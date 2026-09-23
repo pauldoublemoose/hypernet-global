@@ -112,6 +112,9 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .nrow.unread .nlab{ font-weight:bold; }
 .nrow.unread .ncnt{ color:var(--ink); font-weight:bold; }
 .nrow.sel.unread .ncnt{ color:#fff; }
+.nrow.search{ cursor:default; padding-right:4px; margin-bottom:6px; }
+.nrow .nx{ width:36px; height:32px; display:grid; place-items:center; border:0; padding:0; background:transparent; color:#fff; }
+.nrow .nx:hover{ background:#444; }
 .nrow.drop{ outline:2px dashed #000; outline-offset:-2px; background:#f4f2ec; }
 .nrow .sq, .nrow .av{ width:20px; height:20px; flex-basis:20px; font-size:11px; }
 .logincard{ margin:14px 12px; padding:16px; background:var(--face-lt); box-shadow:var(--thin); }
@@ -1122,7 +1125,10 @@ function searchItems(q){
   q = String(q||'').toLowerCase().trim();
   if (!q) return [];
   var out = [];
-  allEvents().forEach(function(e){
+  allEvents().sort(function(a,b){
+    var pa = isPast(lastDay(a)) ? 1 : 0, pb = isPast(lastDay(b)) ? 1 : 0;
+    return pa !== pb ? pa - pb : (pa ? -byDate(a,b) : byDate(a,b));
+  }).forEach(function(e){
     if (matches(e.title,q) || matches(descOf(e),q) || matches(e.city,q) || matches(e.hostName,q) || matches(TH(e.id).mood,q)) out.push({ type:'event', id:e.id });
   });
   Object.keys(HORIZONS).forEach(function(k){
@@ -1887,6 +1893,10 @@ function renderNav(){
     h += '<div class="acctcard">' + avHTML('self','a40') + '<div class="an">'+esc(S.me.name)+'<small>@'+esc(S.me.handle)+'</small></div>' +
          '<button class="btn" data-act="open-reset" data-type="person" data-id="self">Profile</button></div>';
   }
+  if (S.folder.kind === 'search' && S.query.trim() && !L.phone){
+    h += '<div class="nrow sel search">'+ic('search')+'<span class="nlab">“'+esc(S.query)+'”</span>' +
+         '<button class="nx" data-act="clearsearch" aria-label="Clear search">'+ic('close',14)+'</button></div>';
+  }
   var homeUnread = unreadCount(homeItems());
   h += navRow({kind:'home'}, ic('home'), 'Home', { count: homeUnread || '', unread: homeUnread > 0, cls:'dup-tab' });
   h += navRow({kind:'horizons'}, ic('folder'), 'Horizons', { cls:'dup-tab' });
@@ -2339,7 +2349,7 @@ function goFolder(f){
   if (L.phone && S.tab === 'you' && f.kind !== 'you'){ /* stays in the You tab */ }
   if (!sameFolder(S.folder, f)){ S.folder = { kind:f.kind, id:f.id || null }; }
   S.stack = [];
-  if (f.kind !== 'search') S.phoneSearch = false;
+  if (f.kind !== 'search'){ S.phoneSearch = false; S.query = ''; SEARCHRET = null; }
 }
 function markRead(id){ READ[id] = true; }
 /* open an item in the detail pane: from a list row it replaces what is open, from inside a page it stacks */
@@ -2362,8 +2372,8 @@ function goBack(){ if (S.stack.length){ S.stack.pop(); render(); } }
 function phoneBack(){
   if (S.tab === 'chats' && S.chatOpen){ S.chatOpen = null; render(); return; }
   if (S.stack.length){ S.stack.pop(); render(); return; }
-  if (S.phoneSearch && S.folder.kind !== 'search'){ S.phoneSearch = false; render(); return; }
-  if (S.folder.kind === 'search'){ S.query = ''; S.phoneSearch = false; goFolder({ kind: S.tab === 'horizons' ? 'horizons' : S.tab === 'you' ? 'you' : 'home' }); render(); return; }
+  if (S.phoneSearch && S.folder.kind !== 'search'){ S.phoneSearch = false; SEARCHRET = null; render(); return; }
+  if (S.folder.kind === 'search'){ leaveSearch(); S.phoneSearch = false; render(); return; }
   if (S.tab === 'you' && S.folder.kind !== 'you'){ goFolder({ kind:'you' }); render(); return; }
 }
 function setTab(t){
@@ -2472,14 +2482,22 @@ function sendChat(){
   render();
   var b = $('chatbox'); if (b) b.focus();
 }
+/* search is a place of its own: where you were (and what you had open) is kept, and clearing takes you back */
 var SEARCHRET = null;
+function rememberPlace(){ SEARCHRET = { folder:S.folder, stack:S.stack.slice(), autoSel:S.autoSel }; }
+function leaveSearch(){
+  var r = SEARCHRET || { folder:{ kind:'home' }, stack:[] };
+  S.query = ''; SEARCHRET = null;
+  goFolder(r.folder); S.stack = r.stack; S.autoSel = !!r.autoSel;
+  var q = $('q'); if (q) q.value = '';
+}
 function doSearch(q){
   S.query = q;
   if (!q.trim()){
-    if (S.folder.kind === 'search'){ goFolder(SEARCHRET || { kind:'home' }); if (L.phone) S.phoneSearch = true; }
+    if (S.folder.kind === 'search'){ leaveSearch(); if (L.phone) S.phoneSearch = true; }
     render(); return;
   }
-  if (S.folder.kind !== 'search'){ SEARCHRET = S.folder; goFolder({ kind:'search' }); }
+  if (S.folder.kind !== 'search'){ if (!SEARCHRET) rememberPlace(); goFolder({ kind:'search' }); }
   else S.stack = [];
   render();
 }
@@ -2527,7 +2545,8 @@ document.addEventListener('click', function(ev){
     case 'open-reset': openItem(n.getAttribute('data-type'), id); break;
     case 'back':     goBack(); break;
     case 'pback':    phoneBack(); break;
-    case 'psearch':  S.phoneSearch = true; if (S.folder.kind !== 'search'){ SEARCHRET = S.folder; } render(); break;
+    case 'psearch':  S.phoneSearch = true; if (S.folder.kind !== 'search') rememberPlace(); render(); break;
+    case 'clearsearch': leaveSearch(); render(); break;
     case 'tab':      setTab(id); break;
     case 'toggle-left':  S.leftOpen = !L.left; if (S.leftOpen) S.lastOpened = 'left'; render(); break;
     case 'toggle-right': S.rightOpen = !L.right; if (S.rightOpen) S.lastOpened = 'right'; render(); break;
@@ -2658,6 +2677,7 @@ document.addEventListener('keydown', function(ev){
   if (ev.key === 'Escape'){
     if (DLGS.length){ closeDialogs(); S.pending = null; return; }
     if (POP){ closePopup(); return; }
+    if (ae && ae.id === 'q' && S.folder.kind === 'search'){ leaveSearch(); render(); ae.blur(); return; }
     if (inField){ ae.blur(); return; }
     if (L.phone){ phoneBack(); return; }
     if (S.stack.length > (L.split ? 1 : 0)){ goBack(); return; }

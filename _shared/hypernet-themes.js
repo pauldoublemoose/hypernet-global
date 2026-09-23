@@ -228,12 +228,12 @@ window.HYPERNET_THEMES = {
     var t = {
       mood: '',
       palette: PALS[v % PALS.length],
-      square: { pattern: PAT[(v>>3) % PAT.length], glyph: GLY[(v>>7) % GLY.length] },
-      surface: SURF[(v>>11) % SURF.length],
-      type: TYPE[(v>>5) % TYPE.length],
-      headline: HEAD[(v>>13) % HEAD.length],
-      motion: MOT[(v>>17) % MOT.length],
-      shape: SHAPE[(v>>19) % SHAPE.length],
+      square: { pattern: PAT[(v>>>3) % PAT.length], glyph: GLY[(v>>>7) % GLY.length] },
+      surface: SURF[(v>>>11) % SURF.length],
+      type: TYPE[(v>>>5) % TYPE.length],
+      headline: HEAD[(v>>>13) % HEAD.length],
+      motion: MOT[(v>>>17) % MOT.length],
+      shape: SHAPE[(v>>>19) % SHAPE.length],
       density: (v>>23 & 1) ? 'packed' : 'airy'
     };
     T[id] = t; return t;

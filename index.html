@@ -313,6 +313,37 @@ button.chip:hover{ border-color:var(--eac); }
 .kv dd{ margin:0; }
 .kv dd p{ margin:0; }
 .canvas a{ color:var(--eac); }
+/* timeline: build, gates, burns, strike — the event is a sequence, not a date */
+.tl{ list-style:none; margin:0; padding:0; max-width:70ch; }
+.tl li{ position:relative; display:flex; gap:18px; padding:0 0 16px 22px; }
+.tl li::before{ content:""; position:absolute; left:4px; top:7px; width:9px; height:9px; background:var(--eac); }
+.tl li::after{ content:""; position:absolute; left:8px; top:18px; bottom:-4px; width:1px; background:var(--eac2); }
+.tl li:last-child::after{ display:none; }
+.tl .tld{ flex:0 0 150px; font:bold 12px var(--mono); letter-spacing:.04em; text-transform:uppercase; color:var(--eink); padding-top:2px; }
+.tl .tld span{ display:block; font-weight:normal; color:var(--edim); margin-top:2px; }
+.tl .tlb{ flex:1; min-width:0; }
+.tl .tlt{ font-weight:bold; }
+.tln{ font-size:14px; color:var(--edim); margin-top:2px; }
+.tiers{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; margin:14px 0; }
+.tier{ border:1px solid var(--eac2); padding:12px 14px; }
+.tiname{ font:bold 11px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--edim); }
+.tiprice{ font-size:22px; font-weight:bold; margin-top:4px; }
+.tinote{ font-size:13px; color:var(--edim); margin-top:4px; }
+.sales{ margin:6px 0 14px; border-top:1px solid var(--eac2); }
+.sale{ display:flex; gap:18px; padding:11px 0; border-bottom:1px solid var(--eac2); }
+.sale .sd{ flex:0 0 150px; font:bold 12px var(--mono); letter-spacing:.04em; text-transform:uppercase; padding-top:2px; }
+.sale .sm2{ flex:1; min-width:0; }
+.sale .sn{ font-weight:bold; }
+.sst{ display:inline-block; margin-left:6px; padding:1px 7px; border:1px solid var(--edim); font:bold 10px var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--edim); vertical-align:2px; }
+.sst.on{ border-color:var(--eac); background:var(--eac); color:var(--eon); }
+.asof{ margin-top:10px; font:11px var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--edim); }
+.prov{ list-style:none; margin:0 0 10px; padding:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:8px; }
+.prov li{ display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--eac2); }
+.prov li::before{ content:""; flex:0 0 12px; height:12px; border:2px solid var(--eac); }
+.prov li.y::before{ background:var(--eac); }
+.prov li.n{ color:var(--edim); }
+.chip.strong{ border-color:var(--eac); color:var(--eac); font-weight:bold; }
+.vocab dt{ text-transform:none; letter-spacing:0; font:bold 14px var(--sys); color:var(--eink); }
 .srcline{ margin-top:38px; font:11px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--edim); }
 .av{ width:22px; height:22px; flex:0 0 22px; display:inline-grid; place-items:center; color:#fff; font:bold 10px var(--sys); }
 .av.a40{ width:40px; height:40px; flex-basis:40px; font-size:14px; }
@@ -341,6 +372,8 @@ button.chip:hover{ border-color:var(--eac); }
   .facts{ grid-template-columns:1fr 1fr; }
   .evdesc{ font-size:16px; }
   .kv{ grid-template-columns:1fr; gap:2px; }
+  .tl li, .sale{ flex-direction:column; gap:2px; }
+  .tl .tld, .sale .sd{ flex-basis:auto; }
   .kv dd{ margin-bottom:8px; }
 }
 
@@ -657,15 +690,21 @@ var CITYPOOL = ['Stockholm','Malmö','Copenhagen','Berlin','Oslo','Gothenburg','
 Object.keys(EVENTS).forEach(function(id){ if (!EVENTS[id].city) EVENTS[id].city = CITYPOOL[hashId(id) % CITYPOOL.length]; });
 
 /* =========================================================================
-   0b. EVENT DETAILS — sample records now, real ones dropped in later.
-   data/real-events.json (array, or {events:[…]}) is fetched at boot and
-   merged over the samples: matched by id, then by title; unknown events are
-   added. The renderer below only ever reads DETAIL records, never raw JSON.
+   0b. EVENT RECORDS — the Hypernet event schema (docs/research/burn-event-data.md §4)
+   Samples for the mock events come from _shared/hypernet-event-details.js.
+   Real events come from data/real-events.json, fetched at boot: a real record
+   replaces the sample for the same event (matched by id, then by title), and
+   events the fixtures don't have join the network. The page renders records,
+   never raw files.
    ========================================================================= */
-var DREC = (window.HYPERNET_DETAILS && window.HYPERNET_DETAILS.records) || {};
-function detailOf(id){ return DREC[id] || {}; }
-function descOf(e){ var d = detailOf(e.id); return d.description || e.description || ''; }
-
+var REC = (window.HYPERNET_DETAILS && window.HYPERNET_DETAILS.records) || {};
+var COUNTRY = { SE:'Sweden', US:'USA', ZA:'South Africa', ES:'Spain', AT:'Austria', NO:'Norway', CZ:'Czechia', CH:'Switzerland',
+                GB:'United Kingdom', UK:'United Kingdom', DE:'Germany', DK:'Denmark', NL:'Netherlands', LT:'Lithuania', IL:'Israel',
+                FR:'France', FI:'Finland', BE:'Belgium', IT:'Italy', PT:'Portugal', PL:'Poland', HU:'Hungary' };
+function recOf(id){ return REC[id] || {}; }
+function descOf(e){ return recOf(e.id).description || e.description || ''; }
+function endOf(e){ var r = recOf(e.id); return r.endDate && r.endDate > e.date ? r.endDate : null; }
+function lastDay(e){ return endOf(e) || e.date; }
 function pickK(o, keys){
   if (!o || typeof o !== 'object' || Array.isArray(o)) return undefined;
   for (var i = 0; i < keys.length; i++){
@@ -675,101 +714,28 @@ function pickK(o, keys){
   return undefined;
 }
 function isoDate(v){ if (v == null) return null; var m = String(v).match(/(\d{4})-(\d{2})-(\d{2})/); return m ? m[0] : null; }
-var REAL_CONSUMED = ['id','title','name','eventName','event','startDate','start','dateStart','date','from','endDate','end','dateEnd','to',
-  'dates','when','location','where','venue','site','place','city','region','country','organiser','organizer','organisation','organization',
-  'org','producer','host','sourceUrl','source_url','url','website','web','source','description','summary','about','blurb','intro','edition',
-  'year','iteration','theme','yearTheme','size','capacity','attendance','population','participants','tickets','ticketing','ticketModel',
-  'membership','admission','entry','pricing','principles','values','ethos','themeCamps','camps','volunteering','volunteer','shifts','grants',
-  'dreams','artGrants','art','participate','participation','arrival','arrivalDeparture','arrival_departure','earlyArrival','departure',
-  'logistics','lnt','leaveNoTrace','leave_no_trace','moop','care','safety','harmReduction','wellbeing','welfare','bring','whatToBring',
-  'packing','links','mood','kind','type'];
-function normReal(raw){
-  if (!raw || typeof raw !== 'object') return null;
-  var title = pickK(raw, ['title','name','eventName','event']);
-  if (!title) return null;
-  var dr = pickK(raw, ['dates','when']);
-  var start = isoDate(pickK(raw, ['startDate','start','dateStart','date','from'])) ||
-              (dr && typeof dr === 'object' ? isoDate(pickK(dr, ['start','from','startDate','begin'])) : isoDate(dr));
-  var end = isoDate(pickK(raw, ['endDate','end','dateEnd','to'])) ||
-            (dr && typeof dr === 'object' ? isoDate(pickK(dr, ['end','to','endDate','until'])) : null);
-  var gates = dr && typeof dr === 'object' ? pickK(dr, ['gates','gateTimes','times','hours','notes'])
-            : (typeof dr === 'string' && !isoDate(dr) ? dr : undefined);
-  var lr = pickK(raw, ['location','where','venue','site','place']), loc = {};
-  if (typeof lr === 'string') loc.site = lr;
-  else if (lr && typeof lr === 'object'){
-    loc.site = pickK(lr, ['site','venue','name','place','address']);
-    loc.region = pickK(lr, ['region','state','area','province','nearestTown']);
-    loc.city = pickK(lr, ['city','town']);
-    loc.country = pickK(lr, ['country']);
-    loc.travel = pickK(lr, ['travel','directions','gettingThere','transport']);
-  }
-  ['city','region','country'].forEach(function(k){ if (raw[k] && !loc[k]) loc[k] = raw[k]; });
-  var org = pickK(raw, ['organiser','organizer','organisation','organization','org','producer','host']);
-  var part = [];
-  [['themeCamps','Theme camps','camps'],['camps','Camps','camps'],['volunteering','Volunteering','volunteer'],['volunteer','Volunteering','volunteer'],
-   ['shifts','Shifts','volunteer'],['grants','Grants','grants'],['dreams','Dreams','grants'],['artGrants','Art grants','grants'],['art','Art','art'],
-   ['participate','Take part','art'],['participation','Take part','art']].forEach(function(s){
-    var v = raw[s[0]];
-    if (v == null || v === '' || (Array.isArray(v) && !v.length)) return;
-    if (Array.isArray(v) && v.every(function(x){ return x && typeof x === 'object' && pickK(x, ['title','name']); })){
-      v.forEach(function(x){ part.push({ kind: x.kind || s[2], title: pickK(x, ['title','name']), body: pickK(x, ['body','description','text','details','summary']) || x,
-                                         deadline: pickK(x, ['deadline','due','date']) }); });
-    } else part.push({ kind:s[2], title:s[1], body:v });
-  });
-  var extra = {};
-  Object.keys(raw).forEach(function(k){
-    if (REAL_CONSUMED.indexOf(k) >= 0) return;
-    var v = raw[k]; if (v == null || v === '' || (Array.isArray(v) && !v.length)) return;
-    extra[k] = v;
-  });
-  var src = pickK(raw, ['sourceUrl','source_url','url','website','web']);
-  var d = {
-    source:'real', sourceUrl: typeof src === 'string' ? src : undefined,
-    description: pickK(raw, ['description','summary','about','blurb','intro']),
-    dates: { start:start, end:end, gates:gates },
-    edition: pickK(raw, ['edition','year','iteration']),
-    theme: pickK(raw, ['theme','yearTheme']),
-    location: loc,
-    organiser: typeof org === 'string' ? { name:org } : org,
-    size: pickK(raw, ['size','capacity','attendance','population','participants']),
-    tickets: pickK(raw, ['tickets','ticketing','ticketModel','membership','admission','entry','pricing']),
-    principles: pickK(raw, ['principles','values','ethos']),
-    participate: part.length ? part : undefined,
-    arrival: pickK(raw, ['arrival','arrivalDeparture','arrival_departure','earlyArrival','departure','logistics']),
-    lnt: pickK(raw, ['lnt','leaveNoTrace','leave_no_trace','moop']),
-    care: pickK(raw, ['care','safety','harmReduction','wellbeing','welfare']),
-    bring: pickK(raw, ['bring','whatToBring','packing']),
-    links: pickK(raw, ['links']),
-    mood: typeof raw.mood === 'string' ? raw.mood : undefined,
-    extra: Object.keys(extra).length ? extra : undefined
-  };
-  if (!d.links && typeof src === 'string') d.links = [{ label: src.replace(/^https?:\/\/(www\.)?/,'').replace(/\/.*$/,''), url: src }];
-  return { id: raw.id, title: String(title), start: start, city: loc.city || loc.region || loc.country || '', d: d };
-}
-function normTitle(t){ return String(t||'').toLowerCase().replace(/\b(19|20)\d\d\b/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
+function normTitle(t){ return String(t||'').toLowerCase().replace(/\b(19|20)\d\d\b/g,'').replace(/^\s*the\s+/,'').replace(/[^a-z0-9]+/g,' ').trim(); }
 var REALIDS = [];
 function mergeReal(raw){
-  var n = normReal(raw);
-  if (!n) return;
-  var id = n.id && EVENTS[n.id] ? n.id : null;
-  if (!id){
-    var nt = normTitle(n.title);
-    id = Object.keys(EVENTS).filter(function(k){ return normTitle(EVENTS[k].title) === nt; })[0] || null;
-  }
-  var clean = {};
-  Object.keys(n.d).forEach(function(k){ if (n.d[k] !== undefined) clean[k] = n.d[k]; });
-  if (id){
-    DREC[id] = Object.assign({}, DREC[id] || {}, clean);
-    if (n.start) EVENTS[id].date = n.start;
-  } else {
-    id = 'real-' + normTitle(n.title).replace(/ /g,'-') + (n.start ? '-' + n.start.slice(0,4) : '');
-    EVENTS[id] = { id:id, title:n.title, date:n.start || TODAY_ISO, description:clean.description || '',
-                   hostName:(clean.organiser && clean.organiser.name) || 'Hypernet', privacy:'everyone', ownerIds:[], kind:'real', city:n.city };
-    DREC[id] = clean;
-    PROMOCOUNT[id] = hashId(id) % 17;
-    if (clean.mood){ var th = window.HN_THEME(id); th.mood = clean.mood; }
-  }
-  if (REALIDS.indexOf(id) < 0) REALIDS.push(id);
+  if (!raw || typeof raw !== 'object' || !raw.title) return;
+  var id = raw.id && EVENTS[raw.id] ? raw.id : null;
+  if (!id){ var nt = normTitle(raw.title); id = Object.keys(EVENTS).filter(function(k){ return normTitle(EVENTS[k].title) === nt; })[0] || null; }
+  var isNew = !id;
+  if (isNew) id = raw.id || ('real-' + normTitle(raw.title).replace(/ /g,'-'));
+  var e = EVENTS[id] || (EVENTS[id] = { id:id, ownerIds:[], kind:'real' });
+  e.title = raw.title;
+  if (isoDate(raw.date)) e.date = isoDate(raw.date);
+  e.hostName = raw.hostName || (raw.organiser && raw.organiser.name) || e.hostName || 'Hypernet';
+  e.description = raw.description || e.description || '';
+  e.privacy = raw.privacy || e.privacy || 'everyone';
+  e.city = raw.city || raw.region || COUNTRY[raw.country] || raw.country || e.city || '';
+  REC[id] = raw;
+  if (isNew) PROMOCOUNT[id] = hashId(id) % 17;
+  /* a camp's own events land on the camp's horizon */
+  (raw.ownerGroupIds || []).forEach(function(g){
+    Object.keys(HORIZONS).forEach(function(k){ var hz = HORIZONS[k]; if (hz.ownerGroupId === g && hz.eventIds.indexOf(id) < 0) hz.eventIds.push(id); });
+  });
+  if (REALIDS.indexOf(id) < 0 && !raw.illustrative) REALIDS.push(id);
 }
 function loadRealEvents(){
   if (location.protocol === 'file:' || !window.fetch) return;
@@ -777,12 +743,13 @@ function loadRealEvents(){
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(json){
       if (!json) return;
-      var list = Array.isArray(json) ? json : (json.events || json.records || json.items || []);
+      var list = Array.isArray(json) ? json : (json.events || json.records || []);
       list.forEach(mergeReal);
       if (REALIDS.length){
-        HORIZONS['horizon-season'] = { id:'horizon-season', name:'Season of burns', description:'Regional burns and participatory gatherings, from their own pages.',
-          isPersonalDefault:false, isPublished:true, ownerName:'Hypernet', ownerId:null, eventIds:REALIDS.slice() };
-        HZCOUNT['horizon-season'] = 212;
+        HORIZONS['horizon-season'] = { id:'horizon-season', name:'Season of burns', description:'Burns, decompressions and meetups from the community’s own pages.',
+          isPersonalDefault:false, isPublished:true, ownerName:'Hypernet', ownerId:null,
+          eventIds: REALIDS.slice().sort(function(a,b){ return EVENTS[a].date < EVENTS[b].date ? -1 : 1; }) };
+        HZCOUNT['horizon-season'] = 212; HZCOVER['horizon-season'] = REALIDS.filter(function(k){ return /burning-man/.test(k); })[0] || REALIDS[0];
       }
       render();
     })
@@ -962,13 +929,14 @@ function hzRange(hzId){
 }
 function hzOwnedByMe(hzId){ return S.loggedIn && MYHORIZONS.indexOf(hzId) >= 0; }
 function attendees(evId){
+  if (MYEVENTS.indexOf(evId) >= 0) return (S.loggedIn && RSVP[evId] === 'going') ? ['self'] : [];
   var w = H.worlds.filter(function(x){ return x.eventId === evId; })[0];
   var ids = w && w.participantIds ? w.participantIds.filter(function(p){ return PEOPLE[p] && p !== 'self'; }) : [];
   if (!ids.length){ var n = hashId(evId); ids = CREW.filter(function(_,i){ return (n >> i) & 1; }); }
   if (S.loggedIn && RSVP[evId] === 'going') ids = ['self'].concat(ids);
   return ids.slice(0,6);
 }
-function attendeeCount(evId){ return attendees(evId).length + (hashId(evId) % 34) + 4; }
+function attendeeCount(evId){ return attendees(evId).length + (MYEVENTS.indexOf(evId) >= 0 ? 0 : (hashId(evId) % 34) + 4); }
 function stateOf(evId){
   if (!S.loggedIn) return '';
   if (MYEVENTS.indexOf(evId) >= 0) return 'hosting';
@@ -976,8 +944,9 @@ function stateOf(evId){
 }
 /* where an event is, preferring its own details over the fixture's generated city */
 function whereOf(e){
-  var l = detailOf(e.id).location || {};
-  return l.city || l.region || l.country || cityShort(e.city);
+  var r = recOf(e.id);
+  if (r.venueKind === 'virtual') return 'Online';
+  return r.city || r.region || COUNTRY[r.country] || r.country || cityShort(e.city);
 }
 function isMine(evId){ var e = EVENTS[evId]; return S.loggedIn && (MYEVENTS.indexOf(evId) >= 0 || (e && e.hostName === 'You')); }
 function unreadCount(items){ return items.filter(function(it){ return it.type==='event' && !READ[it.id]; }).length; }
@@ -1027,7 +996,7 @@ function browsableHorizons(){
 function browsablePeople(){ var ids = CREW.slice(); if (S.loggedIn) ids.unshift('self'); return ids; }
 function homeItems(){
   var out = [];
-  feedEvents().filter(function(e){ return !isPast(e.date); }).slice(0,9).forEach(function(e){ out.push({ type:'event', id:e.id }); });
+  feedEvents().filter(function(e){ return !isPast(lastDay(e)); }).slice(0,9).forEach(function(e){ out.push({ type:'event', id:e.id }); });
   browsableHorizons().filter(function(k){ return HORIZONS[k].isPublished && !(S.loggedIn && HZFOLLOW[k]) && MYHORIZONS.indexOf(k) < 0; })
     .forEach(function(k){ out.push({ type:'horizon', id:k }); });
   CALLOUTS.forEach(function(c){ out.push({ type:'callout', id:c.id }); });
@@ -1172,12 +1141,13 @@ function rowHTML(it){
   if (it.type === 'event'){
     var e = EVENTS[it.id];
     if (!READ[it.id]) cls += ' unread';
-    if (isPast(e.date)) cls += ' past';
+    if (isPast(lastDay(e))) cls += ' past';
     lead = sqHTML(it.id, 40);
     title = esc(e.title);
-    meta = [hostLabel(e), whereOf(e), e.kind === 'world' ? 'World' : ''].filter(Boolean).map(esc).join(' · ');
-    var dd = (detailOf(it.id).dates || {}).end;
-    date = dd && dd !== e.date ? fmtShort(e.date) + ' +' + (nDays(e.date, dd) - 1) + 'd' : fmtShort(e.date);
+    var rk = recOf(it.id).kind;
+    meta = [hostLabel(e), whereOf(e), rk && rk !== 'meetup' ? KINDLAB[rk] : (e.kind === 'world' ? 'World' : '')].filter(Boolean).map(esc).join(' · ');
+    var dd = endOf(e);
+    date = dd ? fmtShort(e.date) + ' +' + (nDays(e.date, dd) - 1) + 'd' : fmtShort(e.date);
     side = statePills(it.id);
   } else if (it.type === 'horizon'){
     var hz = HORIZONS[it.id];
@@ -1246,16 +1216,32 @@ function renderList(){
 /* =========================================================================
    7. THE DETAIL PANE — events take it over; everything else is quiet chrome
    ========================================================================= */
-var TMODEL = { membership:'Membership', ticket:'Ticketed', tickets:'Ticketed', ticketed:'Ticketed', free:'Free', invite:'Invite only',
-               'invite-only':'Invite only', donation:'Pay what you can', lottery:'Lottery', application:'By application' };
-var PKIND  = { camps:'Theme camps', volunteer:'Volunteer', grants:'Grants', art:'Art', workshop:'Workshop' };
+var ACCESSLAB = { free:'Free', donation:'Donation', pay_what_you_can:'Pay what you can', ticket:'Ticket', membership:'Membership',
+                  members_only:'Members only', lottery:'Lottery', invite:'Invite only' };
+var ACCESSEXPL = {
+  free:'Free to come.',
+  donation:'Entry by donation.',
+  pay_what_you_can:'Pay what you can. Nobody is turned away.',
+  ticket:'Entry by ticket.',
+  membership:'There are no tickets. You join the association that runs it, and your membership is your way in.',
+  members_only:'Members only. You join the association first.',
+  lottery:'Places are given out by lottery.',
+  invite:'By invitation.'
+};
+var KINDLAB = { burn:'Burn', decompression:'Decompression', burn_night:'Burn night', build:'Build', fundraiser:'Fundraiser', camp_meeting:'Camp meeting',
+                meetup:'Meetup', town_hall:'Town hall', workshop:'Workshop', volunteer_day:'Volunteer day', sale:'Sale', other:'Event' };
+var REGLAB = { flagship:'Flagship', official_regional:'Official regional', burn_inspired:'Burn-inspired', independent:'Independent' };
+var PHASELAB = { build:'Build', early_entry:'Early entry', gates_open:'Gates open', effigy_burn:'Effigy burn', temple_burn:'Temple burn',
+                 gates_close:'Gates close', strike:'Strike', event:'The event' };
+var EXPECTLAB = { none:'Optional', encouraged:'Encouraged', expected:'Expected', required:'Required' };
+var ARTLAB = { honoraria:'Honoraria', grants:'Grants', dreams_cobudget:'Co-budgeted by members' };
 function humanKey(k){ return String(k).replace(/[_-]+/g,' ').replace(/([a-z])([A-Z])/g,'$1 $2').replace(/^./, function(c){ return c.toUpperCase(); }); }
 function linkify(s){
   s = String(s);
   if (/^https?:\/\/\S+$/.test(s)) return '<a href="'+esc(s)+'" target="_blank" rel="noopener">'+esc(s.replace(/^https?:\/\/(www\.)?/,'').replace(/\/$/,''))+'</a>';
   return esc(s);
 }
-/* renders whatever shape the data comes in: text, list, list of records, or a record */
+/* renders whatever shape a field comes in: text, list, list of records, or a record */
 function rv(v){
   if (v == null || v === '') return '';
   if (typeof v !== 'object') return '<p>'+linkify(v)+'</p>';
@@ -1266,9 +1252,9 @@ function rv(v){
   return kvHTML(v);
 }
 function itemRow(o){
-  var used = ['title','name','label','role','body','description','text','details','summary','deadline','date','when','url','link','href'];
-  var t = pickK(o, ['title','name','label','role']);
-  var b = pickK(o, ['body','description','text','details','summary']);
+  var used = ['title','name','label','term','body','description','text','details','summary','meaning','note','deadline','date','when','url','link','href'];
+  var t = pickK(o, ['title','name','label','term']);
+  var b = pickK(o, ['body','description','text','details','summary','meaning','note']);
   var w = pickK(o, ['deadline','date','when']);
   var u = pickK(o, ['url','link','href']);
   var rest = {}; Object.keys(o).forEach(function(k){ if (used.indexOf(k) < 0 && o[k] != null && o[k] !== '') rest[k] = o[k]; });
@@ -1277,87 +1263,186 @@ function itemRow(o){
     (w ? '<div class="iw">'+esc(fmtMaybeDate(w))+'</div>' : '') + (u && !t ? '<div class="iw">'+linkify(u)+'</div>' : '') +
     (Object.keys(rest).length ? kvHTML(rest) : '') + '</div>';
 }
-function kvHTML(o){
+function kvHTML(o, labels){
   var keys = Object.keys(o).filter(function(k){ return o[k] != null && o[k] !== '' && k.charAt(0) !== '_'; });
   if (!keys.length) return '';
   return '<dl class="kv">' + keys.map(function(k){
-    return '<dt>'+esc(humanKey(k))+'</dt><dd>'+(typeof o[k] === 'object' ? rv(o[k]) : linkify(o[k]))+'</dd>'; }).join('') + '</dl>';
+    var v = o[k];
+    return '<dt>'+esc((labels && labels[k]) || humanKey(k))+'</dt><dd>'+(typeof v === 'object' ? rv(v) : typeof v === 'boolean' ? (v ? 'Yes' : 'No') : linkify(v))+'</dd>'; }).join('') + '</dl>';
 }
 function sect(title, body){ return body ? '<section class="sect"><h3>'+esc(title)+'</h3>'+body+'</section>' : ''; }
-function ticketModelLabel(t){
-  if (!t) return null;
-  if (typeof t === 'string') return t.length > 34 ? t.slice(0, 32) + '…' : t;
-  var m = pickK(t, ['model','type','kind']);
-  return m ? (TMODEL[String(m).toLowerCase()] || titleCase(m)) : (pickK(t, ['summary']) ? 'See details' : null);
+function chipsHTML(list, cls){ return list && list.length ? '<div class="chips">' + list.map(function(x){ return '<span class="chip plain'+(cls?' '+cls:'')+'">'+esc(x)+'</span>'; }).join('') + '</div>' : ''; }
+function money(n, cur){ if (n == null || n === '') return ''; return (typeof n === 'number' ? n.toLocaleString('en-US') : String(n)) + (cur ? ' ' + cur : ''); }
+function priceSummary(a){
+  if (!a) return '';
+  var ps = (a.tiers || []).map(function(t){ return t.price; }).filter(function(p){ return typeof p === 'number'; });
+  if (ps.length){
+    var lo = Math.min.apply(null, ps), hi = Math.max.apply(null, ps);
+    return (lo === hi ? money(lo) : money(lo) + '–' + money(hi)) + (a.currency ? ' ' + a.currency : '');
+  }
+  return a.lowIncome && a.lowIncome.price ? money(a.lowIncome.price, a.currency) : '';
 }
-function ticketsHTML(t){
-  if (!t) return '';
-  if (typeof t !== 'object' || Array.isArray(t)) return rv(t);
-  var used = ['model','type','kind','summary','description','how','body','price','prices','cost','fee','sales','phases','rounds','programs','notes','rules','policy'];
-  var h = '', m = ticketModelLabel(t);
-  if (pickK(t, ['model','type','kind'])) h += '<div class="tmodel">'+esc(m)+'</div>';
-  var sum = pickK(t, ['summary','description','how','body']); if (sum) h += rv(sum);
-  var price = pickK(t, ['price','prices','cost','fee']); if (price) h += '<dl class="kv"><dt>Price</dt><dd>'+(typeof price === 'object' ? rv(price) : esc(price))+'</dd></dl>';
-  var sales = pickK(t, ['sales','phases','rounds','programs']); if (sales) h += rv(sales);
-  var notes = pickK(t, ['notes','rules','policy']); if (notes) h += rv(notes);
-  var rest = {}; Object.keys(t).forEach(function(k){ if (used.indexOf(k) < 0) rest[k] = t[k]; });
-  return h + kvHTML(rest);
-}
-function themeHTML(v){
-  if (!v) return '';
-  if (typeof v === 'string') return '<div class="themeline">'+esc(v)+'</div>';
-  var t = pickK(v, ['title','name']), b = pickK(v, ['body','description','text']);
-  return (t ? '<div class="themeline">'+esc(t)+'</div>' : '') + (b ? rv(b) : '');
-}
-function participateHTML(list){
-  if (!list) return '';
-  if (!Array.isArray(list)) return rv(list);
-  return '<div class="cards">' + list.map(function(p){
-    if (typeof p !== 'object') return '<div class="card"><div class="cbd">'+linkify(p)+'</div></div>';
-    return '<div class="card">' + (p.kind ? '<div class="ck">'+esc(PKIND[p.kind] || titleCase(p.kind))+'</div>' : '') +
-      (p.title ? '<div class="ctt">'+esc(p.title)+'</div>' : '') +
-      (p.body ? '<div class="cbd">'+(typeof p.body === 'object' ? rv(p.body) : esc(p.body))+'</div>' : '') +
-      (p.deadline ? '<div class="cdl">Deadline '+esc(fmtMaybeDate(p.deadline))+'</div>' : '') + '</div>';
-  }).join('') + '</div>';
-}
-function linksHTML(v){
-  if (!v) return '';
-  if (typeof v === 'string') return '<div class="chips"><a class="chip plain" href="'+esc(v)+'" target="_blank" rel="noopener">'+linkify(v).replace(/<[^>]+>/g,'')+'</a></div>';
-  if (!Array.isArray(v)) return rv(v);
-  return '<div class="chips">' + v.map(function(l){
-    var url = typeof l === 'string' ? l : pickK(l, ['url','href','link']);
-    var lab = typeof l === 'string' ? l.replace(/^https?:\/\/(www\.)?/,'').replace(/\/$/,'') : (pickK(l, ['label','title','name']) || url);
-    return url ? '<a class="chip plain" href="'+esc(url)+'" target="_blank" rel="noopener">'+esc(lab)+'</a>' : '';
-  }).join('') + '</div>';
-}
+function timeRange(r){ return r.startTime ? (r.endTime ? r.startTime + '–' + r.endTime : 'from ' + r.startTime) : ''; }
+function tzNote(r){ return r.timezone && r.timezone !== H.meta.timezone ? r.timezone.split('/').pop().replace(/_/g,' ') + ' time' : ''; }
+function fmtDay(iso){ return isoDate(iso) ? fmtShort(isoDate(iso)) : String(iso); }
 
 function eyebrowOf(e){
-  var parts = [e.kind === 'world' ? 'World' : 'Event'];
-  var d = detailOf(e.id);
-  if (d.edition) parts.push(d.edition);
+  var r = recOf(e.id), b = r.burn || {};
+  var parts = [KINDLAB[r.kind] || (e.kind === 'world' ? 'World' : 'Event')];
+  if (b.edition && b.edition.year) parts.push(b.edition.year + (b.edition.number ? ' · No. ' + b.edition.number : ''));
+  if (REGLAB[b.regionalStatus]) parts.push(REGLAB[b.regionalStatus]);
+  if (r.venueKind === 'virtual') parts.push('Online');
   parts.push({ everyone:'Public', friends:'Friends', only_me:'Private' }[e.privacy] || 'Public');
-  if (isPast((d.dates && d.dates.end) || e.date)) parts.push('Past');
+  if (isPast(lastDay(e))) parts.push('Past');
   return parts.map(esc).join(' · ');
 }
 function factsHTML(evId){
-  var e = EVENTS[evId], d = detailOf(evId), dt = d.dates || {}, loc = d.location || {};
-  var start = dt.start || e.date, end = dt.end;
-  var f = [];
-  f.push(['When', fmtRange(start, end), [dt.gates, end && end !== start ? nDays(start, end) + ' days' : ''].filter(Boolean).join(' · ')]);
-  var where = loc.site || whereOf(e);
-  var wsub = loc.site ? [loc.city, loc.region, loc.country].filter(Boolean).join(', ') : '';
-  if (where) f.push(['Where', where, wsub]);
-  var tm = ticketModelLabel(d.tickets);
-  if (tm) f.push(['Entry', tm, d.tickets && typeof d.tickets === 'object' ? (pickK(d.tickets, ['price']) || '') : '']);
+  var e = EVENTS[evId], r = recOf(evId), f = [], end = endOf(e), past = isPast(lastDay(e));
+  f.push(['When', fmtRange(e.date, end), [timeRange(r), tzNote(r), end ? nDays(e.date, end) + ' days' : ''].filter(Boolean).join(' · ')]);
+  if (r.venueKind === 'virtual') f.push(['Where', 'Online', r.access && r.access.model === 'invite' ? 'Link for invitees' : '']);
+  else {
+    var v = r.venue || {}, place = v.name || r.city || whereOf(e);
+    var sub = [v.name && r.city !== v.name ? r.city : '', r.region, COUNTRY[r.country] || r.country].filter(Boolean).join(', ');
+    var vis = { on_rsvp:'Address on RSVP', ticket_holders:'Address for ticket holders', secret:'Secret location' }[v.addressVisibility];
+    f.push(['Where', place, [sub, vis].filter(Boolean).join(' · ')]);
+  }
+  if (r.access && r.access.model) f.push(['Entry', ACCESSLAB[r.access.model] || titleCase(r.access.model), priceSummary(r.access)]);
+  var pop = r.burn && r.burn.population;
+  if (pop && (pop.lastAttendance || pop.cap)) f.push(['Size', '≈ ' + money(pop.lastAttendance || pop.cap) + ' people',
+    pop.cap && pop.lastAttendance ? 'Cap ' + money(pop.cap) : (pop.lastAttendanceYear ? 'In ' + pop.lastAttendanceYear : '')]);
   var going = S.loggedIn && RSVP[evId] === 'going';
-  f.push([isPast(end || start) ? 'Went' : 'Going', attendeeCount(evId) + ' people', going ? 'Including you' : '']);
-  if (d.size) f.push(['Size', typeof d.size === 'object' ? JSON.stringify(d.size) : d.size, '']);
-  var org = d.organiser ? (typeof d.organiser === 'string' ? d.organiser : d.organiser.name) : null;
-  f.push(['Host', org || hostLabel(e), org && e.hostName !== org && e.hostName !== 'Hypernet' ? 'Listed by ' + hostLabel(e) : '']);
+  f.push([past ? 'Went' : 'Going', attendeeCount(evId) + ' from your network', going ? 'Including you' : '']);
+  var org = r.organiser;
+  f.push(['Host', (org && org.name) || hostLabel(e), [org && org.legalForm, org && org.name && e.hostName !== org.name ? 'as ' + e.hostName : ''].filter(Boolean).join(' · ')]);
+  if (r.age && (r.age.min || r.age.kidsFreeUpTo != null)) f.push(['Age', r.age.min ? r.age.min + '+' : 'All ages', r.age.kidsFreeUpTo != null ? 'Kids free up to ' + r.age.kidsFreeUpTo : '']);
   return '<div class="facts">' + f.map(function(x){
     return '<div class="fact"><div class="fk">'+esc(x[0])+'</div><div class="fv">'+esc(x[1])+'</div>'+(x[2]?'<div class="fs">'+esc(x[2])+'</div>':'')+'</div>';
   }).join('') + '</div>';
 }
+function timelineHTML(items, phases){
+  return '<ol class="tl">' + items.map(function(p){
+    var lab = phases ? (PHASELAB[p.kind] || titleCase(p.kind || '')) : (PHASELAB[p.label] || titleCase(p.label || ''));
+    var when = (p.date ? fmtDay(p.date) + (p.endDate && p.endDate !== p.date ? ' – ' + fmtDay(p.endDate) : '') : '');
+    var time = p.time || timeRange(p);
+    var cls = p.date && isoDate(p.date) === TODAY_ISO ? ' now' : '';
+    return '<li class="'+cls+'"><div class="tld">'+esc(when)+(time ? '<span>'+esc(time)+'</span>' : '')+'</div>' +
+      '<div class="tlb"><div class="tlt">'+esc(lab)+'</div>'+(p.note ? '<div class="tln">'+esc(p.note)+'</div>' : '')+'</div></li>';
+  }).join('') + '</ol>';
+}
+function saleState(s){
+  var o = isoDate(s.opens), c = isoDate(s.closes);
+  if (c && c < TODAY_ISO) return 'Closed';
+  if (o && o > TODAY_ISO){ var d = dayDiff(o); return d <= 31 ? 'Opens in ' + d + ' day' + (d === 1 ? '' : 's') : 'Upcoming'; }
+  if (o) return 'Open now';
+  return '';
+}
+function accessHTML(a){
+  if (!a) return '';
+  var h = '<div class="tmodel">'+esc(ACCESSLAB[a.model] || titleCase(a.model || 'Entry'))+'</div>';
+  if (ACCESSEXPL[a.model]) h += '<p>'+esc(ACCESSEXPL[a.model])+'</p>';
+  var tiers = (a.tiers || []).slice();
+  if (a.lowIncome) tiers.push({ name:'Low income', price:a.lowIncome.price, note:a.lowIncome.note });
+  if (tiers.length) h += '<div class="tiers">' + tiers.map(function(t){
+    return '<div class="tier"><div class="tiname">'+esc(t.name)+'</div>'+(t.price != null ? '<div class="tiprice">'+esc(money(t.price, a.currency))+'</div>' : '') +
+      (t.note ? '<div class="tinote">'+esc(t.note)+'</div>' : '') + (t.quantity ? '<div class="tinote">'+esc(money(t.quantity))+' available</div>' : '') + '</div>';
+  }).join('') + '</div>';
+  if (a.sales && a.sales.length) h += '<div class="sales">' + a.sales.map(function(s){
+    var st = saleState(s);
+    return '<div class="sale"><div class="sd">'+esc(isoDate(s.opens) ? fmtDay(s.opens) + (s.closes ? ' – ' + fmtDay(s.closes) : '') : (s.opens || ''))+'</div>' +
+      '<div class="sm2"><div class="sn">'+esc(s.name)+(st ? ' <span class="sst'+(st === 'Open now' ? ' on' : '')+'">'+esc(st)+'</span>' : '')+'</div>' +
+      (s.note ? '<div class="tln">'+esc(s.note)+'</div>' : '') + '</div></div>';
+  }).join('') + '</div>';
+  var rules = [];
+  if (a.transfer) rules.push({ none:'No transfers.', face_value:'Transfers only at face value.',
+    official_platform:'Transfers only through the official platform' + (a.transferVia ? ', ' + a.transferVia : '') + '.' }[a.transfer] || String(a.transfer));
+  if (a.idMustMatch) rules.push('The name on your ' + (/member/.test(a.model) ? 'membership' : 'ticket') + ' must match your ID.');
+  if (a.vehiclePass) rules.push('Vehicles need a pass' + (a.vehiclePass.price != null ? ' (' + money(a.vehiclePass.price, a.currency) + ')' : '') + (a.vehiclePass.note ? '. ' + a.vehiclePass.note : '.'));
+  if (a.note) rules.push(a.note);
+  if (rules.length) h += '<ul class="blist">' + rules.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('') + '</ul>';
+  if (a.asOf) h += '<div class="asof">Prices for the ' + esc(a.asOf) + ' edition</div>';
+  return h;
+}
+function card(kicker, title, body, chips){
+  return '<div class="card">' + (kicker ? '<div class="ck">'+esc(kicker)+'</div>' : '') + (title ? '<div class="ctt">'+esc(title)+'</div>' : '') +
+    (body ? '<div class="cbd">'+(Array.isArray(body) ? body.filter(Boolean).map(function(x){ return '<p>'+esc(x)+'</p>'; }).join('') : '<p>'+esc(body)+'</p>')+'</div>' : '') +
+    (chips && chips.length ? '<div class="chips" style="margin-top:10px">' + chips.map(function(c){ return '<span class="chip plain">'+esc(c)+'</span>'; }).join('') + '</div>' : '') + '</div>';
+}
+function takePartHTML(r){
+  var c = [], b = r.burn || {}, v = r.volunteering;
+  if (v) c.push(card('Volunteering', EXPECTLAB[v.expectation] || titleCase(v.expectation || ''), v.how, v.teams));
+  if (b.camps){
+    var cm = b.camps;
+    c.push(card('Camps', titleCase(cm.noun || 'Camps'), [cm.registration && cm.registration.closes ? 'Registration closes ' + fmtDay(cm.registration.closes) + '.' : '',
+      cm.count ? money(cm.count) + ' registered.' : '', cm.maxSize ? 'Up to ' + cm.maxSize + '.' : '']));
+  }
+  if (b.artFunding){
+    var af = b.artFunding;
+    c.push(card('Art funding', af.name || ARTLAB[af.model] || 'Art funding', [ARTLAB[af.model] && af.name ? ARTLAB[af.model] + '.' : '',
+      af.pot ? 'Pot: ' + money(af.pot, af.currency) + '.' : '', af.range ? 'Range: ' + (typeof af.range === 'object' ? JSON.stringify(af.range) : af.range) + '.' : '', af.note]));
+  }
+  if (b.earlyEntry) c.push(card('Early entry', b.earlyEntry.credential || 'Early entry', b.earlyEntry.via ? 'Through ' + b.earlyEntry.via + '.' : ''));
+  if (r.openCalls && r.openCalls.length) c.push(card('Open calls', 'Wanted', null, r.openCalls));
+  return c.length ? '<div class="cards">' + c.join('') + '</div>' : '';
+}
+function calloutsHTML(ids){
+  var cs = (ids || []).map(calloutOf).filter(Boolean);
+  return cs.length ? '<div class="chips">' + cs.map(function(c){
+    return '<button class="chip" data-act="open" data-type="callout" data-id="'+c.id+'">'+ic('callout',16)+'Looking for: '+esc(c.title)+' <span class="sub">'+esc(c.hostName)+'</span></button>'; }).join('') + '</div>' : '';
+}
+function providedHTML(p){
+  if (!p) return '';
+  var it = [];
+  if (p.water) it.push({ none:[false,'No water on site. Bring your own.'], taps:[true,'Drinking water from taps'], buy:[true,'Water for sale'] }[p.water] || [true, 'Water: ' + p.water]);
+  if (p.power != null) it.push([!!p.power, p.power ? 'Power on site' : 'No power. Bring your own.']);
+  if (p.toilets) it.push([true, String(p.toilets).charAt(0).toUpperCase() + String(p.toilets).slice(1)]);
+  if (p.showers != null) it.push([!!p.showers, p.showers ? 'Showers' : 'No showers']);
+  if (p.food) it.push({ none:[false,'No food for sale. Bring your own.'], volunteer_kitchen:[true,'Volunteer kitchen'] }[p.food] || [true, 'Food: ' + p.food]);
+  return '<ul class="prov">' + it.map(function(x){ return '<li class="'+(x[0]?'y':'n')+'">'+esc(x[1])+'</li>'; }).join('') + '</ul>' + (p.note ? '<p>'+esc(p.note)+'</p>' : '');
+}
+function rulesHTML(r){
+  var b = r.burn || {}, ru = b.rules, sf = b.safety, h = '';
+  if (ru){
+    var o = {}; ['vending','vehicles','artCars','pets','fire','sound','drones'].forEach(function(k){ if (ru[k] != null) o[k] = ru[k]; });
+    Object.keys(ru).forEach(function(k){ if (o[k] === undefined && k !== 'other') o[k] = ru[k]; });
+    h += kvHTML(o, { artCars:'Art cars' });
+    if (ru.other && ru.other.length) h += rv(ru.other);
+  }
+  if (sf){
+    if (sf.consentTeam) h += '<p style="margin-top:14px">There is a consent team on site.</p>';
+    if (sf.teams && sf.teams.length) h += chipsHTML(sf.teams);
+  }
+  return h;
+}
+function principlesHTML(p){
+  if (!p) return '';
+  if (Array.isArray(p)) return chipsHTML(p);
+  if (typeof p !== 'object') return rv(p);
+  var h = '';
+  if (p.base) h += '<p>' + (p.base === 'own' ? 'Their own principles' : 'Built on the ' + esc(p.base)) + (p.additions && p.additions.length ? ', plus:' : '.') + '</p>';
+  if (p.additions && p.additions.length) h += chipsHTML(p.additions, 'strong');
+  if (p.renamed && p.renamed.length) h += rv(p.renamed);
+  if (p.url) h += '<p style="margin-top:12px"><a href="'+esc(p.url)+'" target="_blank" rel="noopener">Read them</a></p>';
+  return h;
+}
+function nextHTML(n){
+  if (!n) return '';
+  return '<div class="themeline">' + esc(isoDate(n.date) ? fmtRange(isoDate(n.date), isoDate(n.endDate)) : (n.date || '')) + '</div>' +
+    (n.theme ? '<p>Theme: '+esc(typeof n.theme === 'object' ? n.theme.name : n.theme)+'</p>' : '') + (n.note ? '<p>'+esc(n.note)+'</p>' : '');
+}
+function sourcesHTML(r){
+  var ls = [];
+  if (r.externalUrl) ls.push({ label: r.externalUrl.replace(/^https?:\/\/(www\.)?/,'').replace(/\/.*$/,''), url:r.externalUrl });
+  (r.sources || []).forEach(function(s){ var u = typeof s === 'string' ? s : s.url; if (u && !ls.some(function(x){ return x.url === u; })) ls.push({ label: (s.label || u), url:u }); });
+  return ls.length ? '<div class="chips">' + ls.map(function(l){ return '<a class="chip plain" href="'+esc(l.url)+'" target="_blank" rel="noopener">'+esc(l.label)+'</a>'; }).join('') + '</div>' : '';
+}
+function provenance(evId){
+  var r = recOf(evId);
+  if (MYEVENTS.indexOf(evId) >= 0) return '';
+  if (r.illustrative) return 'Illustrative example';
+  if (r.sources || r.externalUrl) return 'From the event’s own pages' + (r.unverified && r.unverified.length ? ' · from directories only: ' + r.unverified.join(', ') : '');
+  return '';
+}
+
 function verbsHTML(evId){
   var st = S.loggedIn ? RSVP[evId] : undefined;
   var pro = S.loggedIn && PROMOTED[evId];
@@ -1373,9 +1458,15 @@ function verbsHTML(evId){
   if (isMine(evId)) h += '<button class="vmore" data-act="customize" data-id="'+evId+'">'+ic('paint',16)+'Customize</button>';
   return h + '</span></div>';
 }
+/* The event page. `scale` picks how much of it there is: a meetup is time,
+   place, price, what to bring, call outs; a gathering adds its timeline,
+   tiers, volunteering and principles; a burn adds phases, the access
+   explainer, what's provided, rules and safety, camps and art money, and
+   its own vocabulary. Empty sections are never drawn. */
 function canvasHTML(evId){
-  var e = EVENTS[evId], t = TH(evId), d = detailOf(evId);
-  var hp = hostPersonOf(e), onHz = horizonsOf(evId), att = attendees(evId);
+  var e = EVENTS[evId], t = TH(evId), r = recOf(evId), b = r.burn || {};
+  var big = r.scale === 'burn' || !!r.burn;
+  var hp = hostPersonOf(e), onHz = horizonsOf(evId), att = attendees(evId), past = isPast(lastDay(e));
   var h = '<article class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+themeVars(t)+'">';
   h += '<header class="banner"><div class="surf u-'+t.surface+'"></div><div class="wash"></div><div class="bin">' + sqHTML(evId, 160) +
        '<div class="btxt"><div class="eyebrow">'+eyebrowOf(e)+'</div>' +
@@ -1385,26 +1476,35 @@ function canvasHTML(evId){
   h += '<div class="layer"><div class="surf u-'+t.surface+'" style="opacity:.45"></div><div class="lin">';
   h += factsHTML(evId);
   h += sect('About', descOf(e) ? '<p class="evdesc">'+esc(descOf(e))+'</p>' : '');
-  h += sect('Theme', themeHTML(d.theme));
-  h += sect('Tickets & membership', ticketsHTML(d.tickets));
-  h += sect('Principles', d.principles ? (Array.isArray(d.principles) && d.principles.every(function(x){ return typeof x === 'string'; })
-        ? '<div class="chips">' + d.principles.map(function(p){ return '<span class="chip plain">'+esc(p)+'</span>'; }).join('') + '</div>' : rv(d.principles)) : '');
-  h += sect('Take part', participateHTML(d.participate));
-  h += sect('Getting there', d.location && d.location.travel ? rv(d.location.travel) : '');
-  h += sect('Arrival & departure', rv(d.arrival) + (d.dates && d.dates.notes ? rv(d.dates.notes) : ''));
-  h += sect('Bring', rv(d.bring));
-  h += sect('Leave no trace', rv(d.lnt));
-  h += sect('Care & safety', rv(d.care));
-  h += sect('More', d.extra ? kvHTML(d.extra) : '');
-  h += sect(isPast(e.date) ? 'Who went' : 'Who’s going', '<div class="chips">' + att.map(function(pid){
+  if (r.theme) h += sect('Theme', '<div class="themeline">'+esc(typeof r.theme === 'object' ? (r.theme.name || '') : r.theme)+'</div>' +
+                                   (r.theme.blurb ? '<p>'+esc(r.theme.blurb)+'</p>' : ''));
+  if (b.phases && b.phases.length) h += sect('Timeline', timelineHTML(b.phases, true));
+  else if (r.blocks && r.blocks.length) h += sect(r.blocks.every(function(x){ return /^shift/i.test(x.label || ''); }) ? 'Shifts' : 'Timeline', timelineHTML(r.blocks, false));
+  var am = r.access && r.access.model;
+  h += sect(/member/.test(am || '') ? 'Membership' : am === 'ticket' || am === 'lottery' ? 'Tickets' : 'Entry', accessHTML(r.access));
+  h += sect('Take part', takePartHTML(r));
+  h += sect('Call outs', calloutsHTML(r.calloutIds));
+  if (big) h += sect('On site', providedHTML(b.provided));
+  h += sect('Bring', rv(r.whatToBring) + (r.dressCode ? '<p style="margin-top:10px"><b>Dress:</b> '+esc(r.dressCode)+'</p>' : ''));
+  if (big) h += sect('Rules & safety', rulesHTML(r));
+  h += sect('Good to know', kvHTML({ age: r.age && r.age.note, accessibility: r.accessibility, lastEntry: r.gateCloses }, { lastEntry:'Last entry' }));
+  h += sect('Principles', principlesHTML(r.principles));
+  if (b.vocabulary && b.vocabulary.length) h += sect('Words used here', '<dl class="kv vocab">' + b.vocabulary.map(function(v){
+    return '<dt>'+esc(v.term)+'</dt><dd>'+esc(v.meaning)+'</dd>'; }).join('') + '</dl>');
+  if (b.nextEdition) h += sect('Next edition', nextHTML(b.nextEdition));
+  h += sect(past ? 'Who went' : 'Who’s going', '<div class="chips">' + att.map(function(pid){
          return '<button class="chip" data-act="open" data-type="person" data-id="'+pid+'">'+avHTML(pid,'a28')+esc(person(pid).displayName)+'</button>';
        }).join('') + '<span class="chip plain">+ '+Math.max(0, attendeeCount(evId)-att.length)+' more</span></div>');
   h += sect('On horizons', onHz.length ? '<div class="chips">' + onHz.map(function(k){
          return '<button class="chip" data-act="open" data-type="horizon" data-id="'+k+'">'+ic('folder',16)+esc(HORIZONS[k].name)+' <span class="sub">'+esc(HORIZONS[k].ownerName)+'</span></button>';
        }).join('') + '</div>' : '');
-  if (hp && hp.id !== 'self') h += sect('Host', '<div class="chips"><button class="chip" data-act="open" data-type="person" data-id="'+hp.id+'">'+avHTML(hp.id,'a28')+esc(hp.displayName)+'</button></div>');
-  h += sect('Links', linksHTML(d.links));
-  h += '<div class="srcline">' + (d.source === 'real' ? 'From the event’s own pages' + (d.sourceUrl ? ' · ' + linkify(d.sourceUrl) : '') : 'Sample details') + '</div>';
+  var hosts = '';
+  if (hp && hp.id !== 'self') hosts += '<button class="chip" data-act="open" data-type="person" data-id="'+hp.id+'">'+avHTML(hp.id,'a28')+esc(hp.displayName)+'</button>';
+  (r.ownerGroupIds || []).forEach(function(g){ if (GROUPS[g]) hosts += '<button class="chip" data-act="open" data-type="group" data-id="'+g+'">'+ic('camp',16)+esc(GROUPS[g].name)+'</button>'; });
+  h += sect('Hosted by', hosts ? '<div class="chips">' + hosts + '</div>' : '');
+  h += sect('Links', sourcesHTML(r));
+  var pv = provenance(evId);
+  if (pv) h += '<div class="srcline">' + esc(pv) + '</div>';
   h += '</div></div></article>';
   return h;
 }
@@ -1547,7 +1647,7 @@ function renderDetail(){
 function calEvents(){ return destEvents().filter(function(e){ return (S.calMine && S.loggedIn) ? !!RSVP[e.id] || MYEVENTS.indexOf(e.id) >= 0 : true; }); }
 function eventsOn(iso){
   return calEvents().filter(function(e){
-    var end = (detailOf(e.id).dates || {}).end;
+    var end = endOf(e);
     return e.date === iso || (end && e.date < iso && iso <= end);
   }).sort(function(a,b){ return a.title < b.title ? -1 : 1; });
 }
@@ -2080,7 +2180,7 @@ function wizBodyHTML(){
            [['everyone','Everyone'],['friends','Friends'],['only_me','Only me']].map(function(p){ return '<option value="'+p[0]+'"'+(p[0]===d.privacy?' selected':'')+'>'+p[1]+'</option>'; }).join('') +
          '</select></div>' +
          '<div class="field"><label for="w-k">Entry</label><select id="w-k" data-cz="entry">' +
-           ['free','donation','ticket','membership','invite'].map(function(p){ return '<option value="'+p+'"'+(p===d.entry?' selected':'')+'>'+TMODEL[p]+'</option>'; }).join('') +
+           ['free','donation','pay_what_you_can','ticket','membership','invite'].map(function(p){ return '<option value="'+p+'"'+(p===d.entry?' selected':'')+'>'+ACCESSLAB[p]+'</option>'; }).join('') +
          '</select></div>';
   } else if (d.step === 2){
     h += '<div class="field"><label for="w-desc">Description</label><textarea id="w-desc" data-cz="desc" rows="5">'+esc(d.desc)+'</textarea></div>' +
@@ -2133,8 +2233,9 @@ function wizAct(which){
   var start = isoDate(DRAFT.date) || TODAY_ISO, end = isoDate(DRAFT.end);
   EVENTS[id] = { id:id, title:DRAFT.title || 'Untitled event', date:start, description:DRAFT.desc,
                  hostName:'You', privacy:DRAFT.privacy, ownerIds:['self'], kind:'own', city:DRAFT.city };
-  DREC[id] = { source:'sample', dates:{ start:start, end: end && end > start ? end : undefined }, location:{ site:DRAFT.city },
-               tickets:{ model:DRAFT.entry }, bring: String(DRAFT.bring||'').split('\n').map(function(s){ return s.trim(); }).filter(Boolean) };
+  REC[id] = { kind:'meetup', scale: end && end > start ? 'gathering' : 'meetup', endDate: end && end > start ? end : undefined,
+              venueKind:'physical', city:DRAFT.city, venue:{ name:DRAFT.city, addressVisibility:'public' }, description:DRAFT.desc,
+              access:{ model:DRAFT.entry }, whatToBring: String(DRAFT.bring||'').split('\n').map(function(s){ return s.trim(); }).filter(Boolean) };
   window.HYPERNET_THEMES.themes[id] = t;
   MYEVENTS.push(id); PROMOCOUNT[id] = 0; READ[id] = true;
   closeDialogs();
@@ -2166,7 +2267,8 @@ function openItem(type, id, mode){
     if (top.type === type && top.id === id) return;
     S.stack.push(it);
   } else S.stack = [it];
-  if (L.phone && S.tab === 'chats') S.tab = 'home';
+  if (L.phone && S.tab === 'chats') S.tab = S.folder.kind === 'you' || /^(going|interested|hosting|horizon|people)$/.test(S.folder.kind) ? 'you'
+                                          : S.folder.kind === 'horizons' ? 'horizons' : 'home';
   render();
   $('dscroll').scrollTop = 0;
 }
@@ -2494,7 +2596,6 @@ function render(){
   L = computeLayout();
   var app = $('app');
   if (!L.phone && S.folder.kind === 'you') goFolder({ kind:'home' });
-  if (L.phone && S.folder.kind === 'you' && S.tab !== 'you') S.tab = 'you';
   /* in a split view something is always open in the reading pane */
   var items = null;
   if (L.split && !S.stack.length){ items = orderedItems(); var first = items.filter(function(it){ return it.type !== 'news' || newsOf(it.id).ref; })[0];

@@ -126,6 +126,15 @@ horizons (drop the unlabelled tile grid or make it "Jump back in" with a label).
 "This week" when it is this week. Show all keeps the view switcher. Network news rows either open
 something or aren't styled as rows.
 Sources: FIRSTTIMER-7, -8, ORGANISER-15, CREW-8, PHONEBROWSER-7, -8, -16.
+*Status: done.* One list of Home sections drives both the phone shelves and the desktop FEED bands, in the same order:
+This week · From people you follow · Coming up · Announced burns · Your horizons · Horizons worth following · Call outs ·
+Network news. Added "Coming up" after This week so later events don't vanish from Home, and put people-you-follow second
+(CREW-8). This week only holds the next seven days, and its cards read "Today", "Tomorrow", "Wed · in 3 days". Phone
+Home lost the ALL/EVENTS/HORIZONS/CALL OUTS chips and the unlabelled tile grid, leaving FEED/LIST/CALENDAR as the one
+switcher. Each thing appears once on Home (first section wins); news rows that point at something already shown, or at
+nothing, are dropped, so every row opens something (today that leaves no news at all). Desktop bands cap at 8 with a
+"Show all N" row. Newly published horizons lead "Horizons worth following", so they reach Home, logged out too. Show all
+on an event shelf keeps LIST / CALENDAR. The "news from your network" subtitle is gone.
 
 **B5. Calendar.** Opens on the current week/month; days are tappable and list that day's events; event
 marks are tappable (≥44px hit area).

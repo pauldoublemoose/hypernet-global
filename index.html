@@ -631,17 +631,10 @@ body.is-phone #sh-list{ max-height:none; }
 .greet{ padding:20px 16px 4px; }
 .greet h2{ margin:0; font-size:24px; line-height:1.15; }
 .greet p{ margin:4px 0 0; color:var(--dim); font-size:14px; }
-.fchips{ display:flex; gap:6px; padding:14px 16px 4px; overflow-x:auto; scrollbar-width:none; }
-.fchips::-webkit-scrollbar{ display:none; }
-.fchip{ flex:0 0 auto; height:var(--ctl); padding:0 12px; border:0; background:var(--face); box-shadow:var(--out); font:bold 12px var(--mono);
-  letter-spacing:.08em; text-transform:uppercase; color:var(--ink2); }
-.fchip.on{ background:var(--sel); color:#fff; box-shadow:inset 1px 1px 0 #000, inset -1px -1px 0 #777; }
-.qgrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:12px 16px 4px; }
-.qtile{ display:flex; align-items:center; gap:10px; min-width:0; height:56px; padding-right:8px; background:var(--face-lt); box-shadow:var(--out); overflow:hidden; }
-.qtile:active{ box-shadow:var(--in); }
-.qtile .qt{ flex:1; min-width:0; font-size:13px; font-weight:bold; line-height:1.2; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-.qtile .sq, .qtile .mosaic{ flex:0 0 56px; }
 .shelf{ margin-top:22px; }
+.newslist{ margin-top:8px; border-top:1px solid var(--line); }
+.row.more{ min-height:52px; color:var(--ink2); }
+.row.more .r-title{ font-size:var(--fs); font-weight:bold; }
 .shh{ display:flex; align-items:center; gap:10px; padding:0 8px 0 16px; }
 .shh h3{ flex:1; min-width:0; margin:0; font-size:19px; line-height:1.2; }
 .showall{ min-height:44px; padding:0 8px; border:0; background:transparent; font:bold 11px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--dim); }
@@ -1116,7 +1109,7 @@ var S = {
   pending:null,
   autoSel:false,
   acct:null,                   /* which account is logged in: 'me' or 'demo' */
-  shelfFilter:'all'             /* first log-in is a sign-up */                /* true while the reading pane shows something the app picked, not you */
+  lastTab:null
 };
 var L = {};                    /* the layout of the current render */
 
@@ -1272,21 +1265,26 @@ function browsableHorizons(){
   return Object.keys(HORIZONS).filter(function(k){ return HORIZONS[k].isPublished || hzOwnedByMe(k); });
 }
 function browsablePeople(){ var ids = CREW.slice(); if (S.loggedIn) ids.unshift('self'); return ids; }
+/* Home on a desktop is the phone's shelves as bands: the same sections, in the same order */
+var HOMEBAND = 8;
 function homeItems(){
   var out = [];
-  feedEvents().filter(function(e){ return !isPast(lastDay(e)); }).slice(0,9).forEach(function(e){ out.push({ type:'event', id:e.id }); });
-  Object.keys(NEXTED).map(function(k){ return EVENTS[NEXTED[k]]; }).sort(byDate)
-    .forEach(function(e){ if (!out.some(function(x){ return x.id === e.id; })) out.push({ type:'event', id:e.id, band:'Announced' }); });
-  browsableHorizons().filter(function(k){ return HORIZONS[k].isPublished && !(S.loggedIn && HZFOLLOW[k]) && MYHORIZONS.indexOf(k) < 0; })
-    .forEach(function(k){ out.push({ type:'horizon', id:k }); });
-  CALLOUTS.forEach(function(c){ out.push({ type:'callout', id:c.id }); });
-  NEWS.forEach(function(n){ out.push({ type:'news', id:n.id }); });
+  homeSections().forEach(function(sec){
+    sec.items.slice(0, HOMEBAND).forEach(function(it){ out.push({ type:it.type, id:it.id, band:sec.title }); });
+    if (sec.items.length > HOMEBAND) out.push({ type:'more', id:sec.id, band:sec.title, n:sec.items.length });
+  });
   return out;
 }
 var VIEWS = { home:['feed','list','calendar'], horizons:['list','calendar'], going:['list','calendar'], interested:['list','calendar'],
               hosting:['list','calendar'], horizon:['list','calendar'] };
 function destKey(f){ f = f || S.folder; return f.kind + (f.id ? ':' + f.id : ''); }
-function viewsOf(f){ return VIEWS[(f || S.folder).kind] || []; }
+function viewsOf(f){
+  f = f || S.folder;
+  /* Show all keeps the switcher: an event shelf is a list you can also see as a calendar */
+  if (f.kind === 'shelf') return EVENTSHELVES.test(f.id || '') ? ['list','calendar'] : [];
+  return VIEWS[f.kind] || [];
+}
+var EVENTSHELVES = /^(week|soon|announced|people)$/;
 function viewOf(f){ f = f || S.folder; var v = viewsOf(f); return v.length ? (S.view[destKey(f)] || v[0]) : 'list'; }
 function isCal(){ return viewOf() === 'calendar'; }
 
@@ -1323,7 +1321,7 @@ function folderName(f){
 function folderSub(f){
   f = f || S.folder;
   var n = folderItems(f).length;
-  if (f.kind === 'home')     return viewOf(f) === 'feed' ? 'Events, horizons, call outs and news from your network' : destEvents(f).length + ' events';
+  if (f.kind === 'home')     return viewOf(f) === 'feed' ? '' : destEvents(f).length + ' events';
   if (f.kind === 'horizons') return n + ' horizons';
   if (f.kind === 'people')   return n + ' people';
   if (f.kind === 'search')   return n + ' result' + (n === 1 ? '' : 's') + ' for “' + S.query + '”';
@@ -1401,7 +1399,8 @@ var BANDORDER = ['Event Horizon','Happening soon','Announced','This week','This 
 function groupItems(items){
   var groups = {}, order = [];
   items.forEach(function(it){ var b = bandOf(it) || ''; if (!groups[b]){ groups[b] = []; order.push(b); } groups[b].push(it); });
-  order.sort(function(a,b){ var ia = BANDORDER.indexOf(a), ib = BANDORDER.indexOf(b); return (ia<0?99:ia) - (ib<0?99:ib); });
+  if (!(S.folder.kind === 'home' && viewOf() === 'feed'))
+    order.sort(function(a,b){ var ia = BANDORDER.indexOf(a), ib = BANDORDER.indexOf(b); return (ia<0?99:ia) - (ib<0?99:ib); });
   return { groups:groups, order:order };
 }
 function orderedItems(){
@@ -1420,6 +1419,8 @@ function statePills(evId){
   return h;
 }
 function rowHTML(it){
+  if (it.type === 'more') return '<div class="row more" data-act="shelfall" data-id="'+it.id+'" role="button" tabindex="-1"><div class="r-main"><div class="r-title">Show all '+it.n+'</div></div>' +
+    ic('back',16).replace('class="ic"','class="ic" style="transform:scaleX(-1)"')+'</div>';
   var cls = 'row' + (isSel(it) ? ' sel' : ''), lead, title, meta, date = '', side = '', act = 'data-act="row" data-type="'+it.type+'" data-id="'+it.id+'"';
   if (it.type === 'event'){
     var e = EVENTS[it.id];
@@ -1489,7 +1490,7 @@ function renderList(){
   } else {
     g.order.forEach(function(b){
       if (b) h += '<div class="band">' + esc(b) + ' <span class="cnt">' + g.groups[b].length + '</span></div>';
-      g.groups[b].forEach(function(it){ h += rowHTML(it); if (it.type !== 'news' || newsOf(it.id).ref) rows.push(it.type === 'news' ? newsOf(it.id).ref : it); });
+      g.groups[b].forEach(function(it){ h += rowHTML(it); if (it.type !== 'more' && (it.type !== 'news' || newsOf(it.id).ref)) rows.push(it.type === 'news' ? newsOf(it.id).ref : it); });
     });
   }
   S.rows = rows;
@@ -2082,7 +2083,7 @@ function cardHTML(it){
   if (it.type === 'event'){
     var e = EVENTS[it.id], end = endOf(e);
     art = sqPx(it.id, 150);
-    t = e.title; sub = fmtShort(e.date) + (end ? ' +' + (nDays(e.date, end) - 1) + 'd' : '') + ' · ' + whereOf(e);
+    t = e.title; sub = relDay(e) + (end && dayDiff(e.date) > 6 ? ' +' + (nDays(e.date, end) - 1) + 'd' : '') + ' · ' + whereOf(e);
   } else if (it.type === 'horizon'){
     var hz = HORIZONS[it.id];
     art = hzMosaic(it.id, 150);
@@ -2095,75 +2096,75 @@ function cardHTML(it){
   return '<div class="card2" data-act="row" data-type="'+it.type+'" data-id="'+it.id+'" role="button">' +
     '<div class="cart">'+art+cardTag(it)+'</div><div class="ct2">'+esc(t)+'</div><div class="cs2">'+esc(sub)+'</div></div>';
 }
-function tileHTML(it){
-  var art = it.type === 'event' ? sqPx(it.id, 56) : hzMosaic(it.id, 56);
-  var t = it.type === 'event' ? EVENTS[it.id].title : HORIZONS[it.id].name;
-  return '<div class="qtile" data-act="row" data-type="'+it.type+'" data-id="'+it.id+'" role="button">'+art+'<span class="qt">'+esc(t)+'</span></div>';
-}
 function upcoming(e){ return !isPast(lastDay(e)); }
-function popularHorizons(){ return browsableHorizons().filter(function(k){ return HORIZONS[k].isPublished; }).sort(function(a,b){ return (HZCOUNT[b]||0) - (HZCOUNT[a]||0); }); }
-function quickItems(){
-  var out = [], seen = {};
-  function add(type, id){ var k = type + id; if (!seen[k] && (type !== 'event' || EVENTS[id]) && (type !== 'horizon' || HORIZONS[id])){ seen[k] = 1; out.push({ type:type, id:id }); } }
-  if (S.loggedIn){
-    MYHORIZONS.slice().reverse().forEach(function(k){ add('horizon', k); });
-    rsvpList('going').filter(upcoming).forEach(function(e){ add('event', e.id); });
-    rsvpList('interested').filter(upcoming).forEach(function(e){ add('event', e.id); });
-    Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k]; }).forEach(function(k){ add('horizon', k); });
-  }
-  popularHorizons().forEach(function(k){ add('horizon', k); });
-  feedEvents().filter(upcoming).sort(function(a,b){ return attendeeCount(b.id) - attendeeCount(a.id); }).forEach(function(e){ add('event', e.id); });
-  return out;
+/* this week's days read as days: Today, Tomorrow, Wed · in 3 days */
+function relDay(e){
+  var d = dayDiff(e.date);
+  if (d < 0 && !isPast(lastDay(e))) return 'On now';
+  if (d === 0) return 'Today';
+  if (d === 1) return 'Tomorrow';
+  if (d > 1 && d <= 6) return DAY[dOf(e.date).getDay()] + ' · in ' + d + ' days';
+  return fmtShort(e.date);
 }
-/* the shelves, in order. Each one also backs a "Show all" list. */
+/* horizons worth following: the newly published first, then the most followed */
+function popularHorizons(){
+  return browsableHorizons().filter(function(k){ return HORIZONS[k].isPublished; }).sort(function(a,b){
+    var na = HORIZONS[a].ownerAcct ? 1 : 0, nb = HORIZONS[b].ownerAcct ? 1 : 0;
+    return (nb - na) || (hzFollowers(b) - hzFollowers(a));
+  });
+}
+/* the sections of Home, in order. Each one also backs a "Show all" list. */
+var HOMESECTIONS = ['week','people','soon','announced','yourhz','horizons','callouts','news'];
 function shelfItems(id){
   var ev = function(list){ return list.map(function(e){ return { type:'event', id:e.id }; }); };
-  if (id === 'soon'){
-    var up = feedEvents().filter(upcoming);
-    var week = up.filter(function(e){ return dayDiff(e.date) <= 7; });
-    return ev(week.length >= 4 ? week : up.slice(0, 12));
-  }
-  if (id === 'announced') return ev(Object.keys(NEXTED).map(function(k){ return EVENTS[NEXTED[k]]; }).sort(byDate));
+  var up = feedEvents().filter(upcoming);
+  if (id === 'week') return ev(up.filter(function(e){ return dayDiff(e.date) <= 6; }));
+  if (id === 'soon') return ev(up.filter(function(e){ return dayDiff(e.date) > 6; }).slice(0, 12));
+  if (id === 'announced') return ev(Object.keys(NEXTED).map(function(k){ return EVENTS[NEXTED[k]]; }).filter(Boolean).sort(byDate));
   if (id === 'horizons') return popularHorizons().filter(function(k){ return !(S.loggedIn && (HZFOLLOW[k] || MYHORIZONS.indexOf(k) >= 0)); }).map(function(k){ return { type:'horizon', id:k }; });
-  if (id === 'yourhz') return !S.loggedIn ? [] : MYHORIZONS.concat(Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k]; })).filter(function(k){ return HORIZONS[k]; }).map(function(k){ return { type:'horizon', id:k }; });
+  if (id === 'yourhz') return !S.loggedIn ? [] : MYHORIZONS.slice().reverse().concat(Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k] && MYHORIZONS.indexOf(k) < 0; })).filter(function(k){ return HORIZONS[k]; }).map(function(k){ return { type:'horizon', id:k }; });
   if (id === 'callouts'){
-    var mine = S.loggedIn ? CALLOUTS.filter(function(c){ return c.hostId && PFOLLOW[c.hostId]; }) : [];
-    return (mine.length ? mine.concat(CALLOUTS.filter(function(c){ return mine.indexOf(c) < 0; })) : CALLOUTS).map(function(c){ return { type:'callout', id:c.id }; });
+    var open = CALLOUTS.filter(function(c){ return !c.closed; });
+    var mine = S.loggedIn ? open.filter(function(c){ return c.hostId && PFOLLOW[c.hostId]; }) : [];
+    return mine.concat(open.filter(function(c){ return mine.indexOf(c) < 0; })).map(function(c){ return { type:'callout', id:c.id }; });
   }
   if (id === 'people'){
     if (!S.loggedIn) return [];
-    return ev(feedEvents().filter(upcoming).filter(function(e){ var hp = hostPersonOf(e); return hp && hp.id !== 'self' && PFOLLOW[hp.id]; }));
+    return ev(up.filter(function(e){ var hp = hostPersonOf(e); return hp && hp.id !== 'self' && PFOLLOW[hp.id]; }));
   }
+  if (id === 'news') return NEWS.filter(function(n){ return n.ref; }).map(function(n){ return { type:'news', id:n.id }; });
   return [];
 }
 function shelfTitle(id){
-  if (id === 'soon'){ var up = feedEvents().filter(upcoming).filter(function(e){ return dayDiff(e.date) <= 7; }); return up.length >= 4 ? 'Happening this week' : 'Coming up'; }
-  return { announced:'Announced burns', horizons:'Horizons worth following', yourhz:'Your horizons',
-           callouts: S.loggedIn && CALLOUTS.some(function(c){ return c.hostId && PFOLLOW[c.hostId]; }) ? 'Call outs from your crews' : 'Call outs',
-           people:'From people you follow' }[id] || '';
+  return { week:'This week', soon:'Coming up', announced:'Announced burns', yourhz:'Your horizons', horizons:'Horizons worth following',
+           callouts: S.loggedIn && CALLOUTS.some(function(c){ return !c.closed && c.hostId && PFOLLOW[c.hostId]; }) ? 'Call outs from your crews' : 'Call outs',
+           people:'From people you follow', news:'Network news' }[id] || '';
 }
-var SHELVES = { all:['soon','announced','horizons','callouts','people'], events:['soon','announced','people'],
-                horizons:['yourhz','horizons'], callouts:['callouts'] };
+/* each event shows up once on Home, in the first section that has it */
+function homeSections(){
+  var seen = {};
+  return HOMESECTIONS.map(function(id){
+    var items = shelfItems(id).filter(function(it){
+      var r = it.type === 'news' ? newsOf(it.id).ref : it, k = r.type + ':' + r.id;
+      if (seen[k]) return false; seen[k] = 1; return true;
+    });
+    return { id:id, title:shelfTitle(id), items:items };
+  }).filter(function(sec){ return sec.items.length; });
+}
 function greeting(){
   var hr = new Date().getHours();
   var g = hr < 5 ? 'Good night' : hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening';
   return S.loggedIn ? g + ', ' + PEOPLE['self'].displayName.split(' ')[0] : g;
 }
 function shelvesHTML(){
-  var f = S.shelfFilter || 'all', h = '<div class="shelves">';
+  var h = '<div class="shelves">';
   h += '<div class="greet"><h2>'+esc(greeting())+'</h2>' + (S.loggedIn ? '' : '<p>Burns, builds and the people who make them.</p>') + '</div>';
-  h += '<div class="fchips" role="tablist">' + [['all','All'],['events','Events'],['horizons','Horizons'],['callouts','Call outs']].map(function(c){
-    return '<button role="tab" class="fchip'+(f===c[0]?' on':'')+'" aria-selected="'+(f===c[0])+'" data-act="shelffilter" data-id="'+c[0]+'">'+c[1]+'</button>'; }).join('') + '</div>';
-  if (f !== 'callouts'){
-    var q = quickItems().filter(function(it){ return f === 'all' || (f === 'events' ? it.type === 'event' : it.type === 'horizon'); }).slice(0, 6);
-    if (q.length) h += '<div class="qgrid">' + q.map(tileHTML).join('') + '</div>';
-  }
-  SHELVES[f].forEach(function(id){
-    var items = shelfItems(id);
-    if (!items.length) return;
-    h += '<section class="shelf"><div class="shh"><h3>'+esc(shelfTitle(id))+'</h3>' +
-         (items.length > 2 ? '<button class="showall" data-act="shelfall" data-id="'+id+'">Show all</button>' : '') + '</div>' +
-         '<div class="srow" data-shelf="'+id+'">' + items.slice(0, 10).map(cardHTML).join('') + '</div></section>';
+  homeSections().forEach(function(sec){
+    var news = sec.id === 'news', more = news ? sec.items.length > 4 : sec.items.length > 2;
+    h += '<section class="shelf"><div class="shh"><h3>'+esc(sec.title)+'</h3>' +
+         (more ? '<button class="showall" data-act="shelfall" data-id="'+sec.id+'">Show all</button>' : '') + '</div>';
+    if (news) h += '<div class="newslist">' + sec.items.slice(0, 4).map(rowHTML).join('') + '</div></section>';
+    else h += '<div class="srow" data-shelf="'+sec.id+'">' + sec.items.slice(0, 10).map(cardHTML).join('') + '</div></section>';
   });
   return h + '</div>';
 }
@@ -3727,7 +3728,6 @@ document.addEventListener('click', function(ev){
     case 'newsheet': newSheet(); break;
     case 'runcmd':   runCmd(id); break;
     case 'folder':   goFolder({ kind:n.getAttribute('data-kind'), id:id || null }); render(); $('listbody').scrollTop = 0; break;
-    case 'shelffilter': S.shelfFilter = id; render(); $('listbody').scrollTop = 0; break;
     case 'shelfall':    goFolder({ kind:'shelf', id:id }); render(); $('listbody').scrollTop = 0; break;
     case 'setview':  S.view[destKey()] = id; S.stack = []; render(); break;
     case 'row':      openItem(n.getAttribute('data-type'), id); break;
@@ -4210,7 +4210,7 @@ function render(){
   var items = null;
   /* an item the app picked for the reading pane is not something you opened: without a reading pane, show the list */
   if (!L.split && S.autoSel){ S.stack = []; S.autoSel = false; }
-  if (L.split && !S.stack.length){ items = orderedItems(); var first = items.filter(function(it){ return it.type !== 'news' || newsOf(it.id).ref; })[0];
+  if (L.split && !S.stack.length){ items = orderedItems(); var first = items.filter(function(it){ return it.type !== 'more' && (it.type !== 'news' || newsOf(it.id).ref); })[0];
     if (first){ S.stack = [first.type === 'news' ? newsOf(first.id).ref : first]; S.autoSel = true; } }
   var conv = phoneConv();
   var scr = L.phone ? ((conv || (S.tab === 'chats' && !S.stack.length)) ? 'chats' : (S.tab === 'you' && S.folder.kind === 'you' && !S.stack.length) ? 'you' : 'center') : '';

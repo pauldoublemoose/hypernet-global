@@ -3418,10 +3418,19 @@ function tabOfFolder(f){
   var k = (f || S.folder).kind;
   return k === 'horizons' ? 'horizons' : k === 'chats' ? 'chats' : /^(you|going|interested|hosting|people)$/.test(k) ? 'you' : 'home';
 }
+/* each tab keeps its own place: switching back returns you there; tapping the tab you are on goes to its top */
+var TABMEM = {};
 function setTab(t){
+  var m = S.tab === t ? null : TABMEM[t];
+  if (S.tab !== t) TABMEM[S.tab] = { folder:S.folder, stack:S.stack.slice(), query:S.query, ps:S.phoneSearch, searchret:SEARCHRET, scroll:copyScroll(CURSCROLL) };
   S.tab = t;
-  S.phoneSearch = false;
-  goFolder(tabRootFolder(t));
+  if (m){
+    S.folder = m.folder; S.stack = m.stack.filter(validItem); S.query = m.query; S.phoneSearch = m.ps; SEARCHRET = m.searchret;
+    S.autoSel = false; ROUTE.restore = m.scroll;
+  } else {
+    S.phoneSearch = false; goFolder(tabRootFolder(t));
+    ROUTE.restore = { list:0, detail:0, nav:0, chats:0, shelves:{} };
+  }
   render();
 }
 var setRSVP = gated(function(evId, mode){
@@ -3872,7 +3881,7 @@ document.addEventListener('keydown', function(ev){
    the whole open stack, the tab, the calendar page. The app's own back
    buttons walk the same history as the phone's back gesture.
    ========================================================================= */
-var ROUTE = { ready:false, applying:false, replace:false, ignore:0 };
+var ROUTE = { ready:false, applying:false, replace:false, ignore:0, restore:null };
 function slugify(t){
   return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/^\s*the\s+/, '')
     .replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64);
@@ -4007,6 +4016,7 @@ function syncRoute(){
   if (cur && cur.modal && !DLGS.length){
     /* the dialog that owned this entry is gone: step off it, or let the place it led to take it over */
     if (navKeyOf(cur) === navKeyOf(s) && s.idx > 0){ ROUTE.ignore++; setTimeout(function(){ ROUTE.ignore = 0; }, 1500); history.back(); return; }
+    placeScroll(cur, s, navKeyOf(cur) === navKeyOf(s)); s.scroll = CURSCROLL;
     history.replaceState(s, '', url); return;
   }
   if (DLGS.length){
@@ -4015,10 +4025,50 @@ function syncRoute(){
     else { s.idx++; history.pushState(s, '', url); }
     return;
   }
-  if (!cur || replace || navKeyOf(cur) === navKeyOf(s)){ history.replaceState(s, '', url); return; }
+  var same = !cur || replace || navKeyOf(cur) === navKeyOf(s);
+  if (!same) history.replaceState(Object.assign({}, cur, { scroll:CURSCROLL }), '', location.hash);
+  placeScroll(cur, s, same);
+  s.scroll = CURSCROLL;
+  if (same){ history.replaceState(s, '', url); return; }
   s.idx++;
   history.pushState(s, '', url);
 }
+/* ---- where you were on the page: kept per history entry, and per phone tab ---- */
+var CURSCROLL = { list:0, detail:0, nav:0, chats:0, shelves:{} };
+function copyScroll(sc){ sc = sc || {}; return { list:sc.list || 0, detail:sc.detail || 0, nav:sc.nav || 0, chats:sc.chats || 0, shelves:Object.assign({}, sc.shelves || {}) }; }
+function restoreScroll(sc){
+  sc = copyScroll(sc);
+  $('listbody').scrollTop = sc.list; $('dscroll').scrollTop = sc.detail; $('navbody').scrollTop = sc.nav;
+  document.querySelectorAll('#listbody .srow[data-shelf]').forEach(function(r){ r.scrollLeft = sc.shelves[r.getAttribute('data-shelf')] || 0; });
+  var cl = document.querySelector('#chats > .panel'); if (cl) cl.scrollTop = sc.chats;
+  CURSCROLL = sc;
+}
+/* a new place starts at the top, unless it is the same list with something opened on it */
+function placeScroll(cur, s, same){
+  if (ROUTE.restore){ var r = ROUTE.restore; ROUTE.restore = null; restoreScroll(r); return; }
+  if (same || !cur) return;
+  var top = function(x){ var t = (x.stack || [])[(x.stack || []).length - 1]; return t ? t.type + ':' + t.id : ''; };
+  var sameList = (!L.phone || cur.tab === s.tab) && sameFolder(cur.folder, s.folder) && cur.view === s.view && !!cur.ps === !!s.ps;
+  var sc = copyScroll(CURSCROLL);
+  if (!sameList){ sc.list = 0; sc.nav = 0; sc.shelves = {}; sc.chats = 0; }
+  if (top(cur) !== top(s)) sc.detail = 0;
+  restoreScroll(sc);
+}
+var SCROLLT = null;
+document.addEventListener('scroll', function(ev){
+  var t = ev.target; if (!t || t.nodeType !== 1) return;
+  if (t.id === 'listbody') CURSCROLL.list = t.scrollTop;
+  else if (t.id === 'dscroll') CURSCROLL.detail = t.scrollTop;
+  else if (t.id === 'navbody') CURSCROLL.nav = t.scrollTop;
+  else if (t.classList.contains('srow') && t.getAttribute('data-shelf')) CURSCROLL.shelves[t.getAttribute('data-shelf')] = t.scrollLeft;
+  else if (t.classList.contains('panel') && t.parentNode && t.parentNode.id === 'chats') CURSCROLL.chats = t.scrollTop;
+  else return;
+  clearTimeout(SCROLLT);
+  SCROLLT = setTimeout(function(){
+    var st = history.state;
+    if (ROUTE.ready && st && st.hn) history.replaceState(Object.assign({}, st, { scroll:CURSCROLL }), '', location.hash);
+  }, 250);
+}, true);
 /* the app's own back buttons: the same step the phone's back gesture takes */
 function navBack(){
   var cur = history.state;
@@ -4035,7 +4085,8 @@ window.addEventListener('popstate', function(ev){
   ROUTE.applying = true;
   applySnap(s); render();
   ROUTE.applying = false;
-  if (!ev.state || s.modal){ var c = snapNow(); c.idx = s.idx || 0; history.replaceState(c, '', hashOf(c)); }
+  restoreScroll(s.scroll);
+  if (!ev.state || s.modal){ var c = snapNow(); c.idx = s.idx || 0; c.scroll = CURSCROLL; history.replaceState(c, '', hashOf(c)); }
 });
 function rootSnap(tab){
   var f = tabRootFolder(L.phone ? tab : 'home');
@@ -4055,7 +4106,11 @@ function startRoutes(){
     /* a link opened cold: put its tab's front page underneath, so back stays inside Hypernet */
     root.idx = 0; history.replaceState(root, '', hashOf(root));
     cur.idx = 1; history.pushState(cur, '', hashOf(cur));
-  } else { cur.idx = st ? st.idx || 0 : 0; history.replaceState(cur, '', hashOf(cur)); }
+  } else {
+    cur.idx = st ? st.idx || 0 : 0;
+    if (st && st.scroll) restoreScroll(st.scroll);
+    cur.scroll = CURSCROLL; history.replaceState(cur, '', hashOf(cur));
+  }
 }
 
 /* =========================================================================

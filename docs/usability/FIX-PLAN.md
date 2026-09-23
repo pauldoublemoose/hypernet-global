@@ -81,6 +81,11 @@ published (a private one shows Publish there instead; the other sits in its ⋯)
 back; restore each shelf's horizontal offset; each phone tab keeps its own scroll; switching tabs doesn't
 carry another tab's offset. Opening a chat from another tab: back returns you there.
 Sources: PHONEBROWSER-4, CREW-6, CREW-7, ORGANISER-20.
+*Status: done.* Every history entry carries the list, reading pane, sidebar, chat list and per-shelf horizontal
+offsets (stamped as you scroll), so back, forward and reload land where you were — Home feed and its shelves,
+LIST, horizon pages, long event pages, desktop list + reading pane. A new place starts at the top unless it is the
+same list with something opened on it. Each phone tab keeps its own place (tap another tab and back: same spot;
+tap the tab you are on: its top). Chats opened from another tab are pushed onto that tab (A1), so back returns there.
 
 ## Phase B — hierarchy and layout
 

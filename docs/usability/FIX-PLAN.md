@@ -100,6 +100,10 @@ a horizon no longer has its own LIST/CALENDAR switch (it was only reachable thro
 **B2. Desktop with chats open keeps list + reading.** Opening the chat dock at 1440 must not collapse the
 event list into one pane; narrow the dock or overlay it instead.
 Source: CREW-5.
+*Status: done.* With the sidebar and the dock both open below 1680px the dock narrows to 300px and the split threshold
+drops to 780px, so at 1440 the list and the reading pane stay side by side while a conversation is open (Share and
+Message open the dock without collapsing anything). Below ~1366 with both panes open it still falls back to one pane;
+at 768 the dock and sidebar already exclude each other.
 
 **B3. Event page actions.** Phone: sticky action bar (Interested / Going / more) that stays reachable on long
 pages. All action buttons on one grid and one height. Burn pages get a primary "Get tickets" /

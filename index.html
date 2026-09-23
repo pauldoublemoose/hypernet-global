@@ -89,6 +89,7 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 #nav{ flex:0 0 var(--nav-w); display:none; }
 #chats{ flex:0 0 var(--chat-w); display:none; }
 #app.l-open #nav, #app.r-open #chats{ display:flex; }
+#app.dock-narrow #chats{ flex-basis:300px; }
 #center{ flex:1 1 auto; }
 .panel{ flex:1; min-height:0; overflow:auto; background:#fff; box-shadow:var(--in); overscroll-behavior:contain; }
 @media (pointer:fine){
@@ -2386,8 +2387,11 @@ function computeLayout(){
   if (W < 760) return { phone:true, left:false, right:false, split:false, cw:W };
   var left = S.leftOpen, right = S.rightOpen;
   if (W < 1120 && left && right){ if (S.lastOpened === 'right') left = false; else right = false; }
-  var cw = W - 12 - (left ? 258 : 0) - (right ? 350 : 0);
-  return { phone:false, left:left, right:right, cw:cw, split: cw >= 860 && !isCal() };
+  /* with the sidebar and the chat dock both open the dock narrows, and the list and the reading pane
+     stay side by side: chatting never turns browsing into Back, click, Back */
+  var narrow = left && right && W < 1680;
+  var cw = W - 12 - (left ? 258 : 0) - (right ? (narrow ? 300 : 350) : 0);
+  return { phone:false, left:left, right:right, cw:cw, narrowDock:narrow, split: cw >= (right ? 780 : 860) && !isCal() };
 }
 </script>
 <script>
@@ -4137,7 +4141,7 @@ function render(){
   var conv = phoneConv();
   var scr = L.phone ? ((conv || (S.tab === 'chats' && !S.stack.length)) ? 'chats' : (S.tab === 'you' && S.folder.kind === 'you' && !S.stack.length) ? 'you' : 'center') : '';
   L.scr = scr;
-  app.className = [L.phone ? 'phone' : 'desk', L.left ? 'l-open' : '', L.right ? 'r-open' : '', L.split ? 'split' : 'push',
+  app.className = [L.phone ? 'phone' : 'desk', L.left ? 'l-open' : '', L.right ? 'r-open' : '', L.narrowDock ? 'dock-narrow' : '', L.split ? 'split' : 'push',
     isCal() ? 'v-cal' : '', S.stack.length ? 'has-detail' : '', scr ? 'scr-' + scr : '',
     conv && S.loggedIn ? 'conv-open' : ''].filter(Boolean).join(' ');
   document.body.className = L.phone ? 'is-phone' : 'is-desk';

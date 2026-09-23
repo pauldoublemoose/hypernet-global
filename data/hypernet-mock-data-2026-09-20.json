@@ -1,0 +1,1199 @@
+{
+  "meta": {
+    "title": "Hypernet mock / seed data export",
+    "exportedAt": "2026-09-20T16:20:00+02:00",
+    "timezoneNote": "Europe/Stockholm (UTC+2)",
+    "repo": "pauldoublemoose/hypernet",
+    "primaryRef": "cursor/welcome-shell-ia-2216",
+    "primaryRefLabel": "PR #11 feat(shell): welcome onboarding + SEARCH IA",
+    "comparedTo": "main",
+    "purpose": "Portable demo fixtures + entity shapes for an engineering friend. No secrets, no live Supabase rows, no .env values.",
+    "sources": [
+      "src/lib/network/seed.ts",
+      "src/lib/network/worlds.ts",
+      "src/lib/network/types.ts",
+      "src/lib/contactsStore.ts",
+      "src/lib/groupsStore.ts",
+      "src/lib/horizonStore.ts",
+      "src/lib/callouts.ts (PR #11 only)",
+      "src/lib/feed.ts (PR #11 only)",
+      "src/lib/finder.ts (PR #11 only)",
+      "src/lib/mysteryPool.ts (PR #11 only)",
+      "src/lib/space.ts / identity.ts (PR #11)",
+      "src/data/copy.ts",
+      "src/data/locations.ts",
+      "src/data/skills.ts",
+      "src/types.ts",
+      "src/lib/profileStore.ts",
+      "supabase/schema.sql",
+      "docs + /workspace/hypernet-notes (briefs / v2 plans)"
+    ],
+    "pr11VsMain": {
+      "sameSeedContent": [
+        "SEED_NODES (network/seed.ts)",
+        "World demo events + GraphWorlds (network/worlds.ts)",
+        "SEED_PEOPLE + friendship graph (contactsStore.ts)",
+        "SEED_GROUPS Baltic Circuit / Night Kitchen (groupsStore.ts seed rows identical; PR adds optional location field on HyperGroup)"
+      ],
+      "pr11OnlyModules": [
+        "callouts.ts — 2 seeded call outs",
+        "feed.ts — FEED_EVENTS + FEED_NEWS (incl. Deep Listening Lab, @nova/@ember/@signal)",
+        "finder.ts — Deep Listening Lab seed + 12 FINDER_FILL_EVENTS + Baltic Circuit published horizon seed",
+        "mysteryPool.ts — HANDSET aliases paired to events/cities",
+        "CreateEventSheet / CreateGroupSheet / FinderScreen / FeedScreen / CalloutsScreen / BotRoulette / MysteryChat"
+      ],
+      "docsMentionNotInCodeFixtures": [
+        "Zurich BM Decompression — cited in network-graph brief / PROJECT_PLAN as example of user-addable open community event; not present as a coded seed title"
+      ]
+    },
+    "gaps": [
+      "Live Supabase signup / skill_options / location_options rows are not accessible — export is code fixtures + schema only.",
+      "localStorage runtime state (user-created events/groups after first run) is not included.",
+      "No production emails; signup Answers.email exists as a field shape only.",
+      "Avatar image files exist under public/default-avatars/ but binary assets are not copied into this export."
+    ],
+    "localStorageKeys": [
+      "hypernet_contact_people",
+      "hypernet_contact_lists",
+      "hypernet_follows",
+      "hypernet_friend_requests",
+      "hypernet_friendships",
+      "hypernet_groups",
+      "hypernet_events",
+      "hypernet_horizons",
+      "hypernet_attendance",
+      "hypernet_profile",
+      "hypernet_privacy_default"
+    ]
+  },
+  "entitySchemaSummary": {
+    "ContactPerson": {
+      "fields": [
+        "id",
+        "displayName",
+        "handle",
+        "bio?",
+        "imageUrl?"
+      ],
+      "notes": "Stub directory people until real profiles/auth. selfId() === 'self'."
+    },
+    "ContactList": {
+      "fields": [
+        "id",
+        "name",
+        "createdAt",
+        "memberIds[]"
+      ],
+      "notes": "Privacy lists for event privacy === 'contacts'."
+    },
+    "FollowEdge": {
+      "fields": [
+        "id",
+        "followerId",
+        "followingId",
+        "createdAt"
+      ]
+    },
+    "FriendRequest": {
+      "fields": [
+        "id",
+        "fromId",
+        "toId",
+        "status: pending|accepted|declined",
+        "createdAt",
+        "resolvedAt?"
+      ]
+    },
+    "Friendship": {
+      "fields": [
+        "id",
+        "aId",
+        "bId",
+        "createdAt"
+      ],
+      "notes": "Undirected edge."
+    },
+    "HyperGroup / Cluster": {
+      "fields": [
+        "id",
+        "name",
+        "description",
+        "visibility: public|private",
+        "adminIds[]",
+        "memberIds[]",
+        "createdAt",
+        "imageUrl?",
+        "location?"
+      ],
+      "notes": "User-facing name is Cluster; storage key remains hypernet_groups. location is PR #11."
+    },
+    "HyperEvent": {
+      "fields": [
+        "id",
+        "title",
+        "date (YYYY-MM-DD)",
+        "description",
+        "externalUrl",
+        "hostName",
+        "createdAt",
+        "ownerIds[]",
+        "ownerGroupIds[]",
+        "privacy: only_me|friends|contacts|everyone",
+        "privacyListIds[]",
+        "imageUrl?",
+        "startTime?",
+        "timezone?",
+        "endDate?",
+        "endTime?",
+        "venueKind?: physical|virtual",
+        "venue?",
+        "recurrence?"
+      ]
+    },
+    "Horizon (calendar)": {
+      "fields": [
+        "id",
+        "name",
+        "description",
+        "isPersonalDefault",
+        "isPublished",
+        "ownerName",
+        "eventIds[]",
+        "createdAt",
+        "ownerGroupId?"
+      ],
+      "notes": "Personal default 'My Horizon' plus publishable calendars (e.g. group-owned Baltic Circuit)."
+    },
+    "Attendance": {
+      "fields": [
+        "eventId",
+        "status: interested|going",
+        "role?: guest|co-creator|sponsor|admin"
+      ]
+    },
+    "GraphNode (legacy helicopter graph seed)": {
+      "fields": [
+        "id",
+        "name",
+        "role: subscriber|prospect|cocreator|member",
+        "countries[]",
+        "cities[] (COUNTRY|CITY)",
+        "skills[] (CATEGORY/SUBCATEGORY)",
+        "cocreated[]",
+        "visited[]"
+      ],
+      "notes": "cocreated/visited historically used Hyperstition year ids 2023–2026."
+    },
+    "GraphWorld (event twin)": {
+      "fields": [
+        "id",
+        "title",
+        "kind: open|private",
+        "surfDial: participants|friends_of_participants|anyone",
+        "description",
+        "eventId",
+        "participantIds[]",
+        "attendanceHiddenIds[]",
+        "extraIds[]",
+        "spread"
+      ]
+    },
+    "WorldInhabitant": {
+      "fields": [
+        "id",
+        "displayName",
+        "bio",
+        "skills[]",
+        "x",
+        "y",
+        "isSelf",
+        "allowed",
+        "imageUrl?"
+      ]
+    },
+    "Callout": {
+      "fields": [
+        "id",
+        "title",
+        "body",
+        "expiresAt",
+        "hostName"
+      ],
+      "notes": "PR #11 SEARCH / Finder kind."
+    },
+    "SpaceRecord": {
+      "fields": [
+        "kind: person|event|calendar|group|callout",
+        "id",
+        "title",
+        "subtitle",
+        "body",
+        "imageUrl?",
+        "expiresAt?",
+        "findMe?",
+        "looks?"
+      ],
+      "notes": "Unified Finder / identity card shape."
+    },
+    "ProfileData": {
+      "fields": [
+        "displayName",
+        "bio",
+        "skillsText",
+        "email",
+        "phone",
+        "discord",
+        "facebook",
+        "avatarDataUrl",
+        "privacy{avatar,bio,skills,contact,chronicle: public|private}"
+      ]
+    },
+    "Answers (signup draft)": {
+      "fields": [
+        "status?",
+        "fullName?",
+        "email?",
+        "phone?",
+        "discord?",
+        "facebook?",
+        "contactChannels[]",
+        "locations[]",
+        "customLocations[]",
+        "attendedEvents[]",
+        "contributionHistory?",
+        "years[]",
+        "skills[]",
+        "customOptions[]",
+        "otherInfo?"
+      ]
+    },
+    "Signup (Supabase signups table)": {
+      "fields": [
+        "id uuid",
+        "created_at",
+        "status",
+        "full_name",
+        "email",
+        "phone",
+        "discord",
+        "facebook",
+        "contact_prefs jsonb",
+        "attended_events text[]",
+        "contribution_history",
+        "hyperstition_years text[]",
+        "skills jsonb",
+        "locations jsonb",
+        "other_info"
+      ],
+      "notes": "Schema only — no live rows exported."
+    },
+    "FeedEvent / FeedNews": {
+      "FeedEvent": [
+        "id",
+        "title",
+        "date",
+        "body",
+        "why"
+      ],
+      "FeedNews": [
+        "when",
+        "text"
+      ]
+    },
+    "MysteryMatch / Handset": {
+      "fields": [
+        "alias",
+        "city",
+        "event"
+      ]
+    }
+  },
+  "users": {
+    "viewerSelf": {
+      "id": "self",
+      "displayName": "You",
+      "source": "contactsStore.selfId()",
+      "origin": "project"
+    },
+    "contactDirectory": [
+      {
+        "id": "p-anna",
+        "displayName": "Anna Vale",
+        "handle": "anna",
+        "bio": "Sound + camp ops",
+        "source": "contactsStore.SEED_PEOPLE",
+        "origin": "project"
+      },
+      {
+        "id": "p-rio",
+        "displayName": "Rio Moss",
+        "handle": "rio",
+        "bio": "Lighting / AV",
+        "source": "contactsStore.SEED_PEOPLE",
+        "origin": "project"
+      },
+      {
+        "id": "p-kai",
+        "displayName": "Kai Okonkwo",
+        "handle": "kai",
+        "bio": "Kitchen lead",
+        "source": "contactsStore.SEED_PEOPLE",
+        "origin": "project"
+      },
+      {
+        "id": "p-mira",
+        "displayName": "Mira Chen",
+        "handle": "mira",
+        "bio": "Art installs",
+        "source": "contactsStore.SEED_PEOPLE",
+        "origin": "project"
+      },
+      {
+        "id": "p-jon",
+        "displayName": "Jon Hale",
+        "handle": "jon",
+        "bio": "Transport",
+        "source": "contactsStore.SEED_PEOPLE",
+        "origin": "project"
+      },
+      {
+        "id": "p-sasha",
+        "displayName": "Sasha Reed",
+        "handle": "sasha",
+        "bio": "Safety / rangers",
+        "source": "contactsStore.SEED_PEOPLE",
+        "origin": "project"
+      }
+    ],
+    "graphSeedNodes": [
+      {
+        "id": "seed-1",
+        "name": "ASTRID V.",
+        "role": "member",
+        "countries": [
+          "SWEDEN"
+        ],
+        "cities": [
+          "SWEDEN|STOCKHOLM"
+        ],
+        "skills": [
+          "BUILD & CONSTRUCTION/CARPENTRY",
+          "CAMP OPERATIONS/KITCHEN & COOKING"
+        ],
+        "cocreated": [
+          "2023",
+          "2024",
+          "2025"
+        ],
+        "visited": [
+          "2023",
+          "2024",
+          "2025",
+          "2026"
+        ]
+      },
+      {
+        "id": "seed-2",
+        "name": "JONAS K.",
+        "role": "member",
+        "countries": [
+          "SWEDEN"
+        ],
+        "cities": [
+          "SWEDEN|STOCKHOLM"
+        ],
+        "skills": [
+          "LIGHT/LIGHTING DESIGN",
+          "TECH & INTERACTIVE/PROGRAMMING"
+        ],
+        "cocreated": [
+          "2024",
+          "2025",
+          "2026"
+        ],
+        "visited": [
+          "2024",
+          "2025",
+          "2026"
+        ]
+      },
+      {
+        "id": "seed-3",
+        "name": "MIRA L.",
+        "role": "cocreator",
+        "countries": [
+          "DENMARK"
+        ],
+        "cities": [
+          "DENMARK|COPENHAGEN"
+        ],
+        "skills": [
+          "PERFORMANCE/DANCE",
+          "SOUND/DJING"
+        ],
+        "cocreated": [
+          "2025"
+        ],
+        "visited": [
+          "2024",
+          "2025",
+          "2026"
+        ]
+      },
+      {
+        "id": "seed-4",
+        "name": "NOAH R.",
+        "role": "cocreator",
+        "countries": [
+          "GERMANY",
+          "NETHERLANDS"
+        ],
+        "cities": [
+          "GERMANY|BERLIN",
+          "NETHERLANDS|AMSTERDAM"
+        ],
+        "skills": [
+          "TECH & INTERACTIVE/ELECTRONICS / MICROCONTROLLERS",
+          "LIGHT/LASERS"
+        ],
+        "cocreated": [
+          "2023",
+          "2024"
+        ],
+        "visited": [
+          "2023",
+          "2024",
+          "2025"
+        ]
+      },
+      {
+        "id": "seed-5",
+        "name": "ELIN S.",
+        "role": "prospect",
+        "countries": [
+          "SWEDEN"
+        ],
+        "cities": [
+          "SWEDEN|GOTHENBURG"
+        ],
+        "skills": [
+          "ART & CRAFT/PAINTING / MURALS"
+        ],
+        "cocreated": [],
+        "visited": [
+          "2026"
+        ]
+      },
+      {
+        "id": "seed-6",
+        "name": "CASPER T.",
+        "role": "subscriber",
+        "countries": [
+          "NETHERLANDS"
+        ],
+        "cities": [
+          "NETHERLANDS|AMSTERDAM"
+        ],
+        "skills": [],
+        "cocreated": [],
+        "visited": [
+          "2025"
+        ]
+      },
+      {
+        "id": "seed-7",
+        "name": "YAEL M.",
+        "role": "cocreator",
+        "countries": [
+          "ISRAEL"
+        ],
+        "cities": [
+          "ISRAEL|TEL AVIV"
+        ],
+        "skills": [
+          "SOUND/SOUND ENGINEERING / PA",
+          "PERFORMANCE/IMMERSIVE THEATRE & ACTING"
+        ],
+        "cocreated": [
+          "2025",
+          "2026"
+        ],
+        "visited": [
+          "2025",
+          "2026"
+        ]
+      },
+      {
+        "id": "seed-8",
+        "name": "OTTO B.",
+        "role": "member",
+        "countries": [
+          "GERMANY"
+        ],
+        "cities": [
+          "GERMANY|BERLIN"
+        ],
+        "skills": [
+          "BUILD & CONSTRUCTION/CARPENTRY",
+          "POWER & INFRASTRUCTURE/ELECTRICS & POWER GRID"
+        ],
+        "cocreated": [
+          "2023",
+          "2024",
+          "2025",
+          "2026"
+        ],
+        "visited": [
+          "2023",
+          "2024",
+          "2025",
+          "2026"
+        ]
+      },
+      {
+        "id": "seed-9",
+        "name": "FREJA H.",
+        "role": "prospect",
+        "countries": [
+          "NORWAY"
+        ],
+        "cities": [
+          "NORWAY|OSLO"
+        ],
+        "skills": [
+          "ART & CRAFT/TEXTILES & COSTUME"
+        ],
+        "cocreated": [],
+        "visited": [
+          "2024",
+          "2026"
+        ]
+      },
+      {
+        "id": "seed-10",
+        "name": "LEO P.",
+        "role": "subscriber",
+        "countries": [
+          "FRANCE"
+        ],
+        "cities": [
+          "FRANCE|PARIS"
+        ],
+        "skills": [],
+        "cocreated": [],
+        "visited": []
+      },
+      {
+        "id": "seed-11",
+        "name": "SAGA N.",
+        "role": "cocreator",
+        "countries": [
+          "SWEDEN",
+          "DENMARK"
+        ],
+        "cities": [
+          "SWEDEN|MALMÖ",
+          "DENMARK|COPENHAGEN"
+        ],
+        "skills": [
+          "LIGHT/PROJECTION MAPPING",
+          "TECH & INTERACTIVE/PROGRAMMING"
+        ],
+        "cocreated": [
+          "2026"
+        ],
+        "visited": [
+          "2025",
+          "2026"
+        ]
+      },
+      {
+        "id": "seed-12",
+        "name": "IVAR D.",
+        "role": "member",
+        "countries": [
+          "DENMARK"
+        ],
+        "cities": [
+          "DENMARK|COPENHAGEN"
+        ],
+        "skills": [
+          "CAMP OPERATIONS/KITCHEN & COOKING",
+          "SOUND/DJING"
+        ],
+        "cocreated": [
+          "2024",
+          "2025"
+        ],
+        "visited": [
+          "2023",
+          "2024",
+          "2025"
+        ]
+      }
+    ],
+    "feedHandlesMentioned": [
+      {
+        "handle": "signal",
+        "context": "FEED_NEWS: New user joined — welcome, @signal",
+        "origin": "project"
+      },
+      {
+        "handle": "nova",
+        "context": "FEED_NEWS: @nova and @ember are now Friends",
+        "origin": "project"
+      },
+      {
+        "handle": "ember",
+        "context": "FEED_NEWS: @nova and @ember are now Friends",
+        "origin": "project"
+      }
+    ],
+    "note": "MIRA L. (seed-3) is a graph seed person; Mira Chen (p-mira) is a contact-directory person — different ids."
+  },
+  "friendshipGraphSeed": {
+    "source": "contactsStore.ensureSeedFriendshipGraph + worlds.ensureWorldDemoData friend grant",
+    "edges": [
+      [
+        "p-anna",
+        "p-rio"
+      ],
+      [
+        "p-rio",
+        "p-kai"
+      ],
+      [
+        "p-mira",
+        "p-sasha"
+      ],
+      [
+        "p-jon",
+        "p-anna"
+      ],
+      [
+        "self",
+        "p-anna"
+      ]
+    ],
+    "origin": "project"
+  },
+  "events": {
+    "worldDemoEvents": [
+      {
+        "id": "evt-world-borderland-2026",
+        "title": "Borderland 2026",
+        "date": "2026-07-20",
+        "description": "Open community twin — public square. Surf irrespective of attendance.",
+        "hostName": "Hypernet",
+        "privacy": "everyone",
+        "ownerIds": [
+          "self"
+        ],
+        "source": "network/worlds.ts ensureWorldDemoData",
+        "origin": "project"
+      },
+      {
+        "id": "evt-world-burning-man-2026",
+        "title": "Burning Man 2026",
+        "date": "2026-08-30",
+        "description": "Open community twin — BM-scale public square. No admin gate to enter.",
+        "hostName": "Hypernet",
+        "privacy": "everyone",
+        "ownerIds": [
+          "self"
+        ],
+        "source": "network/worlds.ts",
+        "origin": "project"
+      },
+      {
+        "id": "evt-world-hyperstition-2026",
+        "title": "Hyperstition 2026",
+        "date": "2026-06-12",
+        "description": "Open community twin seeded from the Hyperstition years.",
+        "hostName": "Hypernet",
+        "privacy": "everyone",
+        "ownerIds": [
+          "self"
+        ],
+        "source": "network/worlds.ts",
+        "origin": "project"
+      },
+      {
+        "id": "evt-world-camp-dinner",
+        "title": "Camp kitchen dinner",
+        "date": "2026-07-22",
+        "description": "Private twin. Surf dial: Friends of participants (default).",
+        "hostName": "Hypernet",
+        "privacy": "friends",
+        "ownerIds": [
+          "p-anna"
+        ],
+        "source": "network/worlds.ts",
+        "origin": "project"
+      },
+      {
+        "id": "evt-world-warehouse",
+        "title": "Warehouse session",
+        "date": "2026-09-04",
+        "description": "Private twin. Surf dial: Participants (you are on the roster).",
+        "hostName": "Hypernet",
+        "privacy": "only_me",
+        "ownerIds": [
+          "self"
+        ],
+        "source": "network/worlds.ts",
+        "origin": "project"
+      }
+    ],
+    "finderSeedEvents": [
+      {
+        "title": "Deep Listening Lab",
+        "date": "2026-10-04",
+        "description": "Quiet rooms, long tones, and a Stockholm basement.",
+        "hostName": "Anna Vale",
+        "ownerIds": [
+          "p-anna"
+        ],
+        "ownerGroupIds": [
+          "g-baltic"
+        ],
+        "privacy": "everyone",
+        "source": "finder.ts ensureFinderSeeds (PR #11)",
+        "origin": "project",
+        "alsoIn": [
+          "feed.ts FEED_EVENTS as fe-listen"
+        ]
+      }
+    ],
+    "finderFillEvents": {
+      "note": "Created by finder.ts when titles missing — camp/crew overflow for SEARCH feed density.",
+      "date": "2026-07-21",
+      "hostName": "You",
+      "privacy": "everyone",
+      "description": "Camp / crew overflow for SEARCH feed.",
+      "titles": [
+        "Ridge dawn stretch",
+        "Night kitchen line",
+        "Portable shade build",
+        "LED forest walk",
+        "Dust patrol briefing",
+        "Temple volunteer shift",
+        "Camp radio hour",
+        "Sunrise tea service",
+        "Generator quiet hours",
+        "Art car docking",
+        "First aid refresh",
+        "Soundcheck west stage"
+      ],
+      "source": "finder.ts FINDER_FILL_EVENTS (PR #11)",
+      "origin": "project"
+    },
+    "hyperstitionYearLabels": {
+      "note": "Signup / chronicle year options (copy.ts EVENTS) — used as GraphNode cocreated/visited ids.",
+      "items": [
+        {
+          "id": "2023",
+          "label": "HYPERSTITION 2023 — PILOT PROBE: OP. STRONG SIGNAL"
+        },
+        {
+          "id": "2024",
+          "label": "HYPERSTITION 2024 — RESEARCH OUTPOST: OP. FUTURE SHOCK"
+        },
+        {
+          "id": "2025",
+          "label": "HYPERSTITION 2025 — DEEP STATE SPEAKEASY OP. C.R.I.C.K.E.T.S"
+        },
+        {
+          "id": "2026",
+          "label": "HYPERSTITION 2026 — EXIT"
+        }
+      ],
+      "origin": "project"
+    },
+    "docsExamplesNotSeeded": [
+      {
+        "title": "Zurich BM Decompression",
+        "note": "Mentioned in 2026-09-12 network-graph locked brief / PROJECT_PLAN as example of Hypernet-seeded AND user-addable large community events. Not a coded fixture title.",
+        "origin": "docs-only"
+      }
+    ]
+  },
+  "groups": [
+    {
+      "id": "g-baltic",
+      "name": "Baltic Circuit",
+      "description": "Regional burn camp — sound, lights, and long nights on the ridge.",
+      "visibility": "public",
+      "adminIds": [
+        "p-anna"
+      ],
+      "memberIds": [
+        "p-anna",
+        "p-rio",
+        "p-kai"
+      ],
+      "createdAt": "2026-06-01T12:00:00.000Z",
+      "source": "groupsStore.SEED_GROUPS",
+      "origin": "project",
+      "aka": "Cluster"
+    },
+    {
+      "id": "g-kitchen",
+      "name": "Night Kitchen",
+      "description": "Late-service crew. Private planning circle; public face stays thin.",
+      "visibility": "private",
+      "adminIds": [
+        "p-kai"
+      ],
+      "memberIds": [
+        "p-kai",
+        "p-mira",
+        "p-sasha"
+      ],
+      "createdAt": "2026-07-12T18:00:00.000Z",
+      "source": "groupsStore.SEED_GROUPS",
+      "origin": "project",
+      "aka": "Cluster"
+    }
+  ],
+  "eventHorizons": {
+    "personalDefault": {
+      "id": "horizon-default",
+      "name": "My Horizon",
+      "description": "Your private liked / starred events (personal default).",
+      "isPersonalDefault": true,
+      "isPublished": false,
+      "ownerName": "You",
+      "eventIds": [],
+      "source": "horizonStore.ensureDefaultHorizon",
+      "origin": "project"
+    },
+    "publishedSeeds": [
+      {
+        "name": "Baltic Circuit",
+        "description": "Shared calendar for the regional burn camp.",
+        "ownerName": "Baltic Circuit",
+        "isPublished": true,
+        "ownerGroupId": "g-baltic",
+        "source": "finder.ts ensureFinderSeeds createHorizon (PR #11)",
+        "origin": "project"
+      }
+    ]
+  },
+  "worlds": [
+    {
+      "id": "world-borderland-2026",
+      "title": "Borderland 2026",
+      "kind": "open",
+      "surfDial": "anyone",
+      "eventId": "evt-world-borderland-2026",
+      "participantIds": [
+        "p-anna",
+        "p-rio",
+        "p-kai",
+        "p-mira",
+        "seed-1",
+        "seed-2",
+        "seed-3",
+        "seed-7",
+        "seed-8"
+      ],
+      "attendanceHiddenIds": [
+        "seed-10"
+      ],
+      "spread": 540,
+      "origin": "project"
+    },
+    {
+      "id": "world-burning-man-2026",
+      "title": "Burning Man 2026",
+      "kind": "open",
+      "surfDial": "anyone",
+      "eventId": "evt-world-burning-man-2026",
+      "participantIds": [
+        "p-sasha",
+        "p-jon",
+        "seed-4",
+        "seed-8",
+        "seed-11",
+        "seed-12",
+        "seed-5"
+      ],
+      "attendanceHiddenIds": [
+        "seed-6"
+      ],
+      "spread": 620,
+      "origin": "project"
+    },
+    {
+      "id": "world-hyperstition-2026",
+      "title": "Hyperstition 2026",
+      "kind": "open",
+      "surfDial": "anyone",
+      "eventId": "evt-world-hyperstition-2026",
+      "participantIdsNote": "SEED_NODES with visited/cocreated including 2026, plus p-anna, p-rio",
+      "spread": 480,
+      "origin": "project"
+    },
+    {
+      "id": "world-camp-dinner",
+      "title": "Camp kitchen dinner",
+      "kind": "private",
+      "surfDial": "friends_of_participants",
+      "eventId": "evt-world-camp-dinner",
+      "participantIds": [
+        "p-anna",
+        "p-rio",
+        "p-kai",
+        "p-jon"
+      ],
+      "attendanceHiddenIds": [
+        "p-mira"
+      ],
+      "spread": 200,
+      "origin": "project"
+    },
+    {
+      "id": "world-warehouse",
+      "title": "Warehouse session",
+      "kind": "private",
+      "surfDial": "participants",
+      "eventId": "evt-world-warehouse",
+      "participantIds": [
+        "self",
+        "p-sasha",
+        "seed-2",
+        "seed-11"
+      ],
+      "spread": 180,
+      "origin": "project"
+    }
+  ],
+  "callouts": [
+    {
+      "id": "co-sound",
+      "title": "Sound engineer",
+      "body": "Hey we are creating an event and we are looking for a sound engineer.",
+      "expiresAt": "2026-10-15",
+      "hostName": "Anna Vale",
+      "source": "callouts.ts SEED (PR #11)",
+      "origin": "project"
+    },
+    {
+      "id": "co-kitchen",
+      "title": "Kitchen lead",
+      "body": "Camp kitchen needs a lead who can feed 80 on a two-burner stove.",
+      "expiresAt": "2026-11-01",
+      "hostName": "Kai Okonkwo",
+      "source": "callouts.ts SEED (PR #11)",
+      "origin": "project"
+    }
+  ],
+  "contacts": {
+    "defaultLists": [
+      {
+        "id": "list-crew",
+        "name": "Camp crew",
+        "memberIds": []
+      },
+      {
+        "id": "list-sound",
+        "name": "Sound team",
+        "memberIds": []
+      },
+      {
+        "id": "list-friends",
+        "name": "Close friends",
+        "memberIds": []
+      }
+    ],
+    "source": "contactsStore.ensureDefaultLists",
+    "origin": "project"
+  },
+  "other": {
+    "feedNews": [
+      {
+        "when": "just now",
+        "text": "New user joined the network — welcome, @signal."
+      },
+      {
+        "when": "12m ago",
+        "text": "New event published: Deep Listening Lab · Stockholm."
+      },
+      {
+        "when": "1h ago",
+        "text": "Horizon “Baltic Circuit” added three dates."
+      },
+      {
+        "when": "yesterday",
+        "text": "@nova and @ember are now Friends."
+      },
+      {
+        "when": "just now",
+        "text": "Clusters unlocked — browse the directory or create a camp."
+      },
+      {
+        "when": "2d ago",
+        "text": "New Cluster pending (locked) — camps unlock later."
+      }
+    ],
+    "feedEvents": [
+      {
+        "id": "fe-borderland",
+        "title": "Borderland 2026",
+        "date": "2026-07-20",
+        "why": "Because you walk this World"
+      },
+      {
+        "id": "fe-bm",
+        "title": "Burning Man 2026",
+        "date": "2026-08-30",
+        "why": "Because you follow burn culture"
+      },
+      {
+        "id": "fe-hyper",
+        "title": "Hyperstition 2026",
+        "date": "2026-06-12",
+        "why": "Because you are in this camp"
+      },
+      {
+        "id": "fe-listen",
+        "title": "Deep Listening Lab",
+        "date": "2026-10-04",
+        "why": "Because you follow Anna Vale"
+      }
+    ],
+    "mysteryHandsets": [
+      {
+        "alias": "HANDSET 4",
+        "city": "Stockholm",
+        "event": "Deep Listening Lab"
+      },
+      {
+        "alias": "HANDSET 9",
+        "city": "Black Rock",
+        "event": "Burning Man 2026"
+      },
+      {
+        "alias": "HANDSET 2",
+        "city": "Alingsås",
+        "event": "Borderland 2026"
+      },
+      {
+        "alias": "HANDSET 11",
+        "city": "Stockholm",
+        "event": "Hyperstition 2026"
+      }
+    ],
+    "mysteryDemoSelf": {
+      "city": "Stockholm",
+      "event": "Deep Listening Lab"
+    },
+    "mysteryPeerLines": [
+      "the booth is humming.",
+      "do not say names.",
+      "fifteen minutes. the line is ours."
+    ],
+    "eventFilters": [
+      {
+        "id": "2023",
+        "label": "H23"
+      },
+      {
+        "id": "2024",
+        "label": "H24"
+      },
+      {
+        "id": "2025",
+        "label": "H25"
+      },
+      {
+        "id": "2026",
+        "label": "H26"
+      }
+    ],
+    "finderKinds": [
+      "people",
+      "events",
+      "calendars",
+      "groups",
+      "callouts"
+    ],
+    "spaceKinds": [
+      "person",
+      "event",
+      "calendar",
+      "group",
+      "callout"
+    ],
+    "signupStatuses": [
+      "subscriber",
+      "prospect",
+      "cocreator",
+      "legacy",
+      "admin"
+    ],
+    "locationTaxonomyCountries": [
+      "SWEDEN",
+      "DENMARK",
+      "NORWAY",
+      "FINLAND",
+      "GERMANY",
+      "NETHERLANDS",
+      "UNITED KINGDOM",
+      "FRANCE",
+      "BELGIUM",
+      "SWITZERLAND",
+      "AUSTRIA",
+      "SPAIN",
+      "ITALY",
+      "ISRAEL",
+      "USA"
+    ],
+    "skillTaxonomyCategories": [
+      "BUILD & CONSTRUCTION",
+      "ART & CRAFT",
+      "LIGHT",
+      "SOUND",
+      "PERFORMANCE",
+      "TECH & INTERACTIVE",
+      "POWER & INFRASTRUCTURE",
+      "CAMP OPERATIONS",
+      "EVENT PRODUCTION",
+      "CARE & COMMUNITY",
+      "SOCIAL & VIBES",
+      "MEDIA & COMMS",
+      "KNOWLEDGE"
+    ],
+    "supabaseTables": [
+      "signups",
+      "skill_options",
+      "location_options"
+    ],
+    "productOriginBlurb": "HYPERSTITION was a 4-year art project at a Scandinavian regional burn; HYPERNET preserves those relationships for participatory event co-creators (Burns / Borderland / BM-scale)."
+  },
+  "counts": {
+    "contactDirectoryUsers": 6,
+    "graphSeedUsers": 12,
+    "viewerSelf": 1,
+    "feedHandlesMentioned": 3,
+    "usersTotalDistinctNamed": 19,
+    "worldDemoEvents": 5,
+    "finderNamedSeedEvents": 1,
+    "finderFillEventTitles": 12,
+    "hyperstitionYearLabels": 4,
+    "groupsClusters": 2,
+    "eventHorizonsNamed": 2,
+    "worlds": 5,
+    "callouts": 2,
+    "contactLists": 3,
+    "friendshipSeedEdges": 5,
+    "feedNewsItems": 6,
+    "feedEventItems": 4,
+    "mysteryHandsets": 4,
+    "docsOnlyEventExamples": 1
+  },
+  "syntheticFiller": {
+    "note": "None invented for this export. All named samples come from repo fixtures or docs. Docs-only items are labeled origin=docs-only."
+  }
+}

@@ -1,0 +1,2722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hypernet — Home feed (concept 08)</title>
+<style>
+/* =======================================================================
+   CONCEPT 08 — THE HOME FEED
+   Outlook 2000 / Lotus Notes chrome. Deliberately boring beige-grey, so
+   that the events — and only the events — carry colour.
+   ======================================================================= */
+
+/* ---------- 1. the mundane frame ---------------------------------- */
+:root{
+  --face:#d4d0c8;        /* the beige-grey everything is made of */
+  --face-lt:#e8e5e0;
+  --white:#ffffff;
+  --shadow:#808080;
+  --dark:#404040;
+  --ink:#000000;
+  --dim:#555555;
+  --sel:#0a246a;         /* classic selection navy */
+  --sel2:#3a6ea5;
+  --line:#aca899;
+  --link:#00379a;
+}
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0; padding:0; overflow:hidden;
+  background:var(--face);
+  color:var(--ink);
+  font:11px Tahoma, "Segoe UI", Geneva, Verdana, sans-serif;
+  -webkit-font-smoothing:antialiased;
+  cursor:default; user-select:none;
+}
+button,input,select,textarea{ font:11px Tahoma, "Segoe UI", Geneva, Verdana, sans-serif; }
+
+/* the two bevels the entire era was built out of */
+.out{ box-shadow: inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white),
+                  inset -2px -2px 0 var(--shadow), inset 2px 2px 0 var(--face-lt); }
+.in { box-shadow: inset  1px  1px 0 var(--shadow), inset -1px -1px 0 var(--white),
+                  inset  2px  2px 0 var(--dark),  inset -2px -2px 0 var(--face); }
+.thin-in{ box-shadow: inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white); }
+
+#app{ position:fixed; inset:0; display:flex; flex-direction:column; }
+
+/* ---------- title bar ---------------------------------- */
+#titlebar{
+  height:20px; flex:0 0 20px; display:flex; align-items:center; gap:5px;
+  padding:0 2px 0 3px; color:#fff; font-weight:bold;
+  background:linear-gradient(90deg,#0a246a 0%,#3a6ea5 62%,#a6caf0 100%);
+}
+#titlebar .tglyph{ width:14px; height:14px; display:grid; place-items:center;
+  background:#c8c4bc; color:#0a246a; font-size:9px; box-shadow:inset -1px -1px 0 #808080, inset 1px 1px 0 #fff; }
+#titlebar .spring{ flex:1; }
+.wbtn{ width:16px; height:14px; background:var(--face); display:grid; place-items:center;
+  font:9px Tahoma; color:#000; box-shadow: inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white),
+  inset -2px -2px 0 var(--shadow), inset 2px 2px 0 var(--face-lt); }
+
+/* ---------- menu bar ---------------------------------- */
+#menubar{ height:19px; flex:0 0 19px; display:flex; align-items:stretch; padding:0 2px;
+  border-bottom:1px solid var(--face); }
+#menubar .mi{ padding:0 7px; display:flex; align-items:center; }
+#menubar .mi u{ text-decoration:underline; }
+#menubar .mi:hover, #menubar .mi.open{ background:var(--sel); color:#fff; }
+#menubar .spring{ flex:1; }
+#menubar .mi.right{ color:#333; }
+
+/* ---------- toolbar: big icons with text beneath ------- */
+#toolbar{ flex:0 0 auto; display:flex; align-items:stretch; gap:1px; padding:2px 3px 3px;
+  border-bottom:1px solid var(--shadow); box-shadow:0 1px 0 var(--white); }
+.tbtn{ min-width:46px; padding:2px 6px 1px; display:flex; flex-direction:column; align-items:center;
+  justify-content:flex-start; gap:1px; background:transparent; border:1px solid transparent; }
+.tbtn .ic{ font-size:17px; line-height:19px; height:19px; }
+.tbtn .lb{ font-size:10px; white-space:nowrap; }
+.tbtn:hover{ border-color:#fff #404040 #404040 #fff; background:#dedad2; }
+.tbtn:active, .tbtn.on{ border-color:#404040 #fff #fff #404040; background:#c8c4bc; }
+.tbtn.big{ min-width:60px; font-weight:bold; }
+.tsep{ width:2px; margin:3px 3px; box-shadow: inset 1px 0 0 var(--shadow), inset -1px 0 0 var(--white); }
+#toolbar .spring{ flex:1; }
+#searchwrap{ display:flex; align-items:center; gap:4px; padding-right:4px; }
+#searchbox{ width:190px; height:19px; padding:1px 4px; border:0; background:#fff;
+  box-shadow: inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white), inset 2px 2px 0 var(--dark), inset -2px -2px 0 var(--face); }
+#searchbox:focus{ outline:1px dotted #000; outline-offset:-3px; }
+
+/* ---------- three panes ---------------------------------- */
+#main{ flex:1; display:flex; min-height:0; padding:0 2px; gap:0; overflow:hidden; }
+.pane{ display:flex; flex-direction:column; min-height:0; background:var(--face); }
+#folders{ flex:0 0 190px; }
+#center{ flex:1 1 auto; min-width:0; overflow:hidden; }
+#contacts{ flex:0 0 212px; }
+.psplit{ flex:0 0 4px; }
+
+/* collapsed-pane rails — a pane must always have a visible way back */
+.rail{ flex:0 0 20px; display:none; flex-direction:column; align-items:center; gap:4px; padding:3px 0;
+  background:var(--face); box-shadow: inset -1px -1px 0 var(--shadow), inset 1px 1px 0 var(--white); }
+.rail.on{ display:flex; }
+.rail .rlab{ writing-mode:vertical-rl; padding:6px 1px; font-weight:bold; letter-spacing:.06em;
+  background:var(--face); box-shadow: inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white),
+  inset -2px -2px 0 var(--shadow), inset 2px 2px 0 var(--face-lt); }
+.rail .rlab:active{ box-shadow: inset 1px 1px 0 var(--dark), inset -1px -1px 0 var(--white); }
+.panehead{ height:18px; flex:0 0 18px; display:flex; align-items:center; gap:4px;
+  padding:0 2px 0 5px; font-weight:bold; color:#000; background:var(--face); }
+.panehead .x{ margin-left:auto; width:14px; height:13px; display:grid; place-items:center; font-size:9px;
+  box-shadow: inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white); }
+.panehead .x:hover{ background:#c8c4bc; }
+.panebody{ flex:1; min-height:0; overflow:auto; background:#fff; }
+.sunken{ box-shadow: inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white), inset 2px 2px 0 var(--dark), inset -2px -2px 0 var(--face); }
+
+/* scrollbars, era-appropriate */
+.panebody::-webkit-scrollbar, #centerlist::-webkit-scrollbar, .scroller::-webkit-scrollbar{ width:16px; height:16px; }
+.panebody::-webkit-scrollbar-track, .scroller::-webkit-scrollbar-track{
+  background:repeating-conic-gradient(#fff 0 25%, #d4d0c8 0 50%) 0 0/2px 2px; }
+.panebody::-webkit-scrollbar-thumb, .scroller::-webkit-scrollbar-thumb{
+  background:var(--face); box-shadow: inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white),
+  inset -2px -2px 0 var(--shadow), inset 2px 2px 0 var(--face-lt); }
+
+/* ---------- folder list (left) ------------------------- */
+.fgroup{ padding:3px 0 5px; }
+.fgtitle{ padding:3px 6px 2px; color:#3a3a3a; font-weight:bold; background:#ece9e2;
+  border-top:1px solid #fff; border-bottom:1px solid #cfcabf; display:flex; align-items:center; gap:4px; }
+.fgtitle .tw{ width:9px; text-align:center; font-size:9px; }
+.fgtitle:hover{ background:#e2ded5; }
+.fold{ display:flex; align-items:center; gap:5px; padding:2px 6px 2px 8px; white-space:nowrap; }
+.fold .fic{ width:15px; text-align:center; font-size:12px; }
+.fold .fnm{ overflow:hidden; text-overflow:ellipsis; }
+.fold .fct{ margin-left:auto; color:#0a3a8a; }
+.fold.unread .fnm, .fold.unread .fct{ font-weight:bold; }
+.fold:hover{ background:#e7f0fb; }
+.fold.sel{ background:var(--sel); color:#fff; }
+.fold.sel .fct{ color:#cfe0ff; }
+.fold.drop{ background:#ffe9a8; outline:1px dotted #806000; outline-offset:-1px; }
+.fold .sub{ color:#6a6a6a; font-size:10px; }
+.fold.sel .sub{ color:#c7d6ef; }
+.findent{ padding-left:22px; }
+.loginpanel{ margin:8px 7px; padding:9px 8px; background:#f6f4ee; border:1px solid var(--line); }
+.loginpanel b{ display:block; margin-bottom:4px; }
+.loginpanel p{ margin:0 0 7px; color:#444; line-height:1.45; }
+
+/* ---------- center: header + list + reading pane -------- */
+#center .cbar{ height:19px; flex:0 0 19px; display:flex; align-items:center; gap:6px; padding:0 4px 0 6px;
+  font-weight:bold; background:var(--face); }
+#center .cbar .meta{ font-weight:normal; color:#3c3c3c; }
+#center .cbar .spring{ flex:1; }
+.viewswitch{ display:flex; gap:0; }
+.viewswitch .vs{ padding:1px 9px 2px; font-weight:normal; letter-spacing:.06em; background:#cdc9c1;
+  box-shadow: inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white); }
+.viewswitch .vs.on{ background:#fff; font-weight:bold;
+  box-shadow: inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white); }
+.viewswitch .vs:hover:not(.on){ background:#dedad2; }
+#centerwrap{ flex:1; min-height:0; display:flex; gap:3px; }
+#centerwrap.bottom{ flex-direction:column; }
+#listcol{ display:flex; flex-direction:column; min-height:0; min-width:0; }
+#centerwrap.right #listcol{ flex:0 0 51%; }
+#centerwrap.bottom #listcol{ flex:0 0 44%; }
+#centerwrap.off #listcol{ flex:1; }
+#readcol{ flex:1; min-height:0; min-width:0; display:flex; flex-direction:column; }
+#centerwrap.off #readcol{ display:none; }
+
+/* column headers */
+.colhead{ display:flex; height:18px; flex:0 0 18px; background:var(--face); }
+.colhead .ch{ display:flex; align-items:center; gap:3px; padding:0 5px; overflow:hidden; white-space:nowrap;
+  box-shadow: inset -1px -1px 0 var(--shadow), inset 1px 1px 0 var(--white); }
+.colhead .ch:active{ box-shadow: inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white); }
+.colhead .ch .ar{ font-size:8px; color:#333; }
+.colhead .ch:hover{ background:#dedad2; }
+
+/* the list itself */
+#listbody{ flex:1; min-height:0; overflow:auto; background:#fff;
+  box-shadow: inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white), inset 2px 2px 0 var(--dark), inset -2px -2px 0 var(--face); }
+.band{ display:flex; align-items:center; gap:6px; padding:3px 6px; background:#e4e1da;
+  border-top:1px solid #fff; border-bottom:1px solid #b9b4a8; font-weight:bold; position:sticky; top:0; z-index:2; }
+.band .tw{ width:11px; height:11px; display:grid; place-items:center; font-size:9px; background:#fff;
+  border:1px solid #6f6a60; }
+.band .cnt{ font-weight:normal; color:#555; }
+.erow{ display:flex; align-items:center; height:19px; border-bottom:1px solid #eceae6; }
+.erow > *{ padding:0 5px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.erow:hover{ background:#eef4fd; }
+.erow.sel{ background:var(--sel); color:#fff; }
+.erow.sel .c-dim, .erow.sel .c-date{ color:#cbd9f2; }
+.erow.unread{ font-weight:bold; color:#000; }
+.erow.unread .c-date{ color:#0a3a8a; }
+.erow.sel.unread{ color:#fff; }
+.erow.past{ color:#7b7b7b; }
+.erow.sel.past{ color:#dfe6f5; }
+.erow.drag{ opacity:.45; }
+.c-sq{ flex:0 0 26px; padding:0 0 0 4px; }
+.c-title{ flex:1 1 auto; min-width:118px; }
+.c-host{ flex:0 0 92px; }
+.c-city{ flex:0 0 74px; }
+.c-date{ flex:0 0 72px; }
+.c-state{ flex:0 0 66px; }
+.c-dim{ color:#4a4a4a; }
+.pill{ display:inline-block; padding:0 4px; font-size:10px; line-height:13px; border:1px solid #9a9488; background:#efece5; }
+.erow.sel .pill{ border-color:#cbd9f2; background:transparent; color:#fff; }
+.pill.going{ background:#dff0d8; border-color:#6a9b57; }
+.pill.int{ background:#fde9f0; border-color:#b05a80; }
+.pill.host{ background:#ddeaf7; border-color:#4a7bb0; }
+.bolt{ color:#a35c00; }
+.emptylist{ padding:20px; color:#555; }
+
+/* reading-pane header — the mundane half of the joke */
+.rphead{ flex:0 0 auto; background:var(--face); padding:3px 5px 4px; border-bottom:1px solid var(--shadow);
+  box-shadow:0 1px 0 var(--white); }
+.rphead .l{ display:flex; gap:6px; line-height:14px; }
+.rphead .k{ flex:0 0 52px; color:#333; text-align:right; }
+.rphead .v{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rphead .v b{ font-weight:bold; }
+.rphead .subj{ font-weight:bold; }
+.rphead .who{ color:var(--link); text-decoration:underline; }
+#readbody{ flex:1; min-height:0; overflow:auto; background:#fff;
+  box-shadow: inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white), inset 2px 2px 0 var(--dark), inset -2px -2px 0 var(--face); }
+.nosel{ display:grid; place-items:center; height:100%; color:#666; text-align:center; padding:20px; line-height:1.6; }
+
+/* ---------- folder-properties view (a horizon) --------- */
+.props{ padding:12px 14px 16px; background:var(--face);
+  box-shadow: inset -1px -1px 0 var(--shadow), inset 1px 1px 0 var(--white); }
+.props .ptop{ display:flex; gap:12px; align-items:flex-start; margin-bottom:10px; }
+.props .pico{ flex:0 0 auto; width:64px; height:52px; position:relative; }
+.props .pico .tab0{ position:absolute; left:0; top:0; width:26px; height:8px; background:#e8c96a;
+  box-shadow: inset -1px -1px 0 #8a7126, inset 1px 1px 0 #fff6d2; }
+.props .pico .body0{ position:absolute; left:0; top:6px; right:4px; bottom:2px; background:#f2d98a;
+  box-shadow: inset -1px -1px 0 #8a7126, inset 1px 1px 0 #fffbe9; display:grid; place-items:center; }
+.props .pname{ font-size:15px; font-weight:bold; }
+.props .psub{ color:#3c3c3c; }
+.props fieldset{ border:1px solid var(--shadow); margin:0 0 9px; padding:7px 10px 9px;
+  box-shadow: 1px 1px 0 var(--white) inset, -1px -1px 0 var(--white); }
+.props legend{ padding:0 4px; font-weight:bold; }
+.prow{ display:flex; gap:8px; line-height:17px; }
+.prow .pk{ flex:0 0 96px; color:#333; }
+.prow .pv{ flex:1; min-width:0; }
+.prule{ height:2px; margin:7px 0; box-shadow: inset 0 1px 0 var(--shadow), inset 0 -1px 0 var(--white); }
+.pacts{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.pnote{ color:#555; margin-top:7px; line-height:1.5; }
+.contents{ background:#fff; padding:0 0 6px; }
+.contents .chead{ padding:4px 8px 3px; font-weight:bold; background:#ece9e2;
+  border-top:1px solid #fff; border-bottom:1px solid #cfcabf; display:flex; align-items:center; gap:6px; }
+.crow2{ display:flex; align-items:center; gap:8px; padding:4px 8px; border-bottom:1px solid #eceae6; }
+.crow2:hover{ background:#eef4fd; }
+.crow2 .cmeta{ flex:1; min-width:0; }
+.crow2 .cmeta .ct{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.crow2 .cverbs{ display:flex; align-items:center; gap:4px; flex:0 0 auto; }
+.crow2 .cverbs .btn.sm{ height:19px; }
+
+/* ---------- chat dock (right) -------------------------- */
+.grphead{ padding:3px 6px 2px; background:#ece9e2; border-top:1px solid #fff; border-bottom:1px solid #cfcabf;
+  font-weight:bold; display:flex; gap:4px; align-items:center; }
+.grphead .cnt{ font-weight:normal; color:#555; margin-left:auto; }
+.buddy{ display:flex; align-items:center; gap:5px; padding:2px 6px; white-space:nowrap; }
+.buddy:hover{ background:#e7f0fb; }
+.buddy.sel{ background:var(--sel); color:#fff; }
+.buddy .nm{ overflow:hidden; text-overflow:ellipsis; }
+.buddy .tag{ margin-left:auto; color:#666; font-size:10px; }
+.buddy.sel .tag{ color:#c7d6ef; }
+.dot{ width:7px; height:7px; border-radius:50%; background:#9a9a9a; flex:0 0 7px; }
+.dot.online{ background:#27a744; } .dot.idle{ background:#e2a72e; }
+.av{ width:16px; height:16px; flex:0 0 16px; display:grid; place-items:center; color:#fff; font-size:9px; font-weight:bold; }
+.av.md{ width:34px; height:34px; flex:0 0 34px; font-size:14px; }
+.mini{ padding:4px 8px; color:#333; line-height:1.5; }
+.linkrow{ display:flex; align-items:center; gap:6px; padding:3px 8px; }
+.linkrow:hover{ background:#e7f0fb; }
+.linkrow .arrow{ margin-left:auto; color:#666; }
+.chatscroll{ flex:1; min-height:0; overflow:auto; background:#fff; padding:4px 6px; }
+.msg{ margin-bottom:5px; line-height:1.45; }
+.msg .mfrom{ font-weight:bold; }
+.msg .mt{ color:#888; font-size:10px; }
+.chatinput{ display:flex; gap:3px; padding:3px; background:var(--face); }
+.chatinput input{ flex:1; height:19px; padding:1px 4px; border:0; background:#fff;
+  box-shadow: inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white), inset 2px 2px 0 var(--dark), inset -2px -2px 0 var(--face); }
+.evcard{ margin:4px 0; border:1px solid #9a9488; background:#faf9f6; padding:4px; display:flex; gap:6px; align-items:center; }
+.evcard .t{ font-weight:bold; }
+
+/* ---------- status bar ---------------------------------- */
+#statusbar{ flex:0 0 20px; height:20px; display:flex; align-items:stretch; gap:2px; padding:2px 3px 3px; }
+#statusbar .cell{ display:flex; align-items:center; padding:0 6px; color:#111;
+  box-shadow: inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white); }
+#statusbar .grow{ flex:1; }
+#statusbar .cell b{ color:#00218a; }
+
+/* ---------- buttons, dialogs, menus --------------------- */
+.btn{ min-width:72px; height:22px; padding:1px 10px; background:var(--face); border:0; color:#000;
+  box-shadow: inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white),
+              inset -2px -2px 0 var(--shadow), inset 2px 2px 0 var(--face-lt); }
+.btn:active{ box-shadow: inset 1px 1px 0 var(--dark), inset -1px -1px 0 var(--white),
+              inset 2px 2px 0 var(--shadow), inset -2px -2px 0 var(--face-lt); padding:2px 9px 0 11px; }
+.btn.def{ font-weight:bold; }
+.btn.sm{ min-width:0; height:19px; padding:0 7px; }
+.btn:focus{ outline:1px dotted #000; outline-offset:-4px; }
+input[type=text], textarea, select{ border:0; background:#fff; padding:2px 4px;
+  box-shadow: inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white), inset 2px 2px 0 var(--dark), inset -2px -2px 0 var(--face); }
+textarea{ resize:none; font:11px Tahoma, sans-serif; }
+
+#mask{ position:fixed; inset:0; background:rgba(0,0,0,.18); display:none; z-index:60; }
+.dlg{ position:fixed; z-index:70; background:var(--face); padding:3px;
+  box-shadow: inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white),
+              inset -2px -2px 0 var(--shadow), inset 2px 2px 0 var(--face-lt), 3px 3px 10px rgba(0,0,0,.4); }
+.dlg .dbar{ height:19px; display:flex; align-items:center; gap:5px; padding:0 2px 0 5px; color:#fff; font-weight:bold;
+  background:linear-gradient(90deg,#0a246a,#3a6ea5 70%,#7ba7d7); }
+.dlg .dbar .spring{ flex:1; }
+.dlg .dbody{ padding:10px 11px; }
+.dlg .drow{ display:flex; gap:7px; align-items:center; margin-bottom:7px; }
+.dlg .drow > label{ flex:0 0 96px; text-align:right; }
+.dlg .drow > input[type=text], .dlg .drow > select, .dlg .drow > textarea{ flex:1; }
+.dlg .dfoot{ display:flex; justify-content:flex-end; gap:6px; padding:4px 11px 10px; }
+.fieldset{ border:1px solid var(--shadow); border-top-color:var(--shadow); margin:0 0 9px; padding:8px 9px;
+  position:relative; box-shadow: 1px 1px 0 var(--white) inset, -1px -1px 0 var(--white); }
+.fieldset > legend{ padding:0 4px; font-weight:bold; }
+.wizsteps{ display:flex; gap:0; margin:0 0 9px; }
+.wizsteps .ws{ flex:1; text-align:center; padding:3px 2px; background:#cdc9c1;
+  box-shadow: inset -1px -1px 0 var(--shadow), inset 1px 1px 0 var(--white); }
+.wizsteps .ws.on{ background:#fff; font-weight:bold; }
+.popmenu{ position:fixed; z-index:80; background:var(--face); padding:2px;
+  box-shadow: inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white),
+              inset -2px -2px 0 var(--shadow), inset 2px 2px 0 var(--face-lt), 2px 2px 6px rgba(0,0,0,.35); min-width:150px; }
+.popmenu .pi{ display:flex; align-items:center; gap:8px; padding:3px 18px 3px 10px; white-space:nowrap; }
+.popmenu .pi .acc{ margin-left:auto; color:#555; }
+.popmenu .pi:hover:not(.sepi){ background:var(--sel); color:#fff; }
+.popmenu .pi:hover .acc{ color:#dbe4f6; }
+.popmenu .sepi{ height:2px; margin:3px 2px; padding:0;
+  box-shadow: inset 0 1px 0 var(--shadow), inset 0 -1px 0 var(--white); }
+.popmenu .pi .chk{ width:10px; }
+#toasts{ position:fixed; right:10px; bottom:30px; z-index:90; display:flex; flex-direction:column; gap:5px; }
+.toast{ background:#ffffe1; border:1px solid #8a8677; padding:6px 9px; max-width:280px; box-shadow:2px 2px 5px rgba(0,0,0,.3); }
+.toast b{ display:block; }
+
+/* =======================================================================
+   2. THE EVENT THEME LAYER — the only colour in the product
+   ======================================================================= */
+.sq{ position:relative; overflow:hidden; display:grid; place-items:center; flex:0 0 auto;
+  background:var(--ebg); color:var(--eac); line-height:1; }
+.sq .g{ position:relative; z-index:2; }
+.sq .pat{ position:absolute; inset:0; z-index:1; }
+.sq.s16{ width:16px; height:16px; font-size:10px; }
+.sq.s32{ width:32px; height:32px; font-size:18px; }
+.sq.s56{ width:56px; height:56px; font-size:30px; }
+.sq.s180{ width:180px; height:180px; font-size:96px; }
+.sq.sh-rounded{ border-radius:14%; }
+.sq.sh-cut{ clip-path:polygon(0 0,100% 0,100% 78%,78% 100%,0 100%); }
+
+/* square patterns — all procedural */
+.pat.p-plain{ background:radial-gradient(circle at 30% 24%, rgba(255,255,255,.18), rgba(0,0,0,0) 62%); }
+.pat.p-stripe{ background:repeating-linear-gradient(45deg, var(--eac2, rgba(255,255,255,.16)) 0 6px, transparent 6px 12px); }
+.pat.p-grid{ background:
+  linear-gradient(var(--eac2, rgba(255,255,255,.16)) 1px, transparent 1px) 0 0/9px 9px,
+  linear-gradient(90deg, var(--eac2, rgba(255,255,255,.16)) 1px, transparent 1px) 0 0/9px 9px; }
+.pat.p-dither{ background:
+  radial-gradient(var(--eac2, rgba(255,255,255,.16)) 40%, transparent 41%) 0 0/6px 6px,
+  radial-gradient(var(--eac2, rgba(255,255,255,.16)) 40%, transparent 41%) 3px 3px/6px 6px; }
+.pat.p-rays{ background:repeating-conic-gradient(from 0deg at 50% 116%, var(--eac2, rgba(255,255,255,.16)) 0deg 7deg, transparent 7deg 16deg); }
+.pat.p-scan{ background:repeating-linear-gradient(0deg, rgba(0,0,0,.34) 0 2px, transparent 2px 4px); }
+.pat.p-halftone{ background:
+  radial-gradient(var(--eac, rgba(255,255,255,.3)) 22%, transparent 23%) 0 0/10px 10px,
+  radial-gradient(var(--eac2, rgba(255,255,255,.16)) 32%, transparent 33%) 5px 5px/10px 10px; opacity:.85; }
+.pat.p-moon{ background:
+  radial-gradient(circle at 66% 32%, var(--eac2, rgba(255,255,255,.16)) 0 30%, transparent 31%),
+  radial-gradient(circle at 26% 74%, var(--eac2, rgba(255,255,255,.16)) 0 16%, transparent 17%); }
+
+/* full-bleed surfaces for the detail canvas */
+.surf{ position:absolute; inset:0; pointer-events:none; z-index:1; }
+.surf.u-none{ display:none; }
+.surf.u-grain{ background:
+  radial-gradient(rgba(255,255,255,.055) 1px, transparent 1px) 0 0/3px 3px,
+  radial-gradient(rgba(0,0,0,.09) 1px, transparent 1px) 2px 1px/5px 5px; }
+.surf.u-paper{ background:
+  repeating-linear-gradient(92deg, rgba(0,0,0,.035) 0 1px, transparent 1px 4px),
+  repeating-linear-gradient(3deg, rgba(0,0,0,.03) 0 1px, transparent 1px 7px),
+  radial-gradient(circle at 20% 15%, rgba(0,0,0,.05), transparent 55%); }
+.surf.u-dither{ background:
+  radial-gradient(var(--eac2, rgba(255,255,255,.16)) 32%, transparent 33%) 0 0/4px 4px,
+  radial-gradient(var(--eac2, rgba(255,255,255,.16)) 32%, transparent 33%) 2px 2px/4px 4px; opacity:.55; }
+.surf.u-halftone{ background:
+  radial-gradient(var(--eac, rgba(255,255,255,.3)) 15%, transparent 16%) 0 0/14px 14px,
+  radial-gradient(var(--eac2, rgba(255,255,255,.16)) 26%, transparent 27%) 7px 7px/14px 14px; opacity:.5; }
+.surf.u-scanlines{ background:repeating-linear-gradient(0deg, rgba(0,0,0,.30) 0 1px, transparent 1px 3px); }
+.surf.u-grid{ background:
+  linear-gradient(var(--eac2, rgba(255,255,255,.16)) 1px, transparent 1px) 0 0/26px 26px,
+  linear-gradient(90deg, var(--eac2, rgba(255,255,255,.16)) 1px, transparent 1px) 0 0/26px 26px; opacity:.85; }
+.surf.u-rays{ background:repeating-conic-gradient(from 0deg at 50% 112%, var(--eac2, rgba(255,255,255,.16)) 0deg 4deg, transparent 4deg 11deg); opacity:.8; }
+.surf.u-photocopy{ background:
+  repeating-linear-gradient(88deg, rgba(0,0,0,.22) 0 2px, transparent 2px 9px),
+  radial-gradient(circle at 78% 10%, rgba(255,255,255,.14), transparent 46%),
+  repeating-linear-gradient(0deg, rgba(0,0,0,.12) 0 1px, transparent 1px 6px); }
+.surf.u-plasma{ background:
+  radial-gradient(circle at 18% 22%, var(--eac2, rgba(255,255,255,.16)) 0, transparent 46%),
+  radial-gradient(circle at 76% 64%, var(--eac, rgba(255,255,255,.3)) 0, transparent 38%),
+  radial-gradient(circle at 44% 88%, var(--eac2, rgba(255,255,255,.16)) 0, transparent 42%); opacity:.55; filter:blur(.4px); }
+
+/* motion */
+@keyframes hn-drift{ 0%{ transform:translate3d(0,0,0);} 50%{ transform:translate3d(-14px,-9px,0);} 100%{ transform:translate3d(0,0,0);} }
+@keyframes hn-pulse{ 0%,100%{ opacity:.42; } 50%{ opacity:1; } }
+@keyframes hn-flicker{ 0%,100%{ opacity:.95;} 6%{opacity:.35;} 9%{opacity:1;} 23%{opacity:.55;} 26%{opacity:1;} 61%{opacity:.4;} 64%{opacity:1;} }
+@keyframes hn-scroll{ from{ background-position:0 0, 0 0, 0 0; } to{ background-position:0 120px, 0 -120px, 60px 0; } }
+@keyframes hn-marquee{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+.mo-drift .surf{ animation:hn-drift 13s ease-in-out infinite; }
+.mo-pulse .surf{ animation:hn-pulse 3.4s ease-in-out infinite; }
+.mo-flicker .surf{ animation:hn-flicker 5s steps(1,end) infinite; }
+.mo-scroll .surf{ animation:hn-scroll 9s linear infinite; }
+@media (prefers-reduced-motion: reduce){
+  .mo-drift .surf,.mo-pulse .surf,.mo-flicker .surf,.mo-scroll .surf,.mq b{ animation:none !important; }
+}
+
+/* the canvas — the takeover inside the reading pane */
+.canvas{ position:relative; min-height:100%; background:var(--ebg); color:var(--eink); overflow:hidden; }
+.canvas .layer{ position:relative; z-index:3; }
+.canvas.d-airy .layer{ padding:26px 30px 34px; }
+.canvas.d-packed .layer{ padding:14px 18px 22px; }
+.canvas.d-packed{ line-height:1.35; }
+.canvas.d-airy{ line-height:1.75; }
+.t-serif{ font-family:Georgia,"Times New Roman",Times,serif; }
+.t-grotesk{ font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; }
+.t-mono{ font-family:"Courier New",Courier,monospace; letter-spacing:.02em; }
+.t-stencil{ font-family:"Arial Black","Arial Bold",Impact,sans-serif; letter-spacing:.06em; text-transform:uppercase; }
+.t-display{ font-family:Impact,Haettenschweiler,"Arial Narrow Bold","Franklin Gothic Heavy",sans-serif; letter-spacing:.01em; }
+
+.banner{ position:relative; min-height:212px; overflow:hidden; background:var(--ebg);
+  border-bottom:1px solid var(--eac2); }
+.banner .bin{ position:relative; z-index:3; height:100%; display:flex; align-items:flex-end; gap:18px; padding:16px 22px; }
+.banner .wash{ position:absolute; inset:0; z-index:2;
+  background:linear-gradient(180deg, transparent 35%, color-mix(in srgb, var(--ebg) 78%, transparent) 100%); }
+.hl{ margin:0; color:var(--eink); }
+.hl.h-huge{ font-size:44px; line-height:.98; letter-spacing:-.018em; }
+.hl.h-condensed{ font-size:38px; line-height:1; transform:scaleX(.82); transform-origin:left center; letter-spacing:.01em; }
+.hl.h-stacked{ font-size:27px; line-height:.96; letter-spacing:.01em; }
+.hl.h-stacked span{ display:block; }
+.hl.h-outlined{ font-size:42px; line-height:1; color:transparent;
+  -webkit-text-stroke:1.5px var(--eink); text-shadow:3px 3px 0 var(--eac2); }
+.hl.h-marquee{ font-size:34px; line-height:1.1; white-space:nowrap; overflow:hidden; }
+.hl.h-marquee b{ display:inline-block; font-weight:inherit; animation:hn-marquee 15s linear infinite; }
+.mood{ margin:12px 0 0; font-size:17px; font-style:italic; color:var(--eac);
+  border-left:3px solid var(--eac); padding-left:11px; max-width:52ch; }
+.t-stencil .mood, .t-mono .mood{ font-style:normal; }
+.evmeta{ display:flex; flex-wrap:wrap; gap:6px 14px; margin:16px 0 0; color:var(--edim); font-size:12px;
+  font-family:Tahoma,sans-serif; letter-spacing:.04em; text-transform:uppercase; }
+.evmeta b{ color:var(--eink); }
+.evdesc{ margin:18px 0 0; font-size:15px; max-width:64ch; }
+.cvsect{ margin:26px 0 8px; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--edim);
+  font-family:Tahoma,sans-serif; border-bottom:1px solid var(--eac2); padding-bottom:4px; }
+.faces{ display:flex; flex-wrap:wrap; gap:7px; align-items:center; }
+.face{ display:flex; align-items:center; gap:5px; padding:3px 8px 3px 4px; border:1px solid var(--eac2);
+  color:var(--eink); font-family:Tahoma,sans-serif; font-size:11px; }
+.face:hover{ border-color:var(--eac); }
+.hzchip{ display:flex; align-items:center; gap:7px; padding:5px 10px 5px 5px; border:1px solid var(--eac2);
+  color:var(--eink); font-family:Tahoma,sans-serif; font-size:11px; }
+.hzchip:hover{ border-color:var(--eac); }
+.sh-rounded .face, .sh-rounded .hzchip, .sh-rounded .vbtn{ border-radius:11px; }
+.sh-cut .face, .sh-cut .hzchip, .sh-cut .vbtn{ clip-path:polygon(0 0,100% 0,100% 68%,90% 100%,0 100%); }
+
+/* the three verbs — themed, but never illegible, and Promote set apart */
+.verbs{ display:flex; align-items:center; gap:10px; margin:22px 0 2px; flex-wrap:wrap;
+  font-family:Tahoma,sans-serif; }
+.vpair{ display:flex; border:2px solid var(--eac); }
+.vbtn{ padding:8px 18px; font-size:12px; font-weight:bold; letter-spacing:.04em; background:transparent;
+  color:var(--eink); border:0; }
+.vbtn + .vbtn{ border-left:2px solid var(--eac); }
+.vbtn:hover{ background:color-mix(in srgb, var(--eac) 22%, transparent); }
+.vbtn.on{ background:var(--eac); color:var(--eon); }
+.vsep{ width:1px; height:26px; background:var(--edim); opacity:.6; margin:0 4px; }
+.vpromo{ padding:8px 16px; font-size:12px; font-weight:bold; letter-spacing:.04em; background:transparent;
+  color:var(--eink); border:2px dashed var(--edim); }
+.vpromo:hover{ border-color:var(--eink); }
+.vpromo.on{ border-style:solid; border-color:var(--eink); background:color-mix(in srgb, var(--eink) 14%, transparent); }
+.vnote{ font-family:Tahoma,sans-serif; font-size:11px; color:var(--edim); margin:9px 0 0; }
+.vmore{ padding:7px 12px; font-size:11px; background:transparent; color:var(--edim); border:1px solid var(--edim);
+  font-family:Tahoma,sans-serif; }
+.vmore:hover{ color:var(--eink); border-color:var(--eink); }
+
+/* the theme strip: proof every field does something */
+.themestrip{ display:flex; flex-wrap:wrap; gap:4px; margin-top:22px; font-family:Tahoma,sans-serif; }
+.themestrip span{ font-size:10px; letter-spacing:.09em; text-transform:uppercase; color:var(--edim);
+  border:1px solid var(--eac2); padding:2px 6px; }
+
+/* ---------- calendar mode ------------------------------ */
+#calwrap{ flex:1; min-height:0; display:flex; gap:3px; }
+#calmain{ flex:1; min-width:0; display:flex; flex-direction:column; background:#fff;
+  box-shadow: inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white), inset 2px 2px 0 var(--dark), inset -2px -2px 0 var(--face); }
+#calside{ flex:0 0 172px; display:flex; flex-direction:column; gap:3px; }
+.calbar{ display:flex; align-items:center; gap:6px; padding:3px 5px; background:var(--face); }
+.calbar .ttl{ font-weight:bold; font-size:12px; }
+.calbar .spring{ flex:1; }
+.calgrid{ flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column; }
+.calrow{ display:flex; flex:1; min-height:78px; border-top:1px solid #cfcabf; }
+.caldow{ display:flex; background:#ece9e2; border-bottom:1px solid #b9b4a8; }
+.caldow div{ flex:1; padding:2px 5px; font-weight:bold; border-left:1px solid #d7d3ca; }
+.calcell{ flex:1; min-width:0; border-left:1px solid #e3e0d9; padding:1px 2px 3px; overflow:hidden; }
+.calcell:first-child{ border-left:0; }
+.calcell.oth{ background:#f4f2ed; color:#9a968e; }
+.calcell.today{ background:#fffbe6; }
+.calcell .dn{ font-weight:bold; padding:1px 3px; }
+.calcell.today .dn{ background:var(--sel); color:#fff; display:inline-block; }
+.calev{ display:flex; align-items:center; gap:4px; margin:1px 0; padding:1px 3px 1px 0; overflow:hidden;
+  white-space:nowrap; text-overflow:ellipsis; background:var(--ebg); color:var(--eink);
+  border-left:4px solid var(--eac); font-size:10px; }
+.calev:hover{ outline:1px solid var(--sel); }
+.calev.sel{ outline:2px solid var(--sel); }
+.calev .cg{ color:var(--eac); }
+.dayband{ display:flex; border-top:1px solid #cfcabf; min-height:34px; }
+.dayband .hr{ flex:0 0 58px; background:#ece9e2; border-right:1px solid #b9b4a8; padding:2px 5px; text-align:right; color:#444; }
+.dayband .slot{ flex:1; padding:2px; display:flex; flex-direction:column; gap:2px; }
+.weekcol{ flex:1; min-width:0; border-left:1px solid #e3e0d9; display:flex; flex-direction:column; }
+.weekcol .wh{ background:#ece9e2; border-bottom:1px solid #b9b4a8; padding:2px 5px; font-weight:bold; }
+.weekcol .wb{ flex:1; padding:2px; overflow:auto; }
+.weekcol.today .wh{ background:var(--sel); color:#fff; }
+.mininav{ background:#fff; padding:3px 4px 5px;
+  box-shadow: inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white), inset 2px 2px 0 var(--dark), inset -2px -2px 0 var(--face); }
+.mininav .mh{ display:flex; align-items:center; gap:4px; padding:1px 2px 3px; font-weight:bold; }
+.mininav .mh .spring{ flex:1; }
+.mininav .nb{ width:14px; height:14px; display:grid; place-items:center; background:var(--face);
+  box-shadow: inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white); font-size:9px; }
+.minigrid{ display:grid; grid-template-columns:repeat(7,1fr); gap:1px; }
+.minigrid div{ text-align:center; padding:1px 0; font-size:10px; }
+.minigrid .hd{ font-weight:bold; color:#555; }
+.minigrid .oth{ color:#b3aea4; }
+.minigrid .has{ font-weight:bold; color:#00218a; }
+.minigrid .cur{ background:var(--sel); color:#fff; }
+.minigrid .d:hover{ background:#e7f0fb; }
+
+/* ---------- opened-item window (Enter) ------------------ */
+#itemwin{ position:absolute; inset:0; z-index:40; display:none; flex-direction:column; background:var(--face); padding:2px; }
+#itemwin.on{ display:flex; }
+#itemwin .iwbar{ height:19px; display:flex; align-items:center; gap:5px; padding:0 2px 0 5px; color:#fff; font-weight:bold;
+  background:linear-gradient(90deg,#0a246a,#3a6ea5 72%,#9dc0e8); }
+#itemwin .iwbar .spring{ flex:1; }
+#itemwin .iwtools{ display:flex; gap:1px; padding:2px 3px; border-bottom:1px solid var(--shadow); box-shadow:0 1px 0 var(--white); }
+#itemwin .iwbody{ flex:1; min-height:0; overflow:auto; background:#fff;
+  box-shadow: inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white), inset 2px 2px 0 var(--dark), inset -2px -2px 0 var(--face); }
+#centerhost{ position:relative; flex:1; min-height:0; display:flex; flex-direction:column; }
+
+/* ---------- customize step ----------------------------- */
+.custwrap{ display:flex; gap:12px; }
+.custcol{ flex:0 0 268px; }
+.custprev{ flex:1; min-width:0; }
+.crow{ display:flex; align-items:center; gap:6px; margin-bottom:5px; }
+.crow label{ flex:0 0 74px; text-align:right; color:#222; }
+.crow select, .crow input[type=text]{ flex:1; height:19px; }
+.swatches{ display:flex; gap:4px; }
+.swatches .sw{ width:22px; height:18px; border:1px solid #6f6a60; }
+.presets{ display:flex; gap:5px; margin-bottom:8px; flex-wrap:wrap; }
+.presets .pz{ padding:3px 8px; background:var(--face); box-shadow: inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white),
+  inset -2px -2px 0 var(--shadow), inset 2px 2px 0 var(--face-lt); }
+.previewbox{ background:#fff; padding:7px; height:430px; overflow:auto;
+  box-shadow: inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white), inset 2px 2px 0 var(--dark), inset -2px -2px 0 var(--face); }
+.previewbox .plabel{ font-weight:bold; color:#444; margin:6px 0 3px; }
+.prevrow{ display:flex; align-items:center; height:19px; border:1px solid #e0ddd7; }
+.prevrow > *{ padding:0 5px; overflow:hidden; white-space:nowrap; }
+.minicanvas{ height:214px; overflow:hidden; position:relative; }
+.minicanvas .canvas{ min-height:196px; }
+.minicanvas .banner{ height:104px; }
+.minicanvas .hl.h-huge{ font-size:26px; } .minicanvas .hl.h-condensed{ font-size:24px; }
+.minicanvas .hl.h-stacked{ font-size:17px; } .minicanvas .hl.h-outlined{ font-size:25px; -webkit-text-stroke-width:1px; }
+.minicanvas .hl.h-marquee{ font-size:22px; }
+.minicanvas .mood{ font-size:12px; margin-top:7px; }
+.minicanvas .canvas.d-airy .layer, .minicanvas .canvas.d-packed .layer{ padding:10px 12px; }
+
+.kbdhint{ color:#555; }
+kbd{ font:10px Tahoma; border:1px solid #9a9488; background:#f4f2ed; padding:0 3px; box-shadow:1px 1px 0 #fff inset; }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <div id="titlebar">
+    <span class="tglyph">▤</span>
+    <span id="wintitle">Home feed — Hypernet</span>
+    <span class="spring"></span>
+  </div>
+
+  <div id="menubar">
+    <div class="mi" data-menu="file"><u>F</u>ile</div>
+    <div class="mi" data-menu="edit"><u>E</u>dit</div>
+    <div class="mi" data-menu="view"><u>V</u>iew</div>
+    <div class="mi" data-menu="go"><u>G</u>o</div>
+    <div class="mi" data-menu="help"><u>H</u>elp</div>
+    <span class="spring"></span>
+    <div class="mi right" id="authmi" data-act="authmenu">Log in</div>
+  </div>
+
+  <div id="toolbar">
+    <div id="tbmain" style="display:flex;align-items:stretch;gap:1px"></div>
+    <span class="spring"></span>
+    <div id="searchwrap">
+      <span>Find:</span>
+      <input id="searchbox" type="text" placeholder="events, horizons, people   ( / )" autocomplete="off">
+      <button class="btn sm" data-act="dosearch">Find Now</button>
+      <span id="clearwrap"></span>
+    </div>
+  </div>
+
+  <div id="main">
+    <div class="rail" id="leftrail"><span class="rlab" data-act="show-left">FOLDERS</span></div>
+    <div class="pane" id="folders">
+      <div class="panehead"><span>Folder List</span><span class="x" data-act="hide-left" title="Hide (a FOLDERS rail appears)">✕</span></div>
+      <div class="panebody sunken" id="folderbody"></div>
+    </div>
+    <div class="psplit"></div>
+
+    <div class="pane" id="center">
+      <div class="cbar">
+        <span id="cbarname">Home feed</span>
+        <span class="meta" id="cbarmeta"></span>
+        <span class="spring"></span>
+        <span id="viewswitch"></span>
+        <span class="meta kbdhint" style="margin-left:8px"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>/</kbd> find</span>
+      </div>
+      <div id="centerhost">
+        <div id="centerwrap" class="right">
+          <div id="listcol">
+            <div class="colhead" id="colhead"></div>
+            <div id="listbody"></div>
+          </div>
+          <div id="readcol">
+            <div class="rphead" id="rphead"></div>
+            <div id="readbody"></div>
+          </div>
+        </div>
+        <div id="calwrap" style="display:none">
+          <div id="calmain"></div>
+          <div id="calside"></div>
+        </div>
+        <div id="itemwin">
+          <div class="iwbar"><span>▤</span><span id="iwtitle">Event</span><span class="spring"></span>
+            <span class="wbtn" data-act="closeitem">✕</span></div>
+          <div class="iwtools">
+            <div class="tbtn" data-act="closeitem"><span class="ic">✕</span><span class="lb">Close</span></div>
+            <div class="tsep"></div>
+            <div class="tbtn" data-act="v-interested"><span class="ic">♥</span><span class="lb">Interested</span></div>
+            <div class="tbtn" data-act="v-going"><span class="ic">✓</span><span class="lb">Going</span></div>
+            <div class="tbtn" data-act="v-promote"><span class="ic">↗</span><span class="lb">Promote</span></div>
+            <div class="tsep"></div>
+            <div class="tbtn" data-act="fileinto"><span class="ic">🗀</span><span class="lb">File into…</span></div>
+            <div class="tbtn" data-act="prev-item"><span class="ic">▲</span><span class="lb">Previous</span></div>
+            <div class="tbtn" data-act="next-item"><span class="ic">▼</span><span class="lb">Next</span></div>
+          </div>
+          <div class="iwbody" id="iwbody"></div>
+        </div>
+      </div>
+    </div>
+    <div class="psplit"></div>
+
+    <div class="pane" id="contacts">
+      <div class="panehead"><span id="contactshead">Chats</span><span class="x" data-act="hide-right" title="Hide (a CHATS rail appears)">✕</span></div>
+      <div class="panebody sunken" id="contactbody" style="display:flex;flex-direction:column"></div>
+    </div>
+    <div class="rail" id="rightrail"><span class="rlab" data-act="show-right">CHATS</span></div>
+  </div>
+
+  <div id="statusbar">
+    <div class="cell grow" id="sb1">Ready</div>
+    <div class="cell" id="sb2"></div>
+    <div class="cell" id="sb3"></div>
+    <div class="cell" id="sb4"></div>
+  </div>
+</div>
+
+<div id="mask"></div>
+<div id="toasts"></div>
+
+<script src="_shared/hypernet-data.js"></script>
+<script src="_shared/hypernet-themes.js"></script>
+<script>
+/* =========================================================================
+   0. DATA ADAPTERS — same fixtures as every other concept
+   ========================================================================= */
+var H = window.HYPERNET;
+var TODAY_ISO = H.meta.today;               /* 2026-09-20 */
+
+var PEOPLE = {};
+H.people.forEach(function(p){ PEOPLE[p.id] = p; });
+PEOPLE['self'] = { id:'self', displayName:'You', handle:H.self.handle, bio:H.self.bio,
+                   skills:['EVENT PRODUCTION/PRODUCING'], city:'SWEDEN|STOCKHOLM' };
+
+var EVENTS = {};
+H.events.forEach(function(e){ EVENTS[e.id] = e; });
+
+var HORIZONS = {};
+H.horizons.forEach(function(h){ HORIZONS[h.id] = h; });
+HORIZONS['horizon-feed'] = { id:'horizon-feed', name:'Feeding the Ridge',
+  description:'Kitchen shifts, tea, and everything that ends in washing up.',
+  isPersonalDefault:false, isPublished:true, ownerName:'Kai Okonkwo', ownerId:'p-kai',
+  eventIds:['evt-fill-1','evt-fill-7','evt-world-camp-dinner'] };
+HORIZONS['horizon-surface'] = { id:'horizon-surface', name:'Surfaces & Projections',
+  description:'Anything you can throw light at after dark.',
+  isPersonalDefault:false, isPublished:true, ownerName:'Mira Chen', ownerId:'p-mira',
+  eventIds:['evt-fill-3','evt-fill-9','evt-world-hyperstition-2026'] };
+
+var GROUPS = {};  H.groups.forEach(function(g){ GROUPS[g.id] = g; });
+var CALLOUTS = H.callouts.map(function(c){
+  var host = H.people.filter(function(p){ return p.displayName === c.hostName; })[0];
+  return { id:c.id, title:c.title, body:c.body, expiresAt:c.expiresAt, hostName:c.hostName, hostId: host?host.id:null };
+});
+
+var CREW = ['p-anna','p-rio','p-kai','p-mira','p-jon','p-sasha'];
+var PRESENCE = { 'p-anna':'online','p-rio':'online','p-kai':'idle','p-mira':'offline','p-jon':'offline','p-sasha':'offline' };
+var AVCOLOR  = { 'self':'#c02020','p-anna':'#2a5db0','p-rio':'#7a2d9c','p-kai':'#0b6b46',
+                 'p-mira':'#c2681f','p-jon':'#31536e','p-sasha':'#a02060' };
+
+function hashId(str){ var n=0; for (var i=0;i<String(str).length;i++) n=(n*31+String(str).charCodeAt(i))>>>0; return n; }
+var CITYPOOL = ['Stockholm','Malmö','Copenhagen','Berlin','Oslo','Gothenburg','Amsterdam'];
+Object.keys(EVENTS).forEach(function(id){ if (!EVENTS[id].city) EVENTS[id].city = CITYPOOL[hashId(id) % CITYPOOL.length]; });
+
+/* =========================================================================
+   1. THE THEME LAYER — every field must be visible
+   ========================================================================= */
+function TH(id){ return window.HN_THEME(id); }
+
+function hex2rgb(h){
+  h = String(h||'#000').replace('#','');
+  if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+}
+function relLum(h){
+  var c = hex2rgb(h).map(function(v){ v/=255; return v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); });
+  return 0.2126*c[0] + 0.7152*c[1] + 0.0722*c[2];
+}
+function contrast(a,b){ var l1=relLum(a), l2=relLum(b); if (l1<l2){ var t=l1; l1=l2; l2=t; } return (l1+0.05)/(l2+0.05); }
+function onColor(bg){ return contrast('#ffffff',bg) >= contrast('#000000',bg) ? '#ffffff' : '#000000'; }
+/* an accent that is actually readable as text on the event background */
+function safeAccent(p){ return contrast(p.accent, p.bg) >= 3 ? p.accent : p.ink; }
+/* a dim that is still readable */
+function safeDim(p){ return contrast(p.dim, p.bg) >= 2.6 ? p.dim : p.ink; }
+
+function themeVars(t){
+  var p = t.palette;
+  return '--ebg:'+p.bg+';--eink:'+p.ink+';--eac:'+safeAccent(p)+';--eac2:'+p.accent2+
+         ';--edim:'+safeDim(p)+';--eon:'+onColor(safeAccent(p))+';';
+}
+function sqHTML(id, size, extra){
+  var t = TH(id);
+  return '<div class="sq s'+size+' sh-'+t.shape+'" style="'+themeVars(t)+(extra||'')+'">' +
+         '<div class="pat p-'+t.square.pattern+'"></div><span class="g">'+t.square.glyph+'</span></div>';
+}
+function headlineHTML(t, title){
+  if (t.headline === 'stacked'){
+    return title.split(' ').map(function(w){ return '<span>'+esc(w)+'</span>'; }).join('');
+  }
+  if (t.headline === 'marquee'){
+    var s = esc(title) + ' &nbsp;·&nbsp; ';
+    return '<b>'+s+s+'</b>';
+  }
+  return esc(title);
+}
+
+/* =========================================================================
+   2. MUTABLE STATE
+   ========================================================================= */
+var RSVP = {};                 /* eventId -> 'going' | 'interested' */
+var PROMOTED = {};
+var PROMOCOUNT = {}; Object.keys(EVENTS).forEach(function(id){ PROMOCOUNT[id] = hashId(id) % 17; });
+var READ = {};                 /* eventId -> true once you've seen it */
+['evt-world-borderland-2026','evt-world-hyperstition-2026','evt-fill-0','evt-fill-2'].forEach(function(id){ READ[id]=true; });
+var HZFOLLOW = { 'horizon-baltic':true, 'horizon-dust':true, 'horizon-quiet':true, 'horizon-feed':false, 'horizon-surface':false };
+var HZCOUNT  = { 'horizon-baltic':41, 'horizon-dust':128, 'horizon-quiet':86, 'horizon-feed':52, 'horizon-surface':37, 'horizon-default':0 };
+var PFOLLOW  = { 'p-anna':true, 'p-rio':true, 'p-kai':true, 'p-mira':false, 'p-jon':false, 'p-sasha':true };
+var MYEVENTS = [];
+var MYHORIZONS = ['horizon-default'];
+
+var CHATS = {};
+H.chats.forEach(function(c){
+  CHATS[c.id] = { id:c.id, name:c.name, kind:c.kind, memberIds:c.memberIds.slice(),
+    subjectId: c.kind==='dm' ? c.memberIds[0] : (c.id==='c-baltic'?'g-baltic':c.id==='c-kitchen'?'g-kitchen':null),
+    messages: c.messages.map(function(m){ return { from:m.from, t:m.t, text:m.text }; }) };
+});
+var UNREADCHAT = { 'c-baltic':true };
+
+/* network news — part of what the Home feed mixes in */
+var NEWS = H.feedNews.map(function(n, i){
+  return { id:'news-'+i, when:n.when, text:n.text };
+});
+
+/* a horizon's cover: which member event's square stands for it */
+var HZCOVER = {};
+
+var S = {
+  loggedIn:false,
+  me:{ name:'You', handle:'you' },
+  /* destinations: home | events | horizons | people | callouts
+     kept things: interested | going | hosting | horizon | search        */
+  folder:{ kind:'home', id:null },
+  hist:[{ kind:'home', id:null }], hi:0,
+  view:{},                           /* destination key -> 'list' | 'calendar' */
+  sort:{ key:'date', dir:1 },
+  collapsed:{}, fcollapsed:{},
+  sel:null,                          /* selected item {type,id} */
+  preview:'right',                   /* right | bottom | off */
+  leftOpen:true, rightOpen:true,
+  activeChat:'c-baltic',
+  query:'',
+  calMode:'month', calAnchor:'2026-10-04',
+  itemOpen:false,
+  rows:[]                            /* flat list of visible item rows, for the keyboard */
+};
+
+/* ---- views: one destination, two views ------------------------------- */
+var NOCAL = { people:true, callouts:true, search:true };
+function destKey(f){ f = f || S.folder; return f.kind + (f.id ? ':' + f.id : ''); }
+function hasCalendar(f){ return !NOCAL[(f||S.folder).kind]; }
+function viewOf(f){ f = f || S.folder; return hasCalendar(f) ? (S.view[destKey(f)] || 'list') : 'list'; }
+function isCal(){ return viewOf() === 'calendar'; }
+function setView(v){ if (hasCalendar()) S.view[destKey()] = v; }
+
+/* =========================================================================
+   3. SMALL HELPERS
+   ========================================================================= */
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function $(id){ return document.getElementById(id); }
+var DAY=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var MONFULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function dOf(iso){ var p=String(iso).split('-'); return new Date(+p[0], +p[1]-1, +p[2], 18, 0, 0); }
+function isoOf(d){ return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+var NOW = dOf(TODAY_ISO); NOW.setHours(0,0,0,0);
+function dayDiff(iso){ var d=dOf(iso); d.setHours(0,0,0,0); return Math.round((d-NOW)/86400000); }
+function fmtDate(iso){ var d=dOf(iso); return DAY[d.getDay()]+' '+d.getDate()+' '+MON[d.getMonth()]+' '+d.getFullYear(); }
+function fmtShort(iso){ var d=dOf(iso); return DAY[d.getDay()]+' '+d.getDate()+' '+MON[d.getMonth()]; }
+function isPast(iso){ return dayDiff(iso) < 0; }
+function nowClock(){ var d=new Date(); return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+function titleCase(s){ return String(s).toLowerCase().replace(/(^|[\s\-\/&])([a-zà-ÿ])/g, function(_,a,b){ return a+b.toUpperCase(); }); }
+function cityShort(c){ if(!c) return '—'; var b=String(c).split('|'); return titleCase(b[b.length-1]); }
+function initials(n){ var b=String(n).trim().split(/\s+/); return (b[0][0]+(b[1]?b[1][0]:'')).toUpperCase(); }
+function person(id){ return PEOPLE[id] || { id:id, displayName:id, handle:id, skills:[], city:'', bio:'' }; }
+function avHTML(id, cls){
+  var p = person(id);
+  return '<span class="av '+(cls||'')+'" style="background:'+(AVCOLOR[id]||'#5a5a5a')+'">'+esc(initials(p.displayName))+'</span>';
+}
+function allEvents(){ return Object.keys(EVENTS).map(function(k){ return EVENTS[k]; }); }
+function hostLabel(e){ return e.hostName === 'You' ? (S.loggedIn ? S.me.name : 'You') : e.hostName; }
+function hostPersonOf(e){ return H.people.filter(function(p){ return p.displayName === e.hostName; })[0] ||
+                                 (e.hostName === 'You' ? PEOPLE['self'] : null); }
+function byDate(a,b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }
+function rsvpList(mode){ if (!S.loggedIn) return []; return allEvents().filter(function(e){ return RSVP[e.id] === mode; }).sort(byDate); }
+function horizonsOf(evId){ return Object.keys(HORIZONS).filter(function(k){ return HORIZONS[k].eventIds.indexOf(evId) >= 0; }); }
+/* a horizon's cover: the member event whose square stands for the folder */
+function hzCover(hzId){
+  var hz = HORIZONS[hzId];
+  if (!hz) return null;
+  if (HZCOVER[hzId] && hz.eventIds.indexOf(HZCOVER[hzId]) >= 0) return HZCOVER[hzId];
+  return hz.eventIds.filter(function(id){ return EVENTS[id]; })[0] || null;
+}
+function hzIconHTML(hzId, size){
+  var cov = hzCover(hzId);
+  return cov ? sqHTML(cov, size || 16) : '<span class="fic" style="font-size:12px">&#128448;</span>';
+}
+function hzDates(hzId){
+  var hz = HORIZONS[hzId];
+  var ds = (hz ? hz.eventIds : []).map(function(id){ return EVENTS[id]; }).filter(Boolean)
+            .map(function(e){ return e.date; }).sort();
+  return ds;
+}
+function hzRangeShort(hzId){ var d = hzDates(hzId); return d.length ? fmtShort(d[0]) : '-'; }
+function hzRange(hzId){
+  var d = hzDates(hzId);
+  if (!d.length) return 'empty';
+  return d.length === 1 ? fmtDate(d[0]) : fmtDate(d[0]) + ' — ' + fmtDate(d[d.length-1]);
+}
+function hzOwnedByMe(hzId){ return S.loggedIn && MYHORIZONS.indexOf(hzId) >= 0; }
+function attendees(evId){
+  var w = H.worlds.filter(function(x){ return x.eventId === evId; })[0];
+  var ids = w && w.participantIds ? w.participantIds.filter(function(p){ return PEOPLE[p]; }) : [];
+  if (!ids.length){ var n = hashId(evId); ids = CREW.filter(function(_,i){ return (n >> i) & 1; }); }
+  if (RSVP[evId] === 'going' && ids.indexOf('self') < 0) ids = ['self'].concat(ids);
+  return ids.slice(0,6);
+}
+function attendeeCount(evId){ return attendees(evId).length + (hashId(evId) % 34) + 4; }
+function stateOf(evId){
+  if (!S.loggedIn) return '';          /* logged out: you have no state to show */
+  var e = EVENTS[evId];
+  if (e && e.hostName === 'You' && MYEVENTS.indexOf(evId) >= 0) return 'hosting';
+  return RSVP[evId] || '';
+}
+function unreadCount(items){ return items.filter(function(it){ return it.type==='event' && !READ[it.id]; }).length; }
+function toast(title, body){
+  var el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = '<b>'+esc(title)+'</b>'+(body?esc(body):'');
+  $('toasts').appendChild(el);
+  setTimeout(function(){ el.remove(); }, 3400);
+}
+function gated(fn){
+  return function(){ if (!S.loggedIn){ loginDialog(); return; } fn.apply(null, arguments); };
+}
+function status(msg){ $('sb1').textContent = msg; }
+</script>
+<script>
+/* =========================================================================
+   4. DESTINATIONS — the left pane. Home feed, Events, Horizons, People,
+      Call outs, plus the things you keep.
+   ========================================================================= */
+function feedEvents(){
+  /* everything public, soonest first, past at the bottom */
+  return allEvents().slice().sort(function(a,b){
+    var pa = isPast(a.date) ? 1 : 0, pb = isPast(b.date) ? 1 : 0;
+    if (pa !== pb) return pa - pb;
+    return byDate(a,b);
+  });
+}
+function browsableHorizons(){
+  return Object.keys(HORIZONS).filter(function(k){
+    return HORIZONS[k].isPublished || (S.loggedIn && MYHORIZONS.indexOf(k) >= 0);
+  });
+}
+function browsablePeople(){
+  var ids = CREW.slice();
+  if (S.loggedIn) ids.unshift('self');
+  return ids;
+}
+/* the Home feed: a mix, curated. Events, horizons worth following,
+   call outs and network news, all in one place. */
+function homeItems(){
+  var out = [];
+  feedEvents().filter(function(e){ return !isPast(e.date); }).slice(0,9)
+    .forEach(function(e){ out.push({ type:'event', id:e.id }); });
+  browsableHorizons().filter(function(k){
+    return HORIZONS[k].isPublished && !HZFOLLOW[k] && MYHORIZONS.indexOf(k) < 0;
+  }).forEach(function(k){ out.push({ type:'horizon', id:k }); });
+  CALLOUTS.forEach(function(c){ out.push({ type:'callout', id:c.id }); });
+  NEWS.forEach(function(n){ out.push({ type:'news', id:n.id }); });
+  return out;
+}
+function folderItems(f){
+  f = f || S.folder;
+  var evs = [];
+  if (f.kind === 'home')             return homeItems();
+  else if (f.kind === 'events')      evs = feedEvents();
+  else if (f.kind === 'horizons')    return browsableHorizons().map(function(k){ return { type:'horizon', id:k }; });
+  else if (f.kind === 'people')      return browsablePeople().map(function(p){ return { type:'person', id:p }; });
+  else if (f.kind === 'interested')  evs = rsvpList('interested');
+  else if (f.kind === 'going')       evs = rsvpList('going');
+  else if (f.kind === 'hosting')     evs = MYEVENTS.map(function(id){ return EVENTS[id]; }).filter(Boolean).sort(byDate);
+  else if (f.kind === 'horizon')     evs = (HORIZONS[f.id] ? HORIZONS[f.id].eventIds : []).map(function(id){ return EVENTS[id]; }).filter(Boolean).sort(byDate);
+  else if (f.kind === 'callouts')    return CALLOUTS.map(function(c){ return { type:'callout', id:c.id }; });
+  else if (f.kind === 'search')      return searchItems(S.query);
+  return evs.map(function(e){ return { type:'event', id:e.id }; });
+}
+/* the events a destination puts on a calendar */
+function destEvents(f){
+  f = f || S.folder;
+  if (f.kind === 'horizons'){
+    var seen = {}, out = [];
+    browsableHorizons().forEach(function(k){
+      HORIZONS[k].eventIds.forEach(function(id){ if (EVENTS[id] && !seen[id]){ seen[id] = 1; out.push(EVENTS[id]); } });
+    });
+    return out.sort(byDate);
+  }
+  if (f.kind === 'home') return feedEvents();
+  return folderItems(f).filter(function(it){ return it.type === 'event'; }).map(function(it){ return EVENTS[it.id]; });
+}
+function folderName(f){
+  f = f || S.folder;
+  if (f.kind === 'home')       return 'Home feed';
+  if (f.kind === 'events')     return 'Events';
+  if (f.kind === 'horizons')   return 'Horizons';
+  if (f.kind === 'people')     return 'People';
+  if (f.kind === 'interested') return 'Interested';
+  if (f.kind === 'going')      return 'Going';
+  if (f.kind === 'hosting')    return 'Hosting';
+  if (f.kind === 'callouts')   return 'Call outs';
+  if (f.kind === 'search')     return 'Search Results';
+  if (f.kind === 'horizon')    return HORIZONS[f.id] ? HORIZONS[f.id].name : 'Horizon';
+  return 'Home feed';
+}
+function folderSub(f){
+  f = f || S.folder;
+  if (f.kind === 'home')       return 'a mix, curated for you — events, horizons, call outs, network news';
+  if (f.kind === 'events')     return 'everything public, soonest first';
+  if (f.kind === 'horizons')   return 'collections you can follow';
+  if (f.kind === 'people')     return 'open one to see their contact card';
+  if (f.kind === 'interested') return 'saved — your private horizon';
+  if (f.kind === 'going')      return 'committed — these are on your calendar';
+  if (f.kind === 'hosting')    return 'events you published';
+  if (f.kind === 'callouts')   return 'people asking for hands';
+  if (f.kind === 'search')     return 'matches for "' + S.query + '", grouped';
+  if (f.kind === 'horizon'){
+    var h = HORIZONS[f.id]; if (!h) return '';
+    return h.eventIds.length + ' events · ' + (h.isPublished ? 'by ' + h.ownerName : 'private to you');
+  }
+  return '';
+}
+function sameFolder(a,b){ return a && b && a.kind === b.kind && a.id === b.id; }
+
+function foldRow(f, icon, label, opts){
+  opts = opts || {};
+  var items = opts.count != null ? null : folderItems(f);
+  var n = opts.count != null ? opts.count : items.length;
+  var u = items ? unreadCount(items) : 0;
+  var sel = sameFolder(S.folder, f);
+  return '<div class="fold'+(sel?' sel':'')+(u?' unread':'')+(opts.indent?' findent':'')+
+    '" data-act="folder" data-kind="'+f.kind+'" data-id="'+(f.id||'')+'"'+
+    (opts.drop ? ' data-drop="'+f.id+'"' : '')+'>' +
+    '<span class="fic">'+icon+'</span><span class="fnm">'+esc(label)+
+    (opts.sub ? ' <span class="sub">'+esc(opts.sub)+'</span>' : '')+'</span>' +
+    '<span class="fct">'+(u ? '('+u+')' : n ? n : '')+'</span></div>';
+}
+
+/* the left-pane group headers are real twisties: they collapse their group */
+function fgroup(key, title, extra){
+  var col = !!S.fcollapsed[key];
+  return { open:'<div class="fgroup"><div class="fgtitle" data-act="fgroup" data-id="'+key+'">' +
+             '<span class="tw">'+(col?'+':'-')+'</span>'+esc(title)+(extra||'')+'</div>' +
+             (col ? '' : '<div class="fgbody">'),
+           close: col ? '</div>' : '</div></div>',
+           collapsed: col };
+}
+function leftVisible(){ return S.leftOpen && window.innerWidth >= 760; }
+function rightVisible(){ return S.rightOpen && window.innerWidth >= 1000; }
+function renderFolders(){
+  var vis = leftVisible();
+  $('folders').style.display = vis ? 'flex' : 'none';
+  $('leftrail').className = 'rail' + (vis ? '' : ' on');
+  if (!vis) return;
+  var h = '';
+
+  /* the five top-level destinations — browse everything from here */
+  var g = fgroup('browse', 'Browse'); h += g.open;
+  if (!g.collapsed){
+    h += foldRow({kind:'home',id:null},     '&#9788;', 'Home feed');
+    h += foldRow({kind:'events',id:null},   '&#9635;', 'Events');
+    h += foldRow({kind:'horizons',id:null}, '&#128448;', 'Horizons');
+    h += foldRow({kind:'people',id:null},   '&#128101;', 'People');
+    h += foldRow({kind:'callouts',id:null}, '&#128227;', 'Call outs');
+  }
+  h += g.close;
+
+  if (!S.loggedIn){
+    h += '<div class="loginpanel"><b>You are browsing logged out.</b>' +
+         '<p>Everything above browses freely. Saving, going, promoting and following need an account.</p>' +
+         '<button class="btn sm" data-act="login">Log in</button></div>';
+    $('folderbody').innerHTML = h;
+    return;
+  }
+
+  var gk = fgroup('keep', 'Things you keep'); h += gk.open;
+  if (!gk.collapsed){
+    h += foldRow({kind:'interested',id:null}, '&#9829;', 'Interested');
+    h += foldRow({kind:'going',id:null}, '&#10003;', 'Going');
+    h += foldRow({kind:'hosting',id:null}, '&#9733;', 'Hosting');
+  }
+  h += gk.close;
+
+  var gm = fgroup('mine', 'Your horizons',
+    '<span class="sub" style="margin-left:auto;font-weight:normal">drop events here</span>');
+  h += gm.open;
+  if (!gm.collapsed) MYHORIZONS.forEach(function(k){
+    h += foldRow({kind:'horizon',id:k}, HORIZONS[k].isPersonalDefault ? '&#9825;' : '&#128448;', HORIZONS[k].name, { indent:true, drop:true });
+  });
+  h += gm.close;
+
+  var followed = Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k] && HORIZONS[k]; });
+  if (followed.length){
+    var gf = fgroup('follow', 'Horizons you follow'); h += gf.open;
+    if (!gf.collapsed) followed.forEach(function(k){
+      h += foldRow({kind:'horizon',id:k}, '&#128448;', HORIZONS[k].name, { indent:true, drop:true, sub:'· '+HORIZONS[k].ownerName });
+    });
+    h += gf.close;
+  }
+  $('folderbody').innerHTML = h;
+}
+
+/* =========================================================================
+   5. SEARCH — both families, visibly grouped
+   ========================================================================= */
+function matches(hay, q){ return String(hay||'').toLowerCase().indexOf(q) >= 0; }
+function searchItems(q){
+  q = String(q||'').toLowerCase().trim();
+  if (!q) return [];
+  var out = [];
+  allEvents().forEach(function(e){
+    if (matches(e.title,q) || matches(e.description,q) || matches(e.city,q) || matches(e.hostName,q) || matches(TH(e.id).mood,q))
+      out.push({ type:'event', id:e.id });
+  });
+  Object.keys(HORIZONS).forEach(function(k){
+    var hz = HORIZONS[k];
+    if (matches(hz.name,q) || matches(hz.description,q) || matches(hz.ownerName,q)) out.push({ type:'horizon', id:k });
+  });
+  CALLOUTS.forEach(function(c){ if (matches(c.title,q) || matches(c.body,q) || matches(c.hostName,q)) out.push({ type:'callout', id:c.id }); });
+  Object.keys(PEOPLE).forEach(function(k){
+    var p = PEOPLE[k];
+    if (matches(p.displayName,q) || matches(p.handle,q) || matches(p.bio,q) || matches((p.skills||[]).join(' '),q))
+      out.push({ type:'person', id:k });
+  });
+  Object.keys(GROUPS).forEach(function(k){
+    if (matches(GROUPS[k].name,q) || matches(GROUPS[k].description,q)) out.push({ type:'group', id:k });
+  });
+  return out;
+}
+
+/* =========================================================================
+   6. THE LIST — the feed, as mail
+   ========================================================================= */
+var COLS = [
+  { key:'sq',    label:'',       cls:'c-sq'    },
+  { key:'title', label:'Title',  cls:'c-title' },
+  { key:'host',  label:'Host',   cls:'c-host'  },
+  { key:'city',  label:'City',   cls:'c-city'  },
+  { key:'date',  label:'Date',   cls:'c-date'  },
+  { key:'state', label:'State',  cls:'c-state' }
+];
+function itemField(it, key){
+  if (it.type === 'event'){
+    var e = EVENTS[it.id];
+    if (key==='title') return e.title;
+    if (key==='host')  return hostLabel(e);
+    if (key==='city')  return cityShort(e.city);
+    if (key==='date')  return e.date;
+    if (key==='state') return stateOf(it.id) || 'zz-none';
+  }
+  if (it.type === 'horizon'){
+    var hz = HORIZONS[it.id], hd = hzDates(it.id);
+    if (key==='title') return hz.name;
+    if (key==='host')  return hz.ownerName;
+    if (key==='city')  return '-';
+    if (key==='date')  return hd.length ? hd[0] : '9999-99-99';
+    if (key==='state') return hzOwnedByMe(it.id) ? 'yours' : (S.loggedIn && HZFOLLOW[it.id]) ? 'following' : '';
+  }
+  if (it.type === 'person'){
+    var p = person(it.id);
+    if (key==='title') return p.displayName;
+    if (key==='host')  return '@'+p.handle;
+    if (key==='city')  return cityShort(p.city);
+    if (key==='date')  return '9999-99-99';
+    if (key==='state') return PFOLLOW[it.id] ? 'following' : '';
+  }
+  if (it.type === 'group'){
+    var g = GROUPS[it.id];
+    if (key==='title') return g.name;
+    if (key==='host')  return g.visibility;
+    if (key==='city')  return '-';
+    if (key==='date')  return '9999-99-99';
+    if (key==='state') return g.memberIds.length + ' members';
+  }
+  if (it.type === 'callout'){
+    var c = CALLOUTS.filter(function(x){ return x.id===it.id; })[0];
+    if (key==='title') return c.title;
+    if (key==='host')  return c.hostName;
+    if (key==='city')  return '-';
+    if (key==='date')  return c.expiresAt;
+    if (key==='state') return 'open';
+  }
+  if (it.type === 'news'){
+    var nw = newsOf(it.id);
+    if (key==='title') return nw.text;
+    if (key==='host')  return 'Hypernet';
+    if (key==='city')  return '-';
+    if (key==='date')  return '9999-99-99';
+    if (key==='state') return nw.when;
+  }
+  return '';
+}
+function newsOf(id){ return NEWS.filter(function(n){ return n.id === id; })[0] || { text:'', when:'' }; }
+function sortKey(){ return S.sort.key === 'sq' ? 'date' : S.sort.key; }
+function sortItems(items){
+  var k = sortKey(), dir = S.sort.dir;
+  return items.slice().sort(function(a,b){
+    var va = String(itemField(a,k)).toLowerCase(), vb = String(itemField(b,k)).toLowerCase();
+    if (va < vb) return -1*dir;
+    if (va > vb) return  1*dir;
+    return String(itemField(a,'date')) < String(itemField(b,'date')) ? -1 : 1;
+  });
+}
+var KINDBAND = { event:'Events', horizon:'Horizons worth following', callout:'Call outs',
+                 person:'People', group:'Clusters', news:'Network news' };
+var SEARCHBAND = { event:'Events', horizon:'Horizons', callout:'Call outs',
+                   person:'People', group:'Clusters', news:'Network news' };
+function bandOf(it){
+  if (S.folder.kind === 'search') return SEARCHBAND[it.type];
+  /* the Home feed is a mix — band it by kind unless you re-sort it */
+  if (S.folder.kind === 'home' && sortKey() === 'date')
+    return it.type === 'event' ? 'Happening soon' : KINDBAND[it.type];
+  if (S.folder.kind === 'horizons' && sortKey() === 'date')
+    return hzOwnedByMe(it.id) ? 'Yours' : (S.loggedIn && HZFOLLOW[it.id]) ? 'Following' : 'Not following';
+  if (S.folder.kind === 'people' && sortKey() === 'date')
+    return it.id === 'self' ? 'You' : (S.loggedIn && PFOLLOW[it.id]) ? 'People you follow' : 'Around the network';
+  var k = sortKey();
+  if (k === 'host')  return 'Host: ' + itemField(it,'host');
+  if (k === 'city')  return 'City: ' + itemField(it,'city');
+  if (k === 'state'){ var s = stateOf(it.id); return 'State: ' + (s ? s : 'no state yet'); }
+  if (k === 'title') return 'All items, A-Z';
+  var iso = itemField(it,'date');
+  if (iso === '9999-99-99') return 'No date';
+  var d = dayDiff(iso);
+  if (d < 0)  return 'Past';
+  if (d === 0) return 'Today';
+  if (d <= 7) return 'This week';
+  return 'Later';
+}
+var BANDORDER = ['Happening soon','Today','This week','Later','No date','Past',
+                 'Events','Horizons worth following','Horizons','Call outs','People','Clusters','Network news',
+                 'You','Yours','Following','People you follow','Around the network','Not following'];
+
+function rowHTML(it, idx){
+  var sel = S.sel && S.sel.type === it.type && S.sel.id === it.id;
+  var cls = 'erow' + (sel ? ' sel' : '');
+  var sq, title, host, city, date, state;
+
+  if (it.type === 'event'){
+    var e = EVENTS[it.id], st = stateOf(it.id);
+    if (!READ[it.id]) cls += ' unread';
+    if (isPast(e.date)) cls += ' past';
+    sq = sqHTML(it.id, 16);
+    title = esc(e.title) + (S.loggedIn && PROMOTED[it.id] ? ' <span class="bolt">&#8599;</span>' : '') +
+            (e.kind === 'world' ? ' <span class="c-dim">· world</span>' : '');
+    host = esc(hostLabel(e)); city = esc(cityShort(e.city)); date = fmtShort(e.date);
+    state = st === 'going' ? '<span class="pill going">&#10003; Going</span>'
+          : st === 'interested' ? '<span class="pill int">&#9829; Saved</span>'
+          : st === 'hosting' ? '<span class="pill host">&#9733; Host</span>'
+          : (READ[it.id] ? '' : '<span class="c-dim">new</span>');
+  } else if (it.type === 'horizon'){
+    var hz = HORIZONS[it.id];
+    sq = hzIconHTML(it.id);
+    title = esc(hz.name) + ' <span class="c-dim">· ' + hz.eventIds.length + ' events</span>';
+    host = esc(hz.ownerName); city = '-'; date = hzRangeShort(it.id);
+    state = hzOwnedByMe(it.id) ? '<span class="pill host">yours</span>'
+          : (S.loggedIn && HZFOLLOW[it.id]) ? '<span class="pill going">following</span>' : '';
+  } else if (it.type === 'person'){
+    sq = avHTML(it.id);
+    title = esc(person(it.id).displayName) + (it.id === 'self' ? ' <span class="c-dim">· you</span>' : '');
+    host = '@'+esc(person(it.id).handle); city = esc(cityShort(person(it.id).city)); date = '-';
+    state = (it.id === 'self' || !S.loggedIn) ? '' : PFOLLOW[it.id] ? '<span class="pill going">following</span>' : '';
+  } else if (it.type === 'group'){
+    sq = '<span class="fic" style="font-size:12px">&#9978;</span>';
+    title = esc(GROUPS[it.id].name) + ' <span class="c-dim">· cluster</span>';
+    host = esc(GROUPS[it.id].visibility); city = '-'; date = '-';
+    state = GROUPS[it.id].memberIds.length + ' ppl';
+  } else if (it.type === 'news'){
+    var nw = newsOf(it.id);
+    sq = '<span class="fic" style="font-size:12px">&#9679;</span>';
+    title = esc(nw.text);
+    host = 'Hypernet'; city = '-'; date = '-'; state = '<span class="c-dim">'+esc(nw.when)+'</span>';
+  } else {
+    var c = CALLOUTS.filter(function(x){ return x.id===it.id; })[0];
+    sq = '<span class="fic" style="font-size:12px">&#128227;</span>';
+    title = esc(c.title) + ' <span class="c-dim">· ' + esc(c.body.slice(0,52)) + '…</span>';
+    host = esc(c.hostName); city = '-'; date = fmtShort(c.expiresAt); state = '<span class="pill">open</span>';
+  }
+
+  return '<div class="'+cls+'" data-act="row" data-rtype="'+it.type+'" data-id="'+it.id+'" data-idx="'+idx+'"'+
+    (it.type === 'event' ? ' draggable="true"' : '')+'>' +
+    '<div class="c-sq">'+sq+'</div>' +
+    '<div class="c-title">'+title+'</div>' +
+    '<div class="c-host c-dim">'+host+'</div>' +
+    '<div class="c-city c-dim">'+city+'</div>' +
+    '<div class="c-date">'+date+'</div>' +
+    '<div class="c-state">'+state+'</div></div>';
+}
+
+function renderColHead(){
+  $('colhead').innerHTML = COLS.map(function(c){
+    var on = S.sort.key === c.key;
+    return '<div class="ch '+c.cls+'" data-act="sort" data-id="'+c.key+'">' +
+      (c.label ? esc(c.label) : '<span class="c-dim">&#9635;</span>') +
+      (on ? ' <span class="ar">'+(S.sort.dir>0?'&#9650;':'&#9660;')+'</span>' : '') + '</div>';
+  }).join('');
+}
+
+function bandSort(a,b){
+  var ia = BANDORDER.indexOf(a), ib = BANDORDER.indexOf(b);
+  if (ia < 0) ia = 50; if (ib < 0) ib = 50;
+  if (ia !== ib) return ia - ib;
+  return a < b ? -1 : 1;
+}
+function groupItems(items){
+  var groups = {}, order = [];
+  items.forEach(function(it){ var b = bandOf(it); if (!groups[b]){ groups[b] = []; order.push(b); } groups[b].push(it); });
+  order.sort(bandSort);
+  return { groups:groups, order:order };
+}
+/* the order the user actually sees — what the keyboard and the default selection follow */
+function orderedItems(f){
+  var g = groupItems(sortItems(folderItems(f)));
+  var out = [];
+  g.order.forEach(function(b){ g.groups[b].forEach(function(it){ out.push(it); }); });
+  return out;
+}
+function firstSelectable(f){ return orderedItems(f)[0] || null; }
+
+function renderList(){
+  var items = sortItems(folderItems());
+  var g = groupItems(items), groups = g.groups, order = g.order;
+
+  var h = '', idx = 0, rows = [];
+  if (S.folder.kind === 'search' && !S.query){
+    h = '<div class="emptylist">Type something in <b>Find</b> and press Enter. Results come back grouped: ' +
+        'events, horizons and call outs open here in the centre — people and clusters open in the right-hand pane.</div>';
+  } else if (!items.length){
+    h = '<div class="emptylist">' + (S.folder.kind === 'search'
+        ? 'No matches for "'+esc(S.query)+'".'
+        : 'Nothing filed here yet. Drag an event row onto this folder in the left pane, or mark events Interested.') + '</div>';
+  } else {
+    order.forEach(function(b){
+      var col = !!S.collapsed[b];
+      var un = groups[b].filter(function(it){ return it.type==='event' && !READ[it.id]; }).length;
+      h += '<div class="band" data-act="band" data-id="'+esc(b)+'"><span class="tw">'+(col?'+':'-')+'</span>' +
+           esc(b) + ' <span class="cnt">('+groups[b].length+(un?', '+un+' unread':'')+')</span></div>';
+      if (!col){ groups[b].forEach(function(it){ h += rowHTML(it, idx); rows.push(it); idx++; }); }
+      else { groups[b].forEach(function(it){ rows.push(it); }); }
+    });
+  }
+  S.rows = rows;
+  $('listbody').innerHTML = h;
+  renderColHead();
+}
+
+/* =========================================================================
+   7. THE READING PANE — the event canvas takes over
+   ========================================================================= */
+function verbsHTML(evId, big){
+  var st = S.loggedIn ? RSVP[evId] : undefined;
+  var pro = S.loggedIn && PROMOTED[evId];
+  var h = '<div class="verbs">';
+  h += '<div class="vpair">' +
+       '<button class="vbtn'+(st==='interested'?' on':'')+'" data-act="v-interested" data-id="'+evId+'">&#9829; Interested</button>' +
+       '<button class="vbtn'+(st==='going'?' on':'')+'" data-act="v-going" data-id="'+evId+'">&#10003; Going</button>' +
+       '</div>';
+  h += '<span class="vsep"></span>';
+  h += '<button class="vpromo'+(pro?' on':'')+'" data-act="v-promote" data-id="'+evId+'">&#8599; Promote' +
+       (PROMOCOUNT[evId] ? ' <span style="opacity:.75">· '+PROMOCOUNT[evId]+'</span>' : '') + '</button>';
+  h += '<button class="vmore" data-act="fileinto" data-id="'+evId+'">&#128448; File into…</button>';
+  h += '<button class="vmore" data-act="discuss" data-id="'+evId+'">&#128172; Discuss</button>';
+  if (big) h += '<button class="vmore" data-act="customize" data-id="'+evId+'">&#9998; Customize theme…</button>';
+  h += '</div>';
+  h += '<div class="vnote">' +
+       (st ? 'You are <b>'+st+'</b>. ' : (S.loggedIn ? 'No state yet. ' : 'Logged out — these prompt a login. ')) +
+       'Interested and Going are one toggle on your own state. Promote is a separate broadcast — it bounces this event back to the top of your followers’ feeds.' +
+       '</div>';
+  return h;
+}
+
+function canvasHTML(evId){
+  var e = EVENTS[evId], t = TH(evId);
+  var hp = hostPersonOf(e);
+  var onHz = horizonsOf(evId);
+  var att = attendees(evId);
+  var vars = themeVars(t);
+
+  var h = '<div class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+vars+'">';
+  h += '<div class="banner"><div class="surf u-'+t.surface+'"></div><div class="wash"></div>' +
+       '<div class="bin">' + sqHTML(evId, 180, 'flex:0 0 auto;') +
+       '<div style="flex:1;min-width:0">' +
+       '<div class="evmeta" style="margin:0 0 8px">'+(e.kind==='world'?'World · public square':'Event')+
+         (isPast(e.date)?' · past':'')+' · '+esc(e.privacy||'everyone')+'</div>' +
+       '<h1 class="hl h-'+t.headline+'">'+headlineHTML(t, e.title)+'</h1>' +
+       (t.mood ? '<p class="mood">"'+esc(t.mood)+'"</p>' : '') +
+       '</div></div></div>';
+
+  h += '<div class="layer"><div class="surf u-'+t.surface+'" style="opacity:.5"></div>';
+  h += '<div class="evmeta">' +
+       '<span>Host <b>'+esc(hostLabel(e))+'</b></span>' +
+       '<span>When <b>'+fmtDate(e.date)+'</b></span>' +
+       '<span>Where <b>'+esc(cityShort(e.city))+'</b></span>' +
+       '<span>Going <b>'+attendeeCount(evId)+'</b></span>' +
+       '</div>';
+  h += '<p class="evdesc">'+esc(e.description)+'</p>';
+  h += verbsHTML(evId, true);
+
+  h += '<div class="cvsect">Who is going</div><div class="faces">' +
+       att.map(function(pid){
+         return '<span class="face" data-act="nav-person" data-id="'+pid+'">'+avHTML(pid)+esc(person(pid).displayName)+'</span>';
+       }).join('') +
+       '<span class="face" style="border-style:dashed">+ '+Math.max(0, attendeeCount(evId)-att.length)+' more</span></div>';
+
+  h += '<div class="cvsect">Appears on these horizons</div>';
+  h += onHz.length
+    ? '<div class="faces">' + onHz.map(function(k){
+        return '<span class="hzchip" data-act="nav-horizon" data-id="'+k+'">&#128448; '+esc(HORIZONS[k].name)+
+               ' <span style="opacity:.7">· '+esc(HORIZONS[k].ownerName)+'</span> &rsaquo;</span>';
+      }).join('') + '</div>'
+    : '<div class="vnote">Not on a horizon yet — drag its row onto a folder on the left.</div>';
+
+  if (hp){
+    h += '<div class="cvsect">The host</div>' +
+         '<div class="faces"><span class="face" data-act="nav-person" data-id="'+hp.id+'">'+avHTML(hp.id)+
+         esc(hp.displayName)+' <span style="opacity:.7">· opens their contact card</span></span></div>';
+  }
+
+  h += '<div class="themestrip">' +
+       ['surface: '+t.surface, 'type: '+t.type, 'headline: '+t.headline, 'motion: '+t.motion,
+        'shape: '+t.shape, 'density: '+t.density, 'square: '+t.square.pattern]
+        .map(function(s){ return '<span>'+esc(s)+'</span>'; }).join('') + '</div>';
+  h += '</div></div>';
+  return h;
+}
+
+/* A horizon opens like a folder in Explorer: its own properties and state,
+   changeable in place. No Interested / Going / Promote — those are event verbs.
+   The events inside it still carry all three, per row. */
+function horizonPropsHTML(hzId){
+  var hz = HORIZONS[hzId];
+  if (!hz) return '<div class="emptylist">That horizon is gone.</div>';
+  var mine = hzOwnedByMe(hzId), cov = hzCover(hzId);
+  var evs = hz.eventIds.map(function(id){ return EVENTS[id]; }).filter(Boolean).sort(byDate);
+
+  var h = '<div class="props">';
+  h += '<div class="ptop"><div class="pico"><div class="tab0"></div><div class="body0">' +
+       (cov ? sqHTML(cov, 32) : '<span style="font-size:18px">&#128448;</span>') + '</div></div>' +
+       '<div style="flex:1;min-width:0"><div class="pname">'+esc(hz.name)+'</div>' +
+       '<div class="psub">Event Horizon · ' + evs.length + ' events · ' + (HZCOUNT[hzId]||0) + ' followers</div></div></div>';
+
+  h += '<fieldset><legend>General</legend>' +
+       prow('Name', esc(hz.name)) +
+       prow('Type', 'Event Horizon (a folder of events)') +
+       prow('Owner', hz.isPersonalDefault ? 'You — personal default' : esc(hz.ownerName)) +
+       prow('Contains', evs.length + ' event' + (evs.length===1?'':'s')) +
+       prow('Dates', esc(hzRange(hzId))) +
+       prow('Visibility', hz.isPublished ? 'Published — anyone can follow it' : 'Private to you') +
+       prow('Followers', String(HZCOUNT[hzId]||0)) +
+       '<div class="prule"></div>' +
+       prow('Description', esc(hz.description || '—')) +
+       '</fieldset>';
+
+  h += '<fieldset><legend>Your relationship</legend>';
+  h += '<div class="prow" style="margin-bottom:7px"><span class="pk">Status</span><span class="pv">' +
+       (mine ? '<b>You own this horizon.</b>'
+             : (S.loggedIn && HZFOLLOW[hzId]) ? '<b>You follow it</b> — its events reach your Home feed.'
+                              : 'You do not follow it.') + '</span></div>';
+  h += '<div class="pacts">';
+  if (!mine){
+    h += '<button class="btn sm" data-act="followhz" data-id="'+hzId+'">' +
+         ((S.loggedIn && HZFOLLOW[hzId]) ? '&#10007; Unfollow' : '&#10003; Follow') + '</button>';
+  }
+  if (mine){
+    h += '<button class="btn sm" data-act="renamehz" data-id="'+hzId+'">Rename…</button>';
+    h += '<button class="btn sm" data-act="publishhz" data-id="'+hzId+'">' +
+         (hz.isPublished ? 'Unpublish' : 'Publish') + '</button>';
+  }
+  if (evs.length) h += '<button class="btn sm" data-act="coverhz" data-id="'+hzId+'">Edit cover…</button>';
+  h += '<button class="btn sm" data-act="openfolder" data-kind="horizon" data-id="'+hzId+'">Browse its events</button>';
+  h += '</div>';
+  h += '<div class="pnote">A horizon has no <b>Interested</b>, <b>Going</b> or <b>Promote</b> — ' +
+       'those are things you do to an event. Follow is what you do to a folder.</div>';
+  h += '</fieldset>';
+  h += '</div>';
+
+  h += '<div class="contents"><div class="chead">Contents <span class="c-dim" style="font-weight:normal">(' +
+       evs.length + ')</span></div>';
+  evs.forEach(function(e){
+    var st = stateOf(e.id);
+    h += '<div class="crow2">' + sqHTML(e.id, 32) +
+      '<div class="cmeta" data-act="row" data-rtype="event" data-id="'+e.id+'">' +
+      '<div class="ct"'+(READ[e.id]?'':' style="font-weight:bold"')+'>'+esc(e.title)+'</div>' +
+      '<div class="c-dim">'+esc(hostLabel(e))+' · '+esc(cityShort(e.city))+' · '+fmtShort(e.date)+'</div></div>' +
+      '<div class="cverbs">' +
+        '<button class="btn sm'+(st==='interested'?' def':'')+'" data-act="v-interested" data-id="'+e.id+'">&#9829;</button>' +
+        '<button class="btn sm'+(st==='going'?' def':'')+'" data-act="v-going" data-id="'+e.id+'">&#10003;</button>' +
+        '<button class="btn sm'+(PROMOTED[e.id]?' def':'')+'" data-act="v-promote" data-id="'+e.id+'">&#8599;</button>' +
+      '</div></div>';
+  });
+  if (!evs.length) h += '<div class="emptylist">This horizon is empty. Drag an event row onto it in the left pane.</div>';
+  return h + '</div>';
+}
+function prow(k, v){ return '<div class="prow"><span class="pk">'+esc(k)+'</span><span class="pv">'+v+'</span></div>'; }
+
+/* a person previews in the centre; the full card is a window (see personWindow) */
+function personPageHTML(pid){
+  var p = person(pid), hz = publishedHorizonsOf(pid);
+  return '<div style="padding:14px 16px;line-height:1.6">' +
+    '<div style="display:flex;gap:10px;align-items:center">' + avHTML(pid,'md') +
+    '<div><div style="font-size:15px;font-weight:bold">'+esc(p.displayName)+'</div>' +
+    '<div class="c-dim">@'+esc(p.handle)+' · '+esc(cityShort(p.city))+'</div></div></div>' +
+    '<p style="max-width:60ch">'+esc(p.bio||'')+'</p>' +
+    '<div class="pacts"><button class="btn sm" data-act="card" data-id="'+pid+'">Open contact card</button>' +
+    (pid !== 'self' ? '<button class="btn sm" data-act="followp" data-id="'+pid+'">'+((S.loggedIn&&PFOLLOW[pid])?'&#10007; Unfollow':'&#10003; Follow')+'</button>' +
+      '<button class="btn sm" data-act="dm" data-id="'+pid+'">Message</button>' : '') + '</div>' +
+    '<div class="c-dim" style="margin-top:9px">' + (hz.length ? hz.length + ' published horizon' + (hz.length===1?'':'s') + ' — see the card.' : 'Nothing published.') + '</div>' +
+    '<div class="kbdhint" style="margin-top:9px"><kbd>Enter</kbd> opens the card too.</div></div>';
+}
+function newsPageHTML(id){
+  var n = newsOf(id);
+  return '<div style="padding:14px 16px;max-width:58ch;line-height:1.6">' +
+    '<div class="c-dim">Network news · '+esc(n.when)+'</div>' +
+    '<div style="font-size:14px;margin-top:6px">'+esc(n.text)+'</div>' +
+    '<div class="pnote">News is what the network is doing around you. It sits in the Home feed ' +
+    'beside events, horizons and call outs — that is the point of a home feed.</div></div>';
+}
+
+function calloutPageHTML(id){
+  var c = CALLOUTS.filter(function(x){ return x.id===id; })[0];
+  return '<div style="padding:14px 16px;max-width:60ch;line-height:1.6">' +
+    '<div style="font-size:15px;font-weight:bold">&#128227; '+esc(c.title)+'</div>' +
+    '<div class="c-dim" style="margin-bottom:9px">from '+esc(c.hostName)+' · open until '+fmtDate(c.expiresAt)+'</div>' +
+    '<p>'+esc(c.body)+'</p>' +
+    '<div style="display:flex;gap:6px;margin-top:10px">' +
+    '<button class="btn sm" data-act="answercallout" data-id="'+id+'">Answer this</button>' +
+    (c.hostId ? '<button class="btn sm" data-act="nav-person" data-id="'+c.hostId+'">Open '+esc(c.hostName)+' &rsaquo;</button>' : '') +
+    '</div></div>';
+}
+
+function readHeadHTML(){
+  var it = S.sel;
+  if (!it) return '<div class="l"><span class="k">Item:</span><span class="v c-dim">nothing selected</span></div>';
+  if (it.type === 'event'){
+    var e = EVENTS[it.id], hp = hostPersonOf(e), t = TH(it.id);
+    return '<div class="l"><span class="k">From:</span><span class="v">' +
+             (hp ? '<span class="who" data-act="nav-person" data-id="'+hp.id+'">'+esc(hostLabel(e))+'</span>' : esc(hostLabel(e))) +
+             ' <span class="c-dim">· host</span></span>' +
+             '<span class="k" style="flex:0 0 auto">Date:</span><span class="v" style="flex:0 0 136px">'+fmtDate(e.date)+'</span></div>' +
+           '<div class="l"><span class="k">Subject:</span><span class="v subj">'+esc(e.title)+'</span></div>' +
+           '<div class="l"><span class="k">Where:</span><span class="v c-dim">'+esc(cityShort(e.city))+
+             ' · '+esc(e.privacy||'everyone')+' · theme "'+esc(t.mood || (t.surface+' / '+t.type))+'"</span></div>';
+  }
+  if (it.type === 'horizon'){
+    var hz = HORIZONS[it.id];
+    return '<div class="l"><span class="k">Folder:</span><span class="v subj">'+esc(hz.name)+
+             ' <span class="c-dim">· Event Horizon</span></span></div>' +
+           '<div class="l"><span class="k">Owner:</span><span class="v">'+esc(hz.ownerName)+
+             ' <span class="c-dim">· '+(hz.isPublished?'published':'private')+' · '+hz.eventIds.length+' events</span></span></div>';
+  }
+  if (it.type === 'callout'){
+    var c = CALLOUTS.filter(function(x){ return x.id===it.id; })[0];
+    return '<div class="l"><span class="k">From:</span><span class="v">'+esc(c.hostName)+'</span></div>' +
+           '<div class="l"><span class="k">Subject:</span><span class="v subj">'+esc(c.title)+' <span class="c-dim">(Call out)</span></span></div>';
+  }
+  if (it.type === 'person'){
+    var p = person(it.id);
+    return '<div class="l"><span class="k">Person:</span><span class="v subj">'+esc(p.displayName)+
+             ' <span class="c-dim">@'+esc(p.handle)+'</span></span></div>' +
+           '<div class="l"><span class="k">Where:</span><span class="v c-dim">'+esc(cityShort(p.city))+'</span></div>';
+  }
+  if (it.type === 'group'){
+    return '<div class="l"><span class="k">Cluster:</span><span class="v subj">'+esc(GROUPS[it.id].name)+'</span></div>';
+  }
+  if (it.type === 'news'){
+    return '<div class="l"><span class="k">From:</span><span class="v">Hypernet <span class="c-dim">· network news</span></span></div>' +
+           '<div class="l"><span class="k">Subject:</span><span class="v subj">'+esc(newsOf(it.id).text)+'</span></div>';
+  }
+  return '<div class="l"><span class="k">Item:</span><span class="v c-dim">nothing selected</span></div>';
+}
+
+function groupPageHTML(gid){
+  var g = GROUPS[gid];
+  return '<div style="padding:14px 16px;line-height:1.6">' +
+    '<div style="font-size:15px;font-weight:bold">'+(g.visibility==='private'?'&#128274; ':'&#9978; ')+esc(g.name)+'</div>' +
+    '<div class="c-dim">Cluster · '+esc(g.visibility)+' · '+g.memberIds.length+' members</div>' +
+    '<p style="max-width:60ch">'+esc(g.description)+'</p>' +
+    '<div class="faces">' + g.memberIds.map(function(m){
+      return '<span class="face" style="border-color:#9a9488;color:#000" data-act="nav-person" data-id="'+m+'">' +
+             avHTML(m)+esc(person(m).displayName)+'</span>'; }).join('') + '</div></div>';
+}
+
+function renderReading(){
+  var it = S.sel;
+  $('rphead').innerHTML = readHeadHTML();
+  var body = $('readbody');
+  if (!it){
+    body.innerHTML = '<div class="nosel">Select an item in the list.<br>' +
+      'An event fills this pane with its own world —<br>its colours, its texture, its typeface.<br>' +
+      'A horizon shows its folder properties.<br><br>' +
+      '<span class="kbdhint"><kbd>&#8593;</kbd> <kbd>&#8595;</kbd> to move · <kbd>Enter</kbd> to open it</span></div>';
+    return;
+  }
+  if (it.type === 'event')        body.innerHTML = canvasHTML(it.id);
+  else if (it.type === 'horizon') body.innerHTML = horizonPropsHTML(it.id);
+  else if (it.type === 'callout') body.innerHTML = calloutPageHTML(it.id);
+  else if (it.type === 'person')  body.innerHTML = personPageHTML(it.id);
+  else if (it.type === 'group')   body.innerHTML = groupPageHTML(it.id);
+  else if (it.type === 'news')    body.innerHTML = newsPageHTML(it.id);
+  else body.innerHTML = '<div class="nosel">Nothing to show.</div>';
+  body.scrollTop = 0;
+}
+
+function renderItemWin(){
+  var w = $('itemwin');
+  if (!S.itemOpen || !S.sel || S.sel.type !== 'event'){ w.className = ''; return; }
+  w.className = 'on';
+  $('iwtitle').textContent = EVENTS[S.sel.id].title + ' — Event';
+  $('iwbody').innerHTML = canvasHTML(S.sel.id);
+}
+</script>
+<script>
+/* =========================================================================
+   8. CALENDAR MODE — the "what am I doing in three weeks" surface
+   ========================================================================= */
+var CALONLYMINE = false;
+/* the calendar is a VIEW of the destination you are in, not a place of its own */
+function calEvents(){
+  return destEvents().filter(function(e){ return (CALONLYMINE && S.loggedIn) ? !!RSVP[e.id] : true; });
+}
+function eventsOn(iso){ return calEvents().filter(function(e){ return e.date === iso; }).sort(function(a,b){ return a.title<b.title?-1:1; }); }
+function calBlock(e, wide){
+  var t = TH(e.id), sel = S.sel && S.sel.type==='event' && S.sel.id===e.id;
+  return '<div class="calev'+(sel?' sel':'')+'" style="'+themeVars(t)+'" data-act="row" data-rtype="event" data-id="'+e.id+'" title="'+esc(e.title)+'">' +
+    '<span class="cg">'+t.square.glyph+'</span><span>'+esc(e.title)+'</span>' +
+    (wide ? '<span style="margin-left:auto;opacity:.75">'+esc(cityShort(e.city))+'</span>' : '') +
+    (S.loggedIn && RSVP[e.id]==='going' ? '<span style="margin-left:auto">&#10003;</span>' : '') + '</div>';
+}
+function monthGrid(anchorIso){
+  var a = dOf(anchorIso), y = a.getFullYear(), m = a.getMonth();
+  var first = new Date(y, m, 1, 18), start = new Date(first);
+  start.setDate(1 - ((first.getDay() + 6) % 7));            /* weeks start Monday */
+  var h = '<div class="caldow">' + ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(function(d){ return '<div>'+d+'</div>'; }).join('') + '</div>';
+  h += '<div class="calgrid">';
+  for (var w = 0; w < 6; w++){
+    h += '<div class="calrow">';
+    for (var d = 0; d < 7; d++){
+      var day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + w*7 + d, 18);
+      var iso = isoOf(day), evs = eventsOn(iso);
+      h += '<div class="calcell'+(day.getMonth()!==m?' oth':'')+(iso===TODAY_ISO?' today':'')+'" data-act="calday" data-id="'+iso+'">' +
+           '<span class="dn">'+day.getDate()+(day.getDate()===1?' '+MON[day.getMonth()]:'')+'</span>' +
+           evs.map(function(e){ return calBlock(e); }).join('') + '</div>';
+    }
+    h += '</div>';
+  }
+  return h + '</div>';
+}
+function weekGrid(anchorIso){
+  var a = dOf(anchorIso), start = new Date(a.getFullYear(), a.getMonth(), a.getDate() - ((a.getDay()+6)%7), 18);
+  var h = '<div class="calgrid" style="flex-direction:row">';
+  for (var d = 0; d < 7; d++){
+    var day = new Date(start.getFullYear(), start.getMonth(), start.getDate()+d, 18), iso = isoOf(day);
+    h += '<div class="weekcol'+(iso===TODAY_ISO?' today':'')+'"><div class="wh">'+DAY[day.getDay()]+' '+day.getDate()+' '+MON[day.getMonth()]+'</div>' +
+         '<div class="wb" data-act="calday" data-id="'+iso+'">' + eventsOn(iso).map(function(e){ return calBlock(e); }).join('') + '</div></div>';
+  }
+  return h + '</div>';
+}
+function dayGrid(anchorIso){
+  var evs = eventsOn(anchorIso);
+  var h = '<div class="calgrid">';
+  for (var hr = 8; hr <= 22; hr++){
+    var label = ('0'+hr).slice(-2)+':00';
+    h += '<div class="dayband"><div class="hr">'+label+'</div><div class="slot">' +
+         (hr === 18 ? evs.map(function(e){ return calBlock(e, true); }).join('') : '') + '</div></div>';
+  }
+  if (!evs.length) h += '<div class="emptylist">Nothing on '+fmtDate(anchorIso)+'.</div>';
+  return h + '</div>';
+}
+function miniNav(){
+  var a = dOf(S.calAnchor), y = a.getFullYear(), m = a.getMonth();
+  var first = new Date(y, m, 1, 18), start = new Date(first);
+  start.setDate(1 - ((first.getDay()+6)%7));
+  var h = '<div class="mininav"><div class="mh"><span class="nb" data-act="calnav" data-id="-1">&#9664;</span>' +
+    '<span class="spring" style="text-align:center">'+MONFULL[m]+' '+y+'</span>' +
+    '<span class="nb" data-act="calnav" data-id="1">&#9654;</span></div><div class="minigrid">';
+  ['M','T','W','T','F','S','S'].forEach(function(d){ h += '<div class="hd">'+d+'</div>'; });
+  for (var i = 0; i < 42; i++){
+    var day = new Date(start.getFullYear(), start.getMonth(), start.getDate()+i, 18), iso = isoOf(day);
+    var cls = 'd' + (day.getMonth()!==m ? ' oth' : '') + (eventsOn(iso).length ? ' has' : '') + (iso===S.calAnchor ? ' cur' : '');
+    h += '<div class="'+cls+'" data-act="calday" data-id="'+iso+'">'+day.getDate()+'</div>';
+  }
+  return h + '</div></div>';
+}
+function renderCalendar(){
+  var title = S.calMode === 'month' ? MONFULL[dOf(S.calAnchor).getMonth()] + ' ' + dOf(S.calAnchor).getFullYear()
+            : S.calMode === 'week'  ? 'Week of ' + fmtDate(S.calAnchor)
+            : fmtDate(S.calAnchor);
+  var bar = '<div class="calbar"><span class="ttl">'+esc(title)+'</span>' +
+    '<button class="btn sm" data-act="calnav" data-id="-1">&#9664;</button>' +
+    '<button class="btn sm" data-act="caltoday">Today</button>' +
+    '<button class="btn sm" data-act="calnav" data-id="1">&#9654;</button>' +
+    '<span class="spring"></span>' +
+    ['day','week','month'].map(function(m){
+      return '<button class="btn sm'+(S.calMode===m?' def':'')+'" data-act="calmode" data-id="'+m+'">'+titleCase(m)+'</button>';
+    }).join('') +
+    (S.loggedIn ? '<label style="display:flex;gap:4px;align-items:center;margin-left:8px"><input type="checkbox" data-act="calmine"'+
+    (CALONLYMINE?' checked':'')+'> only mine</label>' : '') + '</div>';
+  $('calmain').innerHTML = bar + (S.calMode === 'month' ? monthGrid(S.calAnchor)
+                                : S.calMode === 'week'  ? weekGrid(S.calAnchor) : dayGrid(S.calAnchor));
+
+  var side = miniNav();
+  side += '<div class="mininav" style="flex:1;min-height:0;overflow:auto">';
+  if (S.sel && S.sel.type === 'event'){
+    var e = EVENTS[S.sel.id], t = TH(e.id);
+    side += '<div class="minicanvas" style="height:auto">' +
+      '<div class="canvas t-'+t.type+' d-packed sh-'+t.shape+' mo-'+t.motion+'" style="'+themeVars(t)+';min-height:0">' +
+      '<div class="banner" style="height:86px"><div class="surf u-'+t.surface+'"></div><div class="wash"></div>' +
+      '<div class="bin" style="padding:8px"><div style="flex:1;min-width:0">' +
+      '<h1 class="hl h-'+t.headline+'" style="font-size:17px">'+headlineHTML(t, e.title)+'</h1></div></div></div>' +
+      '<div class="layer" style="padding:8px 9px"><div class="surf u-'+t.surface+'" style="opacity:.45"></div>' +
+      (t.mood ? '<div class="mood" style="font-size:11px;margin:0 0 6px">"'+esc(t.mood)+'"</div>' : '') +
+      '<div class="evmeta" style="font-size:10px;margin:0">'+fmtShort(e.date)+' · '+esc(cityShort(e.city))+'</div>' +
+      '</div></div></div>' +
+      '<div style="padding:5px 4px;display:flex;gap:4px;flex-wrap:wrap">' +
+      '<button class="btn sm" data-act="v-going" data-id="'+e.id+'">'+(RSVP[e.id]==='going'?'&#10003; Going':'Going')+'</button>' +
+      '<button class="btn sm" data-act="v-interested" data-id="'+e.id+'">'+(RSVP[e.id]==='interested'?'&#9829; Saved':'Interested')+'</button>' +
+      '<button class="btn sm" data-act="open">Open</button></div>';
+  } else {
+    side += '<div style="padding:8px;color:#555;line-height:1.5">Click a block to preview it here. ' +
+            '<b>Enter</b> opens the full event.</div>';
+  }
+  side += '</div>';
+  $('calside').innerHTML = side;
+}
+
+/* =========================================================================
+   9. THE RIGHT PANE — active chats only. This is the chat dock, nothing else.
+      People live in the left pane and open in the centre / as a card window.
+   ========================================================================= */
+function publishedHorizonsOf(pid){
+  return Object.keys(HORIZONS).filter(function(k){
+    var h = HORIZONS[k];
+    return h.isPublished && (h.ownerId === pid || (h.ownerGroupId && GROUPS[h.ownerGroupId] && GROUPS[h.ownerGroupId].adminIds.indexOf(pid) >= 0));
+  });
+}
+/* ---- the contact card: a person opens as a window, Outlook-style ---- */
+function cardBodyHTML(pid){
+  var p = person(pid), hz = publishedHorizonsOf(pid), st = PRESENCE[pid] || 'offline';
+  var h = '<div style="display:flex;gap:10px;align-items:center;margin-bottom:9px">' + avHTML(pid,'md') +
+    '<div><div style="font-size:14px;font-weight:bold">'+esc(p.displayName)+'</div>' +
+    '<div class="c-dim">@'+esc(p.handle)+' · '+esc(cityShort(p.city))+
+    (pid === 'self' ? '' : ' · <span class="dot '+st+'" style="display:inline-block;vertical-align:middle"></span> '+st) +
+    '</div></div></div>';
+  h += '<div class="fieldset"><legend>About</legend>' +
+       '<div style="line-height:1.55;max-width:46ch">'+esc(p.bio||'—')+'</div>';
+  if ((p.skills||[]).length){
+    h += '<div class="prule"></div><div class="prow"><span class="pk">Skills</span><span class="pv">' +
+         esc(p.skills.map(function(s){ return titleCase(s.split('/')[1]||s); }).join(', ')) + '</span></div>';
+  }
+  h += '<div class="prow"><span class="pk">City</span><span class="pv">'+esc(cityShort(p.city))+'</span></div>';
+  h += '</div>';
+  if (pid !== 'self'){
+    h += '<div class="pacts" style="margin-bottom:9px">' +
+      '<button class="btn sm" data-act="followp" data-id="'+pid+'">'+((S.loggedIn&&PFOLLOW[pid])?'&#10007; Unfollow':'&#10003; Follow')+'</button>' +
+      '<button class="btn sm" data-act="dm" data-id="'+pid+'">Message</button>' +
+      (S.loggedIn ? '' : '<span class="c-dim">both prompt a login</span>') + '</div>';
+  }
+  h += '<div class="fieldset"><legend>Published horizons</legend>';
+  if (hz.length){
+    h += hz.map(function(k){
+      return '<div class="linkrow" data-act="nav-horizon" data-id="'+k+'" style="padding:3px 4px">' +
+             hzIconHTML(k) + ' <span>'+esc(HORIZONS[k].name)+'</span>' +
+             '<span class="c-dim">· '+HORIZONS[k].eventIds.length+' events</span>' +
+             '<span class="arrow">&rsaquo;</span></div>';
+    }).join('') + '<div class="pnote">Clicking one opens it in the centre, as a folder.</div>';
+  } else h += '<div class="c-dim">Nothing published.</div>';
+  h += '</div>';
+  return h;
+}
+function cardGroupHTML(gid){
+  var g = GROUPS[gid];
+  var h = '<div style="font-size:14px;font-weight:bold;margin-bottom:2px">' +
+          (g.visibility==='private'?'&#128274; ':'&#9978; ')+esc(g.name)+'</div>' +
+          '<div class="c-dim" style="margin-bottom:9px">Cluster · '+esc(g.visibility)+' · '+g.memberIds.length+' members</div>';
+  h += '<div class="fieldset"><legend>About</legend><div style="line-height:1.55;max-width:46ch">'+esc(g.description)+'</div></div>';
+  h += '<div class="fieldset"><legend>Members</legend>' + g.memberIds.map(function(m){
+    return '<div class="linkrow" data-act="card" data-id="'+m+'" style="padding:3px 4px">'+avHTML(m)+
+           '<span>'+esc(person(m).displayName)+'</span><span class="arrow">&rsaquo;</span></div>'; }).join('') + '</div>';
+  return h;
+}
+function chatPaneHTML(){
+  var cid = S.activeChat, c = CHATS[cid];
+  var h = '<div class="grphead">Conversations</div>';
+  Object.keys(CHATS).forEach(function(k){
+    h += '<div class="buddy'+(k===cid?' sel':'')+'" data-act="chatsel" data-id="'+k+'">' +
+      '<span class="dot '+(CHATS[k].kind==='dm' ? (PRESENCE[CHATS[k].memberIds[0]]||'offline') : 'online')+'"></span>' +
+      '<span class="nm">'+(CHATS[k].kind==='dm'?'':'&#9978; ')+esc(CHATS[k].name)+'</span>' +
+      (UNREADCHAT[k] ? '<span class="tag" style="color:#b00">new</span>' : '') + '</div>';
+  });
+  h += '<div class="grphead">'+esc(c.name)+'</div>';
+  h += '<div class="chatscroll" id="chatscroll">' + c.messages.map(function(m){
+    if (m.card){
+      var e = EVENTS[m.card];
+      return '<div class="msg"><span class="mfrom" style="color:#444">'+esc(person(m.from).displayName)+'</span> <span class="mt">'+esc(m.t)+'</span>' +
+             '<div class="evcard" data-act="row" data-rtype="event" data-id="'+m.card+'">'+sqHTML(m.card,32)+
+             '<div><div class="t">'+esc(e.title)+'</div><div class="c-dim">'+fmtShort(e.date)+' · '+esc(cityShort(e.city))+'</div></div></div></div>';
+    }
+    return '<div class="msg"><span class="mfrom">'+esc(m.from==='self'?(S.loggedIn?S.me.name:'You'):person(m.from).displayName)+':</span> ' +
+           esc(m.text) + ' <span class="mt">'+esc(m.t)+'</span></div>';
+  }).join('') + '</div>';
+  h += '<div class="chatinput"><input type="text" id="chatbox" placeholder="Message…"><button class="btn sm" data-act="sendchat">Send</button></div>';
+  return h;
+}
+function renderContacts(){
+  var vis = rightVisible();
+  $('contacts').style.display = vis ? 'flex' : 'none';
+  $('rightrail').className = 'rail' + (vis ? '' : ' on');
+  if (!vis) return;
+  var body = $('contactbody');
+  var un = Object.keys(UNREADCHAT).filter(function(k){ return UNREADCHAT[k]; }).length;
+  $('contactshead').textContent = 'Chats' + (S.loggedIn && un ? ' (' + un + ')' : '');
+  if (!S.loggedIn){
+    body.innerHTML = '<div class="mini" style="margin:auto;text-align:center;line-height:1.6;color:#444">' +
+      '<div style="font-size:22px">&#128172;</div><b>Log in to use chats</b><br>' +
+      'This rail is one thing only: your<br>active conversations.<br>' +
+      'People and clusters are in the left pane.<br><br>' +
+      '<button class="btn sm" data-act="login">Log in</button></div>';
+    return;
+  }
+  body.innerHTML = chatPaneHTML();
+}
+
+/* =========================================================================
+   10. CHROME — menus, toolbar state, status bar
+   ========================================================================= */
+/* Every control below is drawn only when it does something.
+   Nothing is greyed out "for period accuracy". */
+function tb(act, icon, label, on, id){
+  return '<div class="tbtn'+(on?' on':'')+'" data-act="'+act+'"'+(id?' data-id="'+id+'"':'')+'>' +
+         '<span class="ic">'+icon+'</span><span class="lb">'+esc(label)+'</span></div>';
+}
+function renderToolbar(){
+  var h = tb('newmenu','&#10035;','New ▾') + '<div class="tsep"></div>';
+  var t = S.sel ? S.sel.type : null;
+  if (t === 'event' || t === 'person') h += tb('open','&#128194;','Open');
+  if (t === 'event'){
+    h += tb('v-interested','&#9829;','Interested', S.loggedIn && RSVP[S.sel.id]==='interested');
+    h += tb('v-going','&#10003;','Going', S.loggedIn && RSVP[S.sel.id]==='going');
+    h += tb('v-promote','&#8599;','Promote', S.loggedIn && PROMOTED[S.sel.id]);
+    h += '<div class="tsep"></div>';
+    h += tb('fileinto','&#128448;','File into…');
+    h += tb('discuss','&#128172;','Discuss');
+  }
+  if (t === 'horizon' && !hzOwnedByMe(S.sel.id)){
+    var fh = S.loggedIn && HZFOLLOW[S.sel.id];
+    h += tb('followhz', fh ? '&#10007;' : '&#10003;', fh ? 'Unfollow' : 'Follow', fh, S.sel.id);
+  }
+  if (t === 'person' && S.sel.id !== 'self'){
+    var fp = S.loggedIn && PFOLLOW[S.sel.id];
+    h += tb('followp', fp ? '&#10007;' : '&#10003;', fp ? 'Unfollow' : 'Follow', fp, S.sel.id);
+    h += tb('dm','&#128172;','Message', false, S.sel.id);
+  }
+  if (t === 'callout') h += tb('answercallout','&#9997;','Answer', false, S.sel.id);
+  if (S.hi > 0 || S.hi < S.hist.length-1){
+    h += '<div class="tsep"></div>';
+    if (S.hi > 0) h += tb('back','&#9668;','Back');
+    if (S.hi < S.hist.length-1) h += tb('fwd','&#9658;','Forward');
+  }
+  $('tbmain').innerHTML = h;
+  $('clearwrap').innerHTML = (S.query || $('searchbox').value)
+    ? '<button class="btn sm" data-act="clearsearch">Clear</button>' : '';
+}
+function renderViewSwitch(){
+  if (!hasCalendar()){ $('viewswitch').innerHTML = ''; return; }
+  var v = viewOf();
+  $('viewswitch').innerHTML = '<span class="viewswitch">' +
+    '<span class="vs'+(v==='list'?' on':'')+'" data-act="setview" data-id="list">LIST</span>' +
+    '<span class="vs'+(v==='calendar'?' on':'')+'" data-act="setview" data-id="calendar">CALENDAR</span></span>';
+}
+function renderChrome(){
+  var fn = folderName(), cal = isCal();
+  $('wintitle').textContent = fn + (cal ? ' (calendar)' : '') + ' — Hypernet';
+  $('cbarname').textContent = fn;
+  $('cbarmeta').textContent = cal
+    ? '— ' + folderSub() + ', on a calendar'
+    : '— ' + folderSub();
+  $('authmi').textContent = S.loggedIn ? (S.me.name + ' ▾') : 'Log in';
+  $('centerwrap').style.display = cal ? 'none' : 'flex';
+  $('calwrap').style.display = cal ? 'flex' : 'none';
+  $('centerwrap').className = S.preview;
+  renderToolbar();
+  renderViewSwitch();
+
+  var items = cal ? calEvents().map(function(e){ return {type:'event',id:e.id}; }) : folderItems();
+  $('sb2').textContent = 'Items: ' + items.length;
+  $('sb3').textContent = 'Undiscovered: ' + unreadCount(items);
+  $('sb4').textContent = S.loggedIn ? ('Connected as @' + S.me.handle) : 'Not logged in — browsing public';
+  status(fn + ' · ' + (cal ? (CALONLYMINE ? 'only your Going / Interested' : 'everything in this destination')
+    : (S.loggedIn ? 'Going ' + rsvpList('going').length + ', Interested ' + rsvpList('interested').length : 'read-only')));
+}
+
+/* ---------- popup menus ---------- */
+var POP = null;
+function closePopup(){ if (POP){ POP.remove(); POP = null; }
+  document.querySelectorAll('#menubar .mi').forEach(function(m){ m.classList.remove('open'); }); }
+function popup(x, y, items){
+  closePopup();
+  var d = document.createElement('div');
+  d.className = 'popmenu';
+  /* drop anything that would be dead, and any separator left stranded by it */
+  items = items.filter(function(it){ return it === '-' || (it && it.cmd); });
+  items = items.filter(function(it, i){
+    if (it !== '-') return true;
+    return i > 0 && i < items.length-1 && items[i-1] !== '-';
+  });
+  d.innerHTML = items.map(function(it){
+    if (it === '-') return '<div class="pi sepi"></div>';
+    return '<div class="pi" data-pop="'+esc(it.cmd||'')+'" data-arg="'+esc(it.arg||'')+'">' +
+      '<span class="chk">'+(it.check?'&#10003;':it.radio?'&#8226;':'')+'</span><span>'+it.label+'</span>' +
+      (it.acc?'<span class="acc">'+esc(it.acc)+'</span>':'') + '</div>';
+  }).join('');
+  document.body.appendChild(d);
+  var w = d.offsetWidth, hgt = d.offsetHeight;
+  d.style.left = Math.min(x, window.innerWidth - w - 4) + 'px';
+  d.style.top  = Math.min(y, window.innerHeight - hgt - 4) + 'px';
+  POP = d;
+}
+var MENUS = {
+  file: function(){
+    var m = [
+      { label:'New Event…', cmd:'new-event' },
+      { label:'New Event Horizon…', cmd:'new-horizon' },
+      { label:'New Group chat…', cmd:'new-chat' },
+      { label:'New Call out…', cmd:'new-callout' },
+      '-' ];
+    if (S.sel && (S.sel.type === 'event' || S.sel.type === 'person'))
+      m.push({ label:'Open selected item', cmd:'open', acc:'Enter' });
+    if (S.sel && S.sel.type === 'event'){
+      m.push({ label:'File into horizon…', cmd:'fileinto' });
+      m.push({ label:'Customize this event’s theme…', cmd:'customize' });
+    }
+    m.push('-');
+    m.push({ label: S.loggedIn ? 'Log out' : 'Log in…', cmd: S.loggedIn ? 'logout' : 'login' });
+    return m;
+  },
+  edit: function(){
+    var m = [];
+    if (S.sel && S.sel.type === 'event'){
+      m.push({ label: READ[S.sel.id] ? 'Mark as undiscovered' : 'Mark as discovered',
+               cmd: READ[S.sel.id] ? 'mark-unread' : 'mark-read' });
+    }
+    m.push({ label:'Mark everything here as discovered', cmd:'mark-all' });
+    m.push('-');
+    m.push({ label:'Find…', cmd:'focus-find', acc:'/' });
+    if (S.query) m.push({ label:'Clear search', cmd:'clearsearch' });
+    return m;
+  },
+  view: function(){
+    var m = [
+      { label:'Reading Pane: Right',  cmd:'preview', arg:'right',  radio:S.preview==='right' },
+      { label:'Reading Pane: Bottom', cmd:'preview', arg:'bottom', radio:S.preview==='bottom' },
+      { label:'Reading Pane: Off',    cmd:'preview', arg:'off',    radio:S.preview==='off' },
+      '-',
+      { label:'Folder List', cmd:'toggle-left',  check:S.leftOpen },
+      { label:'Chats',       cmd:'toggle-right', check:S.rightOpen },
+      '-' ];
+    if (hasCalendar()){
+      m.push({ label:'List view',     cmd:'setview', arg:'list',     radio:viewOf()==='list' });
+      m.push({ label:'Calendar view', cmd:'setview', arg:'calendar', radio:viewOf()==='calendar' });
+      m.push('-');
+    }
+    if (!isCal()){
+      ['date','title','host','city','state'].forEach(function(k){
+        m.push({ label:'Arrange by ' + titleCase(k), cmd:'sort', arg:k, radio:S.sort.key===k });
+      });
+      m.push('-');
+      m.push({ label:'Expand all groups',   cmd:'expand-all' });
+      m.push({ label:'Collapse all groups', cmd:'collapse-all' });
+    }
+    return m;
+  },
+  go: function(){
+    var m = [
+      { label:'Home feed', cmd:'folder', arg:'home',     radio:S.folder.kind==='home' },
+      { label:'Events',    cmd:'folder', arg:'events',   radio:S.folder.kind==='events' },
+      { label:'Horizons',  cmd:'folder', arg:'horizons', radio:S.folder.kind==='horizons' },
+      { label:'People',    cmd:'folder', arg:'people',   radio:S.folder.kind==='people' },
+      { label:'Call outs', cmd:'folder', arg:'callouts', radio:S.folder.kind==='callouts' } ];
+    if (S.loggedIn){
+      m.push('-');
+      m.push({ label:'Interested', cmd:'folder', arg:'interested' });
+      m.push({ label:'Going',      cmd:'folder', arg:'going' });
+      m.push({ label:'Hosting',    cmd:'folder', arg:'hosting' });
+    }
+    if (S.hi > 0 || S.hi < S.hist.length-1){
+      m.push('-');
+      if (S.hi > 0) m.push({ label:'Back', cmd:'back' });
+      if (S.hi < S.hist.length-1) m.push({ label:'Forward', cmd:'fwd' });
+    }
+    return m;
+  },
+  help: function(){ return [ { label:'About Hypernet', cmd:'about' } ]; }
+};
+function openMenu(name, node){
+  var wasOpen = node.classList.contains('open');
+  closePopup();
+  if (wasOpen) return;
+  node.classList.add('open');
+  var r = node.getBoundingClientRect();
+  popup(r.left, r.bottom, MENUS[name]());
+}
+
+/* =========================================================================
+   11. DIALOGS
+   ========================================================================= */
+var DLGS = [];
+function closeDialogs(){ DLGS.forEach(function(d){ d.remove(); }); DLGS = []; $('mask').style.display = 'none'; }
+function dialog(title, bodyHTML, footHTML, w){
+  closePopup();
+  $('mask').style.display = 'block';
+  var d = document.createElement('div');
+  d.className = 'dlg';
+  d.style.width = (w||420) + 'px';
+  d.style.left = Math.max(8, (window.innerWidth - (w||420))/2) + 'px';
+  d.style.top = '76px';
+  d.innerHTML = '<div class="dbar"><span>&#9635;</span><span>'+esc(title)+'</span><span class="spring"></span>' +
+    '<span class="wbtn" data-act="closedlg">&#10005;</span></div>' +
+    '<div class="dbody">'+bodyHTML+'</div><div class="dfoot">'+footHTML+'</div>';
+  document.body.appendChild(d);
+  DLGS.push(d);
+  var bar = d.querySelector('.dbar');
+  bar.addEventListener('mousedown', function(ev){
+    if (ev.target.getAttribute('data-act')) return;
+    var sx = ev.clientX, sy = ev.clientY, ox = d.offsetLeft, oy = d.offsetTop;
+    function mv(e2){ d.style.left = (ox + e2.clientX - sx)+'px'; d.style.top = Math.max(0, oy + e2.clientY - sy)+'px'; }
+    function up(){ document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); }
+    document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+  });
+  return d;
+}
+function loginDialog(){
+  var d = dialog('Log in to Hypernet',
+    '<div class="drow"><label>Display name</label><input type="text" id="lg-name" value="Michal"></div>' +
+    '<div class="drow"><label>Handle</label><input type="text" id="lg-handle" value="mike"></div>' +
+    '<div class="drow"><label></label><span class="c-dim">This prototype never asks for a password and never collects one.</span></div>',
+    '<button class="btn def" data-act="dologin">Log in</button><button class="btn" data-act="closedlg">Cancel</button>', 400);
+  setTimeout(function(){ var n = $('lg-name'); if (n){ n.focus(); n.select(); } }, 20);
+}
+function doLogin(){
+  var n = ($('lg-name')||{}).value || 'You', hnd = ($('lg-handle')||{}).value || 'you';
+  S.loggedIn = true; S.me = { name:n, handle:hnd };
+  PEOPLE['self'].displayName = n; PEOPLE['self'].handle = hnd;
+  if (!Object.keys(RSVP).length){
+    RSVP['evt-deep-listening'] = 'interested';
+    RSVP['evt-fill-0'] = 'going';
+    RSVP['evt-fill-6'] = 'going';
+    READ['evt-deep-listening'] = true; READ['evt-fill-0'] = true; READ['evt-fill-6'] = true;
+  }
+  closeDialogs(); render();
+  toast('Logged in as @'+hnd, ' Your states, horizons and chats are live.');
+}
+function doLogout(){
+  S.loggedIn = false; S.me = { name:'You', handle:'you' };
+  var open = { home:1, events:1, horizons:1, people:1, callouts:1, horizon:1, search:1 };
+  if (!open[S.folder.kind]) S.folder = { kind:'home', id:null };
+  if (S.sel && S.sel.type === 'person' && S.sel.id === 'self') S.sel = firstSelectable();
+  closeCard(); closeDialogs(); closePopup(); render();
+  toast('Logged out', ' Everything public still browses freely.');
+}
+function aboutDialog(){
+  dialog('About Hypernet',
+    '<div style="display:flex;gap:12px"><div style="font-size:34px">&#9635;</div><div style="line-height:1.6">' +
+    '<b>Hypernet — Home feed (concept 08)</b><br>' +
+    'Outlook 2000 bones: folder list, sortable list, reading pane, calendar.<br>' +
+    'Left browses, centre opens, the right rail is chats and nothing else.<br>' +
+    'The frame is deliberately beige. Every drop of colour belongs to a host.<br><br>' +
+    '<span class="c-dim">Fixtures: ' + Object.keys(EVENTS).length + ' events, ' + Object.keys(HORIZONS).length +
+    ' horizons, ' + H.people.length + ' people. Demo date ' + TODAY_ISO + '.</span></div></div>',
+    '<button class="btn def" data-act="closedlg">OK</button>', 470);
+}
+function renameHzDialog(hzId){
+  dialog('Rename horizon',
+    '<div class="drow"><label>Name</label><input type="text" id="rh-n" value="'+esc(HORIZONS[hzId].name)+'"></div>' +
+    '<div class="drow"><label>Description</label><textarea id="rh-d" rows="3">'+esc(HORIZONS[hzId].description||'')+'</textarea></div>',
+    '<button class="btn def" data-act="dorename" data-id="'+hzId+'">OK</button>' +
+    '<button class="btn" data-act="closedlg">Cancel</button>', 420);
+  setTimeout(function(){ var n = $('rh-n'); if (n){ n.focus(); n.select(); } }, 20);
+}
+function coverHzDialog(hzId){
+  var hz = HORIZONS[hzId], cur = hzCover(hzId);
+  var h = '<div style="margin-bottom:8px">Pick which event’s square stands for <b>'+esc(hz.name)+'</b> as a folder.</div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:7px">' +
+    hz.eventIds.filter(function(id){ return EVENTS[id]; }).map(function(id){
+      return '<span class="linkrow" data-act="docover" data-id="'+hzId+'" data-ev="'+id+'" ' +
+        'style="flex-direction:column;gap:3px;padding:5px;border:2px solid '+(id===cur?'#0a246a':'transparent')+'">' +
+        sqHTML(id, 56) + '<span style="max-width:76px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+        esc(EVENTS[id].title) + '</span></span>';
+    }).join('') + '</div>';
+  dialog('Edit cover — ' + hz.name, h, '<button class="btn" data-act="closedlg">Close</button>', 460);
+}
+function fileIntoDialog(evId){
+  var opts = MYHORIZONS.concat(Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k]; }));
+  var h = '<div style="margin-bottom:8px">File <b>'+esc(EVENTS[evId].title)+'</b> into a horizon. ' +
+          '<span class="c-dim">(Dragging the row onto a folder does the same thing.)</span></div>';
+  h += opts.map(function(k){
+    var has = HORIZONS[k].eventIds.indexOf(evId) >= 0;
+    return '<div class="linkrow" data-act="dofile" data-id="'+evId+'" data-hz="'+k+'">&#128448; <span>'+esc(HORIZONS[k].name)+'</span>' +
+           '<span class="arrow">'+(has?'already there':'file &rsaquo;')+'</span></div>';
+  }).join('');
+  dialog('File into horizon', h, '<button class="btn" data-act="closedlg">Close</button>', 400);
+}
+function newChatDialog(){
+  var h = '<div class="drow"><label>Name</label><input type="text" id="nc-name" value="New crew"></div>' +
+    '<div class="fieldset"><legend>Invite</legend>' + CREW.map(function(id){
+      return '<label style="display:block;padding:1px 0"><input type="checkbox" class="nc-m" value="'+id+'"> '+esc(person(id).displayName)+'</label>';
+    }).join('') + '</div>';
+  dialog('New group chat', h, '<button class="btn def" data-act="donewchat">Create</button><button class="btn" data-act="closedlg">Cancel</button>', 380);
+}
+function newCalloutDialog(){
+  dialog('New call out',
+    '<div class="drow"><label>Looking for</label><input type="text" id="co-t" value="Rigger"></div>' +
+    '<div class="drow"><label>Body</label><textarea id="co-b" rows="4">We need a pair of hands for the truss on the Friday build.</textarea></div>' +
+    '<div class="drow"><label>Open until</label><input type="text" id="co-x" value="2026-11-30"></div>',
+    '<button class="btn def" data-act="donewcallout">Post</button><button class="btn" data-act="closedlg">Cancel</button>', 420);
+}
+function newHorizonDialog(){
+  dialog('New event horizon',
+    '<div class="drow"><label>Name</label><input type="text" id="nh-n" value="Untitled horizon"></div>' +
+    '<div class="drow"><label>Description</label><textarea id="nh-d" rows="3">What this collection is for.</textarea></div>' +
+    '<div class="drow"><label></label><label><input type="checkbox" id="nh-p"> Publish it (others can follow)</label></div>',
+    '<button class="btn def" data-act="donewhorizon">Create</button><button class="btn" data-act="closedlg">Cancel</button>', 420);
+}
+</script>
+<script>
+/* =========================================================================
+   12. THE HOST'S EDITOR — New Event wizard, ending in Customize
+   ========================================================================= */
+var PALSETS = [
+  { n:'Basement teal',   p:{ bg:'#06080e', ink:'#e9e7e0', accent:'#6fd6c8', accent2:'#17233a', dim:'#7d8796' } },
+  { n:'Onion orange',    p:{ bg:'#1a0703', ink:'#ffe9d6', accent:'#ff5a1f', accent2:'#7a1b06', dim:'#b4795e' } },
+  { n:'Cathode green',   p:{ bg:'#000000', ink:'#d8ffe8', accent:'#39ff88', accent2:'#ff2fd0', dim:'#4c7f66' } },
+  { n:'Morning paper',   p:{ bg:'#f6f0e4', ink:'#241f18', accent:'#d98d3f', accent2:'#e8dcc4', dim:'#8b8172' } },
+  { n:'Dust and gold',   p:{ bg:'#3a2a12', ink:'#fdf3df', accent:'#e6b23c', accent2:'#7a5a24', dim:'#b9a077' } },
+  { n:'Nordic blue',     p:{ bg:'#0d1b2e', ink:'#eaf2ff', accent:'#5ea8ff', accent2:'#12304f', dim:'#7d97b8' } },
+  { n:'Warning yellow',  p:{ bg:'#16181a', ink:'#f2f4f2', accent:'#ffd400', accent2:'#2e3438', dim:'#8a9196' } },
+  { n:'Violet static',   p:{ bg:'#101014', ink:'#ececf0', accent:'#a98cff', accent2:'#2a2440', dim:'#807c93' } }
+];
+var SURFS = ['grain','paper','dither','halftone','scanlines','grid','rays','photocopy','plasma','none'];
+var TYPES = ['serif','grotesk','mono','stencil','display'];
+var HEADS = ['huge','condensed','stacked','outlined','marquee'];
+var MOTS  = ['none','drift','pulse','flicker','scroll'];
+var SHAPES= ['sharp','rounded','cut'];
+var DENS  = ['airy','packed'];
+var PATS  = ['plain','stripe','grid','dither','rays','scan','halftone','moon'];
+var GLYS  = ['◆','✳','▲','◉','✦','■','☾','◗','⬟','✜','◈','▤','⚡','♫'];
+
+var PRESETS = [
+  { n:'A basement, no phones', t:{ mood:'a basement, long tones, no phones', pal:0, surface:'grain', type:'serif',
+      headline:'huge', motion:'drift', shape:'sharp', density:'airy', pattern:'moon', glyph:'☾' } },
+  { n:'Photocopied flyer', t:{ mood:'bring cash, bring earplugs', pal:1, surface:'photocopy', type:'stencil',
+      headline:'condensed', motion:'flicker', shape:'cut', density:'packed', pattern:'stripe', glyph:'⚡' } },
+  { n:'Dust and gold', t:{ mood:'the big one. dust, and then more dust.', pal:4, surface:'rays', type:'display',
+      headline:'outlined', motion:'drift', shape:'sharp', density:'airy', pattern:'rays', glyph:'✦' } },
+  { n:'Cathode church', t:{ mood:'walk into the trees, the trees walk back', pal:2, surface:'scanlines', type:'mono',
+      headline:'stacked', motion:'flicker', shape:'sharp', density:'packed', pattern:'scan', glyph:'✳' } },
+  { n:'Sunday paper', t:{ mood:'one cup, no talking, until the light lands', pal:3, surface:'paper', type:'serif',
+      headline:'huge', motion:'none', shape:'rounded', density:'airy', pattern:'plain', glyph:'◗' } }
+];
+
+var DRAFT = null;
+function draftTheme(d){
+  return { mood:d.mood, palette:PALSETS[d.pal].p, square:{ pattern:d.pattern, glyph:d.glyph },
+           surface:d.surface, type:d.type, headline:d.headline, motion:d.motion, shape:d.shape, density:d.density };
+}
+function applyPreset(i){
+  var p = PRESETS[i].t;
+  ['mood','pal','surface','type','headline','motion','shape','density','pattern','glyph'].forEach(function(k){ DRAFT[k] = p[k]; });
+}
+function sel(name, list, cur){
+  return '<select data-cz="'+name+'">' + list.map(function(v){
+    return '<option value="'+esc(v)+'"'+(v===cur?' selected':'')+'>'+esc(v)+'</option>'; }).join('') + '</select>';
+}
+function customizeHTML(){
+  var d = DRAFT, t = draftTheme(d);
+  var ev = { title:d.title || 'Untitled event', date:d.date, city:d.city, hostName:d.host || 'You', description:d.desc, privacy:d.privacy };
+
+  var left = '<div class="custcol">';
+  left += '<div style="font-weight:bold;margin-bottom:4px">Start from a preset, then break it</div><div class="presets">' +
+    PRESETS.map(function(p,i){ return '<span class="pz" data-cz="preset" data-i="'+i+'">'+esc(p.n)+'</span>'; }).join('') + '</div>';
+  left += '<div class="crow"><label>Mood</label><input type="text" data-cz="mood" value="'+esc(d.mood)+'"></div>';
+  left += '<div class="crow"><label>Palette</label><select data-cz="pal">' +
+    PALSETS.map(function(p,i){ return '<option value="'+i+'"'+(i===d.pal?' selected':'')+'>'+esc(p.n)+'</option>'; }).join('') +
+    '</select></div>';
+  left += '<div class="crow"><label></label><span class="swatches">' +
+    ['bg','ink','accent','accent2','dim'].map(function(k){ return '<span class="sw" title="'+k+'" style="background:'+PALSETS[d.pal].p[k]+'"></span>'; }).join('') + '</span></div>';
+  left += '<div class="crow"><label>Surface</label>'+sel('surface',SURFS,d.surface)+'</div>';
+  left += '<div class="crow"><label>Typeface</label>'+sel('type',TYPES,d.type)+'</div>';
+  left += '<div class="crow"><label>Headline</label>'+sel('headline',HEADS,d.headline)+'</div>';
+  left += '<div class="crow"><label>Motion</label>'+sel('motion',MOTS,d.motion)+'</div>';
+  left += '<div class="crow"><label>Shape</label>'+sel('shape',SHAPES,d.shape)+'</div>';
+  left += '<div class="crow"><label>Density</label>'+sel('density',DENS,d.density)+'</div>';
+  left += '<div class="crow"><label>Square</label>'+sel('pattern',PATS,d.pattern)+sel('glyph',GLYS,d.glyph)+'</div>';
+  left += '</div>';
+
+  var vars = themeVars(t);
+  var sq = function(size){ return '<div class="sq s'+size+' sh-'+t.shape+'" style="'+vars+'"><div class="pat p-'+t.square.pattern+'"></div><span class="g">'+t.square.glyph+'</span></div>'; };
+  var right = '<div class="custprev"><div class="previewbox">';
+  right += '<div class="plabel">The square — 180, 56, 32 and 16px</div>' +
+    '<div style="display:flex;gap:8px;align-items:flex-end">'+sq(180)+sq(56)+sq(32)+sq(16)+'</div>';
+  right += '<div class="plabel">The row, in a list of other people’s events</div>' +
+    '<div class="prevrow" style="font-weight:bold"><div class="c-sq">'+sq(16)+'</div><div class="c-title">'+esc(ev.title)+'</div>' +
+    '<div class="c-host c-dim">'+esc(ev.host||'You')+'</div><div class="c-date">'+fmtShort(ev.date)+'</div></div>';
+  right += '<div class="plabel">The detail view</div><div class="minicanvas">' +
+    '<div class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+vars+'">' +
+      '<div class="banner"><div class="surf u-'+t.surface+'"></div><div class="wash"></div><div class="bin">' +
+      '<div class="sq s56 sh-'+t.shape+'" style="'+vars+'"><div class="pat p-'+t.square.pattern+'"></div><span class="g">'+t.square.glyph+'</span></div>' +
+      '<div style="flex:1;min-width:0"><h1 class="hl h-'+t.headline+'">'+headlineHTML(t, ev.title)+'</h1>' +
+      (t.mood ? '<p class="mood">"'+esc(t.mood)+'"</p>' : '') + '</div></div></div>' +
+      '<div class="layer"><div class="surf u-'+t.surface+'" style="opacity:.5"></div>' +
+      '<div class="evmeta" style="margin:0">'+fmtShort(ev.date)+' · '+esc(ev.city||'—')+' · '+esc(ev.host||'You')+'</div>' +
+      '<div class="verbs" style="margin:10px 0 0"><div class="vpair">' +
+      '<span class="vbtn">&#9829; Interested</span><span class="vbtn on">&#10003; Going</span></div>' +
+      '<span class="vsep"></span><span class="vpromo">&#8599; Promote</span></div>' +
+      '</div></div></div>';
+  right += '</div></div>';
+  return '<div class="custwrap">' + left + right + '</div>';
+}
+function wizStepsHTML(step){
+  if (DRAFT && DRAFT.editing) return '';   /* editing an existing event: only the Customize step */
+  return '<div class="wizsteps">' + ['1. Basics','2. Words','3. Customize'].map(function(l,i){
+    return '<div class="ws'+(step===i+1?' on':'')+'">'+l+'</div>'; }).join('') + '</div>';
+}
+function wizBodyHTML(){
+  var d = DRAFT, h = wizStepsHTML(d.step);
+  if (d.step === 1){
+    h += '<div class="drow"><label>Title</label><input type="text" data-cz="title" value="'+esc(d.title)+'"></div>' +
+         '<div class="drow"><label>Date</label><input type="text" data-cz="date" value="'+esc(d.date)+'"> <span class="c-dim">YYYY-MM-DD</span></div>' +
+         '<div class="drow"><label>City</label><input type="text" data-cz="city" value="'+esc(d.city)+'"></div>' +
+         '<div class="drow"><label>Who can see</label><select data-cz="privacy">' +
+           ['everyone','friends','only_me'].map(function(p){ return '<option'+(p===d.privacy?' selected':'')+'>'+p+'</option>'; }).join('') +
+         '</select></div>';
+  } else if (d.step === 2){
+    h += '<div class="drow"><label>Description</label><textarea data-cz="desc" rows="5">'+esc(d.desc)+'</textarea></div>' +
+         '<div class="drow"><label>Mood line</label><input type="text" data-cz="mood" value="'+esc(d.mood)+'"></div>' +
+         '<div class="drow"><label></label><span class="c-dim">One line, in your voice. It is rendered as art, not as metadata.</span></div>';
+  } else {
+    h += customizeHTML();
+  }
+  return h;
+}
+function wizFootHTML(){
+  var d = DRAFT;
+  return (d.step > 1 && !d.editing ? '<button class="btn" data-act="wiz" data-id="back">&lt; Back</button>' : '') +
+    (d.step < 3 ? '<button class="btn def" data-act="wiz" data-id="next">Next &gt;</button>'
+                : '<button class="btn def" data-act="wiz" data-id="finish">'+(d.editing?'Apply theme':'Publish event')+'</button>') +
+    '<button class="btn" data-act="closedlg">Cancel</button>';
+}
+function paintWiz(){
+  var d = DLGS[DLGS.length-1];
+  if (!d) return;
+  d.querySelector('.dbody').innerHTML = wizBodyHTML();
+  d.querySelector('.dfoot').innerHTML = wizFootHTML();
+}
+function newEventDialog(){
+  DRAFT = { step:1, editing:null, title:'Ridge sauna, midnight', date:'2026-10-24', city:'Stockholm',
+            privacy:'everyone', host:(S.loggedIn?S.me.name:'You'),
+            desc:'Hot box on the ridge, a bucket of lake water, and nobody checking the time.',
+            mood:'steam, silence, then the lake', pal:0, surface:'grain', type:'serif', headline:'huge',
+            motion:'drift', shape:'sharp', density:'airy', pattern:'moon', glyph:'☾' };
+  var d = dialog('New event', wizBodyHTML(), wizFootHTML(), 760);
+  d.style.left = Math.max(8, (window.innerWidth-760)/2)+'px';
+}
+function customizeDialog(evId){
+  var t = TH(evId), e = EVENTS[evId];
+  var pal = 0, best = 99;
+  PALSETS.forEach(function(p,i){ if (p.p.bg === t.palette.bg) { pal = i; best = 0; } });
+  if (best !== 0){ PALSETS.unshift({ n:'This event’s palette', p:t.palette }); pal = 0; }
+  DRAFT = { step:3, editing:evId, title:e.title, date:e.date, city:cityShort(e.city), privacy:e.privacy,
+            host:hostLabel(e), desc:e.description, mood:t.mood||'', pal:pal, surface:t.surface, type:t.type,
+            headline:t.headline, motion:t.motion, shape:t.shape, density:t.density,
+            pattern:t.square.pattern, glyph:t.square.glyph };
+  var d = dialog('Customize — ' + e.title, wizBodyHTML(), wizFootHTML(), 760);
+  d.style.left = Math.max(8, (window.innerWidth-760)/2)+'px';
+}
+function wizAct(which){
+  if (which === 'back'){ DRAFT.step = Math.max(1, DRAFT.step-1); paintWiz(); return; }
+  if (which === 'next'){ DRAFT.step = Math.min(3, DRAFT.step+1); paintWiz(); return; }
+  var t = draftTheme(DRAFT);
+  if (DRAFT.editing){
+    window.HYPERNET_THEMES.themes[DRAFT.editing] = t;
+    closeDialogs(); render();
+    toast('Theme applied', ' ' + EVENTS[DRAFT.editing].title + ' now looks like itself.');
+    return;
+  }
+  var id = 'evt-new-' + (MYEVENTS.length + 1);
+  EVENTS[id] = { id:id, title:DRAFT.title || 'Untitled event', date:DRAFT.date, description:DRAFT.desc,
+                 hostName:'You', privacy:DRAFT.privacy, ownerIds:['self'], kind:'own', city:DRAFT.city };
+  window.HYPERNET_THEMES.themes[id] = t;
+  MYEVENTS.push(id);
+  PROMOCOUNT[id] = 0; READ[id] = true;
+  HORIZONS['horizon-default'].eventIds.push(id);
+  goFolder({ kind:'hosting', id:null });
+  S.sel = { type:'event', id:id };
+  render();
+  toast('Published', ' ' + EVENTS[id].title + ' is live, themed, and on your horizon.');
+}
+
+/* =========================================================================
+   13. ACTIONS
+   ========================================================================= */
+function goFolder(f){
+  if (sameFolder(S.folder, f)){ S.sel = f.kind === 'horizon' ? { type:'horizon', id:f.id } : S.sel; return; }
+  S.folder = f;
+  S.hist = S.hist.slice(0, S.hi+1); S.hist.push(f); S.hi = S.hist.length-1;
+  /* opening a horizon shows the folder itself first — its properties and state */
+  S.sel = f.kind === 'horizon' ? { type:'horizon', id:f.id } : firstSelectable(f);
+}
+function markRead(id){ if (!READ[id]){ READ[id] = true; } }
+function selectItem(type, id, fromUser){
+  S.sel = { type:type, id:id };
+  if (type === 'event' && fromUser) markRead(id);
+  if (type === 'event' && isCal()) S.calAnchor = EVENTS[id].date;
+  render();
+}
+/* a person opens as a proper contact-card window: own title bar, draggable, closable */
+var CARDWIN = null;
+function personWindow(id){
+  var isGroup = !!GROUPS[id];
+  var title = (isGroup ? GROUPS[id].name : person(id).displayName) + ' — ' + (isGroup ? 'Cluster' : 'Contact');
+  if (CARDWIN){ CARDWIN.remove(); CARDWIN = null; }
+  var d = document.createElement('div');
+  d.className = 'dlg';
+  d.style.width = '360px';
+  d.style.left = Math.max(8, window.innerWidth - 430) + 'px';
+  d.style.top = '96px';
+  d.innerHTML = '<div class="dbar"><span>&#128100;</span><span>'+esc(title)+'</span><span class="spring"></span>' +
+    '<span class="wbtn" data-act="closecard">&#10005;</span></div>' +
+    '<div class="dbody" id="cardbody" style="max-height:62vh;overflow:auto">' +
+    (isGroup ? cardGroupHTML(id) : cardBodyHTML(id)) + '</div>' +
+    '<div class="dfoot"><button class="btn" data-act="closecard">Close</button></div>';
+  document.body.appendChild(d);
+  CARDWIN = d;
+  CARDWIN.dataset.subject = id;
+  var bar = d.querySelector('.dbar');
+  bar.addEventListener('mousedown', function(ev){
+    if (ev.target.getAttribute('data-act')) return;
+    var sx = ev.clientX, sy = ev.clientY, ox = d.offsetLeft, oy = d.offsetTop;
+    function mv(e2){ d.style.left = (ox + e2.clientX - sx)+'px'; d.style.top = Math.max(0, oy + e2.clientY - sy)+'px'; }
+    function up(){ document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); }
+    document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+  });
+  status('Contact card: ' + (isGroup ? GROUPS[id].name : person(id).displayName) + ' — drag its title bar, close it with ✕.');
+}
+function closeCard(){ if (CARDWIN){ CARDWIN.remove(); CARDWIN = null; } }
+function repaintCard(){
+  if (!CARDWIN) return;
+  var id = CARDWIN.dataset.subject;
+  CARDWIN.querySelector('#cardbody').innerHTML = GROUPS[id] ? cardGroupHTML(id) : cardBodyHTML(id);
+}
+function openPerson(id){
+  if (S.folder.kind === 'people' || S.folder.kind === 'search') S.sel = { type:'person', id:id };
+  personWindow(id); render();
+}
+function openGroup(id){ personWindow(id); render(); }
+function openHorizonCenter(id){
+  closeCard();
+  goFolder({ kind:'horizon', id:id });
+  render();
+  status('Horizon "' + HORIZONS[id].name + '" opened in the centre as a folder — name, state and contents.');
+}
+var setRSVP = gated(function(evId, mode){
+  RSVP[evId] = RSVP[evId] === mode ? undefined : mode;
+  if (!RSVP[evId]) delete RSVP[evId];
+  if (RSVP[evId] === 'interested' && HORIZONS['horizon-default'].eventIds.indexOf(evId) < 0)
+    HORIZONS['horizon-default'].eventIds.push(evId);
+  markRead(evId);
+  render();
+  toast(RSVP[evId] ? (mode === 'going' ? 'Going' : 'Interested') : 'State cleared',
+        ' ' + EVENTS[evId].title);
+});
+var doPromote = gated(function(evId){
+  PROMOTED[evId] = !PROMOTED[evId];
+  PROMOCOUNT[evId] = Math.max(0, (PROMOCOUNT[evId]||0) + (PROMOTED[evId] ? 1 : -1));
+  render();
+  toast(PROMOTED[evId] ? 'Promoted' : 'Promotion withdrawn',
+        PROMOTED[evId] ? ' Bounced to the top of your followers’ feeds.' : ' ' + EVENTS[evId].title);
+});
+var addToHorizon = gated(function(evId, hzId){
+  var hz = HORIZONS[hzId];
+  if (hz.eventIds.indexOf(evId) < 0){ hz.eventIds.push(evId); toast('Filed', ' ' + EVENTS[evId].title + ' → ' + hz.name); }
+  else toast('Already there', ' ' + hz.name + ' already holds this event.');
+  closeDialogs(); render();
+});
+var followHz = gated(function(hzId){
+  HZFOLLOW[hzId] = !HZFOLLOW[hzId];
+  HZCOUNT[hzId] = Math.max(0, (HZCOUNT[hzId]||0) + (HZFOLLOW[hzId] ? 1 : -1));
+  render(); repaintCard();
+  toast(HZFOLLOW[hzId] ? 'Following' : 'Unfollowed', ' ' + HORIZONS[hzId].name);
+});
+var renameHz = gated(function(hzId){
+  var nm = ($('rh-n')||{}).value || HORIZONS[hzId].name;
+  HORIZONS[hzId].name = nm;
+  HORIZONS[hzId].description = ($('rh-d')||{}).value || '';
+  closeDialogs(); render();
+  toast('Renamed', ' ' + nm);
+});
+var publishHz = gated(function(hzId){
+  HORIZONS[hzId].isPublished = !HORIZONS[hzId].isPublished;
+  render();
+  toast(HORIZONS[hzId].isPublished ? 'Published' : 'Unpublished',
+        HORIZONS[hzId].isPublished ? ' Anyone can follow it now.' : ' Private to you again.');
+});
+var setCover = gated(function(hzId, evId){
+  HZCOVER[hzId] = evId;
+  closeDialogs(); render();
+  toast('Cover changed', ' ' + HORIZONS[hzId].name + ' now wears ' + EVENTS[evId].title + '.');
+});
+var followP = gated(function(pid){
+  PFOLLOW[pid] = !PFOLLOW[pid]; render(); repaintCard();
+  toast(PFOLLOW[pid] ? 'Following' : 'Unfollowed', ' ' + person(pid).displayName);
+});
+var discuss = gated(function(evId){
+  var cid = S.activeChat;
+  CHATS[cid].messages.push({ from:'self', t:nowClock(), text:'', card:evId });
+  S.rightOpen = true; UNREADCHAT[cid] = false;
+  render();
+  var sc = $('chatscroll'); if (sc) sc.scrollTop = sc.scrollHeight;
+  toast('Dropped into chat', ' ' + CHATS[cid].name);
+});
+/* answering a call out is a real message to its host */
+var answerCallout = gated(function(coId){
+  var c = CALLOUTS.filter(function(x){ return x.id === coId; })[0];
+  if (!c) return;
+  var pid = c.hostId || 'p-anna';
+  var cid = openDM(pid);
+  CHATS[cid].messages.push({ from:'self', t:nowClock(), text:'Re: ' + c.title + ' — I can do this. When do you need me?' });
+  S.rightOpen = true; UNREADCHAT[cid] = false;
+  render();
+  var sc = $('chatscroll'); if (sc) sc.scrollTop = sc.scrollHeight;
+  toast('Answered', ' Sent to ' + c.hostName + ' in chat.');
+});
+function openDM(pid){
+  var dm = Object.keys(CHATS).filter(function(k){ return CHATS[k].kind==='dm' && CHATS[k].memberIds[0]===pid; })[0];
+  if (!dm){ dm = 'c-'+pid; CHATS[dm] = { id:dm, name:person(pid).displayName, kind:'dm', memberIds:[pid], subjectId:pid, messages:[] }; }
+  S.activeChat = dm;
+  return dm;
+}
+function sendChat(){
+  var box = $('chatbox'); if (!box || !box.value.trim()) return;
+  if (!S.loggedIn){ loginDialog(); return; }
+  CHATS[S.activeChat].messages.push({ from:'self', t:nowClock(), text:box.value.trim() });
+  box.value = '';
+  render();
+  var sc = $('chatscroll'); if (sc) sc.scrollTop = sc.scrollHeight;
+}
+function doSearch(){
+  S.query = $('searchbox').value.trim();
+  S.folder = { kind:'search', id:null };
+  S.hist = S.hist.slice(0, S.hi+1); S.hist.push(S.folder); S.hi = S.hist.length-1;
+  var items = folderItems();
+  S.sel = firstSelectable();
+  render();
+  status('Search: ' + (S.query || '(empty)') + ' — ' + items.length + ' matches, grouped by kind.');
+}
+/* opening is type-determined: an event takes over its own window,
+   a person pops its contact card, a horizon opens as a folder */
+function openItemWin(){
+  if (!S.sel) return;
+  if (S.sel.type === 'person' || S.sel.type === 'group'){ personWindow(S.sel.id); return; }
+  if (S.sel.type === 'horizon'){ openHorizonCenter(S.sel.id); return; }
+  if (S.sel.type !== 'event') return;
+  markRead(S.sel.id);
+  S.itemOpen = true; render();
+}
+function stepItem(delta){
+  var list = isCal()
+    ? calEvents().slice().sort(byDate).map(function(e){ return { type:'event', id:e.id }; })
+    : (S.rows.length ? S.rows : orderedItems());
+  if (!list.length) return;
+  var i = -1;
+  if (S.sel) list.forEach(function(it, k){ if (it.type === S.sel.type && it.id === S.sel.id) i = k; });
+  var n = i < 0 ? (delta > 0 ? 0 : list.length-1) : Math.max(0, Math.min(list.length-1, i + delta));
+  var it = list[n];
+  S.sel = it;
+  if (it.type === 'event'){ markRead(it.id); if (isCal()) S.calAnchor = EVENTS[it.id].date; }
+  render();
+  var el = document.querySelector('.erow.sel');
+  if (el && el.scrollIntoView) el.scrollIntoView({ block:'nearest' });
+}
+function runCmd(cmd, arg){
+  switch (cmd){
+    case 'new-event':    closePopup(); (S.loggedIn ? newEventDialog : loginDialog)(); break;
+    case 'new-horizon':  closePopup(); (S.loggedIn ? newHorizonDialog : loginDialog)(); break;
+    case 'new-chat':     closePopup(); (S.loggedIn ? newChatDialog : loginDialog)(); break;
+    case 'new-callout':  closePopup(); (S.loggedIn ? newCalloutDialog : loginDialog)(); break;
+    case 'open':         closePopup(); openItemWin(); break;
+    case 'fileinto':     closePopup(); if (S.sel && S.sel.type==='event'){ S.loggedIn ? fileIntoDialog(S.sel.id) : loginDialog(); } break;
+    case 'login':        closePopup(); loginDialog(); break;
+    case 'logout':       doLogout(); break;
+    case 'about':        closePopup(); aboutDialog(); break;
+    case 'mycard':       closePopup(); personWindow('self'); break;
+    case 'mark-read':    if (S.sel) READ[S.sel.id] = true; closePopup(); render(); break;
+    case 'mark-unread':  if (S.sel) delete READ[S.sel.id]; closePopup(); render(); break;
+    case 'mark-all':     folderItems().forEach(function(it){ if (it.type==='event') READ[it.id] = true; }); closePopup(); render(); break;
+    case 'focus-find':   closePopup(); $('searchbox').focus(); $('searchbox').select(); break;
+    case 'clearsearch':  closePopup(); $('searchbox').value=''; S.query=''; if (S.folder.kind==='search') goFolder({kind:'home',id:null}); render(); break;
+    case 'preview':      S.preview = arg; closePopup(); render(); break;
+    case 'toggle-left':  S.leftOpen = !S.leftOpen; closePopup(); render(); break;
+    case 'toggle-right': S.rightOpen = !S.rightOpen; closePopup(); render(); break;
+    case 'setview':      setView(arg); closePopup(); render(); break;
+    case 'sort':         setSort(arg); closePopup(); break;
+    case 'expand-all':   S.collapsed = {}; closePopup(); render(); break;
+    case 'collapse-all': sortItems(folderItems()).forEach(function(it){ S.collapsed[bandOf(it)] = true; }); closePopup(); render(); break;
+    case 'folder':       closePopup(); goFolder({ kind:arg, id:null }); render(); break;
+    case 'back':         closePopup(); if (S.hi > 0){ S.hi--; S.folder = S.hist[S.hi]; S.sel = firstSelectable(); render(); } break;
+    case 'fwd':          closePopup(); if (S.hi < S.hist.length-1){ S.hi++; S.folder = S.hist[S.hi]; S.sel = firstSelectable(); render(); } break;
+    case 'customize':    closePopup(); if (S.sel && S.sel.type==='event'){ S.loggedIn ? customizeDialog(S.sel.id) : loginDialog(); } break;
+    case 'followhz':     closePopup(); if (arg) followHz(arg); break;
+  }
+}
+function setSort(key){
+  if (S.sort.key === key) S.sort.dir = -S.sort.dir;
+  else { S.sort.key = key; S.sort.dir = 1; }
+  render();
+}
+
+/* =========================================================================
+   14. EVENT WIRING
+   ========================================================================= */
+document.addEventListener('click', function(ev){
+  var pop = ev.target.closest ? ev.target.closest('.popmenu .pi') : null;
+  if (pop && !pop.classList.contains('dis') && !pop.classList.contains('sepi')){
+    runCmd(pop.getAttribute('data-pop'), pop.getAttribute('data-arg'));
+    return;
+  }
+  var mi = ev.target.closest('#menubar .mi[data-menu]');
+  if (mi){ openMenu(mi.getAttribute('data-menu'), mi); return; }
+
+  var n = ev.target.closest('[data-act]');
+  if (!n){ closePopup(); return; }
+  var act = n.getAttribute('data-act'), id = n.getAttribute('data-id');
+  if (act !== 'newmenu' && act !== 'authmenu') closePopup();
+
+  switch (act){
+    case 'newmenu': {
+      var r = n.getBoundingClientRect();
+      popup(r.left, r.bottom, [
+        { label:'Event…', cmd:'new-event' },
+        { label:'Event Horizon…', cmd:'new-horizon' },
+        { label:'Group chat…', cmd:'new-chat' },
+        { label:'Call out…', cmd:'new-callout' }
+      ]);
+      break;
+    }
+    case 'authmenu': {
+      var r2 = n.getBoundingClientRect();
+      popup(r2.left-110, r2.bottom, S.loggedIn
+        ? [ { label:'Your contact card', cmd:'mycard' }, '-', { label:'Log out', cmd:'logout' } ]
+        : [ { label:'Log in…', cmd:'login' } ]);
+      break;
+    }
+    case 'folder':      goFolder({ kind:n.getAttribute('data-kind'), id:id||null }); render(); break;
+    case 'openfolder': {
+      goFolder({ kind:'horizon', id:id });
+      var f0 = orderedItems().filter(function(x){ return x.type === 'event'; })[0];
+      if (f0) S.sel = f0;
+      render();
+      break;
+    }
+    case 'setview':     setView(id); render(); break;
+    case 'card':        personWindow(id); break;
+    case 'closecard':   closeCard(); break;
+    case 'show-left':   S.leftOpen = true; render(); break;
+    case 'show-right':  S.rightOpen = true; render(); break;
+    case 'renamehz':    if (S.loggedIn) renameHzDialog(id); else loginDialog(); break;
+    case 'dorename':    renameHz(id); break;
+    case 'publishhz':   publishHz(id); break;
+    case 'coverhz':     if (S.loggedIn) coverHzDialog(id); else loginDialog(); break;
+    case 'docover':     setCover(id, n.getAttribute('data-ev')); break;
+    case 'row':         selectItem(n.getAttribute('data-rtype'), id, true); break;
+    case 'sort':        setSort(id); break;
+    case 'band':        S.collapsed[id] = !S.collapsed[id]; render(); break;
+    case 'fgroup':      S.fcollapsed[id] = !S.fcollapsed[id]; render(); break;
+    case 'v-interested': if (S.sel || id) setRSVP(id || S.sel.id, 'interested'); break;
+    case 'v-going':      if (S.sel || id) setRSVP(id || S.sel.id, 'going'); break;
+    case 'v-promote':    if (S.sel || id) doPromote(id || S.sel.id); break;
+    case 'fileinto':     if (S.loggedIn){ if (id || (S.sel && S.sel.type==='event')) fileIntoDialog(id || S.sel.id); } else loginDialog(); break;
+    case 'dofile':       addToHorizon(id, n.getAttribute('data-hz')); break;
+    case 'discuss':      if (id || (S.sel && S.sel.type==='event')) discuss(id || S.sel.id); break;
+    case 'customize':    if (S.loggedIn) customizeDialog(id || S.sel.id); else loginDialog(); break;
+    case 'nav-person':   openPerson(id); break;
+    case 'nav-group':    openGroup(id); break;
+    case 'nav-horizon':  openHorizonCenter(id); break;
+    case 'followhz':     followHz(id); break;
+    case 'followp':      followP(id); break;
+    case 'dm':
+      if (!S.loggedIn){ loginDialog(); break; }
+      openDM(id); S.rightOpen = true; UNREADCHAT[S.activeChat] = false; render();
+      toast('Chat open', ' ' + person(id).displayName + ' — in the right-hand rail.');
+      break;
+    case 'chatsel':     S.activeChat = id; UNREADCHAT[id] = false; render(); break;
+    case 'sendchat':    sendChat(); break;
+    case 'hide-left':   S.leftOpen = false; render(); break;
+    case 'hide-right':  S.rightOpen = false; render(); break;
+    case 'back':        runCmd('back'); break;
+    case 'fwd':         runCmd('fwd'); break;
+    case 'open':        openItemWin(); break;
+    case 'closeitem':   S.itemOpen = false; render(); break;
+    case 'prev-item':   stepItem(-1); renderItemWin(); break;
+    case 'next-item':   stepItem(1);  renderItemWin(); break;
+    case 'dosearch':    doSearch(); break;
+    case 'clearsearch': runCmd('clearsearch'); break;
+    case 'login':       loginDialog(); break;
+    case 'dologin':     doLogin(); break;
+    case 'closedlg':    closeDialogs(); break;
+    case 'donewhorizon': {
+      var nm = ($('nh-n')||{}).value || 'Untitled horizon';
+      var hid = 'horizon-new-' + (Object.keys(HORIZONS).length+1);
+      HORIZONS[hid] = { id:hid, name:nm, description:($('nh-d')||{}).value||'', isPersonalDefault:false,
+                        isPublished:!!($('nh-p')||{}).checked, ownerName:S.me.name, ownerId:'self', eventIds:[] };
+      MYHORIZONS.push(hid); HZCOUNT[hid] = 0;
+      closeDialogs(); goFolder({ kind:'horizon', id:hid }); render();
+      toast('Horizon created', ' ' + nm + ' — drag events onto it.');
+      break;
+    }
+    case 'donewchat': {
+      var mem = Array.prototype.slice.call(document.querySelectorAll('.nc-m:checked')).map(function(c){ return c.value; });
+      var cid2 = 'c-new-' + (Object.keys(CHATS).length+1);
+      CHATS[cid2] = { id:cid2, name:($('nc-name')||{}).value||'New crew', kind:'group', memberIds:mem, subjectId:null, messages:[] };
+      S.activeChat = cid2; S.rightOpen = true;
+      closeDialogs(); render();
+      toast('Crew created', ' ' + CHATS[cid2].name + ' — in the chat rail.');
+      break;
+    }
+    case 'donewcallout': {
+      var cid3 = 'co-new-' + (CALLOUTS.length+1);
+      CALLOUTS.push({ id:cid3, title:($('co-t')||{}).value||'Untitled', body:($('co-b')||{}).value||'',
+                      expiresAt:($('co-x')||{}).value||'2026-12-31', hostName:S.me.name, hostId:'self' });
+      closeDialogs(); goFolder({ kind:'callouts', id:null }); render();
+      toast('Call out posted', ' It shows in the Call outs folder.');
+      break;
+    }
+    case 'answercallout': answerCallout(id || (S.sel && S.sel.id)); break;
+    case 'wiz':         wizAct(id); break;
+    case 'calmode':     S.calMode = id; render(); break;
+    case 'caltoday':    S.calAnchor = TODAY_ISO; render(); break;
+    case 'calnav': {
+      var a = dOf(S.calAnchor), step = +id;
+      if (S.calMode === 'month') a.setMonth(a.getMonth() + step);
+      else if (S.calMode === 'week') a.setDate(a.getDate() + 7*step);
+      else a.setDate(a.getDate() + step);
+      S.calAnchor = isoOf(a); render();
+      break;
+    }
+    case 'calday':      if (id){ S.calAnchor = id; if (S.calMode === 'month' && ev.detail === 2) S.calMode = 'day'; render(); } break;
+  }
+});
+document.addEventListener('change', function(ev){
+  var n = ev.target.closest('[data-cz]');
+  if (n && DRAFT){
+    var k = n.getAttribute('data-cz');
+    DRAFT[k] = k === 'pal' ? +n.value : n.value;
+    paintWiz();
+    return;
+  }
+  if (ev.target.getAttribute && ev.target.getAttribute('data-act') === 'calmine'){
+    CALONLYMINE = ev.target.checked; render();
+  }
+});
+document.addEventListener('input', function(ev){
+  var n = ev.target.closest('[data-cz]');
+  if (!n || !DRAFT || n.tagName === 'SELECT') return;
+  var k = n.getAttribute('data-cz');
+  DRAFT[k] = n.value;
+  if (DRAFT.step === 3){
+    /* live, without stealing the caret: repaint only the preview column */
+    var box = DLGS[DLGS.length-1].querySelector('.custprev');
+    if (box){
+      var tmp = document.createElement('div');
+      tmp.innerHTML = customizeHTML();
+      box.innerHTML = tmp.querySelector('.custprev').innerHTML;
+    }
+  }
+});
+document.addEventListener('mousedown', function(ev){
+  var p = ev.target.closest('.popmenu, #menubar .mi');
+  if (!p) closePopup();
+});
+document.addEventListener('click', function(ev){
+  var pz = ev.target.closest('[data-cz="preset"]');
+  if (pz && DRAFT){ applyPreset(+pz.getAttribute('data-i')); paintWiz(); }
+});
+
+/* ---------- drag a row onto a horizon folder ---------- */
+var DRAGID = null;
+document.addEventListener('dragstart', function(ev){
+  var row = ev.target.closest('.erow[draggable]');
+  if (!row){ return; }
+  DRAGID = row.getAttribute('data-id');
+  row.classList.add('drag');
+  ev.dataTransfer.effectAllowed = 'copy';
+  try { ev.dataTransfer.setData('text/plain', DRAGID); } catch(e){}
+  status('Dragging "' + EVENTS[DRAGID].title + '" — drop it on a horizon folder.');
+});
+document.addEventListener('dragend', function(){
+  DRAGID = null;
+  document.querySelectorAll('.drag').forEach(function(n){ n.classList.remove('drag'); });
+  document.querySelectorAll('.fold.drop').forEach(function(n){ n.classList.remove('drop'); });
+});
+document.addEventListener('dragover', function(ev){
+  var f = ev.target.closest('.fold[data-drop]');
+  if (f && DRAGID){ ev.preventDefault(); ev.dataTransfer.dropEffect = 'copy'; f.classList.add('drop'); }
+});
+document.addEventListener('dragleave', function(ev){
+  var f = ev.target.closest('.fold[data-drop]');
+  if (f) f.classList.remove('drop');
+});
+document.addEventListener('drop', function(ev){
+  var f = ev.target.closest('.fold[data-drop]');
+  if (f && DRAGID){
+    ev.preventDefault();
+    addToHorizon(DRAGID, f.getAttribute('data-drop'));
+    f.classList.remove('drop');
+    DRAGID = null;
+  }
+});
+
+/* ---------- keyboard ---------- */
+document.addEventListener('keydown', function(ev){
+  var inField = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+
+  if (ev.key === 'Escape'){
+    if (DLGS.length){ closeDialogs(); return; }
+    if (POP){ closePopup(); return; }
+    if (CARDWIN){ closeCard(); return; }
+    if (S.itemOpen){ S.itemOpen = false; render(); return; }
+    if (document.activeElement === $('searchbox')){ $('searchbox').blur(); return; }
+    return;
+  }
+  if (inField){
+    if (ev.key === 'Enter' && document.activeElement === $('searchbox')){ doSearch(); $('searchbox').blur(); ev.preventDefault(); }
+    if (ev.key === 'Enter' && document.activeElement === $('chatbox')){ sendChat(); ev.preventDefault(); }
+    if (ev.key === 'Enter' && DLGS.length && $('lg-name')){ doLogin(); ev.preventDefault(); }
+    return;
+  }
+  if (DLGS.length) return;
+
+  if (ev.key === '/'){ ev.preventDefault(); $('searchbox').focus(); $('searchbox').select(); return; }
+  if (ev.key === 'ArrowDown'){ ev.preventDefault(); stepItem(1); if (S.itemOpen) renderItemWin(); return; }
+  if (ev.key === 'ArrowUp'){ ev.preventDefault(); stepItem(-1); if (S.itemOpen) renderItemWin(); return; }
+  if (ev.key === 'Enter'){ ev.preventDefault(); openItemWin(); return; }
+  if (ev.key === 'Home'){ ev.preventDefault(); if (S.rows.length) selectItem(S.rows[0].type, S.rows[0].id, true); return; }
+  if (ev.key === 'End'){ ev.preventDefault(); if (S.rows.length){ var l = S.rows[S.rows.length-1]; selectItem(l.type, l.id, true); } return; }
+});
+
+/* =========================================================================
+   15. RENDER + BOOT
+   ========================================================================= */
+function render(){
+  renderChrome();
+  renderFolders();
+  if (!isCal()){ renderList(); renderReading(); }
+  else renderCalendar();
+  renderContacts();
+  renderItemWin();
+}
+window.addEventListener('resize', function(){ render(); });
+(function boot(){
+  var first = firstSelectable();
+  if (first) S.sel = first;          /* selected, but deliberately still undiscovered */
+  render();
+  status('Home feed — a mix of events, horizons, call outs and network news. Bold means undiscovered.');
+})();
+</script>
+</body>
+</html>

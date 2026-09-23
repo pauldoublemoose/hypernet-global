@@ -530,6 +530,16 @@ fieldset.props legend{ padding:0 6px; font-weight:bold; }
 .tochips{ display:flex; flex-wrap:wrap; gap:6px; min-height:0; }
 .tochip{ display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 4px 0 4px; background:#fff; box-shadow:var(--thin); font-size:var(--fs-s); }
 .tochip button{ width:24px; height:24px; border:0; background:transparent; display:grid; place-items:center; padding:0; }
+.pchips{ display:flex; flex-wrap:wrap; gap:6px; }
+.pchip{ height:var(--ctl); padding:0 14px; border:0; background:var(--face); box-shadow:var(--out); font-size:var(--fs-s); }
+.pchip.on{ background:var(--sel); color:#fff; box-shadow:inset 1px 1px 0 #000, inset -1px -1px 0 #777; font-weight:bold; }
+.addcity{ display:inline-flex; gap:6px; flex:1 1 220px; }
+.addcity input{ flex:1; min-width:0; }
+.handlein{ display:flex; align-items:center; background:#fff; box-shadow:var(--in); }
+.handlein > span{ padding:0 0 0 10px; color:var(--dim); }
+.handlein input{ flex:1; box-shadow:none; background:transparent; padding-left:2px; }
+.handlein:focus-within{ outline:1px dotted #000; outline-offset:-5px; }
+.handlein input:focus{ outline:0; }
 .linkrow{ display:flex; align-items:center; gap:12px; min-height:52px; padding:6px 12px; border-bottom:1px solid var(--line); background:#fff; cursor:pointer; }
 .linkrow:hover{ background:var(--hover); }
 .linkrow .lr{ flex:1; min-width:0; }
@@ -597,7 +607,10 @@ fieldset.props legend{ padding:0 6px; font-weight:bold; }
 #app.phone .nrow .sq, #app.phone .nrow .av{ width:26px; height:26px; flex-basis:26px; }
 #app.phone .navh{ padding:22px 18px 8px; }
 #app.phone .dup-tab{ display:none; }
-#app.phone .acctcard{ display:flex; align-items:center; gap:14px; padding:18px; border-bottom:1px solid var(--line); }
+#app.phone .acctcard{ display:flex; flex-direction:column; align-items:stretch; gap:12px; padding:18px; border-bottom:1px solid var(--line); }
+#app.phone .acctcard .acrow{ display:flex; align-items:center; gap:14px; min-height:44px; }
+#app.phone .acctcard .acbio{ margin:0; font-size:15px; }
+#app.phone .acctcard .tags{ margin:0; }
 #app.phone .acctcard .an{ flex:1; min-width:0; font-size:17px; font-weight:bold; }
 #app.phone .acctcard .an small{ display:block; font-size:13px; font-weight:normal; color:var(--dim); }
 #app.phone .logincard{ margin:16px; }
@@ -611,7 +624,7 @@ fieldset.props legend{ padding:0 6px; font-weight:bold; }
 body.is-phone #toasts{ width:calc(100% - 24px); bottom:calc(84px + env(safe-area-inset-bottom)); }
 body.is-phone .dlg{ inset:0 !important; width:auto !important; max-height:none; padding:0; }
 body.is-phone .dbar{ flex-basis:calc(54px + env(safe-area-inset-top)); padding:env(safe-area-inset-top) 6px 0 16px; font-size:16px; }
-body.is-phone .dbar .x{ width:44px; height:38px; }
+body.is-phone .dbar .x{ width:44px; height:44px; }
 body.is-phone .dbody{ padding:18px 16px; }
 body.is-phone .dfoot{ padding:10px 12px calc(12px + env(safe-area-inset-bottom)); box-shadow:inset 0 1px 0 #fff, 0 -1px 0 var(--shadow); }
 body.is-phone .dfoot .btn{ flex:1; }
@@ -927,7 +940,8 @@ var S = {
   phoneSearch:false,
   rows:[],
   pending:null,
-  autoSel:false                /* true while the reading pane shows something the app picked, not you */
+  autoSel:false,
+  hasAccount:false             /* first log-in is a sign-up */                /* true while the reading pane shows something the app picked, not you */
 };
 var L = {};                    /* the layout of the current render */
 
@@ -1139,7 +1153,7 @@ function searchItems(q){
   Object.keys(PEOPLE).forEach(function(k){
     var p = PEOPLE[k];
     if (k === 'self' && !S.loggedIn) return;
-    if (matches(p.displayName,q) || matches(p.handle,q) || matches(p.bio,q) || matches((p.skills||[]).join(' '),q)) out.push({ type:'person', id:k });
+    if (matches(p.displayName,q) || matches(p.handle,q) || matches(p.bio,q) || matches((p.skills||[]).join(' '),q) || matches(citiesOf(p).join(' '),q)) out.push({ type:'person', id:k });
   });
   Object.keys(GROUPS).forEach(function(k){ if (matches(GROUPS[k].name,q) || matches(GROUPS[k].description,q)) out.push({ type:'group', id:k }); });
   return out;
@@ -1659,16 +1673,21 @@ function personHTML(pid){
   var clusters = Object.keys(GROUPS).filter(function(g){ return GROUPS[g].memberIds.indexOf(pid) >= 0; });
   var h = '<div class="page">';
   h += '<div class="phead2">' + avHTML(pid, 'a64') + '<div style="flex:1;min-width:0"><div class="pname">'+esc(p.displayName)+'</div>' +
-       '<div class="psub">@'+esc(p.handle)+(cityShort(p.city)?' · '+esc(cityShort(p.city)):'') +
+       '<div class="psub">@'+esc(p.handle)+(citiesOf(p).length?' · '+esc(citiesOf(p).join(', ')):'') +
        (pid === 'self' ? '' : ' · <span class="pres '+st+'"></span>'+esc(st)) + '</div></div></div>';
   if (p.bio) h += '<p class="pdesc">'+esc(p.bio)+'</p>';
+  if (pid === 'self' && S.loggedIn){
+    h += '<div class="acts"><button class="btn primary" data-act="editprofile">'+ic('edit')+'Edit profile</button></div>';
+  }
   if (pid !== 'self'){
     h += '<div class="acts"><button class="btn '+(fol?'on':'primary')+'" data-act="followp" data-id="'+pid+'" aria-pressed="'+!!fol+'">'+ic(fol?'check':'plus')+(fol?'Following':'Follow')+'</button>' +
          '<button class="btn" data-act="dm" data-id="'+pid+'">'+ic('chat')+'Message</button></div>';
   }
   if ((p.skills||[]).length){
-    h += '<div class="subh">Skills</div><div class="tags">' + p.skills.map(function(s){
-      var b = s.split('/'); return '<span class="tag">'+esc(titleCase(b[1]||b[0]))+'</span>'; }).join('') + '</div>';
+    h += '<div class="subh">Skills</div><div class="tags">' + p.skills.map(function(s){ return '<span class="tag">'+esc(skillLabel(s))+'</span>'; }).join('') + '</div>';
+  }
+  if (citiesOf(p).length > 1 || pid === 'self'){
+    h += citiesOf(p).length ? '<div class="subh">Cities</div><div class="tags">' + citiesOf(p).map(function(c){ return '<span class="tag">'+esc(c)+'</span>'; }).join('') + '</div>' : '';
   }
   if (hz.length){
     h += '<div class="subh">Published horizons</div>' + hz.map(function(k){
@@ -1890,8 +1909,12 @@ function navRow(f, icon, label, opts){
 function renderNav(){
   var h = '';
   if (S.loggedIn){
-    h += '<div class="acctcard">' + avHTML('self','a40') + '<div class="an">'+esc(S.me.name)+'<small>@'+esc(S.me.handle)+'</small></div>' +
-         '<button class="btn" data-act="open-reset" data-type="person" data-id="self">Profile</button></div>';
+    var me = PEOPLE['self'];
+    h += '<div class="acctcard"><div class="acrow" data-act="open-reset" data-type="person" data-id="self" role="button">' + avHTML('self','a40') +
+         '<div class="an">'+esc(me.displayName)+'<small>@'+esc(me.handle)+(citiesOf(me).length ? ' · '+esc(citiesOf(me).join(', ')) : '')+'</small></div></div>' +
+         (me.bio ? '<p class="acbio">'+esc(me.bio)+'</p>' : '') +
+         ((me.skills||[]).length ? '<div class="tags">' + me.skills.map(function(x){ return '<span class="tag">'+esc(skillLabel(x))+'</span>'; }).join('') + '</div>' : '') +
+         '<button class="btn" data-act="editprofile">'+ic('edit')+'Edit profile</button></div>';
   }
   if (S.folder.kind === 'search' && S.query.trim() && !L.phone){
     h += '<div class="nrow sel search">'+ic('search')+'<span class="nlab">“'+esc(S.query)+'”</span>' +
@@ -2071,18 +2094,86 @@ function newSheet(){
     return '<div class="sheetrow" data-act="runcmd" data-id="'+it.cmd+'" role="button">'+ic(it.icon,22)+'<div>'+esc(it.label)+'<small>'+esc(it.sub)+'</small></div></div>';
   }).join(''), '', 420, 'sheet');
 }
+/* First log-in is a short sign-up: who you are, what you can do, where you are.
+   After that, log-in is just your name. No password is ever asked for. */
+var SKILLCHOICES = [
+  ['SOUND/DJING','DJing'], ['SOUND/SOUND ENGINEERING / PA','Sound / PA'], ['BUILD & CONSTRUCTION/CARPENTRY','Build'],
+  ['CAMP OPERATIONS/KITCHEN & COOKING','Kitchen'], ['CARE & COMMUNITY/RANGERS & SAFETY','Ranger'], ['ART & CRAFT/PAINTING / MURALS','Art'],
+  ['LIGHT/LIGHTING DESIGN','Lighting'], ['POWER & INFRASTRUCTURE/ELECTRICS & POWER GRID','Power'], ['PERFORMANCE/DANCE','Performance'],
+  ['TECH & INTERACTIVE/PROGRAMMING','Tech'], ['EVENT PRODUCTION/PRODUCING','Production'], ['MEDIA & COMMS/PHOTOGRAPHY','Photo & video']
+];
+var CITYCHOICES = ['Stockholm','Gothenburg','Malmö','Copenhagen','Oslo','Berlin','Amsterdam','Prague','Brno'];
+function skillLabel(v){
+  var hit = SKILLCHOICES.filter(function(c){ return c[0] === v; })[0];
+  if (hit) return hit[1];
+  var b = String(v).split('/');
+  return titleCase(b[1] || b[0]).replace(/\bPa\b/g,'PA').replace(/\bDj/g,'DJ');
+}
+function citiesOf(p){ return p.cities && p.cities.length ? p.cities : (p.city ? [cityShort(p.city)] : []); }
+var PF = null;
+function profileForm(){
+  var cities = CITYCHOICES.concat(PF.cities.filter(function(c){ return CITYCHOICES.indexOf(c) < 0; }));
+  return '<div class="field"><label for="pf-name">Name</label><input type="text" id="pf-name" value="'+esc(PF.name)+'" autocomplete="name"></div>' +
+    '<div class="field"><label for="pf-handle">Handle</label><span class="handlein"><span>@</span><input type="text" id="pf-handle" value="'+esc(PF.handle)+'" autocomplete="username" autocapitalize="off"></span></div>' +
+    '<div class="field"><label for="pf-about">About you</label><input type="text" id="pf-about" maxlength="120" value="'+esc(PF.about)+'" placeholder="Builds shade, cooks for eighty, always on strike crew"></div>' +
+    '<div class="field"><span class="flabel" id="pf-sk-l">What you can do</span><div class="pchips" role="group" aria-labelledby="pf-sk-l">' +
+      SKILLCHOICES.map(function(c){ var on = PF.skills.indexOf(c[0]) >= 0;
+        return '<button type="button" class="pchip'+(on?' on':'')+'" data-act="pfskill" data-id="'+esc(c[0])+'" aria-pressed="'+on+'">'+esc(c[1])+'</button>'; }).join('') + '</div></div>' +
+    '<div class="field"><span class="flabel" id="pf-ci-l">Where you are</span><div class="pchips" id="pf-cities" role="group" aria-labelledby="pf-ci-l">' +
+      cities.map(function(c){ var on = PF.cities.indexOf(c) >= 0;
+        return '<button type="button" class="pchip'+(on?' on':'')+'" data-act="pfcity" data-id="'+esc(c)+'" aria-pressed="'+on+'">'+esc(c)+'</button>'; }).join('') +
+      '<span class="addcity"><input type="text" id="pf-city" placeholder="Another city" aria-label="Another city"><button type="button" class="btn" data-act="pfaddcity">Add</button></span></div></div>';
+}
+function profileDialog(mode){
+  var p = PEOPLE['self'];
+  PF = { mode:mode, name:p.displayName, handle:p.handle,
+         about: mode === 'signup' ? '' : (p.bio || ''), skills: mode === 'signup' ? [] : (p.skills || []).slice(),
+         cities: mode === 'signup' ? [] : citiesOf(p).slice() };
+  dialog(mode === 'signup' ? 'Join Hypernet' : 'Edit profile', '<div id="pfbody">' + profileForm() + '</div>',
+    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="pfsave" id="pfsave">'+(mode === 'signup' ? 'Join' : 'Save')+'</button>', 560);
+  focusIn(mode === 'signup' ? 'pf-about' : 'pf-name');
+}
+function pfValid(){ return !!(($('pf-name')||{}).value || '').trim() && !!(($('pf-handle')||{}).value || '').trim(); }
+function pfSync(){
+  PF.name = ($('pf-name')||{}).value || ''; PF.handle = (($('pf-handle')||{}).value || '').replace(/^@/, '');
+  PF.about = ($('pf-about')||{}).value || '';
+  var b = $('pfsave'); if (b) b.disabled = !pfValid();
+}
+function pfAddCity(){
+  var inp = $('pf-city'), v = inp ? inp.value.trim() : '';
+  if (!v) return;
+  v = v.charAt(0).toUpperCase() + v.slice(1);
+  if (PF.cities.indexOf(v) < 0) PF.cities.push(v);
+  pfSync();
+  $('pfbody').innerHTML = profileForm();
+  var ni = $('pf-city'); if (ni) ni.focus();
+}
+function pfSave(){
+  pfSync(); if (!pfValid()) return;
+  var p = PEOPLE['self'];
+  p.displayName = PF.name.trim(); p.handle = PF.handle.trim(); p.bio = PF.about.trim();
+  p.skills = PF.skills.slice(); p.cities = PF.cities.slice();
+  p.city = p.cities.length ? p.cities[0].toUpperCase() : '';
+  if (PF.mode === 'signup'){ S.hasAccount = true; logIn(); toast('Welcome to Hypernet', ''); }
+  else { S.me = { name:p.displayName, handle:p.handle }; closeDialogs(); render(); toast('Profile saved', ''); }
+}
 function loginDialog(){
+  if (!S.hasAccount){ profileDialog('signup'); return; }
+  var p = PEOPLE['self'];
   dialog('Log in to Hypernet',
-    '<div class="field"><label for="lg-name">Display name</label><input type="text" id="lg-name" value="Michal"></div>' +
-    '<div class="field"><label for="lg-handle">Handle</label><input type="text" id="lg-handle" value="mike"></div>' +
-    '<div class="fhelp">This prototype never asks for a password.</div>',
+    '<div class="field"><label for="lg-name">Name</label><input type="text" id="lg-name" value="'+esc(p.displayName)+'"></div>' +
+    '<div class="field"><label for="lg-handle">Handle</label><span class="handlein"><span>@</span><input type="text" id="lg-handle" value="'+esc(p.handle)+'" autocapitalize="off"></span></div>',
     '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="dologin">Log in</button>', 420);
   focusIn('lg-name');
 }
 function doLogin(){
-  var n = ($('lg-name')||{}).value || 'You', hnd = ($('lg-handle')||{}).value || 'you';
-  S.loggedIn = true; S.me = { name:n, handle:hnd };
-  PEOPLE['self'].displayName = n; PEOPLE['self'].handle = hnd;
+  var n = (($('lg-name')||{}).value || '').trim(), hnd = (($('lg-handle')||{}).value || '').trim().replace(/^@/, '');
+  if (n) PEOPLE['self'].displayName = n;
+  if (hnd) PEOPLE['self'].handle = hnd;
+  logIn();
+}
+function logIn(){
+  S.loggedIn = true; S.me = { name:PEOPLE['self'].displayName, handle:PEOPLE['self'].handle };
   if (!Object.keys(RSVP).length){
     RSVP['evt-deep-listening'] = 'interested'; RSVP['evt-fill-0'] = 'going'; RSVP['evt-fill-6'] = 'going';
   }
@@ -2517,6 +2608,7 @@ function runCmd(cmd, arg){
     case 'newchat':     closeDialogs(); gated(function(){ newChatDialog(); })(); break;
     case 'new-callout': closeDialogs(); gated(newCalloutDialog)(); break;
     case 'profile':     openItem('person', 'self'); break;
+    case 'editprofile': profileDialog('edit'); break;
     case 'logout':      doLogout(); break;
   }
 }
@@ -2535,7 +2627,7 @@ document.addEventListener('click', function(ev){
   if (n.tagName === 'A') ev.preventDefault();
   switch (act){
     case 'newmenu':  if (POP){ closePopup(); break; } popup(n, NEWITEMS); break;
-    case 'acctmenu': if (POP){ closePopup(); break; } popup(n, [{ label:'Your profile', cmd:'profile', icon:'user' }, '-', { label:'Log out', cmd:'logout', icon:'back' }]); break;
+    case 'acctmenu': if (POP){ closePopup(); break; } popup(n, [{ label:'Your profile', cmd:'profile', icon:'user' }, { label:'Edit profile', cmd:'editprofile', icon:'edit' }, '-', { label:'Log out', cmd:'logout', icon:'back' }]); break;
     case 'newsheet': newSheet(); break;
     case 'runcmd':   runCmd(id); break;
     case 'folder':   goFolder({ kind:n.getAttribute('data-kind'), id:id || null }); render(); $('listbody').scrollTop = 0; break;
@@ -2584,6 +2676,15 @@ document.addEventListener('click', function(ev){
     case 'new-horizon':  runCmd('new-horizon', id); break;
     case 'login':        loginDialog(); break;
     case 'dologin':      doLogin(); break;
+    case 'pfsave':       pfSave(); break;
+    case 'editprofile':  gated(function(){ profileDialog('edit'); })(); break;
+    case 'pfaddcity':    pfAddCity(); break;
+    case 'pfskill': case 'pfcity': {
+      var arr = act === 'pfskill' ? PF.skills : PF.cities, ix = arr.indexOf(id);
+      if (ix < 0) arr.push(id); else arr.splice(ix, 1);
+      n.classList.toggle('on', ix < 0); n.setAttribute('aria-pressed', ix < 0);
+      break;
+    }
     case 'logout':       doLogout(); break;
     case 'closedlg':     closeDialogs(); S.pending = null; break;
     case 'donewhorizon': {
@@ -2637,6 +2738,7 @@ document.addEventListener('input', function(ev){
   var n = ev.target;
   if (n.id === 'q' || n.id === 'pq'){ doSearch(n.value); return; }
   if (n.id === 'nc-q'){ NC.q = n.value; var sel = NC.sel.slice(); paintNewChat(); var q = $('nc-q'); if (q){ q.focus(); q.setSelectionRange(q.value.length, q.value.length); } return; }
+  if (/^pf-(name|handle|about)$/.test(n.id)){ pfSync(); return; }
   if (n.id === 'nc-name'){ NC.name = n.value; paintNewChat(true); return; }
   if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT') return;
   DRAFT[n.getAttribute('data-cz')] = n.value;
@@ -2686,6 +2788,8 @@ document.addEventListener('keydown', function(ev){
   if (ev.key === 'Enter' && ae){
     if (ae.id === 'chatbox'){ sendChat(); ev.preventDefault(); return; }
     if (ae.id === 'lg-name' || ae.id === 'lg-handle'){ doLogin(); ev.preventDefault(); return; }
+    if (ae.id === 'pf-city'){ pfAddCity(); ev.preventDefault(); return; }
+    if (/^pf-(name|handle|about)$/.test(ae.id)){ pfSave(); ev.preventDefault(); return; }
     if (ae.id === 'nc-name'){ createChat(); ev.preventDefault(); return; }
     if (ae.classList.contains('pi')){ ae.click(); ev.preventDefault(); return; }
   }

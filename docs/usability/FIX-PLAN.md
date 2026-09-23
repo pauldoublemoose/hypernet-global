@@ -139,6 +139,10 @@ on an event shelf keeps LIST / CALENDAR. The "news from your network" subtitle i
 **B5. Calendar.** Opens on the current week/month; days are tappable and list that day's events; event
 marks are tappable (≥44px hit area).
 Sources: FIRSTTIMER-11, PHONEBROWSER-5.
+*Status: done.* The calendar opens on today's month (no more hard-coded October). The whole day cell is the target
+(≥53×57px at 375): on a phone it lists that day under the grid ("Wed 23 Sep 2026 · 1", with "All of September" to go
+back; empty days say so), and the picked day is kept in the URL/history; on a desktop a day cell or week-column header
+opens that day. The 6px colour marks are now just marks, not tiny buttons. Today and paging clear the pick.
 
 **B6. Call outs.** Answer opens a DM with an editable prefilled message, then marks the call out
 "Answered" (no duplicates, no Answer on your own). A call out can link to an event and shows on that

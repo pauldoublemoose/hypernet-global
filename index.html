@@ -515,7 +515,13 @@ fieldset.props legend{ padding:0 6px; font-weight:bold; }
 .dayband .hr{ flex:0 0 66px; padding:4px 8px; text-align:right; font:12px var(--mono); color:var(--dim); background:var(--face-lt); border-right:1px solid #b9b4a8; }
 .dayband .slot{ flex:1; padding:3px; display:flex; flex-direction:column; gap:3px; }
 .calcell .dots{ display:flex; flex-wrap:wrap; gap:3px; margin-top:4px; }
-.calcell .dots i{ width:100%; height:6px; background:var(--eac); }
+.calcell .dots i{ width:100%; height:6px; background:var(--eac); pointer-events:none; }
+.calcell[data-act]{ cursor:pointer; }
+.calcell[data-act]:hover{ background:var(--hover); }
+.calcell.picked{ outline:2px solid #000; outline-offset:-2px; background:#fff; }
+.weekcol .wh[data-act]{ cursor:pointer; }
+.calall{ margin-left:auto; min-height:32px; padding:0 8px; border:0; background:transparent; font:bold 11px var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--ink2); text-decoration:underline; }
+body.is-phone .calall{ min-height:44px; }
 .agenda{ border-top:1px solid #b9b4a8; }
 @container cal (max-width:640px){
   .calrow{ min-height:58px; }
@@ -1102,7 +1108,7 @@ var S = {
   leftOpen:true, rightOpen:false, lastOpened:'left',
   chatOpen:null,               /* null = the list of chats */
   query:'',
-  calMode:'month', calAnchor:'2026-10-04', calMine:false,
+  calMode:'month', calAnchor:TODAY_ISO, calMine:false, calDay:null,
   tab:'home',                  /* phone only */
   phoneSearch:false,
   rows:[],
@@ -2206,18 +2212,25 @@ function monthGrid(anchorIso){
     for (var d = 0; d < 7; d++){
       var day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + w*7 + d, 18);
       var iso = isoOf(day), evs = eventsOn(iso);
-      h += '<div class="calcell'+(day.getMonth()!==m?' oth':'')+(iso===TODAY_ISO?' today':'')+'">' +
+      /* the whole day is the target: on a phone it lists that day below, on a desktop it opens the day */
+      var picked = narrow && S.calDay === iso;
+      h += '<div class="calcell'+(day.getMonth()!==m?' oth':'')+(iso===TODAY_ISO?' today':'')+(picked?' picked':'')+'" data-act="calday" data-id="'+iso+'" role="button" ' +
+             'aria-label="'+esc(fmtDate(iso) + (evs.length ? ', ' + evs.length + ' event' + (evs.length === 1 ? '' : 's') : ''))+'"'+(narrow ? ' aria-pressed="'+picked+'"' : '')+'>' +
            '<span class="dn">'+day.getDate()+'</span>' +
-           (narrow ? '<div class="dots">' + evs.slice(0,3).map(function(e){ return '<i style="'+themeVars(TH(e.id))+'" data-act="open-reset" data-type="event" data-id="'+e.id+'"></i>'; }).join('') + '</div>'
+           (narrow ? '<div class="dots">' + evs.slice(0,3).map(function(e){ return '<i style="'+themeVars(TH(e.id))+'"></i>'; }).join('') + '</div>'
                    : evs.map(calBlock).join('')) + '</div>';
     }
     h += '</div>';
   }
   if (narrow){
-    var inMonth = calEvents().filter(function(e){ var dd = dOf(e.date); return dd.getMonth() === m && dd.getFullYear() === y; }).sort(byDate);
-    h += '<div class="agenda">' + (inMonth.length ? '<div class="band">'+MONFULL[m]+' <span class="cnt">'+inMonth.length+'</span></div>' +
-      inMonth.map(function(e){ return rowHTML({ type:'event', id:e.id }).replace('data-act="row"', 'data-act="open-reset"'); }).join('')
-      : '<div class="empty">Nothing in '+MONFULL[m]+'.</div>') + '</div>';
+    var dayPick = S.calDay && dOf(S.calDay).getMonth() === m ? S.calDay : null;
+    var list = dayPick ? eventsOn(dayPick).sort(byDate)
+             : calEvents().filter(function(e){ var dd = dOf(e.date); return dd.getMonth() === m && dd.getFullYear() === y; }).sort(byDate);
+    var head = dayPick ? fmtDate(dayPick) : MONFULL[m];
+    h += '<div class="agenda"><div class="band">'+esc(head)+' <span class="cnt">'+list.length+'</span>' +
+      (dayPick ? '<button class="calall" data-act="calday" data-id="'+dayPick+'">All of '+MONFULL[m]+'</button>' : '') + '</div>' +
+      (list.length ? list.map(function(e){ return rowHTML({ type:'event', id:e.id }).replace('data-act="row"', 'data-act="open-reset"'); }).join('')
+                   : '<div class="empty">Nothing on '+esc(head)+'.</div>') + '</div>';
   }
   return h + '</div>';
 }
@@ -2226,7 +2239,7 @@ function weekGrid(anchorIso){
   var h = '<div class="calgrid" style="flex-direction:row">';
   for (var d = 0; d < 7; d++){
     var day = new Date(start.getFullYear(), start.getMonth(), start.getDate()+d, 18), iso = isoOf(day);
-    h += '<div class="weekcol'+(iso===TODAY_ISO?' today':'')+'"><div class="wh">'+DAY[day.getDay()]+' '+day.getDate()+'</div>' +
+    h += '<div class="weekcol'+(iso===TODAY_ISO?' today':'')+'"><div class="wh" data-act="calday" data-id="'+iso+'" role="button">'+DAY[day.getDay()]+' '+day.getDate()+'</div>' +
          '<div class="wb">' + eventsOn(iso).map(calBlock).join('') + '</div></div>';
   }
   return h + '</div>';
@@ -3844,13 +3857,14 @@ document.addEventListener('click', function(ev){
     case 'nativeshare':  nativeShare(); break;
     case 'discarddraft': FORMDRAFTS[id] = null; closeDialogs(); schedulePersist(); break;
     case 'calmode':      S.calMode = id; render(); break;
-    case 'caltoday':     S.calAnchor = TODAY_ISO; render(); break;
+    case 'caltoday':     S.calAnchor = TODAY_ISO; S.calDay = null; render(); break;
+    case 'calday':       if (narrowCal()) S.calDay = S.calDay === id ? null : id; else { S.calMode = 'day'; S.calAnchor = id; } render(); break;
     case 'calnav': {
       var a = dOf(S.calAnchor), step = +id, mode = narrowCal() && S.calMode === 'week' ? 'month' : S.calMode;
       if (mode === 'month'){ a.setDate(1); a.setMonth(a.getMonth() + step); }
       else if (mode === 'week') a.setDate(a.getDate() + 7*step);
       else a.setDate(a.getDate() + step);
-      S.calAnchor = isoOf(a); render();
+      S.calAnchor = isoOf(a); S.calDay = null; render();
       break;
     }
   }
@@ -4003,7 +4017,7 @@ function snapNow(){
   var f = S.folder, v = viewsOf(f);
   return { hn:1, tab:S.tab, folder:{ kind:f.kind, id:f.id || null }, view: v.length ? viewOf(f) : null,
            stack: S.autoSel ? [] : S.stack.map(function(it){ return { type:it.type, id:it.id }; }),
-           q:S.query, ps:!!S.phoneSearch, cal:{ mode:S.calMode, at:S.calAnchor },
+           q:S.query, ps:!!S.phoneSearch, cal:{ mode:S.calMode, at:S.calAnchor, day:S.calDay },
            dock: L.phone ? null : { open:!!S.rightOpen, chat:S.chatOpen || null } };
 }
 function navKeyOf(s){
@@ -4023,6 +4037,7 @@ function hashOf(s){
   if (s.view === 'calendar' && s.cal){
     if (s.cal.mode && s.cal.mode !== 'month') p.push(['cal', s.cal.mode]);
     if (s.cal.at && s.cal.at !== TODAY_ISO) p.push(['at', s.cal.at]);
+    if (s.cal.day) p.push(['day', s.cal.day]);
   }
   return '#/' + path + (p.length ? '?' + p.map(function(x){ return x[0] + '=' + encodeURIComponent(x[1]); }).join('&') : '');
 }
@@ -4042,7 +4057,7 @@ function parseHash(h){
   var seg = path.split('/').filter(Boolean).map(function(x){ try { return decodeURIComponent(x); } catch(e){ return x; } });
   var a = seg[0] || 'home', b = seg[1], it = null;
   var s = { hn:1, folder:{ kind:'home', id:null }, stack:[], q:p.q || '', ps:false, view:p.view || null,
-            cal:{ mode:p.cal || 'month', at:isoDate(p.at) || null } };
+            cal:{ mode:p.cal || 'month', at:isoDate(p.at) || null, day:isoDate(p.day) || null } };
   if (a === 'event') it = { type:'event', id:evBySlug(b) };
   else if (a === 'horizon') it = { type:'horizon', id:hzBySlug(b) };
   else if (a === 'person') it = { type:'person', id:personBySlug(b) };
@@ -4078,7 +4093,7 @@ function applySnap(s){
   S.query = S.folder.kind === 'search' ? (s.q || '') : '';
   S.phoneSearch = !!s.ps;
   if (s.view && viewsOf(S.folder).indexOf(s.view) >= 0) S.view[destKey(S.folder)] = s.view;
-  if (s.cal){ if (s.cal.mode) S.calMode = s.cal.mode; S.calAnchor = s.cal.at || S.calAnchor; }
+  if (s.cal){ if (s.cal.mode) S.calMode = s.cal.mode; S.calAnchor = s.cal.at || TODAY_ISO; S.calDay = s.cal.day || null; }
   if (s.dock && window.innerWidth >= 760){ S.rightOpen = !!s.dock.open; S.chatOpen = s.dock.chat && CHATS[s.dock.chat] ? s.dock.chat : null; }
   if (S.folder.kind === 'search' && !SEARCHRET) SEARCHRET = { folder:{ kind:'home' }, stack:[] };
   if (S.folder.kind !== 'search') SEARCHRET = null;

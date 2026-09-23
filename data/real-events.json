@@ -1,0 +1,1683 @@
+{
+  "meta": {
+    "title": "Real burn-community events for the Hypernet prototype",
+    "compiledAt": "2026-09-23",
+    "schema": "docs/research/burn-event-data.md section 4",
+    "notes": [
+      "Events without `illustrative: true` use only facts from the linked sources. Where a fact could not be verified, the field was left out.",
+      "`unverified` lists field paths that come only from third-party directories.",
+      "`access.asOf` gives the edition year the prices belong to.",
+      "Relative to 2026-09-23, the 2026 editions of big burns are in the past. `burn.nextEdition` holds any announced 2027 dates.",
+      "`ownerIds` is empty for real external events because no Hypernet user owns them. The illustrative events reuse the existing cast (p-anna, g-baltic)."
+    ]
+  },
+  "events": [
+    {
+      "id": "real-burning-man-2026",
+      "title": "Burning Man 2026",
+      "kind": "burn",
+      "scale": "burn",
+      "date": "2026-08-30",
+      "endDate": "2026-09-07",
+      "startTime": "00:01",
+      "timezone": "America/Los_Angeles",
+      "venueKind": "physical",
+      "city": "Black Rock City",
+      "region": "Black Rock Desert, Nevada",
+      "country": "US",
+      "venue": {
+        "name": "Black Rock City",
+        "addressVisibility": "public"
+      },
+      "hostName": "Burning Man Project",
+      "ownerIds": [],
+      "organiser": {
+        "name": "Burning Man Project",
+        "legalForm": "non-profit",
+        "url": "https://burningman.org"
+      },
+      "description": "The flagship burn: a temporary city of about 70,000 in the Nevada desert, built by its participants and taken down without a trace.",
+      "privacy": "everyone",
+      "externalUrl": "https://burningman.org/black-rock-city/",
+      "access": {
+        "model": "ticket",
+        "currency": "USD",
+        "asOf": 2026,
+        "tiers": [
+          {
+            "name": "Limited",
+            "price": 550,
+            "note": "very limited quantity"
+          },
+          {
+            "name": "Limited",
+            "price": 675,
+            "note": "very limited quantity"
+          },
+          {
+            "name": "Pay Your Way",
+            "price": 775,
+            "note": "covers the cost per participant"
+          },
+          {
+            "name": "Give the Gift",
+            "price": 975
+          },
+          {
+            "name": "Give the Gift",
+            "price": 1500
+          },
+          {
+            "name": "Give the Gift",
+            "price": 3000
+          }
+        ],
+        "lowIncome": {
+          "price": 250,
+          "note": "Ticket Aid program, by application; $75 vehicle pass"
+        },
+        "sales": [
+          {
+            "name": "Sunrise Sale",
+            "opens": "2026-02-04"
+          },
+          {
+            "name": "Stewards Sale",
+            "opens": "2026-03-04",
+            "closes": "2026-04-20",
+            "note": "For theme camps, art, mutant vehicles and infrastructure crews; formerly the Directed Group Sale"
+          },
+          {
+            "name": "STEP resale",
+            "opens": "2026-03-18",
+            "closes": "2026-08-28",
+            "note": "The only safe way to resell"
+          },
+          {
+            "name": "Main Sale",
+            "opens": "2026-04-29",
+            "closes": "2026-05-08"
+          },
+          {
+            "name": "OMG Sale",
+            "opens": "2026-07-29",
+            "closes": "2026-09-04",
+            "note": "Final sale, no registration"
+          }
+        ],
+        "transfer": "official_platform",
+        "transferVia": "STEP",
+        "vehiclePass": {
+          "price": 165,
+          "note": "max one per two tickets"
+        }
+      },
+      "age": {
+        "kidsFreeUpTo": 12,
+        "note": "Kids still need a free Kid's Ticket. Under 18 must be with a parent or guardian over 21. Families can camp in Kidsville."
+      },
+      "principles": {
+        "base": "10 Principles",
+        "additions": [],
+        "url": "https://burningman.org/about-us/10-principles/"
+      },
+      "theme": {
+        "name": "Axis Mundi",
+        "blurb": "The world-tree or central axis found in many cultures, with the Man at the center."
+      },
+      "volunteering": {
+        "expectation": "encouraged",
+        "teams": [
+          "Gate, Perimeter & Exodus",
+          "Rangers",
+          "Lamplighters",
+          "DPW",
+          "Recycle Camp",
+          "Playa Info"
+        ]
+      },
+      "burn": {
+        "edition": {
+          "year": 2026
+        },
+        "nextEdition": {
+          "date": "2027-08-29",
+          "endDate": "2027-09-06",
+          "theme": "Spellbound"
+        },
+        "phases": [
+          {
+            "kind": "build",
+            "note": "The DPW season runs mid-July to early October: set-up, event, tear-down, playa restoration"
+          },
+          {
+            "kind": "early_entry",
+            "note": "Setup Access Pass (SAP) holders only, in the week before the gates open"
+          },
+          {
+            "kind": "gates_open",
+            "date": "2026-08-30",
+            "time": "00:01"
+          },
+          {
+            "kind": "gates_close",
+            "date": "2026-09-05",
+            "time": "18:00",
+            "note": "Entry closes when Exodus begins"
+          },
+          {
+            "kind": "effigy_burn",
+            "date": "2026-09-05",
+            "note": "The Man burns Saturday night, weather permitting"
+          },
+          {
+            "kind": "temple_burn",
+            "date": "2026-09-06",
+            "time": "20:00",
+            "note": "Temple of the Moon, weather permitting"
+          },
+          {
+            "kind": "strike",
+            "note": "Playa restoration lasts just over two weeks, into early October"
+          }
+        ],
+        "population": {
+          "cap": 80000,
+          "lastAttendance": 71500,
+          "lastAttendanceYear": 2025,
+          "note": "The cap comes from the BLM permit. The 2025 figure is the census estimate."
+        },
+        "regionalStatus": "flagship",
+        "site": {
+          "name": "Black Rock City",
+          "terrain": "dry lakebed (playa)",
+          "ownership": "BLM Special Recreation Permit"
+        },
+        "earlyEntry": {
+          "credential": "SAP",
+          "via": "Placement (theme camps), DMV (mutant vehicles), the Art Department and other departments"
+        },
+        "camps": {
+          "noun": "theme camps",
+          "count": "900+"
+        },
+        "artFunding": {
+          "model": "honoraria",
+          "name": "BRC Honoraria",
+          "pot": 1300000,
+          "currency": "USD",
+          "note": "75 projects in 2026. Request 40–60% of your budget; grants above $20k are rare."
+        },
+        "effigies": [
+          {
+            "name": "The Man",
+            "burns": "Saturday night"
+          },
+          {
+            "name": "Temple of the Moon",
+            "burns": "Sunday ~20:00"
+          }
+        ],
+        "provided": {
+          "water": "none",
+          "power": false,
+          "showers": false,
+          "food": "none",
+          "note": "Bring 1.5 gallons of water per person per day, plus your own food and shelter."
+        },
+        "rules": {
+          "vending": "none except ice at Arctica",
+          "vehicles": "Only DMV-licensed mutant vehicles may drive; 5 mph limit",
+          "artCars": "Department of Mutant Vehicles licence, with separate day and night licences",
+          "pets": "No pets; a no-dogs event since 2003",
+          "drones": "By permit only",
+          "other": [
+            "No fireworks",
+            "No firearms or weapons"
+          ]
+        },
+        "safety": {
+          "consentTeam": true,
+          "teams": [
+            "Black Rock Rangers",
+            "Emergency Services Department (ESD)",
+            "Bureau of Erotic Discourse"
+          ]
+        },
+        "vocabulary": [
+          {
+            "term": "playa",
+            "meaning": "the dry lakebed the city sits on"
+          },
+          {
+            "term": "MOOP",
+            "meaning": "Matter Out Of Place"
+          },
+          {
+            "term": "Exodus",
+            "meaning": "the mass departure"
+          },
+          {
+            "term": "Esplanade",
+            "meaning": "the inner ring road"
+          },
+          {
+            "term": "SAP",
+            "meaning": "Setup Access Pass for early build crews"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "label": "Gates",
+          "url": "https://help.burningman.org/hc/en-us/articles/360020966772-When-do-the-Gates-open"
+        },
+        {
+          "label": "Tickets 2026",
+          "url": "https://burningman.org/black-rock-city/ticketing-information/"
+        },
+        {
+          "label": "FAQ",
+          "url": "https://burningman.org/black-rock-city/preparation/faq/"
+        },
+        {
+          "label": "Temple",
+          "url": "https://survival.burningman.org/culture/temple/"
+        },
+        {
+          "label": "2026 theme",
+          "url": "https://burningman.org/black-rock-city/black-rock-city-2026/yyyy-theme/"
+        },
+        {
+          "label": "2027",
+          "url": "https://burningman.org/black-rock-city/black-rock-city-2027/"
+        },
+        {
+          "label": "Census",
+          "url": "https://blackrockcitycensus.org/intro"
+        },
+        {
+          "label": "Honoraria 2026",
+          "url": "https://journal.burningman.org/2026/03/burning-man-arts/brc-art/introducing-brc-2026-honoraria-art-honoraria/"
+        },
+        {
+          "label": "Press kit",
+          "url": "https://burningman.org/news/press-media/press-kit/"
+        },
+        {
+          "label": "Survival",
+          "url": "https://survival.burningman.org/survival-health-and-safety/survival/"
+        }
+      ]
+    },
+    {
+      "id": "real-borderland-2026",
+      "title": "The Borderland 2026",
+      "kind": "burn",
+      "scale": "burn",
+      "date": "2026-07-20",
+      "endDate": "2026-07-26",
+      "timezone": "Europe/Stockholm",
+      "venueKind": "physical",
+      "city": "Eksjö",
+      "region": "Småland",
+      "country": "SE",
+      "venue": {
+        "name": "Alversjö",
+        "addressVisibility": "public"
+      },
+      "hostName": "The Borderland",
+      "ownerIds": [],
+      "organiser": {
+        "name": "Gränslandet Ideell Förening",
+        "legalForm": "Swedish non-profit association",
+        "url": "https://talk.theborderland.se/main/"
+      },
+      "description": "A members-only participatory gathering on 100 ha of forest and lakes that the community owns. Art is funded through Dreams, and there is no central production team.",
+      "privacy": "everyone",
+      "externalUrl": "https://talk.theborderland.se/main/",
+      "access": {
+        "model": "membership",
+        "currency": "SEK",
+        "asOf": 2027,
+        "tiers": [
+          {
+            "name": "Higher",
+            "price": 3000
+          },
+          {
+            "name": "Baseline",
+            "price": 2222
+          }
+        ],
+        "lowIncome": {
+          "price": 1234
+        },
+        "sales": [
+          {
+            "name": "Fall membership sale",
+            "opens": "2026-10-04",
+            "closes": "2026-10-11",
+            "note": "Non-transferable and non-refundable. Runs 12:00 to 23:59 UTC."
+          },
+          {
+            "name": "Spring membership sale",
+            "opens": "2027-02-07",
+            "note": "Transferable"
+          }
+        ],
+        "transfer": "official_platform",
+        "transferVia": "members.theborderland.se",
+        "idMustMatch": true
+      },
+      "age": {
+        "kidsFreeUpTo": 13,
+        "note": "Kids must be registered on a membership. After 20:00 they stay near a guardian, after 23:00 near camp. Families camp in Kidsville."
+      },
+      "principles": {
+        "base": "10 Principles",
+        "additions": [
+          "Consent"
+        ],
+        "url": "https://talk.theborderland.se/d/5dDRz8W7/principles"
+      },
+      "volunteering": {
+        "expectation": "encouraged",
+        "how": "Sign up in the Reality Shifts tab of the membership platform. First-timers are asked to do one Clown Police shift.",
+        "teams": [
+          "Threshold",
+          "The Port",
+          "Clown Police",
+          "The Sanctuary",
+          "B.O.W.E.L.S",
+          "Consent",
+          "LNT",
+          "Sound",
+          "Helm",
+          "DoET"
+        ]
+      },
+      "burn": {
+        "edition": {
+          "year": 2026
+        },
+        "nextEdition": {
+          "date": "2027-07-26",
+          "endDate": "2027-08-01",
+          "note": "Always ISO week 30"
+        },
+        "phases": [
+          {
+            "kind": "build",
+            "date": "2026-07-13",
+            "endDate": "2026-07-19",
+            "note": "Non-members may join the build"
+          },
+          {
+            "kind": "early_entry",
+            "date": "2026-07-17",
+            "note": "Registration and wristbands from Friday"
+          },
+          {
+            "kind": "gates_open",
+            "date": "2026-07-20",
+            "note": "Members only from this date. Gate open 09–22."
+          },
+          {
+            "kind": "gates_close",
+            "date": "2026-07-26",
+            "time": "06:00",
+            "note": "Gate opens for departures. Power off at 12:00; camps packed by 14:00."
+          },
+          {
+            "kind": "strike",
+            "date": "2026-07-26",
+            "note": "Strike and litter sweep continue until the site is clean"
+          }
+        ],
+        "population": {
+          "lastAttendance": 5000,
+          "note": "The Borderland's own site says 'over 5,000 participants annually'. Burning Man's Sweden page says about 4,500."
+        },
+        "regionalStatus": "official_regional",
+        "site": {
+          "name": "Alversjö",
+          "terrain": "forest with 4 lakes, half of it nature reserve",
+          "ownership": "community-owned since 2023"
+        },
+        "camps": {
+          "noun": "camps / clusters",
+          "maxSize": "1,250 m² per camp or cluster"
+        },
+        "artFunding": {
+          "model": "dreams_cobudget",
+          "name": "Dreams",
+          "pot": 3690000,
+          "currency": "SEK",
+          "note": "Members hand out real money over three rounds (caps of 20%, 50%, then none). Funding is all-or-nothing against each dream's minimum. Fund 33 adds 1.82M SEK for large or permanent art."
+        },
+        "provided": {
+          "water": "taps",
+          "power": true,
+          "toilets": "portable toilets",
+          "showers": false,
+          "note": "Drinkable well water from taps at HQ, and an on-site power grid. Eco-labelled soap only."
+        },
+        "rules": {
+          "vending": "none",
+          "vehicles": "One-hour unloading slots 18–20 Jul, then long-term parking. 10 km/h; no parking on fire roads.",
+          "artCars": "Register with the BL DMV (Department of Muddy Vehicles)",
+          "fire": "Only in prepared fireplaces, 5 m from structures. Every camp needs a 6 kg ABC extinguisher.",
+          "sound": "Sound zones. Systems over 1000 W must register as a sound camp."
+        },
+        "safety": {
+          "consentTeam": true,
+          "teams": [
+            "The Sanctuary",
+            "Clown Police",
+            "Helm",
+            "Consent Team (24/7)"
+          ]
+        },
+        "vocabulary": [
+          {
+            "term": "Dreams",
+            "meaning": "member-funded projects, and the platform that funds them"
+          },
+          {
+            "term": "Realities",
+            "meaning": "self-organising working groups"
+          },
+          {
+            "term": "Threshold",
+            "meaning": "the gate"
+          },
+          {
+            "term": "Borderlings",
+            "meaning": "participants"
+          },
+          {
+            "term": "JOMO guide",
+            "meaning": "the programme booklet"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "label": "Main",
+          "url": "https://talk.theborderland.se/main/"
+        },
+        {
+          "label": "Principles",
+          "url": "https://talk.theborderland.se/d/5dDRz8W7/principles"
+        },
+        {
+          "label": "Dreams 2026",
+          "url": "https://dreams.theborderland.se/borderland/dreams-2026/about"
+        },
+        {
+          "label": "Arriving",
+          "url": "https://docs.superhuman.com/d/_ddTvwEwgvJw/Arriving_su_mGxe1"
+        },
+        {
+          "label": "During",
+          "url": "https://docs.superhuman.com/d/_ddTvwEwgvJw/During_suoeyUig"
+        },
+        {
+          "label": "Kids",
+          "url": "https://docs.superhuman.com/d/_ddTvwEwgvJw/Kids_su5y2Y85"
+        },
+        {
+          "label": "Safety",
+          "url": "https://docs.superhuman.com/d/_ddTvwEwgvJw/Safety-Support_suPCvBVM"
+        }
+      ]
+    },
+    {
+      "id": "real-afrikaburn-2026",
+      "title": "AfrikaBurn 2026",
+      "kind": "burn",
+      "scale": "burn",
+      "date": "2026-04-27",
+      "endDate": "2026-05-03",
+      "timezone": "Africa/Johannesburg",
+      "venueKind": "physical",
+      "city": "Tankwa Town",
+      "region": "Tankwa Karoo",
+      "country": "ZA",
+      "venue": {
+        "name": "Quaggafontein",
+        "addressVisibility": "public"
+      },
+      "hostName": "AfrikaBurn",
+      "ownerIds": [],
+      "organiser": {
+        "name": "Africa Burns Creative Projects",
+        "legalForm": "not-for-profit company",
+        "url": "https://www.afrikaburn.org/"
+      },
+      "description": "Tankwa Town, a temporary city in the Karoo desert, built around the San Clan effigy.",
+      "privacy": "everyone",
+      "externalUrl": "https://tickets.afrikaburn.org/",
+      "access": {
+        "model": "ticket",
+        "currency": "ZAR",
+        "asOf": 2026,
+        "tiers": [
+          {
+            "name": "Ground Up",
+            "price": 3099,
+            "quantity": 6200
+          },
+          {
+            "name": "New Horizon",
+            "price": 4999,
+            "quantity": 2000,
+            "note": "includes a R1,900 donation"
+          },
+          {
+            "name": "Blue Sky",
+            "price": 7199,
+            "quantity": 300,
+            "note": "includes a R4,100 donation"
+          },
+          {
+            "name": "Anathi",
+            "price": 299,
+            "quantity": 250,
+            "note": "for historically excluded or disadvantaged groups in Africa; by application"
+          },
+          {
+            "name": "Direct Distribution",
+            "price": 3099,
+            "quantity": 1400,
+            "note": "registered creative projects only"
+          },
+          {
+            "name": "Pensioner",
+            "price": 0,
+            "quantity": 100,
+            "note": "age 70+"
+          }
+        ],
+        "lowIncome": {
+          "price": 999,
+          "note": "Subsidised tier, 100 tickets"
+        },
+        "sales": [
+          {
+            "name": "First Flame",
+            "note": "Blue Sky and New Horizon only, for one week from 22 Oct"
+          },
+          {
+            "name": "Second Strike",
+            "note": "All tickets, from 29 Oct"
+          }
+        ],
+        "transfer": "official_platform",
+        "transferVia": "Quicket",
+        "idMustMatch": true,
+        "vehiclePass": {
+          "note": "An E-Toll (Environment Toll) is required for every motor vehicle"
+        }
+      },
+      "age": {
+        "kidsFreeUpTo": 13,
+        "note": "Ages 14–17 pay the general price and must be linked to an adult aged 28+. One adult may bring at most 4 minors."
+      },
+      "principles": {
+        "base": "10 Principles",
+        "additions": [
+          "Each One Teach One"
+        ]
+      },
+      "theme": {
+        "name": "Through The Prism",
+        "blurb": "Identity as refracted rather than fixed."
+      },
+      "burn": {
+        "edition": {
+          "year": 2026
+        },
+        "nextEdition": {
+          "date": "2027-04-26",
+          "endDate": "2027-05-02"
+        },
+        "phases": [
+          {
+            "kind": "early_entry",
+            "note": "Free Work Access Passes (WAP) for crews of registered creative projects, handed out by the crew lead"
+          },
+          {
+            "kind": "gates_open",
+            "date": "2026-04-27",
+            "time": "09:00",
+            "note": "Gate open 09:00 to midnight, Mon–Thu"
+          },
+          {
+            "kind": "gates_close",
+            "date": "2026-05-01",
+            "time": "19:00",
+            "note": "Exit only after this, through Sunday"
+          },
+          {
+            "kind": "effigy_burn",
+            "note": "The Clan usually burns on Saturday"
+          },
+          {
+            "kind": "temple_burn",
+            "note": "Usually Sunday"
+          }
+        ],
+        "population": {
+          "cap": 10000
+        },
+        "regionalStatus": "official_regional",
+        "site": {
+          "name": "Quaggafontein",
+          "terrain": "semi-desert"
+        },
+        "earlyEntry": {
+          "credential": "WAP",
+          "via": "registered creative projects"
+        },
+        "camps": {
+          "noun": "theme camps"
+        },
+        "artFunding": {
+          "model": "grants",
+          "name": "Creative Grants",
+          "note": "Covers materials and fuel only, no labour or artist fees. Usually 70% upfront, 30% after."
+        },
+        "effigies": [
+          {
+            "name": "San Clan",
+            "burns": "Saturday"
+          }
+        ],
+        "provided": {
+          "water": "none",
+          "note": "Bring at least 5 litres of water per person per day."
+        },
+        "rules": {
+          "vending": "none except ice",
+          "artCars": "Mutant vehicles registered with the DMV; 10 km/h; separate night licence",
+          "pets": "Banned, except service dogs",
+          "drones": "Banned",
+          "sound": "Graded in 3 levels; the loudest only in loud zones"
+        },
+        "vocabulary": [
+          {
+            "term": "Binnekring",
+            "meaning": "the centre of Tankwa Town (Afrikaans for 'inner circle')"
+          },
+          {
+            "term": "San Clan",
+            "meaning": "the effigy"
+          },
+          {
+            "term": "SOOP",
+            "meaning": "Sound Out Of Place"
+          },
+          {
+            "term": "Plug and Play",
+            "meaning": "paying someone to set up your camp (frowned upon)"
+          },
+          {
+            "term": "Darkwad",
+            "meaning": "someone moving around at night without lights"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "label": "Tickets",
+          "url": "https://tickets.afrikaburn.org/"
+        },
+        {
+          "label": "2026 theme",
+          "url": "https://tickets.afrikaburn.org/afrikaburn-2026-theme/"
+        },
+        {
+          "label": "2027",
+          "url": "https://tickets.afrikaburn.org/afrikaburn-2027-theme/"
+        },
+        {
+          "label": "FAQ",
+          "url": "https://quaggapedia.afrikaburn.com/index.php?title=FAQ%27s"
+        },
+        {
+          "label": "Basics",
+          "url": "https://quaggapedia.afrikaburn.com/index.php?title=BASICS"
+        },
+        {
+          "label": "Water",
+          "url": "https://quaggapedia.afrikaburn.com/index.php?title=BE_WATERWISE"
+        },
+        {
+          "label": "Mutant vehicles",
+          "url": "https://www.afrikaburn.org/event/participation/mutant-vehicles/"
+        },
+        {
+          "label": "Grants policy",
+          "url": "https://www.afrikaburn.org/creative-grants-policy/"
+        }
+      ]
+    },
+    {
+      "id": "real-burning-nest-2026",
+      "title": "Burning Nest 2026",
+      "kind": "burn",
+      "scale": "burn",
+      "date": "2026-05-18",
+      "endDate": "2026-05-25",
+      "timezone": "Europe/London",
+      "venueKind": "physical",
+      "city": "Newton Abbot",
+      "region": "Devon",
+      "country": "GB",
+      "venue": {
+        "name": "The Glade",
+        "addressVisibility": "secret"
+      },
+      "hostName": "Burning Nest",
+      "ownerIds": [],
+      "description": "The UK's largest regional burn, at a secret location in Devon. The Effigy burns on Saturday and the Temple on Sunday.",
+      "privacy": "everyone",
+      "externalUrl": "https://burningnest.co.uk/",
+      "access": {
+        "model": "ticket",
+        "currency": "GBP",
+        "asOf": 2026,
+        "tiers": [
+          {
+            "name": "subsidise me by £20",
+            "price": 200
+          },
+          {
+            "name": "actual event price",
+            "price": 220
+          },
+          {
+            "name": "showing Nest some love",
+            "price": 265
+          },
+          {
+            "name": "Moar Art Plz",
+            "price": 285
+          },
+          {
+            "name": "BEST ART EVER",
+            "price": 315
+          },
+          {
+            "name": "Carer",
+            "price": 1
+          },
+          {
+            "name": "Child (14 or under)",
+            "price": 10
+          },
+          {
+            "name": "Age 15–18",
+            "price": 100
+          }
+        ],
+        "lowIncome": {
+          "price": 100,
+          "note": "Inclusion ticket"
+        },
+        "sales": [
+          {
+            "name": "Ticket sales close",
+            "closes": "2026-05-14"
+          }
+        ],
+        "vehiclePass": {
+          "price": 25,
+          "note": "Parking permit; also the live-in vehicle pass"
+        }
+      },
+      "principles": {
+        "base": "10 Principles",
+        "additions": [
+          "Each One Teach One",
+          "Consent (the '0th Principle')"
+        ],
+        "renamed": [
+          "Leaving No Trace → Leave A Better Trace"
+        ],
+        "url": "https://burningnest.co.uk/principles/"
+      },
+      "theme": {
+        "name": "Not Actual Size",
+        "blurb": "Playing with scale."
+      },
+      "volunteering": {
+        "expectation": "encouraged",
+        "how": "No required amount and nobody monitors it",
+        "teams": [
+          "Gate",
+          "Rangers",
+          "LNT",
+          "Welfare Enough",
+          "Build",
+          "Strike"
+        ]
+      },
+      "burn": {
+        "edition": {
+          "year": 2026
+        },
+        "nextEdition": {
+          "date": "2027-05-24",
+          "endDate": "2027-05-31"
+        },
+        "phases": [
+          {
+            "kind": "build",
+            "date": "2026-05-11",
+            "time": "12:00",
+            "note": "DPW build crew on site"
+          },
+          {
+            "kind": "early_entry",
+            "date": "2026-05-15",
+            "time": "12:00",
+            "note": "Work Access Permits for camps, art and key volunteers"
+          },
+          {
+            "kind": "gates_open",
+            "date": "2026-05-18",
+            "time": "08:00",
+            "note": "Gate open 08:00 to midnight"
+          },
+          {
+            "kind": "effigy_burn",
+            "note": "Saturday night"
+          },
+          {
+            "kind": "temple_burn",
+            "note": "Sunday night"
+          },
+          {
+            "kind": "gates_close",
+            "date": "2026-05-25",
+            "time": "15:00",
+            "note": "Non-strikers leave"
+          },
+          {
+            "kind": "strike",
+            "date": "2026-05-25",
+            "endDate": "2026-05-27"
+          }
+        ],
+        "site": {
+          "name": "The Glade",
+          "terrain": "protected grassland with a lake (no swimming) and a manor house with residents"
+        },
+        "earlyEntry": {
+          "credential": "Work Access Permit",
+          "via": "camps, art, key volunteers"
+        },
+        "camps": {
+          "noun": "theme camps",
+          "registration": {
+            "closes": "2026-03-15"
+          }
+        },
+        "artFunding": {
+          "model": "grants",
+          "name": "Art grants",
+          "currency": "GBP",
+          "range": "Small under £100, Medium £100–1,000, Large £1,000–2,000",
+          "note": "Two stages ('Share your dream', then a costed proposal). 70% advance."
+        },
+        "effigies": [
+          {
+            "name": "Effigy",
+            "burns": "Saturday night"
+          },
+          {
+            "name": "Temple",
+            "burns": "Sunday night"
+          }
+        ],
+        "provided": {
+          "water": "taps",
+          "toilets": "compost toilets",
+          "showers": false
+        },
+        "rules": {
+          "vending": "none",
+          "vehicles": "5 mph; only service vehicles move in the main area during event week",
+          "pets": "No pets; assistance dogs need pre-approval",
+          "drones": "Banned",
+          "fire": "Raised off the ground only",
+          "other": [
+            "No fireworks",
+            "No bikes or e-scooters on site"
+          ]
+        },
+        "safety": {
+          "teams": [
+            "Rangers (green tailcoats)",
+            "Welfare Enough",
+            "Medics"
+          ]
+        },
+        "vocabulary": [
+          {
+            "term": "Nestlings",
+            "meaning": "participants"
+          },
+          {
+            "term": "The Carrier Pigeon",
+            "meaning": "the newsletter"
+          },
+          {
+            "term": "WWW Guide",
+            "meaning": "What Where When, the programme"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "label": "Community agreements",
+          "url": "https://burningnest.co.uk/community-agreements/"
+        },
+        {
+          "label": "Tickets",
+          "url": "https://burningnest.co.uk/tickets/"
+        },
+        {
+          "label": "Principles",
+          "url": "https://burningnest.co.uk/principles/"
+        },
+        {
+          "label": "2026 theme",
+          "url": "https://burningnest.co.uk/2026-theme/"
+        },
+        {
+          "label": "Art grants",
+          "url": "https://burningnest.co.uk/art-grants/"
+        },
+        {
+          "label": "Theme camps",
+          "url": "https://burningnest.co.uk/theme-camps/"
+        },
+        {
+          "label": "FAQs",
+          "url": "https://burningnest.co.uk/faqs/"
+        }
+      ]
+    },
+    {
+      "id": "real-elsewhere-2026",
+      "title": "Elsewhere 2026",
+      "kind": "burn",
+      "scale": "burn",
+      "date": "2026-07-07",
+      "endDate": "2026-07-12",
+      "timezone": "Europe/Madrid",
+      "venueKind": "physical",
+      "city": "Sariñena",
+      "region": "Monegros desert, Huesca",
+      "country": "ES",
+      "hostName": "Nobodies Collective",
+      "ownerIds": [],
+      "organiser": {
+        "name": "Nobodies Collective Association",
+        "legalForm": "Spanish non-profit association",
+        "url": "https://nobodies.team/"
+      },
+      "description": "The Monegros desert burn formerly known as Nowhere, now run by the community as Elsewhere. Every ticket holder is expected to volunteer.",
+      "privacy": "everyone",
+      "externalUrl": "https://nobodies.team/",
+      "access": {
+        "model": "ticket",
+        "currency": "EUR",
+        "asOf": 2026,
+        "tiers": [
+          {
+            "name": "Wave 1",
+            "price": 275
+          },
+          {
+            "name": "Wave 2",
+            "price": 295
+          },
+          {
+            "name": "Wave 3",
+            "price": 315
+          }
+        ],
+        "lowIncome": {
+          "note": "Low-income codes, redeemable until 14 May. VIP (Voluntarily Inflated Price) and local-resident discounts also exist."
+        },
+        "idMustMatch": true
+      },
+      "age": {
+        "note": "Under 14: optional donation. Ages 14–18: reduced rate."
+      },
+      "principles": {
+        "base": "own",
+        "additions": [
+          "Consent"
+        ],
+        "url": "https://www.goingnowhere.org/event/principles/"
+      },
+      "volunteering": {
+        "expectation": "expected",
+        "how": "Shifts on the Humans app"
+      },
+      "burn": {
+        "edition": {
+          "year": 2026,
+          "note": "First year as Elsewhere, after Nowhere"
+        },
+        "nextEdition": {
+          "date": "2027-06-07",
+          "endDate": "2027-06-13",
+          "note": "Voted by members; awaiting approval from the regional environment authority (INAGA)"
+        },
+        "phases": [
+          {
+            "kind": "build",
+            "note": "About two weeks; the crew grows from 20 to about 100"
+          }
+        ],
+        "population": {
+          "note": "About 3,000 people through the gate"
+        },
+        "regionalStatus": "official_regional",
+        "camps": {
+          "noun": "barrios"
+        },
+        "artFunding": {
+          "model": "grants",
+          "name": "Art grants",
+          "currency": "EUR",
+          "range": "typically €500–3,000, up to €5,000 as an exception",
+          "note": "Paid as reimbursement. 2026 deadline 17 May."
+        }
+      },
+      "sources": [
+        {
+          "label": "Nobodies",
+          "url": "https://nobodies.team/"
+        },
+        {
+          "label": "FAQ",
+          "url": "https://nobodies.team/faq.html"
+        },
+        {
+          "label": "2027 dates",
+          "url": "https://nobodies.team/event-dates-2027.html"
+        },
+        {
+          "label": "Art grants",
+          "url": "https://nobodies.team/art-grants.html"
+        },
+        {
+          "label": "Volunteering",
+          "url": "https://nobodies.team/volunteering.html"
+        },
+        {
+          "label": "Going Nowhere (end notice)",
+          "url": "https://www.goingnowhere.org/"
+        }
+      ]
+    },
+    {
+      "id": "real-schoenburn-2026",
+      "title": "Schönburn 2026",
+      "kind": "burn",
+      "scale": "gathering",
+      "date": "2026-08-05",
+      "endDate": "2026-08-09",
+      "timezone": "Europe/Vienna",
+      "venueKind": "physical",
+      "country": "AT",
+      "venue": {
+        "name": "Böllerbauer",
+        "addressVisibility": "public"
+      },
+      "hostName": "Burners.at",
+      "ownerIds": [],
+      "organiser": {
+        "name": "Burners.at",
+        "legalForm": "association",
+        "url": "https://www.burners.at/"
+      },
+      "description": "Austria's official regional burn, the closest official regional to Czechia.",
+      "privacy": "everyone",
+      "externalUrl": "https://burners.at/event/schoenburn-2026",
+      "access": {
+        "model": "membership",
+        "sales": [
+          {
+            "name": "Membership sale",
+            "opens": "2026-04-19"
+          }
+        ]
+      },
+      "burn": {
+        "edition": {
+          "year": 2026
+        },
+        "regionalStatus": "official_regional",
+        "population": {
+          "note": "About 100–500 people"
+        }
+      },
+      "unverified": [
+        "access.sales",
+        "burn.population"
+      ],
+      "sources": [
+        {
+          "label": "Schönburn 2026",
+          "url": "https://burners.at/event/schoenburn-2026"
+        },
+        {
+          "label": "Burners.at",
+          "url": "https://www.burners.at/"
+        },
+        {
+          "label": "Size (third-party)",
+          "url": "https://festivibes.co/festival-guides/best-burns-europe-2026"
+        }
+      ]
+    },
+    {
+      "id": "real-varlys-2026",
+      "title": "Vårlys 2026",
+      "kind": "burn",
+      "scale": "gathering",
+      "date": "2026-05-27",
+      "endDate": "2026-05-31",
+      "timezone": "Europe/Oslo",
+      "venueKind": "physical",
+      "city": "Dokka",
+      "region": "Torpa, Innlandet",
+      "country": "NO",
+      "venue": {
+        "name": "Torpa",
+        "address": "Storgata 54, Dokka",
+        "addressVisibility": "public"
+      },
+      "hostName": "Frostlys",
+      "ownerIds": [],
+      "organiser": {
+        "name": "Frostlys",
+        "url": "https://www.frostlys.no/"
+      },
+      "description": "Norway's spring burn, a small membership-based regional about 2.5 hours north of Oslo. Its winter sibling is Frostlys.",
+      "privacy": "everyone",
+      "externalUrl": "https://www.frostlys.no/",
+      "access": {
+        "model": "membership",
+        "note": "Buy in advance only; no sales at the gate."
+      },
+      "age": {
+        "min": 20,
+        "kidsFreeUpTo": 6,
+        "note": "Children up to 6 need a free child membership"
+      },
+      "principles": {
+        "base": "10 Principles",
+        "additions": [
+          "Consent ('Only YES means YES!')"
+        ]
+      },
+      "volunteering": {
+        "expectation": "required",
+        "how": "Pick a volunteer role when you buy your membership"
+      },
+      "burn": {
+        "edition": {
+          "year": 2026
+        },
+        "population": {
+          "lastAttendance": 217,
+          "lastAttendanceYear": 2025
+        },
+        "provided": {
+          "water": "taps",
+          "note": "One drinking-water tap and no bins. Camping on grass; limited campervan spots by application."
+        },
+        "rules": {
+          "vending": "none",
+          "pets": "No pets",
+          "sound": "No amplified sound 04:00–10:00",
+          "other": [
+            "No glitter, feathers, confetti or polystyrene"
+          ]
+        }
+      },
+      "sources": [
+        {
+          "label": "Vårlys 2026 registration",
+          "url": "https://event.checkin.no/202450/varlys-2026"
+        },
+        {
+          "label": "Survival guide",
+          "url": "https://www.frostlys.no/survival-guide"
+        },
+        {
+          "label": "FAQ",
+          "url": "https://www.frostlys.no/faq"
+        },
+        {
+          "label": "Vårlys 2025",
+          "url": "https://www.frostlys.no/event-1"
+        }
+      ]
+    },
+    {
+      "id": "real-carodeni-2026",
+      "title": "Čarodění 2026",
+      "kind": "burn",
+      "scale": "gathering",
+      "date": "2026-04-29",
+      "endDate": "2026-05-03",
+      "timezone": "Europe/Prague",
+      "venueKind": "physical",
+      "country": "CZ",
+      "hostName": "Burning Man Czech Republic",
+      "ownerIds": [],
+      "organiser": {
+        "name": "Burning Man Czech Republic (Regional Contacts, Prague)",
+        "url": "https://burningman.org/global-events-groups/burning-man-regional-network/connect-with-a-local-group/czech-republic/"
+      },
+      "description": "The Czech burner gathering, tied to Witches' Night (pálení čarodějnic, 30 April). Its effigy mixes the Man with a Czech witch. It started in 2014 at Divoko with 7 people.",
+      "privacy": "everyone",
+      "burn": {
+        "edition": {
+          "year": 2026
+        },
+        "regionalStatus": "burn_inspired",
+        "effigies": [
+          {
+            "name": "Man/witch hybrid effigy",
+            "burns": "around Witches' Night"
+          }
+        ]
+      },
+      "unverified": [
+        "date",
+        "endDate"
+      ],
+      "sources": [
+        {
+          "label": "Czech regional contact page",
+          "url": "https://burningman.org/global-events-groups/burning-man-regional-network/connect-with-a-local-group/czech-republic/"
+        },
+        {
+          "label": "Dates (third-party directory)",
+          "url": "https://the.burn.directory/czech-republic"
+        }
+      ]
+    },
+    {
+      "id": "real-zurich-decompression-2026",
+      "title": "Zurich Decompression 2026",
+      "kind": "decompression",
+      "scale": "gathering",
+      "date": "2026-10-09",
+      "endDate": "2026-10-11",
+      "startTime": "15:00",
+      "timezone": "Europe/Zurich",
+      "venueKind": "physical",
+      "city": "Zürich",
+      "country": "CH",
+      "venue": {
+        "name": "Kraftwerk Selnau",
+        "address": "Selnaustrasse 25, 8001 Zürich",
+        "addressVisibility": "public"
+      },
+      "hostName": "Zurich Decompression",
+      "ownerIds": [],
+      "description": "A three-day city decompression: The Grand Hotel for Peculiar Burners. Music, art, performances, workshops and hidden rooms.",
+      "privacy": "everyone",
+      "externalUrl": "https://eventfrog.ch/fr/p/festivals/art-culture/burningman-zurich-decompression-2026-7494012302284356141.html",
+      "access": {
+        "model": "ticket",
+        "currency": "CHF",
+        "asOf": 2026,
+        "tiers": [
+          {
+            "name": "Standard",
+            "price": 65
+          },
+          {
+            "name": "Supporter",
+            "price": 85
+          }
+        ],
+        "lowIncome": {
+          "price": 45
+        }
+      },
+      "theme": {
+        "name": "The Grand Hotel for Peculiar Burners",
+        "blurb": "Declare one peculiarity at check-in."
+      },
+      "principles": {
+        "base": "10 Principles"
+      },
+      "dressCode": "No dress code. Wear whatever makes you feel free.",
+      "gateCloses": "Sat 24:00, no entry after",
+      "blocks": [
+        {
+          "label": "build",
+          "date": "2026-10-09",
+          "startTime": "15:00"
+        },
+        {
+          "label": "event",
+          "date": "2026-10-10",
+          "startTime": "13:00"
+        },
+        {
+          "label": "strike",
+          "date": "2026-10-11",
+          "startTime": "10:00",
+          "note": "strike brunch"
+        }
+      ],
+      "sources": [
+        {
+          "label": "Eventfrog listing",
+          "url": "https://eventfrog.ch/fr/p/festivals/art-culture/burningman-zurich-decompression-2026-7494012302284356141.html"
+        },
+        {
+          "label": "BM event finder",
+          "url": "https://burningman.org/global-events-groups/find-a-burning-man-event/"
+        }
+      ]
+    },
+    {
+      "id": "real-sf-decompression-2026",
+      "title": "SF Bay Area Decompression 2026: Oakland Edition Vol. II",
+      "kind": "decompression",
+      "scale": "meetup",
+      "date": "2026-10-17",
+      "startTime": "14:00",
+      "endTime": "24:00",
+      "timezone": "America/Los_Angeles",
+      "venueKind": "physical",
+      "city": "Oakland",
+      "region": "California",
+      "country": "US",
+      "venue": {
+        "name": "The Loom",
+        "addressVisibility": "public"
+      },
+      "hostName": "Burning Man Project",
+      "ownerIds": [],
+      "description": "The Bay Area's official decompression. Outdoors until midnight, indoors until 3am.",
+      "privacy": "everyone",
+      "externalUrl": "https://here.burningman.org/event/decompression2026",
+      "access": {
+        "model": "ticket",
+        "currency": "USD",
+        "asOf": 2026,
+        "tiers": [
+          {
+            "name": "Early Bird",
+            "price": 35
+          },
+          {
+            "name": "Presale",
+            "price": 45
+          },
+          {
+            "name": "Patron of the Arts",
+            "price": 80
+          }
+        ],
+        "note": "All tiers showed sold out at time of research. Volunteers get in free."
+      },
+      "age": {
+        "kidsFreeUpTo": 12,
+        "note": "All ages; indoors is 21+ after 9pm with an ID wristband"
+      },
+      "volunteering": {
+        "expectation": "encouraged",
+        "how": "Volunteers get in free"
+      },
+      "openCalls": [
+        "art",
+        "performers",
+        "fire performers"
+      ],
+      "sources": [
+        {
+          "label": "Event page",
+          "url": "https://here.burningman.org/event/decompression2026"
+        },
+        {
+          "label": "Partiful",
+          "url": "https://partiful.com/e/Pd131pyRfYr9Occo2WQK"
+        }
+      ]
+    },
+    {
+      "id": "real-london-decompression-2026",
+      "title": "London Decompression 2026",
+      "kind": "decompression",
+      "scale": "meetup",
+      "date": "2026-11-07",
+      "timezone": "Europe/London",
+      "venueKind": "physical",
+      "city": "London",
+      "region": "Docklands",
+      "country": "GB",
+      "venue": {
+        "name": "Warehouse complex, Docklands",
+        "addressVisibility": "ticket_holders"
+      },
+      "hostName": "London Decompression",
+      "ownerIds": [],
+      "organiser": {
+        "name": "London Decompression",
+        "legalForm": "volunteer members' organisation",
+        "url": "https://londondecom.org/"
+      },
+      "description": "The joint Burning Man and Nowhere community decompression. Tickets are sold only to members, and membership is free.",
+      "privacy": "everyone",
+      "externalUrl": "https://londondecom.org/",
+      "access": {
+        "model": "members_only",
+        "lowIncome": {
+          "note": "Low-income tickets exist"
+        },
+        "transfer": "face_value",
+        "note": "Free membership gives access to a private Facebook group and email updates."
+      },
+      "principles": {
+        "base": "10 Principles",
+        "additions": [
+          "Consent"
+        ]
+      },
+      "whatToBring": [
+        "your own cup"
+      ],
+      "dressCode": "Costume optional, better if it fits the theme",
+      "accessibility": "Limited wheelchair access. Welfare officers and medics on site.",
+      "sources": [
+        {
+          "label": "London Decompression",
+          "url": "https://londondecom.org/"
+        },
+        {
+          "label": "FAQs",
+          "url": "https://londondecom.org/faqs/"
+        }
+      ]
+    },
+    {
+      "id": "real-boulder-burner-meetup",
+      "title": "Boulder Burner Meet-up",
+      "kind": "meetup",
+      "scale": "meetup",
+      "date": "2026-10-14",
+      "startTime": "18:30",
+      "endTime": "20:30",
+      "timezone": "America/Denver",
+      "recurrence": {
+        "text": "2nd Wednesday of every month"
+      },
+      "venueKind": "physical",
+      "city": "Boulder",
+      "region": "Colorado",
+      "country": "US",
+      "venue": {
+        "name": "Junkyard Social Club",
+        "addressVisibility": "public"
+      },
+      "hostName": "Junkyard Social Club",
+      "ownerIds": [],
+      "description": "A monthly drop-in for local burners at a non-profit community space.",
+      "privacy": "everyone",
+      "externalUrl": "https://junkyardsocialclub.org/drop-in-event/burner/",
+      "access": {
+        "model": "free",
+        "note": "No ticket needed"
+      },
+      "sources": [
+        {
+          "label": "Junkyard Social Club",
+          "url": "https://junkyardsocialclub.org/drop-in-event/burner/"
+        }
+      ]
+    },
+    {
+      "id": "ill-baltic-build-weekend",
+      "illustrative": true,
+      "title": "Baltic Circuit build weekend",
+      "kind": "build",
+      "scale": "meetup",
+      "date": "2026-10-17",
+      "endDate": "2026-10-18",
+      "startTime": "10:00",
+      "endTime": "18:00",
+      "timezone": "Europe/Stockholm",
+      "venueKind": "physical",
+      "city": "Stockholm",
+      "country": "SE",
+      "venue": {
+        "name": "Shared workshop, Årsta",
+        "addressVisibility": "on_rsvp"
+      },
+      "hostName": "Anna Vale",
+      "ownerIds": [
+        "p-anna"
+      ],
+      "ownerGroupIds": [
+        "g-baltic"
+      ],
+      "description": "Two days of welding and wiring the camp's shade structure and LED ridge for next summer. No skills needed; we teach on site.",
+      "privacy": "everyone",
+      "access": {
+        "model": "free"
+      },
+      "whatToBring": [
+        "work gloves and closed shoes (PPE)",
+        "a potluck dish",
+        "your own cup"
+      ],
+      "volunteering": {
+        "expectation": "encouraged"
+      },
+      "calloutIds": [
+        "co-sound"
+      ],
+      "blocks": [
+        {
+          "label": "build",
+          "date": "2026-10-17",
+          "startTime": "10:00",
+          "endTime": "18:00"
+        },
+        {
+          "label": "build",
+          "date": "2026-10-18",
+          "startTime": "10:00",
+          "endTime": "18:00"
+        }
+      ]
+    },
+    {
+      "id": "ill-borderland-camp-call",
+      "illustrative": true,
+      "title": "Camp call: Borderland 2027 memberships and dreams",
+      "kind": "camp_meeting",
+      "scale": "meetup",
+      "date": "2026-10-01",
+      "startTime": "19:00",
+      "endTime": "20:30",
+      "timezone": "Europe/Stockholm",
+      "venueKind": "virtual",
+      "country": "SE",
+      "hostName": "Baltic Circuit",
+      "ownerIds": [
+        "p-anna"
+      ],
+      "ownerGroupIds": [
+        "g-baltic"
+      ],
+      "description": "Before the fall membership sale opens on 4 Oct: who's in for 2027, which dream we pitch, and who leads build week.",
+      "privacy": "friends",
+      "access": {
+        "model": "invite"
+      }
+    },
+    {
+      "id": "ill-brno-fundraiser",
+      "illustrative": true,
+      "title": "Sound camp fundraiser night",
+      "kind": "fundraiser",
+      "scale": "meetup",
+      "date": "2026-11-21",
+      "startTime": "20:00",
+      "endTime": "04:00",
+      "timezone": "Europe/Prague",
+      "venueKind": "physical",
+      "city": "Brno",
+      "country": "CZ",
+      "venue": {
+        "name": "Basement club",
+        "addressVisibility": "public"
+      },
+      "hostName": "Anna Vale",
+      "ownerIds": [
+        "p-anna"
+      ],
+      "ownerGroupIds": [
+        "g-baltic"
+      ],
+      "description": "Local DJs play so the camp can buy a new sound system and cover transport to next summer's burn. Entry is by donation, and every crown goes to the rig.",
+      "privacy": "everyone",
+      "access": {
+        "model": "donation",
+        "currency": "CZK",
+        "note": "Suggested 200 CZK; nobody is turned away"
+      },
+      "whatToBring": [
+        "your own cup"
+      ],
+      "dressCode": "Costume encouraged",
+      "calloutIds": [
+        "co-sound"
+      ],
+      "volunteering": {
+        "expectation": "encouraged",
+        "how": "Door and bar shifts; volunteers get in free"
+      }
+    }
+  ]
+}

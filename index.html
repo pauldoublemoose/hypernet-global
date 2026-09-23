@@ -429,10 +429,7 @@ fieldset.props legend{ padding:0 6px; font-weight:bold; }
 .chrow .cside{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
 .ctime{ font:11px var(--mono); color:var(--dim); white-space:nowrap; }
 .udot{ width:10px; height:10px; background:#000; }
-.gav{ position:relative; width:40px; height:40px; flex:0 0 40px; }
-.gav .av{ position:absolute; width:25px; height:25px; flex-basis:25px; font-size:10px; box-shadow:0 0 0 2px #fff; }
-.gav .av:first-child{ left:0; top:0; }
-.gav .av:nth-child(2){ right:0; bottom:0; }
+.av.gav{ background:var(--face); color:var(--ink); box-shadow:var(--out); }
 .conv{ flex:1; min-height:0; display:flex; flex-direction:column; gap:8px; }
 .msgs{ flex:1; min-height:0; overflow:auto; padding:16px 14px; background:#fff; box-shadow:var(--in); display:flex; flex-direction:column; gap:12px; }
 .msg{ max-width:86%; align-self:flex-start; }
@@ -867,7 +864,8 @@ var S = {
   tab:'home',                  /* phone only */
   phoneSearch:false,
   rows:[],
-  pending:null
+  pending:null,
+  autoSel:false                /* true while the reading pane shows something the app picked, not you */
 };
 var L = {};                    /* the layout of the current render */
 
@@ -1723,7 +1721,7 @@ function renderCalendar(){
    ========================================================================= */
 function chatAv(c){
   if (c.kind === 'dm') return avHTML(c.memberIds[0], 'a40');
-  return '<span class="gav">' + c.memberIds.slice(0,2).map(function(m){ return avHTML(m); }).join('') + '</span>';
+  return '<span class="av a40 gav" aria-hidden="true">'+esc(initials(c.name))+'</span>';
 }
 function lastMsg(c){ return c.messages[c.messages.length-1]; }
 function msgPreview(m, c){
@@ -2241,7 +2239,7 @@ function wizAct(which){
   closeDialogs();
   goFolder({ kind:'hosting' });
   if (L.phone) S.tab = 'you';
-  S.stack = [{ type:'event', id:id }];
+  S.stack = [{ type:'event', id:id }]; S.autoSel = false;
   render();
   toast('Published', EVENTS[id].title);
 }
@@ -2262,6 +2260,7 @@ function openItem(type, id, mode){
   if (type === 'event') markRead(id);
   if (type === 'news'){ var r = newsOf(id).ref; if (!r) return; type = r.type; id = r.id; }
   var it = { type:type, id:id };
+  S.autoSel = false;
   if (mode === 'push' && S.stack.length){
     var top = S.stack[S.stack.length-1];
     if (top.type === type && top.id === id) return;
@@ -2493,7 +2492,7 @@ document.addEventListener('click', function(ev){
                          expiresAt:isoDate(($('co-x')||{}).value)||'2026-12-31', hostName:S.me.name, hostId:'self' });
       closeDialogs();
       if (L.phone) S.tab = 'home';
-      goFolder({ kind:'home' }); S.view['home'] = 'feed'; S.stack = [{ type:'callout', id:cid3 }]; render();
+      goFolder({ kind:'home' }); S.view['home'] = 'feed'; S.stack = [{ type:'callout', id:cid3 }]; S.autoSel = false; render();
       toast('Call out posted', '');
       break;
     }
@@ -2598,9 +2597,11 @@ function render(){
   if (!L.phone && S.folder.kind === 'you') goFolder({ kind:'home' });
   /* in a split view something is always open in the reading pane */
   var items = null;
+  /* an item the app picked for the reading pane is not something you opened: without a reading pane, show the list */
+  if (!L.split && S.autoSel){ S.stack = []; S.autoSel = false; }
   if (L.split && !S.stack.length){ items = orderedItems(); var first = items.filter(function(it){ return it.type !== 'news' || newsOf(it.id).ref; })[0];
-    if (first) S.stack = [first.type === 'news' ? newsOf(first.id).ref : first]; }
-  if (L.split && S.folder.kind === 'horizon' && !S.stack.length) S.stack = [{ type:'horizon', id:S.folder.id }];
+    if (first){ S.stack = [first.type === 'news' ? newsOf(first.id).ref : first]; S.autoSel = true; } }
+  if (L.split && S.folder.kind === 'horizon' && !S.stack.length){ S.stack = [{ type:'horizon', id:S.folder.id }]; S.autoSel = true; }
   var scr = L.phone ? (S.tab === 'chats' ? 'chats' : (S.tab === 'you' && S.folder.kind === 'you' && !S.stack.length) ? 'you' : 'center') : '';
   app.className = [L.phone ? 'phone' : 'desk', L.left ? 'l-open' : '', L.right ? 'r-open' : '', L.split ? 'split' : 'push',
     isCal() ? 'v-cal' : '', S.stack.length ? 'has-detail' : '', scr ? 'scr-' + scr : '',

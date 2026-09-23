@@ -48,6 +48,11 @@ Dropped the "One item per line", "optional" and "Anyone can find and follow it" 
 **A4. Persistence.** Everything the user creates or changes survives reload: chats, messages, groups, DMs,
 call outs, answers, follows, promotes, horizons, events.
 Sources: CREW-2, ORGANISER-7.
+*Status: done.* One store (`hypernet-feed:v2`): the network keeps created events, horizons (covers, looks),
+call outs and hosts' edits to events they did not create here (the demo's); each account keeps its RSVPs, went,
+promotes, follows, hosting, horizons, chats, messages, DMs, groups, unread flags and drafts. Tab, open chat and
+dock come back through the history entry on reload, and the dock state for a new visit. Follower and promote
+counts are now "everyone else + you", so a reload no longer drifts them. Call-out answers are stored with B6.
 
 **A5. Owners can edit and delete.** Owner's event page: Edit (full wizard from step 1, "Save changes"),
 Customize, Share, Delete (confirm). Owner actions lead; guest verbs are not the first thing a host sees.

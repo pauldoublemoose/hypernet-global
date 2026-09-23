@@ -1026,6 +1026,9 @@ var READ = {};
    Each account's set is swapped in on log-in (see ACCOUNTS). */
 var HZFOLLOW = {};
 var HZCOUNT  = { 'horizon-baltic':41, 'horizon-dust':128, 'horizon-quiet':86, 'horizon-feed':52, 'horizon-surface':37, 'horizon-default':0 };
+/* counts are everyone else plus you, so a reload never loses or doubles your own */
+function hzFollowers(k){ return (HZCOUNT[k] || 0) + (S.loggedIn && HZFOLLOW[k] ? 1 : 0); }
+function promoCount(id){ return (PROMOCOUNT[id] || 0) + (S.loggedIn && PROMOTED[id] ? 1 : 0); }
 var PFOLLOW  = {};
 var DEMOHOST = Object.keys(EVENTS).filter(function(id){ return EVENTS[id].hostName === 'You'; });   /* what the demo account hosts */
 DEMOHOST.forEach(function(id){ EVENTS[id].hostName = 'Michal'; });
@@ -1052,6 +1055,7 @@ var NEWS = H.feedNews.map(function(n, i){
   return { id:'news-'+i, when:n.when, text:n.text, ref:ref };
 });
 var HZCOVER = {};              /* hzId -> 'own' | 'plain' | an event id; nothing = mosaic of its events */
+var EDITED = {};               /* events a host changed after they existed (their look, their details) */
 var HZTHEME = {};              /* hzId -> a theme in the same shape as an event's */
 
 var S = {
@@ -1711,7 +1715,7 @@ function verbsHTML(evId){
        '<button class="vbtn'+(st==='interested'?' on':'')+'" data-act="v-interested" data-id="'+evId+'" aria-pressed="'+(st==='interested')+'">'+ic('heart')+'Interested</button>' +
        '<button class="vbtn'+(st==='going'?' on':'')+'" data-act="v-going" data-id="'+evId+'" aria-pressed="'+(st==='going')+'">'+ic('check')+'Going</button></div>';
   h += '<button class="vpromo'+(pro?' on':'')+'" data-act="v-promote" data-id="'+evId+'" aria-pressed="'+!!pro+'">'+ic('promote')+(pro?'Promoted':'Promote') +
-       (PROMOCOUNT[evId] ? ' <span class="n">'+PROMOCOUNT[evId]+'</span>' : '') + '</button>';
+       (promoCount(evId) ? ' <span class="n">'+promoCount(evId)+'</span>' : '') + '</button>';
   h += '<span class="vsec">';
   h += '<button class="vmore" data-act="addto" data-id="'+evId+'">'+ic('addhorizon',16)+'<span class="lg">Add to horizon</span><span class="sm">Horizon</span></button>';
   h += '<button class="vmore" data-act="share" data-id="'+evId+'">'+ic('share',16)+'Share</button>';
@@ -1805,7 +1809,7 @@ function playlistHTML(hzId, withTracks){
   h += '<div class="plo">' + (!mine && hz.ownerId && PEOPLE[hz.ownerId] && hz.ownerId !== 'self'
         ? '<button class="plown" data-act="open" data-type="person" data-id="'+hz.ownerId+'">'+avHTML(hz.ownerId)+esc(owner)+'</button>'
         : '<span class="plown">'+ic('horizon',16)+esc(owner)+'</span>') + '</div>';
-  h += '<div class="plm">'+evs.length+' event'+(evs.length===1?'':'s')+' · '+(HZCOUNT[hzId]||0)+' followers · '+esc(hzRange(hzId))+'</div></div></div>';
+  h += '<div class="plm">'+evs.length+' event'+(evs.length===1?'':'s')+' · '+hzFollowers(hzId)+' followers · '+esc(hzRange(hzId))+'</div></div></div>';
   h += '<div class="placts">';
   if (!mine) h += '<button class="btn '+(fol?'on':'primary')+' plmain" data-act="followhz" data-id="'+hzId+'" aria-pressed="'+!!fol+'">'+ic(fol?'check':'plus')+(fol?'Following':'Follow')+'</button>';
   else {
@@ -1865,7 +1869,7 @@ function personHTML(pid){
     h += '<div class="subh">Published horizons</div>' + hz.map(function(k){
       return '<div class="crow">'+(hzOwnSquare(k) || hzCover(k) ? hzArt(k, 40) : '<span class="r-ic">'+ic('horizon')+'</span>')+
         '<div class="cm" data-act="open" data-type="horizon" data-id="'+k+'"><div class="r-title">'+esc(HORIZONS[k].name)+'</div>' +
-        '<div class="r-meta">'+HORIZONS[k].eventIds.length+' events · '+(HZCOUNT[k]||0)+' followers</div></div></div>';
+        '<div class="r-meta">'+HORIZONS[k].eventIds.length+' events · '+hzFollowers(k)+' followers</div></div></div>';
     }).join('');
   }
   if (hosts.length) h += '<div class="subh">Hosting</div>' + hosts.map(function(e){ return eventCRow(e, false); }).join('');
@@ -2947,7 +2951,7 @@ function wizAct(which){
     return;
   }
   if (DRAFT.editing){
-    window.HYPERNET_THEMES.themes[DRAFT.editing] = t;
+    window.HYPERNET_THEMES.themes[DRAFT.editing] = t; EDITED[DRAFT.editing] = true;
     closeDialogs(); render();
     toast('Look updated', EVENTS[DRAFT.editing].title);
     return;
@@ -3292,7 +3296,6 @@ var setWent = gated(function(evId){
 var doPromote = gated(function(evId){
   if (RESUMING && PROMOTED[evId]){ render(); toast('Promoted to your followers', EVENTS[evId].title); return; }
   PROMOTED[evId] = !PROMOTED[evId];
-  PROMOCOUNT[evId] = Math.max(0, (PROMOCOUNT[evId]||0) + (PROMOTED[evId] ? 1 : -1));
   render();
   toast(PROMOTED[evId] ? 'Promoted to your followers' : 'Promotion withdrawn', EVENTS[evId].title);
 });
@@ -3320,7 +3323,6 @@ var addToHorizonDrop = gated(function(evId, hzId){
 var followHz = gated(function(hzId){
   if (RESUMING && (HZFOLLOW[hzId] || hzOwnedByMe(hzId))){ render(); toast('Following', HORIZONS[hzId].name); return; }
   HZFOLLOW[hzId] = !HZFOLLOW[hzId];
-  HZCOUNT[hzId] = Math.max(0, (HZCOUNT[hzId]||0) + (HZFOLLOW[hzId] ? 1 : -1));
   render();
   toast(HZFOLLOW[hzId] ? 'Following' : 'Unfollowed', HORIZONS[hzId].name);
 });
@@ -3898,10 +3900,15 @@ function persist(){
     var evs = {}, recs = {}, themes = {}, hzs = {}, covers = {}, hzthemes = {};
     Object.keys(EVENTS).filter(function(k){ return /^evt-new-/.test(k); }).forEach(function(k){ evs[k] = EVENTS[k]; recs[k] = REC[k]; themes[k] = window.HYPERNET_THEMES.themes[k]; });
     Object.keys(HORIZONS).filter(isCreatedHz).forEach(function(k){ hzs[k] = HORIZONS[k]; if (HZCOVER[k]) covers[k] = HZCOVER[k]; if (HZTHEME[k]) hzthemes[k] = HZTHEME[k]; });
+    /* hosts can change events they did not create here (the demo's own), so those edits are kept too */
+    var edits = {};
+    Object.keys(EDITED).forEach(function(k){ if (EVENTS[k] && !/^evt-new-/.test(k)) edits[k] = { ev:EVENTS[k], rec:REC[k] || null, theme:window.HYPERNET_THEMES.themes[k] || null }; });
     localStorage.setItem(STORE, JSON.stringify({ v:2,
       session:{ acct: S.loggedIn ? S.acct : null },
+      ui:{ rightOpen:!!S.rightOpen, chatOpen:S.chatOpen || null },
       accounts:ACCTS,
-      network:{ events:evs, recs:recs, themes:themes, horizons:hzs, covers:covers, hzthemes:hzthemes }
+      network:{ events:evs, recs:recs, themes:themes, horizons:hzs, covers:covers, hzthemes:hzthemes, edits:edits,
+                callouts:CALLOUTS.filter(function(c){ return !!c.hostAcct; }) }
     }));
   } catch(e){}
 }
@@ -3931,6 +3938,17 @@ function restore(){
   Object.keys(n.horizons || {}).forEach(function(k){ HORIZONS[k] = n.horizons[k]; if (HZCOUNT[k] == null) HZCOUNT[k] = 0; });
   Object.keys(n.covers || {}).forEach(function(k){ HZCOVER[k] = n.covers[k]; });
   Object.keys(n.hzthemes || {}).forEach(function(k){ HZTHEME[k] = n.hzthemes[k]; });
+  Object.keys(n.edits || {}).forEach(function(k){
+    var x = n.edits[k]; EDITED[k] = true;
+    EVENTS[k] = Object.assign(EVENTS[k] || {}, x.ev);
+    if (x.rec) REC[k] = x.rec;
+    if (x.theme) window.HYPERNET_THEMES.themes[k] = x.theme;
+  });
+  if (n.callouts && n.callouts.length){
+    var ids = n.callouts.map(function(c){ return c.id; });
+    CALLOUTS = n.callouts.concat(CALLOUTS.filter(function(c){ return ids.indexOf(c.id) < 0; }));
+  }
+  if (d.ui){ S.rightOpen = !!d.ui.rightOpen; S.chatOpen = d.ui.chatOpen || null; }
   ACCTS = d.accounts || {};
   var k = d.session && d.session.acct;
   if (k && ACCTS[k]){ S.acct = k; S.loggedIn = true; loadAcct(ACCTS[k]); }

@@ -390,6 +390,7 @@ button.chip:hover{ border-color:var(--eac); }
   .actbar{ position:relative; }
   .vsec{ display:contents; }
   .vpromo, .vmore{ flex:1 1 auto; justify-content:center; padding:0 8px; }
+  .vmore.vdots{ flex:0 0 var(--act); }
   .vmore .lg{ display:none; }
   .vmore .sm{ display:inline; }
   .facts{ grid-template-columns:1fr 1fr; }
@@ -570,8 +571,9 @@ input[aria-invalid="true"]{ outline:1px solid #000; outline-offset:-4px; }
 .linkrow .lr{ flex:1; min-width:0; }
 .linkrow .lstate{ font:12px var(--mono); color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
 .wizsteps{ display:flex; margin:0 0 18px; }
-.wizsteps .ws{ flex:1; padding:8px 4px; text-align:center; font:bold 12px var(--mono); letter-spacing:.06em; background:var(--face-dk); box-shadow:var(--thin); color:var(--ink2); }
-.wizsteps .ws.on{ background:#fff; color:#000; }
+.wizsteps .ws{ flex:1; min-height:var(--ctl); padding:8px 4px; border:0; text-align:center; font:bold 12px var(--mono); letter-spacing:.06em; background:var(--face-dk); box-shadow:var(--out); color:var(--ink2); }
+.wizsteps .ws:hover{ color:#000; }
+.wizsteps .ws.on{ background:#fff; color:#000; box-shadow:var(--in); }
 .custwrap{ display:flex; gap:18px; }
 .custcol{ flex:0 0 300px; }
 .custprev{ flex:1; min-width:0; }
@@ -593,6 +595,9 @@ input[aria-invalid="true"]{ outline:1px solid #000; outline-offset:-4px; }
 #toasts{ position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:90; display:flex; flex-direction:column; align-items:center; pointer-events:none; }
 .toast{ min-width:220px; max-width:320px; padding:10px 14px; background:#ffffe1; border:1px solid #6d6a5e; box-shadow:2px 2px 6px rgba(0,0,0,.3); font-size:var(--fs-s); }
 .toast b{ display:block; font-size:var(--fs); }
+.toast.act{ display:flex; align-items:center; gap:12px; pointer-events:auto; }
+.toast .tt2{ flex:1; min-width:0; }
+.cmsg{ margin:0; max-width:46ch; font-size:var(--fs-m); line-height:1.5; }
 
 /* ---------- 10b. phone feed: shelves, tiles, playlists --------------- */
 .shelves{ padding:0 0 28px; }
@@ -675,7 +680,12 @@ body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 1
 .plo{ margin-top:10px; }
 .plown{ display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:0; border:0; background:transparent; font-weight:bold; font-size:14px; }
 .plm{ font:12px var(--mono); color:var(--dim); letter-spacing:.02em; }
-.placts{ display:flex; gap:8px; padding:16px 16px 8px; }
+.placts{ display:flex; flex-wrap:wrap; gap:8px; padding:16px 16px 8px; }
+@container pl (max-width:599px){
+  .placts.many .plmain{ flex:1 1 100%; }
+  .placts.many .btn:not(.plmain){ flex:1 1 auto; padding:0 10px; }
+}
+.vmore.vdots{ width:var(--act); padding:0; justify-content:center; }
 .plmain{ flex:1; }
 .tracks{ list-style:none; margin:8px 0 0; padding:0; border-top:1px solid var(--line); }
 .track{ display:flex; align-items:center; gap:12px; min-height:68px; padding:10px 16px; border-bottom:1px solid var(--line); }
@@ -1005,7 +1015,9 @@ var IC = {
   sidebar:'<path d="M3 4h14v12H3zM8 4v12"/>',
   paint:'<path d="M4 16c0-2 1-3 2.5-3s2.5 1 2.5 2.5S7.5 18 4 16zM8.5 13 16 5.5l-1.5-1.5L7 11.5"/>',
   camp:'<path d="M10 3 2.5 17h15zM10 3v14M7 17l3-5 3 5"/>',
-  lock:'<path d="M5 9h10v8H5zM7 9V6.5a3 3 0 0 1 6 0V9"/>'
+  lock:'<path d="M5 9h10v8H5zM7 9V6.5a3 3 0 0 1 6 0V9"/>',
+  dots:'<path d="M4 10h.01M10 10h.01M16 10h.01" stroke-width="3"/>',
+  trash:'<path d="M4 6h12M8 6V4h4v2M5.5 6l.8 11h7.4l.8-11M8.5 9v5M11.5 9v5"/>'
 };
 function ic(n, sz){
   sz = sz || 18;
@@ -1180,12 +1192,15 @@ function calloutOf(id){ return CALLOUTS.filter(function(x){ return x.id === id; 
 function newsOf(id){ return NEWS.filter(function(n){ return n.id === id; })[0] || { text:'', when:'' }; }
 var TOASTT = null;
 var WELCOME = null;             /* the first confirmation after joining also says hello */
-function toast(title, body){
+var TOASTACT = null;            /* the one thing a toast can do: undo what it reports */
+function toast(title, body, undo){
   if (WELCOME){ body = title + (body ? ' · ' + body : ''); title = WELCOME; WELCOME = null; }
   var box = $('toasts');
-  box.innerHTML = '<div class="toast"><b>'+esc(title)+'</b>'+(body?esc(body):'')+'</div>';
+  TOASTACT = undo || null;
+  box.innerHTML = '<div class="toast'+(undo ? ' act' : '')+'"><span class="tt2"><b>'+esc(title)+'</b>'+(body?esc(body):'')+'</span>' +
+    (undo ? '<button class="btn" data-act="toastundo">Undo</button>' : '') + '</div>';
   clearTimeout(TOASTT);
-  TOASTT = setTimeout(function(){ box.innerHTML = ''; }, 2400);
+  TOASTT = setTimeout(function(){ box.innerHTML = ''; TOASTACT = null; }, undo ? 6000 : 2400);
 }
 /* logged-out actions ask for a login, then carry on with what you asked for.
    Carried on means made so: a verb you asked for is switched on, never toggled back off. */
@@ -1707,19 +1722,33 @@ function editionsHTML(evId){
   }
   return '';
 }
+function promoBtnHTML(evId){
+  var pro = S.loggedIn && PROMOTED[evId];
+  return '<button class="vpromo'+(pro?' on':'')+'" data-act="v-promote" data-id="'+evId+'" aria-pressed="'+!!pro+'">'+ic('promote')+(pro?'Promoted':'Promote') +
+       (promoCount(evId) ? ' <span class="n">'+promoCount(evId)+'</span>' : '') + '</button>';
+}
 function verbsHTML(evId){
   var st = S.loggedIn ? RSVP[evId] : undefined;
   var pro = S.loggedIn && PROMOTED[evId];
   var h = '<div class="verbs">';
+  if (isMine(evId)){
+    /* the host's page leads with the host's verbs; Interested / Going are for guests */
+    h += '<div class="vpair" role="group" aria-label="Your event">' +
+         '<button class="vbtn on" data-act="editevent" data-id="'+evId+'">'+ic('edit')+'Edit</button>' +
+         '<button class="vbtn" data-act="customize" data-id="'+evId+'">'+ic('paint')+'Customize</button></div>';
+    h += promoBtnHTML(evId) + '<span class="vsec">';
+    h += '<button class="vmore" data-act="addto" data-id="'+evId+'">'+ic('addhorizon',16)+'<span class="lg">Add to horizon</span><span class="sm">Horizon</span></button>';
+    h += '<button class="vmore" data-act="share" data-id="'+evId+'">'+ic('share',16)+'Share</button>';
+    h += '<button class="vmore vdots" data-act="evmore" data-id="'+evId+'" aria-label="More" aria-haspopup="menu">'+ic('dots',16)+'</button>';
+    return h + '</span></div>';
+  }
   h += '<div class="vpair" role="group" aria-label="Your state">' +
        '<button class="vbtn'+(st==='interested'?' on':'')+'" data-act="v-interested" data-id="'+evId+'" aria-pressed="'+(st==='interested')+'">'+ic('heart')+'Interested</button>' +
        '<button class="vbtn'+(st==='going'?' on':'')+'" data-act="v-going" data-id="'+evId+'" aria-pressed="'+(st==='going')+'">'+ic('check')+'Going</button></div>';
-  h += '<button class="vpromo'+(pro?' on':'')+'" data-act="v-promote" data-id="'+evId+'" aria-pressed="'+!!pro+'">'+ic('promote')+(pro?'Promoted':'Promote') +
-       (promoCount(evId) ? ' <span class="n">'+promoCount(evId)+'</span>' : '') + '</button>';
+  h += promoBtnHTML(evId);
   h += '<span class="vsec">';
   h += '<button class="vmore" data-act="addto" data-id="'+evId+'">'+ic('addhorizon',16)+'<span class="lg">Add to horizon</span><span class="sm">Horizon</span></button>';
   h += '<button class="vmore" data-act="share" data-id="'+evId+'">'+ic('share',16)+'Share</button>';
-  if (isMine(evId)) h += '<button class="vmore" data-act="customize" data-id="'+evId+'">'+ic('paint',16)+'Customize</button>';
   return h + '</span></div>';
 }
 /* The event page. `scale` picks how much of it there is: a meetup is time,
@@ -1810,14 +1839,15 @@ function playlistHTML(hzId, withTracks){
         ? '<button class="plown" data-act="open" data-type="person" data-id="'+hz.ownerId+'">'+avHTML(hz.ownerId)+esc(owner)+'</button>'
         : '<span class="plown">'+ic('horizon',16)+esc(owner)+'</span>') + '</div>';
   h += '<div class="plm">'+evs.length+' event'+(evs.length===1?'':'s')+' · '+hzFollowers(hzId)+' followers · '+esc(hzRange(hzId))+'</div></div></div>';
-  h += '<div class="placts">';
+  h += '<div class="placts'+(mine ? ' many' : '')+'">';
   if (!mine) h += '<button class="btn '+(fol?'on':'primary')+' plmain" data-act="followhz" data-id="'+hzId+'" aria-pressed="'+!!fol+'">'+ic(fol?'check':'plus')+(fol?'Following':'Follow')+'</button>';
   else {
     /* your own horizon: filling it is the job, so Add events leads */
     h += '<button class="btn primary plmain" data-act="addevents" data-id="'+hzId+'">'+ic('plus')+'Add events</button>';
+    h += '<button class="btn" data-act="customizehz" data-id="'+hzId+'">'+ic('paint')+'Customize</button>';
+    h += '<button class="btn" data-act="renamehz" data-id="'+hzId+'">'+ic('edit')+'Edit details</button>';
     if (evs.length && !hz.isPersonalDefault) h += '<button class="btn'+(hz.isPublished?' on':'')+'" data-act="publishhz" data-id="'+hzId+'" aria-pressed="'+!!hz.isPublished+'">'+(hz.isPublished?ic('check')+'Published':'Publish')+'</button>';
-    h += '<button class="ib" data-act="renamehz" data-id="'+hzId+'" aria-label="Rename">'+ic('edit')+'</button>';
-    h += '<button class="ib" data-act="customizehz" data-id="'+hzId+'" aria-label="Customize">'+ic('paint')+'</button>';
+    h += '<button class="ib" data-act="hzmore" data-id="'+hzId+'" aria-label="More" aria-haspopup="menu">'+ic('dots')+'</button>';
   }
   h += '</div>';
   if (withTracks === false) return h + '</div>';
@@ -2590,10 +2620,10 @@ function doLogout(){
   toast('Logged out', '');
 }
 function renameHzDialog(hzId){
-  dialog('Rename horizon',
+  dialog('Edit details',
     '<div class="field"><label for="rh-n">Name</label><input type="text" id="rh-n" value="'+esc(HORIZONS[hzId].name)+'"></div>' +
     '<div class="field"><label for="rh-d">Description</label><textarea id="rh-d" rows="3">'+esc(HORIZONS[hzId].description||'')+'</textarea></div>',
-    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="dorename" data-id="'+hzId+'">Save</button>', 460);
+    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="dorename" data-id="'+hzId+'">Save changes</button>', 460);
   focusIn('rh-n');
 }
 function addToDialog(evId){
@@ -2671,7 +2701,7 @@ function saveForm(kind){
   FORMFIELDS[kind].forEach(function(id){ d[id] = formVal(id); if (d[id]) dirty = true; });
   FORMDRAFTS[kind] = dirty ? d : null;
   var dl = DLGS[DLGS.length-1], f = dl && dl.querySelector('.dfoot');
-  if (f && FORMFOOT[kind]) f.innerHTML = FORMFOOT[kind]();
+  if (f && FORMFOOT[kind]){ var probe = document.createElement('div'); probe.innerHTML = FORMFOOT[kind](); if (probe.innerHTML !== f.innerHTML) f.innerHTML = probe.innerHTML; }
   schedulePersist();
 }
 function formSecondary(kind){
@@ -2851,8 +2881,9 @@ function customizeHTML(){
 }
 function wizBodyHTML(){
   var d = DRAFT, h = '';
-  if (!d.editing) h += '<div class="wizsteps">' + ['1 · Basics','2 · Words','3 · Look'].map(function(l,i){
-    return '<div class="ws'+(d.step===i+1?' on':'')+'">'+l+'</div>'; }).join('') + '</div>';
+  /* the steps are tabs you can use: any step, in any order; Publish checks what is still missing */
+  if (!d.editing || d.mode === 'edit') h += '<div class="wizsteps" role="tablist">' + ['1 · Basics','2 · Words','3 · Look'].map(function(l,i){
+    return '<button type="button" role="tab" class="ws'+(d.step===i+1?' on':'')+'" aria-selected="'+(d.step===i+1)+'" data-act="wizstep" data-id="'+(i+1)+'">'+l+'</button>'; }).join('') + '</div>';
   if (d.step === 1){
     var miss = d.showErr ? eventDraftMissing(d) : {};
     h += '<div class="field"><label for="w-t">Title</label><input type="text" id="w-t" data-cz="title" value="'+esc(d.title)+'" placeholder="Ridge sauna, midnight" autocomplete="off"'+(miss.title?' aria-invalid="true"':'')+'>' +
@@ -2865,7 +2896,7 @@ function wizBodyHTML(){
            [['everyone','Everyone'],['friends','Friends'],['only_me','Only me']].map(function(p){ return '<option value="'+p[0]+'"'+(p[0]===d.privacy?' selected':'')+'>'+p[1]+'</option>'; }).join('') +
          '</select></div>' +
          '<div class="field"><label for="w-k">Entry</label><select id="w-k" data-cz="entry">' +
-           ['free','donation','pay_what_you_can','ticket','membership','invite'].map(function(p){ return '<option value="'+p+'"'+(p===d.entry?' selected':'')+'>'+ACCESSLAB[p]+'</option>'; }).join('') +
+           ['free','donation','pay_what_you_can','ticket','membership','invite'].concat(ACCESSLAB[d.entry] && ['free','donation','pay_what_you_can','ticket','membership','invite'].indexOf(d.entry) < 0 ? [d.entry] : []).map(function(p){ return '<option value="'+p+'"'+(p===d.entry?' selected':'')+'>'+ACCESSLAB[p]+'</option>'; }).join('') +
          '</select></div>';
   } else if (d.step === 2){
     h += '<div class="field"><label for="w-desc">Description</label><textarea id="w-desc" data-cz="desc" rows="5" placeholder="Hot box on the ridge, a bucket of lake water, and nobody checking the time.">'+esc(d.desc)+'</textarea></div>' +
@@ -2876,6 +2907,7 @@ function wizBodyHTML(){
 }
 function wizFootHTML(){
   var d = DRAFT;
+  if (d.mode === 'edit') return '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="wiz" data-id="finish">Save changes</button>';
   return (!d.editing && eventDraftDirty(d) ? '<button class="btn" data-act="discarddraft" data-id="event">Discard</button>' : '<button class="btn" data-act="closedlg">Cancel</button>') +
     (d.step > 1 && !d.editing ? '<button class="btn" data-act="wiz" data-id="back">'+ic('back')+'Back</button>' : '') +
     (d.step < 3 ? '<button class="btn primary" data-act="wiz" data-id="next">Next</button>'
@@ -2899,7 +2931,13 @@ function eventDraftDirty(d){
   return Object.keys(b).some(function(k){ return k !== 'step' && k !== 'editing' && String(d[k] == null ? '' : d[k]) !== String(b[k]); });
 }
 function eventDraftMissing(d){ return { title: !String(d.title || '').trim(), date: !isoDate(d.date) }; }
-function refreshWizFoot(){ var d = DLGS[DLGS.length-1]; if (d && DRAFT && d.querySelector('.dfoot') && d.querySelector('.wizsteps, .custwrap')) d.querySelector('.dfoot').innerHTML = wizFootHTML(); }
+/* repaint the footer only when it changes: replacing a button under the pointer would swallow its click */
+function refreshWizFoot(){
+  var d = DLGS[DLGS.length-1], f = d && DRAFT && d.querySelector('.wizsteps, .custwrap') && d.querySelector('.dfoot');
+  if (!f) return;
+  var h = wizFootHTML(), probe = document.createElement('div'); probe.innerHTML = h;
+  if (probe.innerHTML !== f.innerHTML) f.innerHTML = h;
+}
 var newEventDialog = gated(function(){
   DRAFT = FORMDRAFTS.event || blankEventDraft();
   DRAFT.showErr = false;
@@ -2924,10 +2962,45 @@ var customizeHorizonDialog = gated(function(hzId){
   DRAFT = d;
   dialog('Customize ' + hz.name, wizBodyHTML(), wizFootHTML(), 900);
 });
+/* an event's own palette joins the list when it is not one of the presets */
+function palIndexOf(palette, label){
+  var pal = -1;
+  PALSETS.forEach(function(p,i){ if (p.p.bg === palette.bg) pal = i; });
+  if (pal < 0){ PALSETS.unshift({ n:label || 'This event’s palette', p:palette }); pal = 0; }
+  return pal;
+}
+function lookOf(t){
+  return { mood:t.mood || '', pal:palIndexOf(t.palette), surface:t.surface, type:t.type, headline:t.headline, motion:t.motion, shape:t.shape,
+           density:t.density, pattern:t.square.pattern, glyph:t.square.glyph };
+}
+/* Edit is the whole wizard again, filled in, saved from any step */
+var editEventDialog = gated(function(evId){
+  var e = EVENTS[evId], r = recOf(evId);
+  if (!e || !isMine(evId)) return;
+  DRAFT = Object.assign({ mode:'edit', step:1, editing:evId, title:e.title, date:e.date, end:r.endDate || '', city:r.city || cityShort(e.city),
+            privacy:e.privacy || 'everyone', entry:(r.access && r.access.model) || 'free', desc:descOf(e),
+            bring: Array.isArray(r.whatToBring) ? r.whatToBring.join('\n') : (r.whatToBring || '') }, lookOf(TH(evId)));
+  dialog('Edit ' + e.title, wizBodyHTML(), wizFootHTML(), 900);
+  focusIn('w-t');
+});
+function saveEventEdit(t){
+  var id = DRAFT.editing, e = EVENTS[id], r = REC[id] || (REC[id] = {});
+  var start = isoDate(DRAFT.date), end = isoDate(DRAFT.end), city = String(DRAFT.city || '').trim();
+  if (!e.slug) e.slug = evSlug(id);          /* the link people already have keeps working */
+  e.title = DRAFT.title.trim(); e.date = start; e.privacy = DRAFT.privacy; e.description = DRAFT.desc;
+  if (city){ e.city = city; if (r.venue && (!r.venue.name || r.venue.name === r.city)) r.venue.name = city; r.city = city; }
+  r.endDate = end && end > start ? end : undefined;
+  r.description = DRAFT.desc;
+  r.access = Object.assign({}, r.access || {}, { model:DRAFT.entry });
+  r.whatToBring = String(DRAFT.bring || '').split('\n').map(function(x){ return x.trim(); }).filter(Boolean);
+  if (!r.burn && r.scale !== 'burn') r.scale = r.endDate ? 'gathering' : 'meetup';
+  window.HYPERNET_THEMES.themes[id] = t;
+  EDITED[id] = true; SLUGS = null;
+  closeDialogs(); render();
+  toast('Saved', e.title);
+}
 var customizeDialog = gated(function(evId){
-  var t = TH(evId), e = EVENTS[evId], pal = -1;
-  PALSETS.forEach(function(p,i){ if (p.p.bg === t.palette.bg) pal = i; });
-  if (pal < 0){ PALSETS.unshift({ n:'This event’s palette', p:t.palette }); pal = 0; }
+  var t = TH(evId), e = EVENTS[evId], pal = palIndexOf(t.palette);
   DRAFT = { step:3, editing:evId, title:e.title, date:e.date, city:cityShort(e.city), privacy:e.privacy, host:hostLabel(e), desc:descOf(e),
             mood:t.mood||'', pal:pal, surface:t.surface, type:t.type, headline:t.headline, motion:t.motion, shape:t.shape, density:t.density,
             pattern:t.square.pattern, glyph:t.square.glyph };
@@ -2935,13 +3008,14 @@ var customizeDialog = gated(function(evId){
 });
 function wizAct(which){
   if (which === 'back'){ DRAFT.step = Math.max(1, DRAFT.step-1); paintWiz(); return; }
-  var miss = eventDraftMissing(DRAFT), bad = !DRAFT.editing && (miss.title || miss.date);
+  var miss = eventDraftMissing(DRAFT), bad = (!DRAFT.editing || DRAFT.mode === 'edit') && (miss.title || miss.date);
   if (which === 'next'){
     if (DRAFT.step === 1 && bad){ DRAFT.showErr = true; paintWiz(); focusIn(miss.title ? 'w-t' : 'w-d'); return; }
     DRAFT.step = Math.min(3, DRAFT.step+1); paintWiz(); return;
   }
   if (bad){ DRAFT.step = 1; DRAFT.showErr = true; paintWiz(); focusIn(miss.title ? 'w-t' : 'w-d'); return; }
   var t = draftTheme(DRAFT);
+  if (DRAFT.mode === 'edit'){ saveEventEdit(t); return; }
   if (DRAFT.kind === 'horizon'){
     var hid = DRAFT.editing;
     HZTHEME[hid] = t;
@@ -3014,34 +3088,53 @@ function ctxVerb(fn, isOn, label, name){
     gated(function(){ if (!isOn()) fn(); else toast(label, name); })();
   };
 }
-function ctxItems(t){
-  var id = t.id, out = [{ label:'Open', def:true, lead: t.type === 'event' ? sqPx(id, 32) : hzIconHTML(id, 32), run:function(){ ctxOpen(t); } }, '-'];
+/* `only` keeps just the listed items (by code): the ⋯ on a page holds what the page does not already show */
+function ctxItems(t, only){
+  var id = t.id, out = [{ code:'open', label:'Open', def:true, lead: t.type === 'event' ? sqPx(id, 32) : hzIconHTML(id, 32), run:function(){ ctxOpen(t); } }, '-'];
   if (t.type === 'event'){
-    var st = S.loggedIn ? RSVP[id] : '';
-    if (isPast(lastDay(EVENTS[id]))) out.push({ label:'Went', icon:'check', check: S.loggedIn && !!WENT[id],
+    var st = S.loggedIn ? RSVP[id] : '', mine = isMine(id), past = isPast(lastDay(EVENTS[id]));
+    /* the host's menu leads with the host's verbs, like the host's page */
+    if (mine) out.push({ code:'edit', label:'Edit…', icon:'edit', run:function(){ editEventDialog(id); } },
+                       { code:'customize', label:'Customize…', icon:'paint', run:function(){ customizeDialog(id); } });
+    else if (past) out.push({ code:'went', label:'Went', icon:'check', check: S.loggedIn && !!WENT[id],
       run: ctxVerb(function(){ setWent(id); }, function(){ return !!WENT[id]; }, 'Marked as went', EVENTS[id].title) });
     else out.push(
-      { label:'Interested', icon:'heart', check: st === 'interested',
+      { code:'interested', label:'Interested', icon:'heart', check: st === 'interested',
         run: ctxVerb(function(){ setRSVP(id, 'interested'); }, function(){ return RSVP[id] === 'interested'; }, 'Interested', EVENTS[id].title) },
-      { label:'Going', icon:'check', check: st === 'going',
-        run: ctxVerb(function(){ setRSVP(id, 'going'); }, function(){ return RSVP[id] === 'going'; }, 'Going', EVENTS[id].title) },
-      { label:'Promote', icon:'promote', check: S.loggedIn && !!PROMOTED[id],
+      { code:'going', label:'Going', icon:'check', check: st === 'going',
+        run: ctxVerb(function(){ setRSVP(id, 'going'); }, function(){ return RSVP[id] === 'going'; }, 'Going', EVENTS[id].title) });
+    if (!past) out.push({ code:'promote', label:'Promote', icon:'promote', check: S.loggedIn && !!PROMOTED[id],
         run: ctxVerb(function(){ doPromote(id); }, function(){ return !!PROMOTED[id]; }, 'Promoted to your followers', EVENTS[id].title) });
     out.push('-');
     /* logged out there are no horizons of yours to list yet: log in, then pick one */
-    if (S.loggedIn) out.push({ label:'Add to horizon', icon:'addhorizon', sub: ctxHorizonItems(id) });
-    else out.push({ label:'Add to horizon…', icon:'addhorizon', run:function(){ gated(addToDialog)(id); } });
-    out.push({ label:'Share…', icon:'share', run:function(){ gated(shareDialog)(id); } });
-    if (isMine(id)) out.push({ label:'Customize…', icon:'paint', run:function(){ customizeDialog(id); } });
+    if (S.loggedIn) out.push({ code:'addto', label:'Add to horizon', icon:'addhorizon', sub: ctxHorizonItems(id) });
+    else out.push({ code:'addto', label:'Add to horizon…', icon:'addhorizon', run:function(){ gated(addToDialog)(id); } });
+    out.push({ code:'share', label:'Share…', icon:'share', run:function(){ gated(shareDialog)(id); } });
+    if (mine) out.push('-', { code:'delete', label:'Delete…', icon:'trash', run:function(){ deleteEventDialog(id); } });
   } else {
-    var mine = hzOwnedByMe(id), fol = S.loggedIn && HZFOLLOW[id];
-    if (!mine) out.push({ label: fol ? 'Unfollow' : 'Follow', icon: fol ? 'close' : 'plus',
+    var hmine = hzOwnedByMe(id), fol = S.loggedIn && HZFOLLOW[id], hz = HORIZONS[id];
+    if (!hmine) out.push({ code:'follow', label: fol ? 'Unfollow' : 'Follow', icon: fol ? 'close' : 'plus',
       run: ctxVerb(function(){ followHz(id); }, function(){ return !!HZFOLLOW[id]; }, 'Following', HORIZONS[id].name) });
-    else out.push({ label:'Customize…', icon:'paint', run:function(){ customizeHorizonDialog(id); } },
-                  { label:'Rename…', icon:'edit', run:function(){ gated(renameHzDialog)(id); } });
-    out.push({ label:'Share…', icon:'share', run:function(){ gated(shareDialog)(id, 'horizon'); } });
+    else {
+      out.push({ code:'customize', label:'Customize…', icon:'paint', run:function(){ customizeHorizonDialog(id); } },
+               { code:'edit', label:'Edit details…', icon:'edit', run:function(){ gated(renameHzDialog)(id); } });
+      if (hz.eventIds.length && !hz.isPersonalDefault) out.push({ code:'publish', label:'Published', icon:'check', check: !!hz.isPublished, run:function(){ publishHz(id); } });
+    }
+    out.push({ code:'share', label:'Share…', icon:'share', run:function(){ gated(shareDialog)(id, 'horizon'); } });
+    if (hmine) out.push('-', { code:'delete', label:'Delete…', icon:'trash', run:function(){ deleteHorizonDialog(id); } });
+  }
+  if (only){
+    out = out.filter(function(it){ return it === '-' || only.indexOf(it.code) >= 0; });
+    out = out.filter(function(it, i){ return it !== '-' || (i > 0 && i < out.length - 1 && out[i-1] !== '-'); });
   }
   return out;
+}
+/* the ⋯ on a page: the same menu, drawn at the button (or as the sheet on a phone) */
+function openMoreMenu(btn, type, id, only){
+  var t = { el:btn, act:null, type:type, id:id };
+  if (L.phone){ openCtxSheet(t, only); return; }
+  var r = btn.getBoundingClientRect();
+  openCtxMenu(t, r.left, r.bottom + 2, false, only);
 }
 
 /* ---- the desktop menu ---- */
@@ -3070,9 +3163,9 @@ function ctxPlace(m, x, y, flipX, slideY){
   m.style.top = Math.max(4, top) + 'px';
 }
 function ctxFocus(el){ if (el) try { el.focus({ preventScroll:true }); } catch(e){ el.focus(); } }
-function openCtxMenu(t, x, y, fromKeyboard){
+function openCtxMenu(t, x, y, fromKeyboard, only){
   closeCtx(); closePopup();
-  var root = ctxMenuEl(ctxItems(t), 0);
+  var root = ctxMenuEl(ctxItems(t, only), 0);
   CTX = { root:root, sub:null, subOf:null, target:t, back:document.activeElement };
   t.el.classList.add('ctx-on');
   ctxPlace(root, x, y);
@@ -3171,9 +3264,9 @@ function ctxSheetPaint(){
   d.querySelector('.dbody').innerHTML = ctxSheetBody(top.items, CTXS.stack.length > 1);
   placeDlg(d);
 }
-function openCtxSheet(t){
+function openCtxSheet(t, only){
   closeCtx(); closePopup(); closeDialogs();
-  CTXS = { target:t, stack:[{ title:itemName(t), items:ctxItems(t) }] };
+  CTXS = { target:t, stack:[{ title:itemName(t), items:ctxItems(t, only) }] };
   dialog(itemName(t), '', '', 420, 'sheet ctxsheet');
   ctxSheetPaint();
 }
@@ -3301,20 +3394,65 @@ var doPromote = gated(function(evId){
 });
 var toggleInHorizon = gated(function(evId, hzId){
   var hz = HORIZONS[hzId], i = hz.eventIds.indexOf(evId);
-  if (i < 0){ hz.eventIds.push(evId); toast('Added to ' + hz.name, EVENTS[evId].title); }
-  else { hz.eventIds.splice(i, 1); toast('Removed from ' + hz.name, EVENTS[evId].title); }
-  render();
+  if (i < 0){ hz.eventIds.push(evId); render(); toast('Added to ' + hz.name, EVENTS[evId].title); }
+  else { unfile(evId, hzId); return; }
   if (DLGS.length && document.querySelector('[data-act="dofile"]')){ closeDialogs(); addToDialog(evId); }
 });
-var removeFromHorizon = gated(function(evId, hzId){
-  var hz = HORIZONS[hzId], i = hz.eventIds.indexOf(evId);
-  if (i < 0 || !hzOwnedByMe(hzId)) return;
+/* taking an event out of a horizon is one tap, so it can be taken back */
+function unfile(evId, hzId){
+  var hz = HORIZONS[hzId], i = hz.eventIds.indexOf(evId), wasCover = HZCOVER[hzId] === evId;
+  if (i < 0) return;
   hz.eventIds.splice(i, 1);
-  if (HZCOVER[hzId] === evId) delete HZCOVER[hzId];
-  var top = S.stack[S.stack.length-1];
+  if (wasCover) delete HZCOVER[hzId];
   render();
-  toast('Removed from ' + hz.name, EVENTS[evId].title);
+  if (DLGS.length && document.querySelector('[data-act="dofile"]')){ closeDialogs(); addToDialog(evId); }
+  toast('Removed from ' + hz.name, EVENTS[evId].title, function(){
+    if (hz.eventIds.indexOf(evId) < 0) hz.eventIds.splice(Math.min(i, hz.eventIds.length), 0, evId);
+    if (wasCover) HZCOVER[hzId] = evId;
+    render(); toast('Back in ' + hz.name, EVENTS[evId].title);
+  });
+}
+var removeFromHorizon = gated(function(evId, hzId){
+  if (!hzOwnedByMe(hzId)) return;
+  unfile(evId, hzId);
 });
+/* ---- deleting what you own: one confirmation, then it is gone from everywhere ---- */
+var CONFIRMFN = null;
+function confirmDialog(title, text, okLabel, fn){
+  CONFIRMFN = fn;
+  dialog(title, '<p class="cmsg">'+esc(text)+'</p>',
+    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="confirmok">'+ic('trash')+esc(okLabel)+'</button>', 420);
+}
+var DELETED = { events:[], horizons:[] };
+function deleteEventDialog(evId){
+  if (!isMine(evId)) return;
+  confirmDialog('Delete event', 'Delete “' + EVENTS[evId].title + '”? It leaves Hypernet, every horizon it is on and everyone’s lists.', 'Delete event', function(){ deleteEvent(evId); });
+}
+function deleteEvent(evId){
+  var title = EVENTS[evId].title;
+  delete EVENTS[evId]; delete REC[evId]; delete EDITED[evId];
+  if (!/^evt-new-/.test(evId) && DELETED.events.indexOf(evId) < 0) DELETED.events.push(evId);
+  MYEVENTS = MYEVENTS.filter(function(x){ return x !== evId; });
+  Object.keys(HORIZONS).forEach(function(k){ var i = HORIZONS[k].eventIds.indexOf(evId); if (i >= 0) HORIZONS[k].eventIds.splice(i, 1); if (HZCOVER[k] === evId) delete HZCOVER[k]; });
+  SLUGS = null;
+  S.stack = S.stack.filter(validItem); ROUTE.replace = true;
+  closeDialogs(); render();
+  toast('Deleted', title);
+}
+function deleteHorizonDialog(hzId){
+  if (!hzOwnedByMe(hzId)) return;
+  confirmDialog('Delete horizon', 'Delete “' + HORIZONS[hzId].name + '”? Its events stay on Hypernet; the horizon and its followers’ link to it are gone.', 'Delete horizon', function(){ deleteHorizon(hzId); });
+}
+function deleteHorizon(hzId){
+  var name = HORIZONS[hzId].name;
+  delete HORIZONS[hzId]; delete HZCOVER[hzId]; delete HZTHEME[hzId];
+  if (!HORIZONS[hzId] && !/^horizon-mine-/.test(hzId) && DELETED.horizons.indexOf(hzId) < 0) DELETED.horizons.push(hzId);
+  MYHORIZONS = MYHORIZONS.filter(function(k){ return k !== hzId; });
+  if (S.folder.kind === 'horizon' && S.folder.id === hzId) goFolder({ kind:'home' });
+  S.stack = S.stack.filter(validItem); ROUTE.replace = true;
+  closeDialogs(); render();
+  toast('Deleted', name);
+}
 var addToHorizonDrop = gated(function(evId, hzId){
   var hz = HORIZONS[hzId];
   if (hz.eventIds.indexOf(evId) < 0){ hz.eventIds.push(evId); toast('Added to ' + hz.name, EVENTS[evId].title); }
@@ -3327,9 +3465,10 @@ var followHz = gated(function(hzId){
   toast(HZFOLLOW[hzId] ? 'Following' : 'Unfollowed', HORIZONS[hzId].name);
 });
 var renameHz = gated(function(hzId){
-  var nm = ($('rh-n')||{}).value || HORIZONS[hzId].name;
-  HORIZONS[hzId].name = nm; HORIZONS[hzId].description = ($('rh-d')||{}).value || '';
+  var nm = (($('rh-n')||{}).value || '').trim() || HORIZONS[hzId].name;
+  HORIZONS[hzId].name = nm; HORIZONS[hzId].description = (($('rh-d')||{}).value || '').trim();
   closeDialogs(); render();
+  toast('Saved', nm);
 });
 var publishHz = gated(function(hzId){
   HORIZONS[hzId].isPublished = !HORIZONS[hzId].isPublished;
@@ -3548,6 +3687,12 @@ document.addEventListener('click', function(ev){
       break;
     }
     case 'wiz':          wizAct(id); break;
+    case 'editevent':    editEventDialog(id); break;
+    case 'wizstep':      DRAFT.step = +id; paintWiz(); break;
+    case 'evmore':       openMoreMenu(n, 'event', id, ['delete']); break;
+    case 'hzmore':       openMoreMenu(n, 'horizon', id, ['share','delete']); break;
+    case 'confirmok':    { var cf = CONFIRMFN; CONFIRMFN = null; if (cf) cf(); break; }
+    case 'toastundo':    { var ua = TOASTACT; TOASTACT = null; $('toasts').innerHTML = ''; if (ua) ua(); break; }
     case 'discarddraft': FORMDRAFTS[id] = null; closeDialogs(); schedulePersist(); break;
     case 'calmode':      S.calMode = id; render(); break;
     case 'caltoday':     S.calAnchor = TODAY_ISO; render(); break;
@@ -3907,7 +4052,7 @@ function persist(){
       session:{ acct: S.loggedIn ? S.acct : null },
       ui:{ rightOpen:!!S.rightOpen, chatOpen:S.chatOpen || null },
       accounts:ACCTS,
-      network:{ events:evs, recs:recs, themes:themes, horizons:hzs, covers:covers, hzthemes:hzthemes, edits:edits,
+      network:{ events:evs, recs:recs, themes:themes, horizons:hzs, covers:covers, hzthemes:hzthemes, edits:edits, deleted:DELETED,
                 callouts:CALLOUTS.filter(function(c){ return !!c.hostAcct; }) }
     }));
   } catch(e){}
@@ -3947,6 +4092,11 @@ function restore(){
   if (n.callouts && n.callouts.length){
     var ids = n.callouts.map(function(c){ return c.id; });
     CALLOUTS = n.callouts.concat(CALLOUTS.filter(function(c){ return ids.indexOf(c.id) < 0; }));
+  }
+  if (n.deleted){
+    DELETED = { events:n.deleted.events || [], horizons:n.deleted.horizons || [] };
+    DELETED.events.forEach(function(k){ delete EVENTS[k]; delete REC[k]; });
+    DELETED.horizons.forEach(function(k){ delete HORIZONS[k]; });
   }
   if (d.ui){ S.rightOpen = !!d.ui.rightOpen; S.chatOpen = d.ui.chatOpen || null; }
   ACCTS = d.accounts || {};

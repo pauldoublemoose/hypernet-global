@@ -59,6 +59,13 @@ Customize, Share, Delete (confirm). Owner actions lead; guest verbs are not the 
 Same for horizons: Edit details, Customize, Share, Delete. Rename and Customize are labelled, not
 lookalike icons. Removing an event from a horizon offers Undo.
 Sources: ORGANISER-1, -10, -11, -14.
+*Status: done.* The host's event page leads with Edit · Customize (Interested / Going are for guests), then
+Promote, Horizon, Share and a ⋯ that holds Delete. Edit reopens the whole wizard filled in, with clickable step tabs,
+and saves from any step ("Save changes"); a renamed event keeps its link. Delete asks once and removes the event from
+every horizon; deletions and edits of the demo's own fixture events persist. Horizons: Add events, Customize, Edit
+details, Publish, and ⋯ (Share, Delete), all labelled. Removing an event from a horizon (× or the menu) toasts with
+Undo. The right-click / long-press menu carries the same host verbs (Edit…, Customize…, Delete…, Edit details…,
+Published) and the page ⋯ opens that same menu filtered to what the page doesn't show. Share lands in A6.
 
 **A6. Sharing.** Share on every event and horizon, available logged out: Copy link (uses A1 URLs), native
 share sheet where available, and "Send in a chat" when logged in. Share opens in place, doesn't pull you

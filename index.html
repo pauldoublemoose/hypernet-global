@@ -506,6 +506,30 @@ fieldset.props legend{ padding:0 6px; font-weight:bold; }
 .popmenu .pi:hover, .popmenu .pi:focus{ background:var(--sel); color:#fff; outline:0; }
 .popmenu .sepi{ height:2px; min-height:0; margin:3px 2px; padding:0; box-shadow:inset 0 1px 0 var(--shadow), inset 0 -1px 0 var(--white); }
 .popmenu .sepi:hover{ background:transparent; }
+/* the right-click menu: Windows 2000 grey, etched hairlines, a check gutter, a black ▸ for submenus */
+.ctxmenu{ position:fixed; z-index:85; min-width:196px; max-width:320px; padding:2px; background:var(--face); color:var(--ink);
+  box-shadow:var(--out), 2px 2px 3px rgba(0,0,0,.35); font:var(--fs-s)/1.2 var(--sys); outline:0; user-select:none; -webkit-user-select:none; }
+.ctxmenu .ci{ display:flex; align-items:center; min-height:26px; padding:0 18px 0 0; white-space:nowrap; cursor:default; outline:0; }
+.ctxmenu .ci:focus, .ctxmenu .ci.open{ background:var(--sel); color:#fff; }
+.ctxmenu .ci.def .clab{ font-weight:bold; }
+.ctxmenu .cck{ flex:0 0 24px; display:grid; place-items:center; }
+.ctxmenu .cart2{ flex:0 0 auto; margin-right:8px; display:grid; place-items:center; }
+.ctxmenu .clab{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.ctxmenu .carr{ flex:0 0 auto; margin-left:22px; margin-right:-8px; width:0; height:0; border-left:4px solid currentColor; border-top:4px solid transparent; border-bottom:4px solid transparent; }
+.ctxmenu .csep{ height:0; margin:3px 1px; border-top:1px solid var(--shadow); border-bottom:1px solid var(--white); }
+.ctx-on{ outline:1px dotted currentColor; outline-offset:-3px; }
+/* the same menu as a bottom sheet on a phone */
+.ctxsheet .sheetrow .cico{ flex:0 0 32px; display:grid; place-items:center; }
+.ctxsheet .sheetrow .clab{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ctxsheet .sheetrow.def .clab{ font-weight:bold; }
+.ctxsheet .sheetrow .hzchk .ic{ display:none; }
+.ctxsheet .sheetrow .hzchk.on .ic{ display:block; }
+.ctxsheet .csep{ height:6px; background:var(--face); box-shadow:inset 0 1px 0 var(--shadow), inset 0 -1px 0 var(--white); }
+/* items that answer a long-press: no text selection, no callout */
+body.is-phone :is(.row[data-type], .card2[data-type], .qtile[data-type], .calev, .track[data-type], .crow, .nrow, .evcard){
+  -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
+@media (pointer:coarse){ :is(.row[data-type], .card2[data-type], .qtile[data-type], .calev, .track[data-type], .crow, .nrow, .evcard){
+  -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; } }
 #mask{ position:fixed; inset:0; z-index:60; display:none; background:rgba(0,0,0,.3); }
 .dlg{ position:fixed; z-index:70; display:flex; flex-direction:column; max-height:calc(100vh - 32px); padding:3px; background:var(--face);
   box-shadow:var(--out), 4px 4px 16px rgba(0,0,0,.38); }
@@ -2097,6 +2121,7 @@ function msgPreview(m, c){
   var who = m.from === 'self' ? 'You: ' : (c.kind === 'group' && m.from !== 'sys' ? person(m.from).displayName.split(' ')[0] + ': ' : '');
   if (m.from === 'sys') return m.text;
   if (m.card) return who + 'shared ' + (EVENTS[m.card] ? EVENTS[m.card].title : 'an event');
+  if (m.hzcard) return who + 'shared ' + (HORIZONS[m.hzcard] ? HORIZONS[m.hzcard].name : 'a horizon');
   return who + m.text;
 }
 function unreadChats(){ return S.loggedIn ? Object.keys(UNREADCHAT).filter(function(k){ return UNREADCHAT[k]; }).length : 0; }
@@ -2124,6 +2149,11 @@ function convHTML(cid){
       var e = EVENTS[m.card];
       return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="evcard" data-act="open-reset" data-type="event" data-id="'+m.card+'">'+sqHTML(m.card,40)+
         '<div><div class="t">'+esc(e.title)+'</div><div class="m">'+fmtShort(e.date)+' · '+esc(whereOf(e))+'</div></div></div></div>';
+    }
+    if (m.hzcard && HORIZONS[m.hzcard]){
+      var hz = HORIZONS[m.hzcard];
+      return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="evcard" data-act="open-reset" data-type="horizon" data-id="'+m.hzcard+'">'+hzMosaic(m.hzcard,40)+
+        '<div><div class="t">'+esc(hz.name)+'</div><div class="m">Event Horizon · '+hz.eventIds.length+' events</div></div></div></div>';
     }
     return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+'</div></div>';
   }).join('') : '<div class="msg sys">No messages yet</div>') + '</div>';
@@ -2465,13 +2495,15 @@ function addToDialog(evId){
   }).join('') + '</div>';
   dialog('Add “' + EVENTS[evId].title + '” to', h, '<button class="btn primary" data-act="closedlg">Done</button>', 440);
 }
-function shareDialog(evId){
+/* share an event, or a horizon, into one of your chats */
+function shareDialog(id, type){
+  type = type === 'horizon' ? 'horizon' : 'event';
   var h = '<div class="picklist">' + CHATORDER.map(function(k){
     var c = CHATS[k];
-    return '<div class="linkrow" data-act="doshare" data-id="'+evId+'" data-chat="'+k+'" role="button">'+chatAv(c)+'<div class="lr">'+esc(c.name)+
+    return '<div class="linkrow" data-act="doshare" data-id="'+id+'" data-type="'+type+'" data-chat="'+k+'" role="button">'+chatAv(c)+'<div class="lr">'+esc(c.name)+
       '<div class="fhelp">'+(c.kind==='dm'?'Direct message':(c.memberIds.length+1)+' members')+'</div></div></div>';
   }).join('') + '</div>';
-  dialog('Share “' + EVENTS[evId].title + '”', h, '<button class="btn" data-act="closedlg">Cancel</button>', 440);
+  dialog('Share “' + itemName({ type:type, id:id }) + '”', h, '<button class="btn" data-act="closedlg">Cancel</button>', 440);
 }
 /* ---- new chat: pick people; one person is a direct message, two or more is a group you name ---- */
 var NC = null;
@@ -2780,6 +2812,267 @@ function wizAct(which){
 </script>
 <script>
 /* =========================================================================
+   12b. CONTEXT MENUS — right-click (or long-press) an event or a horizon
+   One list of items, drawn two ways: a Windows 2000 menu under the mouse,
+   a bottom sheet under the finger. Every item runs an action that already
+   exists elsewhere (the verbs, the Horizon sheet, Share, Customize), so the
+   menu is a shortcut, never a second implementation.
+   ========================================================================= */
+var CTXSEL = '.row[data-type], .card2[data-type], .qtile[data-type], .calev[data-type], .calcell .dots i[data-type], ' +
+             '.track[data-type], .crow, .nrow[data-kind="horizon"], .nrow[data-type="horizon"], .evcard[data-type]';
+/* what was pressed: the item's element, the element that opens it, and what it stands for */
+function ctxTarget(node){
+  var el = node && node.closest ? node.closest(CTXSEL) : null;
+  if (!el || el.closest('.dlg, .ctxmenu')) return null;
+  var act = el.classList.contains('crow') ? el.querySelector('.cm[data-type]') : el;
+  if (!act) return null;
+  var type = act.getAttribute('data-kind') === 'horizon' ? 'horizon' : act.getAttribute('data-type'), id = act.getAttribute('data-id');
+  if (!((type === 'event' && EVENTS[id]) || (type === 'horizon' && HORIZONS[id]))) return null;
+  return { el:el, act:act, type:type, id:id };
+}
+/* Open does exactly what a click on the item does */
+function ctxOpen(t){
+  if (t.act && document.body.contains(t.act)) t.act.click();
+  else openItem(t.type, t.id);
+}
+function ctxHorizonItems(evId){
+  var sub = MYHORIZONS.slice().reverse().filter(function(k){ return HORIZONS[k]; }).map(function(k){
+    return { label:HORIZONS[k].name, art:k, check: HORIZONS[k].eventIds.indexOf(evId) >= 0, run:function(){ toggleInHorizon(evId, k); } };
+  });
+  sub.push('-');
+  sub.push({ label:'New horizon…', icon:'plus', run:function(){ runCmd('new-horizon', evId); } });
+  return sub;
+}
+/* a verb picked while logged out means "make it so": after log-in it is switched on, never toggled back off */
+function ctxVerb(fn, isOn, label, name){
+  return function(){
+    if (S.loggedIn){ fn(); return; }
+    gated(function(){ if (!isOn()) fn(); else toast(label, name); })();
+  };
+}
+function ctxItems(t){
+  var id = t.id, out = [{ label:'Open', def:true, lead: t.type === 'event' ? sqPx(id, 32) : hzIconHTML(id, 32), run:function(){ ctxOpen(t); } }, '-'];
+  if (t.type === 'event'){
+    var st = S.loggedIn ? RSVP[id] : '';
+    if (isPast(lastDay(EVENTS[id]))) out.push({ label:'Went', icon:'check', check: S.loggedIn && !!WENT[id],
+      run: ctxVerb(function(){ setWent(id); }, function(){ return !!WENT[id]; }, 'Marked as went', EVENTS[id].title) });
+    else out.push(
+      { label:'Interested', icon:'heart', check: st === 'interested',
+        run: ctxVerb(function(){ setRSVP(id, 'interested'); }, function(){ return RSVP[id] === 'interested'; }, 'Interested', EVENTS[id].title) },
+      { label:'Going', icon:'check', check: st === 'going',
+        run: ctxVerb(function(){ setRSVP(id, 'going'); }, function(){ return RSVP[id] === 'going'; }, 'Going', EVENTS[id].title) },
+      { label:'Promote', icon:'promote', check: S.loggedIn && !!PROMOTED[id],
+        run: ctxVerb(function(){ doPromote(id); }, function(){ return !!PROMOTED[id]; }, 'Promoted to your followers', EVENTS[id].title) });
+    out.push('-');
+    /* logged out there are no horizons of yours to list yet: log in, then pick one */
+    if (S.loggedIn) out.push({ label:'Add to horizon', icon:'addhorizon', sub: ctxHorizonItems(id) });
+    else out.push({ label:'Add to horizon…', icon:'addhorizon', run:function(){ gated(addToDialog)(id); } });
+    out.push({ label:'Share…', icon:'share', run:function(){ gated(shareDialog)(id); } });
+    if (isMine(id)) out.push({ label:'Customize…', icon:'paint', run:function(){ customizeDialog(id); } });
+  } else {
+    var mine = hzOwnedByMe(id), fol = S.loggedIn && HZFOLLOW[id];
+    if (!mine) out.push({ label: fol ? 'Unfollow' : 'Follow', icon: fol ? 'close' : 'plus',
+      run: ctxVerb(function(){ followHz(id); }, function(){ return !!HZFOLLOW[id]; }, 'Following', HORIZONS[id].name) });
+    else out.push({ label:'Customize…', icon:'paint', run:function(){ customizeHorizonDialog(id); } },
+                  { label:'Rename…', icon:'edit', run:function(){ gated(renameHzDialog)(id); } });
+    out.push({ label:'Share…', icon:'share', run:function(){ gated(shareDialog)(id, 'horizon'); } });
+  }
+  return out;
+}
+
+/* ---- the desktop menu ---- */
+var CTX = null;                /* { root, sub, subOf, target, back, tOpen, tClose } */
+function ctxMenuEl(items, level){
+  var m = document.createElement('div');
+  m.className = 'ctxmenu'; m.setAttribute('role', 'menu'); m.tabIndex = -1; m._items = items; m._level = level;
+  m.innerHTML = items.map(function(it, i){
+    if (it === '-') return '<div class="csep" role="separator"></div>';
+    var role = it.check != null ? 'menuitemcheckbox' : 'menuitem';
+    return '<div class="ci'+(it.def?' def':'')+'" role="'+role+'" tabindex="-1" data-ci="'+i+'"' +
+      (it.check != null ? ' aria-checked="'+!!it.check+'"' : '') + (it.sub ? ' aria-haspopup="menu" aria-expanded="false"' : '') + '>' +
+      '<span class="cck">'+(it.check ? ic('check', 14) : '')+'</span>' +
+      (it.art ? '<span class="cart2">'+hzArt(it.art, 16)+'</span>' : '') +
+      '<span class="clab">'+esc(it.label)+'</span>' + (it.sub ? '<span class="carr" aria-hidden="true"></span>' : '') + '</div>';
+  }).join('');
+  document.body.appendChild(m);
+  return m;
+}
+/* place a menu at (x, y); flip left or up, or slide, so it stays on screen */
+function ctxPlace(m, x, y, flipX, slideY){
+  var w = m.offsetWidth, h = m.offsetHeight, W = window.innerWidth, Ht = window.innerHeight;
+  var left = x + w > W - 4 ? (flipX != null ? flipX - w : x - w) : x;
+  var top = y + h > Ht - 4 ? (slideY ? Ht - 4 - h : y - h) : y;
+  m.style.left = Math.max(4, Math.min(left, W - 4 - w)) + 'px';
+  m.style.top = Math.max(4, top) + 'px';
+}
+function ctxFocus(el){ if (el) try { el.focus({ preventScroll:true }); } catch(e){ el.focus(); } }
+function openCtxMenu(t, x, y, fromKeyboard){
+  closeCtx(); closePopup();
+  var root = ctxMenuEl(ctxItems(t), 0);
+  CTX = { root:root, sub:null, subOf:null, target:t, back:document.activeElement };
+  t.el.classList.add('ctx-on');
+  ctxPlace(root, x, y);
+  ctxFocus(fromKeyboard ? root.querySelector('.ci') : root);
+}
+function closeCtx(restore){
+  if (!CTX) return;
+  var c = CTX; CTX = null;
+  clearTimeout(c.tOpen); clearTimeout(c.tClose);
+  c.root.remove(); if (c.sub) c.sub.remove();
+  if (c.target.el) c.target.el.classList.remove('ctx-on');
+  if (restore && c.back && document.body.contains(c.back)) ctxFocus(c.back);
+}
+function ctxOpenSub(item, focusFirst){
+  if (!CTX) return;
+  clearTimeout(CTX.tOpen); clearTimeout(CTX.tClose);
+  if (CTX.subOf === item){ if (focusFirst) ctxFocus(CTX.sub.querySelector('.ci')); return; }
+  ctxCloseSub();
+  var it = CTX.root._items[+item.getAttribute('data-ci')];
+  var sub = ctxMenuEl(it.sub, 1), r = item.getBoundingClientRect(), pr = CTX.root.getBoundingClientRect();
+  CTX.sub = sub; CTX.subOf = item;
+  item.classList.add('open'); item.setAttribute('aria-expanded', 'true');
+  ctxPlace(sub, pr.right - 3, r.top - 3, pr.left + 3, true);
+  if (focusFirst) ctxFocus(sub.querySelector('.ci'));
+}
+function ctxCloseSub(){
+  if (!CTX || !CTX.sub) return;
+  CTX.sub.remove(); CTX.subOf.classList.remove('open'); CTX.subOf.setAttribute('aria-expanded', 'false');
+  CTX.sub = null; CTX.subOf = null;
+}
+function ctxActivate(item){
+  var m = item.closest('.ctxmenu'), it = m._items[+item.getAttribute('data-ci')];
+  if (it.sub){ ctxOpenSub(item, true); return; }
+  closeCtx();
+  it.run();
+}
+function ctxMenuOf(node){ return node && node.closest ? node.closest('.ctxmenu') : null; }
+document.addEventListener('click', function(ev){
+  var m = ctxMenuOf(ev.target); if (!m) return;
+  ev.stopPropagation();
+  var item = ev.target.closest('.ci'); if (item) ctxActivate(item);
+}, true);
+document.addEventListener('mouseover', function(ev){
+  if (!CTX) return;
+  var m = ctxMenuOf(ev.target), item = m && ev.target.closest('.ci');
+  if (!item) return;
+  if (document.activeElement !== item) ctxFocus(item);
+  clearTimeout(CTX.tOpen); clearTimeout(CTX.tClose);
+  if (m === CTX.root){
+    var it = m._items[+item.getAttribute('data-ci')];
+    if (it.sub) CTX.tOpen = setTimeout(function(){ ctxOpenSub(item, false); }, 160);
+    else if (CTX.sub) CTX.tClose = setTimeout(ctxCloseSub, 260);
+  }
+});
+/* anywhere else: mouse down outside, scrolling, resizing or leaving the window closes it */
+document.addEventListener('mousedown', function(ev){ if (CTX && !ctxMenuOf(ev.target)) closeCtx(); }, true);
+document.addEventListener('scroll', function(){ if (CTX) closeCtx(); if (LP && !LP.fired) lpCancel(); }, true);
+window.addEventListener('resize', function(){ closeCtx(); });
+window.addEventListener('blur', function(){ closeCtx(); });
+/* the keyboard, Windows-style: arrows move, → opens the submenu, ← and Esc step back out, Enter runs */
+window.addEventListener('keydown', function(ev){
+  if (!CTX) return;
+  var k = ev.key, ae = document.activeElement, inSub = CTX.sub && CTX.sub.contains(ae);
+  var menu = inSub ? CTX.sub : CTX.root, items = Array.prototype.slice.call(menu.querySelectorAll('.ci')), ix = items.indexOf(ae);
+  ev.stopPropagation();
+  if (k === 'ArrowDown' || k === 'ArrowUp'){
+    var n = items.length, next = ix < 0 ? (k === 'ArrowDown' ? 0 : n - 1) : (ix + (k === 'ArrowDown' ? 1 : n - 1)) % n;
+    ctxFocus(items[next]); ev.preventDefault(); return;
+  }
+  if (k === 'Home' || k === 'End'){ ctxFocus(items[k === 'Home' ? 0 : items.length - 1]); ev.preventDefault(); return; }
+  if (k === 'ArrowRight'){ if (!inSub && ix >= 0 && CTX.root._items[+ae.getAttribute('data-ci')].sub) ctxOpenSub(ae, true); ev.preventDefault(); return; }
+  if (k === 'ArrowLeft'){ if (inSub){ var p = CTX.subOf; ctxCloseSub(); ctxFocus(p); } ev.preventDefault(); return; }
+  if (k === 'Enter' || k === ' '){ if (ix >= 0) ctxActivate(ae); ev.preventDefault(); return; }
+  if (k === 'Escape'){ if (CTX.sub){ var q = CTX.subOf; ctxCloseSub(); ctxFocus(q); } else closeCtx(true); ev.preventDefault(); return; }
+  if (k === 'Tab'){ ev.preventDefault(); return; }
+}, true);
+
+/* ---- the phone sheet: same items, the submenu is a second step with Back ---- */
+var CTXS = null;               /* { target, items, stack:[{ title, items }] } */
+function ctxSheetBody(items, back){
+  var h = back ? '<div class="sheetrow" data-act="ctxback" role="button">'+'<span class="cico">'+ic('back', 22)+'</span><span class="clab">Back</span></div>' : '';
+  return h + items.map(function(it, i){
+    if (it === '-') return '<div class="csep" role="separator"></div>';
+    var lead = it.lead || (it.art ? hzIconHTML(it.art, 32) : ic(it.icon || 'horizon', 22));
+    var tail = it.sub ? ic('back', 18).replace('class="ic"', 'class="ic" style="transform:scaleX(-1)"')
+             : it.check != null ? '<span class="lstate hzchk'+(it.check?' on':'')+'" aria-hidden="true">'+ic('check')+'</span>' : '';
+    return '<div class="sheetrow'+(it.def?' def':'')+'" data-act="ctxrun" data-id="'+i+'" role="'+(it.check != null ? 'menuitemcheckbox' : 'menuitem')+'"' +
+      (it.check != null ? ' aria-checked="'+!!it.check+'"' : '') + '><span class="cico">'+lead+'</span><span class="clab">'+esc(it.label)+'</span>'+tail+'</div>';
+  }).join('');
+}
+function ctxSheetPaint(){
+  var d = DLGS[DLGS.length-1], top = CTXS.stack[CTXS.stack.length-1];
+  if (!d || !d.classList.contains('ctxsheet')) return;
+  d.querySelector('.dtitle').textContent = top.title;
+  d.setAttribute('aria-label', top.title);
+  d.querySelector('.dbody').innerHTML = ctxSheetBody(top.items, CTXS.stack.length > 1);
+  placeDlg(d);
+}
+function openCtxSheet(t){
+  closeCtx(); closePopup(); closeDialogs();
+  CTXS = { target:t, stack:[{ title:itemName(t), items:ctxItems(t) }] };
+  dialog(itemName(t), '', '', 420, 'sheet ctxsheet');
+  ctxSheetPaint();
+}
+function ctxSheetRun(i){
+  if (!CTXS) return;
+  var it = CTXS.stack[CTXS.stack.length-1].items[i];
+  if (!it || it === '-') return;
+  if (it.sub){ CTXS.stack.push({ title:it.label, items:it.sub }); ctxSheetPaint(); return; }
+  closeDialogs(); CTXS = null;
+  it.run();
+}
+function ctxSheetBack(){ if (CTXS && CTXS.stack.length > 1){ CTXS.stack.pop(); ctxSheetPaint(); } }
+/* tapping the dimmed page above the sheet puts it away */
+document.addEventListener('click', function(ev){
+  if (ev.target.id === 'mask' && DLGS.length && DLGS[DLGS.length-1].classList.contains('ctxsheet')){ closeDialogs(); CTXS = null; }
+});
+
+/* ---- right-click: our menu on these items, the browser's everywhere else ---- */
+var LP = null, LPQUIET = 0;
+document.addEventListener('contextmenu', function(ev){
+  if (ctxMenuOf(ev.target)){ ev.preventDefault(); return; }
+  var t = ctxTarget(ev.target);
+  if (!t) return;
+  ev.preventDefault();
+  /* a long-press the browser noticed first: the finger gets the sheet */
+  if (LP || Date.now() < LPQUIET){ if (LP && !LP.fired){ lpFire(); } return; }
+  if (L.phone){ openCtxSheet(t); return; }
+  var kb = !ev.clientX && !ev.clientY, r = t.el.getBoundingClientRect();
+  openCtxMenu(t, kb ? r.left + 12 : ev.clientX, kb ? r.bottom - 4 : ev.clientY, kb);
+});
+
+/* ---- long-press: about half a second, cancelled by any real movement ---- */
+function lpCancel(){ if (LP){ clearTimeout(LP.timer); LP = null; } }
+function lpFire(){
+  if (!LP || LP.fired) return;
+  clearTimeout(LP.timer); LP.fired = true;
+  if (navigator.vibrate) try { navigator.vibrate(12); } catch(e){}
+  openCtxSheet(LP.t);
+}
+document.addEventListener('touchstart', function(ev){
+  lpCancel();
+  if (ev.touches.length !== 1 || DLGS.length) return;
+  var t = ctxTarget(ev.target); if (!t) return;
+  var p = ev.touches[0];
+  LP = { t:t, x:p.clientX, y:p.clientY, fired:false, timer:setTimeout(lpFire, 500) };
+}, { passive:true });
+document.addEventListener('touchmove', function(ev){
+  if (!LP || LP.fired) return;
+  var p = ev.touches[0];
+  if (ev.touches.length !== 1 || Math.abs(p.clientX - LP.x) > 8 || Math.abs(p.clientY - LP.y) > 8) lpCancel();
+}, { passive:true });
+document.addEventListener('touchend', function(ev){
+  if (LP && LP.fired){ ev.preventDefault(); LPQUIET = Date.now() + 350; LP = null; return; }
+  lpCancel();
+}, { passive:false });
+document.addEventListener('touchcancel', function(){ if (LP && LP.fired) LPQUIET = Date.now() + 350; lpCancel(); }, { passive:true });
+/* the lift after a long-press is not a tap */
+document.addEventListener('click', function(ev){
+  if (Date.now() < LPQUIET){ ev.preventDefault(); ev.stopPropagation(); }
+}, true);
+</script>
+<script>
+/* =========================================================================
    13. ACTIONS
    ========================================================================= */
 function goFolder(f){
@@ -2899,10 +3192,11 @@ function openDM(pid){
   return dm;
 }
 var messagePerson = gated(function(pid){ openChat(openDM(pid)); });
-var shareToChat = gated(function(evId, cid){
-  CHATS[cid].messages.push({ from:'self', t:nowClock(), text:'', card:evId });
+var shareToChat = gated(function(id, cid, type){
+  var hz = type === 'horizon';
+  CHATS[cid].messages.push(hz ? { from:'self', t:nowClock(), text:'', hzcard:id } : { from:'self', t:nowClock(), text:'', card:id });
   closeDialogs(); openChat(cid);
-  toast('Shared in ' + CHATS[cid].name, EVENTS[evId].title);
+  toast('Shared in ' + CHATS[cid].name, itemName({ type: hz ? 'horizon' : 'event', id:id }));
 });
 var answerCallout = gated(function(coId){
   var c = calloutOf(coId); if (!c) return;
@@ -3006,7 +3300,9 @@ document.addEventListener('click', function(ev){
     case 'addto':        gated(addToDialog)(id); break;
     case 'dofile':       toggleInHorizon(id, n.getAttribute('data-hz')); break;
     case 'share':        gated(shareDialog)(id); break;
-    case 'doshare':      shareToChat(id, n.getAttribute('data-chat')); break;
+    case 'doshare':      shareToChat(id, n.getAttribute('data-chat'), n.getAttribute('data-type')); break;
+    case 'ctxrun':       ctxSheetRun(+id); break;
+    case 'ctxback':      ctxSheetBack(); break;
     case 'customize':    customizeDialog(id); break;
     case 'followhz':     followHz(id); break;
     case 'renamehz':     gated(renameHzDialog)(id); break;

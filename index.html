@@ -406,9 +406,6 @@ button.chip:hover{ border-color:var(--eac); }
 .psub{ margin-top:5px; color:var(--dim); }
 .pdesc{ margin:14px 0 0; max-width:62ch; font-size:var(--fs-m); line-height:1.55; }
 .acts{ display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
-.folder{ position:relative; width:88px; height:72px; flex:0 0 88px; }
-.folder .tab0{ position:absolute; left:0; top:0; width:36px; height:12px; background:#c9c5bc; box-shadow:inset -1px -1px 0 #7b776f, inset 1px 1px 0 #fff; }
-.folder .body0{ position:absolute; left:0; top:8px; right:0; bottom:0; background:#dedad2; box-shadow:inset -1px -1px 0 #7b776f, inset 1px 1px 0 #fff, 2px 2px 0 rgba(0,0,0,.12); display:grid; place-items:center; }
 fieldset.props{ margin:24px 0 0; padding:8px 18px 12px; border:1px solid var(--shadow); box-shadow:inset 1px 1px 0 #fff, 1px 1px 0 #fff; }
 fieldset.props legend{ padding:0 6px; font-weight:bold; }
 .prow{ display:flex; align-items:center; gap:14px; min-height:40px; padding:6px 0; border-bottom:1px solid var(--line); }
@@ -430,8 +427,6 @@ fieldset.props legend{ padding:0 6px; font-weight:bold; }
 @container detail (max-width:560px){
   .page{ padding:20px 16px 36px; }
   .phead2{ gap:14px; }
-  .folder{ width:64px; height:54px; flex-basis:64px; }
-  .folder .sq.s40{ width:30px; height:30px; font-size:17px; }
   .pname{ font-size:22px; }
   .acts .btn{ flex:1 1 auto; }
   .pk{ flex-basis:92px; }
@@ -941,7 +936,7 @@ function headlineHTML(t, title){
 /* one small monochrome icon set, drawn in the 20px grid */
 var IC = {
   home:'<path d="M3 10 10 3.5 17 10M5 8.5V17h4v-4.5h2V17h4V8.5"/>',
-  folder:'<path d="M2.5 5h6l1.6 2H17.5v9.5h-15z"/>',
+  horizon:'<path d="M1.5 13.5h17M4.5 13.5a5.5 5.5 0 0 1 11 0M10 3.2v2M3.6 6.4l1.4 1.4M16.4 6.4 15 7.8M5 16.5h10"/>',
   people:'<circle cx="7.5" cy="7" r="3"/><path d="M1.8 17c.6-3.3 2.6-5 5.7-5s5.1 1.7 5.7 5"/><circle cx="14.2" cy="6.4" r="2.3"/><path d="M14 10.6c2.5.1 4 1.5 4.4 4.4"/>',
   check:'<path d="M3.5 10.5 8 15l8.5-9.5"/>',
   heart:'<path class="fillable" d="M10 16.6S3 12.3 3 7.7C3 5.4 4.7 3.9 6.6 3.9c1.5 0 2.7.9 3.4 2 .7-1.1 1.9-2 3.4-2 1.9 0 3.6 1.5 3.6 3.8 0 4.6-7 8.9-7 8.9z"/>',
@@ -956,7 +951,7 @@ var IC = {
   edit:'<path d="M4 16l.8-3.6L13 4.2l2.8 2.8-8.2 8.2zM11.2 6l2.8 2.8"/>',
   user:'<circle cx="10" cy="7" r="3.4"/><path d="M3.5 17.5c.7-3.8 3-5.6 6.5-5.6s5.8 1.8 6.5 5.6"/>',
   share:'<path d="M10 12.5V3.5M6.3 7.2 10 3.5l3.7 3.7M4 10.5V17h12v-6.5"/>',
-  addfolder:'<path d="M2.5 5h6l1.6 2H17.5v9.5h-15zM10 9.2v5M7.5 11.7h5"/>',
+  addhorizon:'<path d="M1.5 13.5h11M4 13.5a4.5 4.5 0 0 1 8.3-2.4M8.3 4.2v1.8M16 9v8M12 13h8"/>',
   callout:'<path d="M3 8v4h3l7.5 4V4L6 8zM16.5 7.5v5"/>',
   news:'<path d="M3 4h11v12H4.5A1.5 1.5 0 0 1 3 14.5zM14 7h3v7.5a1.5 1.5 0 0 1-3 0M5.5 7h6M5.5 10h6M5.5 13h4"/>',
   cal:'<path d="M3 5h14v12H3zM3 9h14M7 3v4M13 3v4"/>',
@@ -1071,7 +1066,7 @@ function hzCover(hzId){
 }
 function hzIconHTML(hzId, size){
   var cov = hzCover(hzId);
-  return cov ? sqHTML(cov, size || 20) : ic('folder', size && size > 20 ? 24 : 18);
+  return cov ? sqHTML(cov, size || 20) : ic('horizon', size && size > 20 ? 24 : 18);
 }
 function hzDates(hzId){
   var hz = HORIZONS[hzId];
@@ -1268,7 +1263,7 @@ function bandOf(it){
     return it.band || { event:'Happening soon', horizon:'Horizons worth following', callout:'Call outs', news:'Network news' }[it.type];
   if (k === 'horizons') return hzOwnedByMe(it.id) ? 'Yours' : (S.loggedIn && HZFOLLOW[it.id]) ? 'Following' : 'More horizons';
   if (k === 'people') return it.id === 'self' ? 'You' : (S.loggedIn && PFOLLOW[it.id]) ? 'People you follow' : 'Around the network';
-  if (it.type === 'horizon') return 'Folder';
+  if (it.type === 'horizon') return 'Event Horizon';
   if (S.sort !== 'date') return null;
   var d = dayDiff(EVENTS[it.id].date);
   if (d < 0) return 'Past';
@@ -1276,7 +1271,7 @@ function bandOf(it){
   if (d <= 31) return 'This month';
   return 'Later';
 }
-var BANDORDER = ['Folder','Happening soon','Announced','This week','This month','Later','Past','Horizons worth following','Call outs','Network news',
+var BANDORDER = ['Event Horizon','Happening soon','Announced','This week','This month','Later','Past','Horizons worth following','Call outs','Network news',
                  'Events','Horizons','People','Clusters','You','Yours','Following','People you follow','Around the network','More horizons'];
 function groupItems(items){
   var groups = {}, order = [];
@@ -1314,7 +1309,7 @@ function rowHTML(it){
     side = statePills(it.id);
   } else if (it.type === 'horizon'){
     var hz = HORIZONS[it.id];
-    lead = '<span class="r-ic">'+(hzCover(it.id) ? sqHTML(hzCover(it.id), 32) : ic('folder'))+'</span>';
+    lead = '<span class="r-ic">'+(hzCover(it.id) ? sqHTML(hzCover(it.id), 32) : ic('horizon'))+'</span>';
     title = esc(hz.name);
     meta = esc('Horizon · ' + hz.ownerName + ' · ' + hz.eventIds.length + ' events');
     date = hzDates(it.id).length ? fmtShort(hzDates(it.id)[0]) : '';
@@ -1638,7 +1633,7 @@ function verbsHTML(evId){
   h += '<button class="vpromo'+(pro?' on':'')+'" data-act="v-promote" data-id="'+evId+'" aria-pressed="'+!!pro+'">'+ic('promote')+(pro?'Promoted':'Promote') +
        (PROMOCOUNT[evId] ? ' <span class="n">'+PROMOCOUNT[evId]+'</span>' : '') + '</button>';
   h += '<span class="vsec">';
-  h += '<button class="vmore" data-act="addto" data-id="'+evId+'">'+ic('addfolder',16)+'<span class="lg">Add to horizon</span><span class="sm">Horizon</span></button>';
+  h += '<button class="vmore" data-act="addto" data-id="'+evId+'">'+ic('addhorizon',16)+'<span class="lg">Add to horizon</span><span class="sm">Horizon</span></button>';
   h += '<button class="vmore" data-act="share" data-id="'+evId+'">'+ic('share',16)+'Share</button>';
   if (isMine(evId)) h += '<button class="vmore" data-act="customize" data-id="'+evId+'">'+ic('paint',16)+'Customize</button>';
   return h + '</span></div>';
@@ -1685,7 +1680,7 @@ function canvasHTML(evId){
          return '<button class="chip" data-act="open" data-type="person" data-id="'+pid+'">'+avHTML(pid,'a28')+esc(person(pid).displayName)+'</button>';
        }).join('') + '<span class="chip plain">+ '+Math.max(0, attendeeCount(evId)-att.length)+' more</span></div>');
   h += sect('On horizons', onHz.length ? '<div class="chips">' + onHz.map(function(k){
-         return '<button class="chip" data-act="open" data-type="horizon" data-id="'+k+'">'+ic('folder',16)+esc(HORIZONS[k].name)+' <span class="sub">'+esc(HORIZONS[k].ownerName)+'</span></button>';
+         return '<button class="chip" data-act="open" data-type="horizon" data-id="'+k+'">'+ic('horizon',16)+esc(HORIZONS[k].name)+' <span class="sub">'+esc(HORIZONS[k].ownerName)+'</span></button>';
        }).join('') + '</div>' : '');
   var hosts = '';
   if (hp && (hp.id !== 'self' || !S.loggedIn)) hosts += '<button class="chip" data-act="open" data-type="person" data-id="'+hp.id+'">'+avHTML(hp.id,'a28')+esc(hp.displayName)+'</button>';
@@ -1698,7 +1693,7 @@ function canvasHTML(evId){
   return h;
 }
 
-/* A horizon opens like a folder: its own properties and state. No event verbs
+/* A horizon shows its own properties and state. No event verbs
    on the horizon itself; the events inside it carry them, per row. */
 function compactVerbs(evId){
   var st = S.loggedIn ? RSVP[evId] : '';
@@ -1724,7 +1719,7 @@ function playlistHTML(hzId, withTracks){
   if (hz.description) h += '<p class="pld">'+esc(hz.description)+'</p>';
   h += '<div class="plo">' + (hz.ownerId && PEOPLE[hz.ownerId] && hz.ownerId !== 'self'
         ? '<button class="plown" data-act="open" data-type="person" data-id="'+hz.ownerId+'">'+avHTML(hz.ownerId)+esc(owner)+'</button>'
-        : '<span class="plown">'+ic('folder',16)+esc(owner)+'</span>') + '</div>';
+        : '<span class="plown">'+ic('horizon',16)+esc(owner)+'</span>') + '</div>';
   h += '<div class="plm">'+evs.length+' event'+(evs.length===1?'':'s')+' · '+(HZCOUNT[hzId]||0)+' followers · '+esc(hzRange(hzId))+'</div></div></div>';
   h += '<div class="placts">';
   if (!mine) h += '<button class="btn '+(fol?'on':'primary')+' plmain" data-act="followhz" data-id="'+hzId+'" aria-pressed="'+!!fol+'">'+ic(fol?'check':'plus')+(fol?'Following':'Follow')+'</button>';
@@ -1751,33 +1746,6 @@ function horizonHTML(hzId, withContents){
   var hz = HORIZONS[hzId];
   if (!hz) return '<div class="empty">This horizon no longer exists.</div>';
   return playlistHTML(hzId, withContents);
-  var mine = hzOwnedByMe(hzId), cov = hzCover(hzId), fol = S.loggedIn && HZFOLLOW[hzId];
-  var evs = hz.eventIds.map(function(id){ return EVENTS[id]; }).filter(Boolean).sort(byDate);
-  var h = '<div class="page">';
-  h += '<div class="phead2"><div class="folder"><div class="tab0"></div><div class="body0">' + (cov ? sqHTML(cov, 40) : ic('folder', 28)) + '</div></div>' +
-       '<div style="flex:1;min-width:0"><div class="pname">'+esc(hz.name)+'</div>' +
-       '<div class="psub">Event Horizon · ' + evs.length + ' events · ' + (HZCOUNT[hzId]||0) + ' followers</div></div></div>';
-  if (hz.description) h += '<p class="pdesc">'+esc(hz.description)+'</p>';
-  h += '<div class="acts">';
-  if (!mine) h += '<button class="btn '+(fol?'on':'primary')+'" data-act="followhz" data-id="'+hzId+'" aria-pressed="'+!!fol+'">'+ic(fol?'check':'plus')+(fol?'Following':'Follow')+'</button>';
-  else {
-    h += '<button class="btn '+(hz.isPublished?'on':'primary')+'" data-act="publishhz" data-id="'+hzId+'" aria-pressed="'+!!hz.isPublished+'">'+(hz.isPublished?ic('check')+'Published':'Publish')+'</button>';
-    h += '<button class="btn" data-act="renamehz" data-id="'+hzId+'">'+ic('edit')+'Rename</button>';
-  }
-  if (mine && evs.length) h += '<button class="btn" data-act="coverhz" data-id="'+hzId+'">'+ic('paint')+'Cover</button>';
-  h += '</div>';
-  h += '<fieldset class="props"><legend>Properties</legend>' +
-       prow('Owner', hz.isPersonalDefault ? 'You · your personal horizon' : (hz.ownerId && hz.ownerId !== 'self' && PEOPLE[hz.ownerId]
-         ? '<button class="btn" data-act="open" data-type="person" data-id="'+hz.ownerId+'">'+avHTML(hz.ownerId)+esc(hz.ownerName)+'</button>' : esc(hz.ownerName))) +
-       prow('Dates', esc(hzRange(hzId))) +
-       prow('Visibility', hz.isPublished ? 'Published · anyone can follow' : 'Private') +
-       prow('Followers', String(HZCOUNT[hzId]||0)) +
-       prow('Contains', evs.length + ' event' + (evs.length===1?'':'s')) + '</fieldset>';
-  if (withContents){
-    h += '<div class="subh">Events <span style="font-weight:normal">' + evs.length + '</span></div>';
-    h += evs.length ? evs.map(function(e){ return eventCRow(e, true); }).join('') : '<div class="empty">No events in this horizon yet.</div>';
-  }
-  return h + '</div>';
 }
 function prow(k, v){ return '<div class="prow"><span class="pk">'+esc(k)+'</span><span class="pv">'+v+'</span></div>'; }
 function publishedHorizonsOf(pid){
@@ -1810,7 +1778,7 @@ function personHTML(pid){
   }
   if (hz.length){
     h += '<div class="subh">Published horizons</div>' + hz.map(function(k){
-      return '<div class="crow">'+(hzCover(k) ? sqHTML(hzCover(k), 40) : '<span class="r-ic">'+ic('folder')+'</span>')+
+      return '<div class="crow">'+(hzCover(k) ? sqHTML(hzCover(k), 40) : '<span class="r-ic">'+ic('horizon')+'</span>')+
         '<div class="cm" data-act="open" data-type="horizon" data-id="'+k+'"><div class="r-title">'+esc(HORIZONS[k].name)+'</div>' +
         '<div class="r-meta">'+HORIZONS[k].eventIds.length+' events · '+(HZCOUNT[k]||0)+' followers</div></div></div>';
     }).join('');
@@ -1844,7 +1812,7 @@ function calloutHTML(id){
     (c.hostId ? '<button class="btn" data-act="open" data-type="person" data-id="'+c.hostId+'">'+avHTML(c.hostId)+esc(c.hostName)+'</button>' : '') + '</div></div>';
 }
 function detailHTML(it){
-  if (!it) return '<div class="empty" style="padding-top:25vh">'+ic('folder',40).replace('class="ic"','class="ic" style="margin:0 auto 10px;opacity:.35"')+'</div>';
+  if (!it) return '<div class="empty" style="padding-top:25vh">'+ic('horizon',40).replace('class="ic"','class="ic" style="margin:0 auto 10px;opacity:.35"')+'</div>';
   if (it.type === 'event' && EVENTS[it.id])      return canvasHTML(it.id);
   if (it.type === 'horizon')                     return horizonHTML(it.id, S.folder.kind !== 'horizon' || S.folder.id !== it.id || S.stack.length > 1 || !L.split);
   if (it.type === 'person')                      return personHTML(it.id);
@@ -1885,9 +1853,9 @@ function sqPx(id, px, extra){
 /* a horizon's cover: the owner's pick, or a 2×2 mosaic of its first four events */
 function hzMosaic(hzId, px){
   var hz = HORIZONS[hzId], ids = hz ? hz.eventIds.filter(function(id){ return EVENTS[id]; }) : [];
-  if (HZCOVER[hzId] === 'plain' || !ids.length) return '<div class="mosaic empty" style="width:'+px+'px;height:'+px+'px">'+ic('folder', Math.round(px/3))+'</div>';
+  if (HZCOVER[hzId] === 'plain' || !ids.length) return '<div class="mosaic empty" style="width:'+px+'px;height:'+px+'px">'+ic('horizon', Math.round(px/3))+'</div>';
   if (HZCOVER[hzId] || ids.length < 4) return '<div class="mosaic one" style="width:'+px+'px;height:'+px+'px">' + sqPx(hzCover(hzId), px) + '</div>';
-  if (!ids.length) return '<div class="mosaic empty" style="width:'+px+'px;height:'+px+'px">'+ic('folder', Math.round(px/3))+'</div>';
+  if (!ids.length) return '<div class="mosaic empty" style="width:'+px+'px;height:'+px+'px">'+ic('horizon', Math.round(px/3))+'</div>';
   var h = Math.floor(px/2);
   return '<div class="mosaic" style="width:'+(h*2)+'px;height:'+(h*2)+'px">' + ids.slice(0,4).map(function(id){ return sqPx(id, h); }).join('') + '</div>';
 }
@@ -2173,7 +2141,7 @@ function renderNav(){
   }
   var homeUnread = unreadCount(homeItems());
   h += navRow({kind:'home'}, ic('home'), 'Home', { count: homeUnread || '', unread: homeUnread > 0, cls:'dup-tab' });
-  h += navRow({kind:'horizons'}, ic('folder'), 'Horizons', { cls:'dup-tab' });
+  h += navRow({kind:'horizons'}, ic('horizon'), 'Horizons', { cls:'dup-tab' });
   h += navRow({kind:'people'}, ic('people'), 'People');
   if (!S.loggedIn){
     h += '<div class="logincard"><b>Keep events, follow horizons, chat with your crews.</b>' +
@@ -2203,7 +2171,7 @@ function renderNav(){
 function renderToolbar(){
   $('newbtn').innerHTML = ic('plus') + 'New' + ic('down', 14).replace('class="ic"', 'class="ic caret"');
   $('searchic').innerHTML = ic('search');
-  $('tg-left').innerHTML = ic('sidebar') + 'Folders';
+  $('tg-left').innerHTML = ic('sidebar') + 'Sidebar';
   $('tg-left').classList.toggle('on', !!L.left); $('tg-left').setAttribute('aria-pressed', !!L.left);
   var un = unreadChats();
   $('tg-right').innerHTML = ic('chat') + 'Chats' + (un ? ' <span class="badge-n">'+un+'</span>' : '');
@@ -2261,7 +2229,7 @@ function renderAppbar(){
 }
 function renderTabbar(){
   var un = unreadChats();
-  var tabs = [['home','home','Home'],['horizons','folder','Horizons'],['new','plus','New'],['chats','chat','Chats'],['you','user','You']];
+  var tabs = [['home','home','Home'],['horizons','horizon','Horizons'],['new','plus','New'],['chats','chat','Chats'],['you','user','You']];
   $('tabbar').innerHTML = tabs.map(function(t){
     if (t[0] === 'new') return '<button class="tab new" data-act="newsheet" aria-label="New"><span class="tnew">'+ic('plus',22)+'</span>New</button>';
     return '<button class="tab'+(S.tab===t[0]?' on':'')+'" data-act="tab" data-id="'+t[0]+'" aria-current="'+(S.tab===t[0]?'page':'false')+'">' +
@@ -2302,7 +2270,7 @@ function popup(anchor, items){
 }
 var NEWITEMS = [
   { label:'Event', cmd:'new-event', icon:'star', sub:'Something you host' },
-  { label:'Event Horizon', cmd:'new-horizon', icon:'folder', sub:'A list of events others can follow' },
+  { label:'Event Horizon', cmd:'new-horizon', icon:'horizon', sub:'A list of events others can follow' },
   { label:'Group chat', cmd:'newchat', icon:'chat', sub:'Pick people, name it' },
   { label:'Call out', cmd:'new-callout', icon:'callout', sub:'Ask the network for hands' }
 ];
@@ -2455,7 +2423,7 @@ function coverHzDialog(hzId){
   var auto = !HZCOVER[hzId];
   dialog('Cover for ' + hz.name, '<div style="display:flex;flex-wrap:wrap;gap:10px">' +
     tile('mosaic', (function(){ var c = HZCOVER[hzId]; delete HZCOVER[hzId]; var m = hzMosaic(hzId, 64); if (c) HZCOVER[hzId] = c; return m; })(), 'Mosaic', auto) +
-    tile('plain', '<span class="mosaic empty" style="width:64px;height:64px">'+ic('folder',22)+'</span>', 'Plain', HZCOVER[hzId] === 'plain') +
+    tile('plain', '<span class="mosaic empty" style="width:64px;height:64px">'+ic('horizon',22)+'</span>', 'Plain', HZCOVER[hzId] === 'plain') +
     hz.eventIds.filter(function(id){ return EVENTS[id]; }).map(function(id){
       return '<button class="btn'+(id===HZCOVER[hzId]?' on':'')+'" style="height:auto;flex-direction:column;padding:8px;width:104px;white-space:normal" data-act="docover" data-id="'+hzId+'" data-ev="'+id+'">' +
         sqHTML(id, 64) + '<span style="font-size:12px;line-height:1.25">'+esc(EVENTS[id].title)+'</span></button>';
@@ -2527,13 +2495,13 @@ function newCalloutDialog(){
   focusIn('co-t');
 }
 function newHorizonDialog(withEvent){
-  var cov = withEvent && EVENTS[withEvent] ? sqPx(withEvent, 88) : '<div class="mosaic empty" style="width:88px;height:88px">'+ic('folder',30)+'</div>';
+  var cov = withEvent && EVENTS[withEvent] ? sqPx(withEvent, 88) : '<div class="mosaic empty" style="width:88px;height:88px">'+ic('horizon',30)+'</div>';
   dialog('New Event Horizon',
     '<div class="field"><label for="nh-n">Name</label><input type="text" id="nh-n" value="" placeholder="Autumn builds" autocomplete="off"></div>' +
     '<div class="field"><label for="nh-d">Description <span style="font-weight:normal;color:var(--dim)">optional</span></label><textarea id="nh-d" rows="2" placeholder="What this collection is for"></textarea></div>' +
     '<div class="field"><span class="flabel" id="nh-cl">Cover</span><div class="covpick" role="radiogroup" aria-labelledby="nh-cl">' +
       '<label class="covopt"><input type="radio" name="nh-c" value="mosaic" checked><span class="covart">'+cov+'</span><span>Mosaic of its events</span></label>' +
-      '<label class="covopt"><input type="radio" name="nh-c" value="plain"><span class="covart"><span class="mosaic empty" style="width:88px;height:88px">'+ic('folder',30)+'</span></span><span>Plain folder</span></label></div></div>' +
+      '<label class="covopt"><input type="radio" name="nh-c" value="plain"><span class="covart"><span class="mosaic empty" style="width:88px;height:88px">'+ic('horizon',30)+'</span></span><span>Plain</span></label></div></div>' +
     '<label class="pick" style="border:0;padding-left:0"><input type="checkbox" id="nh-p"><span class="pm">Publish it<small>Anyone can find and follow it</small></span></label>',
     '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="donewhorizon" data-id="'+(withEvent||'')+'" id="nh-go" disabled>Create horizon</button>', 480);
   focusIn('nh-n');

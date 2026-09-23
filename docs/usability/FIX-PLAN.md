@@ -71,6 +71,11 @@ Published) and the page ⋯ opens that same menu filtered to what the page doesn
 share sheet where available, and "Send in a chat" when logged in. Share opens in place, doesn't pull you
 out of the event.
 Sources: ORGANISER-2, FIRSTTIMER-4, CREW-12.
+*Status: done.* One Share dialog for events and horizons, from the page, the ⋯ and the context menu, never gated:
+the item's link with Copy link (primary), "Share to an app" when `navigator.share` exists, and — logged in — "Send in
+a chat" with an optional message and a search over your chats and everyone you have no chat with yet. Sending keeps
+you on the page; the toast says "Sent to Mira Chen" with Open. Horizons show Share to guests, and to owners once
+published (a private one shows Publish there instead; the other sits in its ⋯).
 
 **A7. Scroll and place memory.** Restore vertical scroll on Home, lists, horizon pages and events after
 back; restore each shelf's horizontal offset; each phone tab keeps its own scroll; switching tabs doesn't

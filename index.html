@@ -597,6 +597,11 @@ input[aria-invalid="true"]{ outline:1px solid #000; outline-offset:-4px; }
 .toast b{ display:block; font-size:var(--fs); }
 .toast.act{ display:flex; align-items:center; gap:12px; pointer-events:auto; }
 .toast .tt2{ flex:1; min-width:0; }
+.linkline{ display:flex; gap:8px; }
+.linkline input{ flex:1; min-width:0; color:var(--ink2); }
+#sh-msg, #sh-q{ width:100%; }
+#sh-list{ max-height:260px; }
+body.is-phone #sh-list{ max-height:none; }
 .cmsg{ margin:0; max-width:46ch; font-size:var(--fs-m); line-height:1.5; }
 
 /* ---------- 10b. phone feed: shelves, tiles, playlists --------------- */
@@ -684,6 +689,7 @@ body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 1
 @container pl (max-width:599px){
   .placts.many .plmain{ flex:1 1 100%; }
   .placts.many .btn:not(.plmain){ flex:1 1 auto; padding:0 10px; }
+  .placts.many .btn:not(.plmain) .ic{ display:none; }
 }
 .vmore.vdots{ width:var(--act); padding:0; justify-content:center; }
 .plmain{ flex:1; }
@@ -1198,7 +1204,7 @@ function toast(title, body, undo){
   var box = $('toasts');
   TOASTACT = undo || null;
   box.innerHTML = '<div class="toast'+(undo ? ' act' : '')+'"><span class="tt2"><b>'+esc(title)+'</b>'+(body?esc(body):'')+'</span>' +
-    (undo ? '<button class="btn" data-act="toastundo">Undo</button>' : '') + '</div>';
+    (undo ? '<button class="btn" data-act="toastundo">'+esc(undo.label || 'Undo')+'</button>' : '') + '</div>';
   clearTimeout(TOASTT);
   TOASTT = setTimeout(function(){ box.innerHTML = ''; TOASTACT = null; }, undo ? 6000 : 2400);
 }
@@ -1840,14 +1846,18 @@ function playlistHTML(hzId, withTracks){
         : '<span class="plown">'+ic('horizon',16)+esc(owner)+'</span>') + '</div>';
   h += '<div class="plm">'+evs.length+' event'+(evs.length===1?'':'s')+' · '+hzFollowers(hzId)+' followers · '+esc(hzRange(hzId))+'</div></div></div>';
   h += '<div class="placts'+(mine ? ' many' : '')+'">';
-  if (!mine) h += '<button class="btn '+(fol?'on':'primary')+' plmain" data-act="followhz" data-id="'+hzId+'" aria-pressed="'+!!fol+'">'+ic(fol?'check':'plus')+(fol?'Following':'Follow')+'</button>';
+  if (!mine) h += '<button class="btn '+(fol?'on':'primary')+' plmain" data-act="followhz" data-id="'+hzId+'" aria-pressed="'+!!fol+'">'+ic(fol?'check':'plus')+(fol?'Following':'Follow')+'</button>' +
+                  '<button class="btn" data-act="share" data-type="horizon" data-id="'+hzId+'">'+ic('share')+'Share</button>';
   else {
     /* your own horizon: filling it is the job, so Add events leads */
     h += '<button class="btn primary plmain" data-act="addevents" data-id="'+hzId+'">'+ic('plus')+'Add events</button>';
     h += '<button class="btn" data-act="customizehz" data-id="'+hzId+'">'+ic('paint')+'Customize</button>';
     h += '<button class="btn" data-act="renamehz" data-id="'+hzId+'">'+ic('edit')+'Edit details</button>';
-    if (evs.length && !hz.isPersonalDefault) h += '<button class="btn'+(hz.isPublished?' on':'')+'" data-act="publishhz" data-id="'+hzId+'" aria-pressed="'+!!hz.isPublished+'">'+(hz.isPublished?ic('check')+'Published':'Publish')+'</button>';
-    h += '<button class="ib" data-act="hzmore" data-id="'+hzId+'" aria-label="More" aria-haspopup="menu">'+ic('dots')+'</button>';
+    /* a private horizon's next step is publishing it; a published one's is sharing it */
+    var canPub = evs.length && !hz.isPersonalDefault;
+    if (canPub && !hz.isPublished) h += '<button class="btn" data-act="publishhz" data-id="'+hzId+'" aria-pressed="false">'+ic('horizon')+'Publish</button>';
+    else h += '<button class="btn" data-act="share" data-type="horizon" data-id="'+hzId+'">'+ic('share')+'Share</button>';
+    h += '<button class="ib" data-act="hzmore" data-id="'+hzId+'" data-more="'+(canPub && !hz.isPublished ? 'share,delete' : 'publish,delete')+'" aria-label="More" aria-haspopup="menu">'+ic('dots')+'</button>';
   }
   h += '</div>';
   if (withTracks === false) return h + '</div>';
@@ -2636,15 +2646,53 @@ function addToDialog(evId){
   }).join('') + '</div>';
   dialog('Add “' + EVENTS[evId].title + '” to', h, '<button class="btn primary" data-act="closedlg">Done</button>', 440);
 }
-/* share an event, or a horizon, into one of your chats */
+/* Share: anyone can copy the link (or hand it to the phone's own share sheet);
+   logged in, you can also send it into a chat with a line of your own. You stay where you are. */
+var SH = null;
 function shareDialog(id, type){
   type = type === 'horizon' ? 'horizon' : 'event';
-  var h = '<div class="picklist">' + CHATORDER.map(function(k){
+  SH = { id:id, type:type, q:'' };
+  var url = linkOf(type, id), name = itemName({ type:type, id:id });
+  var h = '<div class="field"><label for="sh-url">Link</label><div class="linkline">' +
+      '<input type="text" id="sh-url" readonly value="'+esc(url)+'" aria-label="Link">' +
+      '<button class="btn primary" data-act="copylink">'+ic('share')+'Copy link</button></div></div>';
+  if (navigator.share) h += '<div class="field"><button class="btn" data-act="nativeshare">'+ic('share')+'Share to an app</button></div>';
+  if (S.loggedIn){
+    h += '<div class="field"><span class="flabel">Send in a chat</span>' +
+         '<input type="text" id="sh-msg" placeholder="Add a message" autocomplete="off" aria-label="Message">' +
+         '<input type="search" id="sh-q" placeholder="Search people and chats" autocomplete="off" aria-label="Search people and chats">' +
+         '<div class="picklist" id="sh-list">'+shareListHTML()+'</div></div>';
+  }
+  dialog('Share “' + name + '”', h, '<button class="btn" data-act="closedlg">Done</button>', 460);
+}
+/* your chats first, then the people you have no chat with yet */
+function shareListHTML(){
+  var q = SH.q.toLowerCase().trim(), rows = [];
+  CHATORDER.forEach(function(k){
     var c = CHATS[k];
-    return '<div class="linkrow" data-act="doshare" data-id="'+id+'" data-type="'+type+'" data-chat="'+k+'" role="button">'+chatAv(c)+'<div class="lr">'+esc(c.name)+
-      '<div class="fhelp">'+(c.kind==='dm'?'Direct message':(c.memberIds.length+1)+' members')+'</div></div></div>';
-  }).join('') + '</div>';
-  dialog('Share “' + itemName({ type:type, id:id }) + '”', h, '<button class="btn" data-act="closedlg">Cancel</button>', 440);
+    if (!c || (q && !matches(c.name, q))) return;
+    rows.push('<div class="linkrow" data-act="doshare" data-chat="'+k+'" role="button">'+chatAv(c)+'<div class="lr">'+esc(c.name)+
+      '<div class="fhelp">'+(c.kind==='dm'?'Direct message':(c.memberIds.length+1)+' members')+'</div></div>'+ic('chat')+'</div>');
+  });
+  ncPeopleAll().filter(function(pid){
+    return !Object.keys(CHATS).some(function(k){ return CHATS[k].kind === 'dm' && CHATS[k].memberIds[0] === pid; }) &&
+           (!q || matches(person(pid).displayName, q) || matches(person(pid).handle, q));
+  }).forEach(function(pid){
+    var p = person(pid);
+    rows.push('<div class="linkrow" data-act="doshare" data-person="'+pid+'" role="button">'+avHTML(pid,'a40')+'<div class="lr">'+esc(p.displayName)+
+      '<div class="fhelp">@'+esc(p.handle)+'</div></div>'+ic('chat')+'</div>');
+  });
+  return rows.join('') || '<div class="empty">Nobody matches.</div>';
+}
+function copyLink(){
+  var inp = $('sh-url'), url = inp ? inp.value : '';
+  var ok = function(){ toast('Link copied', url.replace(/^https?:\/\//, '')); };
+  var legacy = function(){ try { inp.focus(); inp.select(); document.execCommand('copy'); ok(); } catch(e){ inp.select(); } };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(ok, legacy); else legacy();
+}
+function nativeShare(){
+  if (!SH || !navigator.share) return;
+  navigator.share({ title:itemName({ type:SH.type, id:SH.id }), url:linkOf(SH.type, SH.id) }).catch(function(){});
 }
 /* ---- new chat: pick people; one person is a direct message, two or more is a group you name ---- */
 var NC = null;
@@ -2656,9 +2704,13 @@ function newChatDialog(preset){
 }
 /* a group is named after its people until you name it */
 function ncAutoName(){ return NC ? NC.sel.map(function(k){ return person(k).displayName.split(' ')[0]; }).join(', ') : ''; }
-function ncPeople(){
+/* everyone you could message: people you follow first */
+function ncPeopleAll(){
   var ids = Object.keys(PEOPLE).filter(function(k){ return k !== 'self' && k !== 'p-michal' && !/^u-/.test(k); });
-  ids.sort(function(a,b){ return (PFOLLOW[b]?1:0) - (PFOLLOW[a]?1:0) || (person(a).displayName < person(b).displayName ? -1 : 1); });
+  return ids.sort(function(a,b){ return (PFOLLOW[b]?1:0) - (PFOLLOW[a]?1:0) || (person(a).displayName < person(b).displayName ? -1 : 1); });
+}
+function ncPeople(){
+  var ids = ncPeopleAll();
   var q = NC.q.toLowerCase().trim();
   return ids.filter(function(k){ var p = person(k); return !q || matches(p.displayName, q) || matches(p.handle, q) || matches((p.skills||[]).join(' '), q); });
 }
@@ -3109,7 +3161,7 @@ function ctxItems(t, only){
     /* logged out there are no horizons of yours to list yet: log in, then pick one */
     if (S.loggedIn) out.push({ code:'addto', label:'Add to horizon', icon:'addhorizon', sub: ctxHorizonItems(id) });
     else out.push({ code:'addto', label:'Add to horizon…', icon:'addhorizon', run:function(){ gated(addToDialog)(id); } });
-    out.push({ code:'share', label:'Share…', icon:'share', run:function(){ gated(shareDialog)(id); } });
+    out.push({ code:'share', label:'Share…', icon:'share', run:function(){ shareDialog(id, 'event'); } });
     if (mine) out.push('-', { code:'delete', label:'Delete…', icon:'trash', run:function(){ deleteEventDialog(id); } });
   } else {
     var hmine = hzOwnedByMe(id), fol = S.loggedIn && HZFOLLOW[id], hz = HORIZONS[id];
@@ -3120,7 +3172,7 @@ function ctxItems(t, only){
                { code:'edit', label:'Edit details…', icon:'edit', run:function(){ gated(renameHzDialog)(id); } });
       if (hz.eventIds.length && !hz.isPersonalDefault) out.push({ code:'publish', label:'Published', icon:'check', check: !!hz.isPublished, run:function(){ publishHz(id); } });
     }
-    out.push({ code:'share', label:'Share…', icon:'share', run:function(){ gated(shareDialog)(id, 'horizon'); } });
+    out.push({ code:'share', label:'Share…', icon:'share', run:function(){ shareDialog(id, 'horizon'); } });
     if (hmine) out.push('-', { code:'delete', label:'Delete…', icon:'trash', run:function(){ deleteHorizonDialog(id); } });
   }
   if (only){
@@ -3495,11 +3547,14 @@ function openDM(pid){
   return dm;
 }
 var messagePerson = gated(function(pid){ openChat(openDM(pid)); });
-var shareToChat = gated(function(id, cid, type){
-  var hz = type === 'horizon';
-  CHATS[cid].messages.push(hz ? { from:'self', t:nowClock(), text:'', hzcard:id } : { from:'self', t:nowClock(), text:'', card:id });
-  closeDialogs(); openChat(cid);
-  toast('Shared in ' + CHATS[cid].name, itemName({ type: hz ? 'horizon' : 'event', id:id }));
+/* sending keeps you on the page: the toast can take you to the chat */
+var shareToChat = gated(function(id, cid, type, text){
+  var hz = type === 'horizon', t = nowClock();
+  if (text) CHATS[cid].messages.push({ from:'self', t:t, text:text });
+  CHATS[cid].messages.push(hz ? { from:'self', t:t, text:'', hzcard:id } : { from:'self', t:t, text:'', card:id });
+  var i = CHATORDER.indexOf(cid); if (i > 0){ CHATORDER.splice(i, 1); CHATORDER.unshift(cid); }
+  closeDialogs(); render();
+  toast('Sent to ' + CHATS[cid].name, itemName({ type: hz ? 'horizon' : 'event', id:id }), { label:'Open', run:function(){ openChat(cid); } });
 });
 var answerCallout = gated(function(coId){
   var c = calloutOf(coId); if (!c) return;
@@ -3605,8 +3660,13 @@ document.addEventListener('click', function(ev){
     case 'v-went':       setWent(id); break;
     case 'addto':        gated(addToDialog)(id); break;
     case 'dofile':       toggleInHorizon(id, n.getAttribute('data-hz')); break;
-    case 'share':        gated(shareDialog)(id); break;
-    case 'doshare':      shareToChat(id, n.getAttribute('data-chat'), n.getAttribute('data-type')); break;
+    case 'share':        shareDialog(id, n.getAttribute('data-type') || 'event'); break;
+    case 'doshare': {
+      if (!SH) break;
+      var sc = n.getAttribute('data-chat') || openDM(n.getAttribute('data-person'));
+      shareToChat(SH.id, sc, SH.type, (($('sh-msg')||{}).value || '').trim());
+      break;
+    }
     case 'ctxrun':       ctxSheetRun(+id); break;
     case 'ctxback':      ctxSheetBack(); break;
     case 'customize':    customizeDialog(id); break;
@@ -3690,9 +3750,11 @@ document.addEventListener('click', function(ev){
     case 'editevent':    editEventDialog(id); break;
     case 'wizstep':      DRAFT.step = +id; paintWiz(); break;
     case 'evmore':       openMoreMenu(n, 'event', id, ['delete']); break;
-    case 'hzmore':       openMoreMenu(n, 'horizon', id, ['share','delete']); break;
+    case 'hzmore':       openMoreMenu(n, 'horizon', id, (n.getAttribute('data-more') || 'share,delete').split(',')); break;
     case 'confirmok':    { var cf = CONFIRMFN; CONFIRMFN = null; if (cf) cf(); break; }
-    case 'toastundo':    { var ua = TOASTACT; TOASTACT = null; $('toasts').innerHTML = ''; if (ua) ua(); break; }
+    case 'toastundo':    { var ua = TOASTACT; TOASTACT = null; $('toasts').innerHTML = ''; if (ua) (ua.run || ua)(); break; }
+    case 'copylink':     copyLink(); break;
+    case 'nativeshare':  nativeShare(); break;
     case 'discarddraft': FORMDRAFTS[id] = null; closeDialogs(); schedulePersist(); break;
     case 'calmode':      S.calMode = id; render(); break;
     case 'caltoday':     S.calAnchor = TODAY_ISO; render(); break;
@@ -3730,6 +3792,7 @@ document.addEventListener('input', function(ev){
   if (n.id === 'chatbox'){ var ac = activeChat(); if (ac){ if (n.value) CHATDRAFT[ac] = n.value; else delete CHATDRAFT[ac]; schedulePersist(); } return; }
   if (/^co-[tbx]$/.test(n.id)){ saveForm('callout'); return; }
   if (/^nh-[nd]$/.test(n.id)){ saveForm('horizon'); return; }
+  if (n.id === 'sh-q' && SH){ SH.q = n.value; var sl = $('sh-list'); if (sl) sl.innerHTML = shareListHTML(); return; }
   if (n.id === 'pk-q'){ PK.q = n.value; $('pk-list').innerHTML = pickerList(); return; }
   if (n.id === 'nc-name'){ NC.name = n.value; paintNewChat(true); return; }
   if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT') return;

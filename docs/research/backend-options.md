@@ -12,15 +12,15 @@ sustainable and what does it cost to keep running?*
 
 ## TL;DR
 
-- **Paul's upstream repo already has a backend, and it is Supabase.** `pauldoublemoose/hypernet`
+- **Sebastian's upstream repo already has a backend, and it is Supabase.** `pauldoublemoose/hypernet`
   is **not Next.js**: it is a Vite + React 18 + TypeScript single-page app on Vercel
   (`hyperstition.cloud`), with `@supabase/supabase-js`, SQL migrations in `supabase/migrations/`,
   row-level security, passwordless **email one-time-code login** (`src/lib/auth.ts`), and one
   Vercel Function (`api/session.ts`) that keeps people logged in for a year. Horizons and
   clusters are still stored in the browser only (`horizonStore.ts`, `groupsStore.ts` say
-  "localStorage MVP"). Paul's own plan (`docs/PROJECT_PLAN.md` §9) says: *"Continue Vite + React +
+  "localStorage MVP"). Sebastian's own plan (`docs/PROJECT_PLAN.md` §9) says: *"Continue Vite + React +
   Supabase"*.
-- **Recommendation: stay on Supabase and finish what Paul started.** Move profiles, events,
+- **Recommendation: stay on Supabase and finish what Sebastian started.** Move profiles, events,
   horizons, RSVPs and follows from localStorage into the Supabase tables, and use Supabase Realtime
   for chat later. Neon + Vercel would mean throwing away working auth and assembling 4–5 vendors,
   one of them only for chat.
@@ -30,14 +30,14 @@ sustainable and what does it cost to keep running?*
   $27–37**. The catch is that someone has to hand-write auth, chat servers and the whole data
   layer, on SQLite instead of Postgres.
 - **Money is not the biggest risk.** The biggest risk is **two people building two backends**:
-  Michal's prototype in one repo and Paul's app in another. The second risk is **one
+  Michal's prototype in one repo and Sebastian's app in another. The second risk is **one
   maintainer**, which is why the least-code option matters more than the cheapest one.
 
 ---
 
 ## What the backend has to hold
 
-This comes from `docs/reference/CONCEPT-BRIEF.md`, `_shared/hypernet-data.js`, and Paul's `PROJECT_PLAN.md`.
+This comes from `docs/reference/CONCEPT-BRIEF.md`, `_shared/hypernet-data.js`, and Sebastian's `PROJECT_PLAN.md`.
 
 - **Users / nodes**: profile, skills, cities, avatar, privacy per section, follows between users
 - **Events**: public/private, host (a person or a cluster), dates, external ticket link, cover
@@ -95,7 +95,7 @@ Think of it like opening a gallery:
   The whole platform is open source and self-hostable as a last resort.
 - **Ops burden for a non-backend person:** the lowest of the set. You write SQL tables and RLS
   rules; there are no servers to patch. RLS is the one real skill to learn, and getting it wrong
-  leaks private events. Paul has already written working RLS policies.
+  leaks private events. Sebastian has already written working RLS policies.
 - **Fit with Vercel front end:** already in production this way. `api/session.ts` is a Vercel
   Function.
 - **Free tier traps:** the project **pauses after 1 week without activity**, has **no backups**,
@@ -120,7 +120,7 @@ Think of it like opening a gallery:
 - **Ops burden:** medium. Four or five dashboards and bills, and API code to write and secure. The
   free Neon compute **sleeps after 5 idle minutes**, so the first request after a pause waits for
   a cold start.
-- **Fit:** good with Next.js, fine with Vite. But it **replaces Paul's working Supabase auth and
+- **Fit:** good with Next.js, fine with Vite. But it **replaces Sebastian's working Supabase auth and
   migrations**, which is a rewrite, not a step forward.
 - **When it's the right call:** if you were starting from zero with a Next.js codebase. Hypernet
   isn't.
@@ -139,7 +139,7 @@ Think of it like opening a gallery:
 - **Lock-in:** high. The data model and all server code are Convex-specific TypeScript, not SQL.
 - **Ops burden:** low (no servers, no RLS to write, because permissions live in TypeScript
   functions).
-- **Fit:** works with any React front end, but again it means **rewriting Paul's data layer and
+- **Fit:** works with any React front end, but again it means **rewriting Sebastian's data layer and
   auth**.
 
 ### 4. PocketBase on a small VPS (Hetzner CX23)
@@ -257,12 +257,12 @@ $5 Workers Paid plan.
   server.
 
 Across all of them, chat also brings **moderation, blocking, reporting, unread counts and push
-notifications**. Those are product work, not infrastructure. Paul's plan already puts in-app
+notifications**. Those are product work, not infrastructure. Sebastian's plan already puts in-app
 messaging in "Future" and says external contact links are enough for MVP. That's a sound call.
 
 ---
 
-## Recommendation: Supabase, continuing Paul's stack
+## Recommendation: Supabase, continuing Sebastian's stack
 
 **Why**
 
@@ -280,8 +280,8 @@ messaging in "Future" and says external contact links are enough for MVP. That's
 
 **Sustainability: who maintains it**
 
-- **Paul** owns the repo and schema. **Michal** contributes design and front end, and should
-  contribute SQL migrations *into Paul's repo*, not a parallel backend.
+- **Sebastian** owns the repo and schema. **Michal** contributes design and front end, and should
+  contribute SQL migrations *into Sebastian's repo*, not a parallel backend.
 - **Supabase (Pro)** handles database patching, daily backups, TLS and uptime.
 - **Resend** needs the domain's DNS records (SPF/DKIM) set once.
 
@@ -309,7 +309,7 @@ messaging in "Future" and says external contact links are enough for MVP. That's
 
 ### Phase 1: sign-up, events, horizons, RSVP (the playlist-of-events core)
 
-- Upgrade Paul's Supabase project to **Pro** ($25) once real users are in, and plug in **Resend**
+- Upgrade Sebastian's Supabase project to **Pro** ($25) once real users are in, and plug in **Resend**
   as custom SMTP.
 - Extend the schema with migrations. `profiles` already exists. Add:
   - `profiles` fields: bio, skills (text[] + full-text index), cities, avatar path,
@@ -328,9 +328,9 @@ messaging in "Future" and says external contact links are enough for MVP. That's
   upload.
 - Replace `horizonStore.ts` / `groupsStore.ts` localStorage with Supabase queries.
 - Seed real data: the 18 events and the horizons in `_shared/hypernet-data.js` /
-  `data/hypernet-mock-data-*.json`, plus the existing `signups` rows (Paul's `claim_signups`
+  `data/hypernet-mock-data-*.json`, plus the existing `signups` rows (Sebastian's `claim_signups`
   RPC already links them to accounts).
-- Search: Postgres full-text search on events, horizons and skills (Paul's plan says the same).
+- Search: Postgres full-text search on events, horizons and skills (Sebastian's plan says the same).
 - Cost: **$25–27/mo** plus Resend free.
 
 ### Phase 2: chats

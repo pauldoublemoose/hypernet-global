@@ -653,8 +653,9 @@ var TODAY_ISO = H.meta.today;               /* 2026-09-20 */
 
 var PEOPLE = {};
 H.people.forEach(function(p){ PEOPLE[p.id] = p; });
-PEOPLE['self'] = { id:'self', displayName:'You', handle:H.self.handle, bio:H.self.bio,
-                   skills:['EVENT PRODUCTION/PRODUCING'], city:'SWEDEN|STOCKHOLM' };
+/* the demo account. Logged out it is just another member called Michal; logged in, it is you */
+PEOPLE['self'] = { id:'self', displayName:'Michal', handle:'mike', bio:H.self.bio,
+                   skills:['EVENT PRODUCTION/PRODUCING'], city:'SWEDEN|STOCKHOLM', cities:['Stockholm'] };
 
 var EVENTS = {};
 H.events.forEach(function(e){ EVENTS[e.id] = e; });
@@ -699,6 +700,8 @@ var COUNTRY = { SE:'Sweden', US:'USA', ZA:'South Africa', ES:'Spain', AT:'Austri
                 GB:'United Kingdom', UK:'United Kingdom', DE:'Germany', DK:'Denmark', NL:'Netherlands', LT:'Lithuania', IL:'Israel',
                 FR:'France', FI:'Finland', BE:'Belgium', IT:'Italy', PT:'Portugal', PL:'Poland', HU:'Hungary' };
 function recOf(id){ return REC[id] || {}; }
+/* a sample can name the real host of a fixture event */
+Object.keys(REC).forEach(function(id){ if (EVENTS[id] && REC[id].hostName) EVENTS[id].hostName = REC[id].hostName; });
 function descOf(e){ return recOf(e.id).description || e.description || ''; }
 function endOf(e){ var r = recOf(e.id); return r.endDate && r.endDate > e.date ? r.endDate : null; }
 function lastDay(e){ return endOf(e) || e.date; }
@@ -830,7 +833,7 @@ var READ = {};
 var HZFOLLOW = { 'horizon-baltic':true, 'horizon-dust':true, 'horizon-quiet':true, 'horizon-feed':false, 'horizon-surface':false };
 var HZCOUNT  = { 'horizon-baltic':41, 'horizon-dust':128, 'horizon-quiet':86, 'horizon-feed':52, 'horizon-surface':37, 'horizon-default':0 };
 var PFOLLOW  = { 'p-anna':true, 'p-rio':true, 'p-kai':true, 'p-mira':false, 'p-jon':false, 'p-sasha':true };
-var MYEVENTS = [];
+var MYEVENTS = Object.keys(EVENTS).filter(function(id){ return EVENTS[id].hostName === 'You'; });   /* what the demo account hosts */
 var MYHORIZONS = ['horizon-default'];
 
 var CHATS = {}, CHATORDER = [];
@@ -900,9 +903,10 @@ function avHTML(id, cls){
   return '<span class="av '+(cls||'')+'" style="background:'+(AVCOLOR[id]||'#5a5a5a')+'" aria-hidden="true">'+esc(initials(p.displayName))+'</span>';
 }
 function allEvents(){ return Object.keys(EVENTS).map(function(k){ return EVENTS[k]; }); }
-function hostLabel(e){ return e.hostName === 'You' ? (S.loggedIn ? S.me.name : 'You') : e.hostName; }
-function hostPersonOf(e){ return H.people.filter(function(p){ return p.displayName === e.hostName; })[0] ||
-                                 (e.hostName === 'You' ? PEOPLE['self'] : null); }
+function ownEvent(e){ return !!e && (MYEVENTS.indexOf(e.id) >= 0 || e.hostName === 'You'); }
+/* nothing reads "You" until you are logged in: before that, your events carry your name like anyone else's */
+function hostLabel(e){ return ownEvent(e) ? (S.loggedIn ? 'You' : PEOPLE['self'].displayName) : e.hostName; }
+function hostPersonOf(e){ return ownEvent(e) ? PEOPLE['self'] : H.people.filter(function(p){ return p.displayName === e.hostName; })[0] || null; }
 function byDate(a,b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }
 function rsvpList(mode){ if (!S.loggedIn) return []; return allEvents().filter(function(e){ return RSVP[e.id] === mode; }).sort(byDate); }
 function horizonsOf(evId){ return Object.keys(HORIZONS).filter(function(k){ return HORIZONS[k].eventIds.indexOf(evId) >= 0 && (HORIZONS[k].isPublished || hzOwnedByMe(k)); }); }
@@ -927,14 +931,14 @@ function hzRange(hzId){
 }
 function hzOwnedByMe(hzId){ return S.loggedIn && MYHORIZONS.indexOf(hzId) >= 0; }
 function attendees(evId){
-  if (MYEVENTS.indexOf(evId) >= 0) return (S.loggedIn && RSVP[evId] === 'going') ? ['self'] : [];
+  if (/^evt-new-/.test(evId)) return (S.loggedIn && RSVP[evId] === 'going') ? ['self'] : [];
   var w = H.worlds.filter(function(x){ return x.eventId === evId; })[0];
   var ids = w && w.participantIds ? w.participantIds.filter(function(p){ return PEOPLE[p] && p !== 'self'; }) : [];
   if (!ids.length){ var n = hashId(evId); ids = CREW.filter(function(_,i){ return (n >> i) & 1; }); }
   if (S.loggedIn && RSVP[evId] === 'going') ids = ['self'].concat(ids);
   return ids.slice(0,6);
 }
-function attendeeCount(evId){ return attendees(evId).length + (MYEVENTS.indexOf(evId) >= 0 ? 0 : (hashId(evId) % 34) + 4); }
+function attendeeCount(evId){ return attendees(evId).length + (/^evt-new-/.test(evId) ? 0 : (hashId(evId) % 34) + 4); }
 function stateOf(evId){
   if (!S.loggedIn) return '';
   if (MYEVENTS.indexOf(evId) >= 0) return 'hosting';
@@ -946,7 +950,7 @@ function whereOf(e){
   if (r.venueKind === 'virtual') return 'Online';
   return r.city || r.region || COUNTRY[r.country] || r.country || cityShort(e.city);
 }
-function isMine(evId){ var e = EVENTS[evId]; return S.loggedIn && (MYEVENTS.indexOf(evId) >= 0 || (e && e.hostName === 'You')); }
+function isMine(evId){ return S.loggedIn && ownEvent(EVENTS[evId]); }
 function unreadCount(items){ return items.filter(function(it){ return it.type==='event' && !READ[it.id]; }).length; }
 function calloutOf(id){ return CALLOUTS.filter(function(x){ return x.id === id; })[0]; }
 function newsOf(id){ return NEWS.filter(function(n){ return n.id === id; })[0] || { text:'', when:'' }; }
@@ -1018,7 +1022,7 @@ function folderItems(f){
   if (k === 'search')   return searchItems(S.query);
   if (k === 'interested') evs = rsvpList('interested');
   else if (k === 'going') evs = rsvpList('going');
-  else if (k === 'hosting') evs = MYEVENTS.map(function(id){ return EVENTS[id]; }).filter(Boolean).sort(byDate);
+  else if (k === 'hosting') evs = (S.loggedIn ? MYEVENTS : []).map(function(id){ return EVENTS[id]; }).filter(Boolean).sort(byDate);
   else if (k === 'horizon'){
     evs = (HORIZONS[f.id] ? HORIZONS[f.id].eventIds : []).map(function(id){ return EVENTS[id]; }).filter(Boolean).sort(byDate);
     return [{ type:'horizon', id:f.id }].concat(evs.map(function(e){ return { type:'event', id:e.id }; }));
@@ -1435,7 +1439,7 @@ function sourcesHTML(r){
 }
 function provenance(evId){
   var r = recOf(evId);
-  if (MYEVENTS.indexOf(evId) >= 0) return '';
+  if (/^evt-new-/.test(evId)) return '';
   if (r.illustrative) return 'Illustrative example';
   if (r.sources || r.externalUrl) return 'From the event’s own pages' + (r.unverified && r.unverified.length ? ' · from directories only: ' + r.unverified.join(', ') : '');
   return '';
@@ -1497,7 +1501,7 @@ function canvasHTML(evId){
          return '<button class="chip" data-act="open" data-type="horizon" data-id="'+k+'">'+ic('folder',16)+esc(HORIZONS[k].name)+' <span class="sub">'+esc(HORIZONS[k].ownerName)+'</span></button>';
        }).join('') + '</div>' : '');
   var hosts = '';
-  if (hp && hp.id !== 'self') hosts += '<button class="chip" data-act="open" data-type="person" data-id="'+hp.id+'">'+avHTML(hp.id,'a28')+esc(hp.displayName)+'</button>';
+  if (hp && (hp.id !== 'self' || !S.loggedIn)) hosts += '<button class="chip" data-act="open" data-type="person" data-id="'+hp.id+'">'+avHTML(hp.id,'a28')+esc(hp.displayName)+'</button>';
   (r.ownerGroupIds || []).forEach(function(g){ if (GROUPS[g]) hosts += '<button class="chip" data-act="open" data-type="group" data-id="'+g+'">'+ic('camp',16)+esc(GROUPS[g].name)+'</button>'; });
   h += sect('Hosted by', hosts ? '<div class="chips">' + hosts + '</div>' : '');
   h += sect('Links', sourcesHTML(r));
@@ -1562,7 +1566,7 @@ function publishedHorizonsOf(pid){
 }
 function personHTML(pid){
   var p = person(pid), hz = publishedHorizonsOf(pid), st = PRESENCE[pid] || 'offline', fol = S.loggedIn && PFOLLOW[pid];
-  var hosts = allEvents().filter(function(e){ return e.hostName === p.displayName && pid !== 'self'; }).sort(byDate);
+  var hosts = allEvents().filter(function(e){ return pid === 'self' ? ownEvent(e) : e.hostName === p.displayName; }).sort(byDate);
   var clusters = Object.keys(GROUPS).filter(function(g){ return GROUPS[g].memberIds.indexOf(pid) >= 0; });
   var h = '<div class="page">';
   h += '<div class="phead2">' + avHTML(pid, 'a64') + '<div style="flex:1;min-width:0"><div class="pname">'+esc(p.displayName)+'</div>' +
@@ -2131,7 +2135,7 @@ function czSel(name, list, cur, label){
 }
 function customizePreviewHTML(){
   var d = DRAFT, t = draftTheme(d), vars = themeVars(t);
-  var ev = { title:d.title || 'Untitled event', date:d.date, city:d.city, host:d.host || 'You' };
+  var ev = { title:d.title || 'Untitled event', date:d.date, city:d.city, host:'You' };
   var sq = function(size){ return '<div class="sq s'+size+' sh-'+t.shape+'" style="'+vars+'"><div class="pat p-'+t.square.pattern+'"></div><span class="g">'+t.square.glyph+'</span></div>'; };
   var h = '<div class="previewbox">';
   h += '<div class="plabel">Square</div><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">'+sq(160)+sq(64)+sq(40)+sq(20)+'</div>';
@@ -2227,7 +2231,7 @@ function wizAct(which){
     toast('Look updated', EVENTS[DRAFT.editing].title);
     return;
   }
-  var id = 'evt-new-' + (MYEVENTS.length + 1);
+  var id = 'evt-new-' + (MYEVENTS.filter(function(x){ return /^evt-new-/.test(x); }).length + 1);
   var start = isoDate(DRAFT.date) || TODAY_ISO, end = isoDate(DRAFT.end);
   EVENTS[id] = { id:id, title:DRAFT.title || 'Untitled event', date:start, description:DRAFT.desc,
                  hostName:'You', privacy:DRAFT.privacy, ownerIds:['self'], kind:'own', city:DRAFT.city };

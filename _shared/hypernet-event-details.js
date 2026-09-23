@@ -44,6 +44,7 @@ window.HYPERNET_DETAILS = {
 
     "evt-world-burning-man-2026": {
       "source": "sample",
+      "description": "A temporary city in the Nevada desert, built by the people who come to it and taken down again without a trace.",
       "edition": "2026",
       "dates": { "start": "2026-08-30", "end": "2026-09-07", "gates": "Gate opens Sunday; Exodus from Monday",
                  "notes": "Build crews can come earlier on an Early Arrival pass. Strike and clean-up run for weeks after." },
@@ -82,11 +83,12 @@ window.HYPERNET_DETAILS = {
 
     "evt-world-borderland-2026": {
       "source": "sample",
+      "description": "A week-long participatory gathering in the Nordics. There are no spectators: members build the camps, the art and the programme.",
       "edition": "2026",
       "theme": { "title": "The Membrane", "body": "What keeps a community together, and what lets it breathe." },
       "dates": { "start": "2026-07-20", "end": "2026-07-26", "gates": "Gates open Monday 12:00; quiet exodus Sunday",
                  "notes": "Build week before, strike the day after." },
-      "location": { "site": "A field in southern Sweden", "region": "Götaland", "country": "Sweden",
+      "location": { "site": "A field in southern Sweden", "country": "Sweden",
                     "travel": "Train to the nearest town, then the shuttle. Car-pooling is arranged in the members' forum." },
       "organiser": { "name": "The Borderland (a membership association)" },
       "size": "≈ 4,000 members",
@@ -188,9 +190,31 @@ window.HYPERNET_DETAILS = {
 
     "evt-fill-10": {
       "source": "sample",
+      "description": "A day of first aid for rangers, medics and camp leads before the winter builds.",
       "dates": { "start": "2026-11-03", "gates": "10:00–16:00" },
       "tickets": { "model": "free", "summary": "Free for rangers, medics and camp leads." },
       "care": [ "Certificates renewed on the day." ]
     }
   }
 };
+
+// The generated fixtures describe the twelve filler events as "Camp / crew overflow
+// for SEARCH feed." Give them believable one-liners without touching the generated file.
+(function(){
+  var R = window.HYPERNET_DETAILS.records;
+  var D = {
+    "evt-fill-0":  "Twenty minutes of stretching on the ridge as the sun comes up. Bring a mat or borrow one.",
+    "evt-fill-1":  "The late kitchen line for the build crew: chopping from nine, serving from eleven, washing up until it's done.",
+    "evt-fill-2":  "Build shade that packs flat and survives wind. Frames, tarps and a lot of ratchet straps.",
+    "evt-fill-3":  "A slow walk through the woods with LED pieces hung in the trees. No torches, let your eyes adjust.",
+    "evt-fill-4":  "Briefing for this season's dust patrol: routes, the MOOP log, and what goes in which bin.",
+    "evt-fill-5":  "Shifts at the temple build: sanding, carrying, and keeping the space for people who come to write.",
+    "evt-fill-6":  "One hour on the camp radio. Requests, lost and found, and whoever turns up with a record.",
+    "evt-fill-7":  "Tea at sunrise. One cup, no talking, until the light lands on the field.",
+    "evt-fill-8":  "The camps agree quiet hours for generators so the sleeping side of the field can sleep.",
+    "evt-fill-9":  "Mutant vehicles dock for the night. Check-in, lights check, then a slow parade.",
+    "evt-fill-10": "A day of first aid for rangers, medics and camp leads before the winter builds.",
+    "evt-fill-11": "Soundcheck on the west stage before the weekend. If it feeds back we start again."
+  };
+  Object.keys(D).forEach(function(id){ R[id] = R[id] || { source:"sample" }; if (!R[id].description) R[id].description = D[id]; });
+})();

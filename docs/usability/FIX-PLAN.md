@@ -92,6 +92,10 @@ tap the tab you are on: its top). Chats opened from another tab are pushed onto 
 **B1. A horizon is always a horizon.** At every width (768, 1440 with chats open), the horizon page is the
 playlist page with cover and owner actions — never a folder/row inside its own list.
 Source: ORGANISER-3.
+*Status: done.* The horizon folder is gone: a horizon (from the sidebar, a chip, a card, a link) always opens as its
+own page — cover, mood, owner, actions, tracks — in the reading pane or the centre, at 768, 1440, and 1440 with Chats
+open; its sidebar row is lit while it is open. Old folder-style links and history entries open the page. Trade-off:
+a horizon no longer has its own LIST/CALENDAR switch (it was only reachable through the folder view).
 
 **B2. Desktop with chats open keeps list + reading.** Opening the chat dock at 1440 must not collapse the
 event list into one pane; narrow the dock or overlay it instead.

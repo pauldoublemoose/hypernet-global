@@ -265,6 +265,23 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .vpromo .n{ font:12px var(--mono); opacity:.8; }
 .vsec{ display:flex; flex-wrap:wrap; gap:8px; margin-left:auto; }
 .vmore .sm{ display:none; }
+.vwent{ height:var(--act); padding:0 16px; display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--edim);
+  border:1px solid var(--edim); font:bold 14px var(--sys); }
+.vwent:hover{ color:var(--eink); border-color:var(--eink); }
+.vwent.on{ background:var(--eac); border-color:var(--eac); color:var(--eon); }
+.edition{ position:relative; z-index:3; padding:18px 34px 0; }
+.edcard{ width:100%; display:grid; grid-template-columns:1fr auto; column-gap:16px; align-items:center; padding:16px 18px; text-align:left;
+  background:color-mix(in srgb, var(--eac) 14%, transparent); border:2px solid var(--eac); color:var(--eink); font-family:var(--sys); }
+.edcard:hover{ background:color-mix(in srgb, var(--eac) 24%, transparent); }
+.edcard > span:not(.edgo){ grid-column:1; }
+.edk{ font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--eac); }
+.edt{ margin-top:4px; font-size:20px; font-weight:bold; line-height:1.2; }
+.edd{ margin-top:3px; font-size:15px; }
+.eds{ margin-top:8px; font:bold 12px var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--eac); }
+.edgo{ grid-column:2; grid-row:1 / span 4; width:44px; height:44px; display:grid; place-items:center; border:1px solid var(--eac); color:var(--eac); }
+.edprev{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.edprev .chip{ min-height:44px; }
+.ednote{ flex:1 1 260px; font-size:13px; color:var(--edim); }
 .vmore{ height:var(--act); padding:0 14px; display:inline-flex; align-items:center; gap:7px; background:transparent; color:var(--eink);
   border:1px solid var(--edim); font:13px var(--sys); }
 .vmore:hover{ border-color:var(--eink); }
@@ -362,6 +379,8 @@ button.chip:hover{ border-color:var(--eac); }
   .mood{ font-size:16px; }
   .actbar{ padding:10px 14px; }
   .lin{ padding:4px 18px 36px; }
+  .edition{ padding:14px 14px 0; }
+  .vwent{ flex:1 1 auto; justify-content:center; }
   .vpair{ flex:1 1 100%; }
   .vbtn{ flex:1; padding:0 10px; }
   .actbar{ position:relative; }
@@ -737,6 +756,40 @@ function mergeReal(raw){
   });
   if (REALIDS.indexOf(id) < 0 && !raw.illustrative) REALIDS.push(id);
 }
+/* A big burn whose edition is over, with the next one announced, lives on as
+   that next edition: same world, new dates. The past edition stays reachable
+   from it ("Previous: 2026") but leaves the feed. */
+var NEXTED = {};                 /* past edition id -> next edition id */
+function nextEditionOf(id){ return NEXTED[id] || null; }
+function makeNextEditions(){
+  Object.keys(REC).forEach(function(id){
+    var r = REC[id], b = r.burn, e = EVENTS[id];
+    if (!e || !b || !b.nextEdition || NEXTED[id] || r._prev) return;
+    var nd = isoDate(b.nextEdition.date);
+    if (!nd || !isPast(lastDay(e))) return;
+    var nid = id + '--next', ny = nd.slice(0,4);
+    var title = /\b(19|20)\d\d\b/.test(e.title) ? e.title.replace(/\b(19|20)\d\d\b/, ny) : e.title + ' ' + ny;
+    EVENTS[nid] = { id:nid, title:title, date:nd, description:e.description, hostName:e.hostName, privacy:e.privacy,
+                    ownerIds:e.ownerIds || [], kind:e.kind, city:e.city };
+    var nr = JSON.parse(JSON.stringify(r));
+    nr.id = nid; nr.date = nd; nr.endDate = isoDate(b.nextEdition.endDate) || undefined;
+    nr.theme = b.nextEdition.theme ? (typeof b.nextEdition.theme === 'object' ? b.nextEdition.theme : { name:b.nextEdition.theme }) : undefined;
+    nr.burn.edition = { year:+ny }; delete nr.burn.phases; delete nr.burn.nextEdition;
+    delete nr.blocks; delete nr.startTime; delete nr.endTime;
+    if (nr.access){
+      var ay = +(nr.access.asOf || 0);
+      nr.access.sales = (nr.access.sales || []).filter(function(sl){
+        var last = isoDate(sl.closes) || isoDate(sl.opens);
+        return last ? last >= TODAY_ISO : ay >= +ny;
+      });
+    }
+    nr._prev = id; nr._prevYear = e.date.slice(0,4); nr._note = b.nextEdition.note;
+    REC[nid] = nr;
+    window.HYPERNET_THEMES.themes[nid] = TH(id);
+    PROMOCOUNT[nid] = hashId(nid) % 17;
+    NEXTED[id] = nid;
+  });
+}
 function loadRealEvents(){
   if (location.protocol === 'file:' || !window.fetch) return;
   fetch('data/real-events.json', { cache:'no-store' })
@@ -745,6 +798,8 @@ function loadRealEvents(){
       if (!json) return;
       var list = Array.isArray(json) ? json : (json.events || json.records || []);
       list.forEach(mergeReal);
+      makeNextEditions();
+      REALIDS = REALIDS.map(function(id){ return NEXTED[id] || id; });
       if (REALIDS.length){
         HORIZONS['horizon-season'] = { id:'horizon-season', name:'Season of burns', description:'Burns, decompressions and meetups from the community’s own pages.',
           isPersonalDefault:false, isPublished:true, ownerName:'Hypernet', ownerId:null,
@@ -826,6 +881,7 @@ function ic(n, sz){
    2. MUTABLE STATE
    ========================================================================= */
 var RSVP = {};                 /* eventId -> 'going' | 'interested' */
+var WENT = {};                 /* past events you were at */
 var PROMOTED = {};
 var PROMOCOUNT = {}; Object.keys(EVENTS).forEach(function(id){ PROMOCOUNT[id] = hashId(id) % 17; });
 var READ = {};
@@ -986,7 +1042,7 @@ function itemName(it){
    A view is a way of looking at one destination, never a destination.
    ========================================================================= */
 function feedEvents(){
-  return allEvents().slice().sort(function(a,b){
+  return allEvents().filter(function(e){ return !NEXTED[e.id]; }).sort(function(a,b){
     var pa = isPast(a.date) ? 1 : 0, pb = isPast(b.date) ? 1 : 0;
     if (pa !== pb) return pa - pb;
     return byDate(a,b);
@@ -999,6 +1055,8 @@ function browsablePeople(){ var ids = CREW.slice(); if (S.loggedIn) ids.unshift(
 function homeItems(){
   var out = [];
   feedEvents().filter(function(e){ return !isPast(lastDay(e)); }).slice(0,9).forEach(function(e){ out.push({ type:'event', id:e.id }); });
+  Object.keys(NEXTED).map(function(k){ return EVENTS[NEXTED[k]]; }).sort(byDate)
+    .forEach(function(e){ if (!out.some(function(x){ return x.id === e.id; })) out.push({ type:'event', id:e.id, band:'Announced' }); });
   browsableHorizons().filter(function(k){ return HORIZONS[k].isPublished && !(S.loggedIn && HZFOLLOW[k]) && MYHORIZONS.indexOf(k) < 0; })
     .forEach(function(k){ out.push({ type:'horizon', id:k }); });
   CALLOUTS.forEach(function(c){ out.push({ type:'callout', id:c.id }); });
@@ -1105,7 +1163,7 @@ function bandOf(it){
   var k = S.folder.kind;
   if (k === 'search') return SEARCHBAND[it.type];
   if (k === 'home' && viewOf() === 'feed')
-    return { event:'Happening soon', horizon:'Horizons worth following', callout:'Call outs', news:'Network news' }[it.type];
+    return it.band || { event:'Happening soon', horizon:'Horizons worth following', callout:'Call outs', news:'Network news' }[it.type];
   if (k === 'horizons') return hzOwnedByMe(it.id) ? 'Yours' : (S.loggedIn && HZFOLLOW[it.id]) ? 'Following' : 'More horizons';
   if (k === 'people') return it.id === 'self' ? 'You' : (S.loggedIn && PFOLLOW[it.id]) ? 'People you follow' : 'Around the network';
   if (it.type === 'horizon') return 'Folder';
@@ -1116,7 +1174,7 @@ function bandOf(it){
   if (d <= 31) return 'This month';
   return 'Later';
 }
-var BANDORDER = ['Folder','Happening soon','This week','This month','Later','Past','Horizons worth following','Call outs','Network news',
+var BANDORDER = ['Folder','Happening soon','Announced','This week','This month','Later','Past','Horizons worth following','Call outs','Network news',
                  'Events','Horizons','People','Clusters','You','Yours','Following','People you follow','Around the network','More horizons'];
 function groupItems(items){
   var groups = {}, order = [];
@@ -1132,6 +1190,7 @@ function orderedItems(){
 function isSel(it){ var s = S.stack[0]; return s && s.type === it.type && s.id === it.id; }
 function statePills(evId){
   var st = stateOf(evId), h = '';
+  if (S.loggedIn && WENT[evId]) return '<span class="pill going">'+ic('check',11)+'<span>Went</span></span>';
   if (st === 'going')      h += '<span class="pill going">'+ic('check',11)+'<span>Going</span></span>';
   if (st === 'interested') h += '<span class="pill int">'+ic('heart',11)+'<span>Interested</span></span>';
   if (st === 'hosting')    h += '<span class="pill host">'+ic('star',11)+'<span>Hosting</span></span>';
@@ -1296,6 +1355,7 @@ function eyebrowOf(e){
   if (r.venueKind === 'virtual') parts.push('Online');
   parts.push({ everyone:'Public', friends:'Friends', only_me:'Private' }[e.privacy] || 'Public');
   if (isPast(lastDay(e))) parts.push('Past');
+  if (r._prev) parts.push('Announced');
   return parts.map(esc).join(' · ');
 }
 function factsHTML(evId){
@@ -1308,7 +1368,7 @@ function factsHTML(evId){
     var vis = { on_rsvp:'Address on RSVP', ticket_holders:'Address for ticket holders', secret:'Secret location' }[v.addressVisibility];
     f.push(['Where', place, [sub, vis].filter(Boolean).join(' · ')]);
   }
-  if (r.access && r.access.model) f.push(['Entry', ACCESSLAB[r.access.model] || titleCase(r.access.model), priceSummary(r.access)]);
+  if (r.access && r.access.model) f.push(['Entry', ACCESSLAB[r.access.model] || titleCase(r.access.model), past ? '' : priceSummary(r.access)]);
   var pop = r.burn && r.burn.population;
   if (pop && (pop.lastAttendance || pop.cap)) f.push(['Size', '≈ ' + money(pop.lastAttendance || pop.cap) + ' people',
     pop.cap && pop.lastAttendance ? 'Cap ' + money(pop.cap) : (pop.lastAttendanceYear ? 'In ' + pop.lastAttendanceYear : '')]);
@@ -1445,6 +1505,24 @@ function provenance(evId){
   return '';
 }
 
+/* the link between editions: a past one points forward, the next one points back */
+function editionsHTML(evId){
+  var nid = NEXTED[evId], r = recOf(evId);
+  if (nid){
+    var n = EVENTS[nid], nr = recOf(nid), sale = (nr.access && nr.access.sales || []).map(function(sl){ return [sl, saleState(sl)]; })
+      .filter(function(x){ return x[1] && x[1] !== 'Closed'; })[0];
+    return '<div class="edition"><button class="edcard" data-act="open" data-type="event" data-id="'+nid+'">' +
+      '<span class="edk">Next edition</span><span class="edt">'+esc(n.title)+'</span>' +
+      '<span class="edd">'+esc(fmtRange(n.date, endOf(n)))+(nr.theme && nr.theme.name ? ' · ' + esc(nr.theme.name) : '')+'</span>' +
+      (sale ? '<span class="eds">'+esc(sale[0].name)+': '+esc(sale[1].toLowerCase())+'</span>' : '') +
+      '<span class="edgo">'+ic('back',18).replace('class="ic"','class="ic" style="transform:scaleX(-1)"')+'</span></button></div>';
+  }
+  if (r._prev && EVENTS[r._prev]){
+    return '<div class="edition"><div class="edprev"><button class="chip" data-act="open" data-type="event" data-id="'+r._prev+'">'+ic('back',16)+'Previous: '+esc(r._prevYear)+'</button>' +
+      '<span class="ednote">Dates announced'+(r._note ? ' · ' + esc(r._note) : '')+'. Details below are from the '+esc(r._prevYear)+' edition until the organisers update them.</span></div></div>';
+  }
+  return '';
+}
 function verbsHTML(evId){
   var st = S.loggedIn ? RSVP[evId] : undefined;
   var pro = S.loggedIn && PROMOTED[evId];
@@ -1474,7 +1552,11 @@ function canvasHTML(evId){
        '<div class="btxt"><div class="eyebrow">'+eyebrowOf(e)+'</div>' +
        '<h1 class="hl h-'+t.headline+'">'+headlineHTML(t, e.title)+'</h1>' +
        (t.mood ? '<p class="mood">'+esc(t.mood)+'</p>' : '') + '</div></div></header>';
-  h += '<div class="actbar">' + verbsHTML(evId) + '</div>';
+  if (!past) h += '<div class="actbar">' + verbsHTML(evId) + '</div>';
+  else if (S.loggedIn) h += '<div class="actbar"><div class="verbs">' +
+    '<button class="vwent'+(WENT[evId]?' on':'')+'" data-act="v-went" data-id="'+evId+'" aria-pressed="'+!!WENT[evId]+'">'+ic('check')+'Went</button>' +
+    '<span class="vsec"><button class="vmore" data-act="share" data-id="'+evId+'">'+ic('share',16)+'Share</button></span></div></div>';
+  h += editionsHTML(evId);
   h += '<div class="layer"><div class="surf u-'+t.surface+'" style="opacity:.45"></div><div class="lin">';
   h += factsHTML(evId);
   h += sect('About', descOf(e) ? '<p class="evdesc">'+esc(descOf(e))+'</p>' : '');
@@ -1483,7 +1565,7 @@ function canvasHTML(evId){
   if (b.phases && b.phases.length) h += sect('Timeline', timelineHTML(b.phases, true));
   else if (r.blocks && r.blocks.length) h += sect(r.blocks.every(function(x){ return /^shift/i.test(x.label || ''); }) ? 'Shifts' : 'Timeline', timelineHTML(r.blocks, false));
   var am = r.access && r.access.model;
-  h += sect(/member/.test(am || '') ? 'Membership' : am === 'ticket' || am === 'lottery' ? 'Tickets' : 'Entry', accessHTML(r.access));
+  if (!past) h += sect(/member/.test(am || '') ? 'Membership' : am === 'ticket' || am === 'lottery' ? 'Tickets' : 'Entry', accessHTML(r.access));
   h += sect('Take part', takePartHTML(r));
   h += sect('Call outs', calloutsHTML(r.calloutIds));
   if (big) h += sect('On site', providedHTML(b.provided));
@@ -1493,7 +1575,7 @@ function canvasHTML(evId){
   h += sect('Principles', principlesHTML(r.principles));
   if (b.vocabulary && b.vocabulary.length) h += sect('Words used here', '<dl class="kv vocab">' + b.vocabulary.map(function(v){
     return '<dt>'+esc(v.term)+'</dt><dd>'+esc(v.meaning)+'</dd>'; }).join('') + '</dl>');
-  if (b.nextEdition) h += sect('Next edition', nextHTML(b.nextEdition));
+  if (b.nextEdition && !NEXTED[evId]) h += sect('Next edition', nextHTML(b.nextEdition));
   h += sect(past ? 'Who went' : 'Who’s going', '<div class="chips">' + att.map(function(pid){
          return '<button class="chip" data-act="open" data-type="person" data-id="'+pid+'">'+avHTML(pid,'a28')+esc(person(pid).displayName)+'</button>';
        }).join('') + '<span class="chip plain">+ '+Math.max(0, attendeeCount(evId)-att.length)+' more</span></div>');
@@ -1515,6 +1597,7 @@ function canvasHTML(evId){
    on the horizon itself; the events inside it carry them, per row. */
 function compactVerbs(evId){
   var st = S.loggedIn ? RSVP[evId] : '';
+  if (isPast(lastDay(EVENTS[evId]))) return S.loggedIn ? '<div class="cverbs"><button class="ib'+(WENT[evId]?' on':'')+'" data-act="v-went" data-id="'+evId+'" aria-label="Went" aria-pressed="'+!!WENT[evId]+'">'+ic('check')+'</button></div>' : '';
   return '<div class="cverbs">' +
     '<button class="ib'+(st==='interested'?' on':'')+'" data-act="v-interested" data-id="'+evId+'" aria-label="Interested" aria-pressed="'+(st==='interested')+'">'+ic('heart')+'</button>' +
     '<button class="ib'+(st==='going'?' on':'')+'" data-act="v-going" data-id="'+evId+'" aria-label="Going" aria-pressed="'+(st==='going')+'">'+ic('check')+'</button>' +
@@ -2301,6 +2384,11 @@ var setRSVP = gated(function(evId, mode){
   render();
   toast(RSVP[evId] ? (mode === 'going' ? 'Going' : 'Interested') : 'Removed', EVENTS[evId].title);
 });
+var setWent = gated(function(evId){
+  WENT[evId] = !WENT[evId];
+  markRead(evId); render();
+  toast(WENT[evId] ? 'Marked as went' : 'Removed', EVENTS[evId].title);
+});
 var doPromote = gated(function(evId){
   PROMOTED[evId] = !PROMOTED[evId];
   PROMOCOUNT[evId] = Math.max(0, (PROMOCOUNT[evId]||0) + (PROMOTED[evId] ? 1 : -1));
@@ -2446,6 +2534,7 @@ document.addEventListener('click', function(ev){
     case 'v-interested': setRSVP(id, 'interested'); break;
     case 'v-going':      setRSVP(id, 'going'); break;
     case 'v-promote':    doPromote(id); break;
+    case 'v-went':       setWent(id); break;
     case 'addto':        gated(addToDialog)(id); break;
     case 'dofile':       toggleInHorizon(id, n.getAttribute('data-hz')); break;
     case 'share':        gated(shareDialog)(id); break;

@@ -569,6 +569,65 @@ fieldset.props legend{ padding:0 6px; font-weight:bold; }
 .toast{ min-width:220px; max-width:320px; padding:10px 14px; background:#ffffe1; border:1px solid #6d6a5e; box-shadow:2px 2px 6px rgba(0,0,0,.3); font-size:var(--fs-s); }
 .toast b{ display:block; font-size:var(--fs); }
 
+/* ---------- 10b. phone feed: shelves, tiles, playlists --------------- */
+.shelves{ padding:0 0 28px; }
+.greet{ padding:20px 16px 4px; }
+.greet h2{ margin:0; font-size:24px; line-height:1.15; }
+.greet p{ margin:4px 0 0; color:var(--dim); font-size:14px; }
+.fchips{ display:flex; gap:6px; padding:14px 16px 4px; overflow-x:auto; scrollbar-width:none; }
+.fchips::-webkit-scrollbar{ display:none; }
+.fchip{ flex:0 0 auto; height:var(--ctl); padding:0 12px; border:0; background:var(--face); box-shadow:var(--out); font:bold 12px var(--mono);
+  letter-spacing:.08em; text-transform:uppercase; color:var(--ink2); }
+.fchip.on{ background:var(--sel); color:#fff; box-shadow:inset 1px 1px 0 #000, inset -1px -1px 0 #777; }
+.qgrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:12px 16px 4px; }
+.qtile{ display:flex; align-items:center; gap:10px; min-width:0; height:56px; padding-right:8px; background:var(--face-lt); box-shadow:var(--out); overflow:hidden; }
+.qtile:active{ box-shadow:var(--in); }
+.qtile .qt{ flex:1; min-width:0; font-size:13px; font-weight:bold; line-height:1.2; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.qtile .sq, .qtile .mosaic{ flex:0 0 56px; }
+.shelf{ margin-top:22px; }
+.shh{ display:flex; align-items:center; gap:10px; padding:0 8px 0 16px; }
+.shh h3{ flex:1; min-width:0; margin:0; font-size:19px; line-height:1.2; }
+.showall{ min-height:44px; padding:0 8px; border:0; background:transparent; font:bold 11px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--dim); }
+.srow{ display:flex; gap:12px; padding:10px 16px 4px; overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x mandatory; scroll-padding:0 16px;
+  -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.srow::-webkit-scrollbar{ display:none; }
+.srow::after{ content:""; flex:0 0 4px; }
+.card2{ flex:0 0 150px; width:150px; scroll-snap-align:start; min-height:44px; }
+.card2 .cart{ position:relative; width:150px; height:150px; box-shadow:0 0 0 1px rgba(0,0,0,.18), 2px 2px 0 rgba(0,0,0,.14); }
+.card2:active .cart{ transform:translate(1px,1px); box-shadow:0 0 0 1px rgba(0,0,0,.18); }
+.ct2{ margin-top:8px; font-size:14px; font-weight:bold; line-height:1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.cs2{ margin-top:3px; font:11px var(--mono); letter-spacing:.02em; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ctag{ position:absolute; left:6px; bottom:6px; padding:2px 6px; background:#fff; color:#000; border:1px solid #000; font:bold 10px var(--mono); letter-spacing:.08em; text-transform:uppercase; }
+.ctag.inline{ position:static; flex:0 0 auto; }
+.coart{ width:150px; height:150px; display:flex; flex-direction:column; justify-content:flex-end; gap:4px; padding:12px; background:var(--face); box-shadow:var(--out); color:var(--ink); }
+.coart .ic{ margin-bottom:auto; }
+.coart span{ font:bold 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dim); }
+.coart b{ font-size:17px; line-height:1.15; }
+.mosaic{ display:grid; grid-template-columns:1fr 1fr; background:#000; overflow:hidden; }
+.mosaic .sq{ border-radius:0 !important; clip-path:none !important; }
+.mosaic.one{ display:block; }
+.mosaic.empty{ display:grid; place-items:center; background:var(--face); color:var(--dim); box-shadow:var(--out); }
+.plist{ padding:22px 0 32px; }
+.plcover{ display:flex; justify-content:center; padding:0 16px; }
+.plcover .mosaic{ box-shadow:0 0 0 1px rgba(0,0,0,.25), 4px 4px 0 rgba(0,0,0,.18); }
+.plhead{ padding:20px 16px 0; }
+.plk{ font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dim); }
+.pln{ margin:4px 0 0; font-size:28px; line-height:1.1; overflow-wrap:anywhere; }
+.pld{ margin:8px 0 0; color:var(--ink2); font-size:15px; line-height:1.45; }
+.plo{ margin-top:10px; }
+.plown{ display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:0; border:0; background:transparent; font-weight:bold; font-size:14px; }
+.plm{ font:12px var(--mono); color:var(--dim); letter-spacing:.02em; }
+.placts{ display:flex; gap:8px; padding:16px 16px 8px; }
+.plmain{ flex:1; }
+.tracks{ list-style:none; margin:8px 0 0; padding:0; border-top:1px solid var(--line); }
+.track{ display:flex; align-items:center; gap:12px; min-height:68px; padding:10px 16px; border-bottom:1px solid var(--line); }
+.track:active{ background:var(--hover); }
+.track .tn{ flex:0 0 18px; font:12px var(--mono); color:var(--dim); text-align:right; }
+.track .tm{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.track .tt{ font-size:15px; font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.track .ts{ margin-top:2px; font-size:13px; color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.track.past .tt{ color:#6f6f6f; }
+
 /* ---------- 11. phone: its own shell, not a squeezed desktop --------- */
 #app.phone{ --act:48px; font-size:15px; }
 #app.phone #titlebar, #app.phone #toolbar{ display:none; }
@@ -941,7 +1000,8 @@ var S = {
   rows:[],
   pending:null,
   autoSel:false,
-  hasAccount:false             /* first log-in is a sign-up */                /* true while the reading pane shows something the app picked, not you */
+  hasAccount:false,
+  shelfFilter:'all'             /* first log-in is a sign-up */                /* true while the reading pane shows something the app picked, not you */
 };
 var L = {};                    /* the layout of the current render */
 
@@ -1094,6 +1154,7 @@ function folderItems(f){
   if (k === 'home')  return viewOf(f) === 'feed' ? homeItems() : feedEvents().map(function(e){ return { type:'event', id:e.id }; });
   if (k === 'horizons') return browsableHorizons().map(function(h){ return { type:'horizon', id:h }; });
   if (k === 'people')   return browsablePeople().map(function(p){ return { type:'person', id:p }; });
+  if (k === 'shelf')    return shelfItems(f.id);
   if (k === 'search')   return searchItems(S.query);
   if (k === 'interested') evs = rsvpList('interested');
   else if (k === 'going') evs = rsvpList('going');
@@ -1117,7 +1178,7 @@ function destEvents(f){
 function folderName(f){
   f = f || S.folder;
   return { home:'Home', horizons:'Horizons', people:'People', interested:'Interested', going:'Going', hosting:'Hosting',
-           search:'Search', you:'You' }[f.kind] || (f.kind === 'horizon' && HORIZONS[f.id] ? HORIZONS[f.id].name : 'Home');
+           search:'Search', you:'You', shelf: shelfTitle(f.id) }[f.kind] || (f.kind === 'horizon' && HORIZONS[f.id] ? HORIZONS[f.id].name : 'Home');
 }
 function folderSub(f){
   f = f || S.folder;
@@ -1181,6 +1242,7 @@ function sortItems(items){
 var SEARCHBAND = { event:'Events', horizon:'Horizons', callout:'Call outs', person:'People', group:'Clusters' };
 function bandOf(it){
   var k = S.folder.kind;
+  if (k === 'shelf') return null;
   if (k === 'search') return SEARCHBAND[it.type];
   if (k === 'home' && viewOf() === 'feed')
     return it.band || { event:'Happening soon', horizon:'Horizons worth following', callout:'Call outs', news:'Network news' }[it.type];
@@ -1270,6 +1332,7 @@ function rowHTML(it){
     '</div>';
 }
 function renderList(){
+  if (isShelfFeed()){ renderShelves(); return; }
   var items = sortItems(folderItems());
   var g = groupItems(items), h = '', rows = [];
   if (S.folder.kind === 'search' && !S.query.trim()){
@@ -1629,9 +1692,39 @@ function eventCRow(e, withVerbs){
     '<div class="r-meta">'+esc([fmtShort(e.date), whereOf(e), hostLabel(e)].filter(Boolean).join(' · '))+'</div></div>' +
     (withVerbs ? compactVerbs(e.id) : '') + '</div>';
 }
+/* on a phone a horizon opens like a playlist: big cover, who made it, one primary action, then its events */
+function playlistHTML(hzId){
+  var hz = HORIZONS[hzId], mine = hzOwnedByMe(hzId), fol = S.loggedIn && HZFOLLOW[hzId];
+  var evs = hz.eventIds.map(function(id){ return EVENTS[id]; }).filter(Boolean).sort(byDate);
+  var owner = hz.isPersonalDefault ? 'You' : hz.ownerName;
+  var h = '<div class="plist"><div class="plcover">' + hzMosaic(hzId, 232) + '</div>';
+  h += '<div class="plhead"><div class="plk">Event Horizon'+(hz.isPublished ? '' : ' · Private')+'</div><h1 class="pln">'+esc(hz.name)+'</h1>';
+  if (hz.description) h += '<p class="pld">'+esc(hz.description)+'</p>';
+  h += '<div class="plo">' + (hz.ownerId && PEOPLE[hz.ownerId] && hz.ownerId !== 'self'
+        ? '<button class="plown" data-act="open" data-type="person" data-id="'+hz.ownerId+'">'+avHTML(hz.ownerId)+esc(owner)+'</button>'
+        : '<span class="plown">'+ic('folder',16)+esc(owner)+'</span>') + '</div>';
+  h += '<div class="plm">'+evs.length+' event'+(evs.length===1?'':'s')+' · '+(HZCOUNT[hzId]||0)+' followers · '+esc(hzRange(hzId))+'</div></div>';
+  h += '<div class="placts">';
+  if (!mine) h += '<button class="btn '+(fol?'on':'primary')+' plmain" data-act="followhz" data-id="'+hzId+'" aria-pressed="'+!!fol+'">'+ic(fol?'check':'plus')+(fol?'Following':'Follow')+'</button>';
+  else {
+    h += '<button class="btn '+(hz.isPublished?'on':'primary')+' plmain" data-act="publishhz" data-id="'+hzId+'" aria-pressed="'+!!hz.isPublished+'">'+(hz.isPublished?ic('check')+'Published':'Publish')+'</button>';
+    h += '<button class="ib" data-act="renamehz" data-id="'+hzId+'" aria-label="Rename">'+ic('edit')+'</button>';
+    if (evs.length) h += '<button class="ib" data-act="coverhz" data-id="'+hzId+'" aria-label="Cover">'+ic('paint')+'</button>';
+  }
+  h += '</div>';
+  h += '<ol class="tracks">' + (evs.length ? evs.map(function(e, i){
+    var tag = cardTag({ type:'event', id:e.id });
+    return '<li class="track'+(isPast(lastDay(e))?' past':'')+'" data-act="open" data-type="event" data-id="'+e.id+'" role="button">' +
+      '<span class="tn">'+(i+1)+'</span>' + sqPx(e.id, 48) +
+      '<span class="tm"><span class="tt">'+esc(e.title)+'</span><span class="ts">'+esc(fmtShort(e.date) + ' · ' + whereOf(e) + ' · ' + hostLabel(e))+'</span></span>' +
+      (tag ? tag.replace('ctag', 'ctag inline') : '') + '</li>';
+  }).join('') : '<li class="empty">No events in this horizon yet.</li>') + '</ol></div>';
+  return h;
+}
 function horizonHTML(hzId, withContents){
   var hz = HORIZONS[hzId];
   if (!hz) return '<div class="empty">This horizon no longer exists.</div>';
+  if (L.phone) return playlistHTML(hzId);
   var mine = hzOwnedByMe(hzId), cov = hzCover(hzId), fol = S.loggedIn && HZFOLLOW[hzId];
   var evs = hz.eventIds.map(function(id){ return EVENTS[id]; }).filter(Boolean).sort(byDate);
   var h = '<div class="page">';
@@ -1751,6 +1844,136 @@ function renderDetail(){
 }
 </script>
 <script>
+/* =========================================================================
+   7b. THE PHONE FEED — Spotify's structure in a 2000-era skin
+   A greeting, filter chips, quick tiles for the things you keep, then
+   sideways shelves of big squares. Event squares are the album art;
+   horizons are playlists with a cover built from their events.
+   ========================================================================= */
+/* an event square at any pixel size */
+function sqPx(id, px, extra){
+  var t = TH(id);
+  return '<div class="sq sh-'+t.shape+(extra?' '+extra:'')+'" style="'+themeVars(t)+'width:'+px+'px;height:'+px+'px;font-size:'+Math.round(px*0.54)+'px">' +
+         '<div class="pat p-'+t.square.pattern+'"></div><span class="g">'+t.square.glyph+'</span></div>';
+}
+/* a horizon's cover: the owner's pick, or a 2×2 mosaic of its first four events */
+function hzMosaic(hzId, px){
+  var hz = HORIZONS[hzId], ids = hz ? hz.eventIds.filter(function(id){ return EVENTS[id]; }) : [];
+  if (HZCOVER[hzId] || ids.length && ids.length < 4) return '<div class="mosaic one" style="width:'+px+'px;height:'+px+'px">' + sqPx(hzCover(hzId), px) + '</div>';
+  if (!ids.length) return '<div class="mosaic empty" style="width:'+px+'px;height:'+px+'px">'+ic('folder', Math.round(px/3))+'</div>';
+  var h = Math.floor(px/2);
+  return '<div class="mosaic" style="width:'+(h*2)+'px;height:'+(h*2)+'px">' + ids.slice(0,4).map(function(id){ return sqPx(id, h); }).join('') + '</div>';
+}
+function cardTag(it){
+  if (!S.loggedIn) return '';
+  if (it.type === 'event'){
+    if (WENT[it.id]) return '<span class="ctag">Went</span>';
+    var st = stateOf(it.id);
+    return st ? '<span class="ctag">'+{ going:'Going', interested:'Interested', hosting:'Hosting' }[st]+'</span>' : '';
+  }
+  if (it.type === 'horizon') return hzOwnedByMe(it.id) ? '<span class="ctag">Yours</span>' : HZFOLLOW[it.id] ? '<span class="ctag">Following</span>' : '';
+  return '';
+}
+function cardHTML(it){
+  var art, t, sub;
+  if (it.type === 'event'){
+    var e = EVENTS[it.id], end = endOf(e);
+    art = sqPx(it.id, 150);
+    t = e.title; sub = fmtShort(e.date) + (end ? ' +' + (nDays(e.date, end) - 1) + 'd' : '') + ' · ' + whereOf(e);
+  } else if (it.type === 'horizon'){
+    var hz = HORIZONS[it.id];
+    art = hzMosaic(it.id, 150);
+    t = hz.name; sub = hz.ownerName + ' · ' + hz.eventIds.length + ' events';
+  } else {
+    var c = calloutOf(it.id);
+    art = '<div class="coart">'+ic('callout', 40)+'<span>Looking for</span><b>'+esc(c.title)+'</b></div>';
+    t = c.title; sub = c.hostName + ' · until ' + fmtShort(c.expiresAt);
+  }
+  return '<div class="card2" data-act="row" data-type="'+it.type+'" data-id="'+it.id+'" role="button">' +
+    '<div class="cart">'+art+cardTag(it)+'</div><div class="ct2">'+esc(t)+'</div><div class="cs2">'+esc(sub)+'</div></div>';
+}
+function tileHTML(it){
+  var art = it.type === 'event' ? sqPx(it.id, 56) : hzMosaic(it.id, 56);
+  var t = it.type === 'event' ? EVENTS[it.id].title : HORIZONS[it.id].name;
+  return '<div class="qtile" data-act="row" data-type="'+it.type+'" data-id="'+it.id+'" role="button">'+art+'<span class="qt">'+esc(t)+'</span></div>';
+}
+function upcoming(e){ return !isPast(lastDay(e)); }
+function popularHorizons(){ return browsableHorizons().filter(function(k){ return HORIZONS[k].isPublished; }).sort(function(a,b){ return (HZCOUNT[b]||0) - (HZCOUNT[a]||0); }); }
+function quickItems(){
+  var out = [], seen = {};
+  function add(type, id){ var k = type + id; if (!seen[k] && (type !== 'event' || EVENTS[id]) && (type !== 'horizon' || HORIZONS[id])){ seen[k] = 1; out.push({ type:type, id:id }); } }
+  if (S.loggedIn){
+    rsvpList('going').filter(upcoming).forEach(function(e){ add('event', e.id); });
+    rsvpList('interested').filter(upcoming).forEach(function(e){ add('event', e.id); });
+    MYHORIZONS.forEach(function(k){ add('horizon', k); });
+    Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k]; }).forEach(function(k){ add('horizon', k); });
+  }
+  popularHorizons().forEach(function(k){ add('horizon', k); });
+  feedEvents().filter(upcoming).sort(function(a,b){ return attendeeCount(b.id) - attendeeCount(a.id); }).forEach(function(e){ add('event', e.id); });
+  return out;
+}
+/* the shelves, in order. Each one also backs a "Show all" list. */
+function shelfItems(id){
+  var ev = function(list){ return list.map(function(e){ return { type:'event', id:e.id }; }); };
+  if (id === 'soon'){
+    var up = feedEvents().filter(upcoming);
+    var week = up.filter(function(e){ return dayDiff(e.date) <= 7; });
+    return ev(week.length >= 4 ? week : up.slice(0, 12));
+  }
+  if (id === 'announced') return ev(Object.keys(NEXTED).map(function(k){ return EVENTS[NEXTED[k]]; }).sort(byDate));
+  if (id === 'horizons') return popularHorizons().filter(function(k){ return !(S.loggedIn && (HZFOLLOW[k] || MYHORIZONS.indexOf(k) >= 0)); }).map(function(k){ return { type:'horizon', id:k }; });
+  if (id === 'yourhz') return !S.loggedIn ? [] : MYHORIZONS.concat(Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k]; })).filter(function(k){ return HORIZONS[k]; }).map(function(k){ return { type:'horizon', id:k }; });
+  if (id === 'callouts'){
+    var mine = S.loggedIn ? CALLOUTS.filter(function(c){ return c.hostId && PFOLLOW[c.hostId]; }) : [];
+    return (mine.length ? mine.concat(CALLOUTS.filter(function(c){ return mine.indexOf(c) < 0; })) : CALLOUTS).map(function(c){ return { type:'callout', id:c.id }; });
+  }
+  if (id === 'people'){
+    if (!S.loggedIn) return [];
+    return ev(feedEvents().filter(upcoming).filter(function(e){ var hp = hostPersonOf(e); return hp && hp.id !== 'self' && PFOLLOW[hp.id]; }));
+  }
+  return [];
+}
+function shelfTitle(id){
+  if (id === 'soon'){ var up = feedEvents().filter(upcoming).filter(function(e){ return dayDiff(e.date) <= 7; }); return up.length >= 4 ? 'Happening this week' : 'Coming up'; }
+  return { announced:'Announced burns', horizons:'Horizons worth following', yourhz:'Your horizons',
+           callouts: S.loggedIn && CALLOUTS.some(function(c){ return c.hostId && PFOLLOW[c.hostId]; }) ? 'Call outs from your crews' : 'Call outs',
+           people:'From people you follow' }[id] || '';
+}
+var SHELVES = { all:['soon','announced','horizons','callouts','people'], events:['soon','announced','people'],
+                horizons:['yourhz','horizons'], callouts:['callouts'] };
+function greeting(){
+  var hr = new Date().getHours();
+  var g = hr < 5 ? 'Good night' : hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening';
+  return S.loggedIn ? g + ', ' + PEOPLE['self'].displayName.split(' ')[0] : g;
+}
+function shelvesHTML(){
+  var f = S.shelfFilter || 'all', h = '<div class="shelves">';
+  h += '<div class="greet"><h2>'+esc(greeting())+'</h2>' + (S.loggedIn ? '' : '<p>Burns, builds and the people who make them.</p>') + '</div>';
+  h += '<div class="fchips" role="tablist">' + [['all','All'],['events','Events'],['horizons','Horizons'],['callouts','Call outs']].map(function(c){
+    return '<button role="tab" class="fchip'+(f===c[0]?' on':'')+'" aria-selected="'+(f===c[0])+'" data-act="shelffilter" data-id="'+c[0]+'">'+c[1]+'</button>'; }).join('') + '</div>';
+  if (f !== 'callouts'){
+    var q = quickItems().filter(function(it){ return f === 'all' || (f === 'events' ? it.type === 'event' : it.type === 'horizon'); }).slice(0, 6);
+    if (q.length) h += '<div class="qgrid">' + q.map(tileHTML).join('') + '</div>';
+  }
+  SHELVES[f].forEach(function(id){
+    var items = shelfItems(id);
+    if (!items.length) return;
+    h += '<section class="shelf"><div class="shh"><h3>'+esc(shelfTitle(id))+'</h3>' +
+         (items.length > 2 ? '<button class="showall" data-act="shelfall" data-id="'+id+'">Show all</button>' : '') + '</div>' +
+         '<div class="srow" data-shelf="'+id+'">' + items.slice(0, 10).map(cardHTML).join('') + '</div></section>';
+  });
+  return h + '</div>';
+}
+function renderShelves(){
+  var lb = $('listbody'), top = lb.scrollTop, left = {};
+  lb.querySelectorAll('.srow').forEach(function(r){ left[r.getAttribute('data-shelf')] = r.scrollLeft; });
+  lb.innerHTML = shelvesHTML();
+  lb.querySelectorAll('.srow').forEach(function(r){ var v = left[r.getAttribute('data-shelf')]; if (v) r.scrollLeft = v; });
+  lb.scrollTop = top;
+  S.rows = [];
+}
+function isShelfFeed(){ return L.phone && S.folder.kind === 'home' && viewOf() === 'feed'; }
+
 /* =========================================================================
    8. CALENDAR — a view of the destination you are in
    ========================================================================= */
@@ -1902,6 +2125,7 @@ function navRow(f, icon, label, opts){
   var cnt = opts.count != null ? opts.count : '';
   return '<div class="nrow'+(sel?' sel':'')+(opts.unread?' unread':'')+(opts.cls?' '+opts.cls:'')+'" role="button" ' +
     (opts.person ? 'data-act="open-reset" data-type="person" data-id="'+opts.person+'"'
+     : opts.hz ? 'data-act="open-reset" data-type="horizon" data-id="'+f.id+'"'
                  : 'data-act="folder" data-kind="'+f.kind+'" data-id="'+(f.id||'')+'"') + (opts.drop ? ' data-drop="'+f.id+'"' : '') + '>' +
     icon + '<span class="nlab">'+esc(label)+(opts.sub ? ' <span class="nsub">'+esc(opts.sub)+'</span>' : '')+'</span>' +
     (cnt !== '' ? '<span class="ncnt">'+cnt+'</span>' : '') + '</div>';
@@ -1935,11 +2159,11 @@ function renderNav(){
   h += navRow({kind:'interested'}, ic('heart'), 'Interested', { count: rsvpList('interested').length || '' });
   h += navRow({kind:'hosting'}, ic('star'), 'Hosting', { count: MYEVENTS.length || '' });
   h += '<div class="navh">Your horizons</div>';
-  MYHORIZONS.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { count: HORIZONS[k].eventIds.length || '', drop:true }); });
+  MYHORIZONS.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { count: HORIZONS[k].eventIds.length || '', drop:true, hz: L.phone }); });
   var followed = Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k] && HORIZONS[k]; });
   if (followed.length){
     h += '<div class="navh">Following</div>';
-    followed.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { sub: HORIZONS[k].ownerName !== HORIZONS[k].name ? HORIZONS[k].ownerName : '' }); });
+    followed.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { sub: HORIZONS[k].ownerName !== HORIZONS[k].name ? HORIZONS[k].ownerName : '', hz: L.phone }); });
   }
   var ppl = CREW.filter(function(p){ return PFOLLOW[p]; });
   if (ppl.length){
@@ -1981,7 +2205,7 @@ function renderCHead(){
 /* ---- the phone shell: an app bar on top, five tabs at the bottom ---- */
 function phoneCanBack(){
   if (S.tab === 'chats') return !!S.chatOpen;
-  return S.stack.length > 0 || S.folder.kind === 'search' || S.phoneSearch || (S.tab === 'you' && S.folder.kind !== 'you');
+  return S.stack.length > 0 || S.folder.kind === 'search' || S.folder.kind === 'shelf' || S.phoneSearch || (S.tab === 'you' && S.folder.kind !== 'you');
 }
 function renderAppbar(){
   var h = '', back = phoneCanBack();
@@ -2465,6 +2689,7 @@ function phoneBack(){
   if (S.stack.length){ S.stack.pop(); render(); return; }
   if (S.phoneSearch && S.folder.kind !== 'search'){ S.phoneSearch = false; SEARCHRET = null; render(); return; }
   if (S.folder.kind === 'search'){ leaveSearch(); S.phoneSearch = false; render(); return; }
+  if (S.folder.kind === 'shelf'){ goFolder({ kind:'home' }); render(); return; }
   if (S.tab === 'you' && S.folder.kind !== 'you'){ goFolder({ kind:'you' }); render(); return; }
 }
 function setTab(t){
@@ -2631,6 +2856,8 @@ document.addEventListener('click', function(ev){
     case 'newsheet': newSheet(); break;
     case 'runcmd':   runCmd(id); break;
     case 'folder':   goFolder({ kind:n.getAttribute('data-kind'), id:id || null }); render(); $('listbody').scrollTop = 0; break;
+    case 'shelffilter': S.shelfFilter = id; render(); $('listbody').scrollTop = 0; break;
+    case 'shelfall':    goFolder({ kind:'shelf', id:id }); render(); $('listbody').scrollTop = 0; break;
     case 'setview':  S.view[destKey()] = id; S.stack = []; render(); break;
     case 'row':      openItem(n.getAttribute('data-type'), id); break;
     case 'open':     openItem(n.getAttribute('data-type'), id, 'push'); break;

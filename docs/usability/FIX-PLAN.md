@@ -25,6 +25,13 @@ history to an explicit "Try the demo account" entry on the sign-up screen. The a
 sign-up completes afterwards and is confirmed (fixes the Going-toggles-off bug too). Label entry points
 "Join / Log in", not just "Log in".
 Sources: FIRSTTIMER-1, -2, -6, -12, ORGANISER-13, -16, CREW-10, -11, PHONEBROWSER-11.
+*Status: done.* Two local accounts: `me` (the one you join with, starts empty) and `demo` (Michal, fully seeded),
+each keeping its own relations and chats; "Try the demo account" is the first row of Join and of Log in. The fixture
+events once marked "You" are now hosted by Michal, a member like any other. Join starts blank with focus in Name,
+checks the handle live (`@sasha is taken`) and stays disabled until valid. A gated verb is made so after joining,
+never toggled off, and the toast says "Welcome, Mia · Interested · Portable shade build". Entry points read
+"Join / Log in" until an account exists; the duplicate sidebar button is gone on desktop (the phone You tab keeps
+its card), and phone Home/Horizons get the entry in the app bar. The old single-account store migrates into `me`.
 
 **A3. Create forms use placeholders, not sample values; nothing is lost.** Event, horizon, call out, group
 chat: empty fields with placeholder text. Closing a half-filled form asks to discard or keeps a draft;

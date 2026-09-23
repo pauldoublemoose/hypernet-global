@@ -117,7 +117,8 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .nrow .nx:hover{ background:#444; }
 .nrow.drop{ outline:2px dashed #000; outline-offset:-2px; background:#f4f2ec; }
 .nrow .sq, .nrow .av{ width:20px; height:20px; flex-basis:20px; font-size:11px; }
-.logincard{ margin:14px 12px; padding:16px; background:var(--face-lt); box-shadow:var(--thin); }
+/* the toolbar already carries Join on a desktop; the card is the phone's You tab entry */
+.logincard{ display:none; margin:14px 12px; padding:16px; background:var(--face-lt); box-shadow:var(--thin); }
 .logincard b{ display:block; font-size:var(--fs-m); margin-bottom:12px; }
 .acctcard{ display:none; }
 
@@ -541,6 +542,11 @@ body.is-phone :is(.row[data-type], .card2[data-type], .qtile[data-type], .calev,
 .field{ display:flex; flex-direction:column; gap:6px; margin-bottom:16px; }
 .field > label, .flabel{ font-size:var(--fs-s); font-weight:bold; }
 .fhelp{ font-size:var(--fs-s); color:var(--dim); }
+.ferr{ font-size:var(--fs-s); font-weight:bold; color:var(--ink); }
+.ferr::before{ content:"\26A0\FE0E  "; }
+input[aria-invalid="true"]{ outline:1px solid #000; outline-offset:-4px; }
+.demorow{ margin:0 0 20px; }
+.demorow .linkrow .ic{ color:var(--dim); }
 .pick{ display:flex; align-items:center; gap:12px; min-height:52px; padding:6px 10px; border-bottom:1px solid var(--line); cursor:pointer; }
 .pick:hover{ background:var(--hover); }
 .pick .pm{ flex:1; min-width:0; }
@@ -724,7 +730,7 @@ body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 1
 #app.phone .acctcard .tags{ margin:0; }
 #app.phone .acctcard .an{ flex:1; min-width:0; font-size:17px; font-weight:bold; }
 #app.phone .acctcard .an small{ display:block; font-size:13px; font-weight:normal; color:var(--dim); }
-#app.phone .logincard{ margin:16px; }
+#app.phone .logincard{ display:block; margin:16px; }
 #app.phone #tabbar{ display:flex; flex:0 0 auto; gap:4px; padding:5px 5px calc(5px + env(safe-area-inset-bottom)); background:var(--face); box-shadow:inset 0 1px 0 var(--white), 0 -1px 0 var(--shadow); }
 #app.phone.conv-open #tabbar{ display:none; }
 .tab{ position:relative; flex:1 1 0; min-width:0; min-height:54px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
@@ -799,15 +805,18 @@ var TODAY_ISO = H.meta.today;               /* 2026-09-20 */
 
 var PEOPLE = {};
 H.people.forEach(function(p){ PEOPLE[p.id] = p; });
-/* the demo account. Logged out it is just another member called Michal; logged in, it is you */
-PEOPLE['self'] = { id:'self', displayName:'Michal', handle:'mike', bio:H.self.bio,
-                   skills:['EVENT PRODUCTION/PRODUCING'], city:'SWEDEN|STOCKHOLM', cities:['Stockholm'] };
+/* Michal is the demo account: to everyone else he is just another member, and the
+   fixture events marked "You" are his. 'self' is whoever is logged in: nobody until you join. */
+PEOPLE['p-michal'] = { id:'p-michal', displayName:'Michal', handle:'mike', bio:H.self.bio,
+                       skills:['EVENT PRODUCTION/PRODUCING'], city:'SWEDEN|STOCKHOLM', cities:['Stockholm'] };
+PEOPLE['self'] = { id:'self', displayName:'', handle:'', bio:'', skills:[], city:'', cities:[] };
 
 var EVENTS = {};
 H.events.forEach(function(e){ EVENTS[e.id] = e; });
 
 var HORIZONS = {};
 H.horizons.forEach(function(h){ HORIZONS[h.id] = h; });
+HORIZONS['horizon-default'].ownerId = 'p-michal'; HORIZONS['horizon-default'].ownerName = 'Michal';
 HORIZONS['horizon-feed'] = { id:'horizon-feed', name:'Feeding the Ridge',
   description:'Kitchen shifts, tea, and everything that ends in washing up.',
   isPersonalDefault:false, isPublished:true, ownerName:'Kai Okonkwo', ownerId:'p-kai',
@@ -826,7 +835,7 @@ var CALLOUTS = H.callouts.map(function(c){
 var CREW = ['p-anna','p-rio','p-kai','p-mira','p-jon','p-sasha'];
 var PRESENCE = { 'p-anna':'online','p-rio':'online','p-kai':'idle','p-mira':'offline','p-jon':'offline','p-sasha':'offline' };
 /* people are chrome, so their avatars stay in the greys */
-var AVCOLOR  = { 'self':'#1c1c1c','p-anna':'#4b4b4b','p-rio':'#6b6b6b','p-kai':'#363636',
+var AVCOLOR  = { 'self':'#1c1c1c','p-michal':'#1c1c1c','p-anna':'#4b4b4b','p-rio':'#6b6b6b','p-kai':'#363636',
                  'p-mira':'#7c7c7c','p-jon':'#565656','p-sasha':'#2b2b2b' };
 
 function hashId(str){ var n=0; for (var i=0;i<String(str).length;i++) n=(n*31+String(str).charCodeAt(i))>>>0; return n; }
@@ -1013,20 +1022,26 @@ var PROMOTED = {};
 var PROMOCOUNT = {}; Object.keys(EVENTS).forEach(function(id){ PROMOCOUNT[id] = hashId(id) % 17; });
 var READ = {};
 ['evt-world-borderland-2026','evt-world-hyperstition-2026','evt-fill-0','evt-fill-2'].forEach(function(id){ READ[id]=true; });
-var HZFOLLOW = { 'horizon-baltic':true, 'horizon-dust':true, 'horizon-quiet':true, 'horizon-feed':false, 'horizon-surface':false };
+/* Relations belong to the account that is logged in; logged out there are none.
+   Each account's set is swapped in on log-in (see ACCOUNTS). */
+var HZFOLLOW = {};
 var HZCOUNT  = { 'horizon-baltic':41, 'horizon-dust':128, 'horizon-quiet':86, 'horizon-feed':52, 'horizon-surface':37, 'horizon-default':0 };
-var PFOLLOW  = { 'p-anna':true, 'p-rio':true, 'p-kai':true, 'p-mira':false, 'p-jon':false, 'p-sasha':true };
-var MYEVENTS = Object.keys(EVENTS).filter(function(id){ return EVENTS[id].hostName === 'You'; });   /* what the demo account hosts */
-var MYHORIZONS = ['horizon-default'];
-var CREATEDHZ = [];            /* horizons made in this browser */
+var PFOLLOW  = {};
+var DEMOHOST = Object.keys(EVENTS).filter(function(id){ return EVENTS[id].hostName === 'You'; });   /* what the demo account hosts */
+DEMOHOST.forEach(function(id){ EVENTS[id].hostName = 'Michal'; });
+var MYEVENTS = [];
+var MYHORIZONS = [];
 
-var CHATS = {}, CHATORDER = [];
-H.chats.forEach(function(c){
-  CHATS[c.id] = { id:c.id, name:c.name, kind:c.kind, memberIds:c.memberIds.slice(),
-    messages: c.messages.map(function(m){ return { from:m.from, t:m.t, text:m.text }; }) };
-  CHATORDER.push(c.id);
-});
-var UNREADCHAT = { 'c-baltic':true };
+var CHATS = {}, CHATORDER = [], UNREADCHAT = {};
+function fixtureChats(){
+  var byId = {}, order = [];
+  H.chats.forEach(function(c){
+    byId[c.id] = { id:c.id, name:c.name, kind:c.kind, memberIds:c.memberIds.slice(),
+      messages: c.messages.map(function(m){ return { from:m.from, t:m.t, text:m.text }; }) };
+    order.push(c.id);
+  });
+  return { byId:byId, order:order };
+}
 
 /* network news — part of what the Home feed mixes in; each links to its subject when it has one */
 var NEWS = H.feedNews.map(function(n, i){
@@ -1054,7 +1069,7 @@ var S = {
   rows:[],
   pending:null,
   autoSel:false,
-  hasAccount:false,
+  acct:null,                   /* which account is logged in: 'me' or 'demo' */
   shelfFilter:'all'             /* first log-in is a sign-up */                /* true while the reading pane shows something the app picked, not you */
 };
 var L = {};                    /* the layout of the current render */
@@ -1090,10 +1105,15 @@ function avHTML(id, cls){
   return '<span class="av '+(cls||'')+'" style="background:'+(AVCOLOR[id]||'#5a5a5a')+'" aria-hidden="true">'+esc(initials(p.displayName))+'</span>';
 }
 function allEvents(){ return Object.keys(EVENTS).map(function(k){ return EVENTS[k]; }); }
-function ownEvent(e){ return !!e && (MYEVENTS.indexOf(e.id) >= 0 || e.hostName === 'You'); }
+function ownEvent(e){ return !!e && S.loggedIn && MYEVENTS.indexOf(e.id) >= 0; }
 /* nothing reads "You" until you are logged in: before that, your events carry your name like anyone else's */
-function hostLabel(e){ return ownEvent(e) ? (S.loggedIn ? 'You' : PEOPLE['self'].displayName) : e.hostName; }
-function hostPersonOf(e){ return ownEvent(e) ? PEOPLE['self'] : H.people.filter(function(p){ return p.displayName === e.hostName; })[0] || null; }
+function hostLabel(e){ return ownEvent(e) ? 'You' : e.hostName; }
+function hostPersonOf(e){
+  if (ownEvent(e)) return PEOPLE['self'];
+  if (e.hostAcct && PEOPLE[acctPid(e.hostAcct)]) return PEOPLE[acctPid(e.hostAcct)];
+  var k = Object.keys(PEOPLE).filter(function(k){ return k !== 'self' && !/^u-/.test(k) && PEOPLE[k].displayName === e.hostName; })[0];
+  return k ? PEOPLE[k] : null;
+}
 function byDate(a,b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }
 function rsvpList(mode){ if (!S.loggedIn) return []; return allEvents().filter(function(e){ return RSVP[e.id] === mode; }).sort(byDate); }
 function horizonsOf(evId){ return Object.keys(HORIZONS).filter(function(k){ return HORIZONS[k].eventIds.indexOf(evId) >= 0 && (HORIZONS[k].isPublished || hzOwnedByMe(k)); }); }
@@ -1148,21 +1168,30 @@ function whereOf(e){
   return r.city || r.region || COUNTRY[r.country] || r.country || cityShort(e.city);
 }
 function isMine(evId){ return S.loggedIn && ownEvent(EVENTS[evId]); }
+/* the entry point for someone without an account says so */
+function joinLabel(){ return ACCTS.me ? 'Log in' : 'Join / Log in'; }
 function unreadCount(items){ return items.filter(function(it){ return it.type==='event' && !READ[it.id]; }).length; }
 function calloutOf(id){ return CALLOUTS.filter(function(x){ return x.id === id; })[0]; }
 function newsOf(id){ return NEWS.filter(function(n){ return n.id === id; })[0] || { text:'', when:'' }; }
 var TOASTT = null;
+var WELCOME = null;             /* the first confirmation after joining also says hello */
 function toast(title, body){
+  if (WELCOME){ body = title + (body ? ' · ' + body : ''); title = WELCOME; WELCOME = null; }
   var box = $('toasts');
   box.innerHTML = '<div class="toast"><b>'+esc(title)+'</b>'+(body?esc(body):'')+'</div>';
   clearTimeout(TOASTT);
   TOASTT = setTimeout(function(){ box.innerHTML = ''; }, 2400);
 }
-/* logged-out actions ask for a login, then carry on with what you asked for */
+/* logged-out actions ask for a login, then carry on with what you asked for.
+   Carried on means made so: a verb you asked for is switched on, never toggled back off. */
+var RESUMING = false;
 function gated(fn){
   return function(){
     var args = arguments;
-    if (!S.loggedIn){ S.pending = function(){ fn.apply(null, args); }; loginDialog(); return; }
+    if (!S.loggedIn){
+      S.pending = function(){ RESUMING = true; try { fn.apply(null, args); } finally { RESUMING = false; } };
+      loginDialog(); return;
+    }
     fn.apply(null, args);
   };
 }
@@ -1278,7 +1307,7 @@ function searchItems(q){
   CALLOUTS.forEach(function(c){ if (matches(c.title,q) || matches(c.body,q) || matches(c.hostName,q)) out.push({ type:'callout', id:c.id }); });
   Object.keys(PEOPLE).forEach(function(k){
     var p = PEOPLE[k];
-    if (k === 'self' && !S.loggedIn) return;
+    if ((k === 'self' && !S.loggedIn) || k === 'p-michal' || /^u-/.test(k)) return;
     if (matches(p.displayName,q) || matches(p.handle,q) || matches(p.bio,q) || matches((p.skills||[]).join(' '),q) || matches(citiesOf(p).join(' '),q)) out.push({ type:'person', id:k });
   });
   Object.keys(GROUPS).forEach(function(k){ if (matches(GROUPS[k].name,q) || matches(GROUPS[k].description,q)) out.push({ type:'group', id:k }); });
@@ -1763,7 +1792,7 @@ function eventCRow(e, withVerbs){
 function playlistHTML(hzId, withTracks){
   var hz = HORIZONS[hzId], mine = hzOwnedByMe(hzId), fol = S.loggedIn && HZFOLLOW[hzId];
   var evs = hz.eventIds.map(function(id){ return EVENTS[id]; }).filter(Boolean).sort(byDate);
-  var owner = hz.isPersonalDefault ? 'You' : hz.ownerName;
+  var owner = mine ? 'You' : hz.ownerName;
   var t = HZTHEME[hzId];
   var h = t ? '<div class="plist themed canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+themeVars(t)+'"><div class="surf u-'+t.surface+'"></div>'
             : '<div class="plist">';
@@ -1772,7 +1801,7 @@ function playlistHTML(hzId, withTracks){
        (t ? '<h1 class="pln hl h-'+t.headline+'">'+headlineHTML(t, hz.name)+'</h1>' + (t.mood ? '<p class="mood">'+esc(t.mood)+'</p>' : '')
           : '<h1 class="pln">'+esc(hz.name)+'</h1>');
   if (hz.description) h += '<p class="pld">'+esc(hz.description)+'</p>';
-  h += '<div class="plo">' + (hz.ownerId && PEOPLE[hz.ownerId] && hz.ownerId !== 'self'
+  h += '<div class="plo">' + (!mine && hz.ownerId && PEOPLE[hz.ownerId] && hz.ownerId !== 'self'
         ? '<button class="plown" data-act="open" data-type="person" data-id="'+hz.ownerId+'">'+avHTML(hz.ownerId)+esc(owner)+'</button>'
         : '<span class="plown">'+ic('horizon',16)+esc(owner)+'</span>') + '</div>';
   h += '<div class="plm">'+evs.length+' event'+(evs.length===1?'':'s')+' · '+(HZCOUNT[hzId]||0)+' followers · '+esc(hzRange(hzId))+'</div></div></div>';
@@ -1811,7 +1840,7 @@ function publishedHorizonsOf(pid){
 }
 function personHTML(pid){
   var p = person(pid), hz = publishedHorizonsOf(pid), st = PRESENCE[pid] || 'offline', fol = S.loggedIn && PFOLLOW[pid];
-  var hosts = allEvents().filter(function(e){ return pid === 'self' ? ownEvent(e) : e.hostName === p.displayName; }).sort(byDate);
+  var hosts = allEvents().filter(function(e){ return hostPersonOf(e) === PEOPLE[pid]; }).sort(byDate);
   var clusters = Object.keys(GROUPS).filter(function(g){ return GROUPS[g].memberIds.indexOf(pid) >= 0; });
   var h = '<div class="page">';
   h += '<div class="phead2">' + avHTML(pid, 'a64') + '<div style="flex:1;min-width:0"><div class="pname">'+esc(p.displayName)+'</div>' +
@@ -2173,7 +2202,7 @@ function renderChats(){
   var draft = $('chatbox') ? $('chatbox').value : '', focused = document.activeElement && document.activeElement.id === 'chatbox';
   if (!S.loggedIn){
     el.innerHTML = '<div class="phead"><div class="ptitle">Chats</div></div><div class="panel"><div class="empty">'+ic('chat',36).replace('class="ic"','class="ic" style="margin:0 auto 12px"')+
-      'Log in to chat with your crews.<br><button class="btn primary" data-act="login">Log in</button></div></div>';
+      'Chat with your crews.<br><button class="btn primary" data-act="login">'+joinLabel()+'</button></div></div>';
     return;
   }
   var cid = activeChat();
@@ -2219,7 +2248,7 @@ function renderNav(){
   h += navRow({kind:'people'}, ic('people'), 'People');
   if (!S.loggedIn){
     h += '<div class="logincard"><b>Keep events, follow horizons, chat with your crews.</b>' +
-         '<button class="btn primary" data-act="login">Log in</button></div>';
+         '<button class="btn primary" data-act="login">'+joinLabel()+'</button></div>';
     $('navbody').innerHTML = h;
     return;
   }
@@ -2227,7 +2256,7 @@ function renderNav(){
   h += navRow({kind:'going'}, ic('check'), 'Going', { count: rsvpList('going').length || '' });
   h += navRow({kind:'interested'}, ic('heart'), 'Interested', { count: rsvpList('interested').length || '' });
   h += navRow({kind:'hosting'}, ic('star'), 'Hosting', { count: MYEVENTS.length || '' });
-  h += '<div class="navh">Your horizons</div>';
+  if (MYHORIZONS.length) h += '<div class="navh">Your horizons</div>';
   MYHORIZONS.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { count: HORIZONS[k].eventIds.length || '', drop:true, hz: L.phone }); });
   var followed = Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k] && HORIZONS[k]; });
   if (followed.length){
@@ -2252,7 +2281,7 @@ function renderToolbar(){
   $('tg-right').classList.toggle('on', !!L.right); $('tg-right').setAttribute('aria-pressed', !!L.right);
   $('acct').innerHTML = S.loggedIn
     ? '<button class="btn acct" data-act="acctmenu" aria-haspopup="menu">'+avHTML('self')+esc(S.me.name)+ic('down',14)+'</button>'
-    : '<button class="btn" data-act="login">'+ic('user')+'Log in</button>';
+    : '<button class="btn" data-act="login">'+ic('user')+joinLabel()+'</button>';
   var q = $('q');
   if (document.activeElement !== q) q.value = S.folder.kind === 'search' ? S.query : '';
   $('wintitle').textContent = '— ' + folderName() + (isCal() ? ' · Calendar' : '');
@@ -2289,6 +2318,7 @@ function renderAppbar(){
   } else {
     h += '<div class="ab-title">'+esc(folderName())+'</div>';
     if (S.tab === 'home' || S.tab === 'horizons') h += '<button class="ab-btn" data-act="psearch" aria-label="Search">'+ic('search',22)+'</button>';
+    if (!S.loggedIn && (S.tab === 'home' || S.tab === 'horizons')) h += '<button class="ab-btn boxed" data-act="login">'+esc(joinLabel())+'</button>';
     if (S.tab === 'you' && S.folder.kind === 'you' && !S.loggedIn) h += '';
   }
   var ab = $('appbar'), hadFocus = document.activeElement && document.activeElement.id === 'pq';
@@ -2402,8 +2432,10 @@ function citiesOf(p){ return p.cities && p.cities.length ? p.cities : (p.city ? 
 var PF = null;
 function profileForm(){
   var cities = CITYCHOICES.concat(PF.cities.filter(function(c){ return CITYCHOICES.indexOf(c) < 0; }));
-  return '<div class="field"><label for="pf-name">Name</label><input type="text" id="pf-name" value="'+esc(PF.name)+'" autocomplete="name"></div>' +
-    '<div class="field"><label for="pf-handle">Handle</label><span class="handlein"><span>@</span><input type="text" id="pf-handle" value="'+esc(PF.handle)+'" autocomplete="username" autocapitalize="off"></span></div>' +
+  var taken = handleTaken(PF.handle);
+  return '<div class="field"><label for="pf-name">Name</label><input type="text" id="pf-name" value="'+esc(PF.name)+'" placeholder="Your name" autocomplete="name"></div>' +
+    '<div class="field"><label for="pf-handle">Handle</label><span class="handlein"><span>@</span><input type="text" id="pf-handle" value="'+esc(PF.handle)+'" placeholder="yourname" autocomplete="username" autocapitalize="off" spellcheck="false" aria-describedby="pf-herr"'+(taken?' aria-invalid="true"':'')+'></span>' +
+      '<span class="ferr" id="pf-herr"'+(taken?'':' hidden')+'>'+(taken ? '@'+esc(PF.handle)+' is taken' : '')+'</span></div>' +
     '<div class="field"><label for="pf-about">About you</label><input type="text" id="pf-about" maxlength="120" value="'+esc(PF.about)+'" placeholder="Builds shade, cooks for eighty, always on strike crew"></div>' +
     '<div class="field"><span class="flabel" id="pf-sk-l">What you can do</span><div class="pchips" role="group" aria-labelledby="pf-sk-l">' +
       SKILLCHOICES.map(function(c){ var on = PF.skills.indexOf(c[0]) >= 0;
@@ -2413,20 +2445,40 @@ function profileForm(){
         return '<button type="button" class="pchip'+(on?' on':'')+'" data-act="pfcity" data-id="'+esc(c)+'" aria-pressed="'+on+'">'+esc(c)+'</button>'; }).join('') +
       '<span class="addcity"><input type="text" id="pf-city" placeholder="Another city" aria-label="Another city"><button type="button" class="btn" data-act="pfaddcity">Add</button></span></div></div>';
 }
-function profileDialog(mode){
-  var p = PEOPLE['self'];
-  PF = { mode:mode, name:p.displayName, handle:p.handle,
-         about: mode === 'signup' ? '' : (p.bio || ''), skills: mode === 'signup' ? [] : (p.skills || []).slice(),
-         cities: mode === 'signup' ? [] : citiesOf(p).slice() };
-  dialog(mode === 'signup' ? 'Join Hypernet' : 'Edit profile', '<div id="pfbody">' + profileForm() + '</div>',
-    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="pfsave" id="pfsave">'+(mode === 'signup' ? 'Join' : 'Save')+'</button>', 560);
-  focusIn(mode === 'signup' ? 'pf-about' : 'pf-name');
+/* the demo account, one tap from every Join and Log in */
+function demoRowHTML(){
+  var m = PEOPLE['p-michal'];
+  return '<div class="picklist demorow"><div class="linkrow" data-act="useacct" data-id="demo" role="button">'+avHTML('p-michal','a40') +
+    '<div class="lr"><b>Try the demo account</b><div class="fhelp">'+esc(m.displayName)+' · @'+esc(m.handle)+'</div></div>' +
+    ic('back',18).replace('class="ic"','class="ic" style="transform:scaleX(-1)"')+'</div></div>';
 }
-function pfValid(){ return !!(($('pf-name')||{}).value || '').trim() && !!(($('pf-handle')||{}).value || '').trim(); }
+function profileDialog(mode){
+  var p = PEOPLE['self'], up = mode === 'signup';
+  PF = { mode:mode, name: up ? '' : p.displayName, handle: up ? '' : p.handle,
+         about: up ? '' : (p.bio || ''), skills: up ? [] : (p.skills || []).slice(), cities: up ? [] : citiesOf(p).slice() };
+  dialog(up ? 'Join Hypernet' : 'Edit profile', (up ? demoRowHTML() : '') + '<div id="pfbody">' + profileForm() + '</div>',
+    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="pfsave" id="pfsave"'+(up?' disabled':'')+'>'+(up ? 'Join' : 'Save')+'</button>', 560);
+  focusIn('pf-name');
+}
+function normHandle(h){ return String(h || '').trim().replace(/^@+/, '').toLowerCase(); }
+/* a handle is taken when anyone else on the network already has it */
+function handleTaken(h){
+  h = normHandle(h);
+  var mine = S.loggedIn && S.acct ? acctPid(S.acct) : null;
+  return !!h && Object.keys(PEOPLE).some(function(k){ return k !== 'self' && k !== mine && normHandle(PEOPLE[k].handle) === h; });
+}
+function pfValid(){
+  var n = (($('pf-name')||{}).value || '').trim(), hd = normHandle(($('pf-handle')||{}).value);
+  return !!n && !!hd && /^[a-z0-9._-]+$/.test(hd) && !handleTaken(hd);
+}
 function pfSync(){
   PF.name = ($('pf-name')||{}).value || ''; PF.handle = (($('pf-handle')||{}).value || '').replace(/^@/, '');
   PF.about = ($('pf-about')||{}).value || '';
   var b = $('pfsave'); if (b) b.disabled = !pfValid();
+  var hd = normHandle(PF.handle), err = $('pf-herr'), bad = hd && !/^[a-z0-9._-]+$/.test(hd);
+  var msg = handleTaken(hd) ? '@' + hd + ' is taken' : bad ? 'Letters, numbers, dots and dashes' : '';
+  if (err){ err.textContent = msg; err.hidden = !msg; }
+  var hi = $('pf-handle'); if (hi){ if (msg) hi.setAttribute('aria-invalid', 'true'); else hi.removeAttribute('aria-invalid'); }
 }
 function pfAddCity(){
   var inp = $('pf-city'), v = inp ? inp.value.trim() : '';
@@ -2439,33 +2491,82 @@ function pfAddCity(){
 }
 function pfSave(){
   pfSync(); if (!pfValid()) return;
-  var p = PEOPLE['self'];
-  p.displayName = PF.name.trim(); p.handle = PF.handle.trim(); p.bio = PF.about.trim();
-  p.skills = PF.skills.slice(); p.cities = PF.cities.slice();
-  p.city = p.cities.length ? p.cities[0].toUpperCase() : '';
-  if (PF.mode === 'signup'){ S.hasAccount = true; logIn(); toast('Welcome to Hypernet', ''); }
-  else { S.me = { name:p.displayName, handle:p.handle }; closeDialogs(); render(); toast('Profile saved', ''); }
+  var prof = { displayName:PF.name.trim(), handle:normHandle(PF.handle), bio:PF.about.trim(),
+               skills:PF.skills.slice(), cities:PF.cities.slice(), city: PF.cities.length ? PF.cities[0].toUpperCase() : '' };
+  if (PF.mode === 'signup'){
+    /* a new account is a new person: nothing followed, nothing kept, nothing hosted */
+    ACCTS.me = blankAcct(prof);
+    WELCOME = 'Welcome, ' + prof.displayName.split(' ')[0];
+    useAcct('me');
+    return;
+  }
+  Object.keys(prof).forEach(function(k){ PEOPLE['self'][k] = prof[k]; });
+  S.me = { name:prof.displayName, handle:prof.handle }; closeDialogs(); render(); toast('Profile saved', '');
 }
 function loginDialog(){
-  if (!S.hasAccount){ profileDialog('signup'); return; }
-  var p = PEOPLE['self'];
+  if (!ACCTS.me){ profileDialog('signup'); return; }
+  var p = ACCTS.me.profile;
   dialog('Log in to Hypernet',
-    '<div class="field"><label for="lg-name">Name</label><input type="text" id="lg-name" value="'+esc(p.displayName)+'"></div>' +
-    '<div class="field"><label for="lg-handle">Handle</label><span class="handlein"><span>@</span><input type="text" id="lg-handle" value="'+esc(p.handle)+'" autocapitalize="off"></span></div>',
-    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="dologin">Log in</button>', 420);
-  focusIn('lg-name');
+    '<div class="picklist"><div class="linkrow" data-act="useacct" data-id="me" role="button">'+avHTML(acctPid('me'),'a40') +
+      '<div class="lr"><b>'+esc(p.displayName)+'</b><div class="fhelp">@'+esc(p.handle)+'</div></div></div></div>' + demoRowHTML(),
+    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="useacct" data-id="me">Log in</button>', 420);
 }
-function doLogin(){
-  var n = (($('lg-name')||{}).value || '').trim(), hnd = (($('lg-handle')||{}).value || '').trim().replace(/^@/, '');
-  if (n) PEOPLE['self'].displayName = n;
-  if (hnd) PEOPLE['self'].handle = hnd;
+
+/* ---- ACCOUNTS: 'me' (the one you joined with) and 'demo' (Michal, seeded) ----
+   What an account keeps is swapped in when it logs in and put away when it logs out. */
+var ACCTS = {};
+function acctPid(k){ return k === 'demo' ? 'p-michal' : 'u-' + k; }
+function blankAcct(profile){ return { profile:profile, rsvp:{}, went:{}, promoted:{}, hzfollow:{}, pfollow:{}, myevents:[], myhorizons:[], chats:{ byId:{}, order:[] }, unread:{} }; }
+function demoAcct(){
+  var m = PEOPLE['p-michal'];
+  var a = blankAcct({ displayName:m.displayName, handle:m.handle, bio:m.bio, skills:m.skills.slice(), cities:m.cities.slice(), city:m.city });
+  a.rsvp = { 'evt-deep-listening':'interested', 'evt-fill-0':'going', 'evt-fill-6':'going' };
+  a.hzfollow = { 'horizon-baltic':true, 'horizon-dust':true, 'horizon-quiet':true };
+  a.pfollow = { 'p-anna':true, 'p-rio':true, 'p-kai':true, 'p-sasha':true };
+  a.myevents = DEMOHOST.slice(); a.myhorizons = ['horizon-default'];
+  a.chats = fixtureChats(); a.unread = { 'c-baltic':true };
+  return a;
+}
+function captureAcct(){
+  var p = PEOPLE['self'];
+  return { profile:{ displayName:p.displayName, handle:p.handle, bio:p.bio, skills:p.skills, cities:p.cities, city:p.city },
+           rsvp:RSVP, went:WENT, promoted:PROMOTED, hzfollow:HZFOLLOW, pfollow:PFOLLOW, myevents:MYEVENTS, myhorizons:MYHORIZONS,
+           chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT };
+}
+function loadAcct(a){
+  a = a || blankAcct({ displayName:'', handle:'', bio:'', skills:[], cities:[], city:'' });
+  var p = PEOPLE['self'], pr = a.profile || {};
+  ['displayName','handle','bio','city'].forEach(function(k){ p[k] = pr[k] || ''; });
+  p.skills = (pr.skills || []).slice(); p.cities = (pr.cities || []).slice();
+  RSVP = a.rsvp || {}; WENT = a.went || {}; PROMOTED = a.promoted || {}; HZFOLLOW = a.hzfollow || {}; PFOLLOW = a.pfollow || {};
+  MYEVENTS = (a.myevents || []).filter(function(id){ return EVENTS[id]; });
+  MYHORIZONS = (a.myhorizons || []).filter(function(k){ return HORIZONS[k]; });
+  CHATS = (a.chats && a.chats.byId) || {}; CHATORDER = ((a.chats && a.chats.order) || Object.keys(CHATS)).filter(function(k){ return CHATS[k]; });
+  UNREADCHAT = a.unread || {};
+  S.me = { name:p.displayName || 'You', handle:p.handle || 'you' };
+}
+/* an account that is not logged in is, to everyone else, just a person on the network */
+function syncAcctPeople(){
+  Object.keys(ACCTS).forEach(function(k){
+    var pid = acctPid(k);
+    if (k === 'demo') return;
+    if (S.loggedIn && S.acct === k) delete PEOPLE[pid];
+    else PEOPLE[pid] = Object.assign({ id:pid }, ACCTS[k].profile);
+  });
+}
+function useAcct(k){
+  if (S.loggedIn && S.acct){ if (S.acct === k){ closeDialogs(); return; } ACCTS[S.acct] = captureAcct(); }
+  if (!ACCTS[k]) ACCTS[k] = k === 'demo' ? demoAcct() : blankAcct({ displayName:'', handle:'' });
+  S.acct = k;
+  loadAcct(ACCTS[k]);
+  S.loggedIn = true;
+  syncAcctPeople();
+  if (!WELCOME) WELCOME = k === 'demo' ? 'Demo account' : 'Welcome back, ' + PEOPLE['self'].displayName.split(' ')[0];
   logIn();
+  if (WELCOME){ var w = WELCOME; WELCOME = null; toast(w, k === 'demo' ? PEOPLE['self'].displayName + ' · @' + PEOPLE['self'].handle : ''); }
 }
 function logIn(){
   S.loggedIn = true; S.me = { name:PEOPLE['self'].displayName, handle:PEOPLE['self'].handle };
-  if (!Object.keys(RSVP).length){
-    RSVP['evt-deep-listening'] = 'interested'; RSVP['evt-fill-0'] = 'going'; RSVP['evt-fill-6'] = 'going';
-  }
   if (window.innerWidth >= 1680){ S.rightOpen = true; }
   closeDialogs();
   var p = S.pending; S.pending = null;
@@ -2473,10 +2574,12 @@ function logIn(){
   if (p) p();
 }
 function doLogout(){
-  S.loggedIn = false; S.me = { name:'You', handle:'you' }; S.chatOpen = null; S.rightOpen = false;
+  if (S.acct) ACCTS[S.acct] = captureAcct();
+  S.loggedIn = false; S.acct = null; loadAcct(null); syncAcctPeople();
+  S.chatOpen = null; S.rightOpen = false;
   var open = { home:1, horizons:1, people:1, horizon:1, search:1, you:1 };
-  if (!open[S.folder.kind] || (S.folder.kind === 'horizon' && !HORIZONS[S.folder.id].isPublished)) goFolder({ kind:'home' });
-  S.stack = S.stack.filter(function(it){ return !(it.type === 'person' && it.id === 'self'); });
+  if (!open[S.folder.kind] || (S.folder.kind === 'horizon' && !validItem({ type:'horizon', id:S.folder.id }))) goFolder({ kind:'home' });
+  S.stack = S.stack.filter(validItem);
   closeDialogs(); closePopup(); render();
   toast('Logged out', '');
 }
@@ -2516,7 +2619,7 @@ function newChatDialog(preset){
   focusIn('nc-q');
 }
 function ncPeople(){
-  var ids = Object.keys(PEOPLE).filter(function(k){ return k !== 'self'; });
+  var ids = Object.keys(PEOPLE).filter(function(k){ return k !== 'self' && k !== 'p-michal' && !/^u-/.test(k); });
   ids.sort(function(a,b){ return (PFOLLOW[b]?1:0) - (PFOLLOW[a]?1:0) || (person(a).displayName < person(b).displayName ? -1 : 1); });
   var q = NC.q.toLowerCase().trim();
   return ids.filter(function(k){ var p = person(k); return !q || matches(p.displayName, q) || matches(p.handle, q) || matches((p.skills||[]).join(' '), q); });
@@ -2795,10 +2898,10 @@ function wizAct(which){
     toast('Look updated', EVENTS[DRAFT.editing].title);
     return;
   }
-  var id = 'evt-new-' + (MYEVENTS.filter(function(x){ return /^evt-new-/.test(x); }).length + 1);
+  var id = 'evt-new-' + Date.now().toString(36);
   var start = isoDate(DRAFT.date) || TODAY_ISO, end = isoDate(DRAFT.end);
   EVENTS[id] = { id:id, title:DRAFT.title || 'Untitled event', date:start, description:DRAFT.desc,
-                 hostName:'You', privacy:DRAFT.privacy, ownerIds:['self'], kind:'own', city:DRAFT.city };
+                 hostName:S.me.name, hostAcct:S.acct, privacy:DRAFT.privacy, ownerIds:['self'], kind:'own', city:DRAFT.city };
   REC[id] = { kind:'meetup', scale: end && end > start ? 'gathering' : 'meetup', endDate: end && end > start ? end : undefined,
               venueKind:'physical', city:DRAFT.city, venue:{ name:DRAFT.city, addressVisibility:'public' }, description:DRAFT.desc,
               access:{ model:DRAFT.entry }, whatToBring: String(DRAFT.bring||'').split('\n').map(function(s){ return s.trim(); }).filter(Boolean) };
@@ -3118,19 +3221,21 @@ function setTab(t){
   render();
 }
 var setRSVP = gated(function(evId, mode){
-  RSVP[evId] = RSVP[evId] === mode ? undefined : mode;
+  if (!(RESUMING && RSVP[evId] === mode)) RSVP[evId] = RSVP[evId] === mode ? undefined : mode;
   if (!RSVP[evId]) delete RSVP[evId];
-  if (RSVP[evId] === 'interested' && HORIZONS['horizon-default'].eventIds.indexOf(evId) < 0) HORIZONS['horizon-default'].eventIds.push(evId);
+  var dh = HORIZONS['horizon-default'];
+  if (RSVP[evId] === 'interested' && MYHORIZONS.indexOf('horizon-default') >= 0 && dh.eventIds.indexOf(evId) < 0) dh.eventIds.push(evId);
   markRead(evId);
   render();
   toast(RSVP[evId] ? (mode === 'going' ? 'Going' : 'Interested') : 'Removed', EVENTS[evId].title);
 });
 var setWent = gated(function(evId){
-  WENT[evId] = !WENT[evId];
+  if (!(RESUMING && WENT[evId])) WENT[evId] = !WENT[evId];
   markRead(evId); render();
   toast(WENT[evId] ? 'Marked as went' : 'Removed', EVENTS[evId].title);
 });
 var doPromote = gated(function(evId){
+  if (RESUMING && PROMOTED[evId]){ render(); toast('Promoted to your followers', EVENTS[evId].title); return; }
   PROMOTED[evId] = !PROMOTED[evId];
   PROMOCOUNT[evId] = Math.max(0, (PROMOCOUNT[evId]||0) + (PROMOTED[evId] ? 1 : -1));
   render();
@@ -3158,6 +3263,7 @@ var addToHorizonDrop = gated(function(evId, hzId){
   render();
 });
 var followHz = gated(function(hzId){
+  if (RESUMING && (HZFOLLOW[hzId] || hzOwnedByMe(hzId))){ render(); toast('Following', HORIZONS[hzId].name); return; }
   HZFOLLOW[hzId] = !HZFOLLOW[hzId];
   HZCOUNT[hzId] = Math.max(0, (HZCOUNT[hzId]||0) + (HZFOLLOW[hzId] ? 1 : -1));
   render();
@@ -3174,7 +3280,8 @@ var publishHz = gated(function(hzId){
   toast(HORIZONS[hzId].isPublished ? 'Published' : 'Private again', HORIZONS[hzId].name);
 });
 var followP = gated(function(pid){
-  PFOLLOW[pid] = !PFOLLOW[pid]; render();
+  if (!(RESUMING && PFOLLOW[pid])) PFOLLOW[pid] = !PFOLLOW[pid];
+  render();
   toast(PFOLLOW[pid] ? 'Following' : 'Unfollowed', person(pid).displayName);
 });
 /* chats open in the right pane on a desktop, and in the Chats tab on a phone */
@@ -3328,7 +3435,7 @@ document.addEventListener('click', function(ev){
     case 'new-event':    runCmd('new-event'); break;
     case 'new-horizon':  runCmd('new-horizon', id); break;
     case 'login':        loginDialog(); break;
-    case 'dologin':      doLogin(); break;
+    case 'useacct':      useAcct(id); break;
     case 'pfsave':       pfSave(); break;
     case 'editprofile':  gated(function(){ profileDialog('edit'); })(); break;
     case 'pfaddcity':    pfAddCity(); break;
@@ -3346,10 +3453,10 @@ document.addEventListener('click', function(ev){
       var hid = 'horizon-mine-' + Date.now().toString(36);
       var withEv = id && EVENTS[id] ? id : null;
       HORIZONS[hid] = { id:hid, name:nm, description:(($('nh-d')||{}).value||'').trim(), isPersonalDefault:false,
-                        isPublished:!!($('nh-p')||{}).checked, ownerName:S.me.name, ownerId:'self', eventIds: withEv ? [withEv] : [] };
+                        isPublished:!!($('nh-p')||{}).checked, ownerName:S.me.name, ownerId:acctPid(S.acct), ownerAcct:S.acct, eventIds: withEv ? [withEv] : [] };
       var cm = document.querySelector('input[name="nh-c"]:checked');
       if (cm && cm.value === 'plain') HZCOVER[hid] = 'plain';
-      MYHORIZONS.push(hid); HZCOUNT[hid] = 0; CREATEDHZ.push(hid);
+      MYHORIZONS.push(hid); HZCOUNT[hid] = 0;
       closeDialogs();
       var thenCz = n.getAttribute('data-then') === 'customize';
       if (withEv && !thenCz){ render(); toast('Added to ' + nm, EVENTS[withEv].title); break; }   /* from an event: stay on it */
@@ -3371,7 +3478,7 @@ document.addEventListener('click', function(ev){
     case 'donewcallout': {
       var cid3 = 'co-new-' + (CALLOUTS.length+1);
       CALLOUTS.unshift({ id:cid3, title:($('co-t')||{}).value||'Untitled', body:($('co-b')||{}).value||'',
-                         expiresAt:isoDate(($('co-x')||{}).value)||'2026-12-31', hostName:S.me.name, hostId:'self' });
+                         expiresAt:isoDate(($('co-x')||{}).value)||'2026-12-31', hostName:S.me.name, hostId:acctPid(S.acct), hostAcct:S.acct });
       closeDialogs();
       if (L.phone) S.tab = 'home';
       goFolder({ kind:'home' }); S.view['home'] = 'feed'; S.stack = [{ type:'callout', id:cid3 }]; S.autoSel = false; render();
@@ -3459,7 +3566,6 @@ document.addEventListener('keydown', function(ev){
   }
   if (ev.key === 'Enter' && ae){
     if (ae.id === 'chatbox'){ sendChat(); ev.preventDefault(); return; }
-    if (ae.id === 'lg-name' || ae.id === 'lg-handle'){ doLogin(); ev.preventDefault(); return; }
     if (ae.id === 'pf-city'){ pfAddCity(); ev.preventDefault(); return; }
     if (/^pf-(name|handle|about)$/.test(ae.id)){ pfSave(); ev.preventDefault(); return; }
     if (ae.id === 'nc-name'){ createChat(); ev.preventDefault(); return; }
@@ -3711,40 +3817,53 @@ function render(){
   syncRoute();
 }
 /* what you make and keep survives a reload: account, horizons, created events, states */
-var STORE = 'hypernet-feed:v1';
+/* what you make and keep survives a reload. The network (events, horizons and call outs people
+   made here) is shared; each account keeps its own relations and chats. */
+var STORE = 'hypernet-feed:v2', STORE1 = 'hypernet-feed:v1';
+function isCreatedHz(k){ var h = HORIZONS[k]; return !!h && (!!h.ownerAcct || k === 'horizon-default'); }
 function persist(){
   try {
-    var mine = {};
-    MYHORIZONS.forEach(function(k){ if (HORIZONS[k]) mine[k] = HORIZONS[k]; });
-    var evs = {}, recs = {}, themes = {};
-    MYEVENTS.filter(function(x){ return /^evt-new-/.test(x); }).forEach(function(k){ evs[k] = EVENTS[k]; recs[k] = REC[k]; themes[k] = window.HYPERNET_THEMES.themes[k]; });
-    var covers = {}, hzthemes = {}; MYHORIZONS.forEach(function(k){ if (HZCOVER[k]) covers[k] = HZCOVER[k]; if (HZTHEME[k]) hzthemes[k] = HZTHEME[k]; });
-    var me = PEOPLE['self'];
-    localStorage.setItem(STORE, JSON.stringify({
-      account:{ loggedIn:S.loggedIn, hasAccount:S.hasAccount, name:me.displayName, handle:me.handle, bio:me.bio, skills:me.skills, cities:me.cities, city:me.city },
-      horizons:mine, order:MYHORIZONS, created:CREATEDHZ, covers:covers, hzthemes:hzthemes, events:evs, recs:recs, themes:themes,
-      rsvp:RSVP, went:WENT, promoted:PROMOTED, hzfollow:HZFOLLOW, pfollow:PFOLLOW
+    if (S.loggedIn && S.acct) ACCTS[S.acct] = captureAcct();
+    var evs = {}, recs = {}, themes = {}, hzs = {}, covers = {}, hzthemes = {};
+    Object.keys(EVENTS).filter(function(k){ return /^evt-new-/.test(k); }).forEach(function(k){ evs[k] = EVENTS[k]; recs[k] = REC[k]; themes[k] = window.HYPERNET_THEMES.themes[k]; });
+    Object.keys(HORIZONS).filter(isCreatedHz).forEach(function(k){ hzs[k] = HORIZONS[k]; if (HZCOVER[k]) covers[k] = HZCOVER[k]; if (HZTHEME[k]) hzthemes[k] = HZTHEME[k]; });
+    localStorage.setItem(STORE, JSON.stringify({ v:2,
+      session:{ acct: S.loggedIn ? S.acct : null },
+      accounts:ACCTS,
+      network:{ events:evs, recs:recs, themes:themes, horizons:hzs, covers:covers, hzthemes:hzthemes }
     }));
   } catch(e){}
 }
+/* the single-account store of the first builds becomes the 'me' account */
+function migrateV1(d){
+  var a = d.account || {};
+  var net = { events:d.events || {}, recs:d.recs || {}, themes:d.themes || {}, horizons:d.horizons || {}, covers:d.covers || {}, hzthemes:d.hzthemes || {} };
+  Object.keys(net.events).forEach(function(k){ net.events[k].hostAcct = 'me'; if (net.events[k].hostName === 'You') net.events[k].hostName = a.name || 'You'; });
+  Object.keys(net.horizons).forEach(function(k){ if (k !== 'horizon-default'){ net.horizons[k].ownerAcct = 'me'; net.horizons[k].ownerId = 'u-me'; } });
+  var accounts = {};
+  if (a.hasAccount){
+    var me = blankAcct({ displayName:a.name || '', handle:a.handle || '', bio:a.bio || '', skills:a.skills || [], cities:a.cities || [], city:a.city || '' });
+    me.rsvp = d.rsvp || {}; me.went = d.went || {}; me.promoted = d.promoted || {}; me.hzfollow = d.hzfollow || {}; me.pfollow = d.pfollow || {};
+    me.myevents = Object.keys(net.events); me.myhorizons = (d.order || []).filter(function(k){ return k !== 'horizon-default'; });
+    accounts.me = me;
+  }
+  return { v:2, session:{ acct: a.hasAccount && a.loggedIn ? 'me' : null }, accounts:accounts, network:net };
+}
 function restore(){
-  var d; try { d = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch(e){ d = null; }
+  var d = null;
+  try { d = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch(e){}
+  if (!d){ try { var d1 = JSON.parse(localStorage.getItem(STORE1) || 'null'); if (d1) d = migrateV1(d1); } catch(e){} }
   if (!d) return;
-  var a = d.account || {}, me = PEOPLE['self'];
-  ['name','handle','bio','skills','cities','city'].forEach(function(k){ if (a[k] != null) me[k === 'name' ? 'displayName' : k] = a[k]; });
-  S.hasAccount = !!a.hasAccount;
-  Object.keys(d.events || {}).forEach(function(k){ EVENTS[k] = d.events[k]; if (d.recs && d.recs[k]) REC[k] = d.recs[k];
-    if (d.themes && d.themes[k]) window.HYPERNET_THEMES.themes[k] = d.themes[k]; if (MYEVENTS.indexOf(k) < 0) MYEVENTS.push(k); READ[k] = true; PROMOCOUNT[k] = 0; });
-  Object.keys(d.horizons || {}).forEach(function(k){ HORIZONS[k] = d.horizons[k]; if (HZCOUNT[k] == null) HZCOUNT[k] = 0; });
-  if (d.order) MYHORIZONS = d.order.filter(function(k){ return HORIZONS[k]; });
-  CREATEDHZ = d.created || [];
-  Object.keys(d.covers || {}).forEach(function(k){ HZCOVER[k] = d.covers[k]; });
-  Object.keys(d.hzthemes || {}).forEach(function(k){ HZTHEME[k] = d.hzthemes[k]; });
-  ['rsvp','went','promoted','hzfollow','pfollow'].forEach(function(k){
-    var tgt = { rsvp:RSVP, went:WENT, promoted:PROMOTED, hzfollow:HZFOLLOW, pfollow:PFOLLOW }[k];
-    Object.keys(d[k] || {}).forEach(function(x){ tgt[x] = d[k][x]; });
-  });
-  if (a.loggedIn){ S.loggedIn = true; S.me = { name:me.displayName, handle:me.handle }; }
+  var n = d.network || {};
+  Object.keys(n.events || {}).forEach(function(k){ EVENTS[k] = n.events[k]; if (n.recs && n.recs[k]) REC[k] = n.recs[k];
+    if (n.themes && n.themes[k]) window.HYPERNET_THEMES.themes[k] = n.themes[k]; READ[k] = true; PROMOCOUNT[k] = PROMOCOUNT[k] || 0; });
+  Object.keys(n.horizons || {}).forEach(function(k){ HORIZONS[k] = n.horizons[k]; if (HZCOUNT[k] == null) HZCOUNT[k] = 0; });
+  Object.keys(n.covers || {}).forEach(function(k){ HZCOVER[k] = n.covers[k]; });
+  Object.keys(n.hzthemes || {}).forEach(function(k){ HZTHEME[k] = n.hzthemes[k]; });
+  ACCTS = d.accounts || {};
+  var k = d.session && d.session.acct;
+  if (k && ACCTS[k]){ S.acct = k; S.loggedIn = true; loadAcct(ACCTS[k]); }
+  syncAcctPeople();
 }
 var RZ = null;
 window.addEventListener('resize', function(){ clearTimeout(RZ); RZ = setTimeout(render, 60); });

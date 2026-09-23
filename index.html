@@ -256,15 +256,15 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 /* the verbs — themed, never illegible, Promote set apart, one shared grid */
 .actbar{ position:sticky; top:0; z-index:6; background:var(--ebg); border-bottom:1px solid var(--eac2); padding:12px 34px; font-family:var(--sys); }
 .verbs{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
-.vpair{ display:flex; height:var(--act); border:2px solid var(--eac); }
-.vbtn{ height:100%; padding:0 18px; display:inline-flex; align-items:center; justify-content:center; gap:8px; border:0; background:transparent;
+.vpair{ display:flex; height:var(--act); }
+.vbtn{ height:var(--act); padding:0 18px; display:inline-flex; align-items:center; justify-content:center; gap:8px; border:2px solid var(--eac); background:transparent;
   color:var(--eink); font:bold 14px var(--sys); letter-spacing:.02em; }
-.vbtn + .vbtn{ border-left:2px solid var(--eac); }
+.vbtn + .vbtn{ border-left:0; }
 .vbtn:hover{ background:color-mix(in srgb, var(--eac) 20%, transparent); }
 .vbtn.on{ background:var(--eac); color:var(--eon); }
 .vbtn.on .fillable{ fill:currentColor; }
 .vpromo{ height:var(--act); padding:0 16px; display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--eink);
-  border:2px dashed var(--edim); font:bold 14px var(--sys); }
+  border:1px solid var(--edim); font:bold 14px var(--sys); }
 .vpromo:hover{ border-color:var(--eink); }
 .vpromo.on{ border-style:solid; border-color:var(--eink); background:color-mix(in srgb, var(--eink) 14%, transparent); }
 .vpromo .n{ font:12px var(--mono); opacity:.8; }
@@ -292,6 +292,26 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .vmore:hover{ border-color:var(--eink); }
 .sh-rounded .vpair, .sh-rounded .vpromo, .sh-rounded .vmore, .sh-rounded .chip, .sh-rounded .card{ border-radius:10px; }
 .sh-rounded .vpair{ overflow:hidden; }
+.sh-rounded .vpair .vbtn{ border-radius:0; }
+/* the way in: a burn's tickets or membership, summarised, one tap from the top */
+.entry{ position:relative; z-index:3; display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin:18px 34px 0; padding:14px 16px;
+  border:2px solid var(--eac); background:color-mix(in srgb, var(--eac) 10%, transparent); font-family:var(--sys); }
+.entry .ensum{ flex:1 1 240px; min-width:0; }
+.entry .enk{ font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--eac); }
+.entry .env{ margin-top:4px; font-size:16px; font-weight:bold; color:var(--eink); }
+.entry .ens{ margin-top:2px; font-size:13px; color:var(--edim); }
+.enbtn{ height:var(--act); padding:0 18px; display:inline-flex; align-items:center; gap:8px; background:var(--eac); color:var(--eon) !important;
+  border:0; font:bold 15px var(--sys); text-decoration:none; white-space:nowrap; }
+.sh-rounded .entry, .sh-rounded .enbtn{ border-radius:10px; }
+/* on a phone the event's verbs live in a bar at the bottom of the screen, always in reach */
+#evbar{ display:none; flex:0 0 auto; padding:8px 10px; background:var(--ebg); color:var(--eink); border-top:1px solid var(--eac2); font-family:var(--sys); }
+#app.phone.has-evbar #evbar{ display:block; }
+#app.phone .canvas > .actbar{ display:none; }
+#evbar .verbs{ flex-wrap:nowrap; }
+#evbar .vpair{ flex:1 1 auto; min-width:0; }
+#evbar .vbtn{ flex:1 1 0; min-width:0; padding:0 8px; }
+#evbar .vwent, #evbar .vmore:not(.vdots){ flex:1 1 auto; justify-content:center; }
+#evbar .vmore.vdots{ flex:0 0 var(--act); }
 .sh-cut .chip, .sh-cut .vmore, .sh-cut .card{ clip-path:polygon(0 0,100% 0,100% 72%,94% 100%,0 100%); }
 
 .layer{ position:relative; }
@@ -386,6 +406,7 @@ button.chip:hover{ border-color:var(--eac); }
   .lin{ padding:4px 18px 36px; }
   .edition{ padding:14px 14px 0; }
   .vwent{ flex:1 1 auto; justify-content:center; }
+  .entry{ margin:14px 14px 0; }
   .vpair{ flex:1 1 100%; }
   .vbtn{ flex:1; padding:0 10px; }
   .actbar{ position:relative; }
@@ -798,7 +819,7 @@ body.is-phone .picklist{ max-height:none; }
       <div id="cbody">
         <div id="listcol"><div class="panel" id="listbody"></div></div>
         <div id="calcol"></div>
-        <div id="detailcol"><div id="dbar"></div><div class="panel" id="dscroll"></div></div>
+        <div id="detailcol"><div id="dbar"></div><div class="panel" id="dscroll"></div><div id="evbar" role="toolbar" aria-label="Event actions"></div></div>
       </div>
     </section>
     <aside id="chats" class="pane" aria-label="Chats"></aside>
@@ -1023,6 +1044,7 @@ var IC = {
   paint:'<path d="M4 16c0-2 1-3 2.5-3s2.5 1 2.5 2.5S7.5 18 4 16zM8.5 13 16 5.5l-1.5-1.5L7 11.5"/>',
   camp:'<path d="M10 3 2.5 17h15zM10 3v14M7 17l3-5 3 5"/>',
   lock:'<path d="M5 9h10v8H5zM7 9V6.5a3 3 0 0 1 6 0V9"/>',
+  ext:'<path d="M8 4.5h7.5V12M15.5 4.5 5 15"/>',
   dots:'<path d="M4 10h.01M10 10h.01M16 10h.01" stroke-width="3"/>',
   trash:'<path d="M4 6h12M8 6V4h4v2M5.5 6l.8 11h7.4l.8-11M8.5 9v5M11.5 9v5"/>'
 };
@@ -1698,7 +1720,9 @@ function sourcesHTML(r){
   var ls = [];
   if (r.externalUrl) ls.push({ label: r.externalUrl.replace(/^https?:\/\/(www\.)?/,'').replace(/\/.*$/,''), url:r.externalUrl });
   (r.sources || []).forEach(function(s){ var u = typeof s === 'string' ? s : s.url; if (u && !ls.some(function(x){ return x.url === u; })) ls.push({ label: (s.label || u), url:u }); });
-  return ls.length ? '<div class="chips">' + ls.map(function(l){ return '<a class="chip plain" href="'+esc(l.url)+'" target="_blank" rel="noopener">'+esc(l.label)+'</a>'; }).join('') + '</div>' : '';
+  var way = entryLinkOf(r);
+  ls.sort(function(a, b){ return (b.url === way) - (a.url === way); });
+  return ls.length ? '<div class="chips">' + ls.map(function(l){ return '<a class="chip plain'+(l.url === way ? ' strong' : '')+'" href="'+esc(l.url)+'" target="_blank" rel="noopener">'+esc(l.label)+'</a>'; }).join('') + '</div>' : '';
 }
 function provenance(evId){
   var r = recOf(evId);
@@ -1722,7 +1746,10 @@ function editionsHTML(evId){
   }
   if (r._prev && EVENTS[r._prev]){
     return '<div class="edition"><div class="edprev"><button class="chip" data-act="open" data-type="event" data-id="'+r._prev+'">'+ic('back',16)+'Previous: '+esc(r._prevYear)+'</button>' +
-      '<span class="ednote">Dates announced'+(r._note ? ' · ' + esc(r._note) : '')+'. Details below are from the '+esc(r._prevYear)+' edition until the organisers update them.</span></div></div>';
+      '<span class="ednote">Dates announced'+(r._note ? ' · ' + esc(r._note) : '')+'. ' +
+        (r.access && +r.access.asOf >= +EVENTS[evId].date.slice(0,4)
+          ? 'Entry and prices are for ' + esc(EVENTS[evId].date.slice(0,4)) + '; the rest is from ' + esc(r._prevYear) + ' until the organisers update it.'
+          : 'Details below are from the ' + esc(r._prevYear) + ' edition until the organisers update them.') + '</span></div></div>';
   }
   return '';
 }
@@ -1743,7 +1770,7 @@ function verbsHTML(evId){
     h += promoBtnHTML(evId) + '<span class="vsec">';
     h += '<button class="vmore" data-act="addto" data-id="'+evId+'">'+ic('addhorizon',16)+'<span class="lg">Add to horizon</span><span class="sm">Horizon</span></button>';
     h += '<button class="vmore" data-act="share" data-id="'+evId+'">'+ic('share',16)+'Share</button>';
-    h += '<button class="vmore vdots" data-act="evmore" data-id="'+evId+'" aria-label="More" aria-haspopup="menu">'+ic('dots',16)+'</button>';
+    h += '<button class="vmore vdots" data-act="evmore" data-id="'+evId+'" data-more="delete" aria-label="More" aria-haspopup="menu">'+ic('dots',16)+'</button>';
     return h + '</span></div>';
   }
   h += '<div class="vpair" role="group" aria-label="Your state">' +
@@ -1754,6 +1781,47 @@ function verbsHTML(evId){
   h += '<button class="vmore" data-act="addto" data-id="'+evId+'">'+ic('addhorizon',16)+'<span class="lg">Add to horizon</span><span class="sm">Horizon</span></button>';
   h += '<button class="vmore" data-act="share" data-id="'+evId+'">'+ic('share',16)+'Share</button>';
   return h + '</span></div>';
+}
+/* the phone's bottom bar: the two verbs that matter here, and ⋯ for the rest (the same menu as a long-press) */
+function evbarHTML(evId){
+  var e = EVENTS[evId], past = isPast(lastDay(e)), mine = isMine(evId), st = S.loggedIn ? RSVP[evId] : '', more, h = '<div class="verbs">';
+  if (mine){
+    h += '<div class="vpair" role="group" aria-label="Your event"><button class="vbtn on" data-act="editevent" data-id="'+evId+'">'+ic('edit')+'Edit</button>' +
+         '<button class="vbtn" data-act="customize" data-id="'+evId+'">'+ic('paint')+'Customize</button></div>';
+    more = past ? 'addto,share,delete' : 'promote,addto,share,callout,delete';
+  } else if (past){
+    if (S.loggedIn) h += '<button class="vwent'+(WENT[evId]?' on':'')+'" data-act="v-went" data-id="'+evId+'" aria-pressed="'+!!WENT[evId]+'">'+ic('check')+'Went</button>';
+    else h += '<button class="vmore" data-act="share" data-id="'+evId+'">'+ic('share',16)+'Share</button>';
+    more = S.loggedIn ? 'addto,share' : 'addto';
+  } else {
+    h += '<div class="vpair" role="group" aria-label="Your state">' +
+         '<button class="vbtn'+(st==='interested'?' on':'')+'" data-act="v-interested" data-id="'+evId+'" aria-pressed="'+(st==='interested')+'">'+ic('heart')+'Interested</button>' +
+         '<button class="vbtn'+(st==='going'?' on':'')+'" data-act="v-going" data-id="'+evId+'" aria-pressed="'+(st==='going')+'">'+ic('check')+'Going</button></div>';
+    more = 'promote,addto,share';
+  }
+  return h + '<button class="vmore vdots" data-act="evmore" data-id="'+evId+'" data-more="'+more+'" aria-label="More" aria-haspopup="menu">'+ic('dots',16)+'</button></div>';
+}
+/* where the official way in lives: the organiser's ticket or membership page */
+function entryLinkOf(r){
+  var a = r.access || {};
+  if (a.url) return a.url;
+  if (/member/.test(a.model || '') && a.transferVia && /\./.test(a.transferVia)) return 'https://' + String(a.transferVia).replace(/^https?:\/\//, '');
+  var src = (r.sources || []).map(function(x){ return typeof x === 'string' ? { url:x, label:x } : x; })
+    .filter(function(x){ return x && x.url && /ticket|registration|membership|become a member|sign.?up/i.test(x.label || ''); })[0];
+  if (src) return src.url;
+  return r.externalUrl || null;
+}
+function entryHTML(evId){
+  var r = recOf(evId), a = r.access, e = EVENTS[evId];
+  if (!a || !a.model || isPast(lastDay(e)) || /^(free|donation|pay_what_you_can|invite)$/.test(a.model)) return '';
+  var url = entryLinkOf(r), m = a.model;
+  var label = /^(ticket|lottery)$/.test(m) ? 'Get tickets' : /member/.test(m) ? 'Become a member' : 'How to get in';
+  var sale = (a.sales || []).map(function(sl){ return [sl, saleState(sl)]; }).filter(function(x){ return x[1] && x[1] !== 'Closed'; })[0];
+  var sub = [priceSummary(a), sale ? sale[0].name + ': ' + sale[1].toLowerCase() : ''].filter(Boolean).join(' · ');
+  return '<div class="entry"><div class="ensum"><div class="enk">Entry</div><div class="env">'+esc(ACCESSLAB[m] || titleCase(m))+'</div>' +
+    (sub ? '<div class="ens">'+esc(sub)+'</div>' : '') + '</div>' +
+    (url ? '<a class="enbtn" href="'+esc(url)+'" target="_blank" rel="noopener">'+esc(label)+ic('ext',16)+'</a>'
+         : '<button class="enbtn" data-act="toentry">'+esc(label)+'</button>') + '</div>';
 }
 /* The event page. `scale` picks how much of it there is: a meetup is time,
    place, price, what to bring, call outs; a gathering adds its timeline,
@@ -1773,6 +1841,7 @@ function canvasHTML(evId){
   else if (S.loggedIn) h += '<div class="actbar"><div class="verbs">' +
     '<button class="vwent'+(WENT[evId]?' on':'')+'" data-act="v-went" data-id="'+evId+'" aria-pressed="'+!!WENT[evId]+'">'+ic('check')+'Went</button>' +
     '<span class="vsec"><button class="vmore" data-act="share" data-id="'+evId+'">'+ic('share',16)+'Share</button></span></div></div>';
+  h += entryHTML(evId);
   h += editionsHTML(evId);
   h += '<div class="layer"><div class="surf u-'+t.surface+'" style="opacity:.45"></div><div class="lin">';
   h += factsHTML(evId);
@@ -1782,7 +1851,7 @@ function canvasHTML(evId){
   if (b.phases && b.phases.length) h += sect('Timeline', timelineHTML(b.phases, true));
   else if (r.blocks && r.blocks.length) h += sect(r.blocks.every(function(x){ return /^shift/i.test(x.label || ''); }) ? 'Shifts' : 'Timeline', timelineHTML(r.blocks, false));
   var am = r.access && r.access.model;
-  if (!past) h += sect(/member/.test(am || '') ? 'Membership' : am === 'ticket' || am === 'lottery' ? 'Tickets' : 'Entry', accessHTML(r.access));
+  if (!past) h += sect(/member/.test(am || '') ? 'Membership' : am === 'ticket' || am === 'lottery' ? 'Tickets' : 'Entry', accessHTML(r.access)).replace('<section class="sect">', '<section class="sect" data-sect="entry">');
   h += sect('Take part', takePartHTML(r));
   h += sect('Call outs', calloutsHTML(r.calloutIds));
   if (big) h += sect('On site', providedHTML(b.provided));
@@ -1955,6 +2024,10 @@ function renderDetail(){
   sc.innerHTML = detailHTML(it);
   sc.scrollTop = keep;
   LASTDETAIL = key;
+  var bar = $('evbar'), onEv = L.phone && it && it.type === 'event' && EVENTS[it.id];
+  $('app').classList.toggle('has-evbar', !!onEv);
+  if (onEv){ var bt = TH(it.id); bar.className = 't-' + bt.type + ' sh-' + bt.shape; bar.setAttribute('style', themeVars(bt)); bar.innerHTML = evbarHTML(it.id); }
+  else bar.innerHTML = '';
   /* the back bar: only when there is somewhere to go back to */
   var show = !L.phone && ((L.split && S.stack.length > 1) || (!L.split && S.stack.length > 0));
   $('app').classList.toggle('show-dbar', show);
@@ -3762,7 +3835,8 @@ document.addEventListener('click', function(ev){
     case 'wiz':          wizAct(id); break;
     case 'editevent':    editEventDialog(id); break;
     case 'wizstep':      DRAFT.step = +id; paintWiz(); break;
-    case 'evmore':       openMoreMenu(n, 'event', id, ['delete']); break;
+    case 'evmore':       openMoreMenu(n, 'event', id, (n.getAttribute('data-more') || 'delete').split(',')); break;
+    case 'toentry':      { var es = document.querySelector('#dscroll [data-sect="entry"]'); if (es) es.scrollIntoView({ block:'start', behavior:'smooth' }); break; }
     case 'hzmore':       openMoreMenu(n, 'horizon', id, (n.getAttribute('data-more') || 'share,delete').split(',')); break;
     case 'confirmok':    { var cf = CONFIRMFN; CONFIRMFN = null; if (cf) cf(); break; }
     case 'toastundo':    { var ua = TOASTACT; TOASTACT = null; $('toasts').innerHTML = ''; if (ua) (ua.run || ua)(); break; }

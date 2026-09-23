@@ -110,6 +110,14 @@ pages. All action buttons on one grid and one height. Burn pages get a primary "
 "Become a member" / "How to get in" action near the top linking to the official source, with the
 access model summarised; the official links are not buried among identical chips.
 Sources: PHONEBROWSER-3, -18, CREW-19, CREW-21, FIRSTTIMER-5, -15.
+*Status: done.* On phone the event's verbs are a bar at the bottom of the screen, above the tab bar, in the event's
+colours: Interested · Going · ⋯ (host: Edit · Customize · ⋯; past: Went · ⋯). ⋯ opens the same sheet as a long-press,
+holding only what the bar doesn't show; the inline verb row is not drawn twice. Every verb is one height (44 desktop,
+48 phone) with its own border; Promote lost its dashed "draft" look. Events with tickets or membership get an Entry
+block right under the header — model, price range, the next open sale — with "Get tickets" / "Become a member" /
+"How to get in" to the official page (access URL, then the member platform, then the ticket/registration source,
+then the event's own site); that link also leads the Links chips. Borderland's note now says entry and prices are
+for 2027 and the rest is from 2026.
 
 **B4. One Home.** Phone and desktop Home show the same content (shelves on phone, the same sections on
 desktop): This week, Announced burns, Your horizons (incl. newly published), Horizons worth following,

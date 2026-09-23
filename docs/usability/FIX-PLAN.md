@@ -13,6 +13,11 @@ open item (event/horizon/person/call out/chat), search query and "Show all" shel
 history; `popstate` drives the existing back logic; reload restores exactly where you were; phone OS back
 never leaves the app. Each event and horizon has a stable, copyable link.
 Sources: CREW-1, CREW-16, PHONEBROWSER-1, PHONEBROWSER-2, FIRSTTIMER-3, ORGANISER-9.
+*Status: done.* Hash routes (`#/event/borderland-2027`, `#/horizon/baltic`, `#/person/mira`, `#/callout/sound`,
+`#/chats/baltic`, `#/home/announced`, `#/search?q=…`, `?view=list|calendar`, `?in=<list>` for context). The history
+entry carries the full open stack, so reload restores it; the in-app back buttons call `history.back()`. A cold deep
+link gets its tab's front page inserted underneath. Dialogs and the long-press sheet own a history entry, so the
+back gesture closes them instead of the page. On phone a conversation is a screen pushed onto the current tab.
 
 **A2. A fresh account is empty.** Join opens with blank Name/Handle (placeholders only), handle uniqueness
 checked. A new account has no Going/Interested/Hosting, no horizons, follows or chats. Move the seeded

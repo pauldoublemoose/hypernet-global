@@ -918,8 +918,8 @@ function makeNextEditions(){
   });
 }
 function loadRealEvents(){
-  if (location.protocol === 'file:' || !window.fetch) return;
-  fetch('data/real-events.json', { cache:'no-store' })
+  if (location.protocol === 'file:' || !window.fetch) return Promise.resolve();
+  return fetch('data/real-events.json', { cache:'no-store' })
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(json){
       if (!json) return;
@@ -933,7 +933,7 @@ function loadRealEvents(){
           eventIds: REALIDS.slice().sort(function(a,b){ return EVENTS[a].date < EVENTS[b].date ? -1 : 1; }) };
         HZCOUNT['horizon-season'] = 212; HZCOVER['horizon-season'] = REALIDS.filter(function(k){ return /burning-man/.test(k); })[0] || REALIDS[0];
       }
-      render();
+      if (ROUTE.ready) render();
     })
     .catch(function(){});
 }
@@ -1173,6 +1173,7 @@ function itemName(it){
   if (it.type === 'person') return person(it.id).displayName;
   if (it.type === 'group') return GROUPS[it.id] ? GROUPS[it.id].name : '';
   if (it.type === 'callout') return (calloutOf(it.id) || {}).title || '';
+  if (it.type === 'chat') return CHATS[it.id] ? CHATS[it.id].name : '';
   return '';
 }
 </script>
@@ -1242,7 +1243,7 @@ function destEvents(f){
 function folderName(f){
   f = f || S.folder;
   return { home:'Home', horizons:'Horizons', people:'People', interested:'Interested', going:'Going', hosting:'Hosting',
-           search:'Search', you:'You', shelf: shelfTitle(f.id) }[f.kind] || (f.kind === 'horizon' && HORIZONS[f.id] ? HORIZONS[f.id].name : 'Home');
+           search:'Search', you:'You', chats:'Chats', shelf: shelfTitle(f.id) }[f.kind] || (f.kind === 'horizon' && HORIZONS[f.id] ? HORIZONS[f.id].name : 'Home');
 }
 function folderSub(f){
   f = f || S.folder;
@@ -2136,7 +2137,7 @@ function chatListHTML(){
 }
 function convHTML(cid){
   var c = CHATS[cid];
-  var sub = c.kind === 'dm' ? (PRESENCE[c.memberIds[0]] || 'offline') : (c.memberIds.length + 1) + ' members';
+  var sub = chatSub(c);
   var h = '<div class="phead"><button class="ib" data-act="chatback" aria-label="All chats">'+ic('back')+'</button>' +
     '<div class="ptitle">'+esc(c.name)+'<small>'+esc(sub)+'</small></div>' +
     (c.kind === 'group' ? '<span class="members">' + c.memberIds.slice(0,4).map(function(m){ return '<span data-act="open" data-type="person" data-id="'+m+'">'+avHTML(m,'a28')+'</span>'; }).join('') + '</span>'
@@ -2147,12 +2148,12 @@ function convHTML(cid){
     var head = '<div class="mfrom">'+(me ? '' : esc(person(m.from).displayName))+'<span class="mt">'+esc(m.t)+'</span></div>';
     if (m.card && EVENTS[m.card]){
       var e = EVENTS[m.card];
-      return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="evcard" data-act="open-reset" data-type="event" data-id="'+m.card+'">'+sqHTML(m.card,40)+
+      return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="evcard" data-act="open" data-type="event" data-id="'+m.card+'">'+sqHTML(m.card,40)+
         '<div><div class="t">'+esc(e.title)+'</div><div class="m">'+fmtShort(e.date)+' · '+esc(whereOf(e))+'</div></div></div></div>';
     }
     if (m.hzcard && HORIZONS[m.hzcard]){
       var hz = HORIZONS[m.hzcard];
-      return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="evcard" data-act="open-reset" data-type="horizon" data-id="'+m.hzcard+'">'+hzMosaic(m.hzcard,40)+
+      return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="evcard" data-act="open" data-type="horizon" data-id="'+m.hzcard+'">'+hzMosaic(m.hzcard,40)+
         '<div><div class="t">'+esc(hz.name)+'</div><div class="m">Event Horizon · '+hz.eventIds.length+' events</div></div></div></div>';
     }
     return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+'</div></div>';
@@ -2161,9 +2162,13 @@ function convHTML(cid){
        '<button class="btn primary" data-act="sendchat">Send</button></div></div>';
   return h;
 }
+/* on a phone a conversation is a screen pushed onto whatever tab you are in; on a desktop it sits in the dock */
+function phoneConv(){ var t = S.stack[S.stack.length-1]; return L.phone && t && t.type === 'chat' && CHATS[t.id] ? t.id : null; }
+function activeChat(){ return L.phone ? phoneConv() : (S.chatOpen && CHATS[S.chatOpen] ? S.chatOpen : null); }
+function chatSub(c){ return c.kind === 'dm' ? (PRESENCE[c.memberIds[0]] || 'offline') : (c.memberIds.length + 1) + ' members'; }
 function renderChats(){
   var el = $('chats');
-  var visible = L.phone ? S.tab === 'chats' : L.right;
+  var visible = L.phone ? L.scr === 'chats' : L.right;
   if (!visible) return;
   var draft = $('chatbox') ? $('chatbox').value : '', focused = document.activeElement && document.activeElement.id === 'chatbox';
   if (!S.loggedIn){
@@ -2171,8 +2176,9 @@ function renderChats(){
       'Log in to chat with your crews.<br><button class="btn primary" data-act="login">Log in</button></div></div>';
     return;
   }
-  if (S.chatOpen && CHATS[S.chatOpen]){
-    el.innerHTML = convHTML(S.chatOpen);
+  var cid = activeChat();
+  if (cid){
+    el.innerHTML = convHTML(cid);
     var box = $('chatbox'); if (box){ box.value = draft; if (focused) box.focus(); }
     var ms = $('msgs'); if (ms) ms.scrollTop = ms.scrollHeight;
   } else el.innerHTML = chatListHTML();
@@ -2250,7 +2256,6 @@ function renderToolbar(){
   var q = $('q');
   if (document.activeElement !== q) q.value = S.folder.kind === 'search' ? S.query : '';
   $('wintitle').textContent = '— ' + folderName() + (isCal() ? ' · Calendar' : '');
-  document.title = folderName() + ' · Hypernet';
 }
 function renderCHead(){
   var el = $('chead'), views = viewsOf(), v = viewOf();
@@ -2267,23 +2272,18 @@ function renderCHead(){
 }
 /* ---- the phone shell: an app bar on top, five tabs at the bottom ---- */
 function phoneCanBack(){
-  if (S.tab === 'chats') return !!S.chatOpen;
   return S.stack.length > 0 || S.folder.kind === 'search' || S.folder.kind === 'shelf' || S.phoneSearch || (S.tab === 'you' && S.folder.kind !== 'you');
 }
 function renderAppbar(){
   var h = '', back = phoneCanBack();
   if (back) h += '<button class="ab-btn" data-act="pback" aria-label="Back">'+ic('back',22)+'</button>';
-  if (S.tab === 'chats'){
-    if (S.chatOpen && CHATS[S.chatOpen]){
-      var c = CHATS[S.chatOpen];
-      h += '<div class="ab-title">'+esc(c.name)+'<small>'+esc(c.kind === 'dm' ? (PRESENCE[c.memberIds[0]]||'offline') : (c.memberIds.length+1)+' members')+'</small></div>';
-    } else {
-      h += '<div class="ab-title">Chats</div>';
-      if (S.loggedIn) h += '<button class="ab-btn boxed" data-act="newchat">'+ic('edit')+'New chat</button>';
-    }
-  } else if (S.stack.length){
+  if (S.stack.length){
     var it = S.stack[S.stack.length-1];
-    h += '<div class="ab-title">'+esc(itemName(it))+'<small>'+esc({event:'Event',horizon:'Event Horizon',person:'Person',group:'Cluster',callout:'Call out'}[it.type]||'')+'</small></div>';
+    if (it.type === 'chat' && CHATS[it.id]) h += '<div class="ab-title">'+esc(CHATS[it.id].name)+'<small>'+esc(chatSub(CHATS[it.id]))+'</small></div>';
+    else h += '<div class="ab-title">'+esc(itemName(it))+'<small>'+esc({event:'Event',horizon:'Event Horizon',person:'Person',group:'Cluster',callout:'Call out'}[it.type]||'')+'</small></div>';
+  } else if (S.tab === 'chats'){
+    h += '<div class="ab-title">Chats</div>';
+    if (S.loggedIn) h += '<button class="ab-btn boxed" data-act="newchat">'+ic('edit')+'New chat</button>';
   } else if (S.folder.kind === 'search' || S.phoneSearch){
     h += '<label class="ab-search">'+ic('search')+'<input id="pq" type="search" placeholder="Search" value="'+esc(S.query)+'" autocomplete="off" aria-label="Search"></label>';
   } else {
@@ -2343,9 +2343,11 @@ var NEWITEMS = [
   { label:'Call out', cmd:'new-callout', icon:'callout', sub:'Ask the network for hands' }
 ];
 var DLGS = [];
-function closeDialogs(){ DLGS.forEach(function(d){ d.remove(); }); DLGS = []; $('mask').style.display = 'none'; }
+/* a dialog owns a history entry, so the phone's back gesture closes it instead of the page under it */
+function closeDialogs(){ DLGS.forEach(function(d){ d.remove(); }); DLGS = []; $('mask').style.display = 'none'; scheduleSync(); }
 function dialog(title, bodyHTML, footHTML, w, cls){
   closePopup();
+  scheduleSync();
   $('mask').style.display = 'block';
   var d = document.createElement('div');
   d.className = 'dlg' + (cls ? ' ' + cls : '');
@@ -3093,28 +3095,26 @@ function openItem(type, id, mode){
     if (top.type === type && top.id === id) return;
     S.stack.push(it);
   } else S.stack = [it];
-  if (L.phone && S.tab === 'chats') S.tab = S.folder.kind === 'you' || /^(going|interested|hosting|horizon|people)$/.test(S.folder.kind) ? 'you'
-                                          : S.folder.kind === 'horizons' ? 'horizons' : 'home';
   render();
   $('dscroll').scrollTop = 0;
 }
 function goBack(){ if (S.stack.length){ S.stack.pop(); render(); } }
 function phoneBack(){
-  if (S.tab === 'chats' && S.chatOpen){ S.chatOpen = null; render(); return; }
   if (S.stack.length){ S.stack.pop(); render(); return; }
   if (S.phoneSearch && S.folder.kind !== 'search'){ S.phoneSearch = false; SEARCHRET = null; render(); return; }
   if (S.folder.kind === 'search'){ leaveSearch(); S.phoneSearch = false; render(); return; }
   if (S.folder.kind === 'shelf'){ goFolder({ kind:'home' }); render(); return; }
   if (S.tab === 'you' && S.folder.kind !== 'you'){ goFolder({ kind:'you' }); render(); return; }
 }
+function tabRootFolder(t){ return { kind: t === 'horizons' || t === 'chats' || t === 'you' ? t : 'home', id:null }; }
+function tabOfFolder(f){
+  var k = (f || S.folder).kind;
+  return k === 'horizons' ? 'horizons' : k === 'chats' ? 'chats' : /^(you|going|interested|hosting|people)$/.test(k) ? 'you' : 'home';
+}
 function setTab(t){
-  var same = S.tab === t;
   S.tab = t;
-  if (t === 'chats'){ if (same) S.chatOpen = null; render(); return; }
   S.phoneSearch = false;
-  if (t === 'home') goFolder({ kind:'home' });
-  if (t === 'horizons') goFolder({ kind:'horizons' });
-  if (t === 'you') goFolder({ kind:'you' });
+  goFolder(tabRootFolder(t));
   render();
 }
 var setRSVP = gated(function(evId, mode){
@@ -3179,12 +3179,12 @@ var followP = gated(function(pid){
 });
 /* chats open in the right pane on a desktop, and in the Chats tab on a phone */
 function openChat(cid){
-  S.chatOpen = cid; UNREADCHAT[cid] = false;
+  UNREADCHAT[cid] = false;
   var i = CHATORDER.indexOf(cid); if (i > 0){ CHATORDER.splice(i, 1); CHATORDER.unshift(cid); }
-  if (L.phone) S.tab = 'chats';
-  else { S.rightOpen = true; S.lastOpened = 'right'; }
+  if (L.phone){ openItem('chat', cid, 'push'); return; }
+  S.chatOpen = cid; S.rightOpen = true; S.lastOpened = 'right';
   render();
-  setTimeout(function(){ var b = $('chatbox'); if (b && !L.phone) b.focus(); }, 30);
+  setTimeout(function(){ var b = $('chatbox'); if (b) b.focus(); }, 30);
 }
 function openDM(pid){
   var dm = Object.keys(CHATS).filter(function(k){ return CHATS[k].kind === 'dm' && CHATS[k].memberIds[0] === pid; })[0];
@@ -3216,8 +3216,8 @@ function createChat(){
   toast('Group created', name);
 }
 function sendChat(){
-  var box = $('chatbox'); if (!box || !box.value.trim()) return;
-  CHATS[S.chatOpen].messages.push({ from:'self', t:nowClock(), text:box.value.trim() });
+  var box = $('chatbox'), cid = activeChat(); if (!box || !cid || !box.value.trim()) return;
+  CHATS[cid].messages.push({ from:'self', t:nowClock(), text:box.value.trim() });
   box.value = '';
   render();
   var b = $('chatbox'); if (b) b.focus();
@@ -3233,11 +3233,12 @@ function leaveSearch(){
 }
 function doSearch(q){
   S.query = q;
+  /* typing refines one search: the trail back is the place you searched from, not every keystroke */
   if (!q.trim()){
-    if (S.folder.kind === 'search'){ leaveSearch(); if (L.phone) S.phoneSearch = true; }
+    if (S.folder.kind === 'search'){ leaveSearch(); if (L.phone){ S.phoneSearch = true; ROUTE.replace = true; } }
     render(); return;
   }
-  if (S.folder.kind !== 'search'){ if (!SEARCHRET) rememberPlace(); goFolder({ kind:'search' }); }
+  if (S.folder.kind !== 'search'){ if (!SEARCHRET) rememberPlace(); if (S.phoneSearch) ROUTE.replace = true; goFolder({ kind:'search' }); }
   else S.stack = [];
   render();
 }
@@ -3246,6 +3247,7 @@ function stepItem(delta){
   var cur = S.stack[0], i = -1;
   if (cur) list.forEach(function(it, k){ if (it.type === cur.type && it.id === cur.id) i = k; });
   var n = i < 0 ? 0 : Math.max(0, Math.min(list.length-1, i + delta));
+  ROUTE.replace = true;   /* stepping through a list is not a trail you want to walk back */
   openItem(list[n].type, list[n].id);
   var el = document.querySelector('#listbody .row.sel'); if (el && el.scrollIntoView) el.scrollIntoView({ block:'nearest' });
 }
@@ -3286,8 +3288,8 @@ document.addEventListener('click', function(ev){
     case 'row':      openItem(n.getAttribute('data-type'), id); break;
     case 'open':     openItem(n.getAttribute('data-type'), id, 'push'); break;
     case 'open-reset': openItem(n.getAttribute('data-type'), id); break;
-    case 'back':     goBack(); break;
-    case 'pback':    phoneBack(); break;
+    case 'back':     navBack(); break;
+    case 'pback':    navBack(); break;
     case 'psearch':  S.phoneSearch = true; if (S.folder.kind !== 'search') rememberPlace(); render(); break;
     case 'clearsearch': leaveSearch(); render(); break;
     case 'tab':      setTab(id); break;
@@ -3312,7 +3314,7 @@ document.addEventListener('click', function(ev){
     case 'dm':           messagePerson(id); break;
     case 'answercallout': answerCallout(id); break;
     case 'chatsel':      openChat(id); break;
-    case 'chatback':     S.chatOpen = null; render(); break;
+    case 'chatback':     if (L.phone) navBack(); else { S.chatOpen = null; render(); } break;
     case 'sendchat':     sendChat(); break;
     case 'newchat':      runCmd('newchat'); break;
     case 'ncpick': {
@@ -3451,8 +3453,8 @@ document.addEventListener('keydown', function(ev){
     if (POP){ closePopup(); return; }
     if (ae && ae.id === 'q' && S.folder.kind === 'search'){ leaveSearch(); render(); ae.blur(); return; }
     if (inField){ ae.blur(); return; }
-    if (L.phone){ phoneBack(); return; }
-    if (S.stack.length > (L.split ? 1 : 0)){ goBack(); return; }
+    if (L.phone){ if (phoneCanBack()) navBack(); return; }
+    if (S.stack.length > (L.split ? 1 : 0)){ navBack(); return; }
     return;
   }
   if (ev.key === 'Enter' && ae){
@@ -3477,12 +3479,210 @@ document.addEventListener('keydown', function(ev){
 });
 
 /* =========================================================================
+   14b. ROUTES — every place has a URL, and the browser's history is the back stack
+   The URL names the place (#/event/borderland-2027, #/horizon/baltic,
+   #/home?view=calendar). The history entry behind it carries the rest:
+   the whole open stack, the tab, the calendar page. The app's own back
+   buttons walk the same history as the phone's back gesture.
+   ========================================================================= */
+var ROUTE = { ready:false, applying:false, replace:false, ignore:0 };
+function slugify(t){
+  return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/^\s*the\s+/, '')
+    .replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64);
+}
+var SLUGS = null;
+function slugMaps(){
+  var ids = Object.keys(EVENTS).sort();
+  if (SLUGS && SLUGS.n === ids.length) return SLUGS;
+  var bySlug = {}, byId = {};
+  ids.forEach(function(id){
+    var e = EVENTS[id], s = e.slug || slugify(e.title) || 'event';
+    if (bySlug[s] && bySlug[s] !== id) s = s + '-' + slugify(id).split('-').pop();
+    bySlug[s] = id; byId[id] = s;
+  });
+  SLUGS = { n:ids.length, bySlug:bySlug, byId:byId };
+  return SLUGS;
+}
+function evSlug(id){ return slugMaps().byId[id] || id; }
+function evBySlug(s){ return slugMaps().bySlug[s] || (EVENTS[s] ? s : null); }
+function hzSlug(id){ return String(id).replace(/^horizon-/, ''); }
+function hzBySlug(s){ return HORIZONS['horizon-' + s] ? 'horizon-' + s : HORIZONS[s] ? s : null; }
+function personSlug(id){ return (PEOPLE[id] && PEOPLE[id].handle) || id; }
+function personBySlug(s){
+  if (S.loggedIn && PEOPLE['self'].handle === s) return 'self';
+  var hit = Object.keys(PEOPLE).filter(function(k){ return k !== 'self' && PEOPLE[k].handle === s; })[0];
+  return hit || (PEOPLE[s] ? s : null);
+}
+function coSlug(id){ return String(id).replace(/^co-/, ''); }
+function coBySlug(s){ return calloutOf('co-' + s) ? 'co-' + s : calloutOf(s) ? s : null; }
+function chatSlug(id){ return String(id).replace(/^c-/, ''); }
+function chatBySlug(s){ return CHATS['c-' + s] ? 'c-' + s : CHATS[s] ? s : null; }
+function itemPath(it){
+  return { event:'event/' + evSlug(it.id), horizon:'horizon/' + hzSlug(it.id), person:'person/' + personSlug(it.id),
+           callout:'callout/' + coSlug(it.id), group:'group/' + it.id, chat:'chats/' + chatSlug(it.id) }[it.type] || 'home';
+}
+function folderPath(f){ return f.kind === 'shelf' ? 'home/' + f.id : f.kind === 'horizon' ? 'horizon/' + hzSlug(f.id) : f.kind; }
+/* the link to one thing, as anyone can open it */
+function linkOf(type, id){ return location.origin + location.pathname + '#/' + itemPath({ type:type, id:id }); }
+
+function snapNow(){
+  var f = S.folder, v = viewsOf(f);
+  return { hn:1, tab:S.tab, folder:{ kind:f.kind, id:f.id || null }, view: v.length ? viewOf(f) : null,
+           stack: S.autoSel ? [] : S.stack.map(function(it){ return { type:it.type, id:it.id }; }),
+           q:S.query, ps:!!S.phoneSearch, cal:{ mode:S.calMode, at:S.calAnchor },
+           dock: L.phone ? null : { open:!!S.rightOpen, chat:S.chatOpen || null } };
+}
+function navKeyOf(s){
+  return JSON.stringify([L.phone ? s.tab : '', s.folder.kind, s.folder.id || null, s.view || null,
+    (s.stack || []).map(function(it){ return it.type + ':' + it.id; }).join('>'), !!s.ps]);
+}
+function hashOf(s){
+  var top = s.stack[s.stack.length-1], p = [], path;
+  if (top){
+    path = itemPath(top);
+    var home = top.type === 'chat' ? 'chats' : 'home';
+    if (s.folder.kind !== home) p.push(['in', folderPath(s.folder)]);
+  } else path = folderPath(s.folder);
+  if (s.folder.kind === 'search' && s.q) p.push(['q', s.q]);
+  var views = viewsOf(s.folder);
+  if (s.view && views.length && s.view !== views[0]) p.push(['view', s.view]);
+  if (s.view === 'calendar' && s.cal){
+    if (s.cal.mode && s.cal.mode !== 'month') p.push(['cal', s.cal.mode]);
+    if (s.cal.at && s.cal.at !== TODAY_ISO) p.push(['at', s.cal.at]);
+  }
+  return '#/' + path + (p.length ? '?' + p.map(function(x){ return x[0] + '=' + encodeURIComponent(x[1]); }).join('&') : '');
+}
+var FOLDERKINDS = /^(home|horizons|people|going|interested|hosting|you|search|chats)$/;
+function folderFrom(a, b){
+  if (a === 'home' && b) return { kind:'shelf', id:b };
+  return FOLDERKINDS.test(a || '') ? { kind:a, id:null } : null;
+}
+function parseHash(h){
+  h = String(h || '').replace(/^#\/?/, '');
+  var qi = h.indexOf('?'), path = qi < 0 ? h : h.slice(0, qi), p = {};
+  (qi < 0 ? '' : h.slice(qi + 1)).split('&').forEach(function(kv){
+    if (!kv) return;
+    var i = kv.indexOf('='), k = i < 0 ? kv : kv.slice(0, i), v = i < 0 ? '' : kv.slice(i + 1);
+    try { p[decodeURIComponent(k)] = decodeURIComponent(v.replace(/\+/g, ' ')); } catch(e){}
+  });
+  var seg = path.split('/').filter(Boolean).map(function(x){ try { return decodeURIComponent(x); } catch(e){ return x; } });
+  var a = seg[0] || 'home', b = seg[1], it = null;
+  var s = { hn:1, folder:{ kind:'home', id:null }, stack:[], q:p.q || '', ps:false, view:p.view || null,
+            cal:{ mode:p.cal || 'month', at:isoDate(p.at) || null } };
+  if (a === 'event') it = { type:'event', id:evBySlug(b) };
+  else if (a === 'horizon') it = { type:'horizon', id:hzBySlug(b) };
+  else if (a === 'person') it = { type:'person', id:personBySlug(b) };
+  else if (a === 'callout') it = { type:'callout', id:coBySlug(b) };
+  else if (a === 'group') it = { type:'group', id:GROUPS[b] ? b : null };
+  else if (a === 'chats' && b){ it = { type:'chat', id:chatBySlug(b) }; s.folder = { kind:'chats', id:null }; }
+  if (it){
+    if (it.id) s.stack = [it];
+    if (p.in){ var ps = p.in.split('/'); s.folder = folderFrom(ps[0], ps[1]) || s.folder; }
+  } else s.folder = folderFrom(a, b) || s.folder;
+  s.tab = tabOfFolder(s.folder);
+  return s;
+}
+function validItem(it){
+  if (!it) return false;
+  if (it.type === 'event') return !!EVENTS[it.id];
+  if (it.type === 'horizon') return !!HORIZONS[it.id] && (HORIZONS[it.id].isPublished || hzOwnedByMe(it.id));
+  if (it.type === 'person') return !!PEOPLE[it.id];
+  if (it.type === 'callout') return !!calloutOf(it.id);
+  if (it.type === 'group') return !!GROUPS[it.id];
+  if (it.type === 'chat') return S.loggedIn && !!CHATS[it.id];
+  return false;
+}
+function applySnap(s){
+  S.folder = { kind:(s.folder && s.folder.kind) || 'home', id:(s.folder && s.folder.id) || null };
+  if (S.folder.kind === 'horizon' && !validItem({ type:'horizon', id:S.folder.id })) S.folder = { kind:'home', id:null };
+  S.tab = s.tab || tabOfFolder(S.folder);
+  S.stack = (s.stack || []).filter(validItem).map(function(it){ return { type:it.type, id:it.id }; });
+  S.autoSel = false;
+  S.query = S.folder.kind === 'search' ? (s.q || '') : '';
+  S.phoneSearch = !!s.ps;
+  if (s.view && viewsOf(S.folder).indexOf(s.view) >= 0) S.view[destKey(S.folder)] = s.view;
+  if (s.cal){ if (s.cal.mode) S.calMode = s.cal.mode; S.calAnchor = s.cal.at || S.calAnchor; }
+  if (s.dock && window.innerWidth >= 760){ S.rightOpen = !!s.dock.open; S.chatOpen = s.dock.chat && CHATS[s.dock.chat] ? s.dock.chat : null; }
+  if (S.folder.kind === 'search' && !SEARCHRET) SEARCHRET = { folder:{ kind:'home' }, stack:[] };
+  if (S.folder.kind !== 'search') SEARCHRET = null;
+  if (S.stack.some(function(it){ return it.type === 'event'; })) S.stack.forEach(function(it){ if (it.type === 'event') markRead(it.id); });
+}
+var SYNCT = null;
+function scheduleSync(){ clearTimeout(SYNCT); SYNCT = setTimeout(syncRoute, 0); }
+/* after every change: a new place pushes a history entry, anything else rewrites the current one */
+function syncRoute(){
+  if (!ROUTE.ready || ROUTE.applying) return;
+  clearTimeout(SYNCT);
+  var cur = history.state && history.state.hn ? history.state : null;
+  var s = snapNow(), url = hashOf(s), replace = ROUTE.replace;
+  ROUTE.replace = false;
+  s.idx = cur ? cur.idx || 0 : 0;
+  if (cur && cur.modal && !DLGS.length){
+    /* the dialog that owned this entry is gone: step off it, or let the place it led to take it over */
+    if (navKeyOf(cur) === navKeyOf(s) && s.idx > 0){ ROUTE.ignore++; setTimeout(function(){ ROUTE.ignore = 0; }, 1500); history.back(); return; }
+    history.replaceState(s, '', url); return;
+  }
+  if (DLGS.length){
+    s.modal = true;
+    if (cur && cur.modal) history.replaceState(s, '', url);
+    else { s.idx++; history.pushState(s, '', url); }
+    return;
+  }
+  if (!cur || replace || navKeyOf(cur) === navKeyOf(s)){ history.replaceState(s, '', url); return; }
+  s.idx++;
+  history.pushState(s, '', url);
+}
+/* the app's own back buttons: the same step the phone's back gesture takes */
+function navBack(){
+  var cur = history.state;
+  if (cur && cur.hn && cur.idx > 0){ history.back(); return; }
+  ROUTE.replace = true;
+  if (L.phone) phoneBack(); else goBack();
+}
+window.addEventListener('popstate', function(ev){
+  if (ROUTE.ignore > 0){ ROUTE.ignore--; syncRoute(); return; }
+  if (!ROUTE.ready) return;
+  var s = ev.state && ev.state.hn ? ev.state : parseHash(location.hash);
+  closeCtx(); closePopup(); lpCancel();
+  if (DLGS.length){ DLGS.forEach(function(d){ d.remove(); }); DLGS = []; $('mask').style.display = 'none'; S.pending = null; CTXS = null; }
+  ROUTE.applying = true;
+  applySnap(s); render();
+  ROUTE.applying = false;
+  if (!ev.state || s.modal){ var c = snapNow(); c.idx = s.idx || 0; history.replaceState(c, '', hashOf(c)); }
+});
+function rootSnap(tab){
+  var f = tabRootFolder(L.phone ? tab : 'home');
+  return { hn:1, tab:tab, folder:f, stack:[], q:'', ps:false, view:viewsOf(f)[0] || null, cal:null };
+}
+function startRoutes(){
+  L = computeLayout();
+  var st = history.state && history.state.hn ? history.state : null;
+  var s = st || parseHash(location.hash);
+  ROUTE.applying = true;
+  applySnap(s); render();
+  ROUTE.applying = false;
+  ROUTE.ready = true;
+  var cur = snapNow();
+  var root = rootSnap(S.tab), deep = !st && navKeyOf(cur) !== navKeyOf(root);
+  if (deep){
+    /* a link opened cold: put its tab's front page underneath, so back stays inside Hypernet */
+    root.idx = 0; history.replaceState(root, '', hashOf(root));
+    cur.idx = 1; history.pushState(cur, '', hashOf(cur));
+  } else { cur.idx = st ? st.idx || 0 : 0; history.replaceState(cur, '', hashOf(cur)); }
+}
+
+/* =========================================================================
    15. RENDER + BOOT
    ========================================================================= */
 function render(){
   L = computeLayout();
   var app = $('app');
-  if (!L.phone && S.folder.kind === 'you') goFolder({ kind:'home' });
+  if (!L.phone){
+    /* a phone conversation screen becomes the chat dock on a wider screen */
+    var ct = S.stack.filter(function(it){ return it.type === 'chat'; }).pop();
+    if (ct){ S.stack = S.stack.filter(function(it){ return it.type !== 'chat'; }); S.chatOpen = ct.id; S.rightOpen = true; S.lastOpened = 'right'; L = computeLayout(); }
+    if (S.folder.kind === 'you' || S.folder.kind === 'chats') goFolder({ kind:'home' });
+  }
   /* in a split view something is always open in the reading pane */
   var items = null;
   /* an item the app picked for the reading pane is not something you opened: without a reading pane, show the list */
@@ -3490,10 +3690,12 @@ function render(){
   if (L.split && !S.stack.length){ items = orderedItems(); var first = items.filter(function(it){ return it.type !== 'news' || newsOf(it.id).ref; })[0];
     if (first){ S.stack = [first.type === 'news' ? newsOf(first.id).ref : first]; S.autoSel = true; } }
   if (L.split && S.folder.kind === 'horizon' && !S.stack.length){ S.stack = [{ type:'horizon', id:S.folder.id }]; S.autoSel = true; }
-  var scr = L.phone ? (S.tab === 'chats' ? 'chats' : (S.tab === 'you' && S.folder.kind === 'you' && !S.stack.length) ? 'you' : 'center') : '';
+  var conv = phoneConv();
+  var scr = L.phone ? ((conv || (S.tab === 'chats' && !S.stack.length)) ? 'chats' : (S.tab === 'you' && S.folder.kind === 'you' && !S.stack.length) ? 'you' : 'center') : '';
+  L.scr = scr;
   app.className = [L.phone ? 'phone' : 'desk', L.left ? 'l-open' : '', L.right ? 'r-open' : '', L.split ? 'split' : 'push',
     isCal() ? 'v-cal' : '', S.stack.length ? 'has-detail' : '', scr ? 'scr-' + scr : '',
-    L.phone && S.tab === 'chats' && S.chatOpen && S.loggedIn ? 'conv-open' : ''].filter(Boolean).join(' ');
+    conv && S.loggedIn ? 'conv-open' : ''].filter(Boolean).join(' ');
   document.body.className = L.phone ? 'is-phone' : 'is-desk';
 
   if (L.phone){ renderAppbar(); renderTabbar(); } else renderToolbar();
@@ -3504,7 +3706,9 @@ function render(){
     renderDetail();
   }
   renderChats();
+  document.title = (S.stack.length && !S.autoSel ? itemName(S.stack[S.stack.length-1]) : folderName()) + ' · Hypernet';
   persist();
+  syncRoute();
 }
 /* what you make and keep survives a reload: account, horizons, created events, states */
 var STORE = 'hypernet-feed:v1';
@@ -3547,8 +3751,10 @@ window.addEventListener('resize', function(){ clearTimeout(RZ); RZ = setTimeout(
 (function boot(){
   restore();
   if (window.innerWidth >= 1120) S.leftOpen = true;
-  render();
-  loadRealEvents();
+  /* the real events carry the links people share, so the route waits for them (briefly) */
+  var started = false, start = function(){ if (!started){ started = true; startRoutes(); } };
+  loadRealEvents().then(start, start);
+  setTimeout(start, 2500);
 })();
 </script>
 </body>

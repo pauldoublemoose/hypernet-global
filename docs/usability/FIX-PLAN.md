@@ -37,6 +37,13 @@ its card), and phone Home/Horizons get the entry in the app bar. The old single-
 chat: empty fields with placeholder text. Closing a half-filled form asks to discard or keeps a draft;
 chat drafts are kept per conversation.
 Sources: ORGANISER-4, PHONEBROWSER-6, -12, CREW-3, CREW-13.
+*Status: done.* Event, call out, horizon and group chat open empty; the old samples are placeholders. Each create
+form is its own draft: ×, Esc, Cancel and the back gesture keep it (per account, across reloads); the secondary
+button turns into Discard once something is typed. Chose "keep a draft" over a discard prompt: no extra modal, nothing
+lost. The event wizard asks for a title and start date inline ("Add a title") instead of a silently disabled button;
+Post call out / Create horizon stay disabled until named. A group chat is named after its people until you name it,
+so Create group is never mysteriously off. Chat drafts are kept per conversation and show as "Draft: …" in the list.
+Dropped the "One item per line", "optional" and "Anyone can find and follow it" hints on the forms touched here.
 
 **A4. Persistence.** Everything the user creates or changes survives reload: chats, messages, groups, DMs,
 call outs, answers, follows, promotes, horizons, events.

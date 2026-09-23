@@ -1033,6 +1033,7 @@ var MYEVENTS = [];
 var MYHORIZONS = [];
 
 var CHATS = {}, CHATORDER = [], UNREADCHAT = {};
+var CHATDRAFT = {};             /* chat id -> what you typed and haven't sent */
 function fixtureChats(){
   var byId = {}, order = [];
   H.chats.forEach(function(c){
@@ -2160,7 +2161,7 @@ function chatListHTML(){
     '<div class="panel">' + CHATORDER.map(function(k){
       var c = CHATS[k], m = lastMsg(c), un = UNREADCHAT[k];
       return '<div class="chrow'+(un?' unread':'')+'" data-act="chatsel" data-id="'+k+'" role="button">' + chatAv(c) +
-        '<div class="cmn"><div class="cnm">'+esc(c.name)+'</div><div class="cpv">'+esc(msgPreview(m, c))+'</div></div>' +
+        '<div class="cmn"><div class="cnm">'+esc(c.name)+'</div><div class="cpv">'+(CHATDRAFT[k] ? '<b>Draft:</b> '+esc(CHATDRAFT[k]) : esc(msgPreview(m, c)))+'</div></div>' +
         '<div class="cside"><span class="ctime">'+esc(m ? m.t : '')+'</span>'+(un?'<span class="udot" aria-label="Unread"></span>':'')+'</div></div>';
     }).join('') + '</div>';
 }
@@ -2187,7 +2188,7 @@ function convHTML(cid){
     }
     return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+'</div></div>';
   }).join('') : '<div class="msg sys">No messages yet</div>') + '</div>';
-  h += '<div class="composer"><input type="text" id="chatbox" placeholder="Message '+esc(c.kind === 'dm' ? c.name.split(' ')[0] : c.name)+'" autocomplete="off" aria-label="Message">' +
+  h += '<div class="composer"><input type="text" id="chatbox" value="'+esc(CHATDRAFT[cid] || '')+'" placeholder="Message '+esc(c.kind === 'dm' ? c.name.split(' ')[0] : c.name)+'" autocomplete="off" aria-label="Message">' +
        '<button class="btn primary" data-act="sendchat">Send</button></div></div>';
   return h;
 }
@@ -2199,7 +2200,7 @@ function renderChats(){
   var el = $('chats');
   var visible = L.phone ? L.scr === 'chats' : L.right;
   if (!visible) return;
-  var draft = $('chatbox') ? $('chatbox').value : '', focused = document.activeElement && document.activeElement.id === 'chatbox';
+  var focused = document.activeElement && document.activeElement.id === 'chatbox';
   if (!S.loggedIn){
     el.innerHTML = '<div class="phead"><div class="ptitle">Chats</div></div><div class="panel"><div class="empty">'+ic('chat',36).replace('class="ic"','class="ic" style="margin:0 auto 12px"')+
       'Chat with your crews.<br><button class="btn primary" data-act="login">'+joinLabel()+'</button></div></div>';
@@ -2208,7 +2209,7 @@ function renderChats(){
   var cid = activeChat();
   if (cid){
     el.innerHTML = convHTML(cid);
-    var box = $('chatbox'); if (box){ box.value = draft; if (focused) box.focus(); }
+    var box = $('chatbox'); if (box && focused){ box.focus(); box.setSelectionRange(box.value.length, box.value.length); }
     var ms = $('msgs'); if (ms) ms.scrollTop = ms.scrollHeight;
   } else el.innerHTML = chatListHTML();
 }
@@ -2516,7 +2517,7 @@ function loginDialog(){
    What an account keeps is swapped in when it logs in and put away when it logs out. */
 var ACCTS = {};
 function acctPid(k){ return k === 'demo' ? 'p-michal' : 'u-' + k; }
-function blankAcct(profile){ return { profile:profile, rsvp:{}, went:{}, promoted:{}, hzfollow:{}, pfollow:{}, myevents:[], myhorizons:[], chats:{ byId:{}, order:[] }, unread:{} }; }
+function blankAcct(profile){ return { profile:profile, rsvp:{}, went:{}, promoted:{}, hzfollow:{}, pfollow:{}, myevents:[], myhorizons:[], chats:{ byId:{}, order:[] }, unread:{}, drafts:{ forms:{}, chat:{} } }; }
 function demoAcct(){
   var m = PEOPLE['p-michal'];
   var a = blankAcct({ displayName:m.displayName, handle:m.handle, bio:m.bio, skills:m.skills.slice(), cities:m.cities.slice(), city:m.city });
@@ -2531,7 +2532,7 @@ function captureAcct(){
   var p = PEOPLE['self'];
   return { profile:{ displayName:p.displayName, handle:p.handle, bio:p.bio, skills:p.skills, cities:p.cities, city:p.city },
            rsvp:RSVP, went:WENT, promoted:PROMOTED, hzfollow:HZFOLLOW, pfollow:PFOLLOW, myevents:MYEVENTS, myhorizons:MYHORIZONS,
-           chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT };
+           chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT, drafts:{ forms:FORMDRAFTS, chat:CHATDRAFT } };
 }
 function loadAcct(a){
   a = a || blankAcct({ displayName:'', handle:'', bio:'', skills:[], cities:[], city:'' });
@@ -2543,6 +2544,7 @@ function loadAcct(a){
   MYHORIZONS = (a.myhorizons || []).filter(function(k){ return HORIZONS[k]; });
   CHATS = (a.chats && a.chats.byId) || {}; CHATORDER = ((a.chats && a.chats.order) || Object.keys(CHATS)).filter(function(k){ return CHATS[k]; });
   UNREADCHAT = a.unread || {};
+  FORMDRAFTS = (a.drafts && a.drafts.forms) || {}; CHATDRAFT = (a.drafts && a.drafts.chat) || {};
   S.me = { name:p.displayName || 'You', handle:p.handle || 'you' };
 }
 /* an account that is not logged in is, to everyone else, just a person on the network */
@@ -2618,6 +2620,8 @@ function newChatDialog(preset){
   paintNewChat();
   focusIn('nc-q');
 }
+/* a group is named after its people until you name it */
+function ncAutoName(){ return NC ? NC.sel.map(function(k){ return person(k).displayName.split(' ')[0]; }).join(', ') : ''; }
 function ncPeople(){
   var ids = Object.keys(PEOPLE).filter(function(k){ return k !== 'self' && k !== 'p-michal' && !/^u-/.test(k); });
   ids.sort(function(a,b){ return (PFOLLOW[b]?1:0) - (PFOLLOW[a]?1:0) || (person(a).displayName < person(b).displayName ? -1 : 1); });
@@ -2634,7 +2638,7 @@ function paintNewChat(skipBody){
         '<button data-act="ncdrop" data-id="'+k+'" aria-label="Remove '+esc(person(k).displayName)+'">'+ic('close',14)+'</button></span>'; }).join('') + '</div>' : '') +
       '<input type="search" id="nc-q" placeholder="Search people" value="'+esc(NC.q)+'" autocomplete="off"></div>';
     h += '<div class="field" id="nc-namefield"'+(n >= 2 ? '' : ' hidden')+'><label for="nc-name">Group name</label>' +
-      '<input type="text" id="nc-name" value="'+esc(NC.name)+'" placeholder="Ridge build crew" autocomplete="off"></div>';
+      '<input type="text" id="nc-name" value="'+esc(NC.name)+'" placeholder="'+esc(ncAutoName())+'" autocomplete="off"></div>';
     h += '<div class="picklist" id="nc-list">' + ncPeople().map(function(k){
       var p = person(k), on = NC.sel.indexOf(k) >= 0;
       return '<label class="pick"><input type="checkbox" data-act="ncpick" data-id="'+k+'"'+(on?' checked':'')+'>'+avHTML(k,'a40') +
@@ -2645,30 +2649,60 @@ function paintNewChat(skipBody){
   }
   var nf = $('nc-namefield'); if (nf) nf.hidden = n < 2;
   var label = n === 0 ? 'Start chat' : n === 1 ? 'Message ' + person(NC.sel[0]).displayName.split(' ')[0] : 'Create group';
-  var dis = n === 0 || (n >= 2 && !NC.name.trim());
+  var dis = n === 0;
+  var ni = $('nc-name'); if (ni) ni.placeholder = ncAutoName();
   $('ncfoot').innerHTML = '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="donewchat"'+(dis?' disabled':'')+'>'+esc(label)+'</button>';
   placeDlg();
 }
+/* the small create forms keep what you typed as a draft, field by field */
+var FORMFIELDS = { callout:['co-t','co-b','co-x'], horizon:['nh-n','nh-d','nh-p','nh-c'] };
+var FORMFOOT = {};
+function formVal(id){
+  if (id === 'nh-c'){ var r = document.querySelector('input[name="nh-c"]:checked'); return r && r.value !== 'mosaic' ? r.value : ''; }
+  var n = $(id); return !n ? '' : n.type === 'checkbox' ? n.checked : n.value;
+}
+function draftVal(kind, id){ var d = FORMDRAFTS[kind]; return d && d[id] != null ? d[id] : ''; }
+function saveForm(kind){
+  var d = {}, dirty = false;
+  FORMFIELDS[kind].forEach(function(id){ d[id] = formVal(id); if (d[id]) dirty = true; });
+  FORMDRAFTS[kind] = dirty ? d : null;
+  var dl = DLGS[DLGS.length-1], f = dl && dl.querySelector('.dfoot');
+  if (f && FORMFOOT[kind]) f.innerHTML = FORMFOOT[kind]();
+  schedulePersist();
+}
+function formSecondary(kind){
+  return FORMDRAFTS[kind] ? '<button class="btn" data-act="discarddraft" data-id="'+kind+'">Discard</button>' : '<button class="btn" data-act="closedlg">Cancel</button>';
+}
+FORMFOOT.callout = function(){
+  return formSecondary('callout') + '<button class="btn primary" data-act="donewcallout" id="co-go"'+(String(draftVal('callout','co-t')).trim() ? '' : ' disabled')+'>Post call out</button>';
+};
 function newCalloutDialog(){
   dialog('New call out',
-    '<div class="field"><label for="co-t">Looking for</label><input type="text" id="co-t" value="Rigger"></div>' +
-    '<div class="field"><label for="co-b">Details</label><textarea id="co-b" rows="4">We need a pair of hands for the truss on the Friday build.</textarea></div>' +
-    '<div class="field"><label for="co-x">Open until</label><input type="date" id="co-x" value="2026-11-30"></div>',
-    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="donewcallout">Post call out</button>', 460);
+    '<div class="field"><label for="co-t">Looking for</label><input type="text" id="co-t" value="'+esc(draftVal('callout','co-t'))+'" placeholder="Rigger" autocomplete="off"></div>' +
+    '<div class="field"><label for="co-b">Details</label><textarea id="co-b" rows="4" placeholder="We need a pair of hands for the truss on the Friday build.">'+esc(draftVal('callout','co-b'))+'</textarea></div>' +
+    '<div class="field"><label for="co-x">Open until</label><input type="date" id="co-x" value="'+esc(draftVal('callout','co-x'))+'" min="'+TODAY_ISO+'"></div>',
+    FORMFOOT.callout(), 460);
   focusIn('co-t');
 }
+var HZWITH = null;
+FORMFOOT.horizon = function(){
+  var ok = String(draftVal('horizon','nh-n')).trim() ? '' : ' disabled';
+  return formSecondary('horizon') +
+    '<button class="btn" data-act="donewhorizon" data-then="customize" data-id="'+(HZWITH||'')+'" id="nh-cz"'+ok+'>'+ic('paint')+'Customize</button>' +
+    '<button class="btn primary" data-act="donewhorizon" data-id="'+(HZWITH||'')+'" id="nh-go"'+ok+'>Create horizon</button>';
+};
 function newHorizonDialog(withEvent){
-  var cov = withEvent && EVENTS[withEvent] ? sqPx(withEvent, 88) : '<div class="mosaic empty" style="width:88px;height:88px">'+ic('horizon',30)+'</div>';
+  HZWITH = withEvent && EVENTS[withEvent] ? withEvent : null;
+  var cov = HZWITH ? sqPx(HZWITH, 88) : '<div class="mosaic empty" style="width:88px;height:88px">'+ic('horizon',30)+'</div>';
+  var plain = draftVal('horizon','nh-c') === 'plain';
   dialog('New Event Horizon',
-    '<div class="field"><label for="nh-n">Name</label><input type="text" id="nh-n" value="" placeholder="Autumn builds" autocomplete="off"></div>' +
-    '<div class="field"><label for="nh-d">Description <span style="font-weight:normal;color:var(--dim)">optional</span></label><textarea id="nh-d" rows="2" placeholder="What this collection is for"></textarea></div>' +
+    '<div class="field"><label for="nh-n">Name</label><input type="text" id="nh-n" value="'+esc(draftVal('horizon','nh-n'))+'" placeholder="Autumn builds" autocomplete="off"></div>' +
+    '<div class="field"><label for="nh-d">Description</label><textarea id="nh-d" rows="2" placeholder="Every build weekend on the ridge this autumn">'+esc(draftVal('horizon','nh-d'))+'</textarea></div>' +
     '<div class="field"><span class="flabel" id="nh-cl">Cover</span><div class="covpick" role="radiogroup" aria-labelledby="nh-cl">' +
-      '<label class="covopt"><input type="radio" name="nh-c" value="mosaic" checked><span class="covart">'+cov+'</span><span>Mosaic of its events</span></label>' +
-      '<label class="covopt"><input type="radio" name="nh-c" value="plain"><span class="covart"><span class="mosaic empty" style="width:88px;height:88px">'+ic('horizon',30)+'</span></span><span>Plain</span></label></div></div>' +
-    '<label class="pick" style="border:0;padding-left:0"><input type="checkbox" id="nh-p"><span class="pm">Publish it<small>Anyone can find and follow it</small></span></label>',
-    '<button class="btn" data-act="closedlg">Cancel</button>' +
-    '<button class="btn" data-act="donewhorizon" data-then="customize" data-id="'+(withEvent||'')+'" id="nh-cz" disabled>'+ic('paint')+'Customize</button>' +
-    '<button class="btn primary" data-act="donewhorizon" data-id="'+(withEvent||'')+'" id="nh-go" disabled>Create horizon</button>', 520);
+      '<label class="covopt"><input type="radio" name="nh-c" value="mosaic"'+(plain?'':' checked')+'><span class="covart">'+cov+'</span><span>Mosaic of its events</span></label>' +
+      '<label class="covopt"><input type="radio" name="nh-c" value="plain"'+(plain?' checked':'')+'><span class="covart"><span class="mosaic empty" style="width:88px;height:88px">'+ic('horizon',30)+'</span></span><span>Plain</span></label></div></div>' +
+    '<label class="pick" style="border:0;padding-left:0"><input type="checkbox" id="nh-p"'+(draftVal('horizon','nh-p')?' checked':'')+'><span class="pm">Publish it</span></label>',
+    FORMFOOT.horizon(), 520);
   focusIn('nh-n');
 }
 /* ---- add events: search the network's events, tick the ones you want, Done ---- */
@@ -2816,10 +2850,13 @@ function wizBodyHTML(){
   if (!d.editing) h += '<div class="wizsteps">' + ['1 · Basics','2 · Words','3 · Look'].map(function(l,i){
     return '<div class="ws'+(d.step===i+1?' on':'')+'">'+l+'</div>'; }).join('') + '</div>';
   if (d.step === 1){
-    h += '<div class="field"><label for="w-t">Title</label><input type="text" id="w-t" data-cz="title" value="'+esc(d.title)+'"></div>' +
-         '<div style="display:flex;gap:12px;flex-wrap:wrap"><div class="field" style="flex:1 1 160px"><label for="w-d">Starts</label><input type="date" id="w-d" data-cz="date" value="'+esc(d.date)+'"></div>' +
-         '<div class="field" style="flex:1 1 160px"><label for="w-e">Ends</label><input type="date" id="w-e" data-cz="end" value="'+esc(d.end)+'"></div></div>' +
-         '<div class="field"><label for="w-c">Where</label><input type="text" id="w-c" data-cz="city" value="'+esc(d.city)+'"></div>' +
+    var miss = d.showErr ? eventDraftMissing(d) : {};
+    h += '<div class="field"><label for="w-t">Title</label><input type="text" id="w-t" data-cz="title" value="'+esc(d.title)+'" placeholder="Ridge sauna, midnight" autocomplete="off"'+(miss.title?' aria-invalid="true"':'')+'>' +
+           (miss.title ? '<span class="ferr">Add a title</span>' : '') + '</div>' +
+         '<div style="display:flex;gap:12px;flex-wrap:wrap"><div class="field" style="flex:1 1 160px"><label for="w-d">Starts</label><input type="date" id="w-d" data-cz="date" value="'+esc(d.date)+'"'+(miss.date?' aria-invalid="true"':'')+'>' +
+           (miss.date ? '<span class="ferr">Add a start date</span>' : '') + '</div>' +
+         '<div class="field" style="flex:1 1 160px"><label for="w-e">Ends</label><input type="date" id="w-e" data-cz="end" value="'+esc(d.end)+'"'+(d.date?' min="'+esc(d.date)+'"':'')+'></div></div>' +
+         '<div class="field"><label for="w-c">Where</label><input type="text" id="w-c" data-cz="city" value="'+esc(d.city)+'" placeholder="Stockholm"></div>' +
          '<div class="field"><label for="w-p">Who can see it</label><select id="w-p" data-cz="privacy">' +
            [['everyone','Everyone'],['friends','Friends'],['only_me','Only me']].map(function(p){ return '<option value="'+p[0]+'"'+(p[0]===d.privacy?' selected':'')+'>'+p[1]+'</option>'; }).join('') +
          '</select></div>' +
@@ -2827,15 +2864,15 @@ function wizBodyHTML(){
            ['free','donation','pay_what_you_can','ticket','membership','invite'].map(function(p){ return '<option value="'+p+'"'+(p===d.entry?' selected':'')+'>'+ACCESSLAB[p]+'</option>'; }).join('') +
          '</select></div>';
   } else if (d.step === 2){
-    h += '<div class="field"><label for="w-desc">Description</label><textarea id="w-desc" data-cz="desc" rows="5">'+esc(d.desc)+'</textarea></div>' +
-         '<div class="field"><label for="w-m">Mood line</label><input type="text" id="w-m" data-cz="mood" value="'+esc(d.mood)+'"></div>' +
-         '<div class="field"><label for="w-b">Bring</label><textarea id="w-b" data-cz="bring" rows="3">'+esc(d.bring)+'</textarea><span class="fhelp">One item per line</span></div>';
+    h += '<div class="field"><label for="w-desc">Description</label><textarea id="w-desc" data-cz="desc" rows="5" placeholder="Hot box on the ridge, a bucket of lake water, and nobody checking the time.">'+esc(d.desc)+'</textarea></div>' +
+         '<div class="field"><label for="w-m">Mood line</label><input type="text" id="w-m" data-cz="mood" value="'+esc(d.mood)+'" placeholder="steam, silence, then the lake"></div>' +
+         '<div class="field"><label for="w-b">Bring</label><textarea id="w-b" data-cz="bring" rows="3" placeholder="A towel&#10;Something warm for after">'+esc(d.bring)+'</textarea></div>';
   } else h += customizeHTML();
   return h;
 }
 function wizFootHTML(){
   var d = DRAFT;
-  return '<button class="btn" data-act="closedlg">Cancel</button>' +
+  return (!d.editing && eventDraftDirty(d) ? '<button class="btn" data-act="discarddraft" data-id="event">Discard</button>' : '<button class="btn" data-act="closedlg">Cancel</button>') +
     (d.step > 1 && !d.editing ? '<button class="btn" data-act="wiz" data-id="back">'+ic('back')+'Back</button>' : '') +
     (d.step < 3 ? '<button class="btn primary" data-act="wiz" data-id="next">Next</button>'
                 : '<button class="btn primary" data-act="wiz" data-id="finish">'+(d.editing?'Apply':'Publish event')+'</button>');
@@ -2847,12 +2884,24 @@ function paintWiz(){
   d.querySelector('.dfoot').innerHTML = wizFootHTML();
   placeDlg(d);
 }
+/* a create form starts empty and is its own draft: closing it keeps what you typed, Discard throws it away */
+var FORMDRAFTS = {};
+function blankEventDraft(){
+  return { step:1, editing:null, title:'', date:'', end:'', city:'', privacy:'everyone', entry:'free', desc:'', bring:'',
+           mood:'', pal:0, surface:'grain', type:'serif', headline:'huge', motion:'drift', shape:'sharp', density:'airy', pattern:'moon', glyph:'☾' };
+}
+function eventDraftDirty(d){
+  var b = blankEventDraft();
+  return Object.keys(b).some(function(k){ return k !== 'step' && k !== 'editing' && String(d[k] == null ? '' : d[k]) !== String(b[k]); });
+}
+function eventDraftMissing(d){ return { title: !String(d.title || '').trim(), date: !isoDate(d.date) }; }
+function refreshWizFoot(){ var d = DLGS[DLGS.length-1]; if (d && DRAFT && d.querySelector('.dfoot') && d.querySelector('.wizsteps, .custwrap')) d.querySelector('.dfoot').innerHTML = wizFootHTML(); }
 var newEventDialog = gated(function(){
-  DRAFT = { step:1, editing:null, title:'Ridge sauna, midnight', date:'2026-10-24', end:'', city:'Stockholm', privacy:'everyone', entry:'free',
-            host:S.me.name, desc:'Hot box on the ridge, a bucket of lake water, and nobody checking the time.', bring:'A towel\nSomething warm for after',
-            mood:'steam, silence, then the lake', pal:0, surface:'grain', type:'serif', headline:'huge', motion:'drift', shape:'sharp', density:'airy', pattern:'moon', glyph:'☾' };
+  DRAFT = FORMDRAFTS.event || blankEventDraft();
+  DRAFT.showErr = false;
+  FORMDRAFTS.event = DRAFT;
   dialog('New event', wizBodyHTML(), wizFootHTML(), 900);
-  focusIn('w-t');
+  if (DRAFT.step === 1) focusIn('w-t');
 });
 /* a horizon is customised with the same controls, plus its cover */
 var HZDEFAULT = { mood:'', pal:5, surface:'grid', type:'grotesk', headline:'huge', motion:'none', shape:'sharp', density:'airy', pattern:'rays', glyph:'◗' };
@@ -2882,7 +2931,12 @@ var customizeDialog = gated(function(evId){
 });
 function wizAct(which){
   if (which === 'back'){ DRAFT.step = Math.max(1, DRAFT.step-1); paintWiz(); return; }
-  if (which === 'next'){ DRAFT.step = Math.min(3, DRAFT.step+1); paintWiz(); return; }
+  var miss = eventDraftMissing(DRAFT), bad = !DRAFT.editing && (miss.title || miss.date);
+  if (which === 'next'){
+    if (DRAFT.step === 1 && bad){ DRAFT.showErr = true; paintWiz(); focusIn(miss.title ? 'w-t' : 'w-d'); return; }
+    DRAFT.step = Math.min(3, DRAFT.step+1); paintWiz(); return;
+  }
+  if (bad){ DRAFT.step = 1; DRAFT.showErr = true; paintWiz(); focusIn(miss.title ? 'w-t' : 'w-d'); return; }
   var t = draftTheme(DRAFT);
   if (DRAFT.kind === 'horizon'){
     var hid = DRAFT.editing;
@@ -2900,7 +2954,8 @@ function wizAct(which){
   }
   var id = 'evt-new-' + Date.now().toString(36);
   var start = isoDate(DRAFT.date) || TODAY_ISO, end = isoDate(DRAFT.end);
-  EVENTS[id] = { id:id, title:DRAFT.title || 'Untitled event', date:start, description:DRAFT.desc,
+  FORMDRAFTS.event = null;
+  EVENTS[id] = { id:id, title:DRAFT.title.trim(), date:start, description:DRAFT.desc,
                  hostName:S.me.name, hostAcct:S.acct, privacy:DRAFT.privacy, ownerIds:['self'], kind:'own', city:DRAFT.city };
   REC[id] = { kind:'meetup', scale: end && end > start ? 'gathering' : 'meetup', endDate: end && end > start ? end : undefined,
               venueKind:'physical', city:DRAFT.city, venue:{ name:DRAFT.city, addressVisibility:'public' }, description:DRAFT.desc,
@@ -3314,7 +3369,7 @@ var answerCallout = gated(function(coId){
 function createChat(){
   if (!NC || !NC.sel.length) return;
   if (NC.sel.length === 1){ closeDialogs(); openChat(openDM(NC.sel[0])); return; }
-  var name = NC.name.trim(); if (!name) return;
+  var name = NC.name.trim() || ncAutoName();
   var cid = 'c-new-' + (Object.keys(CHATS).length + 1);
   CHATS[cid] = { id:cid, name:name, kind:'group', memberIds:NC.sel.slice(),
     messages:[{ from:'sys', t:nowClock(), text:'You created “'+name+'” with ' + NC.sel.map(function(k){ return person(k).displayName.split(' ')[0]; }).join(', ') }] };
@@ -3325,6 +3380,7 @@ function createChat(){
 function sendChat(){
   var box = $('chatbox'), cid = activeChat(); if (!box || !cid || !box.value.trim()) return;
   CHATS[cid].messages.push({ from:'self', t:nowClock(), text:box.value.trim() });
+  delete CHATDRAFT[cid];
   box.value = '';
   render();
   var b = $('chatbox'); if (b) b.focus();
@@ -3451,6 +3507,7 @@ document.addEventListener('click', function(ev){
       var nm = (($('nh-n')||{}).value || '').trim();
       if (!nm) break;
       var hid = 'horizon-mine-' + Date.now().toString(36);
+      FORMDRAFTS.horizon = null;
       var withEv = id && EVENTS[id] ? id : null;
       HORIZONS[hid] = { id:hid, name:nm, description:(($('nh-d')||{}).value||'').trim(), isPersonalDefault:false,
                         isPublished:!!($('nh-p')||{}).checked, ownerName:S.me.name, ownerId:acctPid(S.acct), ownerAcct:S.acct, eventIds: withEv ? [withEv] : [] };
@@ -3476,9 +3533,12 @@ document.addEventListener('click', function(ev){
     case 'pkdone':       pickerDone(); break;
     case 'unfile':       removeFromHorizon(id, n.getAttribute('data-hz')); break;
     case 'donewcallout': {
-      var cid3 = 'co-new-' + (CALLOUTS.length+1);
-      CALLOUTS.unshift({ id:cid3, title:($('co-t')||{}).value||'Untitled', body:($('co-b')||{}).value||'',
-                         expiresAt:isoDate(($('co-x')||{}).value)||'2026-12-31', hostName:S.me.name, hostId:acctPid(S.acct), hostAcct:S.acct });
+      var cot = (($('co-t')||{}).value || '').trim();
+      if (!cot) break;
+      var cid3 = 'co-new-' + Date.now().toString(36), month = dOf(TODAY_ISO); month.setDate(month.getDate() + 30);
+      CALLOUTS.unshift({ id:cid3, title:cot, body:(($('co-b')||{}).value || '').trim(),
+                         expiresAt:isoDate(($('co-x')||{}).value) || isoOf(month), hostName:S.me.name, hostId:acctPid(S.acct), hostAcct:S.acct });
+      FORMDRAFTS.callout = null;
       closeDialogs();
       if (L.phone) S.tab = 'home';
       goFolder({ kind:'home' }); S.view['home'] = 'feed'; S.stack = [{ type:'callout', id:cid3 }]; S.autoSel = false; render();
@@ -3486,6 +3546,7 @@ document.addEventListener('click', function(ev){
       break;
     }
     case 'wiz':          wizAct(id); break;
+    case 'discarddraft': FORMDRAFTS[id] = null; closeDialogs(); schedulePersist(); break;
     case 'calmode':      S.calMode = id; render(); break;
     case 'caltoday':     S.calAnchor = TODAY_ISO; render(); break;
     case 'calnav': {
@@ -3504,9 +3565,12 @@ document.addEventListener('change', function(ev){
     var k = n.getAttribute('data-cz'); if (k === 'preset') return;
     DRAFT[k] = k === 'pal' ? +n.value : n.value;
     /* text fields already updated the preview as you typed; repainting here would swallow the click that blurred them */
-    if (DRAFT.step === 3 && n.tagName === 'SELECT') paintWiz();
+    if (DRAFT.step === 3 && n.tagName === 'SELECT') paintWiz(); else refreshWizFoot();
+    schedulePersist();
     return;
   }
+  if (/^co-x$/.test(n.id)){ saveForm('callout'); return; }
+  if (n.id === 'nh-p' || n.name === 'nh-c'){ saveForm('horizon'); return; }
   var act = n.getAttribute('data-act');
   if (act === 'calmine'){ S.calMine = n.checked; render(); }
   if (act === 'sort'){ S.sort = n.value; render(); }
@@ -3516,11 +3580,18 @@ document.addEventListener('input', function(ev){
   if (n.id === 'q' || n.id === 'pq'){ doSearch(n.value); return; }
   if (n.id === 'nc-q'){ NC.q = n.value; var sel = NC.sel.slice(); paintNewChat(); var q = $('nc-q'); if (q){ q.focus(); q.setSelectionRange(q.value.length, q.value.length); } return; }
   if (/^pf-(name|handle|about)$/.test(n.id)){ pfSync(); return; }
-  if (n.id === 'nh-n'){ ['nh-go','nh-cz'].forEach(function(b){ var go = $(b); if (go) go.disabled = !n.value.trim(); }); return; }
+  if (n.id === 'chatbox'){ var ac = activeChat(); if (ac){ if (n.value) CHATDRAFT[ac] = n.value; else delete CHATDRAFT[ac]; schedulePersist(); } return; }
+  if (/^co-[tbx]$/.test(n.id)){ saveForm('callout'); return; }
+  if (/^nh-[nd]$/.test(n.id)){ saveForm('horizon'); return; }
   if (n.id === 'pk-q'){ PK.q = n.value; $('pk-list').innerHTML = pickerList(); return; }
   if (n.id === 'nc-name'){ NC.name = n.value; paintNewChat(true); return; }
   if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT') return;
   DRAFT[n.getAttribute('data-cz')] = n.value;
+  if (n.getAttribute('aria-invalid') && String(n.value).trim()){
+    n.removeAttribute('aria-invalid');
+    var er = n.parentNode.querySelector('.ferr'); if (er) er.remove();
+  }
+  refreshWizFoot(); schedulePersist();
   if (DRAFT.step === 3){
     var box = DLGS[DLGS.length-1] && DLGS[DLGS.length-1].querySelector('.custprev');
     if (box) box.innerHTML = customizePreviewHTML();
@@ -3865,6 +3936,8 @@ function restore(){
   if (k && ACCTS[k]){ S.acct = k; S.loggedIn = true; loadAcct(ACCTS[k]); }
   syncAcctPeople();
 }
+var PERSISTT = null;
+function schedulePersist(){ clearTimeout(PERSISTT); PERSISTT = setTimeout(persist, 400); }
 var RZ = null;
 window.addEventListener('resize', function(){ clearTimeout(RZ); RZ = setTimeout(render, 60); });
 (function boot(){

@@ -1,19 +1,53 @@
 /* Hypernet feed — end-to-end regression (usability round 1, Phase A + B).
    Serve:  python3 -m http.server 8936 --bind 127.0.0.1 --directory <repo>
    Run:    npx -y -p playwright node tests/regression.js
-           (PW_CHROME=<chromium binary> and HN_URL=<url> are optional)
+   Browser: Playwright's own Chromium when it is installed; otherwise PW_CHROME=<chromium binary>; otherwise
+            the newest Chromium found in the Playwright cache (~/Library/Caches/ms-playwright, ~/.cache/ms-playwright).
+            If none is found it says how to get one (npx playwright install chromium-headless-shell).
+   HN_URL=<url> points it at another server.
    Covers: open event → Going; create horizon → add events → customize → reload; new group chat;
-   right-click → Add to horizon; long-press sheet; back/forward/reload restore; console errors and
-   horizontal overflow at 375 (touch), 768 and 1440. */
-let chromium; try { ({ chromium } = require('playwright')); } catch(e){ ({ chromium } = require('playwright-core')); }
-const path = require('path');
-const EXE = process.env.PW_CHROME || undefined;           /* a Chromium binary, if playwright's own is not installed */
+   right-click → Add to horizon; long-press sheet; back/forward/reload restore; console errors, failed
+   requests (404s) and horizontal overflow at 375 (touch), 768 and 1440. */
+let chromium;
+try { ({ chromium } = require('playwright')); } catch(e){
+  try { ({ chromium } = require('playwright-core')); } catch(e2){
+    console.error('Needs Playwright: run it as  npx -y -p playwright node tests/regression.js'); process.exit(2);
+  }
+}
+const path = require('path'), fs = require('fs'), os = require('os');
 const URL = process.env.HN_URL || 'http://127.0.0.1:8936/';
-const SHOTS = path.join(require('os').tmpdir(), 'hypernet-shots');
-require('fs').mkdirSync(SHOTS, { recursive: true });
+const SHOTS = path.join(os.tmpdir(), 'hypernet-shots');
+fs.mkdirSync(SHOTS, { recursive: true });
 
+/* any Chromium Playwright has downloaded before, newest first */
+function cachedChromes(){
+  var roots = [process.env.PLAYWRIGHT_BROWSERS_PATH, path.join(os.homedir(), 'Library/Caches/ms-playwright'), path.join(os.homedir(), '.cache/ms-playwright')].filter(Boolean);
+  var bins = [];
+  roots.forEach(function(r){
+    var dirs; try { dirs = fs.readdirSync(r); } catch(e){ return; }
+    dirs.filter(function(d){ return /^chromium(_headless_shell)?-\d+$/.test(d); })
+      .sort(function(a, b){ return +b.split('-').pop() - +a.split('-').pop(); })
+      .forEach(function(d){
+        ['chrome-headless-shell-mac-arm64/chrome-headless-shell', 'chrome-headless-shell-mac-x64/chrome-headless-shell',
+         'chrome-headless-shell-linux64/chrome-headless-shell', 'chrome-linux/chrome', 'chrome-linux64/chrome',
+         'chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
+         'chrome-mac/Chromium.app/Contents/MacOS/Chromium'].forEach(function(b){ var f = path.join(r, d, b); if (fs.existsSync(f)) bins.push(f); });
+      });
+  });
+  return bins;
+}
 let browser;
-async function launch(){ browser = browser || await chromium.launch({ executablePath: EXE, args: ['--no-sandbox'] }); return browser; }
+async function launch(){
+  if (browser) return browser;
+  var tries = [process.env.PW_CHROME || undefined].concat(process.env.PW_CHROME ? [] : cachedChromes());
+  for (var i = 0; i < tries.length; i++){
+    try { browser = await chromium.launch({ executablePath: tries[i], args: ['--no-sandbox'] }); if (tries[i]) console.log('browser: ' + tries[i]); return browser; }
+    catch(e){ if (i === tries.length - 1){
+      console.error('No Chromium to run. Install one with  npx playwright install chromium-headless-shell  or set PW_CHROME=<path>.\n' + String(e.message).split('\n')[0]);
+      process.exit(2);
+    } }
+  }
+}
 const PHONE = { viewport:{ width:375, height:812 }, hasTouch:true, isMobile:true, deviceScaleFactor:2,
   userAgent:'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0 Mobile Safari/537.36' };
 const DESK = { viewport:{ width:1440, height:900 } };
@@ -23,8 +57,9 @@ async function ctx(kind, opts){
   const c = await b.newContext(Object.assign({}, kind === 'phone' ? PHONE : kind === 'tab' ? TAB : DESK, opts || {}));
   const p = await c.newPage();
   p.errors = [];
-  p.on('console', m => { if (m.type() === 'error' && !/favicon/.test(m.text())) p.errors.push(m.text()); });
+  p.on('console', m => { if (m.type() === 'error') p.errors.push(m.text()); });
   p.on('pageerror', e => p.errors.push('PAGEERROR ' + e.message));
+  p.on('response', r => { if (r.status() >= 400) p.errors.push(r.status() + ' ' + r.url()); });
   return p;
 }
 async function open(p, hash, clear){

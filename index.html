@@ -320,6 +320,8 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 #evbar .vbtn{ flex:1 1 0; min-width:0; padding:0 8px; }
 #evbar .vwent, #evbar .vmore:not(.vdots){ flex:1 1 auto; justify-content:center; }
 #evbar .vmore.vdots{ flex:0 0 var(--act); }
+#evbar .vbtn, #evbar .vpromo{ font-size:13px; gap:5px; padding:0 6px; }
+#evbar .vpromo{ flex:0 1 auto; justify-content:center; }
 .sh-cut .chip, .sh-cut .vmore, .sh-cut .card{ clip-path:polygon(0 0,100% 0,100% 72%,94% 100%,0 100%); }
 
 .layer{ position:relative; }
@@ -1247,7 +1249,25 @@ function toast(title, body, undo){
   box.innerHTML = '<div class="toast'+(undo ? ' act' : '')+'"><span class="tt2"><b>'+esc(title)+'</b>'+(body?esc(body):'')+'</span>' +
     (undo ? '<button class="btn" data-act="toastundo">'+esc(undo.label || 'Undo')+'</button>' : '') + '</div>';
   clearTimeout(TOASTT);
-  TOASTT = setTimeout(function(){ box.innerHTML = ''; TOASTACT = null; }, undo ? 6000 : 2400);
+  placeToasts();
+  TOASTT = setTimeout(function(){
+    /* a tap aimed at a toast's button that arrives just after it went is swallowed, not passed to what was under it */
+    var b = box.querySelector('.toast.act'); if (b){ TOASTGHOST = { r:b.getBoundingClientRect(), until:Date.now() + 700 }; }
+    box.innerHTML = ''; TOASTACT = null;
+  }, undo ? 6000 : 2400);
+}
+var TOASTGHOST = null;
+document.addEventListener('click', function(ev){
+  var g = TOASTGHOST; if (!g || Date.now() > g.until) return;
+  if (ev.clientX >= g.r.left && ev.clientX <= g.r.right && ev.clientY >= g.r.top && ev.clientY <= g.r.bottom){ ev.preventDefault(); ev.stopPropagation(); }
+}, true);
+/* on a phone toasts sit above whatever bar holds the controls (the event's verbs, else the tabs), never on it */
+function placeToasts(){
+  var box = $('toasts'); if (!box) return;
+  if (!document.body.classList.contains('is-phone')){ box.style.bottom = ''; return; }
+  var bars = ['evbar', 'tabbar'].map($).filter(function(b){ return b && b.offsetParent; });
+  var top = bars.length ? Math.min.apply(null, bars.map(function(b){ return b.getBoundingClientRect().top; })) : window.innerHeight;
+  box.style.bottom = Math.max(12, window.innerHeight - top + 10) + 'px';
 }
 /* logged-out actions ask for a login, then carry on with what you asked for.
    Carried on means made so: a verb you asked for is switched on, never toggled back off. */
@@ -1863,7 +1883,10 @@ function evbarHTML(evId){
     h += '<div class="vpair" role="group" aria-label="Your state">' +
          '<button class="vbtn'+(st==='interested'?' on':'')+'" data-act="v-interested" data-id="'+evId+'" aria-pressed="'+(st==='interested')+'">'+ic('heart')+'Interested</button>' +
          '<button class="vbtn'+(st==='going'?' on':'')+'" data-act="v-going" data-id="'+evId+'" aria-pressed="'+(st==='going')+'">'+ic('check')+'Going</button></div>';
-    more = 'promote,addto,share';
+    /* the three event verbs stay together, as on a desktop */
+    var pro = S.loggedIn && PROMOTED[evId];
+    h += '<button class="vpromo'+(pro?' on':'')+'" data-act="v-promote" data-id="'+evId+'" aria-pressed="'+!!pro+'">'+ic('promote')+(pro?'Promoted':'Promote')+'</button>';
+    more = 'addto,share';
   }
   return h + '<button class="vmore vdots" data-act="evmore" data-id="'+evId+'" data-more="'+more+'" aria-label="More" aria-haspopup="menu">'+ic('dots',16)+'</button></div>';
 }
@@ -3356,7 +3379,7 @@ function ctxItems(t, only){
       { code:'going', label:'Going', icon:'check', check: st === 'going',
         run: ctxVerb(function(){ setRSVP(id, 'going'); }, function(){ return RSVP[id] === 'going'; }, 'Going', EVENTS[id].title) });
     if (!past) out.push({ code:'promote', label:'Promote', icon:'promote', check: S.loggedIn && !!PROMOTED[id],
-        run: ctxVerb(function(){ doPromote(id); }, function(){ return !!PROMOTED[id]; }, 'Promoted to your followers', EVENTS[id].title) });
+        run: ctxVerb(function(){ doPromote(id); }, function(){ return !!PROMOTED[id]; }, 'Promoted', EVENTS[id].title) });
     out.push('-');
     /* logged out there are no horizons of yours to list yet: log in, then pick one */
     if (S.loggedIn) out.push({ code:'addto', label:'Add to horizon', icon:'addhorizon', sub: ctxHorizonItems(id) });
@@ -3656,7 +3679,7 @@ var setRSVP = gated(function(evId, mode){
   if (RSVP[evId] === 'interested' && MYHORIZONS.indexOf('horizon-default') >= 0 && dh.eventIds.indexOf(evId) < 0) dh.eventIds.push(evId);
   markRead(evId);
   render();
-  toast(RSVP[evId] ? (mode === 'going' ? 'Going' : 'Interested') : 'Removed', EVENTS[evId].title);
+  toast(RSVP[evId] ? (mode === 'going' ? 'Going' : 'Interested') : (mode === 'going' ? 'Not going' : 'Not interested'), EVENTS[evId].title);
 });
 var setWent = gated(function(evId){
   if (!(RESUMING && WENT[evId])) WENT[evId] = !WENT[evId];
@@ -3664,11 +3687,12 @@ var setWent = gated(function(evId){
   toast(WENT[evId] ? 'Marked as went' : 'Removed', EVENTS[evId].title);
 });
 var doPromote = gated(function(evId){
-  if (RESUMING && PROMOTED[evId]){ render(); toast('Promoted to your followers', EVENTS[evId].title); return; }
+  if (RESUMING && PROMOTED[evId]){ render(); toast('Promoted', EVENTS[evId].title); return; }
   PROMOTED[evId] = !PROMOTED[evId];
   render();
-  toast(PROMOTED[evId] ? 'Promoted to your followers' : 'Promotion withdrawn', EVENTS[evId].title,
-    PROMOTED[evId] && S.folder.kind !== 'promoted' ? { label:'See all', run:function(){ if (L.phone) S.tab = 'you'; goFolder({ kind:'promoted' }); render(); } } : null);
+  /* nothing here knows who follows you, so the toast doesn't claim an audience */
+  toast(PROMOTED[evId] ? 'Promoted' : 'Not promoted', EVENTS[evId].title,
+    PROMOTED[evId] ? function(){ PROMOTED[evId] = false; render(); toast('Not promoted', EVENTS[evId].title); } : null);
 });
 var toggleInHorizon = gated(function(evId, hzId){
   var hz = HORIZONS[hzId], i = hz.eventIds.indexOf(evId);
@@ -4434,6 +4458,7 @@ function render(){
     renderDetail();
   }
   renderChats();
+  placeToasts();
   document.title = (S.stack.length && !S.autoSel ? itemName(S.stack[S.stack.length-1]) : folderName()) + ' · Hypernet';
   persist();
   syncRoute();

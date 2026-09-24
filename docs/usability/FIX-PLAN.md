@@ -244,3 +244,16 @@ page ("Horizon created"), where Customize holds the cover.
   Home already shows (the owner's "never the same destination twice") or at nothing ("@nova and @ember are now
   Friends"). Home's sections already carry the network: people you follow, your Event Horizons, call outs from your
   crews. The news fixtures, row type and band are removed rather than kept dormant.
+
+## Round 2 (2026-09-24)
+
+Re-test: 73/81 round-1 findings fixed, 8 partial, 0 broken; 55 new findings (4 major) in `round2/*.md`.
+Fixed in the coordinator's priority order, one commit per group.
+
+**R2-1. Toasts never sit on the controls.** Sources: CREW-R2-1, FIRSTTIMER-R2-2, ORGANISER-R2-12, CREW-R2-3,
+FIRSTTIMER-R2-14, CREW-17 (partial).
+*Status: done.* On phone, toasts are placed above whichever bar holds the controls (the event's verb bar, else the
+tabs) and re-placed on every render; a tap that lands where a toast's button was, within 0.7s of it disappearing, is
+swallowed instead of reaching the page. The phone verb bar is Interested · Going · Promote · ⋯ (Add to horizon and
+Share in ⋯). Toast copy: "Not going" / "Not interested" instead of "Removed"; Promote says "Promoted · <event>" with
+Undo and no longer claims followers the prototype can't know about.

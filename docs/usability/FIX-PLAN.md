@@ -264,3 +264,13 @@ menu — until it is published; then Share takes Publish's place and "Published"
 viewer can't open (private, deleted, mistyped: event, Event Horizon, call out, person, chat) keeps its URL and shows a
 "This Event Horizon is private or no longer here" / "This event is no longer on Hypernet" page with Home, instead of
 silently rewriting to `#/home`. Back to a deleted item's history entry shows the same page.
+
+**R2-3. A horizon is its own place on desktop and tablet.** Sources: ORGANISER-R2-2, ORGANISER-15 (partial),
+PHONEBROWSER-R2-7, ORGANISER-R2-10, ORGANISER-R2-13 (numbering).
+*Status: done.* On wide screens opening a horizon (sidebar, card, chip, link) makes it the destination: its page —
+cover, owner actions, tracks — is the centre list, the reading pane shows the selected track (first upcoming by
+default), only its sidebar row is lit, and the window title is its name; no Home/Hosting header or view switcher.
+Tracks open beside it (`#/event/…?in=horizon/baltic`); at 768 a track opens with "Back · Baltic Circuit". On phone it
+stays a page on the Horizons tab. Tracks: upcoming first, past ones folded under "Past · N", no playlist numbers (they
+implied an order the owner can't set), titles wrap to two lines with the state tag under them; the date range prints
+both years when they differ. `?in=` values keep their slash readable.

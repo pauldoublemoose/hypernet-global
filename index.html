@@ -733,9 +733,14 @@ body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 1
 .tracks{ list-style:none; margin:8px 0 0; padding:0; border-top:1px solid var(--line); }
 .track{ display:flex; align-items:center; gap:12px; min-height:68px; padding:10px 16px; border-bottom:1px solid var(--line); }
 .track:active{ background:var(--hover); }
-.track .tn{ flex:0 0 18px; font:12px var(--mono); color:var(--dim); text-align:right; }
-.track .tm{ flex:1; min-width:0; display:flex; flex-direction:column; }
-.track .tt{ font-size:15px; font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.track .tm{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; }
+.track .tt{ font-size:15px; font-weight:bold; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.track .ctag.inline{ margin-top:5px; }
+.track.sel{ background:var(--sel); color:#fff; }
+.track.sel .ts{ color:var(--seldim); }
+.trpast{ display:flex; align-items:center; gap:8px; min-height:48px; padding:0 16px; border-bottom:1px solid var(--line); cursor:pointer;
+  font:bold 11px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dim); }
+.plist.themed .trpast{ color:var(--edim); border-color:var(--eac2); }
 .track .ts{ margin-top:2px; font-size:13px; color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .track.past .tt{ color:#6f6f6f; }
 
@@ -763,6 +768,7 @@ body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 1
 #app.phone #chead .ct{ display:none; }
 #app.phone #chead .ctools{ flex:1; justify-content:space-between; flex-wrap:nowrap; }
 #app.phone #chead.none{ display:none; }
+#chead.hzhead{ display:none; }
 #app.phone .seg{ flex:1 1 auto; }
 #app.phone .seg button{ flex:1; padding:0 8px; }
 #app.phone .sortsel .sl{ display:none; }
@@ -1108,6 +1114,7 @@ function fixtureChats(){
   return { byId:byId, order:order };
 }
 
+var HZPAST = {};               /* horizons whose past events you unfolded */
 var HZCOVER = {};              /* hzId -> 'own' | 'plain' | an event id; nothing = mosaic of its events */
 var EDITED = {};               /* events a host changed after they existed (their look, their details) */
 var HZTHEME = {};              /* hzId -> a theme in the same shape as an event's */
@@ -1203,7 +1210,7 @@ function hzDates(hzId){
 function hzRange(hzId){
   var d = hzDates(hzId);
   if (!d.length) return 'No events yet';
-  return d.length === 1 ? fmtDate(d[0]) : fmtShort(d[0]) + ' – ' + fmtDate(d[d.length-1]);
+  return d.length === 1 ? fmtDate(d[0]) : fmtRange(d[0], d[d.length-1]);
 }
 /* a horizon's date, said as what it means: its next event, or when its last one was */
 function hzWhen(hzId){
@@ -1323,7 +1330,7 @@ function homeItems(){
   return out;
 }
 var VIEWS = { home:['feed','list','calendar'], horizons:['list','calendar'], going:['list','calendar'], interested:['list','calendar'],
-              hosting:['list','calendar'], promoted:['list','calendar'], horizon:['list','calendar'] };
+              hosting:['list','calendar'], promoted:['list','calendar'] };
 function destKey(f){ f = f || S.folder; return f.kind + (f.id ? ':' + f.id : ''); }
 function viewsOf(f){
   f = f || S.folder;
@@ -1548,6 +1555,10 @@ function browseHTML(){
 }
 function renderList(){
   if (L.phone && S.phoneSearch && S.folder.kind !== 'search'){ $('listbody').innerHTML = browseHTML(); S.rows = []; return; }
+  if (S.folder.kind === 'horizon' && HORIZONS[S.folder.id]){
+    var lb0 = $('listbody'), top0 = lb0.scrollTop;
+    lb0.innerHTML = horizonHTML(S.folder.id, true); lb0.scrollTop = top0; return;
+  }
   if (isShelfFeed()){ renderShelves(); return; }
   var items = sortItems(folderItems());
   var g = groupItems(items), h = '', rows = [];
@@ -2023,14 +2034,23 @@ function playlistHTML(hzId, withTracks){
   }
   h += '</div>';
   if (withTracks === false) return h + '</div>';
-  h += '<ol class="tracks">' + (evs.length ? evs.map(function(e, i){
+  /* what is still to come leads; what already happened folds away under "Past" */
+  var up = evs.filter(function(e){ return !isPast(lastDay(e)); }), past = evs.filter(function(e){ return isPast(lastDay(e)); }).reverse();
+  var inList = !L.phone && S.folder.kind === 'horizon' && S.folder.id === hzId;
+  var track = function(e){
     var tag = cardTag({ type:'event', id:e.id });
-    return '<li class="track'+(isPast(lastDay(e))?' past':'')+'" data-act="open" data-type="event" data-id="'+e.id+'" role="button">' +
-      '<span class="tn">'+(i+1)+'</span>' + sqPx(e.id, 48) +
-      '<span class="tm"><span class="tt">'+esc(e.title)+'</span><span class="ts">'+esc(fmtShort(e.date) + ' · ' + whereOf(e) + ' · ' + hostLabel(e))+'</span></span>' +
-      (tag ? tag.replace('ctag', 'ctag inline') : '') +
+    return '<li class="track'+(isPast(lastDay(e))?' past':'')+(inList && isSel({ type:'event', id:e.id }) ? ' sel' : '')+'" data-act="'+(inList ? 'row' : 'open')+'" data-type="event" data-id="'+e.id+'" data-hz="'+hzId+'" role="button">' +
+      sqPx(e.id, 48) +
+      '<span class="tm"><span class="tt">'+esc(e.title)+'</span><span class="ts">'+esc([fmtShort(e.date), whereOf(e), hostLabel(e)].filter(Boolean).join(' · '))+'</span>' +
+      (tag ? tag.replace('ctag', 'ctag inline') : '') + '</span>' +
       (mine ? '<button class="ib trm" data-act="unfile" data-id="'+e.id+'" data-hz="'+hzId+'" aria-label="Remove '+esc(e.title)+' from '+esc(hz.name)+'">'+ic('close',16)+'</button>' : '') + '</li>';
-  }).join('') : (mine ? '' : '<li class="empty">No events in this horizon yet.</li>')) + '</ol></div>';
+  };
+  var open = !!HZPAST[hzId] || !up.length;
+  h += '<ol class="tracks">' + (evs.length ? up.map(track).join('') +
+      (past.length ? (up.length ? '<li class="trpast" data-act="hzpast" data-id="'+hzId+'" role="button" aria-expanded="'+open+'">'+ic(open ? 'down' : 'back', 16).replace('class="ic"', 'class="ic"'+(open ? '' : ' style="transform:scaleX(-1)"'))+'Past · '+past.length+'</li>' : '') +
+        (open ? past.map(track).join('') : '') : '')
+    : (mine ? '' : '<li class="empty">No events in this horizon yet.</li>')) + '</ol></div>';
+  if (inList) S.rows = up.concat(open ? past : []).map(function(e){ return { type:'event', id:e.id }; });
   return h;
 }
 function horizonHTML(hzId, withContents){
@@ -2500,11 +2520,11 @@ function renderNav(){
   var npro = Object.keys(PROMOTED).filter(function(k){ return PROMOTED[k] && EVENTS[k]; }).length;
   if (npro) h += navRow({kind:'promoted'}, ic('promote'), 'Promoted', { count: npro });
   if (MYHORIZONS.length) h += '<div class="navh">Your horizons</div>';
-  MYHORIZONS.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { count: HORIZONS[k].eventIds.length || '', drop:true, hz:true }); });
+  MYHORIZONS.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { count: HORIZONS[k].eventIds.length || '', drop:true, hz: L.phone }); });
   var followed = Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k] && HORIZONS[k]; });
   if (followed.length){
     h += '<div class="navh">Following</div>';
-    followed.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { sub: HORIZONS[k].ownerName !== HORIZONS[k].name ? HORIZONS[k].ownerName : '', hz:true }); });
+    followed.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { sub: HORIZONS[k].ownerName !== HORIZONS[k].name ? HORIZONS[k].ownerName : '', hz: L.phone }); });
   }
   var ppl = CREW.filter(function(p){ return PFOLLOW[p]; });
   if (ppl.length){
@@ -2531,6 +2551,8 @@ function renderToolbar(){
 }
 function renderCHead(){
   var el = $('chead'), views = viewsOf(), v = viewOf();
+  /* a horizon's own page is its header */
+  if (S.folder.kind === 'horizon'){ el.className = 'none hzhead'; el.innerHTML = ''; return; }
   var tools = '';
   if (v === 'list' && !isCal() && (S.folder.kind === 'home' || viewsOf().length) && S.folder.kind !== 'horizons'){
     tools += '<label class="sortsel"><span class="sl">Sort</span><select data-act="sort" aria-label="Sort">' +
@@ -3647,6 +3669,7 @@ function markRead(id){ READ[id] = true; }
 /* open an item in the detail pane: from a list row it replaces what is open, from inside a page it stacks */
 function openItem(type, id, mode){
   if (S.folder.kind === 'search') rememberQuery(S.query);
+  if (type === 'horizon' && !L.phone){ goFolder({ kind:'horizon', id:id }); render(); $('listbody').scrollTop = 0; return; }
   if (type === 'event') markRead(id);
   var it = { type:type, id:id };
   S.autoSel = false;
@@ -3668,7 +3691,7 @@ function phoneBack(){
 function tabRootFolder(t){ return { kind: t === 'horizons' || t === 'chats' || t === 'you' ? t : 'home', id:null }; }
 function tabOfFolder(f){
   var k = (f || S.folder).kind;
-  return k === 'horizons' ? 'horizons' : k === 'chats' ? 'chats' : /^(you|going|interested|hosting|promoted|people)$/.test(k) ? 'you' : 'home';
+  return k === 'horizons' || k === 'horizon' ? 'horizons' : k === 'chats' ? 'chats' : /^(you|going|interested|hosting|promoted|people)$/.test(k) ? 'you' : 'home';
 }
 /* each tab keeps its own place: switching back returns you there; tapping the tab you are on goes to its top */
 var TABMEM = {};
@@ -3955,6 +3978,7 @@ document.addEventListener('click', function(ev){
     case 'folder':   goFolder({ kind:n.getAttribute('data-kind'), id:id || null }); render(); $('listbody').scrollTop = 0; break;
     case 'shelfall':    goFolder({ kind:'shelf', id:id }); render(); $('listbody').scrollTop = 0; break;
     case 'dosearch':     { var qq = $('pq') || $('q'); if (qq) qq.value = id; doSearch(id); rememberQuery(id); break; }
+    case 'hzpast':       HZPAST[id] = !HZPAST[id]; render(); break;
     case 'gohome':       if (L.phone) setTab('home'); else { goFolder({ kind:'home' }); render(); } break;
     case 'setview':  S.view[destKey()] = id; S.stack = []; render(); break;
     case 'row':      openItem(n.getAttribute('data-type'), id); break;
@@ -4268,11 +4292,12 @@ function hashOf(s){
     if (s.cal.at && s.cal.at !== TODAY_ISO) p.push(['at', s.cal.at]);
     if (s.cal.day) p.push(['day', s.cal.day]);
   }
-  return '#/' + path + (p.length ? '?' + p.map(function(x){ return x[0] + '=' + encodeURIComponent(x[1]); }).join('&') : '');
+  return '#/' + path + (p.length ? '?' + p.map(function(x){ return x[0] + '=' + encodeURIComponent(x[1]).replace(/%2F/g, '/'); }).join('&') : '');
 }
 var FOLDERKINDS = /^(home|horizons|people|going|interested|hosting|promoted|you|search|chats)$/;
 function folderFrom(a, b){
   if (a === 'home' && b) return { kind:'shelf', id:b };
+  if (a === 'horizon'){ var hz = hzBySlug(b); return hz ? { kind:'horizon', id:hz } : null; }
   return FOLDERKINDS.test(a || '') ? { kind:a, id:null } : null;
 }
 function parseHash(h){
@@ -4296,6 +4321,7 @@ function parseHash(h){
   if (it){
     s.stack = [it.id ? it : { type:'missing', id:a + '/' + (b || '') }];
     if (p.in){ var ps = p.in.split('/'); s.folder = folderFrom(ps[0], ps[1]) || s.folder; }
+    else if (it.type === 'horizon') s.folder = { kind:'horizons', id:null };
   } else s.folder = folderFrom(a, b) || s.folder;
   s.tab = tabOfFolder(s.folder);
   return s;
@@ -4313,12 +4339,10 @@ function validItem(it){
 function applySnap(s){
   S.folder = { kind:(s.folder && s.folder.kind) || 'home', id:(s.folder && s.folder.id) || null };
   /* horizons used to open as folders; an old link or history entry opens the horizon's page */
-  var legacyHz = S.folder.kind === 'horizon' ? S.folder.id : null;
-  if (legacyHz) S.folder = { kind:'home', id:null };
+  if (S.folder.kind === 'horizon' && !validItem({ type:'horizon', id:S.folder.id })) S.folder = { kind:'home', id:null };
   S.tab = s.tab || tabOfFolder(S.folder);
   /* something you can't open (deleted, private, mistyped) is shown as such, never silently dropped */
   S.stack = (s.stack || []).map(function(it){ return validItem(it) ? { type:it.type, id:it.id } : { type:'missing', id:itemPath(it) }; });
-  if (legacyHz && !S.stack.length && validItem({ type:'horizon', id:legacyHz })) S.stack = [{ type:'horizon', id:legacyHz }];
   S.autoSel = false;
   S.query = S.folder.kind === 'search' ? (s.q || '') : '';
   S.phoneSearch = !!s.ps;
@@ -4452,6 +4476,14 @@ function render(){
     var ct = S.stack.filter(function(it){ return it.type === 'chat'; }).pop();
     if (ct){ S.stack = S.stack.filter(function(it){ return it.type !== 'chat'; }); S.chatOpen = ct.id; S.rightOpen = true; S.lastOpened = 'right'; L = computeLayout(); }
     if (S.folder.kind === 'you' || S.folder.kind === 'chats') goFolder({ kind:'home' });
+    /* a horizon opened as a page (a phone habit, or a link) becomes the destination on a wide screen */
+    var hi = -1; S.stack.forEach(function(it, i){ if (it.type === 'horizon' && HORIZONS[it.id]) hi = i; });
+    if (hi >= 0){ var hid0 = S.stack[hi].id; S.stack = S.stack.slice(hi + 1); S.folder = { kind:'horizon', id:hid0 }; if (!S.stack.length) S.autoSel = false; }
+  } else if (S.folder.kind === 'horizon'){
+    /* and on a phone it is a page on the Horizons tab */
+    var hid1 = S.folder.id; S.folder = { kind:'horizons', id:null }; S.tab = S.tab === 'home' || !S.tab ? 'horizons' : S.tab;
+    if (S.tab !== 'horizons') S.folder = tabRootFolder(S.tab);
+    S.stack = [{ type:'horizon', id:hid1 }].concat(S.stack);
   }
   /* in a split view something is always open in the reading pane */
   var items = null;

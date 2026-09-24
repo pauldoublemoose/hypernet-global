@@ -153,16 +153,16 @@ async function overflowEverywhere(p, label){
   ok(await ev(d, id => RSVP[id] === 'going', e2), 'desktop: open event → Going');
   await d.evaluate(() => runCmd('new-horizon')); await d.waitForTimeout(150);
   await d.fill('#nh-n', 'Driftwood'); await d.click('#nh-go'); await d.waitForTimeout(300);
-  const dh = await ev(d, () => S.stack[0].id);
-  await d.click('#dscroll [data-act="addevents"]'); await d.waitForTimeout(250);
+  const dh = await ev(d, () => S.folder.kind === 'horizon' ? S.folder.id : S.stack[0].id);
+  await d.click('#listbody [data-act="addevents"]'); await d.waitForTimeout(250);
   await d.fill('#pk-q', 'decompression'); await d.waitForTimeout(150);
   await d.evaluate(() => { [...document.querySelectorAll('#pk-list input[data-act="pkpick"]')].slice(0, 2).forEach(i => i.click()); });
   await d.click('.dlg [data-act="pkdone"]'); await d.waitForTimeout(250);
-  await d.click('#dscroll [data-act="customizehz"]'); await d.waitForTimeout(250);
+  await d.click('#listbody [data-act="customizehz"]'); await d.waitForTimeout(250);
   await d.click('.dlg [data-cz="preset"][data-i="3"]'); await d.waitForTimeout(150);
   await d.click('.dlg [data-act="wiz"][data-id="finish"]'); await d.waitForTimeout(250);
   await d.reload(); await d.waitForTimeout(700);
-  ok(await ev(d, h => HORIZONS[h].eventIds.length === 2 && !!HZTHEME[h] && !!document.querySelector('#dscroll .plist.themed'), dh), 'desktop: horizon + events + look survive reload');
+  ok(await ev(d, h => HORIZONS[h].eventIds.length === 2 && !!HZTHEME[h] && !!document.querySelector('#listbody .plist.themed') && S.folder.kind === 'horizon', dh), 'desktop: horizon + events + look survive reload');
   // right-click → Add to horizon
   await d.goto(URL + '#/home'); await d.waitForTimeout(500);
   const target = await ev(d, () => document.querySelectorAll('#listbody .row[data-type="event"]')[3].getAttribute('data-id'));

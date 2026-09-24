@@ -210,6 +210,8 @@ page ("Horizon created"), where Customize holds the cover.
   Recent in the empty search, and past events in results carry a Past pill.
 - Horizons tab: clear header; explain or drop the lone date on horizon rows (show a date range).
   (PHONEBROWSER-14, FIRSTTIMER-19)
+  *Status: done (C5).* The catch-all section is "Popular" (sorted by followers) under Yours / Following; the lone
+  date is now "Next Fri 25 Sep" or "Ended Fri 12 Jun" on every horizon row.
 - Promote shows a visible effect (e.g. "Promoted by you" and it appears to followers). (CREW-17)
   *Status: done (C4), partly.* Promoting adds a "Promoted" fact on the event ("By you and 8 more"), a Promoted list
   under Your events (sidebar and You tab), a Promoted tag on its cards, and a toast with "See all". Not done: showing it
@@ -218,7 +220,11 @@ page ("Horizon created"), where Customize holds the cover.
   *Status: done (C1/C4).* The button always reads "Add to horizon" (the bare noun "Horizon" is gone; verb paddings
   tightened so the row still fits one line at 1440 split). Promote lost its dashed look in B3; C4 gives it a visible result.
 - Truncation keeps the distinguishing part of titles; no duplicated titles. (FIRSTTIMER-18, PHONEBROWSER-19)
+  *Status: done (C5).* In narrow lists (phone) a title may take two lines and the date moves under it, so
+  "SF Bay Area Decompression 2026: Oakland Edition Vol. II" shows whole; desktop keeps its date column. The phone app
+  bar gives long names two lines (dropping the type word). Duplicated call-out titles went in B6.
 - Sticky headers render above row glyphs. (FIRSTTIMER-17)
+  *Status: done (C5).* Squares isolate their glyph layer and section headers sit above rows.
 - All touch targets ≥44px. (PHONEBROWSER-9, CREW-22)
 - New sheet dismissible by tapping the backdrop / swipe down. (PHONEBROWSER-17)
 - Picker: "Your events" shortcut. (ORGANISER-17)

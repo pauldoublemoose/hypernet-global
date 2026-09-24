@@ -151,7 +151,7 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 #dscroll{ position:relative; }
 
 /* rows */
-.band{ position:sticky; top:0; z-index:2; display:flex; align-items:baseline; gap:8px; padding:14px 16px 7px; background:#fff;
+.band{ position:sticky; top:0; z-index:6; display:flex; align-items:baseline; gap:8px; padding:14px 16px 7px; background:#fff;
   border-bottom:1px solid var(--line); font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--ink2); }
 .band .cnt{ color:var(--dim); font-weight:normal; letter-spacing:.04em; }
 .row{ display:flex; align-items:center; gap:13px; min-height:66px; padding:10px 16px; border-bottom:1px solid var(--line); }
@@ -183,9 +183,17 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .empty{ padding:40px 24px; color:var(--dim); text-align:center; font-size:var(--fs-m); }
 .empty .btn{ margin-top:14px; }
 @container list (max-width:300px){ .r-states .pill span{ display:none; } }
+.r-dm{ display:none; }
+/* a narrow list gives the title the width: it may take two lines, and the date moves under it */
+@container list (max-width:440px){
+  .r-title{ white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  .r-side .r-date{ display:none; }
+  .r-dm{ display:inline; font:12px var(--mono); letter-spacing:.02em; text-transform:uppercase; color:var(--ink2); }
+  .row.sel .r-dm{ color:#fff; }
+}
 
 /* ---------- 6. the event theme layer — the only colour in the product - */
-.sq{ position:relative; overflow:hidden; display:grid; place-items:center; flex:0 0 auto; background:var(--ebg); color:var(--eac); line-height:1; }
+.sq{ position:relative; isolation:isolate; overflow:hidden; display:grid; place-items:center; flex:0 0 auto; background:var(--ebg); color:var(--eac); line-height:1; }
 .sq .g{ position:relative; z-index:2; }
 .sq .pat{ position:absolute; inset:0; z-index:1; }
 .sq.s20{ width:20px; height:20px; font-size:12px; }
@@ -727,6 +735,8 @@ body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 1
 #app.phone #titlebar, #app.phone #toolbar{ display:none; }
 #app.phone #appbar{ display:flex; flex:0 0 auto; align-items:center; gap:2px; min-height:calc(54px + env(safe-area-inset-top)); padding:env(safe-area-inset-top) 4px 0; color:#fff; background:var(--bar); }
 .ab-title{ flex:1; min-width:0; padding:0 10px; font-size:17px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ab-title .abn{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; white-space:normal; overflow:hidden; line-height:1.15; }
+.ab-title .abn:not(:only-child){ font-size:16px; }
 .ab-title small{ display:block; font-size:12px; font-weight:normal; opacity:.8; }
 .ab-btn{ min-width:46px; height:46px; display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:0 10px; border:0; background:transparent; color:#fff; font-weight:bold; }
 .ab-btn:active{ background:rgba(255,255,255,.14); }
@@ -1186,6 +1196,14 @@ function hzRange(hzId){
   if (!d.length) return 'No events yet';
   return d.length === 1 ? fmtDate(d[0]) : fmtShort(d[0]) + ' – ' + fmtDate(d[d.length-1]);
 }
+/* a horizon's date, said as what it means: its next event, or when its last one was */
+function hzWhen(hzId){
+  var hz = HORIZONS[hzId], evs = (hz ? hz.eventIds : []).map(function(id){ return EVENTS[id]; }).filter(Boolean);
+  if (!evs.length) return '';
+  var up = evs.filter(function(e){ return !isPast(lastDay(e)); }).sort(byDate)[0];
+  if (up) return 'Next ' + fmtShort(up.date);
+  return 'Ended ' + fmtShort(evs.map(lastDay).sort().pop());
+}
 function hzOwnedByMe(hzId){ return S.loggedIn && MYHORIZONS.indexOf(hzId) >= 0; }
 function attendees(evId){
   if (/^evt-new-/.test(evId)) return (S.loggedIn && RSVP[evId] === 'going') ? ['self'] : [];
@@ -1294,7 +1312,7 @@ function folderItems(f){
   var evs = [];
   var k = f.kind;
   if (k === 'home')  return viewOf(f) === 'feed' ? homeItems() : feedEvents().map(function(e){ return { type:'event', id:e.id }; });
-  if (k === 'horizons') return browsableHorizons().map(function(h){ return { type:'horizon', id:h }; });
+  if (k === 'horizons') return browsableHorizons().sort(function(a, b){ return hzFollowers(b) - hzFollowers(a); }).map(function(h){ return { type:'horizon', id:h }; });
   if (k === 'people')   return browsablePeople().map(function(p){ return { type:'person', id:p }; });
   if (k === 'shelf')    return shelfItems(f.id);
   if (k === 'search')   return searchItems(S.query);
@@ -1406,7 +1424,7 @@ function bandOf(it){
   if (k === 'search') return SEARCHBAND[it.type];
   if (k === 'home' && viewOf() === 'feed')
     return it.band;
-  if (k === 'horizons') return hzOwnedByMe(it.id) ? 'Yours' : (S.loggedIn && HZFOLLOW[it.id]) ? 'Following' : 'More horizons';
+  if (k === 'horizons') return hzOwnedByMe(it.id) ? 'Yours' : (S.loggedIn && HZFOLLOW[it.id]) ? 'Following' : 'Popular';
   if (k === 'people') return it.id === 'self' ? 'You' : (S.loggedIn && PFOLLOW[it.id]) ? 'People you follow' : 'Around the network';
   if (it.type === 'horizon') return 'Event Horizon';
   if (S.sort !== 'date') return null;
@@ -1417,7 +1435,7 @@ function bandOf(it){
   return 'Later';
 }
 var BANDORDER = ['Event Horizon','Happening soon','Announced','This week','This month','Later','Past',
-                 'Events','Event Horizons','People','You','Yours','Following','People you follow','Around the network','More horizons'];
+                 'Events','Event Horizons','People','You','Yours','Following','People you follow','Around the network','Popular'];
 function groupItems(items){
   var groups = {}, order = [];
   items.forEach(function(it){ var b = bandOf(it) || ''; if (!groups[b]){ groups[b] = []; order.push(b); } groups[b].push(it); });
@@ -1461,7 +1479,7 @@ function rowHTML(it){
     lead = '<span class="r-ic">'+hzArt(it.id, 32)+'</span>';
     title = esc(hz.name);
     meta = esc('Event Horizon · ' + hz.ownerName + ' · ' + hz.eventIds.length + ' events');
-    date = hzDates(it.id).length ? fmtShort(hzDates(it.id)[0]) : '';
+    date = hzWhen(it.id);
     side = hzOwnedByMe(it.id) ? '<span class="pill host"><span>Yours</span></span>' : (S.loggedIn && HZFOLLOW[it.id]) ? '<span class="pill going">'+ic('check',11)+'<span>Following</span></span>' : '';
   } else if (it.type === 'person'){
     var p = person(it.id);
@@ -1480,7 +1498,7 @@ function rowHTML(it){
   if (it.type === 'event' && S.folder.kind === 'horizon' && hzOwnedByMe(S.folder.id))
     side += '<button class="ib rrm" data-act="unfile" data-id="'+it.id+'" data-hz="'+S.folder.id+'" aria-label="Remove from '+esc(HORIZONS[S.folder.id].name)+'">'+ic('close',14)+'</button>';
   return '<div class="'+cls+'" '+act+drag+' role="button" tabindex="-1">' + lead +
-    '<div class="r-main"><div class="r-title">'+title+'</div>'+(meta?'<div class="r-meta">'+meta+'</div>':'')+'</div>' +
+    '<div class="r-main"><div class="r-title">'+title+'</div>'+((meta || date)?'<div class="r-meta">'+(date?'<span class="r-dm">'+date+(meta?' · ':'')+'</span>':'')+meta+'</div>':'')+'</div>' +
     ((date || side) ? '<div class="r-side">'+(date?'<div class="r-date">'+date+'</div>':'')+(side?'<div class="r-states">'+side+'</div>':'')+'</div>' : '') +
     '</div>';
 }
@@ -2493,7 +2511,9 @@ function renderAppbar(){
     var it = S.stack[S.stack.length-1];
     if (it.type === 'chat' && CHATS[it.id]) h += '<div class="ab-title ab-tap" data-act="chatinfo" data-id="'+it.id+'" role="button">'+esc(CHATS[it.id].name)+'<small>'+esc(chatSub(CHATS[it.id]))+'</small></div>' +
       '<button class="ab-btn" data-act="chatinfo" data-id="'+it.id+'" aria-label="Chat details" aria-haspopup="dialog">'+ic('dots',22)+'</button>';
-    else h += '<div class="ab-title">'+esc(itemName(it))+'<small>'+esc({event:'Event',horizon:'Event Horizon',person:'Person',callout:'Call out'}[it.type]||'')+'</small></div>';
+    /* a long name takes both lines; the kind of thing it is gives way */
+    else h += '<div class="ab-title"><span class="abn">'+esc(itemName(it))+'</span>' +
+      (itemName(it).length > 26 ? '' : '<small>'+esc({event:'Event',horizon:'Event Horizon',person:'Person',callout:'Call out'}[it.type]||'')+'</small>') + '</div>';
   } else if (S.tab === 'chats'){
     h += '<div class="ab-title">Chats</div>';
     if (S.loggedIn) h += '<button class="ab-btn boxed" data-act="newchat">'+ic('edit')+'New chat</button>';

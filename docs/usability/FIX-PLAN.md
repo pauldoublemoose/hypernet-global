@@ -324,3 +324,12 @@ the list, so FEED/LIST/CALENDAR never move. People is one steady list (following
 tab drops the repeated Following/Yours pill and the "Event Horizon" word so owners fit; "1 event" is singular. Phone
 rows lead with the place and drop a host that repeats the title; Home cards put the day and the place on separate
 lines. "Crews" is gone ("Call outs"). The phone search field has a 44px clear button (the native one is hidden).
+
+**R2-9b. Event page says each thing once.** Sources: FIRSTTIMER-R2-4, PHONEBROWSER-R2-9, FIRSTTIMER-R2-10,
+FIRSTTIMER-R2-13, ORGANISER-R2-9, ORGANISER-R2-13 (button state), PHONEBROWSER-10 (partial).
+*Status: done.* When the Entry block shows (tickets / membership) the facts grid drops its Entry cell; a free event's
+Entry section that only repeated "Free" is gone. The headline price is the standard tiers (concessions — pensioner,
+child, subsidised, carer — stay in Tickets): AfrikaBurn reads 3,099–7,199 ZAR, Zurich 65–85 CHF, by one rule. "From the
+event's own pages" is a caption inside Links. Empty sections (Bring, Who's going with nobody) are omitted. The Add to
+horizon button reads "✓ On 1 horizon" once the event is on one of yours. Inert tags are small labels again on touch
+screens, not 44px blocks.

@@ -630,6 +630,7 @@ input[aria-invalid="true"]{ outline:1px solid #000; outline-offset:-4px; }
 #sh-msg, #sh-q{ width:100%; }
 #sh-list{ max-height:260px; }
 body.is-phone #sh-list{ max-height:none; }
+.answered{ display:inline-flex; align-items:center; gap:6px; min-height:var(--ctl); padding:0 6px 0 0; font-weight:bold; }
 .cmsg{ margin:0; max-width:46ch; font-size:var(--fs-m); line-height:1.5; }
 
 /* ---------- 10b. phone feed: shelves, tiles, playlists --------------- */
@@ -1077,6 +1078,7 @@ var MYHORIZONS = [];
 
 var CHATS = {}, CHATORDER = [], UNREADCHAT = {};
 var CHATDRAFT = {};             /* chat id -> what you typed and haven't sent */
+var ANSWERED = {}, ANSWERING = {};   /* call out -> the chat you answered it in; chat -> the call out its draft answers */
 function fixtureChats(){
   var byId = {}, order = [];
   H.chats.forEach(function(c){
@@ -1460,9 +1462,9 @@ function rowHTML(it){
   } else if (it.type === 'callout'){
     var c = calloutOf(it.id);
     lead = '<span class="r-ic">'+ic('callout')+'</span>';
-    title = esc('Looking for: ' + c.title);
-    meta = esc(c.hostName + ' · ' + c.body);
-    date = 'until ' + fmtShort(c.expiresAt);
+    title = esc(c.title);
+    meta = esc([c.hostName, c.eventId && EVENTS[c.eventId] ? 'for ' + EVENTS[c.eventId].title : '', c.body].filter(Boolean).join(' · '));
+    date = c.closed ? 'closed' : 'until ' + fmtShort(c.expiresAt);
   } else if (it.type === 'news'){
     var nw = newsOf(it.id);
     lead = '<span class="r-ic">'+ic('news')+'</span>';
@@ -1678,10 +1680,14 @@ function takePartHTML(r){
   if (r.openCalls && r.openCalls.length) c.push(card('Open calls', 'Wanted', null, r.openCalls));
   return c.length ? '<div class="cards">' + c.join('') + '</div>' : '';
 }
-function calloutsHTML(ids){
+/* an event's call outs: its own, and any posted for it; its host can post one from here */
+function calloutsHTML(ids, evId){
   var cs = (ids || []).map(calloutOf).filter(Boolean);
-  return cs.length ? '<div class="chips">' + cs.map(function(c){
-    return '<button class="chip" data-act="open" data-type="callout" data-id="'+c.id+'">'+ic('callout',16)+'Looking for: '+esc(c.title)+' <span class="sub">'+esc(c.hostName)+'</span></button>'; }).join('') + '</div>' : '';
+  CALLOUTS.forEach(function(c){ if (evId && c.eventId === evId && cs.indexOf(c) < 0) cs.push(c); });
+  cs = cs.filter(function(c){ return !c.closed; });
+  var add = evId && isMine(evId) && !isPast(lastDay(EVENTS[evId])) ? '<button class="chip" data-act="newcalloutfor" data-id="'+evId+'">'+ic('plus',16)+'New call out</button>' : '';
+  return cs.length || add ? '<div class="chips">' + cs.map(function(c){
+    return '<button class="chip" data-act="open" data-type="callout" data-id="'+c.id+'">'+ic('callout',16)+esc(c.title)+' <span class="sub">'+esc(c.hostName)+'</span></button>'; }).join('') + add + '</div>' : '';
 }
 function providedHTML(p){
   if (!p) return '';
@@ -1860,7 +1866,7 @@ function canvasHTML(evId){
   var am = r.access && r.access.model;
   if (!past) h += sect(/member/.test(am || '') ? 'Membership' : am === 'ticket' || am === 'lottery' ? 'Tickets' : 'Entry', accessHTML(r.access)).replace('<section class="sect">', '<section class="sect" data-sect="entry">');
   h += sect('Take part', takePartHTML(r));
-  h += sect('Call outs', calloutsHTML(r.calloutIds));
+  h += sect('Call outs', calloutsHTML(r.calloutIds, evId));
   if (big) h += sect('On site', providedHTML(b.provided));
   h += sect('Bring', rv(r.whatToBring) + (r.dressCode ? '<p style="margin-top:10px"><b>Dress:</b> '+esc(r.dressCode)+'</p>' : ''));
   if (big) h += sect('Rules & safety', rulesHTML(r));
@@ -2005,14 +2011,24 @@ function groupHTML(gid){
       return '<div class="crow">'+avHTML(m,'a40')+'<div class="cm" data-act="open" data-type="person" data-id="'+m+'"><div class="r-title">'+esc(person(m).displayName)+'</div>' +
         '<div class="r-meta">'+esc(person(m).bio||'')+(GROUPS[gid].adminIds.indexOf(m)>=0?' · admin':'')+'</div></div></div>'; }).join('') + '</div>';
 }
+function isOwnCallout(c){ return !!c && S.loggedIn && !!c.hostAcct && c.hostAcct === S.acct; }
+/* a call out: what is wanted, by whom, for which event; you answer it once, and its author edits or closes it */
 function calloutHTML(id){
-  var c = calloutOf(id);
-  return '<div class="page"><div class="phead2"><span class="r-ic" style="width:64px;height:64px;flex-basis:64px">'+ic('callout',30)+'</span>' +
-    '<div style="flex:1;min-width:0"><div class="psub" style="margin:0 0 4px">Call out</div><div class="pname">Looking for: '+esc(c.title)+'</div>' +
-    '<div class="psub">'+esc(c.hostName)+' · open until '+fmtDate(c.expiresAt)+'</div></div></div>' +
-    '<p class="pdesc">'+esc(c.body)+'</p>' +
-    '<div class="acts"><button class="btn primary" data-act="answercallout" data-id="'+id+'">'+ic('chat')+'Answer</button>' +
-    (c.hostId ? '<button class="btn" data-act="open" data-type="person" data-id="'+c.hostId+'">'+avHTML(c.hostId)+esc(c.hostName)+'</button>' : '') + '</div></div>';
+  var c = calloutOf(id), mine = isOwnCallout(c), ans = S.loggedIn && ANSWERED[id] && CHATS[ANSWERED[id]] ? ANSWERED[id] : null;
+  var ev = c.eventId && EVENTS[c.eventId];
+  var h = '<div class="page"><div class="phead2"><span class="r-ic" style="width:64px;height:64px;flex-basis:64px">'+ic('callout',30)+'</span>' +
+    '<div style="flex:1;min-width:0"><div class="psub" style="margin:0 0 4px">Call out · Looking for'+(c.closed ? ' · Closed' : '')+'</div><div class="pname">'+esc(c.title)+'</div>' +
+    '<div class="psub">'+esc(mine ? 'You' : c.hostName)+' · '+(c.closed ? 'closed' : 'open until '+fmtDate(c.expiresAt))+'</div></div></div>';
+  if (c.body) h += '<p class="pdesc">'+esc(c.body)+'</p>';
+  if (ev) h += '<div class="subh">For</div><div class="crow">'+sqHTML(ev.id, 40)+'<div class="cm" data-act="open" data-type="event" data-id="'+ev.id+'"><div class="r-title">'+esc(ev.title)+'</div>' +
+    '<div class="r-meta">'+esc([fmtShort(ev.date), whereOf(ev)].filter(Boolean).join(' · '))+'</div></div></div>';
+  h += '<div class="acts">';
+  if (mine) h += '<button class="btn primary" data-act="editcallout" data-id="'+id+'">'+ic('edit')+'Edit</button>' +
+    '<button class="btn" data-act="closecallout" data-id="'+id+'">'+(c.closed ? 'Reopen' : 'Close call out')+'</button>';
+  else if (ans) h += '<span class="answered">'+ic('check',16)+'You answered</span><button class="btn primary" data-act="chatsel" data-id="'+ans+'">'+ic('chat')+'Open chat</button>';
+  else if (!c.closed) h += '<button class="btn primary" data-act="answercallout" data-id="'+id+'">'+ic('chat')+'Answer</button>';
+  if (!mine && c.hostId && PEOPLE[c.hostId]) h += '<button class="btn" data-act="open" data-type="person" data-id="'+c.hostId+'">'+avHTML(c.hostId)+esc(c.hostName)+'</button>';
+  return h + '</div></div>';
 }
 function detailHTML(it){
   if (!it) return '<div class="empty" style="padding-top:25vh">'+ic('horizon',40).replace('class="ic"','class="ic" style="margin:0 auto 10px;opacity:.35"')+'</div>';
@@ -2097,7 +2113,7 @@ function cardHTML(it){
   } else {
     var c = calloutOf(it.id);
     art = '<div class="coart">'+ic('callout', 40)+'<span>Looking for</span><b>'+esc(c.title)+'</b></div>';
-    t = c.title; sub = c.hostName + ' · until ' + fmtShort(c.expiresAt);
+    t = c.hostName; sub = 'until ' + fmtShort(c.expiresAt);
   }
   return '<div class="card2" data-act="row" data-type="'+it.type+'" data-id="'+it.id+'" role="button">' +
     '<div class="cart">'+art+cardTag(it)+'</div><div class="ct2">'+esc(t)+'</div><div class="cs2">'+esc(sub)+'</div></div>';
@@ -2652,7 +2668,7 @@ function loginDialog(){
    What an account keeps is swapped in when it logs in and put away when it logs out. */
 var ACCTS = {};
 function acctPid(k){ return k === 'demo' ? 'p-michal' : 'u-' + k; }
-function blankAcct(profile){ return { profile:profile, rsvp:{}, went:{}, promoted:{}, hzfollow:{}, pfollow:{}, myevents:[], myhorizons:[], chats:{ byId:{}, order:[] }, unread:{}, drafts:{ forms:{}, chat:{} } }; }
+function blankAcct(profile){ return { profile:profile, rsvp:{}, went:{}, promoted:{}, hzfollow:{}, pfollow:{}, myevents:[], myhorizons:[], chats:{ byId:{}, order:[] }, unread:{}, drafts:{ forms:{}, chat:{} }, answered:{}, answering:{} }; }
 function demoAcct(){
   var m = PEOPLE['p-michal'];
   var a = blankAcct({ displayName:m.displayName, handle:m.handle, bio:m.bio, skills:m.skills.slice(), cities:m.cities.slice(), city:m.city });
@@ -2667,7 +2683,7 @@ function captureAcct(){
   var p = PEOPLE['self'];
   return { profile:{ displayName:p.displayName, handle:p.handle, bio:p.bio, skills:p.skills, cities:p.cities, city:p.city },
            rsvp:RSVP, went:WENT, promoted:PROMOTED, hzfollow:HZFOLLOW, pfollow:PFOLLOW, myevents:MYEVENTS, myhorizons:MYHORIZONS,
-           chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT, drafts:{ forms:FORMDRAFTS, chat:CHATDRAFT } };
+           chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT, drafts:{ forms:FORMDRAFTS, chat:CHATDRAFT }, answered:ANSWERED, answering:ANSWERING };
 }
 function loadAcct(a){
   a = a || blankAcct({ displayName:'', handle:'', bio:'', skills:[], cities:[], city:'' });
@@ -2680,6 +2696,7 @@ function loadAcct(a){
   CHATS = (a.chats && a.chats.byId) || {}; CHATORDER = ((a.chats && a.chats.order) || Object.keys(CHATS)).filter(function(k){ return CHATS[k]; });
   UNREADCHAT = a.unread || {};
   FORMDRAFTS = (a.drafts && a.drafts.forms) || {}; CHATDRAFT = (a.drafts && a.drafts.chat) || {};
+  ANSWERED = a.answered || {}; ANSWERING = a.answering || {};
   S.me = { name:p.displayName || 'You', handle:p.handle || 'you' };
 }
 /* an account that is not logged in is, to everyone else, just a person on the network */
@@ -2832,7 +2849,7 @@ function paintNewChat(skipBody){
   placeDlg();
 }
 /* the small create forms keep what you typed as a draft, field by field */
-var FORMFIELDS = { callout:['co-t','co-b','co-x'], horizon:['nh-n','nh-d','nh-p','nh-c'] };
+var FORMFIELDS = { callout:['co-t','co-b','co-x','co-e'], horizon:['nh-n','nh-d','nh-p','nh-c'] };
 var FORMFOOT = {};
 function formVal(id){
   if (id === 'nh-c'){ var r = document.querySelector('input[name="nh-c"]:checked'); return r && r.value !== 'mosaic' ? r.value : ''; }
@@ -2840,6 +2857,7 @@ function formVal(id){
 }
 function draftVal(kind, id){ var d = FORMDRAFTS[kind]; return d && d[id] != null ? d[id] : ''; }
 function saveForm(kind){
+  if (kind === 'callout' && COEDIT){ var dl0 = DLGS[DLGS.length-1], f0 = dl0 && dl0.querySelector('#co-go'); if (f0) f0.disabled = !String(formVal('co-t')).trim(); return; }
   var d = {}, dirty = false;
   FORMFIELDS[kind].forEach(function(id){ d[id] = formVal(id); if (d[id]) dirty = true; });
   FORMDRAFTS[kind] = dirty ? d : null;
@@ -2853,14 +2871,38 @@ function formSecondary(kind){
 FORMFOOT.callout = function(){
   return formSecondary('callout') + '<button class="btn primary" data-act="donewcallout" id="co-go"'+(String(draftVal('callout','co-t')).trim() ? '' : ' disabled')+'>Post call out</button>';
 };
-function newCalloutDialog(){
-  dialog('New call out',
-    '<div class="field"><label for="co-t">Looking for</label><input type="text" id="co-t" value="'+esc(draftVal('callout','co-t'))+'" placeholder="Rigger" autocomplete="off"></div>' +
-    '<div class="field"><label for="co-b">Details</label><textarea id="co-b" rows="4" placeholder="We need a pair of hands for the truss on the Friday build.">'+esc(draftVal('callout','co-b'))+'</textarea></div>' +
-    '<div class="field"><label for="co-x">Open until</label><input type="date" id="co-x" value="'+esc(draftVal('callout','co-x'))+'" min="'+TODAY_ISO+'"></div>',
-    FORMFOOT.callout(), 460);
+/* the events a call out can be for: what you host, then what you are going to */
+function calloutEventChoices(pre){
+  var ids = [];
+  var add = function(id){ if (id && EVENTS[id] && ids.indexOf(id) < 0 && !isPast(lastDay(EVENTS[id]))) ids.push(id); };
+  MYEVENTS.slice().sort(function(a,b){ return byDate(EVENTS[a], EVENTS[b]); }).forEach(add);
+  rsvpList('going').forEach(function(e){ add(e.id); });
+  if (pre && EVENTS[pre] && ids.indexOf(pre) < 0) ids.unshift(pre);
+  return ids;
+}
+var COEDIT = null;
+/* New call out, optionally for an event; the same form edits one you posted */
+function newCalloutDialog(opts){
+  opts = opts || {};
+  var c = opts.edit ? calloutOf(opts.edit) : null;
+  COEDIT = c ? c.id : null;
+  var v = function(id, field){ return c ? (c[field] || '') : draftVal('callout', id); };
+  var ev = c ? (c.eventId || '') : (opts.eventId || draftVal('callout', 'co-e'));
+  var evs = calloutEventChoices(ev);
+  dialog(c ? 'Edit call out' : 'New call out',
+    '<div class="field"><label for="co-t">Looking for</label><input type="text" id="co-t" value="'+esc(v('co-t','title'))+'" placeholder="Rigger" autocomplete="off"></div>' +
+    '<div class="field"><label for="co-b">Details</label><textarea id="co-b" rows="4" placeholder="We need a pair of hands for the truss on the Friday build.">'+esc(v('co-b','body'))+'</textarea></div>' +
+    (evs.length ? '<div class="field"><label for="co-e">For event</label><select id="co-e"><option value="">None</option>' +
+      evs.map(function(id){ return '<option value="'+id+'"'+(id === ev ? ' selected' : '')+'>'+esc(EVENTS[id].title + ' · ' + fmtShort(EVENTS[id].date))+'</option>'; }).join('') + '</select></div>' : '') +
+    '<div class="field"><label for="co-x">Open until</label><input type="date" id="co-x" value="'+esc(c ? c.expiresAt : draftVal('callout','co-x'))+'" min="'+TODAY_ISO+'"></div>',
+    c ? '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="donewcallout" id="co-go">Save changes</button>' : FORMFOOT.callout(), 460);
   focusIn('co-t');
 }
+var closeCallout = gated(function(coId){
+  var c = calloutOf(coId); if (!isOwnCallout(c)) return;
+  c.closed = !c.closed; render();
+  toast(c.closed ? 'Call out closed' : 'Call out open again', c.title, c.closed ? function(){ c.closed = false; render(); toast('Call out open again', c.title); } : null);
+});
 var HZWITH = null;
 FORMFOOT.horizon = function(){
   var ok = String(draftVal('horizon','nh-n')).trim() ? '' : ' disabled';
@@ -3253,6 +3295,7 @@ function ctxItems(t, only){
     if (S.loggedIn) out.push({ code:'addto', label:'Add to horizon', icon:'addhorizon', sub: ctxHorizonItems(id) });
     else out.push({ code:'addto', label:'Add to horizon…', icon:'addhorizon', run:function(){ gated(addToDialog)(id); } });
     out.push({ code:'share', label:'Share…', icon:'share', run:function(){ shareDialog(id, 'event'); } });
+    if (mine && !past) out.push({ code:'callout', label:'New call out…', icon:'callout', run:function(){ runCmd('new-callout', id); } });
     if (mine) out.push('-', { code:'delete', label:'Delete…', icon:'trash', run:function(){ deleteEventDialog(id); } });
   } else {
     var hmine = hzOwnedByMe(id), fol = S.loggedIn && HZFOLLOW[id], hz = HORIZONS[id];
@@ -3657,10 +3700,13 @@ var shareToChat = gated(function(id, cid, type, text){
   toast('Sent to ' + CHATS[cid].name, itemName({ type: hz ? 'horizon' : 'event', id:id }), { label:'Open', run:function(){ openChat(cid); } });
 });
 var answerCallout = gated(function(coId){
-  var c = calloutOf(coId); if (!c) return;
+  var c = calloutOf(coId); if (!c || isOwnCallout(c)) return;
+  if (ANSWERED[coId] && CHATS[ANSWERED[coId]]){ openChat(ANSWERED[coId]); return; }
   var cid = openDM(c.hostId || 'p-anna');
-  CHATS[cid].messages.push({ from:'self', t:nowClock(), text:'Re: ' + c.title + ' — I can do this. When do you need me?' });
+  if (!CHATDRAFT[cid]) CHATDRAFT[cid] = 'Re: ' + c.title + ' — I can do this. When do you need me?';
+  ANSWERING[cid] = coId;
   openChat(cid);
+  setTimeout(function(){ var b = $('chatbox'); if (b){ b.focus(); b.setSelectionRange(b.value.length, b.value.length); } }, 60);
 });
 function createChat(){
   if (!NC || !NC.sel.length) return;
@@ -3677,6 +3723,7 @@ function sendChat(){
   var box = $('chatbox'), cid = activeChat(); if (!box || !cid || !box.value.trim()) return;
   CHATS[cid].messages.push({ from:'self', t:nowClock(), text:box.value.trim() });
   delete CHATDRAFT[cid];
+  if (ANSWERING[cid]){ ANSWERED[ANSWERING[cid]] = cid; delete ANSWERING[cid]; }
   box.value = '';
   render();
   var b = $('chatbox'); if (b) b.focus();
@@ -3716,7 +3763,7 @@ function runCmd(cmd, arg){
     case 'new-event':   closeDialogs(); newEventDialog(); break;
     case 'new-horizon': closeDialogs(); gated(function(){ newHorizonDialog(arg); })(); break;
     case 'newchat':     closeDialogs(); gated(function(){ newChatDialog(); })(); break;
-    case 'new-callout': closeDialogs(); gated(newCalloutDialog)(); break;
+    case 'new-callout': closeDialogs(); gated(newCalloutDialog)(arg ? { eventId:arg } : null); break;
     case 'profile':     openItem('person', 'self'); break;
     case 'editprofile': profileDialog('edit'); break;
     case 'logout':      doLogout(); break;
@@ -3835,9 +3882,15 @@ document.addEventListener('click', function(ev){
     case 'donewcallout': {
       var cot = (($('co-t')||{}).value || '').trim();
       if (!cot) break;
+      var coEv = ($('co-e')||{}).value || null, coBody = (($('co-b')||{}).value || '').trim(), coX = isoDate(($('co-x')||{}).value);
+      if (COEDIT){
+        var ce = calloutOf(COEDIT);
+        ce.title = cot; ce.body = coBody; ce.eventId = coEv; if (coX) ce.expiresAt = coX;
+        COEDIT = null; closeDialogs(); render(); toast('Saved', cot); break;
+      }
       var cid3 = 'co-new-' + Date.now().toString(36), month = dOf(TODAY_ISO); month.setDate(month.getDate() + 30);
-      CALLOUTS.unshift({ id:cid3, title:cot, body:(($('co-b')||{}).value || '').trim(),
-                         expiresAt:isoDate(($('co-x')||{}).value) || isoOf(month), hostName:S.me.name, hostId:acctPid(S.acct), hostAcct:S.acct });
+      CALLOUTS.unshift({ id:cid3, title:cot, body:coBody, eventId:coEv,
+                         expiresAt:coX || isoOf(month), hostName:S.me.name, hostId:acctPid(S.acct), hostAcct:S.acct });
       FORMDRAFTS.callout = null;
       closeDialogs();
       if (L.phone) S.tab = 'home';
@@ -3846,6 +3899,9 @@ document.addEventListener('click', function(ev){
       break;
     }
     case 'wiz':          wizAct(id); break;
+    case 'editcallout':  newCalloutDialog({ edit:id }); break;
+    case 'closecallout': closeCallout(id); break;
+    case 'newcalloutfor': gated(newCalloutDialog)({ eventId:id }); break;
     case 'editevent':    editEventDialog(id); break;
     case 'wizstep':      DRAFT.step = +id; paintWiz(); break;
     case 'evmore':       openMoreMenu(n, 'event', id, (n.getAttribute('data-more') || 'delete').split(',')); break;
@@ -3879,7 +3935,7 @@ document.addEventListener('change', function(ev){
     schedulePersist();
     return;
   }
-  if (/^co-x$/.test(n.id)){ saveForm('callout'); return; }
+  if (/^co-[xe]$/.test(n.id)){ saveForm('callout'); return; }
   if (n.id === 'nh-p' || n.name === 'nh-c'){ saveForm('horizon'); return; }
   var act = n.getAttribute('data-act');
   if (act === 'calmine'){ S.calMine = n.checked; render(); }

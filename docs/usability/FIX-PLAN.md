@@ -148,6 +148,13 @@ opens that day. The 6px colour marks are now just marks, not tiny buttons. Today
 "Answered" (no duplicates, no Answer on your own). A call out can link to an event and shows on that
 event's page. No duplicated titles on cards/detail.
 Sources: CREW-4, ORGANISER-8, -19, CREW-20, FIRSTTIMER-16.
+*Status: done.* Answer opens the host's DM with "Re: … I can do this" as an editable draft (nothing is sent for you);
+once you send it the call out shows "You answered · Open chat" instead of Answer, per account, across reloads —
+a second tap opens the same chat, never a duplicate. Your own call out shows Edit and Close call out (Reopen, with
+Undo) instead of Answer; closed ones leave Home. A call out can be "For event" (your hosted or Going events; the
+host's event page has "New call out" with the event preselected, and the ⋯/context menu too); the event page lists
+call outs posted for it and the call out page links back. The title appears once: cards show host and deadline under
+the "Looking for" tile, rows and the detail page show the title as typed.
 
 **B7. Chats on phone.** Conversation header with members, profile, rename, add people. Chat list sorted by
 latest message; empty DMs don't clutter it. People directory reachable from Home/search, not only You.

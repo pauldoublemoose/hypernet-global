@@ -274,3 +274,10 @@ Tracks open beside it (`#/event/…?in=horizon/baltic`); at 768 a track opens wi
 stays a page on the Horizons tab. Tracks: upcoming first, past ones folded under "Past · N", no playlist numbers (they
 implied an order the owner can't set), titles wrap to two lines with the state tag under them; the date range prints
 both years when they differ. `?in=` values keep their slash readable.
+
+**R2-4. Volunteer shifts you can take; the host is one tap away.** Sources: CREW-R2-2, CREW-R2-13, PHONEBROWSER-R2-9 (host).
+*Status: done.* Each shift is a row with "Take this shift" (logged out it goes through Join and completes): taking one
+sets Going with that shift ("Going · Shift 2 · Fri 9 Oct 14:00–18:00"), "Your shift" gives it up, and Not going drops
+it; kept per account. The "Pick a shift with Going, then confirm it in the camp chat" text is gone; a "Message Jon
+Hale" chip sits under the shifts (the fixtures have no camp chat for this host, so the host's DM is the chat). The Host
+fact itself links to the host (or the camp's Event Horizon) and the duplicate "Hosted by" block at the bottom is gone.

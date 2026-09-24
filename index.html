@@ -332,6 +332,8 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .facts{ display:grid; grid-template-columns:repeat(auto-fill, minmax(168px, 1fr)); margin-top:24px; border-top:1px solid var(--eac2); border-left:1px solid var(--eac2); }
 .fact{ padding:12px 14px 13px; border-right:1px solid var(--eac2); border-bottom:1px solid var(--eac2); min-width:0; }
 .fk{ font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--edim); }
+.fvlink{ padding:0; border:0; background:transparent; color:inherit; font:inherit; text-align:left; text-decoration:underline; text-decoration-color:var(--eac); text-underline-offset:3px; cursor:pointer; min-height:0; }
+@media (pointer:coarse){ .fvlink{ min-height:44px; } }
 .fv{ margin-top:5px; font-size:16px; font-weight:bold; line-height:1.3; overflow-wrap:anywhere; }
 .fs{ margin-top:3px; font-size:13px; color:var(--edim); line-height:1.4; }
 .sect{ margin-top:30px; }
@@ -376,6 +378,9 @@ button.chip:hover{ border-color:var(--eac); }
 .tl .tlb{ flex:1; min-width:0; }
 .tl .tlt{ font-weight:bold; }
 .tln{ font-size:14px; color:var(--edim); margin-top:2px; }
+.tl.shifts li{ align-items:center; }
+.shiftbtn{ flex:0 0 auto; }
+.shiftbtn.on{ background:var(--eac); color:var(--eon); border-color:var(--eac); }
 .tiers{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; margin:14px 0; }
 .tier{ border:1px solid var(--eac2); padding:12px 14px; }
 .tiname{ font:bold 11px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--edim); }
@@ -431,6 +436,7 @@ span.chip.strong{ border-color:transparent; background:color-mix(in srgb, var(--
   .kv{ grid-template-columns:1fr; gap:2px; }
   .tl li, .sale{ flex-direction:column; gap:2px; }
   .tl .tld, .sale .sd{ flex-basis:auto; }
+  .tl.shifts li{ align-items:flex-start; gap:6px; }
   .kv dd{ margin-bottom:8px; }
 }
 
@@ -1103,6 +1109,7 @@ var MYHORIZONS = [];
 
 var CHATS = {}, CHATORDER = [], UNREADCHAT = {};
 var CHATDRAFT = {};             /* chat id -> what you typed and haven't sent */
+var SHIFT = {};                 /* event -> the shift you took */
 var ANSWERED = {}, ANSWERING = {};   /* call out -> the chat you answered it in; chat -> the call out its draft answers */
 function fixtureChats(){
   var byId = {}, order = [];
@@ -1694,12 +1701,35 @@ function factsHTML(evId){
   f.push([past ? 'Went' : 'Going', attendeeCount(evId) + (net ? ' from your network' : ' on Hypernet'), going ? 'Including you' : '']);
   if (S.loggedIn && PROMOTED[evId]) f.push(['Promoted', 'By you' + (promoCount(evId) > 1 ? ' and ' + (promoCount(evId) - 1) + ' more' : ''), '']);
   var org = r.organiser;
-  f.push(['Host', (org && org.name) || hostLabel(e), [org && org.legalForm, org && org.name && e.hostName !== org.name ? 'as ' + e.hostName : ''].filter(Boolean).join(' · ')]);
+  var hp0 = hostPersonOf(e), camp = (r.ownerGroupIds || []).map(groupHorizon).filter(Boolean)[0];
+  var hostTo = hp0 && hp0.id !== 'self' ? { type:'person', id:hp0.id } : camp ? { type:'horizon', id:camp } : null;
+  f.push(['Host', (org && org.name) || hostLabel(e), [org && org.legalForm, org && org.name && e.hostName !== org.name ? 'as ' + e.hostName : ''].filter(Boolean).join(' · '), hostTo]);
   if (r.age && (r.age.min || r.age.kidsFreeUpTo != null)) f.push(['Age', r.age.min ? r.age.min + '+' : 'All ages', r.age.kidsFreeUpTo != null ? 'Kids free up to ' + r.age.kidsFreeUpTo : '']);
   return '<div class="facts">' + f.map(function(x){
-    return '<div class="fact"><div class="fk">'+esc(x[0])+'</div><div class="fv">'+esc(x[1])+'</div>'+(x[2]?'<div class="fs">'+esc(x[2])+'</div>':'')+'</div>';
+    var v = x[3] ? '<button class="fvlink" data-act="open" data-type="'+x[3].type+'" data-id="'+x[3].id+'">'+esc(x[1])+'</button>' : esc(x[1]);
+    return '<div class="fact"><div class="fk">'+esc(x[0])+'</div><div class="fv">'+v+'</div>'+(x[2]?'<div class="fs">'+esc(x[2])+'</div>':'')+'</div>';
   }).join('') + '</div>';
 }
+function isShifts(r){ return !!(r.blocks && r.blocks.length && r.blocks.every(function(x){ return /^shift/i.test(x.label || ''); })); }
+/* each shift is something you take: taking one makes you Going with that shift; the host is one tap away */
+function shiftsHTML(evId){
+  var r = recOf(evId), e = EVENTS[evId], past = isPast(lastDay(e)), mine = S.loggedIn ? SHIFT[evId] : null;
+  var h = '<ol class="tl shifts">' + r.blocks.map(function(b, i){
+    var when = (b.date ? fmtDay(b.date) : '') , time = b.time || timeRange(b), on = mine === i;
+    return '<li class="'+(on ? 'on' : '')+'"><div class="tld">'+esc(when)+(time ? '<span>'+esc(time)+'</span>' : '')+'</div>' +
+      '<div class="tlb"><div class="tlt">'+esc(b.label)+'</div></div>' +
+      (past ? '' : '<button class="vmore shiftbtn'+(on ? ' on' : '')+'" data-act="takeshift" data-id="'+evId+'" data-i="'+i+'" aria-pressed="'+on+'">'+(on ? ic('check',16)+'Your shift' : 'Take this shift')+'</button>') + '</li>';
+  }).join('') + '</ol>';
+  var hp = hostPersonOf(e);
+  if (hp && hp.id !== 'self' && !past) h += '<div class="chips" style="margin-top:12px"><button class="chip" data-act="dm" data-id="'+hp.id+'">'+ic('chat',16)+'Message '+esc(hp.displayName)+'</button></div>';
+  return h;
+}
+var takeShift = gated(function(evId, i){
+  var r = recOf(evId), b = r.blocks[i];
+  if (SHIFT[evId] === i && !RESUMING){ delete SHIFT[evId]; render(); toast('Shift given up', EVENTS[evId].title + ' · ' + b.label); return; }
+  SHIFT[evId] = i; RSVP[evId] = 'going'; markRead(evId); render();
+  toast('Going · ' + b.label, EVENTS[evId].title + ' · ' + [fmtDay(b.date), timeRange(b)].filter(Boolean).join(' '));
+});
 function timelineHTML(items, phases){
   return '<ol class="tl">' + items.map(function(p){
     var lab = phases ? (PHASELAB[p.kind] || titleCase(p.kind || '')) : (PHASELAB[p.label] || titleCase(p.label || ''));
@@ -1750,7 +1780,8 @@ function card(kicker, title, body, chips){
 }
 function takePartHTML(r){
   var c = [], b = r.burn || {}, v = r.volunteering;
-  if (v) c.push(card('Volunteering', EXPECTLAB[v.expectation] || titleCase(v.expectation || ''), v.how, v.teams));
+  /* when the shifts can be taken right here, the card doesn't also explain how */
+  if (v) c.push(card('Volunteering', EXPECTLAB[v.expectation] || titleCase(v.expectation || ''), isShifts(r) ? '' : v.how, v.teams));
   if (b.camps){
     var cm = b.camps;
     c.push(card('Camps', titleCase(cm.noun || 'Camps'), [cm.registration && cm.registration.closes ? 'Registration closes ' + fmtDay(cm.registration.closes) + '.' : '',
@@ -1950,7 +1981,7 @@ function canvasHTML(evId){
   if (r.theme) h += sect('Theme', '<div class="themeline">'+esc(typeof r.theme === 'object' ? (r.theme.name || '') : r.theme)+'</div>' +
                                    (r.theme.blurb ? '<p>'+esc(r.theme.blurb)+'</p>' : ''));
   if (b.phases && b.phases.length) h += sect('Timeline', timelineHTML(b.phases, true));
-  else if (r.blocks && r.blocks.length) h += sect(r.blocks.every(function(x){ return /^shift/i.test(x.label || ''); }) ? 'Shifts' : 'Timeline', timelineHTML(r.blocks, false));
+  else if (r.blocks && r.blocks.length) h += isShifts(r) ? sect('Shifts', shiftsHTML(evId)) : sect('Timeline', timelineHTML(r.blocks, false));
   var am = r.access && r.access.model;
   if (!past) h += sect(/member/.test(am || '') ? 'Membership' : am === 'ticket' || am === 'lottery' ? 'Tickets' : 'Entry', accessHTML(r.access)).replace('<section class="sect">', '<section class="sect" data-sect="entry">');
   h += sect('Take part', takePartHTML(r));
@@ -1969,15 +2000,6 @@ function canvasHTML(evId){
   h += sect('On Event Horizons', onHz.length ? '<div class="chips">' + onHz.map(function(k){
          return '<button class="chip" data-act="open" data-type="horizon" data-id="'+k+'">'+ic('horizon',16)+esc(HORIZONS[k].name)+' <span class="sub">'+esc(HORIZONS[k].ownerName)+'</span></button>';
        }).join('') + '</div>' : '');
-  var hosts = '';
-  if (hp && (hp.id !== 'self' || !S.loggedIn)) hosts += '<button class="chip" data-act="open" data-type="person" data-id="'+hp.id+'">'+avHTML(hp.id,'a28')+esc(hp.displayName)+'</button>';
-  (r.ownerGroupIds || []).forEach(function(g){
-    if (!GROUPS[g]) return;
-    var gh = groupHorizon(g);
-    hosts += gh ? '<button class="chip" data-act="open" data-type="horizon" data-id="'+gh+'">'+ic('horizon',16)+esc(GROUPS[g].name)+'</button>'
-                : '<span class="chip plain">'+esc(GROUPS[g].name)+'</span>';
-  });
-  h += sect('Hosted by', hosts ? '<div class="chips">' + hosts + '</div>' : '');
   h += sect('Links', sourcesHTML(r));
   var pv = provenance(evId);
   if (pv) h += '<div class="srcline">' + esc(pv) + '</div>';
@@ -2788,7 +2810,7 @@ function loginDialog(){
    What an account keeps is swapped in when it logs in and put away when it logs out. */
 var ACCTS = {};
 function acctPid(k){ return k === 'demo' ? 'p-michal' : 'u-' + k; }
-function blankAcct(profile){ return { profile:profile, rsvp:{}, went:{}, promoted:{}, hzfollow:{}, pfollow:{}, myevents:[], myhorizons:[], chats:{ byId:{}, order:[] }, unread:{}, drafts:{ forms:{}, chat:{} }, answered:{}, answering:{} }; }
+function blankAcct(profile){ return { profile:profile, rsvp:{}, went:{}, promoted:{}, hzfollow:{}, pfollow:{}, myevents:[], myhorizons:[], chats:{ byId:{}, order:[] }, unread:{}, drafts:{ forms:{}, chat:{} }, answered:{}, answering:{}, shift:{} }; }
 function demoAcct(){
   var m = PEOPLE['p-michal'];
   var a = blankAcct({ displayName:m.displayName, handle:m.handle, bio:m.bio, skills:m.skills.slice(), cities:m.cities.slice(), city:m.city });
@@ -2803,7 +2825,7 @@ function captureAcct(){
   var p = PEOPLE['self'];
   return { profile:{ displayName:p.displayName, handle:p.handle, bio:p.bio, skills:p.skills, cities:p.cities, city:p.city },
            rsvp:RSVP, went:WENT, promoted:PROMOTED, hzfollow:HZFOLLOW, pfollow:PFOLLOW, myevents:MYEVENTS, myhorizons:MYHORIZONS,
-           chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT, drafts:{ forms:FORMDRAFTS, chat:CHATDRAFT }, answered:ANSWERED, answering:ANSWERING };
+           chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT, drafts:{ forms:FORMDRAFTS, chat:CHATDRAFT }, answered:ANSWERED, answering:ANSWERING, shift:SHIFT };
 }
 function loadAcct(a){
   a = a || blankAcct({ displayName:'', handle:'', bio:'', skills:[], cities:[], city:'' });
@@ -2816,7 +2838,7 @@ function loadAcct(a){
   CHATS = (a.chats && a.chats.byId) || {}; CHATORDER = ((a.chats && a.chats.order) || Object.keys(CHATS)).filter(function(k){ return CHATS[k]; });
   UNREADCHAT = a.unread || {};
   FORMDRAFTS = (a.drafts && a.drafts.forms) || {}; CHATDRAFT = (a.drafts && a.drafts.chat) || {};
-  ANSWERED = a.answered || {}; ANSWERING = a.answering || {};
+  ANSWERED = a.answered || {}; ANSWERING = a.answering || {}; SHIFT = a.shift || {};
   S.me = { name:p.displayName || 'You', handle:p.handle || 'you' };
 }
 /* an account that is not logged in is, to everyone else, just a person on the network */
@@ -3710,6 +3732,7 @@ function setTab(t){
 }
 var setRSVP = gated(function(evId, mode){
   if (!(RESUMING && RSVP[evId] === mode)) RSVP[evId] = RSVP[evId] === mode ? undefined : mode;
+  if (RSVP[evId] !== 'going') delete SHIFT[evId];
   if (!RSVP[evId]) delete RSVP[evId];
   var dh = HORIZONS['horizon-default'];
   if (RSVP[evId] === 'interested' && MYHORIZONS.indexOf('horizon-default') >= 0 && dh.eventIds.indexOf(evId) < 0) dh.eventIds.push(evId);
@@ -3978,6 +4001,7 @@ document.addEventListener('click', function(ev){
     case 'folder':   goFolder({ kind:n.getAttribute('data-kind'), id:id || null }); render(); $('listbody').scrollTop = 0; break;
     case 'shelfall':    goFolder({ kind:'shelf', id:id }); render(); $('listbody').scrollTop = 0; break;
     case 'dosearch':     { var qq = $('pq') || $('q'); if (qq) qq.value = id; doSearch(id); rememberQuery(id); break; }
+    case 'takeshift':    takeShift(id, +n.getAttribute('data-i')); break;
     case 'hzpast':       HZPAST[id] = !HZPAST[id]; render(); break;
     case 'gohome':       if (L.phone) setTab('home'); else { goFolder({ kind:'home' }); render(); } break;
     case 'setview':  S.view[destKey()] = id; S.stack = []; render(); break;

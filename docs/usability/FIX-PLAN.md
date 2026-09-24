@@ -305,3 +305,11 @@ draft through ×, back and reload, cleared on create. Group name shows only from
 (the `hidden` attribute was being overridden by `.field{display:flex}`; `[hidden]` now always wins). A chat with an
 unsent draft (e.g. a started call-out answer) is listed; call-out cards and rows say "Answered" once you sent one. The
 dock header drops the member avatars (members are in ⋯), so the group name is readable.
+
+**R2-8. Organiser gaps.** Sources: ORGANISER-R2-4, ORGANISER-R2-3, ORGANISER-R2-5, ORGANISER-R2-6, ORGANISER-R2-7.
+*Status: done.* Basics has Type (Build, Workshop, Volunteer day, …) and optional From / Until times; they show in the
+kicker, the row meta and the When fact, and Edit fills them in. Mood lives only on Look; Edit is Basics · Words and
+leaves the look to Customize. Right-click / long-press on a track of your own horizon leads with "Remove from ‹horizon›"
+(Undo toast). Search, the Add events picker and every search field match all words in any order across fields
+("baltic build"). Call outs have Share (page and link `#/callout/…`; sent into a chat as a call-out card). Posting a
+call out opens it on top of where you were, in the same tab (from the event: event → call out; phone stays on You).

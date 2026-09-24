@@ -234,6 +234,8 @@ page ("Horizon created"), where Customize holds the cover.
   title bar (it follows the finger; under 70px it springs back). Also fixed: a link without `?view=` now opens the
   destination's default view instead of the last one used.
 - Picker: "Your events" shortcut. (ORGANISER-17)
+  *Status: done (C7).* Add events opens with "Your events" (hosting, going, interested, each labelled) above
+  "All events"; typing a search gives one flat list.
 - *Added by the coordinator:* inline favicon (no /favicon.ico 404). *Status: done (42c7606).* Also: the regression
   script finds a Chromium on its own (Playwright's, `PW_CHROME`, or the Playwright cache) and counts 4xx responses.
 - *Added by the coordinator:* Network news after B4. *Status: dropped (C1).* Every item either pointed at something

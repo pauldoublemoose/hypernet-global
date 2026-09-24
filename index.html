@@ -709,6 +709,7 @@ body.is-phone #sh-list{ max-height:none; }
 .pksearch{ position:sticky; top:-20px; z-index:3; margin:-20px -20px 12px; padding:20px 20px 12px; background:var(--face); }
 body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 12px; }
 .picklist.tall{ max-height:min(58vh, 460px); }
+.pkband{ padding:12px 10px 6px; font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dim); border-bottom:1px solid var(--line); background:#fff; }
 .hzchk{ width:28px; height:28px; display:grid; place-items:center; box-shadow:var(--in); background:#fff; color:#000; }
 .plcover{ display:flex; justify-content:center; padding:0 16px; }
 .plcover .mosaic{ box-shadow:0 0 0 1px rgba(0,0,0,.25), 4px 4px 0 rgba(0,0,0,.18); }
@@ -2986,13 +2987,19 @@ function pickerEvents(){
     .sort(function(a,b){ var pa = isPast(lastDay(a)) ? 1 : 0, pb = isPast(lastDay(b)) ? 1 : 0; return pa !== pb ? pa - pb : (pa ? -byDate(a,b) : byDate(a,b)); })
     .filter(function(e){ return !q || matches(e.title, q) || matches(whereOf(e), q) || matches(hostLabel(e), q) || matches(descOf(e), q); });
 }
+function pickRow(e){
+  var on = PK.sel.indexOf(e.id) >= 0, st = stateOf(e.id);
+  return '<label class="pick"><input type="checkbox" data-act="pkpick" data-id="'+e.id+'"'+(on?' checked':'')+'>' + sqPx(e.id, 40) +
+    '<span class="pm">'+esc(e.title)+'<small>'+esc([fmtShort(e.date), whereOf(e), isPast(lastDay(e)) ? 'past' : '', { hosting:'Hosting', going:'Going', interested:'Interested' }[st] || ''].filter(Boolean).join(' · '))+'</small></span></label>';
+}
+/* your own events first — what you host, go to or saved — then everything else */
 function pickerList(){
   var evs = pickerEvents();
-  return evs.length ? evs.map(function(e){
-    var on = PK.sel.indexOf(e.id) >= 0;
-    return '<label class="pick"><input type="checkbox" data-act="pkpick" data-id="'+e.id+'"'+(on?' checked':'')+'>' + sqPx(e.id, 40) +
-      '<span class="pm">'+esc(e.title)+'<small>'+esc(fmtShort(e.date) + ' · ' + whereOf(e) + (isPast(lastDay(e)) ? ' · past' : ''))+'</small></span></label>';
-  }).join('') : '<div class="empty">Nothing matches.</div>';
+  if (!evs.length) return '<div class="empty">Nothing matches.</div>';
+  var mine = PK.q.trim() ? [] : evs.filter(function(e){ return !!stateOf(e.id); });
+  if (!mine.length) return evs.map(pickRow).join('');
+  var rest = evs.filter(function(e){ return mine.indexOf(e) < 0; });
+  return '<div class="pkband">Your events</div>' + mine.map(pickRow).join('') + '<div class="pkband">All events</div>' + rest.map(pickRow).join('');
 }
 function pickerFoot(){
   var added = PK.sel.filter(function(id){ return PK.start.indexOf(id) < 0; }).length;

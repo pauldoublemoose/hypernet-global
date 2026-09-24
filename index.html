@@ -1291,6 +1291,7 @@ function itemName(it){
   if (it.type === 'person') return person(it.id).displayName;
   if (it.type === 'callout') return (calloutOf(it.id) || {}).title || '';
   if (it.type === 'chat') return CHATS[it.id] ? CHATS[it.id].name : '';
+  if (it.type === 'missing') return 'Not here';
   return '';
 }
 </script>
@@ -2015,10 +2016,10 @@ function playlistHTML(hzId, withTracks){
     h += '<button class="btn" data-act="customizehz" data-id="'+hzId+'">'+ic('paint')+'Customize</button>';
     h += '<button class="btn" data-act="renamehz" data-id="'+hzId+'">'+ic('edit')+'Edit details</button>';
     /* a private horizon's next step is publishing it; a published one's is sharing it */
-    var canPub = evs.length && !hz.isPersonalDefault;
-    if (canPub && !hz.isPublished) h += '<button class="btn" data-act="publishhz" data-id="'+hzId+'" aria-pressed="false">'+ic('horizon')+'Publish</button>';
-    else h += '<button class="btn" data-act="share" data-type="horizon" data-id="'+hzId+'">'+ic('share')+'Share</button>';
-    h += '<button class="ib" data-act="hzmore" data-id="'+hzId+'" data-more="'+(canPub && !hz.isPublished ? 'share,delete' : 'publish,delete')+'" aria-label="More" aria-haspopup="menu">'+ic('dots')+'</button>';
+    /* nobody else can open a private horizon, so it offers Publish, never a link */
+    if (!hz.isPublished && !hz.isPersonalDefault) h += '<button class="btn" data-act="publishhz" data-id="'+hzId+'" aria-pressed="false">'+ic('horizon')+'Publish</button>';
+    else if (hz.isPublished) h += '<button class="btn" data-act="share" data-type="horizon" data-id="'+hzId+'">'+ic('share')+'Share</button>';
+    h += '<button class="ib" data-act="hzmore" data-id="'+hzId+'" data-more="'+(hz.isPublished ? 'publish,delete' : 'delete')+'" aria-label="More" aria-haspopup="menu">'+ic('dots')+'</button>';
   }
   h += '</div>';
   if (withTracks === false) return h + '</div>';
@@ -2094,7 +2095,19 @@ function calloutHTML(id){
   if (!mine && c.hostId && PEOPLE[c.hostId]) h += '<button class="btn" data-act="open" data-type="person" data-id="'+c.hostId+'">'+avHTML(c.hostId)+esc(c.hostName)+'</button>';
   return h + '</div></div>';
 }
+/* a link to something you can't see: say which kind of thing, and give a way on */
+function missingHTML(path){
+  var kind = String(path).split('/')[0];
+  var t = { event:'This event is no longer on Hypernet', horizon:'This Event Horizon is private or no longer here',
+            callout:'This call out is closed or no longer here', person:'This person isn’t on Hypernet', chats:'This chat isn’t in your account' }[kind] || 'Nothing here';
+  var h = '<div class="page missing"><span class="r-ic" style="width:64px;height:64px;flex-basis:64px">'+ic(kind === 'horizon' ? 'horizon' : kind === 'callout' ? 'callout' : kind === 'person' ? 'user' : kind === 'chats' ? 'chat' : 'star', 30)+'</span>' +
+    '<div class="pname" style="margin-top:16px">'+esc(t)+'</div><div class="acts">';
+  if (kind === 'chats' && !S.loggedIn) h += '<button class="btn primary" data-act="login">'+esc(joinLabel())+'</button>';
+  h += '<button class="btn'+(kind === 'chats' && !S.loggedIn ? '' : ' primary')+'" data-act="gohome">'+ic('home')+'Home</button>';
+  return h + '</div></div>';
+}
 function detailHTML(it){
+  if (it && it.type === 'missing') return missingHTML(it.id);
   if (!it) return '<div class="empty" style="padding-top:25vh">'+ic('horizon',40).replace('class="ic"','class="ic" style="margin:0 auto 10px;opacity:.35"')+'</div>';
   if (it.type === 'event' && EVENTS[it.id])      return canvasHTML(it.id);
   if (it.type === 'horizon')                     return horizonHTML(it.id, true);
@@ -3394,9 +3407,9 @@ function ctxItems(t, only){
     else {
       out.push({ code:'customize', label:'Customize…', icon:'paint', run:function(){ customizeHorizonDialog(id); } },
                { code:'edit', label:'Edit details…', icon:'edit', run:function(){ gated(renameHzDialog)(id); } });
-      if (hz.eventIds.length && !hz.isPersonalDefault) out.push({ code:'publish', label:'Published', icon:'check', check: !!hz.isPublished, run:function(){ publishHz(id); } });
+      if (!hz.isPersonalDefault) out.push({ code:'publish', label:'Published', icon:'check', check: !!hz.isPublished, run:function(){ publishHz(id); } });
     }
-    out.push({ code:'share', label:'Share…', icon:'share', run:function(){ shareDialog(id, 'horizon'); } });
+    if (hz.isPublished) out.push({ code:'share', label:'Share…', icon:'share', run:function(){ shareDialog(id, 'horizon'); } });
     if (hmine) out.push('-', { code:'delete', label:'Delete…', icon:'trash', run:function(){ deleteHorizonDialog(id); } });
   }
   if (only){
@@ -3942,6 +3955,7 @@ document.addEventListener('click', function(ev){
     case 'folder':   goFolder({ kind:n.getAttribute('data-kind'), id:id || null }); render(); $('listbody').scrollTop = 0; break;
     case 'shelfall':    goFolder({ kind:'shelf', id:id }); render(); $('listbody').scrollTop = 0; break;
     case 'dosearch':     { var qq = $('pq') || $('q'); if (qq) qq.value = id; doSearch(id); rememberQuery(id); break; }
+    case 'gohome':       if (L.phone) setTab('home'); else { goFolder({ kind:'home' }); render(); } break;
     case 'setview':  S.view[destKey()] = id; S.stack = []; render(); break;
     case 'row':      openItem(n.getAttribute('data-type'), id); break;
     case 'open':     openItem(n.getAttribute('data-type'), id, 'push'); break;
@@ -4220,6 +4234,7 @@ function coBySlug(s){ return calloutOf('co-' + s) ? 'co-' + s : calloutOf(s) ? s
 function chatSlug(id){ return String(id).replace(/^c-/, ''); }
 function chatBySlug(s){ return CHATS['c-' + s] ? 'c-' + s : CHATS[s] ? s : null; }
 function itemPath(it){
+  if (it.type === 'missing') return it.id;
   return { event:'event/' + evSlug(it.id), horizon:'horizon/' + hzSlug(it.id), person:'person/' + personSlug(it.id),
            callout:'callout/' + coSlug(it.id), group:'group/' + it.id, chat:'chats/' + chatSlug(it.id) }[it.type] || 'home';
 }
@@ -4279,7 +4294,7 @@ function parseHash(h){
   else if (a === 'group') it = { type:'horizon', id:groupHorizon(b) };
   else if (a === 'chats' && b){ it = { type:'chat', id:chatBySlug(b) }; s.folder = { kind:'chats', id:null }; }
   if (it){
-    if (it.id) s.stack = [it];
+    s.stack = [it.id ? it : { type:'missing', id:a + '/' + (b || '') }];
     if (p.in){ var ps = p.in.split('/'); s.folder = folderFrom(ps[0], ps[1]) || s.folder; }
   } else s.folder = folderFrom(a, b) || s.folder;
   s.tab = tabOfFolder(s.folder);
@@ -4287,6 +4302,7 @@ function parseHash(h){
 }
 function validItem(it){
   if (!it) return false;
+  if (it.type === 'missing') return true;
   if (it.type === 'event') return !!EVENTS[it.id];
   if (it.type === 'horizon') return !!HORIZONS[it.id] && (HORIZONS[it.id].isPublished || hzOwnedByMe(it.id));
   if (it.type === 'person') return !!PEOPLE[it.id];
@@ -4300,7 +4316,8 @@ function applySnap(s){
   var legacyHz = S.folder.kind === 'horizon' ? S.folder.id : null;
   if (legacyHz) S.folder = { kind:'home', id:null };
   S.tab = s.tab || tabOfFolder(S.folder);
-  S.stack = (s.stack || []).filter(validItem).map(function(it){ return { type:it.type, id:it.id }; });
+  /* something you can't open (deleted, private, mistyped) is shown as such, never silently dropped */
+  S.stack = (s.stack || []).map(function(it){ return validItem(it) ? { type:it.type, id:it.id } : { type:'missing', id:itemPath(it) }; });
   if (legacyHz && !S.stack.length && validItem({ type:'horizon', id:legacyHz })) S.stack = [{ type:'horizon', id:legacyHz }];
   S.autoSel = false;
   S.query = S.folder.kind === 'search' ? (s.q || '') : '';

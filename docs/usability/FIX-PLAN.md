@@ -257,3 +257,10 @@ tabs) and re-placed on every render; a tap that lands where a toast's button was
 swallowed instead of reaching the page. The phone verb bar is Interested · Going · Promote · ⋯ (Add to horizon and
 Share in ⋯). Toast copy: "Not going" / "Not interested" instead of "Removed"; Promote says "Promoted · <event>" with
 Undo and no longer claims followers the prototype can't know about.
+
+**R2-2. Private horizons and unavailable links.** Sources: ORGANISER-R2-1, PHONEBROWSER-R2-6.
+*Status: done.* A private horizon always offers Publish (empty ones too) and has no Share anywhere — page, ⋯, context
+menu — until it is published; then Share takes Publish's place and "Published" moves into ⋯. A link to anything the
+viewer can't open (private, deleted, mistyped: event, Event Horizon, call out, person, chat) keeps its URL and shows a
+"This Event Horizon is private or no longer here" / "This event is no longer on Hypernet" page with Home, instead of
+silently rewriting to `#/home`. Back to a deleted item's history entry shows the same page.

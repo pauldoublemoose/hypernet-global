@@ -6,7 +6,9 @@ The right-click menu (`e436828`) landed after testing and was not covered.
 
 Order = priority. Commit per theme.
 
-**Round 1 status (2026-09-24):** Phase A (A1–A7) and Phase B (B1–B8) done, one commit each; Phase C untouched.
+**Round 1 status (2026-09-24):** Phases A, B and C done (C in seven groups, C1–C7, plus the favicon); one commit each.
+C was checked the same way, plus a 44px touch-target scan of 16 phone screens; the regression is green with no console
+errors or failed requests.
 Checked in headless Chromium at 375×812 (touch), 768×1024 and 1440×900 against each source finding's repro, plus
 `tests/regression.js` (event → Going; horizon → add events → customize → reload; new group chat; right-click → Add to
 horizon; long-press sheet; back/forward/reload; console errors; horizontal overflow on 12 screens). The right-click /

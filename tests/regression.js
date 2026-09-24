@@ -1,4 +1,4 @@
-/* Hypernet feed — end-to-end regression (usability round 1, Phase A + B).
+/* Hypernet feed — end-to-end regression (usability round 1, Phases A–C).
    Serve:  python3 -m http.server 8936 --bind 127.0.0.1 --directory <repo>
    Run:    npx -y -p playwright node tests/regression.js
    Browser: Playwright's own Chromium when it is installed; otherwise PW_CHROME=<chromium binary>; otherwise

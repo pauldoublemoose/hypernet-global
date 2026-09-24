@@ -196,7 +196,11 @@ page ("Horizon created"), where Customize holds the cover.
   *Status: done (C1).* New-sheet subtitles and the desktop empty-search sentence are gone (empty search shows Browse:
   People, Call outs); form hints went in A3, the Home subtitle in B4.
 - Inert chips/tags don't look like buttons; "+ N more" opens the full list. (PHONEBROWSER-10, FIRSTTIMER-13)
+  *Status: done (C2), changed.* Inert tags (take part, principles, teams, a camp without a page) are filled and
+  borderless; only pressable chips and links keep an outline. "+ N more" became plain text "and N more": the prototype
+  only knows the few named people already shown, so a "full list" would repeat them.
 - "Going: N from your network" only when you have a network. (FIRSTTIMER-9)
+  *Status: done (C2).* Logged out, or before you follow anyone, the fact reads "N on Hypernet".
 - Search: accent-insensitive, matches countries, useful no-results state, remembers last query.
   (FIRSTTIMER-10, PHONEBROWSER-15)
 - Horizons tab: clear header; explain or drop the lone date on horizon rows (show a date range).

@@ -385,6 +385,10 @@ button.chip:hover{ border-color:var(--eac); }
 .prov li.y::before{ background:var(--eac); }
 .prov li.n{ color:var(--edim); }
 .chip.strong{ border-color:var(--eac); color:var(--eac); font-weight:bold; }
+/* a label is not a button: tags and facts are filled and borderless; only what you can press has an outline */
+span.chip{ border-color:transparent; background:color-mix(in srgb, var(--eac2) 55%, transparent); padding:4px 11px; }
+span.chip.strong{ border-color:transparent; background:color-mix(in srgb, var(--eac) 16%, transparent); }
+.chipmore{ align-self:center; padding:0 4px; font-size:13px; color:var(--edim); }
 .vocab dt{ text-transform:none; letter-spacing:0; font:bold 14px var(--sys); color:var(--eink); }
 .srcline{ margin-top:38px; font:11px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--edim); }
 .av{ width:22px; height:22px; flex:0 0 22px; display:inline-grid; place-items:center; color:#fff; font:bold 10px var(--sys); }
@@ -1591,7 +1595,9 @@ function factsHTML(evId){
   if (pop && (pop.lastAttendance || pop.cap)) f.push(['Size', '≈ ' + money(pop.lastAttendance || pop.cap) + ' people',
     pop.cap && pop.lastAttendance ? 'Cap ' + money(pop.cap) : (pop.lastAttendanceYear ? 'In ' + pop.lastAttendanceYear : '')]);
   var going = S.loggedIn && RSVP[evId] === 'going';
-  f.push([past ? 'Went' : 'Going', attendeeCount(evId) + ' from your network', going ? 'Including you' : '']);
+  /* "your network" only means something once you follow people */
+  var net = S.loggedIn && Object.keys(PFOLLOW).some(function(k){ return PFOLLOW[k]; });
+  f.push([past ? 'Went' : 'Going', attendeeCount(evId) + (net ? ' from your network' : ' on Hypernet'), going ? 'Including you' : '']);
   var org = r.organiser;
   f.push(['Host', (org && org.name) || hostLabel(e), [org && org.legalForm, org && org.name && e.hostName !== org.name ? 'as ' + e.hostName : ''].filter(Boolean).join(' · ')]);
   if (r.age && (r.age.min || r.age.kidsFreeUpTo != null)) f.push(['Age', r.age.min ? r.age.min + '+' : 'All ages', r.age.kidsFreeUpTo != null ? 'Kids free up to ' + r.age.kidsFreeUpTo : '']);
@@ -1861,7 +1867,7 @@ function canvasHTML(evId){
   if (b.nextEdition && !NEXTED[evId]) h += sect('Next edition', nextHTML(b.nextEdition));
   h += sect(past ? 'Who went' : 'Who’s going', '<div class="chips">' + att.map(function(pid){
          return '<button class="chip" data-act="open" data-type="person" data-id="'+pid+'">'+avHTML(pid,'a28')+esc(person(pid).displayName)+'</button>';
-       }).join('') + '<span class="chip plain">+ '+Math.max(0, attendeeCount(evId)-att.length)+' more</span></div>');
+       }).join('') + (attendeeCount(evId) > att.length ? '<span class="chipmore">and '+(attendeeCount(evId)-att.length)+' more</span>' : '') + '</div>');
   h += sect('On Event Horizons', onHz.length ? '<div class="chips">' + onHz.map(function(k){
          return '<button class="chip" data-act="open" data-type="horizon" data-id="'+k+'">'+ic('horizon',16)+esc(HORIZONS[k].name)+' <span class="sub">'+esc(HORIZONS[k].ownerName)+'</span></button>';
        }).join('') + '</div>' : '');

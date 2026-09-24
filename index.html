@@ -631,6 +631,9 @@ input[aria-invalid="true"]{ outline:1px solid #000; outline-offset:-4px; }
 #sh-list{ max-height:260px; }
 body.is-phone #sh-list{ max-height:none; }
 .answered{ display:inline-flex; align-items:center; gap:6px; min-height:var(--ctl); padding:0 6px 0 0; font-weight:bold; }
+.ab-tap{ cursor:pointer; }
+.linkrow.static{ cursor:default; }
+.linkrow.static:hover{ background:#fff; }
 .cmsg{ margin:0; max-width:46ch; font-size:var(--fs-m); line-height:1.5; }
 
 /* ---------- 10b. phone feed: shelves, tiles, playlists --------------- */
@@ -1482,7 +1485,16 @@ function rowHTML(it){
     ((date || side) ? '<div class="r-side">'+(date?'<div class="r-date">'+date+'</div>':'')+(side?'<div class="r-states">'+side+'</div>':'')+'</div>' : '') +
     '</div>';
 }
+/* an empty phone search offers the directories that have no tab of their own */
+function browseHTML(){
+  return '<div class="band">Browse</div>' +
+    '<div class="row" data-act="folder" data-kind="people" role="button">'+'<span class="r-ic">'+ic('people')+'</span><div class="r-main"><div class="r-title">People</div>' +
+      '<div class="r-meta">'+browsablePeople().filter(function(k){ return k !== 'self'; }).length+' on Hypernet</div></div></div>' +
+    '<div class="row" data-act="shelfall" data-id="callouts" role="button">'+'<span class="r-ic">'+ic('callout')+'</span><div class="r-main"><div class="r-title">Call outs</div>' +
+      '<div class="r-meta">'+shelfItems('callouts').length+' open</div></div></div>';
+}
 function renderList(){
+  if (L.phone && S.phoneSearch && S.folder.kind !== 'search'){ $('listbody').innerHTML = browseHTML(); S.rows = []; return; }
   if (isShelfFeed()){ renderShelves(); return; }
   var items = sortItems(folderItems());
   var g = groupItems(items), h = '', rows = [];
@@ -2292,6 +2304,23 @@ function chatAv(c){
   return '<span class="av a40 gav" aria-hidden="true">'+esc(initials(c.name))+'</span>';
 }
 function lastMsg(c){ return c.messages[c.messages.length-1]; }
+/* when a message was sent: new ones carry a timestamp; the fixtures' "09:31" and "yesterday" are read on a
+   morning clock that ends just before you arrived, so anything you send is newer */
+var BOOTNOW = Date.now();
+function msgTs(m){
+  if (!m) return 0;
+  if (m.ts) return m.ts;
+  var t = String(m.t || ''), hm = t.match(/^(\d{1,2}):(\d{2})$/), H = 3600000;
+  if (/^yesterday$/i.test(t)) return BOOTNOW - 22 * H;
+  if (hm){ var ago = (10 - +hm[1] - +hm[2] / 60) * H; if (ago < 0) ago += 24 * H; return BOOTNOW - 60000 - ago; }
+  return BOOTNOW - 48 * H;
+}
+function stamp(){ return { t:nowClock(), ts:Date.now() }; }
+/* the chat list: newest message first; a chat with nothing in it yet is not listed */
+function chatList(){
+  return CHATORDER.filter(function(k){ return CHATS[k] && CHATS[k].messages.length; })
+    .sort(function(a, b){ return msgTs(lastMsg(CHATS[b])) - msgTs(lastMsg(CHATS[a])); });
+}
 function msgPreview(m, c){
   if (!m) return 'No messages yet';
   var who = m.from === 'self' ? 'You: ' : (c.kind === 'group' && m.from !== 'sys' ? person(m.from).displayName.split(' ')[0] + ': ' : '');
@@ -2303,7 +2332,7 @@ function msgPreview(m, c){
 function unreadChats(){ return S.loggedIn ? Object.keys(UNREADCHAT).filter(function(k){ return UNREADCHAT[k]; }).length : 0; }
 function chatListHTML(){
   return '<div class="phead"><div class="ptitle">Chats</div><button class="btn primary" data-act="newchat">'+ic('edit')+'New chat</button></div>' +
-    '<div class="panel">' + CHATORDER.map(function(k){
+    '<div class="panel">' + chatList().map(function(k){
       var c = CHATS[k], m = lastMsg(c), un = UNREADCHAT[k];
       return '<div class="chrow'+(un?' unread':'')+'" data-act="chatsel" data-id="'+k+'" role="button">' + chatAv(c) +
         '<div class="cmn"><div class="cnm">'+esc(c.name)+'</div><div class="cpv">'+(CHATDRAFT[k] ? '<b>Draft:</b> '+esc(CHATDRAFT[k]) : esc(msgPreview(m, c)))+'</div></div>' +
@@ -2316,7 +2345,8 @@ function convHTML(cid){
   var h = '<div class="phead"><button class="ib" data-act="chatback" aria-label="All chats">'+ic('back')+'</button>' +
     '<div class="ptitle">'+esc(c.name)+'<small>'+esc(sub)+'</small></div>' +
     (c.kind === 'group' ? '<span class="members">' + c.memberIds.slice(0,4).map(function(m){ return '<span data-act="open" data-type="person" data-id="'+m+'">'+avHTML(m,'a28')+'</span>'; }).join('') + '</span>'
-                        : '<button class="ib" data-act="open" data-type="person" data-id="'+c.memberIds[0]+'" aria-label="Profile">'+ic('user')+'</button>') + '</div>';
+                        : '<button class="ib" data-act="open" data-type="person" data-id="'+c.memberIds[0]+'" aria-label="Profile">'+ic('user')+'</button>') +
+    '<button class="ib" data-act="chatinfo" data-id="'+cid+'" aria-label="Chat details" aria-haspopup="dialog">'+ic('dots')+'</button></div>';
   h += '<div class="conv"><div class="msgs" id="msgs">' + (c.messages.length ? c.messages.map(function(m){
     if (m.from === 'sys') return '<div class="msg sys">'+esc(m.text)+'</div>';
     var me = m.from === 'self';
@@ -2394,7 +2424,7 @@ function renderNav(){
   var homeUnread = unreadCount(homeItems());
   h += navRow({kind:'home'}, ic('home'), 'Home', { count: homeUnread || '', unread: homeUnread > 0, cls:'dup-tab' });
   h += navRow({kind:'horizons'}, ic('horizon'), 'Horizons', { cls:'dup-tab' });
-  h += navRow({kind:'people'}, ic('people'), 'People');
+  h += navRow({kind:'people'}, ic('people'), 'People', { cls:'dup-tab' });
   if (!S.loggedIn){
     h += '<div class="logincard"><b>Keep events, follow horizons, chat with your crews.</b>' +
          '<button class="btn primary" data-act="login">'+joinLabel()+'</button></div>';
@@ -2445,19 +2475,21 @@ function renderCHead(){
   }
   if (views.length > 1) tools += '<span class="seg" role="tablist">' + views.map(function(x){
     return '<button role="tab" class="'+(x===v?'on':'')+'" aria-selected="'+(x===v)+'" data-act="setview" data-id="'+x+'">'+x.toUpperCase()+'</button>'; }).join('') + '</span>';
+  if (L.phone && S.phoneSearch && S.folder.kind !== 'search') tools = '';
   el.className = tools ? '' : 'none';
   el.innerHTML = '<div class="ct"><h2>'+esc(folderName())+'</h2><div class="csub">'+esc(folderSub())+'</div></div>' + (tools ? '<div class="ctools">'+tools+'</div>' : '');
 }
 /* ---- the phone shell: an app bar on top, five tabs at the bottom ---- */
 function phoneCanBack(){
-  return S.stack.length > 0 || S.folder.kind === 'search' || S.folder.kind === 'shelf' || S.phoneSearch || (S.tab === 'you' && S.folder.kind !== 'you');
+  return S.stack.length > 0 || S.phoneSearch || S.folder.kind !== tabRootFolder(S.tab).kind;
 }
 function renderAppbar(){
   var h = '', back = phoneCanBack();
   if (back) h += '<button class="ab-btn" data-act="pback" aria-label="Back">'+ic('back',22)+'</button>';
   if (S.stack.length){
     var it = S.stack[S.stack.length-1];
-    if (it.type === 'chat' && CHATS[it.id]) h += '<div class="ab-title">'+esc(CHATS[it.id].name)+'<small>'+esc(chatSub(CHATS[it.id]))+'</small></div>';
+    if (it.type === 'chat' && CHATS[it.id]) h += '<div class="ab-title ab-tap" data-act="chatinfo" data-id="'+it.id+'" role="button">'+esc(CHATS[it.id].name)+'<small>'+esc(chatSub(CHATS[it.id]))+'</small></div>' +
+      '<button class="ab-btn" data-act="chatinfo" data-id="'+it.id+'" aria-label="Chat details" aria-haspopup="dialog">'+ic('dots',22)+'</button>';
     else h += '<div class="ab-title">'+esc(itemName(it))+'<small>'+esc({event:'Event',horizon:'Event Horizon',person:'Person',group:'Cluster',callout:'Call out'}[it.type]||'')+'</small></div>';
   } else if (S.tab === 'chats'){
     h += '<div class="ab-title">Chats</div>';
@@ -2776,14 +2808,14 @@ function shareDialog(id, type){
 /* your chats first, then the people you have no chat with yet */
 function shareListHTML(){
   var q = SH.q.toLowerCase().trim(), rows = [];
-  CHATORDER.forEach(function(k){
+  chatList().forEach(function(k){
     var c = CHATS[k];
     if (!c || (q && !matches(c.name, q))) return;
     rows.push('<div class="linkrow" data-act="doshare" data-chat="'+k+'" role="button">'+chatAv(c)+'<div class="lr">'+esc(c.name)+
       '<div class="fhelp">'+(c.kind==='dm'?'Direct message':(c.memberIds.length+1)+' members')+'</div></div>'+ic('chat')+'</div>');
   });
   ncPeopleAll().filter(function(pid){
-    return !Object.keys(CHATS).some(function(k){ return CHATS[k].kind === 'dm' && CHATS[k].memberIds[0] === pid; }) &&
+    return !Object.keys(CHATS).some(function(k){ return CHATS[k].kind === 'dm' && CHATS[k].memberIds[0] === pid && CHATS[k].messages.length; }) &&
            (!q || matches(person(pid).displayName, q) || matches(person(pid).handle, q));
   }).forEach(function(pid){
     var p = person(pid);
@@ -2804,9 +2836,9 @@ function nativeShare(){
 }
 /* ---- new chat: pick people; one person is a direct message, two or more is a group you name ---- */
 var NC = null;
-function newChatDialog(preset){
-  NC = { sel: preset ? [preset] : [], q:'', name:'' };
-  dialog('New chat', '<div id="ncbody"></div>', '<span id="ncfoot" style="display:contents"></span>', 480);
+function newChatDialog(preset, addTo){
+  NC = { sel: preset ? [preset] : [], q:'', name:'', addTo:addTo || null };
+  dialog(addTo ? 'Add people' : 'New chat', '<div id="ncbody"></div>', '<span id="ncfoot" style="display:contents"></span>', 480);
   paintNewChat();
   focusIn('nc-q');
 }
@@ -2818,7 +2850,8 @@ function ncPeopleAll(){
   return ids.sort(function(a,b){ return (PFOLLOW[b]?1:0) - (PFOLLOW[a]?1:0) || (person(a).displayName < person(b).displayName ? -1 : 1); });
 }
 function ncPeople(){
-  var ids = ncPeopleAll();
+  var into = NC.addTo && CHATS[NC.addTo];
+  var ids = ncPeopleAll().filter(function(k){ return !into || into.memberIds.indexOf(k) < 0; });
   var q = NC.q.toLowerCase().trim();
   return ids.filter(function(k){ var p = person(k); return !q || matches(p.displayName, q) || matches(p.handle, q) || matches((p.skills||[]).join(' '), q); });
 }
@@ -2831,7 +2864,7 @@ function paintNewChat(skipBody){
       (n ? '<div class="tochips">' + NC.sel.map(function(k){ return '<span class="tochip">'+avHTML(k)+esc(person(k).displayName)+
         '<button data-act="ncdrop" data-id="'+k+'" aria-label="Remove '+esc(person(k).displayName)+'">'+ic('close',14)+'</button></span>'; }).join('') + '</div>' : '') +
       '<input type="search" id="nc-q" placeholder="Search people" value="'+esc(NC.q)+'" autocomplete="off"></div>';
-    h += '<div class="field" id="nc-namefield"'+(n >= 2 ? '' : ' hidden')+'><label for="nc-name">Group name</label>' +
+    h += '<div class="field" id="nc-namefield"'+(n >= 2 && !NC.addTo ? '' : ' hidden')+'><label for="nc-name">Group name</label>' +
       '<input type="text" id="nc-name" value="'+esc(NC.name)+'" placeholder="'+esc(ncAutoName())+'" autocomplete="off"></div>';
     h += '<div class="picklist" id="nc-list">' + ncPeople().map(function(k){
       var p = person(k), on = NC.sel.indexOf(k) >= 0;
@@ -2841,8 +2874,8 @@ function paintNewChat(skipBody){
     }).join('') + (ncPeople().length ? '' : '<div class="empty">Nobody matches.</div>') + '</div>';
     $('ncbody').innerHTML = h;
   }
-  var nf = $('nc-namefield'); if (nf) nf.hidden = n < 2;
-  var label = n === 0 ? 'Start chat' : n === 1 ? 'Message ' + person(NC.sel[0]).displayName.split(' ')[0] : 'Create group';
+  var nf = $('nc-namefield'); if (nf) nf.hidden = n < 2 || !!NC.addTo;
+  var label = NC.addTo ? (n ? 'Add ' + firstNames(NC.sel) : 'Add people') : n === 0 ? 'Start chat' : n === 1 ? 'Message ' + person(NC.sel[0]).displayName.split(' ')[0] : 'Create group';
   var dis = n === 0;
   var ni = $('nc-name'); if (ni) ni.placeholder = ncAutoName();
   $('ncfoot').innerHTML = '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="donewchat"'+(dis?' disabled':'')+'>'+esc(label)+'</button>';
@@ -3544,8 +3577,7 @@ function phoneBack(){
   if (S.stack.length){ S.stack.pop(); render(); return; }
   if (S.phoneSearch && S.folder.kind !== 'search'){ S.phoneSearch = false; SEARCHRET = null; render(); return; }
   if (S.folder.kind === 'search'){ leaveSearch(); S.phoneSearch = false; render(); return; }
-  if (S.folder.kind === 'shelf'){ goFolder({ kind:'home' }); render(); return; }
-  if (S.tab === 'you' && S.folder.kind !== 'you'){ goFolder({ kind:'you' }); render(); return; }
+  if (S.folder.kind !== tabRootFolder(S.tab).kind){ goFolder(tabRootFolder(S.tab)); render(); return; }
 }
 function tabRootFolder(t){ return { kind: t === 'horizons' || t === 'chats' || t === 'you' ? t : 'home', id:null }; }
 function tabOfFolder(f){
@@ -3692,9 +3724,9 @@ function openDM(pid){
 var messagePerson = gated(function(pid){ openChat(openDM(pid)); });
 /* sending keeps you on the page: the toast can take you to the chat */
 var shareToChat = gated(function(id, cid, type, text){
-  var hz = type === 'horizon', t = nowClock();
-  if (text) CHATS[cid].messages.push({ from:'self', t:t, text:text });
-  CHATS[cid].messages.push(hz ? { from:'self', t:t, text:'', hzcard:id } : { from:'self', t:t, text:'', card:id });
+  var hz = type === 'horizon', st = stamp();
+  if (text) CHATS[cid].messages.push({ from:'self', t:st.t, ts:st.ts, text:text });
+  CHATS[cid].messages.push(hz ? { from:'self', t:st.t, ts:st.ts + 1, text:'', hzcard:id } : { from:'self', t:st.t, ts:st.ts + 1, text:'', card:id });
   var i = CHATORDER.indexOf(cid); if (i > 0){ CHATORDER.splice(i, 1); CHATORDER.unshift(cid); }
   closeDialogs(); render();
   toast('Sent to ' + CHATS[cid].name, itemName({ type: hz ? 'horizon' : 'event', id:id }), { label:'Open', run:function(){ openChat(cid); } });
@@ -3708,20 +3740,65 @@ var answerCallout = gated(function(coId){
   openChat(cid);
   setTimeout(function(){ var b = $('chatbox'); if (b){ b.focus(); b.setSelectionRange(b.value.length, b.value.length); } }, 60);
 });
+function firstNames(ids){ return ids.map(function(k){ return person(k).displayName.split(' ')[0]; }).join(', '); }
 function createChat(){
   if (!NC || !NC.sel.length) return;
-  if (NC.sel.length === 1){ closeDialogs(); openChat(openDM(NC.sel[0])); return; }
-  var name = NC.name.trim() || ncAutoName();
-  var cid = 'c-new-' + (Object.keys(CHATS).length + 1);
-  CHATS[cid] = { id:cid, name:name, kind:'group', memberIds:NC.sel.slice(),
-    messages:[{ from:'sys', t:nowClock(), text:'You created “'+name+'” with ' + NC.sel.map(function(k){ return person(k).displayName.split(' ')[0]; }).join(', ') }] };
+  var into = NC.addTo && CHATS[NC.addTo], st = stamp();
+  if (into && into.kind === 'group'){
+    /* adding people to a group keeps the group */
+    NC.sel.forEach(function(k){ if (into.memberIds.indexOf(k) < 0) into.memberIds.push(k); });
+    into.messages.push({ from:'sys', t:st.t, ts:st.ts, text:'You added ' + firstNames(NC.sel) });
+    closeDialogs(); render(); toast('Added to ' + into.name, firstNames(NC.sel)); return;
+  }
+  var sel = into ? into.memberIds.concat(NC.sel.filter(function(k){ return into.memberIds.indexOf(k) < 0; })) : NC.sel.slice();
+  if (sel.length === 1){ closeDialogs(); openChat(openDM(sel[0])); return; }
+  var name = NC.name.trim() || firstNames(sel);
+  var cid = 'c-new-' + Date.now().toString(36);
+  CHATS[cid] = { id:cid, name:name, kind:'group', memberIds:sel,
+    messages:[{ from:'sys', t:st.t, ts:st.ts, text:'You created “'+name+'” with ' + firstNames(sel) }] };
   CHATORDER.unshift(cid);
   closeDialogs(); openChat(cid);
   toast('Group created', name);
 }
+/* a conversation's details: who is in it (each opens their page), add people, rename, leave */
+function chatInfoDialog(cid){
+  var c = CHATS[cid]; if (!c) return;
+  var rows = '<div class="linkrow static">'+avHTML('self','a40')+'<div class="lr">'+esc(PEOPLE['self'].displayName)+'<div class="fhelp">You</div></div></div>' +
+    c.memberIds.map(function(pid){ var p = person(pid);
+      return '<div class="linkrow" data-act="chatperson" data-id="'+pid+'" role="button">'+avHTML(pid,'a40')+'<div class="lr">'+esc(p.displayName)+'<div class="fhelp">@'+esc(p.handle)+'</div></div>' +
+        ic('back',18).replace('class="ic"','class="ic" style="transform:scaleX(-1)"')+'</div>'; }).join('');
+  var acts = '<div class="linkrow" data-act="chatadd" data-id="'+cid+'" role="button"><span class="r-ic">'+ic('plus')+'</span><div class="lr"><b>Add people</b></div></div>';
+  if (c.kind === 'group') acts += '<div class="linkrow" data-act="chatrename" data-id="'+cid+'" role="button"><span class="r-ic">'+ic('edit')+'</span><div class="lr"><b>Rename</b></div></div>' +
+    '<div class="linkrow" data-act="chatleave" data-id="'+cid+'" role="button"><span class="r-ic">'+ic('back')+'</span><div class="lr"><b>Leave group</b></div></div>';
+  dialog(c.name, '<div class="flabel" style="margin-bottom:8px">'+(c.kind === 'group' ? (c.memberIds.length + 1) + ' members' : 'Direct message')+'</div>' +
+    '<div class="picklist">'+rows+'</div><div class="picklist" style="margin-top:16px">'+acts+'</div>', '<button class="btn" data-act="closedlg">Done</button>', 420);
+}
+function chatRenameDialog(cid){
+  var c = CHATS[cid];
+  dialog('Rename group', '<div class="field"><label for="cr-n">Name</label><input type="text" id="cr-n" value="'+esc(c.name)+'" autocomplete="off"></div>',
+    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="dochatrename" data-id="'+cid+'">Save changes</button>', 420);
+  focusIn('cr-n');
+}
+function chatRename(cid){
+  var c = CHATS[cid], v = (($('cr-n')||{}).value || '').trim(), st = stamp();
+  if (!c || !v || v === c.name){ closeDialogs(); return; }
+  c.name = v; c.messages.push({ from:'sys', t:st.t, ts:st.ts, text:'You renamed the group to “' + v + '”' });
+  closeDialogs(); render(); toast('Renamed', v);
+}
+function chatLeave(cid){
+  var c = CHATS[cid]; if (!c) return;
+  confirmDialog('Leave group', 'Leave “' + c.name + '”? It leaves your chats; the others keep talking.', 'Leave group', function(){
+    delete CHATS[cid]; delete UNREADCHAT[cid]; delete CHATDRAFT[cid];
+    CHATORDER = CHATORDER.filter(function(k){ return k !== cid; });
+    if (S.chatOpen === cid) S.chatOpen = null;
+    S.stack = S.stack.filter(validItem); ROUTE.replace = true;
+    closeDialogs(); render(); toast('Left', c.name);
+  });
+}
 function sendChat(){
   var box = $('chatbox'), cid = activeChat(); if (!box || !cid || !box.value.trim()) return;
-  CHATS[cid].messages.push({ from:'self', t:nowClock(), text:box.value.trim() });
+  var st = stamp();
+  CHATS[cid].messages.push({ from:'self', t:st.t, ts:st.ts, text:box.value.trim() });
   delete CHATDRAFT[cid];
   if (ANSWERING[cid]){ ANSWERED[ANSWERING[cid]] = cid; delete ANSWERING[cid]; }
   box.value = '';
@@ -3824,6 +3901,12 @@ document.addEventListener('click', function(ev){
     case 'dm':           messagePerson(id); break;
     case 'answercallout': answerCallout(id); break;
     case 'chatsel':      openChat(id); break;
+    case 'chatinfo':     chatInfoDialog(id); break;
+    case 'chatperson':   closeDialogs(); openItem('person', id, 'push'); break;
+    case 'chatadd':      closeDialogs(); newChatDialog(null, id); break;
+    case 'chatrename':   closeDialogs(); chatRenameDialog(id); break;
+    case 'dochatrename': chatRename(id); break;
+    case 'chatleave':    closeDialogs(); chatLeave(id); break;
     case 'chatback':     if (L.phone) navBack(); else { S.chatOpen = null; render(); } break;
     case 'sendchat':     sendChat(); break;
     case 'newchat':      runCmd('newchat'); break;
@@ -4007,6 +4090,7 @@ document.addEventListener('keydown', function(ev){
     if (ae.id === 'pf-city'){ pfAddCity(); ev.preventDefault(); return; }
     if (/^pf-(name|handle|about)$/.test(ae.id)){ pfSave(); ev.preventDefault(); return; }
     if (ae.id === 'nc-name'){ createChat(); ev.preventDefault(); return; }
+    if (ae.id === 'cr-n'){ var rb = document.querySelector('[data-act="dochatrename"]'); if (rb) chatRename(rb.getAttribute('data-id')); ev.preventDefault(); return; }
     if (ae.id === 'nh-n'){ var go = $('nh-go'); if (go && !go.disabled) go.click(); ev.preventDefault(); return; }
     if (ae.classList.contains('pi')){ ae.click(); ev.preventDefault(); return; }
   }

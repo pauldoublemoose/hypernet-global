@@ -159,6 +159,12 @@ the "Looking for" tile, rows and the detail page show the title as typed.
 **B7. Chats on phone.** Conversation header with members, profile, rename, add people. Chat list sorted by
 latest message; empty DMs don't clutter it. People directory reachable from Home/search, not only You.
 Sources: CREW-9, CREW-14, CREW-18.
+*Status: done.* A conversation's title (and a ⋯ beside it; on desktop a ⋯ in the dock header) opens its details: you
+and every member (each opens their profile on top of the chat), Add people (a DM becomes a new group), Rename and
+Leave group (confirmed) for groups. The chat list is ordered by the latest message — opening a chat no longer bumps it
+— using timestamps on new messages and a morning clock for the fixture times; a DM with nothing in it is not listed.
+People: an empty phone search now offers People and Call outs, so the directory is one tap from Home's search; the
+You tab keeps only "People you follow" (desktop keeps People in the sidebar).
 
 **B8. Customize.** Choosing a preset never overwrites the mood line the user typed. On phone the live
 preview stays visible (sticky). Wizard step tabs are either clickable or not styled as tabs. The New

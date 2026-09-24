@@ -6,6 +6,15 @@ The right-click menu (`e436828`) landed after testing and was not covered.
 
 Order = priority. Commit per theme.
 
+**Round 1 status (2026-09-24):** Phase A (A1–A7) and Phase B (B1–B8) done, one commit each; Phase C untouched.
+Checked in headless Chromium at 375×812 (touch), 768×1024 and 1440×900 against each source finding's repro, plus
+`tests/regression.js` (event → Going; horizon → add events → customize → reload; new group chat; right-click → Add to
+horizon; long-press sheet; back/forward/reload; console errors; horizontal overflow on 12 screens). The right-click /
+long-press menu from `e436828` was kept and now carries the new host verbs (Edit, Delete, New call out, Published).
+Changes to the plan: B4 adds a "Coming up" section after "This week" and puts "From people you follow" second; B7
+reaches the people directory through the empty phone search rather than a Home chip (the chips are gone per B4);
+A3 keeps drafts instead of asking "Discard?"; B8's clickable step tabs landed with A5's Edit wizard.
+
 ## Phase A — foundations (blockers + the majors everyone hit)
 
 **A1. Real URLs and history.** Hash-based routing for tab, destination, view (FEED/LIST/CALENDAR),

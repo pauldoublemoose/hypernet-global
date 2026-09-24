@@ -258,19 +258,18 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .actbar{ position:sticky; top:0; z-index:6; background:var(--ebg); border-bottom:1px solid var(--eac2); padding:12px 34px; font-family:var(--sys); }
 .verbs{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
 .vpair{ display:flex; height:var(--act); }
-.vbtn{ height:var(--act); padding:0 18px; display:inline-flex; align-items:center; justify-content:center; gap:8px; border:2px solid var(--eac); background:transparent;
+.vbtn{ height:var(--act); padding:0 14px; display:inline-flex; align-items:center; justify-content:center; gap:8px; border:2px solid var(--eac); background:transparent;
   color:var(--eink); font:bold 14px var(--sys); letter-spacing:.02em; }
 .vbtn + .vbtn{ border-left:0; }
 .vbtn:hover{ background:color-mix(in srgb, var(--eac) 20%, transparent); }
 .vbtn.on{ background:var(--eac); color:var(--eon); }
 .vbtn.on .fillable{ fill:currentColor; }
-.vpromo{ height:var(--act); padding:0 16px; display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--eink);
+.vpromo{ height:var(--act); padding:0 13px; display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--eink);
   border:1px solid var(--edim); font:bold 14px var(--sys); }
 .vpromo:hover{ border-color:var(--eink); }
 .vpromo.on{ border-style:solid; border-color:var(--eink); background:color-mix(in srgb, var(--eink) 14%, transparent); }
 .vpromo .n{ font:12px var(--mono); opacity:.8; }
 .vsec{ display:flex; flex-wrap:wrap; gap:8px; margin-left:auto; }
-.vmore .sm{ display:none; }
 .vwent{ height:var(--act); padding:0 16px; display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--edim);
   border:1px solid var(--edim); font:bold 14px var(--sys); }
 .vwent:hover{ color:var(--eink); border-color:var(--eink); }
@@ -288,7 +287,7 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .edprev{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
 .edprev .chip{ min-height:44px; }
 .ednote{ flex:1 1 260px; font-size:13px; color:var(--edim); }
-.vmore{ height:var(--act); padding:0 14px; display:inline-flex; align-items:center; gap:7px; background:transparent; color:var(--eink);
+.vmore{ height:var(--act); padding:0 12px; display:inline-flex; align-items:center; gap:7px; background:transparent; color:var(--eink);
   border:1px solid var(--edim); font:13px var(--sys); }
 .vmore:hover{ border-color:var(--eink); }
 .sh-rounded .vpair, .sh-rounded .vpromo, .sh-rounded .vmore, .sh-rounded .chip, .sh-rounded .card{ border-radius:10px; }
@@ -393,7 +392,6 @@ button.chip:hover{ border-color:var(--eac); }
 .av.a64{ width:64px; height:64px; flex-basis:64px; font-size:22px; }
 .av.a28{ width:28px; height:28px; flex-basis:28px; font-size:11px; }
 
-@container detail (max-width:760px){ .vmore .lg{ display:none; } .vmore .sm{ display:inline; } }
 @container detail (max-width:620px){
   .banner{ min-height:0; }
   .banner .bin{ flex-direction:column; align-items:flex-start; gap:16px; padding:22px 18px 20px; }
@@ -414,8 +412,6 @@ button.chip:hover{ border-color:var(--eac); }
   .vsec{ display:contents; }
   .vpromo, .vmore{ flex:1 1 auto; justify-content:center; padding:0 8px; }
   .vmore.vdots{ flex:0 0 var(--act); }
-  .vmore .lg{ display:none; }
-  .vmore .sm{ display:inline; }
   .facts{ grid-template-columns:1fr 1fr; }
   .evdesc{ font-size:16px; }
   .kv{ grid-template-columns:1fr; gap:2px; }
@@ -643,7 +639,6 @@ body.is-phone #sh-list{ max-height:none; }
 .greet h2{ margin:0; font-size:24px; line-height:1.15; }
 .greet p{ margin:4px 0 0; color:var(--dim); font-size:14px; }
 .shelf{ margin-top:22px; }
-.newslist{ margin-top:8px; border-top:1px solid var(--line); }
 .row.more{ min-height:52px; color:var(--ink2); }
 .row.more .r-title{ font-size:var(--fs); font-weight:bold; }
 .shh{ display:flex; align-items:center; gap:10px; padding:0 8px 0 16px; }
@@ -1040,7 +1035,6 @@ var IC = {
   share:'<path d="M10 12.5V3.5M6.3 7.2 10 3.5l3.7 3.7M4 10.5V17h12v-6.5"/>',
   addhorizon:'<path d="M1.5 13.5h11M4 13.5a4.5 4.5 0 0 1 8.3-2.4M8.3 4.2v1.8M16 9v8M12 13h8"/>',
   callout:'<path d="M3 8v4h3l7.5 4V4L6 8zM16.5 7.5v5"/>',
-  news:'<path d="M3 4h11v12H4.5A1.5 1.5 0 0 1 3 14.5zM14 7h3v7.5a1.5 1.5 0 0 1-3 0M5.5 7h6M5.5 10h6M5.5 13h4"/>',
   cal:'<path d="M3 5h14v12H3zM3 9h14M7 3v4M13 3v4"/>',
   sidebar:'<path d="M3 4h14v12H3zM8 4v12"/>',
   paint:'<path d="M4 16c0-2 1-3 2.5-3s2.5 1 2.5 2.5S7.5 18 4 16zM8.5 13 16 5.5l-1.5-1.5L7 11.5"/>',
@@ -1091,13 +1085,6 @@ function fixtureChats(){
   return { byId:byId, order:order };
 }
 
-/* network news — part of what the Home feed mixes in; each links to its subject when it has one */
-var NEWS = H.feedNews.map(function(n, i){
-  var ref = null;
-  Object.keys(EVENTS).forEach(function(k){ if (!ref && n.text.indexOf(EVENTS[k].title) >= 0) ref = { type:'event', id:k }; });
-  Object.keys(HORIZONS).forEach(function(k){ if (!ref && n.text.indexOf('“'+HORIZONS[k].name+'”') >= 0) ref = { type:'horizon', id:k }; });
-  return { id:'news-'+i, when:n.when, text:n.text, ref:ref };
-});
 var HZCOVER = {};              /* hzId -> 'own' | 'plain' | an event id; nothing = mosaic of its events */
 var EDITED = {};               /* events a host changed after they existed (their look, their details) */
 var HZTHEME = {};              /* hzId -> a theme in the same shape as an event's */
@@ -1221,7 +1208,6 @@ function isMine(evId){ return S.loggedIn && ownEvent(EVENTS[evId]); }
 function joinLabel(){ return ACCTS.me ? 'Log in' : 'Join / Log in'; }
 function unreadCount(items){ return items.filter(function(it){ return it.type==='event' && !READ[it.id]; }).length; }
 function calloutOf(id){ return CALLOUTS.filter(function(x){ return x.id === id; })[0]; }
-function newsOf(id){ return NEWS.filter(function(n){ return n.id === id; })[0] || { text:'', when:'' }; }
 var TOASTT = null;
 var WELCOME = null;             /* the first confirmation after joining also says hello */
 var TOASTACT = null;            /* the one thing a toast can do: undo what it reports */
@@ -1247,12 +1233,13 @@ function gated(fn){
     fn.apply(null, args);
   };
 }
+/* a camp (group) is met through the Event Horizon it publishes */
+function groupHorizon(g){ return Object.keys(HORIZONS).filter(function(k){ return HORIZONS[k].ownerGroupId === g && HORIZONS[k].isPublished; })[0] || null; }
 function itemName(it){
   if (!it) return '';
   if (it.type === 'event') return EVENTS[it.id] ? EVENTS[it.id].title : '';
   if (it.type === 'horizon') return HORIZONS[it.id] ? HORIZONS[it.id].name : '';
   if (it.type === 'person') return person(it.id).displayName;
-  if (it.type === 'group') return GROUPS[it.id] ? GROUPS[it.id].name : '';
   if (it.type === 'callout') return (calloutOf(it.id) || {}).title || '';
   if (it.type === 'chat') return CHATS[it.id] ? CHATS[it.id].name : '';
   return '';
@@ -1364,7 +1351,6 @@ function searchItems(q){
     if ((k === 'self' && !S.loggedIn) || k === 'p-michal' || /^u-/.test(k)) return;
     if (matches(p.displayName,q) || matches(p.handle,q) || matches(p.bio,q) || matches((p.skills||[]).join(' '),q) || matches(citiesOf(p).join(' '),q)) out.push({ type:'person', id:k });
   });
-  Object.keys(GROUPS).forEach(function(k){ if (matches(GROUPS[k].name,q) || matches(GROUPS[k].description,q)) out.push({ type:'group', id:k }); });
   return out;
 }
 
@@ -1387,13 +1373,13 @@ function sortItems(items){
   });
   return head.concat(evs);
 }
-var SEARCHBAND = { event:'Events', horizon:'Horizons', callout:'Call outs', person:'People', group:'Clusters' };
+var SEARCHBAND = { event:'Events', horizon:'Event Horizons', callout:'Call outs', person:'People' };
 function bandOf(it){
   var k = S.folder.kind;
   if (k === 'shelf') return null;
   if (k === 'search') return SEARCHBAND[it.type];
   if (k === 'home' && viewOf() === 'feed')
-    return it.band || { event:'Happening soon', horizon:'Horizons worth following', callout:'Call outs', news:'Network news' }[it.type];
+    return it.band;
   if (k === 'horizons') return hzOwnedByMe(it.id) ? 'Yours' : (S.loggedIn && HZFOLLOW[it.id]) ? 'Following' : 'More horizons';
   if (k === 'people') return it.id === 'self' ? 'You' : (S.loggedIn && PFOLLOW[it.id]) ? 'People you follow' : 'Around the network';
   if (it.type === 'horizon') return 'Event Horizon';
@@ -1404,8 +1390,8 @@ function bandOf(it){
   if (d <= 31) return 'This month';
   return 'Later';
 }
-var BANDORDER = ['Event Horizon','Happening soon','Announced','This week','This month','Later','Past','Horizons worth following','Call outs','Network news',
-                 'Events','Horizons','People','Clusters','You','Yours','Following','People you follow','Around the network','More horizons'];
+var BANDORDER = ['Event Horizon','Happening soon','Announced','This week','This month','Later','Past',
+                 'Events','Event Horizons','People','You','Yours','Following','People you follow','Around the network','More horizons'];
 function groupItems(items){
   var groups = {}, order = [];
   items.forEach(function(it){ var b = bandOf(it) || ''; if (!groups[b]){ groups[b] = []; order.push(b); } groups[b].push(it); });
@@ -1447,7 +1433,7 @@ function rowHTML(it){
     var hz = HORIZONS[it.id];
     lead = '<span class="r-ic">'+hzArt(it.id, 32)+'</span>';
     title = esc(hz.name);
-    meta = esc('Horizon · ' + hz.ownerName + ' · ' + hz.eventIds.length + ' events');
+    meta = esc('Event Horizon · ' + hz.ownerName + ' · ' + hz.eventIds.length + ' events');
     date = hzDates(it.id).length ? fmtShort(hzDates(it.id)[0]) : '';
     side = hzOwnedByMe(it.id) ? '<span class="pill host"><span>Yours</span></span>' : (S.loggedIn && HZFOLLOW[it.id]) ? '<span class="pill going">'+ic('check',11)+'<span>Following</span></span>' : '';
   } else if (it.type === 'person'){
@@ -1456,25 +1442,12 @@ function rowHTML(it){
     title = esc(p.displayName) + (it.id === 'self' ? ' <span class="r-meta" style="display:inline">(you)</span>' : '');
     meta = esc(['@'+p.handle, cityShort(p.city), p.bio].filter(Boolean).join(' · '));
     side = (it.id !== 'self' && S.loggedIn && PFOLLOW[it.id]) ? '<span class="pill going">'+ic('check',11)+'<span>Following</span></span>' : '';
-  } else if (it.type === 'group'){
-    var g = GROUPS[it.id];
-    lead = '<span class="r-ic">'+ic(g.visibility === 'private' ? 'lock' : 'camp')+'</span>';
-    title = esc(g.name);
-    meta = esc('Cluster · ' + g.visibility + ' · ' + g.memberIds.length + ' members');
   } else if (it.type === 'callout'){
     var c = calloutOf(it.id);
     lead = '<span class="r-ic">'+ic('callout')+'</span>';
     title = esc(c.title);
     meta = esc([c.hostName, c.eventId && EVENTS[c.eventId] ? 'for ' + EVENTS[c.eventId].title : '', c.body].filter(Boolean).join(' · '));
     date = c.closed ? 'closed' : 'until ' + fmtShort(c.expiresAt);
-  } else if (it.type === 'news'){
-    var nw = newsOf(it.id);
-    lead = '<span class="r-ic">'+ic('news')+'</span>';
-    title = esc(nw.text);
-    meta = '';
-    date = esc(nw.when);
-    if (nw.ref) act = 'data-act="row" data-type="'+nw.ref.type+'" data-id="'+nw.ref.id+'"';
-    else { act = ''; cls += ' static'; }
   }
   var drag = it.type === 'event' && !L.phone ? ' draggable="true"' : '';
   if (it.type === 'event' && S.folder.kind === 'horizon' && hzOwnedByMe(S.folder.id))
@@ -1498,7 +1471,7 @@ function renderList(){
   var items = sortItems(folderItems());
   var g = groupItems(items), h = '', rows = [];
   if (S.folder.kind === 'search' && !S.query.trim()){
-    h = '<div class="empty">Search events, horizons, call outs and people.</div>';
+    h = browseHTML();
   } else if (!items.length){
     var k = S.folder.kind;
     h = '<div class="empty">' + (k === 'search' ? 'Nothing matches “'+esc(S.query)+'”.'
@@ -1509,7 +1482,7 @@ function renderList(){
   } else {
     g.order.forEach(function(b){
       if (b) h += '<div class="band">' + esc(b) + ' <span class="cnt">' + g.groups[b].length + '</span></div>';
-      g.groups[b].forEach(function(it){ h += rowHTML(it); if (it.type !== 'more' && (it.type !== 'news' || newsOf(it.id).ref)) rows.push(it.type === 'news' ? newsOf(it.id).ref : it); });
+      g.groups[b].forEach(function(it){ h += rowHTML(it); if (it.type !== 'more') rows.push(it); });
     });
   }
   S.rows = rows;
@@ -1792,7 +1765,7 @@ function verbsHTML(evId){
          '<button class="vbtn on" data-act="editevent" data-id="'+evId+'">'+ic('edit')+'Edit</button>' +
          '<button class="vbtn" data-act="customize" data-id="'+evId+'">'+ic('paint')+'Customize</button></div>';
     h += promoBtnHTML(evId) + '<span class="vsec">';
-    h += '<button class="vmore" data-act="addto" data-id="'+evId+'">'+ic('addhorizon',16)+'<span class="lg">Add to horizon</span><span class="sm">Horizon</span></button>';
+    h += '<button class="vmore" data-act="addto" data-id="'+evId+'">'+ic('addhorizon',16)+'Add to horizon</button>';
     h += '<button class="vmore" data-act="share" data-id="'+evId+'">'+ic('share',16)+'Share</button>';
     h += '<button class="vmore vdots" data-act="evmore" data-id="'+evId+'" data-more="delete" aria-label="More" aria-haspopup="menu">'+ic('dots',16)+'</button>';
     return h + '</span></div>';
@@ -1802,7 +1775,7 @@ function verbsHTML(evId){
        '<button class="vbtn'+(st==='going'?' on':'')+'" data-act="v-going" data-id="'+evId+'" aria-pressed="'+(st==='going')+'">'+ic('check')+'Going</button></div>';
   h += promoBtnHTML(evId);
   h += '<span class="vsec">';
-  h += '<button class="vmore" data-act="addto" data-id="'+evId+'">'+ic('addhorizon',16)+'<span class="lg">Add to horizon</span><span class="sm">Horizon</span></button>';
+  h += '<button class="vmore" data-act="addto" data-id="'+evId+'">'+ic('addhorizon',16)+'Add to horizon</button>';
   h += '<button class="vmore" data-act="share" data-id="'+evId+'">'+ic('share',16)+'Share</button>';
   return h + '</span></div>';
 }
@@ -1889,12 +1862,17 @@ function canvasHTML(evId){
   h += sect(past ? 'Who went' : 'Who’s going', '<div class="chips">' + att.map(function(pid){
          return '<button class="chip" data-act="open" data-type="person" data-id="'+pid+'">'+avHTML(pid,'a28')+esc(person(pid).displayName)+'</button>';
        }).join('') + '<span class="chip plain">+ '+Math.max(0, attendeeCount(evId)-att.length)+' more</span></div>');
-  h += sect('On horizons', onHz.length ? '<div class="chips">' + onHz.map(function(k){
+  h += sect('On Event Horizons', onHz.length ? '<div class="chips">' + onHz.map(function(k){
          return '<button class="chip" data-act="open" data-type="horizon" data-id="'+k+'">'+ic('horizon',16)+esc(HORIZONS[k].name)+' <span class="sub">'+esc(HORIZONS[k].ownerName)+'</span></button>';
        }).join('') + '</div>' : '');
   var hosts = '';
   if (hp && (hp.id !== 'self' || !S.loggedIn)) hosts += '<button class="chip" data-act="open" data-type="person" data-id="'+hp.id+'">'+avHTML(hp.id,'a28')+esc(hp.displayName)+'</button>';
-  (r.ownerGroupIds || []).forEach(function(g){ if (GROUPS[g]) hosts += '<button class="chip" data-act="open" data-type="group" data-id="'+g+'">'+ic('camp',16)+esc(GROUPS[g].name)+'</button>'; });
+  (r.ownerGroupIds || []).forEach(function(g){
+    if (!GROUPS[g]) return;
+    var gh = groupHorizon(g);
+    hosts += gh ? '<button class="chip" data-act="open" data-type="horizon" data-id="'+gh+'">'+ic('horizon',16)+esc(GROUPS[g].name)+'</button>'
+                : '<span class="chip plain">'+esc(GROUPS[g].name)+'</span>';
+  });
   h += sect('Hosted by', hosts ? '<div class="chips">' + hosts + '</div>' : '');
   h += sect('Links', sourcesHTML(r));
   var pv = provenance(evId);
@@ -1977,7 +1955,6 @@ function publishedHorizonsOf(pid){
 function personHTML(pid){
   var p = person(pid), hz = publishedHorizonsOf(pid), st = PRESENCE[pid] || 'offline', fol = S.loggedIn && PFOLLOW[pid];
   var hosts = allEvents().filter(function(e){ return hostPersonOf(e) === PEOPLE[pid]; }).sort(byDate);
-  var clusters = Object.keys(GROUPS).filter(function(g){ return GROUPS[g].memberIds.indexOf(pid) >= 0; });
   var h = '<div class="page">';
   h += '<div class="phead2">' + avHTML(pid, 'a64') + '<div style="flex:1;min-width:0"><div class="pname">'+esc(p.displayName)+'</div>' +
        '<div class="psub">@'+esc(p.handle)+(citiesOf(p).length?' · '+esc(citiesOf(p).join(', ')):'') +
@@ -1997,30 +1974,14 @@ function personHTML(pid){
     h += citiesOf(p).length ? '<div class="subh">Cities</div><div class="tags">' + citiesOf(p).map(function(c){ return '<span class="tag">'+esc(c)+'</span>'; }).join('') + '</div>' : '';
   }
   if (hz.length){
-    h += '<div class="subh">Published horizons</div>' + hz.map(function(k){
+    h += '<div class="subh">Published Event Horizons</div>' + hz.map(function(k){
       return '<div class="crow">'+(hzOwnSquare(k) || hzCover(k) ? hzArt(k, 40) : '<span class="r-ic">'+ic('horizon')+'</span>')+
         '<div class="cm" data-act="open" data-type="horizon" data-id="'+k+'"><div class="r-title">'+esc(HORIZONS[k].name)+'</div>' +
         '<div class="r-meta">'+HORIZONS[k].eventIds.length+' events · '+hzFollowers(k)+' followers</div></div></div>';
     }).join('');
   }
   if (hosts.length) h += '<div class="subh">Hosting</div>' + hosts.map(function(e){ return eventCRow(e, false); }).join('');
-  if (clusters.length){
-    h += '<div class="subh">Clusters</div>' + clusters.map(function(g){
-      return '<div class="crow"><span class="r-ic">'+ic(GROUPS[g].visibility==='private'?'lock':'camp')+'</span>' +
-        '<div class="cm" data-act="open" data-type="group" data-id="'+g+'"><div class="r-title">'+esc(GROUPS[g].name)+'</div>' +
-        '<div class="r-meta">'+esc(GROUPS[g].visibility)+' · '+GROUPS[g].memberIds.length+' members</div></div></div>';
-    }).join('');
-  }
   return h + '</div>';
-}
-function groupHTML(gid){
-  var g = GROUPS[gid];
-  return '<div class="page"><div class="phead2"><span class="r-ic" style="width:64px;height:64px;flex-basis:64px">'+ic(g.visibility==='private'?'lock':'camp',30)+'</span>' +
-    '<div style="flex:1;min-width:0"><div class="pname">'+esc(g.name)+'</div><div class="psub">Cluster · '+esc(g.visibility)+' · '+g.memberIds.length+' members</div></div></div>' +
-    '<p class="pdesc">'+esc(g.description)+'</p>' +
-    '<div class="subh">Members</div>' + g.memberIds.map(function(m){
-      return '<div class="crow">'+avHTML(m,'a40')+'<div class="cm" data-act="open" data-type="person" data-id="'+m+'"><div class="r-title">'+esc(person(m).displayName)+'</div>' +
-        '<div class="r-meta">'+esc(person(m).bio||'')+(GROUPS[gid].adminIds.indexOf(m)>=0?' · admin':'')+'</div></div></div>'; }).join('') + '</div>';
 }
 function isOwnCallout(c){ return !!c && S.loggedIn && !!c.hostAcct && c.hostAcct === S.acct; }
 /* a call out: what is wanted, by whom, for which event; you answer it once, and its author edits or closes it */
@@ -2046,7 +2007,6 @@ function detailHTML(it){
   if (it.type === 'event' && EVENTS[it.id])      return canvasHTML(it.id);
   if (it.type === 'horizon')                     return horizonHTML(it.id, true);
   if (it.type === 'person')                      return personHTML(it.id);
-  if (it.type === 'group' && GROUPS[it.id])      return groupHTML(it.id);
   if (it.type === 'callout' && calloutOf(it.id)) return calloutHTML(it.id);
   return '<div class="empty">Nothing to show.</div>';
 }
@@ -2147,7 +2107,7 @@ function popularHorizons(){
   });
 }
 /* the sections of Home, in order. Each one also backs a "Show all" list. */
-var HOMESECTIONS = ['week','people','soon','announced','yourhz','horizons','callouts','news'];
+var HOMESECTIONS = ['week','people','soon','announced','yourhz','horizons','callouts'];
 function shelfItems(id){
   var ev = function(list){ return list.map(function(e){ return { type:'event', id:e.id }; }); };
   var up = feedEvents().filter(upcoming);
@@ -2165,20 +2125,19 @@ function shelfItems(id){
     if (!S.loggedIn) return [];
     return ev(up.filter(function(e){ var hp = hostPersonOf(e); return hp && hp.id !== 'self' && PFOLLOW[hp.id]; }));
   }
-  if (id === 'news') return NEWS.filter(function(n){ return n.ref; }).map(function(n){ return { type:'news', id:n.id }; });
   return [];
 }
 function shelfTitle(id){
-  return { week:'This week', soon:'Coming up', announced:'Announced burns', yourhz:'Your horizons', horizons:'Horizons worth following',
+  return { week:'This week', soon:'Coming up', announced:'Announced burns', yourhz:'Your Event Horizons', horizons:'Event Horizons worth following',
            callouts: S.loggedIn && CALLOUTS.some(function(c){ return !c.closed && c.hostId && PFOLLOW[c.hostId]; }) ? 'Call outs from your crews' : 'Call outs',
-           people:'From people you follow', news:'Network news' }[id] || '';
+           people:'From people you follow' }[id] || '';
 }
 /* each event shows up once on Home, in the first section that has it */
 function homeSections(){
   var seen = {};
   return HOMESECTIONS.map(function(id){
     var items = shelfItems(id).filter(function(it){
-      var r = it.type === 'news' ? newsOf(it.id).ref : it, k = r.type + ':' + r.id;
+      var k = it.type + ':' + it.id;
       if (seen[k]) return false; seen[k] = 1; return true;
     });
     return { id:id, title:shelfTitle(id), items:items };
@@ -2193,11 +2152,10 @@ function shelvesHTML(){
   var h = '<div class="shelves">';
   h += '<div class="greet"><h2>'+esc(greeting())+'</h2>' + (S.loggedIn ? '' : '<p>Burns, builds and the people who make them.</p>') + '</div>';
   homeSections().forEach(function(sec){
-    var news = sec.id === 'news', more = news ? sec.items.length > 4 : sec.items.length > 2;
+    var more = sec.items.length > 2;
     h += '<section class="shelf"><div class="shh"><h3>'+esc(sec.title)+'</h3>' +
          (more ? '<button class="showall" data-act="shelfall" data-id="'+sec.id+'">Show all</button>' : '') + '</div>';
-    if (news) h += '<div class="newslist">' + sec.items.slice(0, 4).map(rowHTML).join('') + '</div></section>';
-    else h += '<div class="srow" data-shelf="'+sec.id+'">' + sec.items.slice(0, 10).map(cardHTML).join('') + '</div></section>';
+    h += '<div class="srow" data-shelf="'+sec.id+'">' + sec.items.slice(0, 10).map(cardHTML).join('') + '</div></section>';
   });
   return h + '</div>';
 }
@@ -2489,7 +2447,7 @@ function renderAppbar(){
     var it = S.stack[S.stack.length-1];
     if (it.type === 'chat' && CHATS[it.id]) h += '<div class="ab-title ab-tap" data-act="chatinfo" data-id="'+it.id+'" role="button">'+esc(CHATS[it.id].name)+'<small>'+esc(chatSub(CHATS[it.id]))+'</small></div>' +
       '<button class="ab-btn" data-act="chatinfo" data-id="'+it.id+'" aria-label="Chat details" aria-haspopup="dialog">'+ic('dots',22)+'</button>';
-    else h += '<div class="ab-title">'+esc(itemName(it))+'<small>'+esc({event:'Event',horizon:'Event Horizon',person:'Person',group:'Cluster',callout:'Call out'}[it.type]||'')+'</small></div>';
+    else h += '<div class="ab-title">'+esc(itemName(it))+'<small>'+esc({event:'Event',horizon:'Event Horizon',person:'Person',callout:'Call out'}[it.type]||'')+'</small></div>';
   } else if (S.tab === 'chats'){
     h += '<div class="ab-title">Chats</div>';
     if (S.loggedIn) h += '<button class="ab-btn boxed" data-act="newchat">'+ic('edit')+'New chat</button>';
@@ -2550,10 +2508,10 @@ function popup(anchor, items){
   var f = d.querySelector('.pi[tabindex]'); if (f) f.focus();
 }
 var NEWITEMS = [
-  { label:'Event', cmd:'new-event', icon:'star', sub:'Something you host' },
-  { label:'Event Horizon', cmd:'new-horizon', icon:'horizon', sub:'A list of events others can follow' },
-  { label:'Group chat', cmd:'newchat', icon:'chat', sub:'Pick people, name it' },
-  { label:'Call out', cmd:'new-callout', icon:'callout', sub:'Ask the network for hands' }
+  { label:'Event', cmd:'new-event', icon:'star' },
+  { label:'Event Horizon', cmd:'new-horizon', icon:'horizon' },
+  { label:'Chat', cmd:'newchat', icon:'chat' },
+  { label:'Call out', cmd:'new-callout', icon:'callout' }
 ];
 var DLGS = [];
 /* a dialog owns a history entry, so the phone's back gesture closes it instead of the page under it */
@@ -2593,7 +2551,7 @@ function placeDlg(d){
 function focusIn(id){ setTimeout(function(){ var n = $(id); if (n){ n.focus(); if (n.select) n.select(); } }, 30); }
 function newSheet(){
   dialog('New', NEWITEMS.map(function(it){
-    return '<div class="sheetrow" data-act="runcmd" data-id="'+it.cmd+'" role="button">'+ic(it.icon,22)+'<div>'+esc(it.label)+'<small>'+esc(it.sub)+'</small></div></div>';
+    return '<div class="sheetrow" data-act="runcmd" data-id="'+it.cmd+'" role="button">'+ic(it.icon,22)+'<div>'+esc(it.label)+'</div></div>';
   }).join(''), '', 420, 'sheet');
 }
 /* First log-in is a short sign-up: who you are, what you can do, where you are.
@@ -2776,7 +2734,7 @@ function renameHzDialog(hzId){
   focusIn('rh-n');
 }
 function addToDialog(evId){
-  var h = '<div class="picklist"><div class="linkrow" data-act="new-horizon" data-id="'+evId+'" role="button"><span class="r-ic">'+ic('plus')+'</span><div class="lr"><b>New horizon</b></div></div>' +
+  var h = '<div class="picklist"><div class="linkrow" data-act="new-horizon" data-id="'+evId+'" role="button"><span class="r-ic">'+ic('plus')+'</span><div class="lr"><b>New Event Horizon</b></div></div>' +
     MYHORIZONS.slice().reverse().map(function(k){
     var has = HORIZONS[k].eventIds.indexOf(evId) >= 0;
     return '<div class="linkrow" data-act="dofile" data-id="'+evId+'" data-hz="'+k+'" role="button">' + hzIconHTML(k, 32) +
@@ -3293,7 +3251,7 @@ function ctxHorizonItems(evId){
     return { label:HORIZONS[k].name, art:k, check: HORIZONS[k].eventIds.indexOf(evId) >= 0, run:function(){ toggleInHorizon(evId, k); } };
   });
   sub.push('-');
-  sub.push({ label:'New horizon…', icon:'plus', run:function(){ runCmd('new-horizon', evId); } });
+  sub.push({ label:'New Event Horizon…', icon:'plus', run:function(){ runCmd('new-horizon', evId); } });
   return sub;
 }
 /* a verb picked while logged out means "make it so": after log-in it is switched on, never toggled back off */
@@ -3558,7 +3516,6 @@ function markRead(id){ READ[id] = true; }
 /* open an item in the detail pane: from a list row it replaces what is open, from inside a page it stacks */
 function openItem(type, id, mode){
   if (type === 'event') markRead(id);
-  if (type === 'news'){ var r = newsOf(id).ref; if (!r) return; type = r.type; id = r.id; }
   var it = { type:type, id:id };
   S.autoSel = false;
   if (mode === 'push' && S.stack.length){
@@ -3665,7 +3622,7 @@ function deleteEvent(evId){
 }
 function deleteHorizonDialog(hzId){
   if (!hzOwnedByMe(hzId)) return;
-  confirmDialog('Delete horizon', 'Delete “' + HORIZONS[hzId].name + '”? Its events stay on Hypernet; the horizon and its followers’ link to it are gone.', 'Delete horizon', function(){ deleteHorizon(hzId); });
+  confirmDialog('Delete Event Horizon', 'Delete “' + HORIZONS[hzId].name + '”? Its events stay on Hypernet; the Event Horizon and its followers’ link to it are gone.', 'Delete', function(){ deleteHorizon(hzId); });
 }
 function deleteHorizon(hzId){
   var name = HORIZONS[hzId].name;
@@ -3944,7 +3901,7 @@ document.addEventListener('click', function(ev){
       if (L.phone){ S.tab = 'you'; goFolder({ kind:'you' }); S.stack = [{ type:'horizon', id:hid }]; S.autoSel = false; }
       else { S.stack = [{ type:'horizon', id:hid }]; S.autoSel = false; }
       render();
-      toast('Horizon created', nm);
+      toast('Event Horizon created', nm);
       break;
     }
     case 'addevents':    addEventsDialog(id); break;
@@ -4196,7 +4153,7 @@ function parseHash(h){
   else if (a === 'horizon') it = { type:'horizon', id:hzBySlug(b) };
   else if (a === 'person') it = { type:'person', id:personBySlug(b) };
   else if (a === 'callout') it = { type:'callout', id:coBySlug(b) };
-  else if (a === 'group') it = { type:'group', id:GROUPS[b] ? b : null };
+  else if (a === 'group') it = { type:'horizon', id:groupHorizon(b) };
   else if (a === 'chats' && b){ it = { type:'chat', id:chatBySlug(b) }; s.folder = { kind:'chats', id:null }; }
   if (it){
     if (it.id) s.stack = [it];
@@ -4211,7 +4168,6 @@ function validItem(it){
   if (it.type === 'horizon') return !!HORIZONS[it.id] && (HORIZONS[it.id].isPublished || hzOwnedByMe(it.id));
   if (it.type === 'person') return !!PEOPLE[it.id];
   if (it.type === 'callout') return !!calloutOf(it.id);
-  if (it.type === 'group') return !!GROUPS[it.id];
   if (it.type === 'chat') return S.loggedIn && !!CHATS[it.id];
   return false;
 }
@@ -4359,8 +4315,8 @@ function render(){
   var items = null;
   /* an item the app picked for the reading pane is not something you opened: without a reading pane, show the list */
   if (!L.split && S.autoSel){ S.stack = []; S.autoSel = false; }
-  if (L.split && !S.stack.length){ items = orderedItems(); var first = items.filter(function(it){ return it.type !== 'more' && (it.type !== 'news' || newsOf(it.id).ref); })[0];
-    if (first){ S.stack = [first.type === 'news' ? newsOf(first.id).ref : first]; S.autoSel = true; } }
+  if (L.split && !S.stack.length){ items = orderedItems(); var first = items.filter(function(it){ return it.type !== 'more'; })[0];
+    if (first){ S.stack = [first]; S.autoSel = true; } }
   var conv = phoneConv();
   var scr = L.phone ? ((conv || (S.tab === 'chats' && !S.stack.length)) ? 'chats' : (S.tab === 'you' && S.folder.kind === 'you' && !S.stack.length) ? 'you' : 'center') : '';
   L.scr = scr;

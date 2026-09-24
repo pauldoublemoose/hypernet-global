@@ -189,7 +189,12 @@ page ("Horizon created"), where Customize holds the cover.
 
 - Nouns: no "Cluster" anywhere user-facing; "Event Horizon" in headings/create, "Horizons" as the short nav
   label, consistently. (PHONEBROWSER-13, FIRSTTIMER-8, CREW-15)
+  *Status: done (C1).* "Cluster" is gone: groups left search and person pages; a camp shows as its published Event
+  Horizon (Hosted by chip, old `#/group/…` links) or as a plain name. Headings, create rows, toasts and search bands say
+  "Event Horizon(s)"; the nav keeps "Horizons". The New sheet says Event · Event Horizon · Chat · Call out.
 - Remove remaining instruction/hint text, including New-sheet subtitles. (ORGANISER-18, CREW-15)
+  *Status: done (C1).* New-sheet subtitles and the desktop empty-search sentence are gone (empty search shows Browse:
+  People, Call outs); form hints went in A3, the Home subtitle in B4.
 - Inert chips/tags don't look like buttons; "+ N more" opens the full list. (PHONEBROWSER-10, FIRSTTIMER-13)
 - "Going: N from your network" only when you have a network. (FIRSTTIMER-9)
 - Search: accent-insensitive, matches countries, useful no-results state, remembers last query.
@@ -198,8 +203,16 @@ page ("Horizon created"), where Customize holds the cover.
   (PHONEBROWSER-14, FIRSTTIMER-19)
 - Promote shows a visible effect (e.g. "Promoted by you" and it appears to followers). (CREW-17)
 - Newcomer clarity for "Horizon" and "Promote" verbs via labels, not hint text. (FIRSTTIMER-14)
+  *Status: done (C1/C4).* The button always reads "Add to horizon" (the bare noun "Horizon" is gone; verb paddings
+  tightened so the row still fits one line at 1440 split). Promote lost its dashed look in B3; C4 gives it a visible result.
 - Truncation keeps the distinguishing part of titles; no duplicated titles. (FIRSTTIMER-18, PHONEBROWSER-19)
 - Sticky headers render above row glyphs. (FIRSTTIMER-17)
 - All touch targets ≥44px. (PHONEBROWSER-9, CREW-22)
 - New sheet dismissible by tapping the backdrop / swipe down. (PHONEBROWSER-17)
 - Picker: "Your events" shortcut. (ORGANISER-17)
+- *Added by the coordinator:* inline favicon (no /favicon.ico 404). *Status: done (42c7606).* Also: the regression
+  script finds a Chromium on its own (Playwright's, `PW_CHROME`, or the Playwright cache) and counts 4xx responses.
+- *Added by the coordinator:* Network news after B4. *Status: dropped (C1).* Every item either pointed at something
+  Home already shows (the owner's "never the same destination twice") or at nothing ("@nova and @ember are now
+  Friends"). Home's sections already carry the network: people you follow, your Event Horizons, call outs from your
+  crews. The news fixtures, row type and band are removed rather than kept dormant.

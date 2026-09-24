@@ -692,11 +692,6 @@ body.is-phone #sh-list{ max-height:none; }
 .plist.themed .track.past .tt{ color:var(--edim); }
 .plist.themed .plcover .mosaic{ box-shadow:0 0 0 1px var(--eac2), 4px 4px 0 rgba(0,0,0,.3); }
 .rrm{ width:32px; height:32px; }
-.covpick{ display:flex; gap:10px; flex-wrap:wrap; }
-.covopt{ display:flex; flex-direction:column; align-items:flex-start; gap:6px; padding:8px; background:#fff; box-shadow:var(--thin); cursor:pointer; font-size:var(--fs-s); }
-.covopt input{ position:absolute; opacity:0; pointer-events:none; }
-.covopt:has(input:checked){ outline:2px solid #000; outline-offset:-2px; font-weight:bold; }
-.covopt:has(input:focus-visible){ outline:2px dotted #000; }
 .pksearch{ position:sticky; top:-20px; z-index:3; margin:-20px -20px 12px; padding:20px 20px 12px; background:var(--face); }
 body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 12px; }
 .picklist.tall{ max-height:min(58vh, 460px); }
@@ -791,6 +786,9 @@ body.is-phone .dlg.sheet .dbody{ padding:6px 0; }
 body.is-phone .custwrap{ flex-direction:column; }
 body.is-phone .custcol{ flex:0 0 auto; }
 body.is-phone .previewbox{ max-height:none; }
+body.is-phone .custprev{ order:-1; position:sticky; top:-18px; z-index:4; margin:-18px -16px 14px; padding:10px 16px; background:var(--face); box-shadow:0 1px 0 var(--shadow); }
+.previewbox.compact{ padding:0; }
+.previewbox.compact .minicanvas{ height:auto; max-height:190px; }
 body.is-phone input, body.is-phone select, body.is-phone textarea{ font-size:16px; }
 body.is-phone .picklist{ max-height:none; }
 .sheetrow{ display:flex; align-items:center; gap:14px; min-height:60px; padding:0 18px; border-bottom:1px solid var(--line); background:#fff; font-size:16px; cursor:pointer; }
@@ -2882,10 +2880,9 @@ function paintNewChat(skipBody){
   placeDlg();
 }
 /* the small create forms keep what you typed as a draft, field by field */
-var FORMFIELDS = { callout:['co-t','co-b','co-x','co-e'], horizon:['nh-n','nh-d','nh-p','nh-c'] };
+var FORMFIELDS = { callout:['co-t','co-b','co-x','co-e'], horizon:['nh-n','nh-d','nh-p'] };
 var FORMFOOT = {};
 function formVal(id){
-  if (id === 'nh-c'){ var r = document.querySelector('input[name="nh-c"]:checked'); return r && r.value !== 'mosaic' ? r.value : ''; }
   var n = $(id); return !n ? '' : n.type === 'checkbox' ? n.checked : n.value;
 }
 function draftVal(kind, id){ var d = FORMDRAFTS[kind]; return d && d[id] != null ? d[id] : ''; }
@@ -2939,20 +2936,13 @@ var closeCallout = gated(function(coId){
 var HZWITH = null;
 FORMFOOT.horizon = function(){
   var ok = String(draftVal('horizon','nh-n')).trim() ? '' : ' disabled';
-  return formSecondary('horizon') +
-    '<button class="btn" data-act="donewhorizon" data-then="customize" data-id="'+(HZWITH||'')+'" id="nh-cz"'+ok+'>'+ic('paint')+'Customize</button>' +
-    '<button class="btn primary" data-act="donewhorizon" data-id="'+(HZWITH||'')+'" id="nh-go"'+ok+'>Create horizon</button>';
+  return formSecondary('horizon') + '<button class="btn primary" data-act="donewhorizon" data-id="'+(HZWITH||'')+'" id="nh-go"'+ok+'>Create horizon</button>';
 };
 function newHorizonDialog(withEvent){
   HZWITH = withEvent && EVENTS[withEvent] ? withEvent : null;
-  var cov = HZWITH ? sqPx(HZWITH, 88) : '<div class="mosaic empty" style="width:88px;height:88px">'+ic('horizon',30)+'</div>';
-  var plain = draftVal('horizon','nh-c') === 'plain';
   dialog('New Event Horizon',
     '<div class="field"><label for="nh-n">Name</label><input type="text" id="nh-n" value="'+esc(draftVal('horizon','nh-n'))+'" placeholder="Autumn builds" autocomplete="off"></div>' +
     '<div class="field"><label for="nh-d">Description</label><textarea id="nh-d" rows="2" placeholder="Every build weekend on the ridge this autumn">'+esc(draftVal('horizon','nh-d'))+'</textarea></div>' +
-    '<div class="field"><span class="flabel" id="nh-cl">Cover</span><div class="covpick" role="radiogroup" aria-labelledby="nh-cl">' +
-      '<label class="covopt"><input type="radio" name="nh-c" value="mosaic"'+(plain?'':' checked')+'><span class="covart">'+cov+'</span><span>Mosaic of its events</span></label>' +
-      '<label class="covopt"><input type="radio" name="nh-c" value="plain"'+(plain?' checked':'')+'><span class="covart"><span class="mosaic empty" style="width:88px;height:88px">'+ic('horizon',30)+'</span></span><span>Plain</span></label></div></div>' +
     '<label class="pick" style="border:0;padding-left:0"><input type="checkbox" id="nh-p"'+(draftVal('horizon','nh-p')?' checked':'')+'><span class="pm">Publish it</span></label>',
     FORMFOOT.horizon(), 520);
   focusIn('nh-n');
@@ -3032,7 +3022,8 @@ function draftTheme(d){
   return { mood:d.mood, palette:PALSETS[d.pal].p, square:{ pattern:d.pattern, glyph:d.glyph },
            surface:d.surface, type:d.type, headline:d.headline, motion:d.motion, shape:d.shape, density:d.density };
 }
-function applyPreset(i){ var p = PRESETS[i].t; ['mood','pal','surface','type','headline','motion','shape','density','pattern','glyph'].forEach(function(k){ DRAFT[k] = p[k]; }); }
+/* a preset is a look: palette, surface, type, headline, motion, shape, density and square. Never your words. */
+function applyPreset(i){ var p = PRESETS[i].t; ['pal','surface','type','headline','motion','shape','density','pattern','glyph'].forEach(function(k){ DRAFT[k] = p[k]; }); }
 function czSel(name, list, cur, label){
   return '<select data-cz="'+name+'" aria-label="'+esc(label||name)+'">' + list.map(function(v){ return '<option value="'+esc(v)+'"'+(v===cur?' selected':'')+'>'+esc(v)+'</option>'; }).join('') + '</select>';
 }
@@ -3049,9 +3040,12 @@ function horizonPreviewHTML(){
   h += '<div class="plabel">Cover</div><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">'+coverFromDraft(d, t, 160)+coverFromDraft(d, t, 56)+'</div>';
   h += '<div class="plabel">Card</div><div class="card2" style="cursor:default"><div class="cart">'+coverFromDraft(d, t, 150)+'</div>' +
        '<div class="ct2">'+esc(hz.name)+'</div><div class="cs2">'+esc(hz.ownerName+' · '+hz.eventIds.length+' events')+'</div></div>';
-  h += '<div class="plabel">Horizon page</div><div class="minicanvas"><div class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+vars+'">' +
+  var page = '<div class="minicanvas"><div class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+vars+'">' +
        '<div class="banner"><div class="surf u-'+t.surface+'"></div><div class="wash"></div><div class="bin">'+coverFromDraft(d, t, 72) +
        '<div class="btxt"><div class="eyebrow">Event Horizon</div><h1 class="hl h-'+t.headline+'">'+headlineHTML(t, hz.name)+'</h1>'+(t.mood?'<p class="mood">'+esc(t.mood)+'</p>':'')+'</div></div></div></div></div>';
+  /* on a phone the preview is the page itself, small, and it stays in view while you change things */
+  if (L.phone) return '<div class="previewbox compact">' + page + '</div>';
+  h += '<div class="plabel">Horizon page</div>' + page;
   return h + '</div>';
 }
 function customizePreviewHTML(){
@@ -3064,9 +3058,11 @@ function customizePreviewHTML(){
   h += '<div class="plabel">Row</div><div class="row unread" style="border:1px solid var(--line);cursor:default">'+sq(40)+
        '<div class="r-main"><div class="r-title">'+esc(ev.title)+'</div><div class="r-meta">'+esc(ev.host)+' · '+esc(ev.city||'')+'</div></div>' +
        '<div class="r-side"><div class="r-date">'+(isoDate(ev.date) ? fmtShort(ev.date) : '')+'</div></div></div>';
-  h += '<div class="plabel">Event page</div><div class="minicanvas"><div class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+vars+'">' +
-       '<div class="banner"><div class="surf u-'+t.surface+'"></div><div class="wash"></div><div class="bin">'+sq(64) +
-       '<div class="btxt"><h1 class="hl h-'+t.headline+'">'+headlineHTML(t, ev.title)+'</h1>'+(t.mood?'<p class="mood">'+esc(t.mood)+'</p>':'')+'</div></div></div>' +
+  var banner = '<div class="banner"><div class="surf u-'+t.surface+'"></div><div class="wash"></div><div class="bin">'+sq(64) +
+       '<div class="btxt"><h1 class="hl h-'+t.headline+'">'+headlineHTML(t, ev.title)+'</h1>'+(t.mood?'<p class="mood">'+esc(t.mood)+'</p>':'')+'</div></div></div>';
+  var open = '<div class="minicanvas"><div class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+vars+'">';
+  if (L.phone) return '<div class="previewbox compact">' + open + banner + '</div></div></div>';
+  h += '<div class="plabel">Event page</div>' + open + banner +
        '<div class="actbar" style="position:relative"><div class="verbs"><div class="vpair"><span class="vbtn">'+ic('heart')+'Interested</span><span class="vbtn on">'+ic('check')+'Going</span></div>' +
        '<span class="vpromo">'+ic('promote')+'Promote</span></div></div></div></div>';
   return h + '</div>';
@@ -3941,16 +3937,13 @@ document.addEventListener('click', function(ev){
       var withEv = id && EVENTS[id] ? id : null;
       HORIZONS[hid] = { id:hid, name:nm, description:(($('nh-d')||{}).value||'').trim(), isPersonalDefault:false,
                         isPublished:!!($('nh-p')||{}).checked, ownerName:S.me.name, ownerId:acctPid(S.acct), ownerAcct:S.acct, eventIds: withEv ? [withEv] : [] };
-      var cm = document.querySelector('input[name="nh-c"]:checked');
-      if (cm && cm.value === 'plain') HZCOVER[hid] = 'plain';
       MYHORIZONS.push(hid); HZCOUNT[hid] = 0;
       closeDialogs();
-      var thenCz = n.getAttribute('data-then') === 'customize';
-      if (withEv && !thenCz){ render(); toast('Added to ' + nm, EVENTS[withEv].title); break; }   /* from an event: stay on it */
+      if (withEv){ render(); toast('Added to ' + nm, EVENTS[withEv].title); break; }   /* from an event: stay on it */
       if (L.phone){ S.tab = 'you'; goFolder({ kind:'you' }); S.stack = [{ type:'horizon', id:hid }]; S.autoSel = false; }
       else { S.stack = [{ type:'horizon', id:hid }]; S.autoSel = false; }
       render();
-      if (thenCz) customizeHorizonDialog(hid); else toast('Horizon created', nm);
+      toast('Horizon created', nm);
       break;
     }
     case 'addevents':    addEventsDialog(id); break;
@@ -4019,7 +4012,7 @@ document.addEventListener('change', function(ev){
     return;
   }
   if (/^co-[xe]$/.test(n.id)){ saveForm('callout'); return; }
-  if (n.id === 'nh-p' || n.name === 'nh-c'){ saveForm('horizon'); return; }
+  if (n.id === 'nh-p'){ saveForm('horizon'); return; }
   var act = n.getAttribute('data-act');
   if (act === 'calmine'){ S.calMine = n.checked; render(); }
   if (act === 'sort'){ S.sort = n.value; render(); }

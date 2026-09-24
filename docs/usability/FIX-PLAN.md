@@ -170,6 +170,11 @@ You tab keeps only "People you follow" (desktop keeps People in the sidebar).
 preview stays visible (sticky). Wizard step tabs are either clickable or not styled as tabs. The New
 horizon flow has one cover picker and one create button.
 Sources: ORGANISER-5, -6, -12, -21.
+*Status: done.* Presets set palette, surface, type, headline, motion, shape, density and square — never the mood line.
+On phone the Look step (events and horizons) shows a compact live preview (the page header: square, headline, mood)
+first, pinned to the top of the sheet while the controls scroll under it. The wizard's step tabs became real,
+clickable tabs in A5. New Event Horizon has no cover picker and one "Create horizon" button; it lands on the horizon's
+page ("Horizon created"), where Customize holds the cover.
 
 ## Phase C — minor and polish
 

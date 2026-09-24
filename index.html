@@ -1334,16 +1334,37 @@ function sameFolder(a,b){ return a && b && a.kind === b.kind && (a.id||null) ===
 /* =========================================================================
    5. SEARCH — every family, grouped
    ========================================================================= */
-function matches(hay, q){ return String(hay||'').toLowerCase().indexOf(q) >= 0; }
+/* search folds accents and case on both sides: "malmo" finds Malmö, "eksjo" finds Eksjö */
+function fold(s){
+  return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/ø/g, 'o').replace(/æ/g, 'ae').replace(/ß/g, 'ss').replace(/đ/g, 'd').replace(/ł/g, 'l');
+}
+function matches(hay, q){ return fold(hay).indexOf(fold(q)) >= 0; }
+/* where an event is, in every word someone might type: city, venue, region, country */
+function placeWords(e){
+  var r = recOf(e.id);
+  return [e.city, whereOf(e), r.city, r.region, r.country, COUNTRY[r.country], r.venue && r.venue.name].filter(Boolean).join(' ');
+}
+/* "this week" (the next seven days, as on Home), "today", "tomorrow", "this weekend", "this month", "next week" read as dates */
+function dateQuery(q){
+  q = fold(q).trim();
+  var dow = (NOW.getDay() + 6) % 7;   /* Monday = 0 */
+  var R = { 'today':[0,0], 'tonight':[0,0], 'tomorrow':[1,1], 'this week':[0, 6], 'week':[0, 6], 'next week':[7 - dow, 13 - dow],
+            'this weekend':[Math.max(0, 5 - dow), 6 - dow], 'weekend':[Math.max(0, 5 - dow), 6 - dow],
+            'this month':[0, new Date(NOW.getFullYear(), NOW.getMonth() + 1, 0).getDate() - NOW.getDate()] }[q];
+  return R || null;
+}
 function searchItems(q){
-  q = String(q||'').toLowerCase().trim();
+  q = String(q||'').trim();
   if (!q) return [];
-  var out = [];
+  var out = [], dq = dateQuery(q);
+  if (dq) return feedEvents().filter(function(e){ var a = dayDiff(e.date), b = dayDiff(lastDay(e)); return b >= dq[0] && a <= dq[1]; })
+    .map(function(e){ return { type:'event', id:e.id }; });
   allEvents().sort(function(a,b){
     var pa = isPast(lastDay(a)) ? 1 : 0, pb = isPast(lastDay(b)) ? 1 : 0;
     return pa !== pb ? pa - pb : (pa ? -byDate(a,b) : byDate(a,b));
   }).forEach(function(e){
-    if (matches(e.title,q) || matches(descOf(e),q) || matches(e.city,q) || matches(e.hostName,q) || matches(TH(e.id).mood,q)) out.push({ type:'event', id:e.id });
+    if (matches(e.title,q) || matches(descOf(e),q) || matches(placeWords(e),q) || matches(e.hostName,q) || matches(TH(e.id).mood,q)) out.push({ type:'event', id:e.id });
   });
   Object.keys(HORIZONS).forEach(function(k){
     var hz = HORIZONS[k];
@@ -1433,6 +1454,7 @@ function rowHTML(it){
     var dd = endOf(e);
     date = dd ? fmtShort(e.date) + ' +' + (nDays(e.date, dd) - 1) + 'd' : fmtShort(e.date);
     side = statePills(it.id);
+    if (S.folder.kind === 'search' && isPast(lastDay(e)) && !side) side = '<span class="pill dim"><span>Past</span></span>';
   } else if (it.type === 'horizon'){
     var hz = HORIZONS[it.id];
     lead = '<span class="r-ic">'+hzArt(it.id, 32)+'</span>';
@@ -1462,8 +1484,16 @@ function rowHTML(it){
     '</div>';
 }
 /* an empty phone search offers the directories that have no tab of their own */
+var RECENTQ = [];                /* the last searches you ran, newest first */
+function rememberQuery(q){
+  q = String(q || '').trim(); if (q.length < 2) return;
+  RECENTQ = [q].concat(RECENTQ.filter(function(x){ return fold(x) !== fold(q) && fold(q).indexOf(fold(x)) !== 0; })).slice(0, 5);
+  schedulePersist();
+}
 function browseHTML(){
-  return '<div class="band">Browse</div>' +
+  var rec = RECENTQ.length ? '<div class="band">Recent</div>' + RECENTQ.map(function(q){
+    return '<div class="row" data-act="dosearch" data-id="'+esc(q)+'" role="button"><span class="r-ic">'+ic('search')+'</span><div class="r-main"><div class="r-title">'+esc(q)+'</div></div></div>'; }).join('') : '';
+  return rec + '<div class="band">Browse</div>' +
     '<div class="row" data-act="folder" data-kind="people" role="button">'+'<span class="r-ic">'+ic('people')+'</span><div class="r-main"><div class="r-title">People</div>' +
       '<div class="r-meta">'+browsablePeople().filter(function(k){ return k !== 'self'; }).length+' on Hypernet</div></div></div>' +
     '<div class="row" data-act="shelfall" data-id="callouts" role="button">'+'<span class="r-ic">'+ic('callout')+'</span><div class="r-main"><div class="r-title">Call outs</div>' +
@@ -1478,7 +1508,12 @@ function renderList(){
     h = browseHTML();
   } else if (!items.length){
     var k = S.folder.kind;
-    h = '<div class="empty">' + (k === 'search' ? 'Nothing matches “'+esc(S.query)+'”.'
+    if (k === 'search'){
+      h = '<div class="empty">Nothing matches “'+esc(S.query)+'”.</div>';
+      var wk = shelfItems('week').concat(shelfItems('soon')).slice(0, 4), ph = popularHorizons().slice(0, 3);
+      if (wk.length) h += '<div class="band">'+esc(shelfItems('week').length ? 'This week' : 'Coming up')+'</div>' + wk.map(function(it){ rows.push(it); return rowHTML(it); }).join('');
+      if (ph.length) h += '<div class="band">Popular Event Horizons</div>' + ph.map(function(k2){ var it = { type:'horizon', id:k2 }; rows.push(it); return rowHTML(it); }).join('');
+    } else h = '<div class="empty">' + (k === 'search' ? ''
       : k === 'going' ? 'You are not going to anything yet.'
       : k === 'interested' ? 'Nothing saved yet.'
       : k === 'hosting' ? 'You are not hosting anything yet.<br><button class="btn primary" data-act="new-event">'+ic('plus')+'New event</button>'
@@ -3521,6 +3556,7 @@ function goFolder(f){
 function markRead(id){ READ[id] = true; }
 /* open an item in the detail pane: from a list row it replaces what is open, from inside a page it stacks */
 function openItem(type, id, mode){
+  if (S.folder.kind === 'search') rememberQuery(S.query);
   if (type === 'event') markRead(id);
   var it = { type:type, id:id };
   S.autoSel = false;
@@ -3826,6 +3862,7 @@ document.addEventListener('click', function(ev){
     case 'runcmd':   runCmd(id); break;
     case 'folder':   goFolder({ kind:n.getAttribute('data-kind'), id:id || null }); render(); $('listbody').scrollTop = 0; break;
     case 'shelfall':    goFolder({ kind:'shelf', id:id }); render(); $('listbody').scrollTop = 0; break;
+    case 'dosearch':     { var qq = $('pq') || $('q'); if (qq) qq.value = id; doSearch(id); rememberQuery(id); break; }
     case 'setview':  S.view[destKey()] = id; S.stack = []; render(); break;
     case 'row':      openItem(n.getAttribute('data-type'), id); break;
     case 'open':     openItem(n.getAttribute('data-type'), id, 'push'); break;
@@ -4044,6 +4081,7 @@ document.addEventListener('keydown', function(ev){
   }
   if (ev.key === 'Enter' && ae){
     if (ae.id === 'chatbox'){ sendChat(); ev.preventDefault(); return; }
+    if (ae.id === 'q' || ae.id === 'pq'){ rememberQuery(ae.value); if (L.phone) ae.blur(); ev.preventDefault(); return; }
     if (ae.id === 'pf-city'){ pfAddCity(); ev.preventDefault(); return; }
     if (/^pf-(name|handle|about)$/.test(ae.id)){ pfSave(); ev.preventDefault(); return; }
     if (ae.id === 'nc-name'){ createChat(); ev.preventDefault(); return; }
@@ -4359,7 +4397,7 @@ function persist(){
     Object.keys(EDITED).forEach(function(k){ if (EVENTS[k] && !/^evt-new-/.test(k)) edits[k] = { ev:EVENTS[k], rec:REC[k] || null, theme:window.HYPERNET_THEMES.themes[k] || null }; });
     localStorage.setItem(STORE, JSON.stringify({ v:2,
       session:{ acct: S.loggedIn ? S.acct : null },
-      ui:{ rightOpen:!!S.rightOpen, chatOpen:S.chatOpen || null },
+      ui:{ rightOpen:!!S.rightOpen, chatOpen:S.chatOpen || null, recent:RECENTQ },
       accounts:ACCTS,
       network:{ events:evs, recs:recs, themes:themes, horizons:hzs, covers:covers, hzthemes:hzthemes, edits:edits, deleted:DELETED,
                 callouts:CALLOUTS.filter(function(c){ return !!c.hostAcct; }) }
@@ -4407,7 +4445,7 @@ function restore(){
     DELETED.events.forEach(function(k){ delete EVENTS[k]; delete REC[k]; });
     DELETED.horizons.forEach(function(k){ delete HORIZONS[k]; });
   }
-  if (d.ui){ S.rightOpen = !!d.ui.rightOpen; S.chatOpen = d.ui.chatOpen || null; }
+  if (d.ui){ S.rightOpen = !!d.ui.rightOpen; S.chatOpen = d.ui.chatOpen || null; RECENTQ = d.ui.recent || []; }
   ACCTS = d.accounts || {};
   var k = d.session && d.session.acct;
   if (k && ACCTS[k]){ S.acct = k; S.loggedIn = true; loadAcct(ACCTS[k]); }

@@ -203,6 +203,11 @@ page ("Horizon created"), where Customize holds the cover.
   *Status: done (C2).* Logged out, or before you follow anyone, the fact reads "N on Hypernet".
 - Search: accent-insensitive, matches countries, useful no-results state, remembers last query.
   (FIRSTTIMER-10, PHONEBROWSER-15)
+  *Status: done (C3).* Matching folds accents and case both ways (Malmo → Malmö, Eksjo → Eksjö) and covers city,
+  venue, region and country (Sweden → Borderland, South Africa → AfrikaBurn). "this week", "today", "tomorrow",
+  "this weekend", "next week" and "this month" read as dates. No results shows "Nothing matches" followed by This week
+  events and Popular Event Horizons to tap. The query survives tab switches (A7), the last five searches appear as
+  Recent in the empty search, and past events in results carry a Past pill.
 - Horizons tab: clear header; explain or drop the lone date on horizon rows (show a date range).
   (PHONEBROWSER-14, FIRSTTIMER-19)
 - Promote shows a visible effect (e.g. "Promoted by you" and it appears to followers). (CREW-17)

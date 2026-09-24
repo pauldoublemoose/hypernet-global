@@ -1277,7 +1277,7 @@ function homeItems(){
   return out;
 }
 var VIEWS = { home:['feed','list','calendar'], horizons:['list','calendar'], going:['list','calendar'], interested:['list','calendar'],
-              hosting:['list','calendar'], horizon:['list','calendar'] };
+              hosting:['list','calendar'], promoted:['list','calendar'], horizon:['list','calendar'] };
 function destKey(f){ f = f || S.folder; return f.kind + (f.id ? ':' + f.id : ''); }
 function viewsOf(f){
   f = f || S.folder;
@@ -1300,6 +1300,7 @@ function folderItems(f){
   if (k === 'search')   return searchItems(S.query);
   if (k === 'interested') evs = rsvpList('interested');
   else if (k === 'going') evs = rsvpList('going');
+  else if (k === 'promoted') evs = S.loggedIn ? allEvents().filter(function(e){ return PROMOTED[e.id]; }).sort(byDate) : [];
   else if (k === 'hosting') evs = (S.loggedIn ? MYEVENTS : []).map(function(id){ return EVENTS[id]; }).filter(Boolean).sort(byDate);
   else if (k === 'horizon') evs = (HORIZONS[f.id] ? HORIZONS[f.id].eventIds : []).map(function(id){ return EVENTS[id]; }).filter(Boolean).sort(byDate);
   return evs.map(function(e){ return { type:'event', id:e.id }; });
@@ -1316,7 +1317,7 @@ function destEvents(f){
 }
 function folderName(f){
   f = f || S.folder;
-  return { home:'Home', horizons:'Horizons', people:'People', interested:'Interested', going:'Going', hosting:'Hosting',
+  return { home:'Home', horizons:'Horizons', people:'People', interested:'Interested', going:'Going', hosting:'Hosting', promoted:'Promoted',
            search:'Search', you:'You', chats:'Chats', shelf: shelfTitle(f.id) }[f.kind] || (f.kind === 'horizon' && HORIZONS[f.id] ? HORIZONS[f.id].name : 'Home');
 }
 function folderSub(f){
@@ -1516,6 +1517,7 @@ function renderList(){
     } else h = '<div class="empty">' + (k === 'search' ? ''
       : k === 'going' ? 'You are not going to anything yet.'
       : k === 'interested' ? 'Nothing saved yet.'
+      : k === 'promoted' ? 'Nothing promoted yet.'
       : k === 'hosting' ? 'You are not hosting anything yet.<br><button class="btn primary" data-act="new-event">'+ic('plus')+'New event</button>'
       : 'Nothing here yet.') + '</div>';
   } else {
@@ -1633,6 +1635,7 @@ function factsHTML(evId){
   /* "your network" only means something once you follow people */
   var net = S.loggedIn && Object.keys(PFOLLOW).some(function(k){ return PFOLLOW[k]; });
   f.push([past ? 'Went' : 'Going', attendeeCount(evId) + (net ? ' from your network' : ' on Hypernet'), going ? 'Including you' : '']);
+  if (S.loggedIn && PROMOTED[evId]) f.push(['Promoted', 'By you' + (promoCount(evId) > 1 ? ' and ' + (promoCount(evId) - 1) + ' more' : ''), '']);
   var org = r.organiser;
   f.push(['Host', (org && org.name) || hostLabel(e), [org && org.legalForm, org && org.name && e.hostName !== org.name ? 'as ' + e.hostName : ''].filter(Boolean).join(' · ')]);
   if (r.age && (r.age.min || r.age.kidsFreeUpTo != null)) f.push(['Age', r.age.min ? r.age.min + '+' : 'All ages', r.age.kidsFreeUpTo != null ? 'Kids free up to ' + r.age.kidsFreeUpTo : '']);
@@ -2107,7 +2110,7 @@ function cardTag(it){
   if (it.type === 'event'){
     if (WENT[it.id]) return '<span class="ctag">Went</span>';
     var st = stateOf(it.id);
-    return st ? '<span class="ctag">'+{ going:'Going', interested:'Interested', hosting:'Hosting' }[st]+'</span>' : '';
+    return st ? '<span class="ctag">'+{ going:'Going', interested:'Interested', hosting:'Hosting' }[st]+'</span>' : PROMOTED[it.id] ? '<span class="ctag">Promoted</span>' : '';
   }
   if (it.type === 'horizon') return hzOwnedByMe(it.id) ? '<span class="ctag">Yours</span>' : HZFOLLOW[it.id] ? '<span class="ctag">Following</span>' : '';
   return '';
@@ -2433,6 +2436,8 @@ function renderNav(){
   h += navRow({kind:'going'}, ic('check'), 'Going', { count: rsvpList('going').length || '' });
   h += navRow({kind:'interested'}, ic('heart'), 'Interested', { count: rsvpList('interested').length || '' });
   h += navRow({kind:'hosting'}, ic('star'), 'Hosting', { count: MYEVENTS.length || '' });
+  var npro = Object.keys(PROMOTED).filter(function(k){ return PROMOTED[k] && EVENTS[k]; }).length;
+  if (npro) h += navRow({kind:'promoted'}, ic('promote'), 'Promoted', { count: npro });
   if (MYHORIZONS.length) h += '<div class="navh">Your horizons</div>';
   MYHORIZONS.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { count: HORIZONS[k].eventIds.length || '', drop:true, hz:true }); });
   var followed = Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k] && HORIZONS[k]; });
@@ -3578,7 +3583,7 @@ function phoneBack(){
 function tabRootFolder(t){ return { kind: t === 'horizons' || t === 'chats' || t === 'you' ? t : 'home', id:null }; }
 function tabOfFolder(f){
   var k = (f || S.folder).kind;
-  return k === 'horizons' ? 'horizons' : k === 'chats' ? 'chats' : /^(you|going|interested|hosting|people)$/.test(k) ? 'you' : 'home';
+  return k === 'horizons' ? 'horizons' : k === 'chats' ? 'chats' : /^(you|going|interested|hosting|promoted|people)$/.test(k) ? 'you' : 'home';
 }
 /* each tab keeps its own place: switching back returns you there; tapping the tab you are on goes to its top */
 var TABMEM = {};
@@ -3613,7 +3618,8 @@ var doPromote = gated(function(evId){
   if (RESUMING && PROMOTED[evId]){ render(); toast('Promoted to your followers', EVENTS[evId].title); return; }
   PROMOTED[evId] = !PROMOTED[evId];
   render();
-  toast(PROMOTED[evId] ? 'Promoted to your followers' : 'Promotion withdrawn', EVENTS[evId].title);
+  toast(PROMOTED[evId] ? 'Promoted to your followers' : 'Promotion withdrawn', EVENTS[evId].title,
+    PROMOTED[evId] && S.folder.kind !== 'promoted' ? { label:'See all', run:function(){ if (L.phone) S.tab = 'you'; goFolder({ kind:'promoted' }); render(); } } : null);
 });
 var toggleInHorizon = gated(function(evId, hzId){
   var hz = HORIZONS[hzId], i = hz.eventIds.indexOf(evId);
@@ -4176,7 +4182,7 @@ function hashOf(s){
   }
   return '#/' + path + (p.length ? '?' + p.map(function(x){ return x[0] + '=' + encodeURIComponent(x[1]); }).join('&') : '');
 }
-var FOLDERKINDS = /^(home|horizons|people|going|interested|hosting|you|search|chats)$/;
+var FOLDERKINDS = /^(home|horizons|people|going|interested|hosting|promoted|you|search|chats)$/;
 function folderFrom(a, b){
   if (a === 'home' && b) return { kind:'shelf', id:b };
   return FOLDERKINDS.test(a || '') ? { kind:a, id:null } : null;

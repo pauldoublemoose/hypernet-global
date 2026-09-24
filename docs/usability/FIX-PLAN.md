@@ -211,6 +211,9 @@ page ("Horizon created"), where Customize holds the cover.
 - Horizons tab: clear header; explain or drop the lone date on horizon rows (show a date range).
   (PHONEBROWSER-14, FIRSTTIMER-19)
 - Promote shows a visible effect (e.g. "Promoted by you" and it appears to followers). (CREW-17)
+  *Status: done (C4), partly.* Promoting adds a "Promoted" fact on the event ("By you and 8 more"), a Promoted list
+  under Your events (sidebar and You tab), a Promoted tag on its cards, and a toast with "See all". Not done: showing it
+  in followers' feeds ("Promoted by Anna") — the prototype has no model of who follows you or of others' promotions.
 - Newcomer clarity for "Horizon" and "Promote" verbs via labels, not hint text. (FIRSTTIMER-14)
   *Status: done (C1/C4).* The button always reads "Add to horizon" (the bare noun "Horizon" is gone; verb paddings
   tightened so the row still fits one line at 1440 split). Promote lost its dashed look in B3; C4 gives it a visible result.

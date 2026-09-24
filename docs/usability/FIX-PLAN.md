@@ -290,3 +290,9 @@ count is the whole section on both viewports (Coming up 12 = its Show all 12), a
 Show all. Event Horizon sections on desktop Home are cards, as on phone, not rows that pass for events. A link opened
 cold (or pasted into the address bar) lights its row and scrolls it into view; the window title names the item. Bold
 "unread" titles only appear where reading is tracked (desktop, logged in).
+
+**R2-6. Network counts and Promote copy tell the truth.** Sources: FIRSTTIMER-R2-3, FIRSTTIMER-9 (partial),
+FIRSTTIMER-R2-14, CREW-17 (partial).
+*Status: done.* The Going fact is always "N on Hypernet"; underneath it says "1 you follow" (and "Including you") only
+counting people you actually follow who are going. Promote copy was fixed in R2-1 ("Promoted · <event>" with Undo,
+no follower claims); showing a promotion in followers' feeds stays out of reach of the prototype's data.

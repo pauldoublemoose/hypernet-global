@@ -1711,9 +1711,10 @@ function factsHTML(evId){
   if (pop && (pop.lastAttendance || pop.cap)) f.push(['Size', '≈ ' + money(pop.lastAttendance || pop.cap) + ' people',
     pop.cap && pop.lastAttendance ? 'Cap ' + money(pop.cap) : (pop.lastAttendanceYear ? 'In ' + pop.lastAttendanceYear : '')]);
   var going = S.loggedIn && RSVP[evId] === 'going';
-  /* "your network" only means something once you follow people */
-  var net = S.loggedIn && Object.keys(PFOLLOW).some(function(k){ return PFOLLOW[k]; });
-  f.push([past ? 'Went' : 'Going', attendeeCount(evId) + (net ? ' from your network' : ' on Hypernet'), going ? 'Including you' : '']);
+  /* the total is everyone on Hypernet; "your network" counts only the people you actually follow */
+  var net = S.loggedIn ? attendees(evId).filter(function(pid){ return PFOLLOW[pid]; }).length : 0;
+  f.push([past ? 'Went' : 'Going', attendeeCount(evId) + ' on Hypernet',
+    [going ? 'Including you' : '', net ? net + ' you follow' : ''].filter(Boolean).join(' · ')]);
   if (S.loggedIn && PROMOTED[evId]) f.push(['Promoted', 'By you' + (promoCount(evId) > 1 ? ' and ' + (promoCount(evId) - 1) + ' more' : ''), '']);
   var org = r.organiser;
   var hp0 = hostPersonOf(e), camp = (r.ownerGroupIds || []).map(groupHorizon).filter(Boolean)[0];

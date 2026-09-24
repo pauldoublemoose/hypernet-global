@@ -333,3 +333,13 @@ child, subsidised, carer — stay in Tickets): AfrikaBurn reads 3,099–7,199 ZA
 event's own pages" is a caption inside Links. Empty sections (Bring, Who's going with nobody) are omitted. The Add to
 horizon button reads "✓ On 1 horizon" once the event is on one of yours. Inert tags are small labels again on touch
 screens, not 44px blocks.
+
+**R2-9c. Forms, sheets and menus.** Sources: PHONEBROWSER-R2-1, PHONEBROWSER-6 (partial), FIRSTTIMER-R2-6,
+FIRSTTIMER-R2-9, CREW-R2-9, PHONEBROWSER-R2-13, ORGANISER-R2-8.
+*Status: done.* Cancel always sits in the thumb spot and keeps the draft; Discard moved to the dialog's title bar
+(appears once something is typed) and toasts "Draft discarded" with Undo. A restored draft puts the caret at the end
+instead of selecting everything. Join opened by an action says why ("Join to keep “Portable shade build”"), and typing a
+name fills the handle (numbered if taken), so Join lights up. Logged-out Share is a short bottom sheet and Copy link
+closes it. Right-click / long-press now works on people (Open, Message, Follow), call outs (Open, Answer / Open chat or
+Edit / Close, Share) and chats (Open, Rename, Add people, Leave; DM: Profile). "Add to horizon" is one label everywhere.
+Horizon Customize previews the horizon page first.

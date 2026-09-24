@@ -576,15 +576,17 @@ body.is-phone .calall{ min-height:44px; }
 .ctxsheet .sheetrow .hzchk.on .ic{ display:block; }
 .ctxsheet .csep{ height:6px; background:var(--face); box-shadow:inset 0 1px 0 var(--shadow), inset 0 -1px 0 var(--white); }
 /* items that answer a long-press: no text selection, no callout */
-body.is-phone :is(.row[data-type], .card2[data-type], .qtile[data-type], .calev, .track[data-type], .crow, .nrow, .evcard){
+body.is-phone :is(.row[data-type], .card2[data-type], .qtile[data-type], .calev, .track[data-type], .crow, .nrow, .evcard, .chrow){
   -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
-@media (pointer:coarse){ :is(.row[data-type], .card2[data-type], .qtile[data-type], .calev, .track[data-type], .crow, .nrow, .evcard){
+@media (pointer:coarse){ :is(.row[data-type], .card2[data-type], .qtile[data-type], .calev, .track[data-type], .crow, .nrow, .evcard, .chrow){
   -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; } }
 #mask{ position:fixed; inset:0; z-index:60; display:none; background:rgba(0,0,0,.3); }
 .dlg{ position:fixed; z-index:70; display:flex; flex-direction:column; max-height:calc(100vh - 32px); padding:3px; background:var(--face);
   box-shadow:var(--out), 4px 4px 16px rgba(0,0,0,.38); }
 .dbar{ flex:0 0 34px; display:flex; align-items:center; gap:8px; padding:0 4px 0 12px; color:#fff; font-weight:bold; background:var(--bar); user-select:none; }
 .dbar .dtitle{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dbar .dbtn{ height:26px; padding:0 10px; border:0; background:transparent; color:#fff; font:inherit; font-weight:normal; text-decoration:underline; text-underline-offset:3px; }
+body.is-phone .dbar .dbtn{ height:44px; }
 .dbar .x{ width:30px; height:26px; display:grid; place-items:center; border:0; padding:0; background:var(--face); color:#000; box-shadow:var(--out); }
 .dbody{ flex:1; min-height:0; overflow:auto; padding:20px; }
 .dfoot{ flex:0 0 auto; display:flex; justify-content:flex-end; gap:8px; padding:12px 20px 18px; }
@@ -827,6 +829,7 @@ body.is-phone .dfoot{ padding:10px 12px calc(12px + env(safe-area-inset-bottom))
 body.is-phone .dfoot .btn{ flex:1; }
 body.is-phone .dlg.sheet{ top:auto !important; bottom:0 !important; }
 body.is-phone .dlg.sheet .dbody{ padding:6px 0; }
+body.is-phone .dlg.shsheet .dbody{ padding:18px 16px; }
 body.is-phone .custwrap{ flex-direction:column; }
 body.is-phone .custcol{ flex:0 0 auto; }
 body.is-phone .previewbox{ max-height:none; }
@@ -1298,13 +1301,16 @@ function placeToasts(){
 }
 /* logged-out actions ask for a login, then carry on with what you asked for.
    Carried on means made so: a verb you asked for is switched on, never toggled back off. */
-var RESUMING = false;
+var RESUMING = false, JOINFOR = null;
 function gated(fn){
   return function(){
     var args = arguments;
     if (!S.loggedIn){
       S.pending = function(){ RESUMING = true; try { fn.apply(null, args); } finally { RESUMING = false; } };
-      loginDialog(); return;
+      var a0 = args[0];
+      JOINFOR = typeof a0 === 'string' ? (EVENTS[a0] ? 'Join to keep “' + EVENTS[a0].title + '”' : HORIZONS[a0] ? 'Join to follow “' + HORIZONS[a0].name + '”'
+              : PEOPLE[a0] && a0 !== 'self' ? 'Join to follow ' + PEOPLE[a0].displayName : null) : null;
+      loginDialog(); JOINFOR = null; return;
     }
     fn.apply(null, args);
   };
@@ -2784,7 +2790,7 @@ function placeDlg(d){
   var h = d.offsetHeight, top = parseFloat(d.style.top) || 0;
   if (top + h > window.innerHeight - 16) d.style.top = Math.max(16, window.innerHeight - 16 - h) + 'px';
 }
-function focusIn(id){ setTimeout(function(){ var n = $(id); if (n){ n.focus(); if (n.select) n.select(); } }, 30); }
+function focusIn(id){ setTimeout(function(){ var n = $(id); if (n){ n.focus(); try { var l = String(n.value || '').length; n.setSelectionRange(l, l); } catch(e){} } }, 30); }
 function newSheet(){
   dialog('New', NEWITEMS.map(function(it){
     return '<div class="sheetrow" data-act="runcmd" data-id="'+it.cmd+'" role="button">'+ic(it.icon,22)+'<div>'+esc(it.label)+'</div></div>';
@@ -2833,9 +2839,16 @@ function profileDialog(mode){
   var p = PEOPLE['self'], up = mode === 'signup';
   PF = { mode:mode, name: up ? '' : p.displayName, handle: up ? '' : p.handle,
          about: up ? '' : (p.bio || ''), skills: up ? [] : (p.skills || []).slice(), cities: up ? [] : citiesOf(p).slice() };
-  dialog(up ? 'Join Hypernet' : 'Edit profile', (up ? demoRowHTML() : '') + '<div id="pfbody">' + profileForm() + '</div>',
+  dialog(up ? (JOINFOR || 'Join Hypernet') : 'Edit profile', (up ? demoRowHTML() : '') + '<div id="pfbody">' + profileForm() + '</div>',
     '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="pfsave" id="pfsave"'+(up?' disabled':'')+'>'+(up ? 'Join' : 'Save')+'</button>', 560);
   focusIn('pf-name');
+}
+/* a handle from a name: first name, lower case, plain letters; a number when it is taken */
+function suggestHandle(name){
+  var b = fold(String(name || '').trim().split(/\s+/)[0] || '').replace(/[^a-z0-9._-]/g, '');
+  if (!b) return '';
+  var h = b, i = 2; while (handleTaken(h)) h = b + i++;
+  return h;
 }
 function normHandle(h){ return String(h || '').trim().replace(/^@+/, '').toLowerCase(); }
 /* a handle is taken when anyone else on the network already has it */
@@ -2997,7 +3010,7 @@ function shareDialog(id, type){
          '<input type="search" id="sh-q" placeholder="Search people and chats" autocomplete="off" aria-label="Search people and chats">' +
          '<div class="picklist" id="sh-list">'+shareListHTML()+'</div></div>';
   }
-  dialog('Share “' + name + '”', h, '<button class="btn" data-act="closedlg">Done</button>', 460);
+  dialog('Share “' + name + '”', h, '<button class="btn" data-act="closedlg">Done</button>', 460, S.loggedIn ? '' : 'sheet shsheet');
 }
 /* your chats first, then the people you have no chat with yet */
 function shareListHTML(){
@@ -3020,7 +3033,7 @@ function shareListHTML(){
 }
 function copyLink(){
   var inp = $('sh-url'), url = inp ? inp.value : '';
-  var ok = function(){ toast('Link copied', url.replace(/^https?:\/\//, '')); };
+  var ok = function(){ if (!S.loggedIn) closeDialogs(); toast('Link copied', url.replace(/^https?:\/\//, '')); };
   var legacy = function(){ try { inp.focus(); inp.select(); document.execCommand('copy'); ok(); } catch(e){ inp.select(); } };
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(ok, legacy); else legacy();
 }
@@ -3035,6 +3048,7 @@ function newChatDialog(preset, addTo){
   NC = { sel: preset ? [preset] : dr ? dr.sel.filter(function(k){ return PEOPLE[k]; }) : [], q:'', name: dr ? dr.name || '' : '', addTo:addTo || null };
   dialog(addTo ? 'Add people' : 'New chat', '<div id="ncbody"></div>', '<span id="ncfoot" style="display:contents"></span>', 480);
   paintNewChat();
+  if (!addTo) setTimeout(function(){ syncDiscard('chat'); }, 0);
   focusIn('nc-q');
 }
 /* a group is named after its people until you name it */
@@ -3092,8 +3106,14 @@ function saveForm(kind){
   if (f && FORMFOOT[kind]){ var probe = document.createElement('div'); probe.innerHTML = FORMFOOT[kind](); if (probe.innerHTML !== f.innerHTML) f.innerHTML = probe.innerHTML; }
   schedulePersist();
 }
-function formSecondary(kind){
-  return FORMDRAFTS[kind] ? '<button class="btn" data-act="discarddraft" data-id="'+kind+'">Discard</button>' : '<button class="btn" data-act="closedlg">Cancel</button>';
+function formSecondary(kind){ setTimeout(function(){ syncDiscard(kind); }, 0); return '<button class="btn" data-act="closedlg">Cancel</button>'; }
+/* a draft can be thrown away from the title bar, away from Cancel, and taken back from the toast */
+function syncDiscard(kind){
+  var d = DLGS[DLGS.length-1]; if (!d) return;
+  var bar = d.querySelector('.dbar'), btn = bar.querySelector('.dbtn');
+  var dirty = kind === 'event' ? DRAFT && !DRAFT.editing && eventDraftDirty(DRAFT) : !!FORMDRAFTS[kind];
+  if (dirty && !btn) bar.querySelector('.x').insertAdjacentHTML('beforebegin', '<button class="dbtn" data-act="discarddraft" data-id="'+kind+'">Discard</button>');
+  if (!dirty && btn) btn.remove();
 }
 FORMFOOT.callout = function(){
   return formSecondary('callout') + '<button class="btn primary" data-act="donewcallout" id="co-go"'+(String(draftVal('callout','co-t')).trim() ? '' : ' disabled')+'>Post call out</button>';
@@ -3248,8 +3268,7 @@ function horizonPreviewHTML(){
        '<div class="btxt"><div class="eyebrow">Event Horizon</div><h1 class="hl h-'+t.headline+'">'+headlineHTML(t, hz.name)+'</h1>'+(t.mood?'<p class="mood">'+esc(t.mood)+'</p>':'')+'</div></div></div></div></div>';
   /* on a phone the preview is the page itself, small, and it stays in view while you change things */
   if (L.phone) return '<div class="previewbox compact">' + page + '</div>';
-  h += '<div class="plabel">Horizon page</div>' + page;
-  return h + '</div>';
+  return h.replace('<div class="previewbox">', '<div class="previewbox"><div class="plabel">Horizon page</div>' + page) + '</div>';
 }
 function customizePreviewHTML(){
   if (DRAFT.kind === 'horizon') return horizonPreviewHTML();
@@ -3329,7 +3348,8 @@ function wizBodyHTML(){
 function wizFootHTML(){
   var d = DRAFT;
   if (d.mode === 'edit') return '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="wiz" data-id="finish">Save changes</button>';
-  return (!d.editing && eventDraftDirty(d) ? '<button class="btn" data-act="discarddraft" data-id="event">Discard</button>' : '<button class="btn" data-act="closedlg">Cancel</button>') +
+  if (!d.editing) setTimeout(function(){ syncDiscard('event'); }, 0);
+  return '<button class="btn" data-act="closedlg">Cancel</button>' +
     (d.step > 1 && !d.editing ? '<button class="btn" data-act="wiz" data-id="back">'+ic('back')+'Back</button>' : '') +
     (d.step < 3 ? '<button class="btn primary" data-act="wiz" data-id="next">Next</button>'
                 : '<button class="btn primary" data-act="wiz" data-id="finish">'+(d.editing?'Apply':'Publish event')+'</button>');
@@ -3481,15 +3501,16 @@ function wizAct(which){
    menu is a shortcut, never a second implementation.
    ========================================================================= */
 var CTXSEL = '.row[data-type], .card2[data-type], .qtile[data-type], .calev[data-type], .calcell .dots i[data-type], ' +
-             '.track[data-type], .crow, .nrow[data-kind="horizon"], .nrow[data-type="horizon"], .evcard[data-type]';
+             '.track[data-type], .crow, .nrow[data-kind="horizon"], .nrow[data-type="horizon"], .nrow[data-type="person"], .evcard[data-type], .chrow[data-act="chatsel"]';
 /* what was pressed: the item's element, the element that opens it, and what it stands for */
 function ctxTarget(node){
   var el = node && node.closest ? node.closest(CTXSEL) : null;
   if (!el || el.closest('.dlg, .ctxmenu')) return null;
   var act = el.classList.contains('crow') ? el.querySelector('.cm[data-type]') : el;
   if (!act) return null;
-  var type = act.getAttribute('data-kind') === 'horizon' ? 'horizon' : act.getAttribute('data-type'), id = act.getAttribute('data-id');
-  if (!((type === 'event' && EVENTS[id]) || (type === 'horizon' && HORIZONS[id]))) return null;
+  var type = act.getAttribute('data-kind') === 'horizon' ? 'horizon' : act.getAttribute('data-act') === 'chatsel' ? 'chat' : act.getAttribute('data-type'), id = act.getAttribute('data-id');
+  if (!((type === 'event' && EVENTS[id]) || (type === 'horizon' && HORIZONS[id]) || (type === 'person' && PEOPLE[id]) ||
+        (type === 'callout' && calloutOf(id)) || (type === 'chat' && CHATS[id]))) return null;
   return { el:el, act:act, type:type, id:id, hz: el.getAttribute('data-hz') || null };
 }
 /* Open does exactly what a click on the item does */
@@ -3514,7 +3535,10 @@ function ctxVerb(fn, isOn, label, name){
 }
 /* `only` keeps just the listed items (by code): the ⋯ on a page holds what the page does not already show */
 function ctxItems(t, only){
-  var id = t.id, out = [{ code:'open', label:'Open', def:true, lead: t.type === 'event' ? sqPx(id, 32) : hzIconHTML(id, 32), run:function(){ ctxOpen(t); } }, '-'];
+  var id = t.id;
+  /* people, call outs and chats answer the same gesture with their own verbs */
+  if (t.type === 'person' || t.type === 'callout' || t.type === 'chat') return ctxOtherItems(t, only);
+  var out = [{ code:'open', label:'Open', def:true, lead: t.type === 'event' ? sqPx(id, 32) : hzIconHTML(id, 32), run:function(){ ctxOpen(t); } }, '-'];
   /* on a track of your own horizon, taking it out is the first thing you might want */
   if (t.type === 'event' && t.hz && hzOwnedByMe(t.hz) && HORIZONS[t.hz].eventIds.indexOf(id) >= 0)
     out.push({ code:'unfile', label:'Remove from ' + HORIZONS[t.hz].name, icon:'close', run:function(){ unfile(id, t.hz); } }, '-');
@@ -3535,7 +3559,7 @@ function ctxItems(t, only){
     out.push('-');
     /* logged out there are no horizons of yours to list yet: log in, then pick one */
     if (S.loggedIn) out.push({ code:'addto', label:'Add to horizon', icon:'addhorizon', sub: ctxHorizonItems(id) });
-    else out.push({ code:'addto', label:'Add to horizon…', icon:'addhorizon', run:function(){ gated(addToDialog)(id); } });
+    else out.push({ code:'addto', label:'Add to horizon', icon:'addhorizon', run:function(){ gated(addToDialog)(id); } });
     out.push({ code:'share', label:'Share…', icon:'share', run:function(){ shareDialog(id, 'event'); } });
     if (mine && !past) out.push({ code:'callout', label:'New call out…', icon:'callout', run:function(){ runCmd('new-callout', id); } });
     if (mine) out.push('-', { code:'delete', label:'Delete…', icon:'trash', run:function(){ deleteEventDialog(id); } });
@@ -3555,6 +3579,32 @@ function ctxItems(t, only){
     out = out.filter(function(it){ return it === '-' || only.indexOf(it.code) >= 0; });
     out = out.filter(function(it, i){ return it !== '-' || (i > 0 && i < out.length - 1 && out[i-1] !== '-'); });
   }
+  return out;
+}
+function ctxOtherItems(t, only){
+  var id = t.id, out;
+  if (t.type === 'person'){
+    var fol = S.loggedIn && PFOLLOW[id];
+    out = [{ code:'open', label:'Open', def:true, lead:avHTML(id, 'a28'), run:function(){ ctxOpen(t); } }];
+    if (id !== 'self') out.push('-', { code:'dm', label:'Message', icon:'chat', run:function(){ messagePerson(id); } },
+      { code:'follow', label: fol ? 'Unfollow' : 'Follow', icon: fol ? 'close' : 'plus', run: ctxVerb(function(){ followP(id); }, function(){ return !!PFOLLOW[id]; }, 'Following', person(id).displayName) });
+  } else if (t.type === 'callout'){
+    var c = calloutOf(id), mine = isOwnCallout(c), ans = S.loggedIn && ANSWERED[id] && CHATS[ANSWERED[id]] ? ANSWERED[id] : null;
+    out = [{ code:'open', label:'Open', def:true, icon:'callout', run:function(){ ctxOpen(t); } }, '-'];
+    if (mine) out.push({ code:'edit', label:'Edit…', icon:'edit', run:function(){ newCalloutDialog({ edit:id }); } },
+                       { code:'close', label: c.closed ? 'Reopen' : 'Close call out', icon:'close', run:function(){ closeCallout(id); } });
+    else if (ans) out.push({ code:'chat', label:'Open chat', icon:'chat', run:function(){ openChat(ans); } });
+    else if (!c.closed) out.push({ code:'answer', label:'Answer…', icon:'chat', run:function(){ answerCallout(id); } });
+    if (!c.closed) out.push({ code:'share', label:'Share…', icon:'share', run:function(){ shareDialog(id, 'callout'); } });
+  } else {
+    var ch = CHATS[id];
+    out = [{ code:'open', label:'Open', def:true, lead:chatAv(ch), run:function(){ openChat(id); } }, '-'];
+    if (ch.kind === 'group') out.push({ code:'rename', label:'Rename…', icon:'edit', run:function(){ chatRenameDialog(id); } },
+                                      { code:'add', label:'Add people…', icon:'plus', run:function(){ newChatDialog(null, id); } },
+                                      '-', { code:'leave', label:'Leave group…', icon:'back', run:function(){ chatLeave(id); } });
+    else out.push({ code:'profile', label:'Profile', icon:'user', run:function(){ openItem('person', ch.memberIds[0], 'push'); } });
+  }
+  if (only) out = out.filter(function(it){ return it !== '-' && only.indexOf(it.code) >= 0; });
   return out;
 }
 /* the ⋯ on a page: the same menu, drawn at the button (or as the sheet on a phone) */
@@ -3974,7 +4024,7 @@ function firstNames(ids){ return ids.map(function(k){ return person(k).displayNa
 function saveChatDraft(){
   if (!NC || NC.addTo) return;
   FORMDRAFTS.chat = NC.sel.length || NC.name.trim() ? { sel:NC.sel.slice(), name:NC.name } : null;
-  schedulePersist();
+  schedulePersist(); syncDiscard('chat');
 }
 function createChat(){
   if (!NC || !NC.sel.length) return;
@@ -4231,7 +4281,12 @@ document.addEventListener('click', function(ev){
     case 'toastundo':    { var ua = TOASTACT; TOASTACT = null; $('toasts').innerHTML = ''; if (ua) (ua.run || ua)(); break; }
     case 'copylink':     copyLink(); break;
     case 'nativeshare':  nativeShare(); break;
-    case 'discarddraft': FORMDRAFTS[id] = null; closeDialogs(); schedulePersist(); break;
+    case 'discarddraft': {
+      var kept = FORMDRAFTS[id]; FORMDRAFTS[id] = null; if (id === 'chat') NC = null;
+      closeDialogs(); schedulePersist();
+      toast('Draft discarded', '', function(){ FORMDRAFTS[id] = kept; schedulePersist(); toast('Draft restored', ''); });
+      break;
+    }
     case 'calmode':      S.calMode = id; render(); break;
     case 'caltoday':     S.calAnchor = TODAY_ISO; S.calDay = null; render(); break;
     case 'calday':       if (narrowCal()) S.calDay = S.calDay === id ? null : id; else { S.calMode = 'day'; S.calAnchor = id; S.calDay = null; } render(); break;
@@ -4265,6 +4320,8 @@ document.addEventListener('input', function(ev){
   var n = ev.target;
   if (n.id === 'q' || n.id === 'pq'){ doSearch(n.value); return; }
   if (n.id === 'nc-q'){ NC.q = n.value; var sel = NC.sel.slice(); paintNewChat(); var q = $('nc-q'); if (q){ q.focus(); q.setSelectionRange(q.value.length, q.value.length); } return; }
+  if (n.id === 'pf-handle' && PF) PF.handleTouched = true;
+  if (n.id === 'pf-name' && PF && PF.mode === 'signup' && !PF.handleTouched){ var hi0 = $('pf-handle'); if (hi0) hi0.value = suggestHandle(n.value); }
   if (/^pf-(name|handle|about)$/.test(n.id)){ pfSync(); return; }
   if (n.id === 'chatbox'){ var ac = activeChat(); if (ac){ if (n.value) CHATDRAFT[ac] = n.value; else delete CHATDRAFT[ac]; schedulePersist(); } return; }
   if (/^co-[tbx]$/.test(n.id)){ saveForm('callout'); return; }

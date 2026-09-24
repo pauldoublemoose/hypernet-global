@@ -296,3 +296,12 @@ FIRSTTIMER-R2-14, CREW-17 (partial).
 *Status: done.* The Going fact is always "N on Hypernet"; underneath it says "1 you follow" (and "Including you") only
 counting people you actually follow who are going. Promote copy was fixed in R2-1 ("Promoted · <event>" with Undo,
 no follower claims); showing a promotion in followers' feeds stays out of reach of the prototype's data.
+
+**R2-7. Chats for a new account, New chat drafts, answered call outs.** Sources: CREW-R2-4, FIRSTTIMER-R2-11,
+PHONEBROWSER-R2-8, CREW-R2-5, CREW-R2-6, PHONEBROWSER-R2-2, PHONEBROWSER-6 (partial), CREW-R2-7, CREW-R2-8, CREW-R2-11.
+*Status: done.* A new account's Chats lists people (the ones you follow first, else people on Hypernet), each one tap
+from a DM; New chat stays in the header only, so it isn't drawn twice. New chat keeps its picks and group name as a
+draft through ×, back and reload, cleared on create. Group name shows only from two people and never in Add people
+(the `hidden` attribute was being overridden by `.field{display:flex}`; `[hidden]` now always wins). A chat with an
+unsent draft (e.g. a started call-out answer) is listed; call-out cards and rows say "Answered" once you sent one. The
+dock header drops the member avatars (members are in ⋯), so the group name is readable.

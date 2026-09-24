@@ -41,6 +41,7 @@ button{ cursor:pointer; }
 [data-act]{ cursor:pointer; }
 a{ color:inherit; }
 .ic{ flex:0 0 auto; display:block; }
+[hidden]{ display:none !important; }
 .sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
 
 /* ---------- 2. controls ---------------------------------------------- */
@@ -658,6 +659,8 @@ body.is-phone #sh-list{ max-height:none; }
 .ab-tap{ cursor:pointer; align-self:stretch; display:flex; flex-direction:column; justify-content:center; }
 .linkrow.static{ cursor:default; }
 .linkrow.static:hover{ background:#fff; }
+.chatsempty{ padding:36px 24px 26px; }
+.chrow .lstate{ font:12px var(--mono); color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
 .cmsg{ margin:0; max-width:46ch; font-size:var(--fs-m); line-height:1.5; }
 
 /* ---------- 10b. phone feed: shelves, tiles, playlists --------------- */
@@ -685,6 +688,7 @@ body.is-phone #sh-list{ max-height:none; }
 .cs2{ margin-top:3px; font:11px var(--mono); letter-spacing:.02em; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .ctag{ position:absolute; z-index:5; left:6px; bottom:6px; padding:2px 6px; background:#fff; color:#000; border:1px solid #000; font:bold 10px var(--mono); letter-spacing:.08em; text-transform:uppercase; }
 .ctag.inline{ position:static; flex:0 0 auto; }
+.coart + .ctag{ left:auto; right:6px; bottom:auto; top:6px; }
 .coart{ width:150px; height:150px; display:flex; flex-direction:column; justify-content:flex-end; gap:4px; padding:12px; background:var(--face); box-shadow:var(--out); color:var(--ink); }
 .coart .ic{ margin-bottom:auto; }
 .coart span{ font:bold 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dim); }
@@ -1539,6 +1543,7 @@ function rowHTML(it){
     title = esc(c.title);
     meta = esc([c.hostName, c.eventId && EVENTS[c.eventId] ? 'for ' + EVENTS[c.eventId].title : '', c.body].filter(Boolean).join(' · '));
     date = c.closed ? 'closed' : 'until ' + fmtShort(c.expiresAt);
+    if (S.loggedIn && ANSWERED[it.id]) side = '<span class="pill going">'+ic('check',11)+'<span>Answered</span></span>';
   }
   var drag = it.type === 'event' && !L.phone ? ' draggable="true"' : '';
   if (it.type === 'event' && S.folder.kind === 'horizon' && hzOwnedByMe(S.folder.id))
@@ -2232,6 +2237,7 @@ function cardTag(it){
     return st ? '<span class="ctag">'+{ going:'Going', interested:'Interested', hosting:'Hosting' }[st]+'</span>' : PROMOTED[it.id] ? '<span class="ctag">Promoted</span>' : '';
   }
   if (it.type === 'horizon') return hzOwnedByMe(it.id) ? '<span class="ctag">Yours</span>' : HZFOLLOW[it.id] ? '<span class="ctag">Following</span>' : '';
+  if (it.type === 'callout') return ANSWERED[it.id] ? '<span class="ctag">Answered</span>' : isOwnCallout(calloutOf(it.id)) ? '<span class="ctag">Yours</span>' : '';
   return '';
 }
 function cardHTML(it){
@@ -2438,8 +2444,10 @@ function msgTs(m){
 function stamp(){ return { t:nowClock(), ts:Date.now() }; }
 /* the chat list: newest message first; a chat with nothing in it yet is not listed */
 function chatList(){
-  return CHATORDER.filter(function(k){ return CHATS[k] && CHATS[k].messages.length; })
-    .sort(function(a, b){ return msgTs(lastMsg(CHATS[b])) - msgTs(lastMsg(CHATS[a])); });
+  /* a chat is listed once it has a message, or something you started typing in it (a draft floats to the top) */
+  var ts = function(k){ return CHATDRAFT[k] && !CHATS[k].messages.length ? Date.now() : msgTs(lastMsg(CHATS[k])); };
+  return CHATORDER.filter(function(k){ return CHATS[k] && (CHATS[k].messages.length || CHATDRAFT[k]); })
+    .sort(function(a, b){ return ts(b) - ts(a); });
 }
 function msgPreview(m, c){
   if (!m) return 'No messages yet';
@@ -2450,9 +2458,19 @@ function msgPreview(m, c){
   return who + m.text;
 }
 function unreadChats(){ return S.loggedIn ? Object.keys(UNREADCHAT).filter(function(k){ return UNREADCHAT[k]; }).length : 0; }
+/* no chats yet: message someone straight away */
+function chatsEmptyHTML(){
+  var ppl = ncPeopleAll().slice(0, 8);
+  /* New chat is already in the header; the body offers the people */
+  return '<div class="band">'+(ppl.some(function(k){ return PFOLLOW[k]; }) ? 'People you follow' : 'People on Hypernet')+'</div>' +
+    ppl.map(function(pid){ var p = person(pid);
+      return '<div class="chrow" data-act="dm" data-id="'+pid+'" role="button">'+avHTML(pid,'a40')+'<div class="cmn"><div class="cnm">'+esc(p.displayName)+'</div>' +
+        '<div class="cpv">@'+esc(p.handle)+(p.bio ? ' · '+esc(p.bio) : '')+'</div></div><span class="lstate">Message</span></div>'; }).join('');
+}
 function chatListHTML(){
+  var list = chatList();
   return '<div class="phead"><div class="ptitle">Chats</div><button class="btn primary" data-act="newchat">'+ic('edit')+'New chat</button></div>' +
-    '<div class="panel">' + chatList().map(function(k){
+    '<div class="panel">' + (list.length ? '' : chatsEmptyHTML()) + list.map(function(k){
       var c = CHATS[k], m = lastMsg(c), un = UNREADCHAT[k];
       return '<div class="chrow'+(un?' unread':'')+'" data-act="chatsel" data-id="'+k+'" role="button">' + chatAv(c) +
         '<div class="cmn"><div class="cnm">'+esc(c.name)+'</div><div class="cpv">'+(CHATDRAFT[k] ? '<b>Draft:</b> '+esc(CHATDRAFT[k]) : esc(msgPreview(m, c)))+'</div></div>' +
@@ -2464,8 +2482,7 @@ function convHTML(cid){
   var sub = chatSub(c);
   var h = '<div class="phead"><button class="ib" data-act="chatback" aria-label="All chats">'+ic('back')+'</button>' +
     '<div class="ptitle">'+esc(c.name)+'<small>'+esc(sub)+'</small></div>' +
-    (c.kind === 'group' ? '<span class="members">' + c.memberIds.slice(0,4).map(function(m){ return '<span data-act="open" data-type="person" data-id="'+m+'">'+avHTML(m,'a28')+'</span>'; }).join('') + '</span>'
-                        : '<button class="ib" data-act="open" data-type="person" data-id="'+c.memberIds[0]+'" aria-label="Profile">'+ic('user')+'</button>') +
+    (c.kind === 'group' ? '' : '<button class="ib" data-act="open" data-type="person" data-id="'+c.memberIds[0]+'" aria-label="Profile">'+ic('user')+'</button>') +
     '<button class="ib" data-act="chatinfo" data-id="'+cid+'" aria-label="Chat details" aria-haspopup="dialog">'+ic('dots')+'</button></div>';
   h += '<div class="conv"><div class="msgs" id="msgs">' + (c.messages.length ? c.messages.map(function(m){
     if (m.from === 'sys') return '<div class="msg sys">'+esc(m.text)+'</div>';
@@ -2965,7 +2982,8 @@ function nativeShare(){
 /* ---- new chat: pick people; one person is a direct message, two or more is a group you name ---- */
 var NC = null;
 function newChatDialog(preset, addTo){
-  NC = { sel: preset ? [preset] : [], q:'', name:'', addTo:addTo || null };
+  var dr = !preset && !addTo && FORMDRAFTS.chat;
+  NC = { sel: preset ? [preset] : dr ? dr.sel.filter(function(k){ return PEOPLE[k]; }) : [], q:'', name: dr ? dr.name || '' : '', addTo:addTo || null };
   dialog(addTo ? 'Add people' : 'New chat', '<div id="ncbody"></div>', '<span id="ncfoot" style="display:contents"></span>', 480);
   paintNewChat();
   focusIn('nc-q');
@@ -3893,8 +3911,14 @@ var answerCallout = gated(function(coId){
   setTimeout(function(){ var b = $('chatbox'); if (b){ b.focus(); b.setSelectionRange(b.value.length, b.value.length); } }, 60);
 });
 function firstNames(ids){ return ids.map(function(k){ return person(k).displayName.split(' ')[0]; }).join(', '); }
+function saveChatDraft(){
+  if (!NC || NC.addTo) return;
+  FORMDRAFTS.chat = NC.sel.length || NC.name.trim() ? { sel:NC.sel.slice(), name:NC.name } : null;
+  schedulePersist();
+}
 function createChat(){
   if (!NC || !NC.sel.length) return;
+  if (!NC.addTo) FORMDRAFTS.chat = null;
   var into = NC.addTo && CHATS[NC.addTo], st = stamp();
   if (into && into.kind === 'group'){
     /* adding people to a group keeps the group */
@@ -4070,9 +4094,9 @@ document.addEventListener('click', function(ev){
       var k = id, i = NC.sel.indexOf(k);
       if (n.checked && i < 0) NC.sel.push(k); else if (!n.checked && i >= 0) NC.sel.splice(i, 1);
       var q = $('nc-q'); NC.q = q ? q.value : NC.q;
-      paintNewChat(); break;
+      paintNewChat(); saveChatDraft(); break;
     }
-    case 'ncdrop':       NC.sel = NC.sel.filter(function(x){ return x !== id; }); paintNewChat(); break;
+    case 'ncdrop':       NC.sel = NC.sel.filter(function(x){ return x !== id; }); paintNewChat(); saveChatDraft(); break;
     case 'donewchat':    createChat(); break;
     case 'new-event':    runCmd('new-event'); break;
     case 'new-horizon':  runCmd('new-horizon', id); break;
@@ -4187,7 +4211,7 @@ document.addEventListener('input', function(ev){
   if (/^nh-[nd]$/.test(n.id)){ saveForm('horizon'); return; }
   if (n.id === 'sh-q' && SH){ SH.q = n.value; var sl = $('sh-list'); if (sl) sl.innerHTML = shareListHTML(); return; }
   if (n.id === 'pk-q'){ PK.q = n.value; $('pk-list').innerHTML = pickerList(); return; }
-  if (n.id === 'nc-name'){ NC.name = n.value; paintNewChat(true); return; }
+  if (n.id === 'nc-name'){ NC.name = n.value; paintNewChat(true); saveChatDraft(); return; }
   if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT') return;
   DRAFT[n.getAttribute('data-cz')] = n.value;
   if (n.getAttribute('aria-invalid') && String(n.value).trim()){

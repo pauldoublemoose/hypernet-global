@@ -161,7 +161,8 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .row.static:hover{ background:transparent; }
 .r-main{ flex:1; min-width:0; }
 .r-title{ font-size:15px; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.row.unread .r-title{ font-weight:bold; }
+/* bold for unread only where reading is tracked: a desktop with an account */
+#app.readmarks .row.unread .r-title{ font-weight:bold; }
 .row.past .r-title{ color:#6f6f6f; }
 .row.sel.past .r-title{ color:#ddd; }
 .r-meta{ margin-top:3px; font-size:var(--fs-s); color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -665,6 +666,9 @@ body.is-phone #sh-list{ max-height:none; }
 .greet h2{ margin:0; font-size:24px; line-height:1.15; }
 .greet p{ margin:4px 0 0; color:var(--dim); font-size:14px; }
 .shelf{ margin-top:22px; }
+.deskgreet{ padding:22px 16px 14px; border-bottom:1px solid var(--line); }
+.srow.deskrow{ padding:14px 16px 16px; border-bottom:1px solid var(--line); scroll-snap-type:x proximity; }
+@media (pointer:fine){ .srow.deskrow{ scrollbar-width:thin; } .srow.deskrow::-webkit-scrollbar{ display:block; height:8px; } .srow.deskrow::-webkit-scrollbar-thumb{ background:var(--face-dk); } }
 .row.more{ min-height:52px; color:var(--ink2); }
 .row.more .r-title{ font-size:var(--fs); font-weight:bold; }
 .shh{ display:flex; align-items:center; gap:10px; padding:0 8px 0 16px; }
@@ -1331,7 +1335,7 @@ var HOMEBAND = 8;
 function homeItems(){
   var out = [];
   homeSections().forEach(function(sec){
-    sec.items.slice(0, HOMEBAND).forEach(function(it){ out.push({ type:it.type, id:it.id, band:sec.title }); });
+    sec.items.slice(0, HOMEBAND).forEach(function(it){ out.push({ type:it.type, id:it.id, band:sec.title, total:sec.items.length, sec:sec.id }); });
     if (sec.items.length > HOMEBAND) out.push({ type:'more', id:sec.id, band:sec.title, n:sec.items.length });
   });
   return out;
@@ -1585,9 +1589,20 @@ function renderList(){
       : k === 'hosting' ? 'You are not hosting anything yet.<br><button class="btn primary" data-act="new-event">'+ic('plus')+'New event</button>'
       : 'Nothing here yet.') + '</div>';
   } else {
+    var feed = S.folder.kind === 'home' && viewOf() === 'feed';
+    /* desktop Home opens with what Hypernet is, like the phone */
+    if (feed) h += '<div class="greet deskgreet"><h2>'+esc(greeting())+'</h2>' + (S.loggedIn ? '' : '<p>Burns, builds and the people who make them.</p>') + '</div>';
     g.order.forEach(function(b){
-      if (b) h += '<div class="band">' + esc(b) + ' <span class="cnt">' + g.groups[b].length + '</span></div>';
-      g.groups[b].forEach(function(it){ h += rowHTML(it); if (it.type !== 'more') rows.push(it); });
+      var its = g.groups[b], first = its[0] || {};
+      /* a section's count is the whole section, as on its Show all page */
+      if (b) h += '<div class="band">' + esc(b) + ' <span class="cnt">' + (first.total || its.filter(function(x){ return x.type !== 'more'; }).length) + '</span></div>';
+      /* horizons are cards on Home at every width, not rows that pass for events */
+      if (feed && first.type === 'horizon'){
+        h += '<div class="srow deskrow" data-shelf="'+first.sec+'">' + its.filter(function(x){ return x.type === 'horizon'; }).map(cardHTML).join('') + '</div>';
+        if (first.total > HOMEBAND) h += rowHTML(its[its.length-1]);
+        return;
+      }
+      its.forEach(function(it){ h += rowHTML(it); if (it.type !== 'more') rows.push(it); });
     });
   }
   S.rows = rows;
@@ -2302,7 +2317,7 @@ function shelvesHTML(){
     var more = sec.items.length > 2;
     h += '<section class="shelf"><div class="shh"><h3>'+esc(sec.title)+'</h3>' +
          (more ? '<button class="showall" data-act="shelfall" data-id="'+sec.id+'">Show all</button>' : '') + '</div>';
-    h += '<div class="srow" data-shelf="'+sec.id+'">' + sec.items.slice(0, 10).map(cardHTML).join('') + '</div></section>';
+    h += '<div class="srow" data-shelf="'+sec.id+'">' + sec.items.slice(0, HOMEBAND).map(cardHTML).join('') + '</div></section>';
   });
   return h + '</div>';
 }
@@ -2525,7 +2540,8 @@ function renderNav(){
     h += '<div class="nrow sel search">'+ic('search')+'<span class="nlab">“'+esc(S.query)+'”</span>' +
          '<button class="nx" data-act="clearsearch" aria-label="Clear search">'+ic('close',14)+'</button></div>';
   }
-  var homeUnread = unreadCount(homeItems());
+  /* unread only means something to someone with an account */
+  var homeUnread = S.loggedIn ? unreadCount(homeItems()) : 0;
   h += navRow({kind:'home'}, ic('home'), 'Home', { count: homeUnread || '', unread: homeUnread > 0, cls:'dup-tab' });
   h += navRow({kind:'horizons'}, ic('horizon'), 'Horizons', { cls:'dup-tab' });
   h += navRow({kind:'people'}, ic('people'), 'People', { cls:'dup-tab' });
@@ -2825,7 +2841,7 @@ function captureAcct(){
   var p = PEOPLE['self'];
   return { profile:{ displayName:p.displayName, handle:p.handle, bio:p.bio, skills:p.skills, cities:p.cities, city:p.city },
            rsvp:RSVP, went:WENT, promoted:PROMOTED, hzfollow:HZFOLLOW, pfollow:PFOLLOW, myevents:MYEVENTS, myhorizons:MYHORIZONS,
-           chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT, drafts:{ forms:FORMDRAFTS, chat:CHATDRAFT }, answered:ANSWERED, answering:ANSWERING, shift:SHIFT };
+           chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT, drafts:{ forms:FORMDRAFTS, chat:CHATDRAFT }, answered:ANSWERED, answering:ANSWERING, shift:SHIFT, read:READ };
 }
 function loadAcct(a){
   a = a || blankAcct({ displayName:'', handle:'', bio:'', skills:[], cities:[], city:'' });
@@ -2839,6 +2855,7 @@ function loadAcct(a){
   UNREADCHAT = a.unread || {};
   FORMDRAFTS = (a.drafts && a.drafts.forms) || {}; CHATDRAFT = (a.drafts && a.drafts.chat) || {};
   ANSWERED = a.answered || {}; ANSWERING = a.answering || {}; SHIFT = a.shift || {};
+  if (a.read) Object.keys(a.read).forEach(function(k){ READ[k] = true; });
   S.me = { name:p.displayName || 'You', handle:p.handle || 'you' };
 }
 /* an account that is not logged in is, to everyone else, just a person on the network */
@@ -4462,8 +4479,14 @@ window.addEventListener('popstate', function(ev){
   applySnap(s); render();
   ROUTE.applying = false;
   restoreScroll(s.scroll);
+  if (!ev.state) revealSel();
   if (!ev.state || s.modal){ var c = snapNow(); c.idx = s.idx || 0; c.scroll = CURSCROLL; history.replaceState(c, '', hashOf(c)); }
 });
+/* a link (not a history step): its row, if the list has one, is lit and in view */
+function revealSel(){
+  var el = document.querySelector('#listbody .row.sel, #listbody .track.sel');
+  if (el && !L.phone){ el.scrollIntoView({ block:'center' }); CURSCROLL.list = $('listbody').scrollTop; }
+}
 function rootSnap(tab){
   var f = tabRootFolder(L.phone ? tab : 'home');
   return { hn:1, tab:tab, folder:f, stack:[], q:'', ps:false, view:viewsOf(f)[0] || null, cal:null };
@@ -4478,6 +4501,7 @@ function startRoutes(){
   ROUTE.ready = true;
   var cur = snapNow();
   var root = rootSnap(S.tab), deep = !st && navKeyOf(cur) !== navKeyOf(root);
+  if (!st) revealSel();
   if (deep){
     /* a link opened cold: put its tab's front page underneath, so back stays inside Hypernet */
     root.idx = 0; history.replaceState(root, '', hashOf(root));
@@ -4520,7 +4544,7 @@ function render(){
   L.scr = scr;
   app.className = [L.phone ? 'phone' : 'desk', L.left ? 'l-open' : '', L.right ? 'r-open' : '', L.narrowDock ? 'dock-narrow' : '', L.split ? 'split' : 'push',
     isCal() ? 'v-cal' : '', S.stack.length ? 'has-detail' : '', scr ? 'scr-' + scr : '',
-    conv && S.loggedIn ? 'conv-open' : ''].filter(Boolean).join(' ');
+    conv && S.loggedIn ? 'conv-open' : '', !L.phone && S.loggedIn ? 'readmarks' : ''].filter(Boolean).join(' ');
   document.body.className = L.phone ? 'is-phone' : 'is-desk';
 
   if (L.phone){ renderAppbar(); renderTabbar(); } else renderToolbar();

@@ -281,3 +281,12 @@ sets Going with that shift ("Going · Shift 2 · Fri 9 Oct 14:00–18:00"), "You
 it; kept per account. The "Pick a shift with Going, then confirm it in the camp chat" text is gone; a "Message Jon
 Hale" chip sits under the shifts (the fixtures have no camp chat for this host, so the host's DM is the chat). The Host
 fact itself links to the host (or the camp's Event Horizon) and the duplicate "Hosted by" block at the bottom is gone.
+
+**R2-5. One Home, told the same way at every width.** Sources: FIRSTTIMER-R2-1, FIRSTTIMER-R2-5, FIRSTTIMER-7 (partial),
+ORGANISER-15 (partial), FIRSTTIMER-R2-15, PHONEBROWSER-R2-10.
+*Status: done.* Desktop Home opens with the phone's greeting and tagline. The sidebar Home count is hidden logged out;
+logged in it is the unread count and read state is kept per account, so it no longer resets on reload. A section's
+count is the whole section on both viewports (Coming up 12 = its Show all 12), and both show at most 8 items before
+Show all. Event Horizon sections on desktop Home are cards, as on phone, not rows that pass for events. A link opened
+cold (or pasted into the address bar) lights its row and scrolls it into view; the window title names the item. Bold
+"unread" titles only appear where reading is tracked (desktop, logged in).

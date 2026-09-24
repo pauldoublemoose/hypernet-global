@@ -591,8 +591,14 @@ input[aria-invalid="true"]{ outline:1px solid #000; outline-offset:-4px; }
 .pick .pm small{ display:block; color:var(--dim); font-size:var(--fs-s); }
 .picklist{ background:#fff; box-shadow:var(--in); max-height:300px; overflow:auto; }
 .tochips{ display:flex; flex-wrap:wrap; gap:6px; min-height:0; }
-.tochip{ display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 4px 0 4px; background:#fff; box-shadow:var(--thin); font-size:var(--fs-s); }
+.tochip{ display:inline-flex; align-items:center; gap:6px; min-height:30px; padding:0 4px 0 4px; background:#fff; box-shadow:var(--thin); font-size:var(--fs-s); }
 .tochip button{ width:24px; height:24px; border:0; background:transparent; display:grid; place-items:center; padding:0; }
+/* on a touch screen everything you can press is at least 44px */
+@media (pointer:coarse){
+  .chip{ min-height:var(--ctl); }
+  .tochip{ min-height:var(--ctl); padding-right:0; }
+  .tochip button{ width:var(--ctl); height:var(--ctl); }
+}
 .pchips{ display:flex; flex-wrap:wrap; gap:6px; }
 .pchip{ height:var(--ctl); padding:0 14px; border:0; background:var(--face); box-shadow:var(--out); font-size:var(--fs-s); }
 .pchip.on{ background:var(--sel); color:#fff; box-shadow:inset 1px 1px 0 #000, inset -1px -1px 0 #777; font-weight:bold; }
@@ -640,7 +646,7 @@ input[aria-invalid="true"]{ outline:1px solid #000; outline-offset:-4px; }
 #sh-list{ max-height:260px; }
 body.is-phone #sh-list{ max-height:none; }
 .answered{ display:inline-flex; align-items:center; gap:6px; min-height:var(--ctl); padding:0 6px 0 0; font-weight:bold; }
-.ab-tap{ cursor:pointer; }
+.ab-tap{ cursor:pointer; align-self:stretch; display:flex; flex-direction:column; justify-content:center; }
 .linkrow.static{ cursor:default; }
 .linkrow.static:hover{ background:#fff; }
 .cmsg{ margin:0; max-width:46ch; font-size:var(--fs-m); line-height:1.5; }
@@ -740,8 +746,8 @@ body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 1
 .ab-title small{ display:block; font-size:12px; font-weight:normal; opacity:.8; }
 .ab-btn{ min-width:46px; height:46px; display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:0 10px; border:0; background:transparent; color:#fff; font-weight:bold; }
 .ab-btn:active{ background:rgba(255,255,255,.14); }
-.ab-btn.boxed{ height:38px; margin-right:6px; background:var(--face); color:#000; box-shadow:var(--out); }
-.ab-search{ flex:1; display:flex; align-items:center; gap:8px; height:40px; margin:0 4px 0 8px; padding:0 10px; background:#fff; box-shadow:var(--in); color:var(--dim); }
+.ab-btn.boxed{ height:44px; margin-right:6px; background:var(--face); color:#000; box-shadow:var(--out); }
+.ab-search{ flex:1; display:flex; align-items:center; gap:8px; height:44px; margin:0 4px 0 8px; padding:0 10px; background:#fff; box-shadow:var(--in); color:var(--dim); }
 .ab-search input{ flex:1; min-width:0; height:100%; padding:0; border:0; box-shadow:none; background:transparent; color:var(--ink); font-size:16px; }
 #app.phone #main{ padding:0; gap:0; }
 #app.phone #nav, #app.phone #chats, #app.phone #center{ flex:1 1 auto; width:100%; }
@@ -1767,7 +1773,7 @@ function principlesHTML(p){
   if (p.base) h += '<p>' + (p.base === 'own' ? 'Their own principles' : 'Built on the ' + esc(p.base)) + (p.additions && p.additions.length ? ', plus:' : '.') + '</p>';
   if (p.additions && p.additions.length) h += chipsHTML(p.additions, 'strong');
   if (p.renamed && p.renamed.length) h += rv(p.renamed);
-  if (p.url) h += '<p style="margin-top:12px"><a href="'+esc(p.url)+'" target="_blank" rel="noopener">Read them</a></p>';
+  if (p.url) h += '<div class="chips" style="margin-top:12px"><a class="chip plain" href="'+esc(p.url)+'" target="_blank" rel="noopener">Read them</a></div>';
   return h;
 }
 function nextHTML(n){
@@ -3519,10 +3525,26 @@ function ctxSheetRun(i){
   it.run();
 }
 function ctxSheetBack(){ if (CTXS && CTXS.stack.length > 1){ CTXS.stack.pop(); ctxSheetPaint(); } }
-/* tapping the dimmed page above the sheet puts it away */
+/* a sheet goes away with a tap on the dimmed page above it, or a swipe down on its title bar */
 document.addEventListener('click', function(ev){
-  if (ev.target.id === 'mask' && DLGS.length && DLGS[DLGS.length-1].classList.contains('ctxsheet')){ closeDialogs(); CTXS = null; }
+  if (ev.target.id === 'mask' && DLGS.length && DLGS[DLGS.length-1].classList.contains('sheet')){ closeDialogs(); CTXS = null; }
 });
+var SWIPE = null;
+document.addEventListener('touchstart', function(ev){
+  var bar = ev.target.closest && ev.target.closest('.dlg.sheet .dbar');
+  SWIPE = bar && ev.touches.length === 1 && !ev.target.closest('.x') ? { y:ev.touches[0].clientY, dlg:bar.parentNode } : null;
+}, { passive:true });
+document.addEventListener('touchmove', function(ev){
+  if (!SWIPE) return;
+  var dy = Math.max(0, ev.touches[0].clientY - SWIPE.y);
+  SWIPE.dy = dy; SWIPE.dlg.style.transform = 'translateY(' + dy + 'px)';
+}, { passive:true });
+document.addEventListener('touchend', function(){
+  if (!SWIPE) return;
+  var s = SWIPE; SWIPE = null;
+  /* the lift after a swipe is not a tap on whatever was under the sheet */
+  if ((s.dy || 0) > 70){ closeDialogs(); CTXS = null; LPQUIET = Date.now() + 400; } else s.dlg.style.transform = '';
+}, { passive:true });
 
 /* ---- right-click: our menu on these items, the browser's everywhere else ---- */
 var LP = null, LPQUIET = 0;
@@ -4252,7 +4274,9 @@ function applySnap(s){
   S.autoSel = false;
   S.query = S.folder.kind === 'search' ? (s.q || '') : '';
   S.phoneSearch = !!s.ps;
+  /* a link without ?view= means the destination's first view, whatever you last used */
   if (s.view && viewsOf(S.folder).indexOf(s.view) >= 0) S.view[destKey(S.folder)] = s.view;
+  else delete S.view[destKey(S.folder)];
   if (s.cal){ if (s.cal.mode) S.calMode = s.cal.mode; S.calAnchor = s.cal.at || TODAY_ISO; S.calDay = s.cal.day || null; }
   if (s.dock && window.innerWidth >= 760){ S.rightOpen = !!s.dock.open; S.chatOpen = s.dock.chat && CHATS[s.dock.chat] ? s.dock.chat : null; }
   if (S.folder.kind === 'search' && !SEARCHRET) SEARCHRET = { folder:{ kind:'home' }, stack:[] };

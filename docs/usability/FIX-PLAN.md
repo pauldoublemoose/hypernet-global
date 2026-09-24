@@ -226,7 +226,13 @@ page ("Horizon created"), where Customize holds the cover.
 - Sticky headers render above row glyphs. (FIRSTTIMER-17)
   *Status: done (C5).* Squares isolate their glyph layer and section headers sit above rows.
 - All touch targets ≥44px. (PHONEBROWSER-9, CREW-22)
+  *Status: done (C6).* Chips, app-bar buttons, the phone search field, chip remove buttons, "Read them" (now a link
+  chip) and the conversation title are ≥44px on touch screens; a scan of 16 phone screens and dialogs finds nothing
+  smaller (full-row labels around checkboxes count as the row).
 - New sheet dismissible by tapping the backdrop / swipe down. (PHONEBROWSER-17)
+  *Status: done (C6).* Every bottom sheet (New, long-press) closes on a tap on the dimmed page or a swipe down on its
+  title bar (it follows the finger; under 70px it springs back). Also fixed: a link without `?view=` now opens the
+  destination's default view instead of the last one used.
 - Picker: "Your events" shortcut. (ORGANISER-17)
 - *Added by the coordinator:* inline favicon (no /favicon.ico 404). *Status: done (42c7606).* Also: the regression
   script finds a Chromium on its own (Playwright's, `PW_CHROME`, or the Playwright cache) and counts 4xx responses.

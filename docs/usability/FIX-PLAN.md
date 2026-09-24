@@ -343,3 +343,9 @@ name fills the handle (numbered if taken), so Join lights up. Logged-out Share i
 closes it. Right-click / long-press now works on people (Open, Message, Follow), call outs (Open, Answer / Open chat or
 Edit / Close, Share) and chats (Open, Rename, Add people, Leave; DM: Profile). "Add to horizon" is one label everywhere.
 Horizon Customize previews the horizon page first.
+
+**Round 2 status:** all 55 new findings and the 8 round-1 partials addressed across R2-1 … R2-9c, except the
+follower-feed half of CREW-17 (the prototype has no model of who follows you). `tests/regression.js` now also covers
+the four majors (toast vs verb bar incl. the late tap, private horizon Publish/Share and its link, horizon as a desktop
+destination, volunteer shifts) plus Cancel/Discard safety; it passes at 375 / 768 / 1440 with no console errors or
+failed requests.

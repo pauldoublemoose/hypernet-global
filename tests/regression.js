@@ -1,4 +1,4 @@
-/* Hypernet feed — end-to-end regression (usability round 1, Phases A–C).
+/* Hypernet feed — end-to-end regression (usability rounds 1 and 2).
    Serve:  python3 -m http.server 8936 --bind 127.0.0.1 --directory <repo>
    Run:    npx -y -p playwright node tests/regression.js
    Browser: Playwright's own Chromium when it is installed; otherwise PW_CHROME=<chromium binary>; otherwise
@@ -7,7 +7,8 @@
    HN_URL=<url> points it at another server.
    Covers: open event → Going; create horizon → add events → customize → reload; new group chat;
    right-click → Add to horizon; long-press sheet; back/forward/reload restore; console errors, failed
-   requests (404s) and horizontal overflow at 375 (touch), 768 and 1440. */
+   requests (404s) and horizontal overflow at 375 (touch), 768 and 1440; plus the round-2 majors: toasts vs the
+   phone verb bar, private horizons, horizon as a desktop destination, volunteer shifts, safe Cancel/Discard. */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch(e){
   try { ({ chromium } = require('playwright-core')); } catch(e2){
@@ -186,6 +187,49 @@ async function overflowEverywhere(p, label){
   ok(await ev(d, h => location.hash === h && !!document.querySelector('#listbody .row.sel') && S.rightOpen, h3), 'desktop: reload restores selection and the dock');
   await overflowEverywhere(d, 'desktop 1440');
   console.log('desk errors', d.errors); ok(!d.errors.length, 'desktop: no console errors');
+
+  /* ---------------- round 2 majors ---------------- */
+  // CREW-R2-1: toasts sit above the phone's verb bar; a late tap where a toast button was never sets Going
+  const r = await ctx('phone');
+  await open(r, '#/event/led-forest-walk', true);
+  await r.evaluate(() => loginDialog()); await r.waitForTimeout(150);
+  await r.tap('.dlg [data-act="useacct"][data-id="demo"]'); await r.waitForTimeout(300);
+  await r.tap('#evbar [data-act="v-interested"]'); await r.waitForTimeout(150);
+  ok(await ev(r, () => document.querySelector('#toasts .toast').getBoundingClientRect().bottom <= document.getElementById('evbar').getBoundingClientRect().top), 'R2: toast sits above the phone verb bar');
+  await r.tap('#evbar [data-act="evmore"]'); await r.waitForTimeout(200);
+  await r.tap('.ctxsheet .sheetrow:has-text("Share")'); await r.waitForTimeout(250);
+  await r.tap('#sh-list .linkrow[data-chat="c-baltic"]'); await r.waitForTimeout(250);
+  const tb = await r.locator('#toasts [data-act="toastundo"]').boundingBox();
+  await r.waitForTimeout(6200);
+  const rs = await ev(r, () => RSVP['evt-fill-3'] || null);
+  await r.touchscreen.tap(tb.x + tb.width / 2, tb.y + tb.height / 2); await r.waitForTimeout(250);
+  ok(await ev(r, b => (RSVP['evt-fill-3'] || null) === b, rs), 'R2: a late tap on a vanished toast button changes no RSVP');
+  // CREW-R2-2: a volunteer shift can be taken
+  await r.goto(URL + '#/event/temple-volunteer-shift'); await r.waitForTimeout(500);
+  await r.evaluate(() => document.querySelector('[data-act="takeshift"][data-i="2"]').scrollIntoView({ block:'center' }));
+  await r.tap('[data-act="takeshift"][data-i="2"]'); await r.waitForTimeout(200);
+  ok(await ev(r, () => SHIFT['evt-fill-5'] === 2 && RSVP['evt-fill-5'] === 'going' && !/Pick a shift/.test(document.body.innerText)), 'R2: taking a shift sets Going with that shift');
+  // PHONEBROWSER-R2-1: Cancel keeps a draft; Discard is not where Cancel is, and can be undone
+  await r.evaluate(() => runCmd('new-callout')); await r.waitForTimeout(200);
+  await r.fill('#co-t', 'Two builders'); await r.waitForTimeout(100);
+  ok(await ev(r, () => document.querySelector('.dlg .dfoot .btn').textContent.trim() === 'Cancel' && !!document.querySelector('.dlg .dbar [data-act="discarddraft"]')), 'R2: Cancel in the footer, Discard in the title bar');
+  await r.tap('.dlg .dfoot [data-act="closedlg"]'); await r.waitForTimeout(250);
+  ok(await ev(r, () => FORMDRAFTS.callout && FORMDRAFTS.callout['co-t'] === 'Two builders'), 'R2: Cancel keeps the draft');
+  console.log('r2 phone errors', r.errors); ok(!r.errors.length, 'R2 phone: no console errors');
+  // ORGANISER-R2-1 / -2: a private horizon offers Publish, not Share; on desktop a horizon is its own destination
+  const o = await ctx('desk');
+  await open(o, '', true);
+  await join(o, 'Jonas Berg', 'jonas');
+  await o.evaluate(() => runCmd('new-horizon')); await o.waitForTimeout(150);
+  await o.fill('#nh-n', 'Driftwood crew season'); await o.click('#nh-go'); await o.waitForTimeout(300);
+  ok(await ev(o, () => S.folder.kind === 'horizon' && getComputedStyle(document.getElementById('chead')).display === 'none' && document.querySelectorAll('#navbody .nrow.sel').length === 1),
+     'R2: a horizon is the desktop destination, one sidebar row lit');
+  ok(await ev(o, () => !!document.querySelector('#listbody [data-act="publishhz"]') && !document.querySelector('#listbody [data-act="share"]')), 'R2: an empty private horizon offers Publish, no Share');
+  const priv = await ev(o, () => location.hash);
+  const x = await ctx('desk');
+  await open(x, priv, true);
+  ok(await ev(x, () => /private or no longer here/.test(document.body.innerText) && location.hash.indexOf('#/horizon/') === 0), 'R2: its link elsewhere says it is private, not a silent redirect');
+  console.log('r2 desk errors', o.errors, x.errors); ok(!o.errors.length && !x.errors.length, 'R2 desktop: no console errors');
 
   /* ---------------- tablet ---------------- */
   const t = await ctx('tab');

@@ -669,6 +669,8 @@ body.is-phone #sh-list{ max-height:none; }
 .greet h2{ margin:0; font-size:24px; line-height:1.15; }
 .greet p{ margin:4px 0 0; color:var(--dim); font-size:14px; }
 .shelf{ margin-top:22px; }
+.sortrow{ display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:6px 12px; border-bottom:1px solid var(--line); font-size:var(--fs-s); color:var(--dim); }
+.sortrow select{ height:var(--ctl); }
 .deskgreet{ padding:22px 16px 14px; border-bottom:1px solid var(--line); }
 .srow.deskrow{ padding:14px 16px 16px; border-bottom:1px solid var(--line); scroll-snap-type:x proximity; }
 @media (pointer:fine){ .srow.deskrow{ scrollbar-width:thin; } .srow.deskrow::-webkit-scrollbar{ display:block; height:8px; } .srow.deskrow::-webkit-scrollbar-thumb{ background:var(--face-dk); } }
@@ -770,6 +772,8 @@ body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 1
 .ab-btn:active{ background:rgba(255,255,255,.14); }
 .ab-btn.boxed{ height:44px; margin-right:6px; background:var(--face); color:#000; box-shadow:var(--out); }
 .ab-search{ flex:1; display:flex; align-items:center; gap:8px; height:44px; margin:0 4px 0 8px; padding:0 10px; background:#fff; box-shadow:var(--in); color:var(--dim); }
+input[type=search]::-webkit-search-cancel-button{ -webkit-appearance:none; display:none; }
+.abclear{ flex:0 0 44px; height:44px; margin-right:-10px; display:grid; place-items:center; border:0; background:transparent; color:var(--ink2); }
 .ab-search input{ flex:1; min-width:0; height:100%; padding:0; border:0; box-shadow:none; background:transparent; color:var(--ink); font-size:16px; }
 #app.phone #main{ padding:0; gap:0; }
 #app.phone #nav, #app.phone #chats, #app.phone #center{ flex:1 1 auto; width:100%; }
@@ -1479,21 +1483,29 @@ function bandOf(it){
   if (k === 'home' && viewOf() === 'feed')
     return it.band;
   if (k === 'horizons') return hzOwnedByMe(it.id) ? 'Yours' : (S.loggedIn && HZFOLLOW[it.id]) ? 'Following' : 'Popular';
-  if (k === 'people') return it.id === 'self' ? 'You' : (S.loggedIn && PFOLLOW[it.id]) ? 'People you follow' : 'Around the network';
+  /* one list in a steady order: following someone marks them in place instead of moving the rows under your thumb */
+  if (k === 'people') return it.id === 'self' ? 'You' : 'People';
   if (it.type === 'horizon') return 'Event Horizon';
   if (S.sort !== 'date') return null;
-  var d = dayDiff(EVENTS[it.id].date);
-  if (d < 0) return 'Past';
-  if (d <= 7) return 'This week';
-  if (d <= 31) return 'This month';
-  return 'Later';
+  return timeBand(EVENTS[it.id]);
 }
-var BANDORDER = ['Event Horizon','Happening soon','Announced','This week','This month','Later','Past',
-                 'Events','Event Horizons','People','You','Yours','Following','People you follow','Around the network','Popular'];
+/* this week, then the rest of this month, then each month by name */
+function timeBand(e){
+  var d = dayDiff(e.date);
+  if (d < 0) return isPast(lastDay(e)) ? 'Past' : 'This week';
+  if (d <= 6) return 'This week';
+  var dt = dOf(e.date);
+  if (dt.getMonth() === NOW.getMonth() && dt.getFullYear() === NOW.getFullYear()) return 'Later in ' + MONFULL[dt.getMonth()];
+  return MONFULL[dt.getMonth()] + (dt.getFullYear() !== NOW.getFullYear() ? ' ' + dt.getFullYear() : '');
+}
+var BANDORDER = ['Event Horizon','Happening soon','Announced','This week','Past',
+                 'Events','Event Horizons','You','People','Yours','Following','Popular'];
 function groupItems(items){
   var groups = {}, order = [];
   items.forEach(function(it){ var b = bandOf(it) || ''; if (!groups[b]){ groups[b] = []; order.push(b); } groups[b].push(it); });
-  if (!(S.folder.kind === 'home' && viewOf() === 'feed'))
+  /* date-sorted events already come in time order, months included */
+  var timed = S.sort === 'date' && items.length && items.every(function(it){ return it.type === 'event'; }) && S.folder.kind !== 'search';
+  if (!(S.folder.kind === 'home' && viewOf() === 'feed') && !timed)
     order.sort(function(a,b){ var ia = BANDORDER.indexOf(a), ib = BANDORDER.indexOf(b); return (ia<0?99:ia) - (ib<0?99:ib); });
   return { groups:groups, order:order };
 }
@@ -1523,7 +1535,10 @@ function rowHTML(it){
     lead = sqHTML(it.id, 40);
     title = esc(e.title);
     var rk = recOf(it.id).kind;
-    meta = [hostLabel(e), whereOf(e), rk && rk !== 'meetup' ? KINDLAB[rk] : (e.kind === 'world' ? 'World' : '')].filter(Boolean).map(esc).join(' · ');
+    var kl = rk && rk !== 'meetup' ? KINDLAB[rk] : (e.kind === 'world' ? 'World' : ''), hl = hostLabel(e);
+    /* the host often repeats the title; on a phone the place comes first because it is what gets cut */
+    if (hl && fold(e.title).indexOf(fold(hl)) >= 0) hl = '';
+    meta = (L.phone ? [whereOf(e), kl, hl] : [hl, whereOf(e), kl]).filter(Boolean).map(esc).join(' · ');
     var dd = endOf(e);
     date = dd ? fmtShort(e.date) + ' +' + (nDays(e.date, dd) - 1) + 'd' : fmtShort(e.date);
     side = statePills(it.id);
@@ -1532,9 +1547,11 @@ function rowHTML(it){
     var hz = HORIZONS[it.id];
     lead = '<span class="r-ic">'+hzArt(it.id, 32)+'</span>';
     title = esc(hz.name);
-    meta = esc('Event Horizon · ' + hz.ownerName + ' · ' + hz.eventIds.length + ' events');
+    var onTab = S.folder.kind === 'horizons';
+    meta = esc((onTab ? '' : 'Event Horizon · ') + hz.ownerName + ' · ' + plural(hz.eventIds.length, 'event'));
     date = hzWhen(it.id);
-    side = hzOwnedByMe(it.id) ? '<span class="pill host"><span>Yours</span></span>' : (S.loggedIn && HZFOLLOW[it.id]) ? '<span class="pill going">'+ic('check',11)+'<span>Following</span></span>' : '';
+    /* on the Horizons tab the section already says Yours / Following */
+    side = onTab ? '' : hzOwnedByMe(it.id) ? '<span class="pill host"><span>Yours</span></span>' : (S.loggedIn && HZFOLLOW[it.id]) ? '<span class="pill going">'+ic('check',11)+'<span>Following</span></span>' : '';
   } else if (it.type === 'person'){
     var p = person(it.id);
     lead = avHTML(it.id, 'a40');
@@ -1588,8 +1605,10 @@ function renderList(){
     var k = S.folder.kind;
     if (k === 'search'){
       h = '<div class="empty">Nothing matches “'+esc(S.query)+'”.</div>';
-      var wk = shelfItems('week').concat(shelfItems('soon')).slice(0, 4), ph = popularHorizons().slice(0, 3);
-      if (wk.length) h += '<div class="band">'+esc(shelfItems('week').length ? 'This week' : 'Coming up')+'</div>' + wk.map(function(it){ rows.push(it); return rowHTML(it); }).join('');
+      var wk = shelfItems('week').slice(0, 4), cu = shelfItems('soon').slice(0, Math.max(0, 4 - wk.length)), ph = popularHorizons().slice(0, 3);
+      var rowsOf = function(list){ return list.map(function(it){ rows.push(it); return rowHTML(it); }).join(''); };
+      if (wk.length) h += '<div class="band">This week</div>' + rowsOf(wk);
+      if (cu.length) h += '<div class="band">Coming up</div>' + rowsOf(cu);
       if (ph.length) h += '<div class="band">Popular Event Horizons</div>' + ph.map(function(k2){ var it = { type:'horizon', id:k2 }; rows.push(it); return rowHTML(it); }).join('');
     } else h = '<div class="empty">' + (k === 'search' ? ''
       : k === 'going' ? 'You are not going to anything yet.'
@@ -1614,6 +1633,10 @@ function renderList(){
       its.forEach(function(it){ h += rowHTML(it); if (it.type !== 'more') rows.push(it); });
     });
   }
+  /* on a phone Sort sits above the list it sorts, so FEED / LIST / CALENDAR never move */
+  if (L.phone && viewOf() === 'list' && items.length && items.every(function(it){ return it.type === 'event'; }) && S.folder.kind !== 'search')
+    h = '<label class="sortrow">Sort <select data-act="sort" aria-label="Sort">' +
+      [['date','Date'],['title','Title'],['host','Host'],['city','City']].map(function(o){ return '<option value="'+o[0]+'"'+(S.sort===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('') + '</select></label>' + h;
   S.rows = rows;
   var lb = $('listbody'), top = lb.scrollTop;
   lb.innerHTML = h;
@@ -2246,24 +2269,25 @@ function cardTag(it){
   return '';
 }
 function cardHTML(it){
-  var art, t, sub;
+  var art, t, sub, sub2 = '';
   if (it.type === 'event'){
     var e = EVENTS[it.id], end = endOf(e);
     art = sqPx(it.id, 150);
-    t = e.title; sub = relDay(e) + (end && dayDiff(e.date) > 6 ? ' +' + (nDays(e.date, end) - 1) + 'd' : '') + ' · ' + whereOf(e);
+    t = e.title; sub = relDay(e) + (end && dayDiff(e.date) > 6 ? ' +' + (nDays(e.date, end) - 1) + 'd' : ''); sub2 = whereOf(e);
   } else if (it.type === 'horizon'){
     var hz = HORIZONS[it.id];
     art = hzMosaic(it.id, 150);
-    t = hz.name; sub = hz.ownerName + ' · ' + hz.eventIds.length + ' events';
+    t = hz.name; sub = hz.ownerName; sub2 = plural(hz.eventIds.length, 'event');
   } else {
     var c = calloutOf(it.id);
     art = '<div class="coart">'+ic('callout', 40)+'<span>Looking for</span><b>'+esc(c.title)+'</b></div>';
     t = c.hostName; sub = 'until ' + fmtShort(c.expiresAt);
   }
   return '<div class="card2" data-act="row" data-type="'+it.type+'" data-id="'+it.id+'" role="button">' +
-    '<div class="cart">'+art+cardTag(it)+'</div><div class="ct2">'+esc(t)+'</div><div class="cs2">'+esc(sub)+'</div></div>';
+    '<div class="cart">'+art+cardTag(it)+'</div><div class="ct2">'+esc(t)+'</div><div class="cs2">'+esc(sub)+'</div>'+(sub2 ? '<div class="cs2">'+esc(sub2)+'</div>' : '')+'</div>';
 }
 function upcoming(e){ return !isPast(lastDay(e)); }
+function plural(n, w){ return n + ' ' + w + (n === 1 ? '' : 's'); }
 /* this week's days read as days: Today, Tomorrow, Wed · in 3 days */
 function relDay(e){
   var d = dayDiff(e.date);
@@ -2303,7 +2327,7 @@ function shelfItems(id){
 }
 function shelfTitle(id){
   return { week:'This week', soon:'Coming up', announced:'Announced burns', yourhz:'Your Event Horizons', horizons:'Event Horizons worth following',
-           callouts: S.loggedIn && CALLOUTS.some(function(c){ return !c.closed && c.hostId && PFOLLOW[c.hostId]; }) ? 'Call outs from your crews' : 'Call outs',
+           callouts:'Call outs',
            people:'From people you follow' }[id] || '';
 }
 /* each event shows up once on Home, in the first section that has it */
@@ -2412,16 +2436,17 @@ function dayGrid(anchorIso){
   return h + '</div>';
 }
 function renderCalendar(){
-  var mode = narrowCal() && S.calMode === 'week' ? 'month' : S.calMode;
+  var mode = narrowCal() ? 'month' : S.calMode;
   var a = dOf(S.calAnchor);
   var title = mode === 'month' ? MONFULL[a.getMonth()] + ' ' + a.getFullYear() : mode === 'week' ? 'Week of ' + fmtShort(S.calAnchor) : fmtDate(S.calAnchor);
-  var modes = narrowCal() ? ['day','month'] : ['day','week','month'];
+  /* on a phone the day tap is the day view, so month is the only mode */
+  var modes = narrowCal() ? [] : ['day','week','month'];
   var bar = '<div class="calbar"><span class="ttl">'+esc(title)+'</span>' +
     '<button class="ib" data-act="calnav" data-id="-1" aria-label="Previous">'+ic('back')+'</button>' +
     '<button class="btn" data-act="caltoday">Today</button>' +
     '<button class="ib" data-act="calnav" data-id="1" aria-label="Next" style="transform:scaleX(-1)">'+ic('back')+'</button>' +
     '<span class="spring"></span>' +
-    '<span class="seg">' + modes.map(function(m){ return '<button class="'+(mode===m?'on':'')+'" data-act="calmode" data-id="'+m+'">'+m.toUpperCase()+'</button>'; }).join('') + '</span>' +
+    (modes.length ? '<span class="seg">' + modes.map(function(m){ return '<button class="'+(mode===m?'on':'')+'" data-act="calmode" data-id="'+m+'">'+m.toUpperCase()+'</button>'; }).join('') + '</span>' : '') +
     (S.loggedIn ? '<label><input type="checkbox" data-act="calmine"'+(S.calMine?' checked':'')+'> Only mine</label>' : '') + '</div>';
   var body = mode === 'month' ? monthGrid(S.calAnchor) : mode === 'week' ? weekGrid(S.calAnchor) : dayGrid(S.calAnchor);
   $('calcol').innerHTML = bar + '<div class="panel" style="display:flex;flex-direction:column">' + body + '</div>';
@@ -2526,7 +2551,7 @@ function renderChats(){
   var focused = document.activeElement && document.activeElement.id === 'chatbox';
   if (!S.loggedIn){
     el.innerHTML = '<div class="phead"><div class="ptitle">Chats</div></div><div class="panel"><div class="empty">'+ic('chat',36).replace('class="ic"','class="ic" style="margin:0 auto 12px"')+
-      'Chat with your crews.<br><button class="btn primary" data-act="login">'+joinLabel()+'</button></div></div>';
+      'Chat with the people you make events with.<br><button class="btn primary" data-act="login">'+joinLabel()+'</button></div></div>';
     return;
   }
   var cid = activeChat();
@@ -2575,7 +2600,7 @@ function renderNav(){
   h += navRow({kind:'horizons'}, ic('horizon'), 'Horizons', { cls:'dup-tab' });
   h += navRow({kind:'people'}, ic('people'), 'People', { cls:'dup-tab' });
   if (!S.loggedIn){
-    h += '<div class="logincard"><b>Keep events, follow horizons, chat with your crews.</b>' +
+    h += '<div class="logincard"><b>Keep events, follow Event Horizons, chat with the people you make events with.</b>' +
          '<button class="btn primary" data-act="login">'+joinLabel()+'</button></div>';
     $('navbody').innerHTML = h;
     return;
@@ -2621,7 +2646,7 @@ function renderCHead(){
   /* a horizon's own page is its header */
   if (S.folder.kind === 'horizon'){ el.className = 'none hzhead'; el.innerHTML = ''; return; }
   var tools = '';
-  if (v === 'list' && !isCal() && (S.folder.kind === 'home' || viewsOf().length) && S.folder.kind !== 'horizons'){
+  if (!L.phone && v === 'list' && !isCal() && (S.folder.kind === 'home' || viewsOf().length) && S.folder.kind !== 'horizons'){
     tools += '<label class="sortsel"><span class="sl">Sort</span><select data-act="sort" aria-label="Sort">' +
       [['date','Date'],['title','Title'],['host','Host'],['city','City']].map(function(o){ return '<option value="'+o[0]+'"'+(S.sort===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('') +
       '</select></label>';
@@ -2650,7 +2675,8 @@ function renderAppbar(){
     h += '<div class="ab-title">Chats</div>';
     if (S.loggedIn) h += '<button class="ab-btn boxed" data-act="newchat">'+ic('edit')+'New chat</button>';
   } else if (S.folder.kind === 'search' || S.phoneSearch){
-    h += '<label class="ab-search">'+ic('search')+'<input id="pq" type="search" placeholder="Search" value="'+esc(S.query)+'" autocomplete="off" aria-label="Search"></label>';
+    h += '<label class="ab-search">'+ic('search')+'<input id="pq" type="search" placeholder="Search" value="'+esc(S.query)+'" autocomplete="off" aria-label="Search">' +
+      (S.query ? '<button class="abclear" data-act="clearq" aria-label="Clear search">'+ic('close',16)+'</button>' : '') + '</label>';
   } else {
     h += '<div class="ab-title">'+esc(folderName())+'</div>';
     if (S.tab === 'home' || S.tab === 'horizons') h += '<button class="ab-btn" data-act="psearch" aria-label="Search">'+ic('search',22)+'</button>';
@@ -4066,6 +4092,7 @@ document.addEventListener('click', function(ev){
     case 'shelfall':    goFolder({ kind:'shelf', id:id }); render(); $('listbody').scrollTop = 0; break;
     case 'dosearch':     { var qq = $('pq') || $('q'); if (qq) qq.value = id; doSearch(id); rememberQuery(id); break; }
     case 'takeshift':    takeShift(id, +n.getAttribute('data-i')); break;
+    case 'clearq':       { doSearch(''); var pq0 = $('pq'); if (pq0){ pq0.value = ''; pq0.focus(); } break; }
     case 'hzpast':       HZPAST[id] = !HZPAST[id]; render(); break;
     case 'gohome':       if (L.phone) setTab('home'); else { goFolder({ kind:'home' }); render(); } break;
     case 'setview':  S.view[destKey()] = id; S.stack = []; render(); break;
@@ -4195,7 +4222,7 @@ document.addEventListener('click', function(ev){
     case 'discarddraft': FORMDRAFTS[id] = null; closeDialogs(); schedulePersist(); break;
     case 'calmode':      S.calMode = id; render(); break;
     case 'caltoday':     S.calAnchor = TODAY_ISO; S.calDay = null; render(); break;
-    case 'calday':       if (narrowCal()) S.calDay = S.calDay === id ? null : id; else { S.calMode = 'day'; S.calAnchor = id; } render(); break;
+    case 'calday':       if (narrowCal()) S.calDay = S.calDay === id ? null : id; else { S.calMode = 'day'; S.calAnchor = id; S.calDay = null; } render(); break;
     case 'calnav': {
       var a = dOf(S.calAnchor), step = +id, mode = narrowCal() && S.calMode === 'week' ? 'month' : S.calMode;
       if (mode === 'month'){ a.setDate(1); a.setMonth(a.getMonth() + step); }
@@ -4362,7 +4389,7 @@ function snapNow(){
 }
 function navKeyOf(s){
   return JSON.stringify([L.phone ? s.tab : '', s.folder.kind, s.folder.id || null, s.view || null,
-    (s.stack || []).map(function(it){ return it.type + ':' + it.id; }).join('>'), !!s.ps]);
+    (s.stack || []).map(function(it){ return it.type + ':' + it.id; }).join('>'), !!s.ps, (s.view === 'calendar' && s.cal && s.cal.day) || null]);
 }
 function hashOf(s){
   var top = s.stack[s.stack.length-1], p = [], path;

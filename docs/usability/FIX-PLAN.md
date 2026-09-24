@@ -313,3 +313,14 @@ leaves the look to Customize. Right-click / long-press on a track of your own ho
 (Undo toast). Search, the Add events picker and every search field match all words in any order across fields
 ("baltic build"). Call outs have Share (page and link `#/callout/…`; sent into a chat as a call-out card). Posting a
 call out opens it on top of where you were, in the same tab (from the event: event → call out; phone stays on You).
+
+**R2-9a. Lists, calendar and search polish.** Sources: PHONEBROWSER-7 (partial), PHONEBROWSER-R2-3, PHONEBROWSER-R2-4,
+FIRSTTIMER-R2-12, CREW-R2-14, ORGANISER-R2-11, PHONEBROWSER-R2-5, CREW-R2-10, FIRSTTIMER-R2-7, ORGANISER-R2-10 (plural),
+FIRSTTIMER-R2-8, PHONEBROWSER-R2-11, CREW-R2-12, PHONEBROWSER-R2-12.
+*Status: done.* Phone calendar has no DAY/MONTH row (tapping a day is the day view), so the grid starts one row
+higher; picking a day is a history step. Time bands are This week (7 days, as on Home) · Later in September ·
+October · … · Past, everywhere. The no-results fallback separates This week from Coming up. On phone, Sort sits above
+the list, so FEED/LIST/CALENDAR never move. People is one steady list (following marks a row in place). The Horizons
+tab drops the repeated Following/Yours pill and the "Event Horizon" word so owners fit; "1 event" is singular. Phone
+rows lead with the place and drop a host that repeats the title; Home cards put the day and the place on separate
+lines. "Crews" is gone ("Call outs"). The phone search field has a 44px clear button (the native one is hidden).

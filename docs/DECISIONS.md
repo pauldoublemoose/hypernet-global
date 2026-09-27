@@ -16,3 +16,8 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   dock open, 1280 and 1440 keep list + reading pane + dock side by side (the dock narrows to 300px below 1680);
   below 1120 there is no room for a fourth column, so the dock floats over the right of the centre instead of
   pushing the sidebar away. Supersedes IA-v2's "panes must be restorable" for the left pane (it can't be hidden).
+- **2026-09-27 · Controls are system chrome; identity lives in the canvas.** Every button on event and horizon pages
+  (Interested / Going / Promote, Add to horizon, Share, Edit, Customize, ⋯, shift pickers, Get tickets, the phone
+  bar, pressable chips) is the app's own bevel button — one height (`--act`), the app's hover / pressed / checked
+  states, no event colour, border, font or shape. The action row is a chrome toolbar sitting on top of the event's
+  world. Supersedes the earlier "themed, never illegible" verbs.

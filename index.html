@@ -283,26 +283,21 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .mood{ margin:14px 0 0; font-size:18px; line-height:1.45; font-style:italic; color:var(--eac); border-left:3px solid var(--eac); padding-left:12px; max-width:52ch; }
 .t-stencil .mood, .t-mono .mood{ font-style:normal; }
 
-/* the verbs — themed, never illegible, Promote set apart, one shared grid */
-.actbar{ position:sticky; top:0; z-index:6; background:var(--ebg); border-bottom:1px solid var(--eac2); padding:12px 34px; font-family:var(--sys); }
-.verbs{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
-.vpair{ display:flex; height:var(--act); }
-.vbtn{ height:var(--act); padding:0 14px; display:inline-flex; align-items:center; justify-content:center; gap:8px; border:2px solid var(--eac); background:transparent;
-  color:var(--eink); font:bold 14px var(--sys); letter-spacing:.02em; }
-.vbtn + .vbtn{ border-left:0; }
-.vbtn:hover{ background:color-mix(in srgb, var(--eac) 20%, transparent); }
-.vbtn.on{ background:var(--eac); color:var(--eon); }
-.vbtn.on .fillable{ fill:currentColor; }
-.vpromo{ height:var(--act); padding:0 13px; display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--eink);
-  border:1px solid var(--edim); font:bold 14px var(--sys); }
-.vpromo:hover{ border-color:var(--eink); }
-.vpromo.on{ border-style:solid; border-color:var(--eink); background:color-mix(in srgb, var(--eink) 14%, transparent); }
-.vpromo .n{ font:12px var(--mono); opacity:.8; }
-.vsec{ display:flex; flex-wrap:wrap; gap:8px; margin-left:auto; }
-.vwent{ height:var(--act); padding:0 16px; display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--edim);
-  border:1px solid var(--edim); font:bold 14px var(--sys); }
-.vwent:hover{ color:var(--eink); border-color:var(--eink); }
-.vwent.on{ background:var(--eac); border-color:var(--eac); color:var(--eon); }
+/* The verbs are the window's controls, not the event's: one toolbar in the app's own bevel style, sitting on top of
+   the event's world. No event colour, border, font or shape ever reaches a control. */
+.actbar{ position:sticky; top:0; z-index:6; margin:0; padding:8px 34px; background:var(--face); color:var(--ink); font-family:var(--sys);
+  box-shadow:inset 0 1px 0 var(--white), inset 0 -1px 0 var(--shadow), 0 1px 0 var(--dark), 0 3px 8px rgba(0,0,0,.25); }
+.verbs{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.vgroup{ display:flex; }
+.vgroup .btn + .btn{ margin-left:2px; }
+.vsec{ display:flex; flex-wrap:wrap; gap:6px; margin-left:auto; }
+/* one size for every control on an event or horizon page */
+.vb{ height:var(--act); min-width:var(--act); padding:0 14px; font-size:var(--fs); }
+.vb .n{ font:12px var(--mono); color:var(--dim); }
+.vb.on .n{ color:var(--ink2); }
+.vb.icononly{ padding:0; width:var(--act); }
+.btn.on .fillable{ fill:currentColor; }
+a.btn{ text-decoration:none; color:var(--ink) !important; }
 .edition{ position:relative; z-index:3; padding:18px 34px 0; }
 .edcard{ width:100%; display:grid; grid-template-columns:1fr auto; column-gap:16px; align-items:center; padding:16px 18px; text-align:left;
   background:color-mix(in srgb, var(--eac) 14%, transparent); border:2px solid var(--eac); color:var(--eink); font-family:var(--sys); }
@@ -316,13 +311,7 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .edprev{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
 .edprev .chip{ min-height:44px; }
 .ednote{ flex:1 1 260px; font-size:13px; color:var(--edim); }
-.vmore{ height:var(--act); padding:0 12px; display:inline-flex; align-items:center; gap:7px; background:transparent; color:var(--eink);
-  border:1px solid var(--edim); font:13px var(--sys); }
-.vmore:hover{ border-color:var(--eink); }
-.vmore.on{ border-color:var(--eac); color:var(--eac); font-weight:bold; }
-.sh-rounded .vpair, .sh-rounded .vpromo, .sh-rounded .vmore, .sh-rounded .chip, .sh-rounded .card{ border-radius:10px; }
-.sh-rounded .vpair{ overflow:hidden; }
-.sh-rounded .vpair .vbtn{ border-radius:0; }
+.sh-rounded .card{ border-radius:10px; }
 /* the way in: a burn's tickets or membership, summarised, one tap from the top */
 .entry{ position:relative; z-index:3; display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin:18px 34px 0; padding:14px 16px;
   border:2px solid var(--eac); background:color-mix(in srgb, var(--eac) 10%, transparent); font-family:var(--sys); }
@@ -330,21 +319,17 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .entry .enk{ font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--eac); }
 .entry .env{ margin-top:4px; font-size:16px; font-weight:bold; color:var(--eink); }
 .entry .ens{ margin-top:2px; font-size:13px; color:var(--edim); }
-.enbtn{ height:var(--act); padding:0 18px; display:inline-flex; align-items:center; gap:8px; background:var(--eac); color:var(--eon) !important;
-  border:0; font:bold 15px var(--sys); text-decoration:none; white-space:nowrap; }
-.sh-rounded .entry, .sh-rounded .enbtn{ border-radius:10px; }
+.sh-rounded .entry{ border-radius:10px; }
 /* on a phone the event's verbs live in a bar at the bottom of the screen, always in reach */
-#evbar{ display:none; flex:0 0 auto; padding:8px 10px; background:var(--ebg); color:var(--eink); border-top:1px solid var(--eac2); font-family:var(--sys); }
+#evbar{ display:none; flex:0 0 auto; padding:6px 8px; background:var(--face); color:var(--ink); box-shadow:inset 0 1px 0 var(--white), 0 -1px 0 var(--shadow); font-family:var(--sys); }
 #app.phone.has-evbar #evbar{ display:block; }
 #app.phone .canvas > .actbar{ display:none; }
 #evbar .verbs{ flex-wrap:nowrap; }
-#evbar .vpair{ flex:1 1 auto; min-width:0; }
-#evbar .vbtn{ flex:1 1 0; min-width:0; padding:0 8px; }
-#evbar .vwent, #evbar .vmore:not(.vdots){ flex:1 1 auto; justify-content:center; }
-#evbar .vmore.vdots{ flex:0 0 var(--act); }
-#evbar .vbtn, #evbar .vpromo{ font-size:13px; gap:5px; padding:0 6px; }
-#evbar .vpromo{ flex:0 1 auto; justify-content:center; }
-.sh-cut .chip, .sh-cut .vmore, .sh-cut .card{ clip-path:polygon(0 0,100% 0,100% 72%,94% 100%,0 100%); }
+#evbar .verbs{ gap:4px; }
+#evbar .vgroup{ flex:1 1 auto; min-width:0; }
+#evbar .vb{ flex:1 1 auto; min-width:0; padding:0 6px; font-size:13px; gap:5px; }
+#evbar .vb.icononly{ flex:0 0 var(--act); }
+.sh-cut .card{ clip-path:polygon(0 0,100% 0,100% 72%,94% 100%,0 100%); }
 
 .layer{ position:relative; }
 .lin{ position:relative; z-index:3; padding:6px 34px 44px; }
@@ -367,7 +352,11 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .chip{ display:inline-flex; align-items:center; gap:8px; min-height:38px; padding:4px 13px 4px 6px; border:1px solid var(--eac2); background:transparent;
   color:var(--eink); font:13px var(--sys); text-align:left; }
 .chip.plain{ padding:4px 13px; }
-button.chip:hover{ border-color:var(--eac); }
+/* a chip you can press is a control, so it is the app's button; a chip that is only a label stays in the event's world */
+button.chip, .canvas a.chip, a.chip{ border:0; background:var(--face); color:var(--ink); box-shadow:var(--out); text-decoration:none; }
+button.chip:active, a.chip:active{ box-shadow:var(--in); }
+button.chip .sub, a.chip .sub{ color:var(--dim); opacity:1; }
+.canvas a.chip.strong, a.chip.strong{ color:var(--ink); font-weight:bold; box-shadow:0 0 0 1px #000, var(--out); }
 .chip .sub{ opacity:.7; }
 .cards{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:10px; }
 .card{ border:1px solid var(--eac2); padding:14px 16px 15px; }
@@ -402,7 +391,6 @@ button.chip:hover{ border-color:var(--eac); }
 .tln{ font-size:14px; color:var(--edim); margin-top:2px; }
 .tl.shifts li{ align-items:center; }
 .shiftbtn{ flex:0 0 auto; }
-.shiftbtn.on{ background:var(--eac); color:var(--eon); border-color:var(--eac); }
 .tiers{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; margin:14px 0; }
 .tier{ border:1px solid var(--eac2); padding:12px 14px; }
 .tiname{ font:bold 11px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--edim); }
@@ -421,7 +409,7 @@ button.chip:hover{ border-color:var(--eac); }
 .prov li::before{ content:""; flex:0 0 12px; height:12px; border:2px solid var(--eac); }
 .prov li.y::before{ background:var(--eac); }
 .prov li.n{ color:var(--edim); }
-.chip.strong{ border-color:var(--eac); color:var(--eac); font-weight:bold; }
+span.chip.strong{ color:var(--eac); font-weight:bold; }
 /* a label is not a button: tags and facts are filled and borderless; only what you can press has an outline */
 span.chip{ border-color:transparent; background:color-mix(in srgb, var(--eac2) 55%, transparent); padding:4px 11px; }
 span.chip.strong{ border-color:transparent; background:color-mix(in srgb, var(--eac) 16%, transparent); }
@@ -442,17 +430,16 @@ span.chip.strong{ border-color:transparent; background:color-mix(in srgb, var(--
   .hl.h-condensed{ font-size:clamp(30px, 10cqi, 44px); }
   .hl.h-stacked{ font-size:clamp(26px, 9cqi, 38px); }
   .mood{ font-size:16px; }
-  .actbar{ padding:10px 14px; }
+  .actbar{ padding:8px 14px; }
   .lin{ padding:4px 18px 36px; }
   .edition{ padding:14px 14px 0; }
-  .vwent{ flex:1 1 auto; justify-content:center; }
   .entry{ margin:14px 14px 0; }
-  .vpair{ flex:1 1 100%; }
-  .vbtn{ flex:1; padding:0 10px; }
+  .vgroup{ flex:1 1 100%; }
+  .vgroup .vb{ flex:1; }
   .actbar{ position:relative; }
   .vsec{ display:contents; }
-  .vpromo, .vmore{ flex:1 1 auto; justify-content:center; padding:0 8px; }
-  .vmore.vdots{ flex:0 0 var(--act); }
+  .verbs > .vb, .vsec > .vb{ flex:1 1 auto; padding:0 8px; }
+  .vb.icononly{ flex:0 0 var(--act); }
   .facts{ grid-template-columns:1fr 1fr; }
   .evdesc{ font-size:16px; }
   .kv{ grid-template-columns:1fr; gap:2px; }
@@ -726,7 +713,7 @@ body.is-phone #sh-list{ max-height:none; }
   .pltop{ display:flex; align-items:flex-end; gap:24px; padding:0 24px; }
   .pltop .plcover{ padding:0; }
   .pltop .plhead{ flex:1; min-width:0; padding:0; }
-  .placts{ padding:18px 24px 8px; }
+  .placts{ padding:8px 24px; }
   .plmain{ flex:0 0 auto; min-width:180px; }
   .track{ padding:10px 24px; }
 }
@@ -738,9 +725,6 @@ body.is-phone #sh-list{ max-height:none; }
 .plist.themed .pln{ margin-top:6px; }
 .plist.themed .mood{ font-size:16px; margin-top:8px; }
 .plist.themed .plown{ color:var(--eink); }
-.plist.themed .btn, .plist.themed .ib{ background:transparent; color:var(--eink); box-shadow:none; border:1px solid var(--edim); }
-.plist.themed .btn.primary{ background:var(--eac); border-color:var(--eac); color:var(--eon); }
-.plist.themed .btn.on{ border:2px solid var(--eac); }
 .plist.themed .tracks, .plist.themed .track{ border-color:var(--eac2); }
 .plist.themed .track:active, .plist.themed .track:hover{ background:color-mix(in srgb, var(--eac) 14%, transparent); }
 .plist.themed .track.past .tt{ color:var(--edim); }
@@ -760,13 +744,14 @@ body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 1
 .plo{ margin-top:10px; }
 .plown{ display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:0; border:0; background:transparent; font-weight:bold; font-size:14px; }
 .plm{ font:12px var(--mono); color:var(--dim); letter-spacing:.02em; }
-.placts{ display:flex; flex-wrap:wrap; gap:8px; padding:16px 16px 8px; }
+.placts{ display:flex; flex-wrap:wrap; gap:6px; margin-top:16px; padding:8px 16px; background:var(--face); color:var(--ink); font-family:var(--sys);
+  box-shadow:inset 0 1px 0 var(--white), inset 0 -1px 0 var(--shadow), 0 1px 0 var(--dark), 0 3px 8px rgba(0,0,0,.2); }
+.placts .btn, .placts .ib{ height:var(--act); min-width:var(--act); }
 @container pl (max-width:599px){
   .placts.many .plmain{ flex:1 1 100%; }
   .placts.many .btn:not(.plmain){ flex:1 1 auto; padding:0 10px; }
   .placts.many .btn:not(.plmain) .ic{ display:none; }
 }
-.vmore.vdots{ width:var(--act); padding:0; justify-content:center; }
 .plmain{ flex:1; }
 .tracks{ list-style:none; margin:8px 0 0; padding:0; border-top:1px solid var(--line); }
 .track{ display:flex; align-items:center; gap:12px; min-height:68px; padding:10px 16px; border-bottom:1px solid var(--line); }
@@ -1810,7 +1795,7 @@ function shiftsHTML(evId){
     var when = (b.date ? fmtDay(b.date) : '') , time = b.time || timeRange(b), on = mine === i;
     return '<li class="'+(on ? 'on' : '')+'"><div class="tld">'+esc(when)+(time ? '<span>'+esc(time)+'</span>' : '')+'</div>' +
       '<div class="tlb"><div class="tlt">'+esc(b.label)+'</div></div>' +
-      (past ? '' : '<button class="vmore shiftbtn'+(on ? ' on' : '')+'" data-act="takeshift" data-id="'+evId+'" data-i="'+i+'" aria-pressed="'+on+'">'+(on ? ic('check',16)+'Your shift' : 'Take this shift')+'</button>') + '</li>';
+      (past ? '' : vb('takeshift', evId, on ? 'Your shift' : 'Take this shift', on ? 'check' : '', { on:on, pressed:on, cls:'shiftbtn', attrs:' data-i="'+i+'"' })) + '</li>';
   }).join('') + '</ol>';
   var hp = hostPersonOf(e);
   if (hp && hp.id !== 'self' && !past) h += '<div class="chips" style="margin-top:12px"><button class="chip" data-act="dm" data-id="'+hp.id+'">'+ic('chat',16)+'Message '+esc(hp.displayName)+'</button></div>';
@@ -1975,60 +1960,58 @@ function editionsHTML(evId){
   return '';
 }
 /* the button says where the event already is, once it is on one of your horizons */
+/* every event control is the app's own button: one class, one height, the app's checked state */
+function vb(act, id, label, icon, opts){
+  opts = opts || {};
+  var cls = 'btn vb' + (opts.on ? ' on' : '') + (opts.primary ? ' primary' : '') + (label ? '' : ' icononly') + (opts.cls ? ' ' + opts.cls : '');
+  return '<button class="'+cls+'" data-act="'+act+'" data-id="'+id+'"' + (opts.pressed != null ? ' aria-pressed="'+!!opts.pressed+'"' : '') +
+    (opts.attrs || '') + (label ? '' : ' aria-label="'+esc(opts.aria || '')+'"') + '>' + (icon ? ic(icon, 16) : '') + (label ? esc(label) : '') + (opts.after || '') + '</button>';
+}
 function addtoBtnHTML(evId){
   var n = S.loggedIn ? MYHORIZONS.filter(function(k){ return HORIZONS[k] && HORIZONS[k].eventIds.indexOf(evId) >= 0; }).length : 0;
-  return '<button class="vmore'+(n ? ' on' : '')+'" data-act="addto" data-id="'+evId+'">'+ic(n ? 'check' : 'addhorizon',16)+(n ? 'On ' + plural(n, 'horizon') : 'Add to horizon')+'</button>';
+  return vb('addto', evId, n ? 'On ' + plural(n, 'horizon') : 'Add to horizon', n ? 'check' : 'addhorizon', { on:!!n });
 }
-function promoBtnHTML(evId){
+function promoBtnHTML(evId, bare){
   var pro = S.loggedIn && PROMOTED[evId];
-  return '<button class="vpromo'+(pro?' on':'')+'" data-act="v-promote" data-id="'+evId+'" aria-pressed="'+!!pro+'">'+ic('promote')+(pro?'Promoted':'Promote') +
-       (promoCount(evId) ? ' <span class="n">'+promoCount(evId)+'</span>' : '') + '</button>';
+  return vb('v-promote', evId, pro ? 'Promoted' : 'Promote', 'promote', { on:pro, pressed:pro,
+    after: !bare && promoCount(evId) ? ' <span class="n">'+promoCount(evId)+'</span>' : '' });
+}
+function stateGroupHTML(evId){
+  var st = S.loggedIn ? RSVP[evId] : undefined;
+  return '<div class="vgroup" role="group" aria-label="Your state">' +
+    vb('v-interested', evId, 'Interested', 'heart', { on:st === 'interested', pressed:st === 'interested' }) +
+    vb('v-going', evId, 'Going', 'check', { on:st === 'going', pressed:st === 'going' }) + '</div>';
+}
+function hostGroupHTML(evId){
+  return '<div class="vgroup" role="group" aria-label="Your event">' + vb('editevent', evId, 'Edit', 'edit', { primary:true }) + vb('customize', evId, 'Customize', 'paint') + '</div>';
 }
 function verbsHTML(evId){
-  var st = S.loggedIn ? RSVP[evId] : undefined;
-  var pro = S.loggedIn && PROMOTED[evId];
   var h = '<div class="verbs">';
   if (isMine(evId)){
     /* the host's page leads with the host's verbs; Interested / Going are for guests */
-    h += '<div class="vpair" role="group" aria-label="Your event">' +
-         '<button class="vbtn on" data-act="editevent" data-id="'+evId+'">'+ic('edit')+'Edit</button>' +
-         '<button class="vbtn" data-act="customize" data-id="'+evId+'">'+ic('paint')+'Customize</button></div>';
-    h += promoBtnHTML(evId) + '<span class="vsec">';
-    h += addtoBtnHTML(evId);
-    h += '<button class="vmore" data-act="share" data-id="'+evId+'">'+ic('share',16)+'Share</button>';
-    h += '<button class="vmore vdots" data-act="evmore" data-id="'+evId+'" data-more="delete" aria-label="More" aria-haspopup="menu">'+ic('dots',16)+'</button>';
+    h += hostGroupHTML(evId) + promoBtnHTML(evId) + '<span class="vsec">' + addtoBtnHTML(evId) + vb('share', evId, 'Share', 'share') +
+         vb('evmore', evId, '', 'dots', { aria:'More', attrs:' data-more="delete" aria-haspopup="menu"' });
     return h + '</span></div>';
   }
-  h += '<div class="vpair" role="group" aria-label="Your state">' +
-       '<button class="vbtn'+(st==='interested'?' on':'')+'" data-act="v-interested" data-id="'+evId+'" aria-pressed="'+(st==='interested')+'">'+ic('heart')+'Interested</button>' +
-       '<button class="vbtn'+(st==='going'?' on':'')+'" data-act="v-going" data-id="'+evId+'" aria-pressed="'+(st==='going')+'">'+ic('check')+'Going</button></div>';
-  h += promoBtnHTML(evId);
-  h += '<span class="vsec">';
-  h += addtoBtnHTML(evId);
-  h += '<button class="vmore" data-act="share" data-id="'+evId+'">'+ic('share',16)+'Share</button>';
+  h += stateGroupHTML(evId) + promoBtnHTML(evId) + '<span class="vsec">' + addtoBtnHTML(evId) + vb('share', evId, 'Share', 'share');
   return h + '</span></div>';
 }
 /* the phone's bottom bar: the two verbs that matter here, and ⋯ for the rest (the same menu as a long-press) */
 function evbarHTML(evId){
-  var e = EVENTS[evId], past = isPast(lastDay(e)), mine = isMine(evId), st = S.loggedIn ? RSVP[evId] : '', more, h = '<div class="verbs">';
+  var e = EVENTS[evId], past = isPast(lastDay(e)), mine = isMine(evId), more, h = '<div class="verbs">';
   if (mine){
-    h += '<div class="vpair" role="group" aria-label="Your event"><button class="vbtn on" data-act="editevent" data-id="'+evId+'">'+ic('edit')+'Edit</button>' +
-         '<button class="vbtn" data-act="customize" data-id="'+evId+'">'+ic('paint')+'Customize</button></div>';
+    h += hostGroupHTML(evId);
     more = past ? 'addto,share,delete' : 'promote,addto,share,callout,delete';
   } else if (past){
-    if (S.loggedIn) h += '<button class="vwent'+(WENT[evId]?' on':'')+'" data-act="v-went" data-id="'+evId+'" aria-pressed="'+!!WENT[evId]+'">'+ic('check')+'Went</button>';
-    else h += '<button class="vmore" data-act="share" data-id="'+evId+'">'+ic('share',16)+'Share</button>';
+    if (S.loggedIn) h += vb('v-went', evId, 'Went', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] });
+    else h += vb('share', evId, 'Share', 'share');
     more = S.loggedIn ? 'addto,share' : 'addto';
   } else {
-    h += '<div class="vpair" role="group" aria-label="Your state">' +
-         '<button class="vbtn'+(st==='interested'?' on':'')+'" data-act="v-interested" data-id="'+evId+'" aria-pressed="'+(st==='interested')+'">'+ic('heart')+'Interested</button>' +
-         '<button class="vbtn'+(st==='going'?' on':'')+'" data-act="v-going" data-id="'+evId+'" aria-pressed="'+(st==='going')+'">'+ic('check')+'Going</button></div>';
     /* the three event verbs stay together, as on a desktop */
-    var pro = S.loggedIn && PROMOTED[evId];
-    h += '<button class="vpromo'+(pro?' on':'')+'" data-act="v-promote" data-id="'+evId+'" aria-pressed="'+!!pro+'">'+ic('promote')+(pro?'Promoted':'Promote')+'</button>';
+    h += stateGroupHTML(evId) + promoBtnHTML(evId, true);
     more = 'addto,share';
   }
-  return h + '<button class="vmore vdots" data-act="evmore" data-id="'+evId+'" data-more="'+more+'" aria-label="More" aria-haspopup="menu">'+ic('dots',16)+'</button></div>';
+  return h + vb('evmore', evId, '', 'dots', { aria:'More', attrs:' data-more="'+more+'" aria-haspopup="menu"' }) + '</div>';
 }
 /* where the official way in lives: the organiser's ticket or membership page */
 function entryLinkOf(r){
@@ -2049,8 +2032,8 @@ function entryHTML(evId){
   var sub = [priceSummary(a), sale ? sale[0].name + ': ' + sale[1].toLowerCase() : ''].filter(Boolean).join(' · ');
   return '<div class="entry"><div class="ensum"><div class="enk">Entry</div><div class="env">'+esc(ACCESSLAB[m] || titleCase(m))+'</div>' +
     (sub ? '<div class="ens">'+esc(sub)+'</div>' : '') + '</div>' +
-    (url ? '<a class="enbtn" href="'+esc(url)+'" target="_blank" rel="noopener">'+esc(label)+ic('ext',16)+'</a>'
-         : '<button class="enbtn" data-act="toentry">'+esc(label)+'</button>') + '</div>';
+    (url ? '<a class="btn vb primary enbtn" href="'+esc(url)+'" target="_blank" rel="noopener">'+esc(label)+ic('ext',16)+'</a>'
+         : vb('toentry', evId, label, '', { primary:true, cls:'enbtn' })) + '</div>';
 }
 /* The event page. `scale` picks how much of it there is: a meetup is time,
    place, price, what to bring, call outs; a gathering adds its timeline,
@@ -2068,8 +2051,7 @@ function canvasHTML(evId){
        (t.mood ? '<p class="mood">'+esc(t.mood)+'</p>' : '') + '</div></div></header>';
   if (!past) h += '<div class="actbar">' + verbsHTML(evId) + '</div>';
   else if (S.loggedIn) h += '<div class="actbar"><div class="verbs">' +
-    '<button class="vwent'+(WENT[evId]?' on':'')+'" data-act="v-went" data-id="'+evId+'" aria-pressed="'+!!WENT[evId]+'">'+ic('check')+'Went</button>' +
-    '<span class="vsec"><button class="vmore" data-act="share" data-id="'+evId+'">'+ic('share',16)+'Share</button></span></div></div>';
+    vb('v-went', evId, 'Went', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] }) + '<span class="vsec">' + vb('share', evId, 'Share', 'share') + '</span></div></div>';
   h += entryHTML(evId);
   h += editionsHTML(evId);
   h += '<div class="layer"><div class="surf u-'+t.surface+'" style="opacity:.45"></div><div class="lin">';
@@ -3316,8 +3298,8 @@ function customizePreviewHTML(){
   var open = '<div class="minicanvas"><div class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+vars+'">';
   if (L.phone) return '<div class="previewbox compact">' + open + banner + '</div></div></div>';
   h += '<div class="plabel">Event page</div>' + open + banner +
-       '<div class="actbar" style="position:relative"><div class="verbs"><div class="vpair"><span class="vbtn">'+ic('heart')+'Interested</span><span class="vbtn on">'+ic('check')+'Going</span></div>' +
-       '<span class="vpromo">'+ic('promote')+'Promote</span></div></div></div></div>';
+       '<div class="actbar" style="position:relative"><div class="verbs"><div class="vgroup"><span class="btn vb">'+ic('heart',16)+'Interested</span><span class="btn vb on">'+ic('check',16)+'Going</span></div>' +
+       '<span class="btn vb">'+ic('promote',16)+'Promote</span></div></div></div></div>';
   return h + '</div>';
 }
 function customizeHTML(){

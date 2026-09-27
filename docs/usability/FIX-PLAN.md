@@ -370,3 +370,12 @@ list + reading pane 504px + dock; 1280 = 216 + list + reading 394px + dock (spli
 *Verified* at 375 (touch), 768, 1280 and 1440, logged out and logged in: `tests/regression.js` gained a block for the
 three changes (preview bar position vs tab bar / event bar / toasts / last row, old `?view=` Home links, no sidebar
 toggle, sidebar + dock + reading pane at 1280/1440) and passes with no console errors or failed requests.
+
+## Owner feedback 2026-09-27, later: consistent controls, expressive canvas
+
+**G1. Controls are system chrome.** *Status: done.* One helper (`vb()`) draws every event control as the app's
+`.btn` at `--act` height with the app's checked state (inset, bold) instead of the event accent. The action row is a
+grey toolbar panel on top of the canvas (desktop sticky, phone bottom bar); the horizon action row is the same toolbar.
+Get tickets is the app's primary button; shift pickers, Went, the ⋯ and pressable chips (people, horizons, links,
+Previous edition) are app buttons. Inert labels (tags, principles) stay in the event's colours. `tests/regression.js`
+checks that Interested / Going / Promote have identical computed styles on five different event pages (desktop and phone).

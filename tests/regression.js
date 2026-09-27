@@ -327,8 +327,8 @@ async function overflowEverywhere(p, label){
       ok(lay.ctrls > 0 && !lay.blocked.length, kind + ' ' + sl + ': nothing covers a control ' + JSON.stringify(lay.blocked));
       await measure(sl, ['#dscroll .canvas .eyebrow', '#dscroll .canvas .hl', '#dscroll .canvas .mood', '#dscroll .canvas .fk', '#dscroll .canvas .fv', '#dscroll .canvas .evdesc', '#dscroll .canvas .sect h3', '#dscroll .canvas .fs']);
     }
-    /* a customised horizon, in three different looks */
-    for (const look of ['evt-world-borderland-2026', 'evt-fill-9', 'evt-deep-listening']){
+    /* a customised horizon, in four different looks */
+    for (const look of ['evt-world-borderland-2026', 'evt-fill-9', 'evt-fill-11', 'evt-deep-listening']){
       await c.goto(URL + '#/horizon/season'); await c.waitForTimeout(300);
       await ev(c, k => { HZTHEME.season = JSON.parse(JSON.stringify(TH(k))); render(); }, look); await c.waitForTimeout(400);
       await measure('horizon ' + look, ['.plist.themed .plk', '.plist.themed .pln', '.plist.themed .mood', '.plist.themed .pld', '.plist.themed .plm', '.plist.themed .tt', '.plist.themed .ts']);

@@ -708,7 +708,7 @@ input[aria-invalid="true"]{ outline:1px solid #000; outline-offset:-4px; }
 .wizsteps .ws.on{ background:#fff; color:#000; box-shadow:var(--in); }
 .custwrap{ display:flex; gap:18px; }
 .custcol{ flex:0 0 300px; }
-.custprev{ flex:1; min-width:0; }
+.custprev{ flex:1; min-width:0; position:sticky; top:0; align-self:flex-start; }
 .crow2{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
 .crow2 > label{ flex:0 0 80px; font-size:var(--fs-s); font-weight:bold; }
 .crow2 select, .crow2 input{ flex:1; }
@@ -812,13 +812,17 @@ body.is-phone #sh-list{ max-height:none; }
 .plist.themed .plcover .orn-tape.t1{ left:calc(50% - 138px); }
 .plist.themed .plcover .orn-tape.t2{ right:calc(50% - 138px); }
 @container pl (min-width:600px){ .plist.themed .plcover .orn-tape.t1{ left:-22px; } .plist.themed .plcover .orn-tape.t2{ right:auto; left:184px; } }
-.plist.themed .heroart{ top:40%; }
+.plist.themed .heroart{ top:40%; z-index:0; }
+/* the horizon's header text sits on a wash, as an event's does */
+.plist.themed > .pltop::before{ content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:linear-gradient(180deg, color-mix(in srgb, var(--ebg) 20%, transparent) 0%, color-mix(in srgb, var(--ebg) 62%, transparent) 40%, color-mix(in srgb, var(--ebg) 90%, transparent) 100%); }
 .plist.themed.canvas > .placts{ z-index:6; }
 .plist.themed.canvas > .tracks{ z-index:5; margin:18px clamp(0px, 3cqi, 24px) 0; border-top:0; background:color-mix(in srgb, var(--ebg) 93%, transparent);
   box-shadow:0 0 0 1px color-mix(in srgb, var(--eac2) 70%, transparent), 0 10px 40px rgba(0,0,0,.28); }
 .plist.themed.canvas > .orn-ribbon{ z-index:2; }
 .plist.themed .surf{ opacity:.55; }
-.plist.themed .plk, .plist.themed .plm, .plist.themed .pld, .plist.themed .tn, .plist.themed .ts{ color:var(--edim); }
+.plist.themed .pld{ color:var(--eink); }
+.plist.themed .plk, .plist.themed .plm, .plist.themed .tn, .plist.themed .ts{ color:var(--edim); }
 .plist.themed .pln{ margin-top:6px; }
 .plist.themed .mood{ font-size:16px; margin-top:8px; }
 .plist.themed .plown{ color:var(--eink); }

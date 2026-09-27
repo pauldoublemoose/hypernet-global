@@ -349,3 +349,11 @@ follower-feed half of CREW-17 (the prototype has no model of who follows you). `
 the four majors (toast vs verb bar incl. the late tap, private horizon Publish/Share and its link, horizon as a desktop
 destination, volunteer shifts) plus Cancel/Discard safety; it passes at 375 / 768 / 1440 with no console errors or
 failed requests.
+
+## Owner feedback 2026-09-27 (`docs/FEEDBACK-2026-09-27.md`; decisions in `docs/DECISIONS.md`)
+
+**F1. Logged out is a preview.** *Status: done.* Bottom bar "Preview of Hypernet · Join to keep events, follow Event
+Horizons and chat." with Join free and Log in (Log in alone once an account exists). Full width on desktop and tablet;
+on phone directly above the tab bar and below the event verb bar; toasts stack above both. It takes layout space, so
+the last rows and cards stay reachable. The toolbar / app-bar / You-tab / Chats Join buttons are gone (one entry point).
+The owner's line said "crews"; kept the round-2 rule that "crew" isn't a product noun, so the line ends "and chat".

@@ -79,6 +79,7 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 #titlebar #wintitle{ opacity:.8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 #toolbar{ flex:0 0 auto; display:flex; align-items:center; gap:10px; padding:9px 10px; border-bottom:1px solid var(--shadow); box-shadow:0 1px 0 var(--white); }
 #toolbar .spring{ flex:1; }
+.tsep:has(+ #acct:empty){ display:none; }
 .tsep{ width:2px; align-self:stretch; margin:3px 0; box-shadow:inset 1px 0 0 var(--shadow), inset -1px 0 0 var(--white); }
 .searchbox{ flex:0 1 460px; min-width:160px; height:var(--ctl); display:flex; align-items:center; gap:8px; padding:0 10px; background:#fff; box-shadow:var(--in); color:var(--dim); }
 .searchbox input{ flex:1; min-width:0; height:100%; padding:0; border:0; box-shadow:none; background:transparent; color:var(--ink); }
@@ -100,6 +101,21 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
   .panel::-webkit-scrollbar-thumb{ background:var(--face); box-shadow:var(--out); }
 }
 #appbar, #tabbar{ display:none; }
+/* logged out, the whole app is a preview: a bar across the bottom says so and offers the way in (Spotify's pattern).
+   It is a row of the app's own column, so it takes its space instead of covering anything. */
+#previewbar{ display:none; flex:0 0 auto; align-items:center; gap:16px; padding:8px 12px 8px 16px; color:#fff;
+  background:linear-gradient(90deg,#1c1c1c 0%,#3a3a3a 60%,#5a5a5a 100%); box-shadow:inset 0 1px 0 #7a7a7a; }
+#app.preview #previewbar{ display:flex; }
+#previewbar .pvt{ flex:1; min-width:0; }
+#previewbar .pvk{ font:bold 11px var(--mono); letter-spacing:.16em; text-transform:uppercase; color:#cfcfcf; }
+#previewbar .pvl{ margin-top:2px; font-size:var(--fs); line-height:1.3; }
+#previewbar .pva{ flex:0 0 auto; display:flex; gap:8px; }
+#previewbar .btn{ color:#000; }
+#app.phone #previewbar{ gap:10px; padding:8px 8px 8px 12px; }
+#app.phone #previewbar .pvl{ font-size:13px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+#app.phone #previewbar .pva{ flex-direction:column; gap:4px; }
+#app.phone #previewbar .pva .btn{ height:36px; min-height:36px; padding:0 12px; }
+#app.phone #previewbar .pva .btn.pvlogin{ height:auto; min-height:0; padding:4px 12px; background:transparent; box-shadow:none; color:#fff; text-decoration:underline; font-size:13px; }
 
 /* ---------- 4. left: navigation -------------------------------------- */
 #navbody{ padding:6px 0 18px; }
@@ -873,6 +889,7 @@ body.is-phone .picklist{ max-height:none; }
     <aside id="chats" class="pane" aria-label="Chats"></aside>
   </div>
 
+  <div id="previewbar" role="region" aria-label="Preview"></div>
   <nav id="tabbar" aria-label="Main"></nav>
 </div>
 
@@ -1294,10 +1311,24 @@ document.addEventListener('click', function(ev){
 /* on a phone toasts sit above whatever bar holds the controls (the event's verbs, else the tabs), never on it */
 function placeToasts(){
   var box = $('toasts'); if (!box) return;
-  if (!document.body.classList.contains('is-phone')){ box.style.bottom = ''; return; }
-  var bars = ['evbar', 'tabbar'].map($).filter(function(b){ return b && b.offsetParent; });
+  if (!document.body.classList.contains('is-phone')){ var pb = $('previewbar'); box.style.bottom = pb && pb.offsetParent ? (pb.offsetHeight + 14) + 'px' : ''; return; }
+  var bars = ['evbar', 'previewbar', 'tabbar'].map($).filter(function(b){ return b && b.offsetParent; });
   var top = bars.length ? Math.min.apply(null, bars.map(function(b){ return b.getBoundingClientRect().top; })) : window.innerHeight;
   box.style.bottom = Math.max(12, window.innerHeight - top + 10) + 'px';
+}
+/* the preview bar: one line, and the way in. Join when there is no account here yet; Log in when there is */
+function renderPreview(){
+  var el = $('previewbar'); if (!el) return;
+  if (S.loggedIn){ el.innerHTML = ''; return; }
+  var has = !!ACCTS.me;
+  el.innerHTML = '<div class="pvt"><div class="pvk">Preview of Hypernet</div><div class="pvl">Join to keep events, follow Event Horizons and chat.</div></div>' +
+    '<div class="pva">' + (has ? '<button class="btn primary" data-act="login">Log in</button>'
+      : '<button class="btn primary" data-act="join">Join free</button><button class="btn pvlogin" data-act="loginpick">Log in</button>') + '</div>';
+}
+/* Log in without an account here yet: the only account to log in to is the demo */
+function loginPicker(){
+  if (ACCTS.me){ loginDialog(); return; }
+  dialog('Log in to Hypernet', demoRowHTML(), '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="join">Join free</button>', 420);
 }
 /* logged-out actions ask for a login, then carry on with what you asked for.
    Carried on means made so: a verb you asked for is switched on, never toggled back off. */
@@ -2569,7 +2600,7 @@ function renderChats(){
   var focused = document.activeElement && document.activeElement.id === 'chatbox';
   if (!S.loggedIn){
     el.innerHTML = '<div class="phead"><div class="ptitle">Chats</div></div><div class="panel"><div class="empty">'+ic('chat',36).replace('class="ic"','class="ic" style="margin:0 auto 12px"')+
-      'Chat with the people you make events with.<br><button class="btn primary" data-act="login">'+joinLabel()+'</button></div></div>';
+      'Chat with the people you make events with.</div></div>';
     return;
   }
   var cid = activeChat();
@@ -2616,10 +2647,8 @@ function renderNav(){
   var homeUnread = S.loggedIn ? unreadCount(homeItems()) : 0;
   h += navRow({kind:'home'}, ic('home'), 'Home', { count: homeUnread || '', unread: homeUnread > 0, cls:'dup-tab' });
   h += navRow({kind:'horizons'}, ic('horizon'), 'Horizons', { cls:'dup-tab' });
-  h += navRow({kind:'people'}, ic('people'), 'People', { cls:'dup-tab' });
+  h += navRow({kind:'people'}, ic('people'), 'People', { cls: S.loggedIn ? 'dup-tab' : '' });
   if (!S.loggedIn){
-    h += '<div class="logincard"><b>Keep events, follow Event Horizons, chat with the people you make events with.</b>' +
-         '<button class="btn primary" data-act="login">'+joinLabel()+'</button></div>';
     $('navbody').innerHTML = h;
     return;
   }
@@ -2654,7 +2683,7 @@ function renderToolbar(){
   $('tg-right').classList.toggle('on', !!L.right); $('tg-right').setAttribute('aria-pressed', !!L.right);
   $('acct').innerHTML = S.loggedIn
     ? '<button class="btn acct" data-act="acctmenu" aria-haspopup="menu">'+avHTML('self')+esc(S.me.name)+ic('down',14)+'</button>'
-    : '<button class="btn" data-act="login">'+ic('user')+joinLabel()+'</button>';
+    : '';
   var q = $('q');
   if (document.activeElement !== q) q.value = S.folder.kind === 'search' ? S.query : '';
   $('wintitle').textContent = '— ' + folderName() + (isCal() ? ' · Calendar' : '');
@@ -2698,7 +2727,6 @@ function renderAppbar(){
   } else {
     h += '<div class="ab-title">'+esc(folderName())+'</div>';
     if (S.tab === 'home' || S.tab === 'horizons') h += '<button class="ab-btn" data-act="psearch" aria-label="Search">'+ic('search',22)+'</button>';
-    if (!S.loggedIn && (S.tab === 'home' || S.tab === 'horizons')) h += '<button class="ab-btn boxed" data-act="login">'+esc(joinLabel())+'</button>';
     if (S.tab === 'you' && S.folder.kind === 'you' && !S.loggedIn) h += '';
   }
   var ab = $('appbar'), hadFocus = document.activeElement && document.activeElement.id === 'pq';
@@ -4212,6 +4240,8 @@ document.addEventListener('click', function(ev){
     case 'new-event':    runCmd('new-event'); break;
     case 'new-horizon':  runCmd('new-horizon', id); break;
     case 'login':        loginDialog(); break;
+    case 'join':         closeDialogs(); if (ACCTS.me) loginDialog(); else profileDialog('signup'); break;
+    case 'loginpick':    loginPicker(); break;
     case 'useacct':      useAcct(id); break;
     case 'pfsave':       pfSave(); break;
     case 'editprofile':  gated(function(){ profileDialog('edit'); })(); break;
@@ -4686,7 +4716,7 @@ function render(){
   L.scr = scr;
   app.className = [L.phone ? 'phone' : 'desk', L.left ? 'l-open' : '', L.right ? 'r-open' : '', L.narrowDock ? 'dock-narrow' : '', L.split ? 'split' : 'push',
     isCal() ? 'v-cal' : '', S.stack.length ? 'has-detail' : '', scr ? 'scr-' + scr : '',
-    conv && S.loggedIn ? 'conv-open' : '', !L.phone && S.loggedIn ? 'readmarks' : ''].filter(Boolean).join(' ');
+    conv && S.loggedIn ? 'conv-open' : '', !L.phone && S.loggedIn ? 'readmarks' : '', S.loggedIn ? '' : 'preview'].filter(Boolean).join(' ');
   document.body.className = L.phone ? 'is-phone' : 'is-desk';
 
   if (L.phone){ renderAppbar(); renderTabbar(); } else renderToolbar();
@@ -4697,6 +4727,7 @@ function render(){
     renderDetail();
   }
   renderChats();
+  renderPreview();
   placeToasts();
   document.title = (S.stack.length && !S.autoSel ? itemName(S.stack[S.stack.length-1]) : folderName()) + ' · Hypernet';
   persist();

@@ -11,3 +11,8 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   Home). This supersedes IA-v2's "Home with a view switcher". The calendar stays only where it already was outside
   Home: your Going / Interested / Hosting / Promoted lists, the Horizons tab, and Show all on an event section
   (`#/home/soon?view=calendar`). No new destination was added.
+- **2026-09-27 · The left sidebar is always there.** No Sidebar toggle on desktop or tablet (phone keeps its tabs).
+  It narrows with the screen and keeps its labels: 252px from 1400, 216px from 1120, 200px below. With the chat
+  dock open, 1280 and 1440 keep list + reading pane + dock side by side (the dock narrows to 300px below 1680);
+  below 1120 there is no room for a fourth column, so the dock floats over the right of the centre instead of
+  pushing the sidebar away. Supersedes IA-v2's "panes must be restorable" for the left pane (it can't be hidden).

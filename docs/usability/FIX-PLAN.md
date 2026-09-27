@@ -361,3 +361,8 @@ The owner's line said "crews"; kept the round-2 rule that "crew" isn't a product
 **F2. Home has one view.** *Status: done.* No FEED / LIST / CALENDAR on Home at any width; `#/home?view=list` and
 `?view=calendar` links land on `#/home`. LIST/CALENDAR remain on Going, Interested, Hosting, Promoted, Horizons and an
 event section's Show all. (Home's LIST was the only place with Sort for the whole network; Show all lists keep Sort.)
+
+**F3. The left sidebar is always there.** *Status: done.* The Sidebar toggle and every way to hide the left pane are
+gone; it narrows with the screen (252 / 216 / 200px) and keeps labels. With the dock open: 1440 = sidebar 252 +
+list + reading pane 504px + dock; 1280 = 216 + list + reading 394px + dock (split threshold with the dock lowered to
+720px); 1024 and 768 = sidebar + centre with the dock floating over the centre's right edge.

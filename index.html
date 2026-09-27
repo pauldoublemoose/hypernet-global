@@ -93,6 +93,9 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 #chats{ flex:0 0 var(--chat-w); display:none; }
 #app.l-open #nav, #app.r-open #chats{ display:flex; }
 #app.dock-narrow #chats{ flex-basis:300px; }
+#main{ position:relative; }
+#app.dock-over #chats{ position:absolute; top:6px; right:6px; bottom:6px; z-index:20; width:min(344px, calc(100% - var(--nav-w) - 40px));
+  background:var(--face); padding:0 0 0 6px; box-shadow:-3px 0 0 var(--face), -4px 0 0 var(--shadow), -8px 0 16px rgba(0,0,0,.18); }
 #center{ flex:1 1 auto; }
 .panel{ flex:1; min-height:0; overflow:auto; background:#fff; box-shadow:var(--in); overscroll-behavior:contain; }
 @media (pointer:fine){
@@ -868,7 +871,6 @@ body.is-phone .picklist{ max-height:none; }
     <label class="searchbox"><span id="searchic"></span><span class="sr">Search</span>
       <input id="q" type="search" placeholder="Search events, horizons, people" autocomplete="off"></label>
     <span class="spring"></span>
-    <button class="btn" data-act="toggle-left" id="tg-left" aria-pressed="true"></button>
     <button class="btn" data-act="toggle-right" id="tg-right" aria-pressed="false"></button>
     <span class="tsep"></span>
     <span id="acct"></span>
@@ -2677,8 +2679,6 @@ function renderNav(){
 function renderToolbar(){
   $('newbtn').innerHTML = ic('plus') + 'New' + ic('down', 14).replace('class="ic"', 'class="ic caret"');
   $('searchic').innerHTML = ic('search');
-  $('tg-left').innerHTML = ic('sidebar') + 'Sidebar';
-  $('tg-left').classList.toggle('on', !!L.left); $('tg-left').setAttribute('aria-pressed', !!L.left);
   var un = unreadChats();
   $('tg-right').innerHTML = ic('chat') + 'Chats' + (un ? ' <span class="badge-n">'+un+'</span>' : '');
   $('tg-right').classList.toggle('on', !!L.right); $('tg-right').setAttribute('aria-pressed', !!L.right);
@@ -2748,13 +2748,15 @@ function renderTabbar(){
 function computeLayout(){
   var W = window.innerWidth;
   if (W < 760) return { phone:true, left:false, right:false, split:false, cw:W };
-  var left = S.leftOpen, right = S.rightOpen;
-  if (W < 1120 && left && right){ if (S.lastOpened === 'right') left = false; else right = false; }
-  /* with the sidebar and the chat dock both open the dock narrows, and the list and the reading pane
-     stay side by side: chatting never turns browsing into Back, click, Back */
-  var narrow = left && right && W < 1680;
-  var cw = W - 12 - (left ? 258 : 0) - (right ? (narrow ? 300 : 350) : 0);
-  return { phone:false, left:left, right:right, cw:cw, narrowDock:narrow, split: cw >= (right ? 780 : 860) && !isCal() };
+  /* the sidebar is always there; it gets narrower (labels stay) as the screen does */
+  var right = S.rightOpen, navW = W < 1120 ? 200 : W < 1400 ? 216 : 252;
+  /* below 1120 there is no room for a third column: the chat dock floats over the centre's right edge */
+  var over = right && W < 1120;
+  /* with the dock open it narrows, and the list and the reading pane stay side by side */
+  var narrow = right && !over && W < 1680;
+  var cw = W - 12 - (navW + 6) - (right && !over ? (narrow ? 306 : 356) : 0);
+  return { phone:false, left:true, right:right, navW:navW, dockOver:over, cw:cw, narrowDock:narrow,
+           split: cw >= (right && !over ? 720 : 860) && !isCal() };
 }
 </script>
 <script>
@@ -4195,7 +4197,6 @@ document.addEventListener('click', function(ev){
     case 'psearch':  S.phoneSearch = true; if (S.folder.kind !== 'search') rememberPlace(); render(); break;
     case 'clearsearch': leaveSearch(); render(); break;
     case 'tab':      setTab(id); break;
-    case 'toggle-left':  S.leftOpen = !L.left; if (S.leftOpen) S.lastOpened = 'left'; render(); break;
     case 'toggle-right': S.rightOpen = !L.right; if (S.rightOpen) S.lastOpened = 'right'; render(); break;
     case 'v-interested': setRSVP(id, 'interested'); break;
     case 'v-going':      setRSVP(id, 'going'); break;
@@ -4715,7 +4716,8 @@ function render(){
   var conv = phoneConv();
   var scr = L.phone ? ((conv || (S.tab === 'chats' && !S.stack.length)) ? 'chats' : (S.tab === 'you' && S.folder.kind === 'you' && !S.stack.length) ? 'you' : 'center') : '';
   L.scr = scr;
-  app.className = [L.phone ? 'phone' : 'desk', L.left ? 'l-open' : '', L.right ? 'r-open' : '', L.narrowDock ? 'dock-narrow' : '', L.split ? 'split' : 'push',
+  if (!L.phone) app.style.setProperty('--nav-w', L.navW + 'px');
+  app.className = [L.phone ? 'phone' : 'desk', L.left ? 'l-open' : '', L.right ? 'r-open' : '', L.narrowDock ? 'dock-narrow' : '', L.dockOver ? 'dock-over' : '', L.split ? 'split' : 'push',
     isCal() ? 'v-cal' : '', S.stack.length ? 'has-detail' : '', scr ? 'scr-' + scr : '',
     conv && S.loggedIn ? 'conv-open' : '', !L.phone && S.loggedIn ? 'readmarks' : '', S.loggedIn ? '' : 'preview'].filter(Boolean).join(' ');
   document.body.className = L.phone ? 'is-phone' : 'is-desk';
@@ -4810,7 +4812,6 @@ var RZ = null;
 window.addEventListener('resize', function(){ clearTimeout(RZ); RZ = setTimeout(render, 60); });
 (function boot(){
   restore();
-  if (window.innerWidth >= 1120) S.leftOpen = true;
   /* the real events carry the links people share, so the route waits for them (briefly) */
   var started = false, start = function(){ if (!started){ started = true; startRoutes(); } };
   loadRealEvents().then(start, start);

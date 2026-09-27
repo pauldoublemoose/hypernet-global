@@ -232,8 +232,6 @@ async function overflowEverywhere(p, label){
   ok(await ev(x, () => /private or no longer here/.test(document.body.innerText) && location.hash.indexOf('#/horizon/') === 0), 'R2: its link elsewhere says it is private, not a silent redirect');
   console.log('r2 desk errors', o.errors, x.errors); ok(!o.errors.length && !x.errors.length, 'R2 desktop: no console errors');
 
-  /* ---------------- tablet ---------------- */
-  /* ---------------- tablet ---------------- */
   /* ---------------- owner feedback 2026-09-27: preview bar, one-view Home, fixed sidebar ---------------- */
   const rb = (pg, sel) => ev(pg, s => { const e = document.querySelector(s); if (!e || !e.offsetParent) return null; const r = e.getBoundingClientRect(); return { top:r.top, bottom:r.bottom, w:r.width }; }, sel);
   for (const [kind, w, h] of [['phone', 375, 812], ['tab', 768, 1024], ['desk', 1280, 800], ['desk', 1440, 900]]){
@@ -267,6 +265,24 @@ async function overflowEverywhere(p, label){
     }
     ok((await overflow(f)) <= 0, w + ': no overflow');
     console.log(w + ' feedback errors', f.errors); ok(!f.errors.length, w + ': no console errors');
+  }
+
+  /* ---------------- controls are system chrome: the same button on every event page ---------------- */
+  const KEYS = ['height','fontFamily','fontSize','fontWeight','color','backgroundColor','boxShadow','borderTopWidth','borderRadius'];
+  for (const kind of ['desk', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '', true);
+    const sigs = {};
+    for (const sl of ['burning-man-2027', 'ridge-dawn-stretch', 'led-forest-walk', 'night-kitchen-line', 'zurich-decompression-2026']){
+      await c.goto(URL + '#/event/' + sl); await c.waitForTimeout(400);
+      for (const act of ['v-interested', 'v-going', 'v-promote']){
+        const sig = await ev(c, ([a, K, ph]) => { const b = document.querySelector((ph ? '#evbar' : '#dscroll .actbar') + ' [data-act="'+a+'"]'); if (!b) return 'missing'; const st = getComputedStyle(b); return K.map(k => st[k]).join('|'); }, [act, KEYS, kind === 'phone']);
+        (sigs[act] = sigs[act] || new Set()).add(sig);
+      }
+    }
+    ok(Object.keys(sigs).every(a => sigs[a].size === 1 && !sigs[a].has('missing')), kind + ': Interested / Going / Promote have identical computed styles on 5 event pages');
+    ok(new Set(Object.keys(sigs).map(a => [...sigs[a]][0])).size === 1, kind + ': and the three verbs share one style');
+    ok(!c.errors.length, kind + ': no console errors (controls)');
   }
 
   /* ---------------- tablet ---------------- */

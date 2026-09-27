@@ -379,3 +379,21 @@ grey toolbar panel on top of the canvas (desktop sticky, phone bottom bar); the 
 Get tickets is the app's primary button; shift pickers, Went, the ⋯ and pressable chips (people, horizons, links,
 Previous edition) are app buttons. Inert labels (tags, principles) stay in the event's colours. `tests/regression.js`
 checks that Interested / Going / Promote have identical computed styles on five different event pages (desktop and phone).
+
+**G2. The canvas is a world.** *Status: done.* Each event and customised horizon page is layered: a generative
+backdrop seeded by the event (contours, rays, stars, dunes, halftone, synthwave, woodgrain, map, glyphs) pinned while
+the page moves over it; a poster-scale hero from the square's glyph and pattern with parallax; an atmosphere of
+particles (dust, embers, sparks, fireflies, snow, rain, glyphs, smoke) that is capped (60, ×0.45 on phone), sleeps
+offscreen and in background tabs; ornaments that only say true things (stamp: "Burn 2027", "Members only", "Free
+entry", a horizon's years; compass: the city; tape on the square; a ribbon with the mood; a torn header edge). Burns
+get a monumental header. Content sits on calm panels. New theme fields `backdrop`, `atmosphere`, `ornaments`,
+`parallax` in `_shared/hypernet-themes.js` for all ten authored themes; any other event gets seeded values. Theme
+dim and accent text colours are nudged toward the ink until they clear AA; reduced motion removes particles, parallax
+and the marquee. Measured: phone scroll at 4× CPU throttle, p95 frame 18.6 ms.
+
+**G3. Art in Customize.** *Status: done.* Backdrop, Atmosphere, Parallax and Ornaments controls in the event and
+horizon wizards, with a live preview (the preview stays in view while you tune them); presets carry an art direction.
+
+Regression: backdrop on every page, art takes no clicks, no control covered (every control scrolled into view and
+hit-tested), text contrast measured from real pixels (6 events, 4 horizon looks, desktop and phone), reduced motion.
+Screens: `docs/screens/canvas-*.png`.

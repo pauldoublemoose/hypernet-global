@@ -21,3 +21,8 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   bar, pressable chips) is the app's own bevel button — one height (`--act`), the app's hover / pressed / checked
   states, no event colour, border, font or shape. The action row is a chrome toolbar sitting on top of the event's
   world. Supersedes the earlier "themed, never illegible" verbs.
+- **2026-09-27 · The canvas is layered art; reading stays calm.** Back to front: seeded backdrop, header hero,
+  particle atmosphere, then content panels and the window's toolbar. Art never takes a click or covers a control;
+  ornaments state only facts (edition year, entry model, city, a horizon's years), never invented ones. Text colours
+  are corrected to AA against the ground; reduced motion stills everything. Four theme fields (`backdrop`,
+  `atmosphere`, `ornaments`, `parallax`) are part of a look and editable in Customize.

@@ -713,6 +713,17 @@ input[aria-invalid="true"]{ outline:1px solid #000; outline-offset:-4px; }
 .swatches{ display:flex; gap:5px; }
 .swatches .sw{ width:26px; height:22px; border:1px solid #6f6a60; }
 .presets{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+.crow2.top{ align-items:flex-start; }
+.ornset{ flex:1; display:flex; flex-wrap:wrap; gap:2px 12px; }
+.ornck{ display:inline-flex; align-items:center; gap:6px; min-height:32px; font-size:var(--fs-s); cursor:pointer; }
+body.is-phone .ornck{ min-height:44px; }
+.minicanvas .banner .bin{ padding-top:46px; }
+.minicanvas .orn-stamp{ top:8px; right:10px; font-size:10px; padding:3px 8px; }
+.minicanvas .orn-compass{ top:8px; left:14px; font-size:10px; }
+.minicanvas .orn-compass svg{ width:22px; height:22px; }
+.minicanvas .orn-tape{ width:44px; height:14px; top:-6px; }
+.minicanvas .orn-tape.t1{ left:-14px; } .minicanvas .orn-tape.t2{ right:-14px; }
+.minicanvas .orn-ribbon{ font-size:11px; padding:4px 0; }
 .previewbox{ padding:12px; max-height:470px; overflow:auto; background:#fff; box-shadow:var(--in); }
 .plabel{ margin:10px 0 6px; font:bold 11px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dim); }
 .plabel:first-child{ margin-top:0; }
@@ -2203,8 +2214,7 @@ function playlistHTML(hzId, withTracks){
   var h = t ? '<div class="plist themed canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+artClass(t, hzId)+'" style="'+themeVars(t)+'">' +
               artLayersHTML(t, hzId) + '<div class="surf u-'+t.surface+'"></div>'
             : '<div class="plist">';
-  var hzCities = evs.map(function(e){ return placeOf(e.id); }).filter(Boolean);
-  h += '<div class="pltop'+(t && hasOrn(t, hzId, 'torn') ? ' torn" style="'+tornStyle(hzId) : '')+'">' + (t ? heroArtHTML(t) + ornamentsHTML(t, hzId, { stamp:hzYears(evs), place:hzCities.length && hzCities.every(function(c){ return c === hzCities[0]; }) ? hzCities[0] : '' }) : '') +
+  h += '<div class="pltop'+(t && hasOrn(t, hzId, 'torn') ? ' torn" style="'+tornStyle(hzId) : '')+'">' + (t ? heroArtHTML(t) + ornamentsHTML(t, hzId, hzOrnOpts(hzId)) : '') +
        '<div class="plcover">' + (t && hasOrn(t, hzId, 'tape') ? tapeHTML() : '') + hzMosaic(hzId, 232) + '</div>';
   h += '<div class="plhead"><div class="plk">Event Horizon'+(hz.isPublished ? '' : ' · Private')+'</div>' +
        (t ? '<h1 class="pln hl h-'+t.headline+'">'+headlineHTML(t, hz.name)+'</h1>' + (t.mood ? '<p class="mood">'+esc(t.mood)+'</p>' : '')
@@ -3344,19 +3354,22 @@ var DENS  = ['airy','packed'];
 var PATS  = ['plain','stripe','grid','dither','rays','scan','halftone','moon'];
 var GLYS  = ['◆','✳','▲','◉','✦','■','☾','◗','⬟','✜','◈','▤','⚡','♫'];
 var PRESETS = [
-  { n:'A basement, no phones', t:{ mood:'a basement, long tones, no phones', pal:0, surface:'grain', type:'serif', headline:'huge', motion:'drift', shape:'sharp', density:'airy', pattern:'moon', glyph:'☾' } },
-  { n:'Photocopied flyer', t:{ mood:'bring cash, bring earplugs', pal:1, surface:'photocopy', type:'stencil', headline:'condensed', motion:'flicker', shape:'cut', density:'packed', pattern:'stripe', glyph:'⚡' } },
-  { n:'Dust and gold', t:{ mood:'the big one. dust, and then more dust.', pal:4, surface:'rays', type:'display', headline:'outlined', motion:'drift', shape:'sharp', density:'airy', pattern:'rays', glyph:'✦' } },
-  { n:'Cathode church', t:{ mood:'walk into the trees, the trees walk back', pal:2, surface:'scanlines', type:'mono', headline:'stacked', motion:'flicker', shape:'sharp', density:'packed', pattern:'scan', glyph:'✳' } },
-  { n:'Sunday paper', t:{ mood:'one cup, no talking, until the light lands', pal:3, surface:'paper', type:'serif', headline:'huge', motion:'none', shape:'rounded', density:'airy', pattern:'plain', glyph:'◗' } }
+  { n:'A basement, no phones', t:{ mood:'a basement, long tones, no phones', pal:0, surface:'grain', type:'serif', headline:'huge', motion:'drift', shape:'sharp', density:'airy', pattern:'moon', glyph:'☾', backdrop:'contours', atmosphere:'dust', parallax:'gentle', orn:['stamp','tape'] } },
+  { n:'Photocopied flyer', t:{ mood:'bring cash, bring earplugs', pal:1, surface:'photocopy', type:'stencil', headline:'condensed', motion:'flicker', shape:'cut', density:'packed', pattern:'stripe', glyph:'⚡', backdrop:'halftone', atmosphere:'sparks', parallax:'none', orn:['stamp','torn'] } },
+  { n:'Dust and gold', t:{ mood:'the big one. dust, and then more dust.', pal:4, surface:'rays', type:'display', headline:'outlined', motion:'drift', shape:'sharp', density:'airy', pattern:'rays', glyph:'✦', backdrop:'dunes', atmosphere:'dust', parallax:'deep', orn:['stamp','compass','ribbon'] } },
+  { n:'Cathode church', t:{ mood:'walk into the trees, the trees walk back', pal:2, surface:'scanlines', type:'mono', headline:'stacked', motion:'flicker', shape:'sharp', density:'packed', pattern:'scan', glyph:'✳', backdrop:'synthwave', atmosphere:'fireflies', parallax:'deep', orn:['ribbon'] } },
+  { n:'Sunday paper', t:{ mood:'one cup, no talking, until the light lands', pal:3, surface:'paper', type:'serif', headline:'huge', motion:'none', shape:'rounded', density:'airy', pattern:'plain', glyph:'◗', backdrop:'map', atmosphere:'none', parallax:'gentle', orn:['tape','compass'] } }
 ];
 var DRAFT = null;
 function draftTheme(d){
   return { mood:d.mood, palette:PALSETS[d.pal].p, square:{ pattern:d.pattern, glyph:d.glyph },
-           surface:d.surface, type:d.type, headline:d.headline, motion:d.motion, shape:d.shape, density:d.density };
+           surface:d.surface, type:d.type, headline:d.headline, motion:d.motion, shape:d.shape, density:d.density,
+           backdrop:d.backdrop, atmosphere:d.atmosphere, parallax:d.parallax, ornaments:d.orn ? d.orn.slice() : undefined };
 }
+/* the art of a saved theme, as draft fields (a theme saved before the art existed gets its seeded art) */
+function artDraft(t, seed){ var a = artOf(t, seed); return { backdrop:a.backdrop, atmosphere:a.atmosphere, parallax:a.parallax, orn:a.ornaments.slice() }; }
 /* a preset is a look: palette, surface, type, headline, motion, shape, density and square. Never your words. */
-function applyPreset(i){ var p = PRESETS[i].t; ['pal','surface','type','headline','motion','shape','density','pattern','glyph'].forEach(function(k){ DRAFT[k] = p[k]; }); }
+function applyPreset(i){ var p = PRESETS[i].t; ['pal','surface','type','headline','motion','shape','density','pattern','glyph','backdrop','atmosphere','parallax'].forEach(function(k){ DRAFT[k] = p[k]; }); DRAFT.orn = p.orn.slice(); }
 function czSel(name, list, cur, label){
   return '<select data-cz="'+name+'" aria-label="'+esc(label||name)+'">' + list.map(function(v){ return '<option value="'+esc(v)+'"'+(v===cur?' selected':'')+'>'+esc(v)+'</option>'; }).join('') + '</select>';
 }
@@ -3373,9 +3386,12 @@ function horizonPreviewHTML(){
   h += '<div class="plabel">Cover</div><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">'+coverFromDraft(d, t, 160)+coverFromDraft(d, t, 56)+'</div>';
   h += '<div class="plabel">Card</div><div class="card2" style="cursor:default"><div class="cart">'+coverFromDraft(d, t, 150)+'</div>' +
        '<div class="ct2">'+esc(hz.name)+'</div><div class="cs2">'+esc(hz.ownerName+' · '+hz.eventIds.length+' events')+'</div></div>';
-  var page = '<div class="minicanvas"><div class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+vars+'">' +
-       '<div class="banner"><div class="surf u-'+t.surface+'"></div><div class="wash"></div><div class="bin">'+coverFromDraft(d, t, 72) +
-       '<div class="btxt"><div class="eyebrow">Event Horizon</div><h1 class="hl h-'+t.headline+'">'+headlineHTML(t, hz.name)+'</h1>'+(t.mood?'<p class="mood">'+esc(t.mood)+'</p>':'')+'</div></div></div></div></div>';
+  var seed = d.editing, torn = hasOrn(t, seed, 'torn');
+  var page = '<div class="minicanvas"><div class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+vars+'">' + artLayersHTML(t, seed, true) +
+       '<div class="banner'+(torn ? ' torn" style="'+tornStyle(seed) : '')+'"><div class="surf u-'+t.surface+'"></div>' + heroArtHTML(t) + '<div class="wash"></div>' + ornamentsHTML(t, seed, hzOrnOpts(seed)) +
+       '<div class="bin"><div class="sqwrap">'+coverFromDraft(d, t, 72) + (hasOrn(t, seed, 'tape') ? tapeHTML() : '') + '</div>' +
+       '<div class="btxt"><div class="eyebrow">Event Horizon</div><h1 class="hl h-'+t.headline+'">'+headlineHTML(t, hz.name)+'</h1>'+(t.mood?'<p class="mood">'+esc(t.mood)+'</p>':'')+'</div></div></div>' +
+       (hasOrn(t, seed, 'ribbon') ? ribbonHTML(t, t.mood || hz.name) : '') + '</div></div>';
   /* on a phone the preview is the page itself, small, and it stays in view while you change things */
   if (L.phone) return '<div class="previewbox compact">' + page + '</div>';
   return h.replace('<div class="previewbox">', '<div class="previewbox"><div class="plabel">Horizon page</div>' + page) + '</div>';
@@ -3390,9 +3406,13 @@ function customizePreviewHTML(){
   h += '<div class="plabel">Row</div><div class="row unread" style="border:1px solid var(--line);cursor:default">'+sq(40)+
        '<div class="r-main"><div class="r-title">'+esc(ev.title)+'</div><div class="r-meta">'+esc(ev.host)+' · '+esc(ev.city||'')+'</div></div>' +
        '<div class="r-side"><div class="r-date">'+(isoDate(ev.date) ? fmtShort(ev.date) : '')+'</div></div></div>';
-  var banner = '<div class="banner"><div class="surf u-'+t.surface+'"></div><div class="wash"></div><div class="bin">'+sq(64) +
-       '<div class="btxt"><h1 class="hl h-'+t.headline+'">'+headlineHTML(t, ev.title)+'</h1>'+(t.mood?'<p class="mood">'+esc(t.mood)+'</p>':'')+'</div></div></div>';
-  var open = '<div class="minicanvas"><div class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+vars+'">';
+  var seed = d.editing || 'draft', torn = hasOrn(t, seed, 'torn');
+  var orn = { stamp: d.editing ? stampText(d.editing) : (ENTRYSTAMP[d.entry] || KINDLAB[d.kind] || ''), place: d.editing ? placeOf(d.editing) : String(d.city || '').trim() };
+  var banner = '<div class="banner'+(torn ? ' torn" style="'+tornStyle(seed) : '')+'"><div class="surf u-'+t.surface+'"></div>' + heroArtHTML(t) + '<div class="wash"></div>' + ornamentsHTML(t, seed, orn) +
+       '<div class="bin"><div class="sqwrap">'+sq(64) + (hasOrn(t, seed, 'tape') ? tapeHTML() : '') + '</div>' +
+       '<div class="btxt"><h1 class="hl h-'+t.headline+'">'+headlineHTML(t, ev.title)+'</h1>'+(t.mood?'<p class="mood">'+esc(t.mood)+'</p>':'')+'</div></div></div>' +
+       (hasOrn(t, seed, 'ribbon') ? ribbonHTML(t, t.mood || ev.title) : '');
+  var open = '<div class="minicanvas"><div class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+vars+'">' + artLayersHTML(t, seed, true);
   if (L.phone) return '<div class="previewbox compact">' + open + banner + '</div></div></div>';
   h += '<div class="plabel">Event page</div>' + open + banner +
        '<div class="actbar" style="position:relative"><div class="verbs"><div class="vgroup"><span class="btn vb">'+ic('heart',16)+'Interested</span><span class="btn vb on">'+ic('check',16)+'Going</span></div>' +
@@ -3422,6 +3442,12 @@ function customizeHTML(){
   left += '<div class="crow2"><label>Shape</label>'+czSel('shape',SHAPES,d.shape)+'</div>';
   left += '<div class="crow2"><label>Density</label>'+czSel('density',DENS,d.density)+'</div>';
   left += '<div class="crow2"><label>Square</label>'+czSel('pattern',PATS,d.pattern,'Pattern')+czSel('glyph',GLYS,d.glyph,'Glyph')+'</div>';
+  var art = artOf(draftTheme(d), d.editing || 'draft');
+  left += '<div class="crow2"><label>Backdrop</label>'+czSel('backdrop',BACKDROPS,art.backdrop)+'</div>';
+  left += '<div class="crow2"><label>Atmosphere</label>'+czSel('atmosphere',ATMOS,art.atmosphere)+'</div>';
+  left += '<div class="crow2"><label>Parallax</label>'+czSel('parallax',PARALLAX,art.parallax)+'</div>';
+  left += '<div class="crow2 top"><label>Ornaments</label><span class="ornset">' + ORNAMENTS.map(function(o){
+    return '<label class="ornck"><input type="checkbox" data-cz="orn" value="'+o[0]+'"'+(art.ornaments.indexOf(o[0]) >= 0 ? ' checked' : '')+'>'+esc(o[1])+'</label>'; }).join('') + '</span></div>';
   left += '</div>';
   return '<div class="custwrap">' + left + '<div class="custprev">' + customizePreviewHTML() + '</div></div>';
 }
@@ -3470,13 +3496,15 @@ function paintWiz(){
   d.querySelector('.dbody').innerHTML = wizBodyHTML();
   d.querySelector('.dfoot').innerHTML = wizFootHTML();
   placeDlg(d);
+  pxSync();
 }
 /* a create form starts empty and is its own draft: closing it keeps what you typed, Discard throws it away */
 var FORMDRAFTS = {};
 var EVENTKINDS = ['meetup','build','workshop','volunteer_day','fundraiser','camp_meeting','burn_night','town_hall','decompression','burn','sale','other'];
 function blankEventDraft(){
   return { step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', city:'', privacy:'everyone', entry:'free', desc:'', bring:'',
-           mood:'', pal:0, surface:'grain', type:'serif', headline:'huge', motion:'drift', shape:'sharp', density:'airy', pattern:'moon', glyph:'☾' };
+           mood:'', pal:0, surface:'grain', type:'serif', headline:'huge', motion:'drift', shape:'sharp', density:'airy', pattern:'moon', glyph:'☾',
+           backdrop:'contours', atmosphere:'dust', parallax:'gentle', orn:['stamp','tape'] };
 }
 function eventDraftDirty(d){
   var b = blankEventDraft();
@@ -3498,7 +3526,8 @@ var newEventDialog = gated(function(){
   if (DRAFT.step === 1) focusIn('w-t');
 });
 /* a horizon is customised with the same controls, plus its cover */
-var HZDEFAULT = { mood:'', pal:5, surface:'grid', type:'grotesk', headline:'huge', motion:'none', shape:'sharp', density:'airy', pattern:'rays', glyph:'◗' };
+var HZDEFAULT = { mood:'', pal:5, surface:'grid', type:'grotesk', headline:'huge', motion:'none', shape:'sharp', density:'airy', pattern:'rays', glyph:'◗',
+                  backdrop:'stars', atmosphere:'fireflies', parallax:'gentle', orn:['stamp'] };
 var customizeHorizonDialog = gated(function(hzId){
   var hz = HORIZONS[hzId], t = HZTHEME[hzId], d = { step:3, editing:hzId, kind:'horizon', title:hz.name, date:TODAY_ISO, city:'' };
   if (t){
@@ -3506,8 +3535,8 @@ var customizeHorizonDialog = gated(function(hzId){
     PALSETS.forEach(function(p,i){ if (p.p.bg === t.palette.bg) pal = i; });
     if (pal < 0){ PALSETS.unshift({ n:'This horizon’s palette', p:t.palette }); pal = 0; }
     Object.assign(d, { mood:t.mood||'', pal:pal, surface:t.surface, type:t.type, headline:t.headline, motion:t.motion, shape:t.shape,
-                       density:t.density, pattern:t.square.pattern, glyph:t.square.glyph });
-  } else Object.assign(d, HZDEFAULT);
+                       density:t.density, pattern:t.square.pattern, glyph:t.square.glyph }, artDraft(t, hzId));
+  } else Object.assign(d, HZDEFAULT, { orn:HZDEFAULT.orn.slice() });
   var has = hz.eventIds.some(function(id){ return EVENTS[id]; });
   d.cover = HZCOVER[hzId] || (t || !has ? 'own' : 'mosaic');
   if (!t && !has) d.cover = 'own';
@@ -3521,9 +3550,9 @@ function palIndexOf(palette, label){
   if (pal < 0){ PALSETS.unshift({ n:label || 'This event’s palette', p:palette }); pal = 0; }
   return pal;
 }
-function lookOf(t){
-  return { mood:t.mood || '', pal:palIndexOf(t.palette), surface:t.surface, type:t.type, headline:t.headline, motion:t.motion, shape:t.shape,
-           density:t.density, pattern:t.square.pattern, glyph:t.square.glyph };
+function lookOf(t, seed){
+  return Object.assign({ mood:t.mood || '', pal:palIndexOf(t.palette), surface:t.surface, type:t.type, headline:t.headline, motion:t.motion, shape:t.shape,
+           density:t.density, pattern:t.square.pattern, glyph:t.square.glyph }, artDraft(t, seed));
 }
 /* Edit is the whole wizard again, filled in, saved from any step */
 var editEventDialog = gated(function(evId){
@@ -3532,7 +3561,7 @@ var editEventDialog = gated(function(evId){
   DRAFT = Object.assign({ mode:'edit', step:1, editing:evId, title:e.title, date:e.date, end:r.endDate || '', city:r.city || cityShort(e.city),
             privacy:e.privacy || 'everyone', entry:(r.access && r.access.model) || 'free', desc:descOf(e),
             kind:r.kind || 'meetup', startTime:r.startTime || '', endTime:r.endTime || '',
-            bring: Array.isArray(r.whatToBring) ? r.whatToBring.join('\n') : (r.whatToBring || '') }, lookOf(TH(evId)));
+            bring: Array.isArray(r.whatToBring) ? r.whatToBring.join('\n') : (r.whatToBring || '') }, lookOf(TH(evId), evId));
   dialog('Edit ' + e.title, wizBodyHTML(), wizFootHTML(), 900);
   focusIn('w-t');
 });
@@ -3558,6 +3587,7 @@ var customizeDialog = gated(function(evId){
   DRAFT = { step:3, editing:evId, title:e.title, date:e.date, city:cityShort(e.city), privacy:e.privacy, host:hostLabel(e), desc:descOf(e),
             mood:t.mood||'', pal:pal, surface:t.surface, type:t.type, headline:t.headline, motion:t.motion, shape:t.shape, density:t.density,
             pattern:t.square.pattern, glyph:t.square.glyph };
+  Object.assign(DRAFT, artDraft(t, evId));
   dialog('Customize ' + e.title, wizBodyHTML(), wizFootHTML(), 900);
 });
 function wizAct(which){
@@ -3697,8 +3727,15 @@ function artClass(t, seed){ return ' px-' + artOf(t, seed).parallax; }
 function stampText(evId){
   var r = recOf(evId), b = r.burn || {}, m = r.access && r.access.model;
   if (b.edition && b.edition.year) return (KINDLAB[r.kind] || 'Burn') + ' ' + b.edition.year;
-  return { membership:'Members only', members_only:'Members only', invite:'Invite only', free:'Free entry', donation:'By donation',
-           pay_what_you_can:'Pay what you can', lottery:'By lottery' }[m] || KINDLAB[r.kind] || '';
+  return ENTRYSTAMP[m] || KINDLAB[r.kind] || '';
+}
+var ENTRYSTAMP = { membership:'Members only', members_only:'Members only', invite:'Invite only', free:'Free entry', donation:'By donation',
+                   pay_what_you_can:'Pay what you can', lottery:'By lottery' };
+/* a horizon's true things: the years it spans, and its city when every event shares one */
+function hzOrnOpts(hzId){
+  var evs = HORIZONS[hzId].eventIds.map(function(id){ return EVENTS[id]; }).filter(Boolean);
+  var cs = evs.map(function(e){ return placeOf(e.id); }).filter(Boolean);
+  return { stamp:hzYears(evs), place:cs.length && cs.every(function(c){ return c === cs[0]; }) ? cs[0] : '' };
 }
 function placeOf(evId){
   var e = EVENTS[evId], r = recOf(evId);
@@ -4628,6 +4665,12 @@ document.addEventListener('change', function(ev){
   var n = ev.target;
   if (n.closest('[data-cz]') && DRAFT){
     var k = n.getAttribute('data-cz'); if (k === 'preset') return;
+    if (k === 'orn'){
+      /* ornaments are a set: each box adds or removes one */
+      var cur = (DRAFT.orn || artOf(draftTheme(DRAFT), DRAFT.editing || 'draft').ornaments).filter(function(x){ return x !== n.value; });
+      if (n.checked) cur.push(n.value);
+      DRAFT.orn = cur; paintWiz(); schedulePersist(); return;
+    }
     DRAFT[k] = k === 'pal' ? +n.value : n.value;
     /* text fields already updated the preview as you typed; repainting here would swallow the click that blurred them */
     if (DRAFT.step === 3 && n.tagName === 'SELECT') paintWiz(); else refreshWizFoot();
@@ -4653,7 +4696,7 @@ document.addEventListener('input', function(ev){
   if (n.id === 'sh-q' && SH){ SH.q = n.value; var sl = $('sh-list'); if (sl) sl.innerHTML = shareListHTML(); return; }
   if (n.id === 'pk-q'){ PK.q = n.value; $('pk-list').innerHTML = pickerList(); return; }
   if (n.id === 'nc-name'){ NC.name = n.value; paintNewChat(true); saveChatDraft(); return; }
-  if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT') return;
+  if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT' || n.type === 'checkbox') return;
   DRAFT[n.getAttribute('data-cz')] = n.value;
   if (n.getAttribute('aria-invalid') && String(n.value).trim()){
     n.removeAttribute('aria-invalid');
@@ -4662,7 +4705,7 @@ document.addEventListener('input', function(ev){
   refreshWizFoot(); schedulePersist();
   if (DRAFT.step === 3){
     var box = DLGS[DLGS.length-1] && DLGS[DLGS.length-1].querySelector('.custprev');
-    if (box) box.innerHTML = customizePreviewHTML();
+    if (box){ box.innerHTML = customizePreviewHTML(); pxSync(); }
   }
 });
 document.addEventListener('click', function(ev){

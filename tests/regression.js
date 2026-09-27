@@ -8,7 +8,8 @@
    Covers: open event → Going; create horizon → add events → customize → reload; new group chat;
    right-click → Add to horizon; long-press sheet; back/forward/reload restore; console errors, failed
    requests (404s) and horizontal overflow at 375 (touch), 768 and 1440; plus the round-2 majors: toasts vs the
-   phone verb bar, private horizons, horizon as a desktop destination, volunteer shifts, safe Cancel/Discard. */
+   phone verb bar, private horizons, horizon as a desktop destination, volunteer shifts, safe Cancel/Discard;
+   and the 2026-09-27 owner changes: the logged-out preview bar, one-view Home, the always-there sidebar. */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch(e){
   try { ({ chromium } = require('playwright-core')); } catch(e2){
@@ -230,6 +231,43 @@ async function overflowEverywhere(p, label){
   await open(x, priv, true);
   ok(await ev(x, () => /private or no longer here/.test(document.body.innerText) && location.hash.indexOf('#/horizon/') === 0), 'R2: its link elsewhere says it is private, not a silent redirect');
   console.log('r2 desk errors', o.errors, x.errors); ok(!o.errors.length && !x.errors.length, 'R2 desktop: no console errors');
+
+  /* ---------------- tablet ---------------- */
+  /* ---------------- tablet ---------------- */
+  /* ---------------- owner feedback 2026-09-27: preview bar, one-view Home, fixed sidebar ---------------- */
+  const rb = (pg, sel) => ev(pg, s => { const e = document.querySelector(s); if (!e || !e.offsetParent) return null; const r = e.getBoundingClientRect(); return { top:r.top, bottom:r.bottom, w:r.width }; }, sel);
+  for (const [kind, w, h] of [['phone', 375, 812], ['tab', 768, 1024], ['desk', 1280, 800], ['desk', 1440, 900]]){
+    const f = await ctx(kind, kind === 'desk' ? { viewport:{ width:w, height:h } } : {});
+    await open(f, '', true);
+    const pb = await rb(f, '#previewbar');
+    ok(!!pb && Math.abs(pb.w - w) < 2 && await ev(f, () => !!document.querySelector('#previewbar [data-act="join"]')), w + ': logged out, the preview bar spans the bottom with Join free');
+    ok(await ev(f, () => !document.querySelector('#chead .seg')), w + ': Home has no view switch');
+    await f.goto(URL + '#/home?view=calendar'); await f.waitForTimeout(400);
+    ok(await ev(f, () => location.hash === '#/home' && !document.getElementById('app').classList.contains('v-cal')), w + ': an old #/home?view=calendar link lands on Home');
+    await f.evaluate(() => { const l = document.getElementById('listbody'); l.scrollTop = l.scrollHeight; }); await f.waitForTimeout(150);
+    const last = await ev(f, () => { const els = document.querySelectorAll('#listbody .row, #listbody .card2'); return els.length ? els[els.length - 1].getBoundingClientRect().bottom : 0; });
+    ok(last <= (await rb(f, '#previewbar')).top + 1, w + ': the last row/card is above the preview bar');
+    if (kind === 'phone'){
+      ok(Math.abs((await rb(f, '#previewbar')).bottom - (await rb(f, '#tabbar')).top) < 1, 'phone: preview bar directly above the tab bar');
+      await f.goto(URL + '#/event/led-forest-walk'); await f.waitForTimeout(400);
+      ok((await rb(f, '#evbar')).bottom <= (await rb(f, '#previewbar')).top + 1, 'phone: the event verb bar is not covered by the preview bar');
+      await f.evaluate(() => toast('Test', 'toast')); await f.waitForTimeout(100);
+      ok((await rb(f, '#toasts .toast')).bottom <= (await rb(f, '#evbar')).top + 1, 'phone: toasts stack above both bars');
+    } else {
+      ok(await ev(f, () => !document.getElementById('tg-left') && document.getElementById('nav').getBoundingClientRect().width >= 190), w + ': sidebar always visible, no toggle');
+      await join(f, 'Mia Lind', 'mialind');
+      ok(!(await rb(f, '#previewbar')), w + ': the preview bar goes once logged in');
+      await f.evaluate(() => doLogout()); await f.waitForTimeout(200);
+      await f.evaluate(() => loginDialog()); await f.waitForTimeout(150);
+      await f.click('.dlg [data-act="useacct"][data-id="demo"]'); await f.waitForTimeout(300);
+      await f.click('#tg-right'); await f.waitForTimeout(200);
+      await f.click('.chrow[data-id="c-baltic"]'); await f.waitForTimeout(200);
+      ok(await ev(f, () => document.getElementById('nav').getBoundingClientRect().width >= 190 && !!document.querySelector('#chats .conv')), w + ': sidebar stays with the chat dock open');
+      if (w >= 1280) ok(await ev(f, () => document.getElementById('app').classList.contains('split') && document.getElementById('dscroll').getBoundingClientRect().width >= 380), w + ': list + reading pane + dock fit');
+    }
+    ok((await overflow(f)) <= 0, w + ': no overflow');
+    console.log(w + ' feedback errors', f.errors); ok(!f.errors.length, w + ': no console errors');
+  }
 
   /* ---------------- tablet ---------------- */
   const t = await ctx('tab');

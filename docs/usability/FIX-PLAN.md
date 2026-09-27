@@ -366,3 +366,7 @@ event section's Show all. (Home's LIST was the only place with Sort for the whol
 gone; it narrows with the screen (252 / 216 / 200px) and keeps labels. With the dock open: 1440 = sidebar 252 +
 list + reading pane 504px + dock; 1280 = 216 + list + reading 394px + dock (split threshold with the dock lowered to
 720px); 1024 and 768 = sidebar + centre with the dock floating over the centre's right edge.
+
+*Verified* at 375 (touch), 768, 1280 and 1440, logged out and logged in: `tests/regression.js` gained a block for the
+three changes (preview bar position vs tab bar / event bar / toasts / last row, old `?view=` Home links, no sidebar
+toggle, sidebar + dock + reading pane at 1280/1440) and passes with no console errors or failed requests.

@@ -11,7 +11,11 @@ window.HYPERNET_THEMES = {
     "motion": "none | drift | pulse | flicker | scroll",
     "shape": "sharp | rounded | cut",
     "density": "airy | packed",
-    "mood": "one line the host writes; render it, it is part of the art"
+    "mood": "one line the host writes; render it, it is part of the art",
+    "backdrop": "contours | rays | stars | dunes | halftone | synthwave | woodgrain | map | glyphs | none — generative, seeded per event, behind everything",
+    "atmosphere": "dust | embers | sparks | fireflies | snow | rain | glyphs | smoke | none — particles in front of the art, behind content and controls",
+    "ornaments": "any of stamp | tape | ribbon | torn | compass",
+    "parallax": "none | gentle | deep — how far the layers drift apart as you scroll"
   },
   "themes": {
     "evt-deep-listening": {
@@ -32,7 +36,11 @@ window.HYPERNET_THEMES = {
       "headline": "huge",
       "motion": "drift",
       "shape": "sharp",
-      "density": "airy"
+      "density": "airy",
+      "backdrop": "contours",
+      "atmosphere": "dust",
+      "ornaments": ["stamp", "tape"],
+      "parallax": "gentle"
     },
     "evt-fill-1": {
       "mood": "forty kilos of onions and a two-burner stove",
@@ -52,7 +60,11 @@ window.HYPERNET_THEMES = {
       "headline": "condensed",
       "motion": "flicker",
       "shape": "cut",
-      "density": "packed"
+      "density": "packed",
+      "backdrop": "glyphs",
+      "atmosphere": "embers",
+      "ornaments": ["stamp", "ribbon"],
+      "parallax": "gentle"
     },
     "evt-fill-3": {
       "mood": "walk into the trees, the trees walk back",
@@ -72,7 +84,11 @@ window.HYPERNET_THEMES = {
       "headline": "stacked",
       "motion": "flicker",
       "shape": "sharp",
-      "density": "packed"
+      "density": "packed",
+      "backdrop": "stars",
+      "atmosphere": "fireflies",
+      "ornaments": ["compass"],
+      "parallax": "deep"
     },
     "evt-fill-0": {
       "mood": "cold air, warm bodies, the sun does the rest",
@@ -92,7 +108,11 @@ window.HYPERNET_THEMES = {
       "headline": "huge",
       "motion": "none",
       "shape": "rounded",
-      "density": "airy"
+      "density": "airy",
+      "backdrop": "rays",
+      "atmosphere": "dust",
+      "ornaments": ["tape", "stamp"],
+      "parallax": "gentle"
     },
     "evt-fill-11": {
       "mood": "if it feeds back we start again",
@@ -112,7 +132,11 @@ window.HYPERNET_THEMES = {
       "headline": "condensed",
       "motion": "pulse",
       "shape": "sharp",
-      "density": "packed"
+      "density": "packed",
+      "backdrop": "synthwave",
+      "atmosphere": "sparks",
+      "ornaments": ["ribbon"],
+      "parallax": "deep"
     },
     "evt-fill-9": {
       "mood": "bring the thing that shouldn't drive",
@@ -132,7 +156,11 @@ window.HYPERNET_THEMES = {
       "headline": "outlined",
       "motion": "drift",
       "shape": "cut",
-      "density": "airy"
+      "density": "airy",
+      "backdrop": "halftone",
+      "atmosphere": "smoke",
+      "ornaments": ["stamp", "torn"],
+      "parallax": "gentle"
     },
     "evt-world-burning-man-2026": {
       "mood": "the big one. dust, and then more dust.",
@@ -152,7 +180,11 @@ window.HYPERNET_THEMES = {
       "headline": "huge",
       "motion": "drift",
       "shape": "sharp",
-      "density": "airy"
+      "density": "airy",
+      "backdrop": "dunes",
+      "atmosphere": "dust",
+      "ornaments": ["stamp", "compass", "ribbon"],
+      "parallax": "deep"
     },
     "evt-world-borderland-2026": {
       "mood": "a nordic field and everyone you know",
@@ -172,7 +204,11 @@ window.HYPERNET_THEMES = {
       "headline": "stacked",
       "motion": "none",
       "shape": "sharp",
-      "density": "airy"
+      "density": "airy",
+      "backdrop": "map",
+      "atmosphere": "fireflies",
+      "ornaments": ["stamp", "compass", "torn"],
+      "parallax": "gentle"
     },
     "evt-fill-6": {
       "mood": "quiet work, no photographs",
@@ -192,7 +228,11 @@ window.HYPERNET_THEMES = {
       "headline": "huge",
       "motion": "none",
       "shape": "rounded",
-      "density": "airy"
+      "density": "airy",
+      "backdrop": "woodgrain",
+      "atmosphere": "none",
+      "ornaments": ["tape"],
+      "parallax": "none"
     },
     "evt-fill-7": {
       "mood": "one cup, no talking, until the light lands",
@@ -212,7 +252,11 @@ window.HYPERNET_THEMES = {
       "headline": "huge",
       "motion": "drift",
       "shape": "rounded",
-      "density": "airy"
+      "density": "airy",
+      "backdrop": "rays",
+      "atmosphere": "smoke",
+      "ornaments": ["stamp"],
+      "parallax": "gentle"
     }
   },
   "fallbackNote": "Events without a hand-authored theme get a deterministic one from their id via HN_THEME(id)."
@@ -220,6 +264,8 @@ window.HYPERNET_THEMES = {
 
 (function(){
   var PALS=[{"bg": "#101014", "ink": "#ececf0", "accent": "#a98cff", "accent2": "#2a2440", "dim": "#807c93"}, {"bg": "#0b1410", "ink": "#e4f4ea", "accent": "#48c98a", "accent2": "#17372a", "dim": "#749a86"}, {"bg": "#f4f2ed", "ink": "#1c1c1c", "accent": "#d0452f", "accent2": "#e2ddd2", "dim": "#8a857c"}, {"bg": "#12141f", "ink": "#e8ecff", "accent": "#ff8fb1", "accent2": "#262b45", "dim": "#8288a8"}, {"bg": "#1e1405", "ink": "#ffeed4", "accent": "#d9a441", "accent2": "#4a3412", "dim": "#a98f68"}], SURF=["grain", "dither", "halftone", "scanlines", "grid", "paper"], TYPE=["grotesk", "mono", "serif", "stencil", "display"], HEAD=["huge", "condensed", "stacked", "outlined"], MOT=["none", "drift", "pulse"], SHAPE=["sharp", "rounded", "cut"], PAT=["plain", "stripe", "grid", "dither", "rays", "scan", "halftone", "moon"], GLY=["◆", "✳", "▲", "◉", "✦", "■", "☾", "◗", "⬟", "✜", "◈", "▤"];
+  var BD=["contours","rays","stars","dunes","halftone","synthwave","woodgrain","map","glyphs"], AT=["dust","embers","sparks","fireflies","snow","rain","glyphs","smoke","none"],
+      ORN=[["stamp"],["tape"],["ribbon"],["stamp","torn"],["compass","tape"],["stamp","ribbon"],["torn"]], PX=["gentle","deep","gentle","none"];
   function hash(s){ var v=0; for(var i=0;i<s.length;i++){ v=(v*131+s.charCodeAt(i))>>>0; } return v; }
   window.HN_THEME = function(id){
     var T = window.HYPERNET_THEMES.themes;
@@ -234,7 +280,11 @@ window.HYPERNET_THEMES = {
       headline: HEAD[(v>>>13) % HEAD.length],
       motion: MOT[(v>>>17) % MOT.length],
       shape: SHAPE[(v>>>19) % SHAPE.length],
-      density: (v>>23 & 1) ? 'packed' : 'airy'
+      density: (v>>23 & 1) ? 'packed' : 'airy',
+      backdrop: BD[(v>>>9) % BD.length],
+      atmosphere: AT[(v>>>15) % AT.length],
+      ornaments: ORN[(v>>>21) % ORN.length].slice(),
+      parallax: PX[(v>>>25) % PX.length]
     };
     T[id] = t; return t;
   };

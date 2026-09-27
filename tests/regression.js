@@ -81,7 +81,7 @@ async function join(p, name, handle){
 }
 async function overflowEverywhere(p, label){
   const worst = [];
-  for (const h of ['#/home', '#/home?view=list', '#/home?view=calendar', '#/horizons', '#/event/borderland-2027', '#/event/burning-man-2027', '#/horizon/season', '#/person/anna', '#/callout/sound', '#/search?q=sound', '#/home/soon', '#/chats']){
+  for (const h of ['#/home', '#/home/soon?view=list', '#/home/soon?view=calendar', '#/horizons', '#/event/borderland-2027', '#/event/burning-man-2027', '#/horizon/season', '#/person/anna', '#/callout/sound', '#/search?q=sound', '#/home/soon', '#/chats']){
     await p.goto(URL + h); await p.waitForTimeout(350);
     const o = await overflow(p); if (o > 0) worst.push(h + ':' + o);
   }

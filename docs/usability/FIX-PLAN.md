@@ -357,3 +357,7 @@ Horizons and chat." with Join free and Log in (Log in alone once an account exis
 on phone directly above the tab bar and below the event verb bar; toasts stack above both. It takes layout space, so
 the last rows and cards stay reachable. The toolbar / app-bar / You-tab / Chats Join buttons are gone (one entry point).
 The owner's line said "crews"; kept the round-2 rule that "crew" isn't a product noun, so the line ends "and chat".
+
+**F2. Home has one view.** *Status: done.* No FEED / LIST / CALENDAR on Home at any width; `#/home?view=list` and
+`?view=calendar` links land on `#/home`. LIST/CALENDAR remain on Going, Interested, Hosting, Promoted, Horizons and an
+event section's Show all. (Home's LIST was the only place with Sort for the whole network; Show all lists keep Sort.)

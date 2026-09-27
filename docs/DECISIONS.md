@@ -6,3 +6,8 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   one line, Join free + Log in; Log in only once an account exists here) replaces the other logged-out Join
   buttons (toolbar, phone app bar, You tab card, Chats). It is a row of the app's layout, not an overlay: on phone
   it sits between the page (with its event verb bar) and the tab bar; toasts stack above it. Not dismissible.
+- **2026-09-27 · Home has one view.** Home is the feed (sections on desktop, shelves on phone) at every width; the
+  FEED / LIST / CALENDAR switch is gone and `?view=` on Home is ignored (old `?view=list|calendar` links land on
+  Home). This supersedes IA-v2's "Home with a view switcher". The calendar stays only where it already was outside
+  Home: your Going / Interested / Hosting / Promoted lists, the Horizons tab, and Show all on an event section
+  (`#/home/soon?view=calendar`). No new destination was added.

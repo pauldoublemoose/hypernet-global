@@ -1386,7 +1386,8 @@ function homeItems(){
   });
   return out;
 }
-var VIEWS = { home:['feed','list','calendar'], horizons:['list','calendar'], going:['list','calendar'], interested:['list','calendar'],
+/* Home is the feed and only the feed; lists of your own keep a calendar */
+var VIEWS = { home:['feed'], horizons:['list','calendar'], going:['list','calendar'], interested:['list','calendar'],
               hosting:['list','calendar'], promoted:['list','calendar'] };
 function destKey(f){ f = f || S.folder; return f.kind + (f.id ? ':' + f.id : ''); }
 function viewsOf(f){
@@ -4434,7 +4435,7 @@ document.addEventListener('keydown', function(ev){
 /* =========================================================================
    14b. ROUTES — every place has a URL, and the browser's history is the back stack
    The URL names the place (#/event/borderland-2027, #/horizon/baltic,
-   #/home?view=calendar). The history entry behind it carries the rest:
+   #/going?view=calendar). The history entry behind it carries the rest:
    the whole open stack, the tab, the calendar page. The app's own back
    buttons walk the same history as the phone's back gesture.
    ========================================================================= */

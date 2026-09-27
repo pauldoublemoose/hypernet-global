@@ -3850,10 +3850,13 @@ function pxSync(el){
   PXRAF = requestAnimationFrame(function(){
     PXRAF = 0;
     [$('dscroll'), $('listbody')].forEach(function(sc){
-      if (!sc) return;
-      var c = sc.querySelector('.canvas'); if (c) c.style.setProperty('--sy', sc.scrollTop);
+      if (!sc || FX.reduce) return;
+      /* only the moving layers get the value, so a scroll never restyles the page's text */
+      var y = sc.scrollTop;
+      sc.querySelectorAll('.canvas:not(.px-none) .art.bg .bd, .canvas:not(.px-none) .heroart').forEach(function(n){ n.style.setProperty('--sy', y); });
     });
-    fxScan();
+    /* the particle loop sleeps when nothing is on screen; a scroll or a render wakes it */
+    if (!FX.raf || !el) fxScan();
   });
 }
 document.addEventListener('scroll', function(ev){ var t = ev.target; if (t && (t.id === 'dscroll' || t.id === 'listbody')) pxSync(t); }, true);

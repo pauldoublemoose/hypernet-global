@@ -350,6 +350,7 @@ body.is-phone .canvas.px-deep{ --pf:1.1; }
   transform:translate3d(0, max(-26%, calc(var(--sy, 0) * -.05px * var(--pf))), 0); }
 .art canvas{ display:block; width:100%; height:100%; }
 .canvas > .banner{ z-index:1; overflow:hidden; }
+.canvas > .banner .eyebrow{ color:var(--eink); }
 .canvas > .banner .wash{ background:linear-gradient(180deg, color-mix(in srgb, var(--ebg) 25%, transparent) 0%, color-mix(in srgb, var(--ebg) 58%, transparent) 45%, color-mix(in srgb, var(--ebg) 90%, transparent) 100%); }
 /* the hero: the square's glyph at poster scale, drifting slower than the page */
 .heroart{ position:absolute; z-index:1; right:-6%; top:50%; width:min(64%, 540px); aspect-ratio:1; pointer-events:none;
@@ -361,6 +362,7 @@ body.is-phone .canvas.px-deep{ --pf:1.1; }
 .canvas.big .heroart{ width:min(86%, 720px); right:-10%; }
 .canvas.big .heroart .hg{ font-size:min(44cqi, 520px); opacity:.3; }
 /* ornaments: only true things (an edition number, how you get in, the city) */
+.heroart, .orn-stamp, .orn-compass, .orn-tape, .orn-ribbon{ pointer-events:none; }
 .orn-stamp{ position:absolute; z-index:4; top:18px; right:22px; padding:5px 11px; border:3px double var(--eac); border-radius:3px; color:var(--eac);
   font:bold 13px var(--mono); letter-spacing:.16em; text-transform:uppercase; background:color-mix(in srgb, var(--ebg) 70%, transparent); }
 .orn-compass{ position:absolute; z-index:4; top:18px; left:34px; display:flex; align-items:center; gap:8px; color:var(--eink);
@@ -1147,8 +1149,12 @@ function relLum(h){
 }
 function contrast(a,b){ var l1=relLum(a), l2=relLum(b); if (l1<l2){ var t=l1; l1=l2; l2=t; } return (l1+0.05)/(l2+0.05); }
 function onColor(bg){ return contrast('#ffffff',bg) >= contrast('#000000',bg) ? '#ffffff' : '#000000'; }
-function safeAccent(p){ return contrast(p.accent, p.bg) >= 3 ? p.accent : p.ink; }
-function safeDim(p){ return contrast(p.dim, p.bg) >= 3 ? p.dim : p.ink; }
+/* text colours reach AA against the event's ground (with room for the art that shows through the panels):
+   a colour that falls short is nudged toward the ink until it clears, keeping its hue */
+function mixHex(a, b, t){ var x = hex2rgb(a), y = hex2rgb(b); return '#' + x.map(function(v, i){ return ('0' + Math.round(v + (y[i] - v) * t).toString(16)).slice(-2); }).join(''); }
+function readable(c, p, need){ for (var t = 0; t <= 1.001; t += .05){ var m = mixHex(c, p.ink, t); if (contrast(m, p.bg) >= need) return m; } return p.ink; }
+function safeAccent(p){ return readable(p.accent, p, 4.8); }
+function safeDim(p){ return readable(p.dim, p, 5.2); }
 function themeVars(t){
   var p = t.palette;
   return '--ebg:'+p.bg+';--eink:'+p.ink+';--eac:'+safeAccent(p)+';--eac2:'+p.accent2+
@@ -3720,7 +3726,7 @@ function backdropSVG(kind, seed, glyph){
 function artLayersHTML(t, seed, still){
   var a = artOf(t, seed), cls = still ? ' still' : '';
   return '<div class="art bg'+cls+'" aria-hidden="true">' + backdropSVG(a.backdrop, seed, t.square.glyph) + '</div>' +
-    (a.atmosphere !== 'none' ? '<div class="art fg'+cls+'" aria-hidden="true"><canvas class="atmo" data-kind="'+a.atmosphere+'" data-key="'+esc(seed)+'" data-glyph="'+esc(t.square.glyph)+'"></canvas></div>' : '');
+    (a.atmosphere !== 'none' && !FX.reduce ? '<div class="art fg'+cls+'" aria-hidden="true"><canvas class="atmo" data-kind="'+a.atmosphere+'" data-key="'+esc(seed)+'" data-glyph="'+esc(t.square.glyph)+'"></canvas></div>' : '');
 }
 function artClass(t, seed){ return ' px-' + artOf(t, seed).parallax; }
 /* a stamp only says what is true about the event */

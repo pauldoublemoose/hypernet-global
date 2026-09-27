@@ -9,7 +9,9 @@
    right-click → Add to horizon; long-press sheet; back/forward/reload restore; console errors, failed
    requests (404s) and horizontal overflow at 375 (touch), 768 and 1440; plus the round-2 majors: toasts vs the
    phone verb bar, private horizons, horizon as a desktop destination, volunteer shifts, safe Cancel/Discard;
-   and the 2026-09-27 owner changes: the logged-out preview bar, one-view Home, the always-there sidebar. */
+   and the 2026-09-27 owner changes: the logged-out preview bar, one-view Home, the always-there sidebar;
+   one button style on every event page; the canvas art (backdrop on every page, art takes no clicks and covers no
+   control, text AA over the art on events and customised horizons, reduced motion stills it). */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch(e){
   try { ({ chromium } = require('playwright-core')); } catch(e2){
@@ -283,6 +285,81 @@ async function overflowEverywhere(p, label){
     ok(Object.keys(sigs).every(a => sigs[a].size === 1 && !sigs[a].has('missing')), kind + ': Interested / Going / Promote have identical computed styles on 5 event pages');
     ok(new Set(Object.keys(sigs).map(a => [...sigs[a]][0])).size === 1, kind + ': and the three verbs share one style');
     ok(!c.errors.length, kind + ': no console errors (controls)');
+  }
+
+  /* ---------------- the canvas art: layered, readable, never in the way ---------------- */
+  const ARTPAGES = ['burning-man-2027', 'ridge-dawn-stretch', 'led-forest-walk', 'borderland-2026', 'night-kitchen-line', 'deep-listening-lab'];
+  /* worst-case contrast of text against what is actually painted behind it: hide the text, sample the pixels */
+  const contrastOf = async (p, sels) => {
+    const out = [];
+    for (const sel of sels) for (const el of await p.$$(sel)){
+      await el.evaluate(n => n.scrollIntoView({ block:'center' })); await p.waitForTimeout(60);
+      const b0 = await el.boundingBox(); if (!b0) continue;
+      const vp = p.viewportSize(), top = Math.max(0, b0.y), bot = Math.min(vp.height, b0.y + b0.height);
+      const box = { x:Math.max(0, b0.x), y:top, width:Math.min(vp.width, b0.x + b0.width) - Math.max(0, b0.x), height:bot - top };
+      if (box.width < 4 || box.height < 4) continue;
+      const fg = await el.evaluate(n => getComputedStyle(n).color);
+      await el.evaluate(n => { n.dataset.c = n.style.color; n.style.setProperty('color', 'transparent', 'important'); n.style.setProperty('-webkit-text-stroke-color', 'transparent', 'important'); n.style.setProperty('text-shadow', 'none', 'important'); n.querySelectorAll('*').forEach(k => k.style.setProperty('color', 'transparent', 'important')); });
+      const png = await p.screenshot({ clip:box, animations:'disabled' });
+      await el.evaluate(n => { n.style.color = n.dataset.c; n.style.removeProperty('-webkit-text-stroke-color'); n.style.removeProperty('text-shadow'); n.querySelectorAll('*').forEach(k => k.style.removeProperty('color')); });
+      out.push({ sel, fg, png:png.toString('base64') });
+    }
+    return out;
+  };
+  for (const kind of ['desk', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '', true);
+    let worst = 99, where = '', low = [];
+    for (const sl of ARTPAGES){
+      await c.goto(URL + '#/event/' + sl); await c.waitForTimeout(500);
+      const lay = await ev(c, () => {
+        const cv = document.querySelector('#dscroll .canvas');
+        const arts = [...cv.querySelectorAll('.art, .heroart, .orn-stamp, .orn-compass, .orn-tape, .orn-ribbon')];
+        /* every control in the page and its bar, scrolled into view one by one: under its centre is itself, or the window's own bars */
+        const ctrls = [...document.querySelectorAll('#dscroll .canvas button, #dscroll .canvas a.btn, #evbar .btn')].filter(b => b.getBoundingClientRect().width);
+        const blocked = ctrls.filter(b => { b.scrollIntoView({ block:'center' }); const r = b.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return hit && !b.contains(hit) && cv.contains(hit); });
+        document.getElementById('dscroll').scrollTop = 0;
+        return { art:!!cv.querySelector('.art.bg svg'), inert:arts.every(a => getComputedStyle(a).pointerEvents === 'none'), ctrls:ctrls.length, blocked:blocked.map(b => b.textContent.trim()) };
+      });
+      ok(lay.art, kind + ' ' + sl + ': has a backdrop');
+      ok(lay.inert, kind + ' ' + sl + ': art layers take no clicks');
+      ok(lay.ctrls > 0 && !lay.blocked.length, kind + ' ' + sl + ': nothing covers a control ' + JSON.stringify(lay.blocked));
+      await measure(sl, ['#dscroll .canvas .eyebrow', '#dscroll .canvas .hl', '#dscroll .canvas .mood', '#dscroll .canvas .fk', '#dscroll .canvas .fv', '#dscroll .canvas .evdesc', '#dscroll .canvas .sect h3', '#dscroll .canvas .fs']);
+    }
+    /* a customised horizon, in three different looks */
+    for (const look of ['evt-world-borderland-2026', 'evt-fill-9', 'evt-deep-listening']){
+      await c.goto(URL + '#/horizon/season'); await c.waitForTimeout(300);
+      await ev(c, k => { HZTHEME.season = JSON.parse(JSON.stringify(TH(k))); render(); }, look); await c.waitForTimeout(400);
+      await measure('horizon ' + look, ['.plist.themed .plk', '.plist.themed .pln', '.plist.themed .mood', '.plist.themed .pld', '.plist.themed .plm', '.plist.themed .tt', '.plist.themed .ts']);
+    }
+    async function measure(sl, sels){
+      for (const shot of await contrastOf(c, sels)){
+        const r = await ev(c, async s => {
+          const img = new Image(); img.src = 'data:image/png;base64,' + s.png; await img.decode();
+          const cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height; const g = cv.getContext('2d'); g.drawImage(img, 0, 0);
+          const d = g.getImageData(0, 0, cv.width, cv.height).data;
+          const lin = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); };
+          const L = (r, gg, b) => .2126 * lin(r) + .7152 * lin(gg) + .0722 * lin(b);
+          const m = s.fg.match(/\d+(\.\d+)?/g).map(Number), lf = L(m[0], m[1], m[2]);
+          const cr = []; for (let i = 0; i < d.length; i += 16){ const lb = L(d[i], d[i + 1], d[i + 2]); cr.push((Math.max(lf, lb) + .05) / (Math.min(lf, lb) + .05)); }
+          cr.sort((a, b) => a - b); return cr[Math.floor(cr.length * .05)];
+        }, shot);
+        /* big display type needs 3:1, running text 4.5:1 (AA), measured at the 5th percentile of the background */
+        const need = /\.hl|\.pln/.test(shot.sel) ? 3 : 4.5;
+        if (r / need < worst){ worst = r / need; where = sl + ' ' + shot.sel + ' ' + r.toFixed(2); }
+        if (r < need) low.push(sl + ' ' + shot.sel + ' ' + r.toFixed(2));
+      }
+    }
+    ok(worst >= 1, kind + ': canvas text meets AA over its art (worst: ' + where + ')' + (low.length ? '\n   ' + low.join('\n   ') : ''));
+    ok(!c.errors.length, kind + ': no console errors (canvas art)');
+  }
+  {
+    const c = await ctx('phone', { reducedMotion:'reduce' });
+    await open(c, '#/event/burning-man-2027', true); await c.waitForTimeout(600);
+    const mo = await ev(c, () => ({ raf:FX.raf, drawn:document.querySelectorAll('canvas.atmo').length + Object.keys(FX.states).length, pf:getComputedStyle(document.querySelector('#dscroll .canvas')).getPropertyValue('--pf').trim(),
+      ribbon:getComputedStyle(document.querySelector('.orn-ribbon b')).animationName }));
+    ok(!mo.raf && !mo.drawn && mo.pf === '0' && mo.ribbon === 'none', 'reduced motion: no particles, no parallax, no marquee ' + JSON.stringify(mo));
   }
 
   /* ---------------- tablet ---------------- */

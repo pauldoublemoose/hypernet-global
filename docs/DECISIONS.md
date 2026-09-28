@@ -21,6 +21,12 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   bar, pressable chips) is the app's own bevel button — one height (`--act`), the app's hover / pressed / checked
   states, no event colour, border, font or shape. The action row is a chrome toolbar sitting on top of the event's
   world. Supersedes the earlier "themed, never illegible" verbs.
+- **2026-09-28 · One page template for event, horizon and person.** `pageHTML(spec)` builds all three: canvas layers →
+  title block (square, mosaic or avatar; title; subtitle; mood) → the grey toolbar → anything that must sit under it
+  (an event's entry and editions) → facts grid → sections. Only the spec differs: an event's facts and timeline, a
+  horizon's events as a track list (the phone "playlist" layout is gone), a person's about, skills, cities, hosting,
+  going, horizons and call outs. Every page is its own size container, so it lays out the same in the list column,
+  the reading pane or full width.
 - **2026-09-28 · Customize is optional; the default is plain.** Nothing has to be customised. An event, horizon or profile
   nobody customised wears the plain look (`HN_PLAIN`): paper, a hairline-ruled backdrop, ink type, no particles, no
   ornaments, a kind glyph on its square. The ten authored fixture themes stay; fixture events without one now go plain

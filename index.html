@@ -328,7 +328,7 @@ a.btn{ text-decoration:none; color:var(--ink) !important; }
 /* on a phone the event's verbs live in a bar at the bottom of the screen, always in reach */
 #evbar{ display:none; flex:0 0 auto; padding:6px 8px; background:var(--face); color:var(--ink); box-shadow:inset 0 1px 0 var(--white), 0 -1px 0 var(--shadow); font-family:var(--sys); }
 #app.phone.has-evbar #evbar{ display:block; }
-#app.phone .canvas > .actbar{ display:none; }
+#app.phone .pg-event > .actbar{ display:none; }
 #evbar .verbs{ flex-wrap:nowrap; }
 #evbar .verbs{ gap:4px; }
 #evbar .vgroup{ flex:1 1 auto; min-width:0; }
@@ -382,13 +382,31 @@ body.is-phone .canvas.px-deep{ --pf:1.1; }
   font:bold 13px var(--mono); letter-spacing:.16em; text-transform:uppercase; box-shadow:0 2px 0 var(--eac2); }
 .orn-ribbon b{ display:inline-block; animation:hn-marquee 48s linear infinite; }
 /* a torn header is a sheet of its own, ripped along the bottom */
-.canvas > .banner.torn, .plist.themed > .pltop.torn{ border-bottom:0; background:color-mix(in srgb, var(--eink) 9%, var(--ebg)); }
+.canvas > .banner.torn{ border-bottom:0; background:color-mix(in srgb, var(--eink) 9%, var(--ebg)); }
 .canvas > .banner.torn .bin{ padding-bottom:40px; }
-.plist.themed > .pltop.torn{ padding-bottom:36px; }
 /* content sits on calm panels so the art never competes with reading */
 .canvas > .layer{ z-index:5; margin:28px clamp(0px, 3cqi, 40px) 0; background:color-mix(in srgb, var(--ebg) 93%, transparent);
   box-shadow:0 0 0 1px color-mix(in srgb, var(--eac2) 70%, transparent), 0 10px 40px rgba(0,0,0,.28); }
 .canvas.big > .layer{ margin-top:56px; }
+/* one page template for events, horizons and people: every page is its own container, wherever it is shown */
+.canvas.pg{ container:detail / inline-size; }
+.psub2{ margin:12px 0 0; max-width:60ch; font-size:16px; line-height:1.45; color:var(--eink); }
+.banner .av.a160{ width:160px; height:160px; flex-basis:160px; font-size:56px; box-shadow:0 0 0 1px rgba(0,0,0,.25), 4px 4px 0 rgba(0,0,0,.18); }
+.pg-horizon .banner .mosaic{ box-shadow:0 0 0 1px var(--eac2), 4px 4px 0 rgba(0,0,0,.3); }
+.pg .tracks{ margin:0; border-top:1px solid var(--eac2); }
+.pg .track, .pg .trpast{ padding-left:0; padding-right:0; border-color:var(--eac2); }
+.pg .track .ts, .pg .trpast{ color:var(--edim); }
+.pg .track.past .tt{ color:var(--edim); }
+.pg .track:hover, .pg .track:active{ background:color-mix(in srgb, var(--eac) 10%, transparent); }
+.pg .track.sel{ background:var(--sel); color:#fff; margin:0 -12px; padding-left:12px; padding-right:12px; }
+.pg .track.sel .tt, .pg .track.sel .ts{ color:#fff; }
+.pg .crow{ border-color:var(--eac2); }
+.pg .crow .r-meta{ color:var(--edim); }
+.pg .pres{ vertical-align:middle; }
+@container detail (max-width:620px){
+  .pg-horizon .banner .sqwrap .mosaic{ zoom:.575; }
+  .banner .av.a160{ width:92px; height:92px; flex-basis:92px; font-size:32px; }
+}
 /* the plain look: paper, one hairline, ink; the hero is a quiet watermark */
 .canvas.plain > .layer{ background:#fff; box-shadow:0 0 0 1px var(--eac2); }
 .canvas.plain .heroart{ opacity:.55; }
@@ -799,71 +817,13 @@ body.is-phone #sh-list{ max-height:none; }
 .mosaic .sq{ border-radius:0 !important; clip-path:none !important; }
 .mosaic.one{ display:block; }
 .mosaic.empty{ display:grid; place-items:center; background:var(--face); color:var(--dim); box-shadow:var(--out); }
-.plist{ padding:22px 0 32px; container:pl / inline-size; }
-@container pl (min-width:600px){
-  .pltop{ display:flex; align-items:flex-end; gap:24px; padding:0 24px; }
-  .pltop .plcover{ padding:0; }
-  .pltop .plhead{ flex:1; min-width:0; padding:0; }
-  .placts{ padding:8px 24px; }
-  .plmain{ flex:0 0 auto; min-width:180px; }
-  .track{ padding:10px 24px; }
-}
 .trm{ flex:0 0 auto; }
-.plist.themed{ min-height:100%; background:var(--ebg); color:var(--eink); padding-bottom:40px; }
-.plist.themed > :not(.surf):not(.art){ position:relative; z-index:3; }
-.plist.themed{ overflow:clip; }
-.plist.themed{ padding-top:0; }
-.plist.themed > .pltop{ overflow:hidden; padding-top:48px; padding-bottom:26px; }
-.plist.themed .orn-stamp, .plist.themed .orn-compass{ top:10px; }
-.plist.themed .orn-compass{ left:16px; }
-.plist.themed .orn-stamp{ right:16px; }
-.plist.themed .plcover{ position:relative; z-index:2; }
-.plist.themed .plhead{ position:relative; z-index:2; }
-.plist.themed .plcover .orn-tape.t1{ left:calc(50% - 138px); }
-.plist.themed .plcover .orn-tape.t2{ right:calc(50% - 138px); }
-@container pl (min-width:600px){ .plist.themed .plcover .orn-tape.t1{ left:-22px; } .plist.themed .plcover .orn-tape.t2{ right:auto; left:184px; } }
-.plist.themed .heroart{ top:40%; z-index:0; }
-/* the horizon's header text sits on a wash, as an event's does */
-.plist.themed > .pltop::before{ content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
-  background:linear-gradient(180deg, color-mix(in srgb, var(--ebg) 20%, transparent) 0%, color-mix(in srgb, var(--ebg) 62%, transparent) 40%, color-mix(in srgb, var(--ebg) 90%, transparent) 100%); }
-.plist.themed.canvas > .placts{ z-index:6; }
-.plist.themed.canvas > .tracks{ z-index:5; margin:18px clamp(0px, 3cqi, 24px) 0; border-top:0; background:color-mix(in srgb, var(--ebg) 93%, transparent);
-  box-shadow:0 0 0 1px color-mix(in srgb, var(--eac2) 70%, transparent), 0 10px 40px rgba(0,0,0,.28); }
-.plist.themed.canvas > .orn-ribbon{ z-index:2; }
-.plist.themed .surf{ opacity:.55; }
-.plist.themed .pld{ color:var(--eink); }
-.plist.themed .plk, .plist.themed .plm, .plist.themed .tn, .plist.themed .ts{ color:var(--edim); }
-.plist.themed .pln{ margin-top:6px; }
-.plist.themed .mood{ font-size:16px; margin-top:8px; }
-.plist.themed .plown{ color:var(--eink); }
-.plist.themed .tracks, .plist.themed .track{ border-color:var(--eac2); }
-.plist.themed .track:active, .plist.themed .track:hover{ background:color-mix(in srgb, var(--eac) 14%, transparent); }
-.plist.themed .track.past .tt{ color:var(--edim); }
-.plist.themed .plcover .mosaic{ box-shadow:0 0 0 1px var(--eac2), 4px 4px 0 rgba(0,0,0,.3); }
 .rrm{ width:32px; height:32px; }
 .pksearch{ position:sticky; top:-20px; z-index:3; margin:-20px -20px 12px; padding:20px 20px 12px; background:var(--face); }
 body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 12px; }
 .picklist.tall{ max-height:min(58vh, 460px); }
 .pkband{ padding:12px 10px 6px; font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dim); border-bottom:1px solid var(--line); background:#fff; }
 .hzchk{ width:28px; height:28px; display:grid; place-items:center; box-shadow:var(--in); background:#fff; color:#000; }
-.plcover{ display:flex; justify-content:center; padding:0 16px; }
-.plcover .mosaic{ box-shadow:0 0 0 1px rgba(0,0,0,.25), 4px 4px 0 rgba(0,0,0,.18); }
-.plhead{ padding:20px 16px 0; }
-.plk{ font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dim); }
-.pln{ margin:4px 0 0; font-size:28px; line-height:1.1; overflow-wrap:anywhere; }
-.pld{ margin:8px 0 0; color:var(--ink2); font-size:15px; line-height:1.45; }
-.plo{ margin-top:10px; }
-.plown{ display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:0; border:0; background:transparent; font-weight:bold; font-size:14px; }
-.plm{ font:12px var(--mono); color:var(--dim); letter-spacing:.02em; }
-.placts{ display:flex; flex-wrap:wrap; gap:6px; margin-top:16px; padding:8px 16px; background:var(--face); color:var(--ink); font-family:var(--sys);
-  box-shadow:inset 0 1px 0 var(--white), inset 0 -1px 0 var(--shadow), 0 1px 0 var(--dark), 0 3px 8px rgba(0,0,0,.2); }
-.placts .btn, .placts .ib{ height:var(--act); min-width:var(--act); }
-@container pl (max-width:599px){
-  .placts.many .plmain{ flex:1 1 100%; }
-  .placts.many .btn:not(.plmain){ flex:1 1 auto; padding:0 10px; }
-  .placts.many .btn:not(.plmain) .ic{ display:none; }
-}
-.plmain{ flex:1; }
 .tracks{ list-style:none; margin:8px 0 0; padding:0; border-top:1px solid var(--line); }
 .track{ display:flex; align-items:center; gap:12px; min-height:68px; padding:10px 16px; border-bottom:1px solid var(--line); }
 .track:active{ background:var(--hover); }
@@ -874,7 +834,6 @@ body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 1
 .track.sel .ts{ color:var(--seldim); }
 .trpast{ display:flex; align-items:center; gap:8px; min-height:48px; padding:0 16px; border-bottom:1px solid var(--line); cursor:pointer;
   font:bold 11px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dim); }
-.plist.themed .trpast{ color:var(--edim); border-color:var(--eac2); }
 .track .ts{ margin-top:2px; font-size:13px; color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .track.past .tt{ color:#6f6f6f; }
 
@@ -1912,10 +1871,7 @@ function factsHTML(evId){
   var hostTo = hp0 && hp0.id !== 'self' ? { type:'person', id:hp0.id } : camp ? { type:'horizon', id:camp } : null;
   f.push(['Host', (org && org.name) || hostLabel(e), [org && org.legalForm, org && org.name && e.hostName !== org.name ? 'as ' + e.hostName : ''].filter(Boolean).join(' · '), hostTo]);
   if (r.age && (r.age.min || r.age.kidsFreeUpTo != null)) f.push(['Age', r.age.min ? r.age.min + '+' : 'All ages', r.age.kidsFreeUpTo != null ? 'Kids free up to ' + r.age.kidsFreeUpTo : '']);
-  return '<div class="facts">' + f.map(function(x){
-    var v = x[3] ? '<button class="fvlink" data-act="open" data-type="'+x[3].type+'" data-id="'+x[3].id+'">'+esc(x[1])+'</button>' : esc(x[1]);
-    return '<div class="fact"><div class="fk">'+esc(x[0])+'</div><div class="fv">'+v+'</div>'+(x[2]?'<div class="fs">'+esc(x[2])+'</div>':'')+'</div>';
-  }).join('') + '</div>';
+  return factGrid(f);
 }
 function isShifts(r){ return !!(r.blocks && r.blocks.length && r.blocks.every(function(x){ return /^shift/i.test(x.label || ''); })); }
 /* each shift is something you take: taking one makes you Going with that shift; the host is one tap away */
@@ -2170,62 +2126,76 @@ function entryHTML(evId){
    tiers, volunteering and principles; a burn adds phases, the access
    explainer, what's provided, rules and safety, camps and art money, and
    its own vocabulary. Empty sections are never drawn. */
+/* ONE PAGE TEMPLATE. An event, an Event Horizon and a person are the same page with different contents:
+   the canvas layers (backdrop, atmosphere, header art, ornaments) → the title block (square or avatar, title,
+   subtitle, mood line) → the window's grey toolbar → anything that must sit right under it → the facts grid →
+   the sections. Only the spec differs. */
+function pageHTML(o){
+  var t = o.t, seed = o.seed, torn = hasOrn(t, seed, 'torn');
+  var h = '<article class="canvas pg pg-'+o.kind+' t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+(o.big ? ' big' : '')+(t.plain ? ' plain' : '')+artClass(t, seed)+'"' +
+          ' data-page="'+o.kind+'" style="'+themeVars(t)+'">';
+  h += artLayersHTML(t, seed);
+  h += '<header class="banner'+(torn ? ' torn" style="'+tornStyle(seed) : '')+'"><div class="surf u-'+t.surface+'"></div>' + heroArtHTML(t) + '<div class="wash"></div>' +
+       ornamentsHTML(t, seed, o.orn || {}) +
+       '<div class="bin"><div class="sqwrap">' + o.cover + (hasOrn(t, seed, 'tape') ? tapeHTML() : '') + '</div>' +
+       '<div class="btxt">' + (o.eyebrow ? '<div class="eyebrow">'+o.eyebrow+'</div>' : '') +
+       '<h1 class="hl h-'+t.headline+'">'+headlineHTML(t, o.title)+'</h1>' +
+       (o.sub ? '<p class="psub2">'+o.sub+'</p>' : '') +
+       (t.mood ? '<p class="mood">'+esc(t.mood)+'</p>' : '') + '</div></div></header>';
+  if (hasOrn(t, seed, 'ribbon')) h += ribbonHTML(t, t.mood || o.title);
+  if (o.toolbar) h += '<div class="actbar">' + o.toolbar + '</div>';
+  h += o.pre || '';
+  h += '<div class="layer"><div class="lin">' + (o.facts || '') + (o.body || '') + '</div></div><div class="tail"></div></article>';
+  return h;
+}
+/* a facts grid: [label, value, small print, {type,id} to open] */
+function factGrid(f){
+  return f.length ? '<div class="facts">' + f.map(function(x){
+    var v = x[3] ? '<button class="fvlink" data-act="open" data-type="'+x[3].type+'" data-id="'+x[3].id+'">'+esc(x[1])+'</button>' : esc(x[1]);
+    return '<div class="fact"><div class="fk">'+esc(x[0])+'</div><div class="fv">'+v+'</div>'+(x[2]?'<div class="fs">'+esc(x[2])+'</div>':'')+'</div>';
+  }).join('') + '</div>' : '';
+}
+/* the toolbar's shape: one primary group, then the secondary actions pushed to the right */
+function toolbarHTML(primary, secondary){ return '<div class="verbs">' + primary + (secondary ? '<span class="vsec">' + secondary + '</span>' : '') + '</div>'; }
+
+/* ---- event ---- */
 function canvasHTML(evId){
   var e = EVENTS[evId], t = TH(evId), r = recOf(evId), b = r.burn || {};
   var big = r.scale === 'burn' || !!r.burn;
-  var hp = hostPersonOf(e), onHz = horizonsOf(evId), att = attendees(evId), past = isPast(lastDay(e));
-  var torn = hasOrn(t, evId, 'torn');
-  var h = '<article class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+(big ? ' big' : '')+(t.plain ? ' plain' : '')+artClass(t, evId)+'" style="'+themeVars(t)+'">';
-  h += artLayersHTML(t, evId);
-  h += '<header class="banner'+(torn ? ' torn" style="'+tornStyle(evId) : '')+'"><div class="surf u-'+t.surface+'"></div>' + heroArtHTML(t) + '<div class="wash"></div>' +
-       ornamentsHTML(t, evId, { stamp:stampText(evId), place:placeOf(evId) }) +
-       '<div class="bin"><div class="sqwrap">' + sqHTML(evId, 160) + (hasOrn(t, evId, 'tape') ? tapeHTML() : '') + '</div>' +
-       '<div class="btxt"><div class="eyebrow">'+eyebrowOf(e)+'</div>' +
-       '<h1 class="hl h-'+t.headline+'">'+headlineHTML(t, e.title)+'</h1>' +
-       (t.mood ? '<p class="mood">'+esc(t.mood)+'</p>' : '') + '</div></div></header>';
-  if (hasOrn(t, evId, 'ribbon')) h += ribbonHTML(t, t.mood || e.title);
-  if (!past) h += '<div class="actbar">' + verbsHTML(evId) + '</div>';
-  else if (S.loggedIn) h += '<div class="actbar"><div class="verbs">' +
-    vb('v-went', evId, 'Went', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] }) + '<span class="vsec">' + vb('share', evId, 'Share', 'share') + '</span></div></div>';
-  h += entryHTML(evId);
-  h += editionsHTML(evId);
-  h += '<div class="layer"><div class="lin">';
-  h += factsHTML(evId);
-  h += sect('About', descOf(e) ? '<p class="evdesc">'+esc(descOf(e))+'</p>' : '');
-  if (r.theme) h += sect('Theme', '<div class="themeline">'+esc(typeof r.theme === 'object' ? (r.theme.name || '') : r.theme)+'</div>' +
+  var onHz = horizonsOf(evId), att = attendees(evId), past = isPast(lastDay(e));
+  var bar = !past ? verbsHTML(evId) : S.loggedIn ? toolbarHTML(vb('v-went', evId, 'Went', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] }), vb('share', evId, 'Share', 'share')) : '';
+  var s = sect('About', descOf(e) ? '<p class="evdesc">'+esc(descOf(e))+'</p>' : '');
+  if (r.theme) s += sect('Theme', '<div class="themeline">'+esc(typeof r.theme === 'object' ? (r.theme.name || '') : r.theme)+'</div>' +
                                    (r.theme.blurb ? '<p>'+esc(r.theme.blurb)+'</p>' : ''));
-  if (b.phases && b.phases.length) h += sect('Timeline', timelineHTML(b.phases, true));
-  else if (r.blocks && r.blocks.length) h += isShifts(r) ? sect('Shifts', shiftsHTML(evId)) : sect('Timeline', timelineHTML(r.blocks, false));
+  if (b.phases && b.phases.length) s += sect('Timeline', timelineHTML(b.phases, true));
+  else if (r.blocks && r.blocks.length) s += isShifts(r) ? sect('Shifts', shiftsHTML(evId)) : sect('Timeline', timelineHTML(r.blocks, false));
   var am = r.access && r.access.model;
   /* an Entry section that would only repeat "Free" is left out: the fact already says it */
   var ax = r.access || {}, entryDetail = ax.tiers || ax.sales || ax.lowIncome || ax.transfer || ax.idMustMatch || ax.vehiclePass || ax.note || !/^(free|donation|pay_what_you_can)$/.test(am || '');
-  if (!past && entryDetail) h += sect(/member/.test(am || '') ? 'Membership' : am === 'ticket' || am === 'lottery' ? 'Tickets' : 'Entry', accessHTML(r.access)).replace('<section class="sect">', '<section class="sect" data-sect="entry">');
-  h += sect('Take part', takePartHTML(r));
-  h += sect('Call outs', calloutsHTML(r.calloutIds, evId));
-  if (big) h += sect('On site', providedHTML(b.provided));
-  h += sect('Bring', rv(r.whatToBring) + (r.dressCode ? '<p style="margin-top:10px"><b>Dress:</b> '+esc(r.dressCode)+'</p>' : ''));
-  if (big) h += sect('Rules & safety', rulesHTML(r));
-  h += sect('Good to know', kvHTML({ age: r.age && r.age.note, accessibility: r.accessibility, lastEntry: r.gateCloses }, { lastEntry:'Last entry' }));
-  h += sect('Principles', principlesHTML(r.principles));
-  if (b.vocabulary && b.vocabulary.length) h += sect('Words used here', '<dl class="kv vocab">' + b.vocabulary.map(function(v){
+  if (!past && entryDetail) s += sect(/member/.test(am || '') ? 'Membership' : am === 'ticket' || am === 'lottery' ? 'Tickets' : 'Entry', accessHTML(r.access)).replace('<section class="sect">', '<section class="sect" data-sect="entry">');
+  s += sect('Take part', takePartHTML(r));
+  s += sect('Call outs', calloutsHTML(r.calloutIds, evId));
+  if (big) s += sect('On site', providedHTML(b.provided));
+  s += sect('Bring', rv(r.whatToBring) + (r.dressCode ? '<p style="margin-top:10px"><b>Dress:</b> '+esc(r.dressCode)+'</p>' : ''));
+  if (big) s += sect('Rules & safety', rulesHTML(r));
+  s += sect('Good to know', kvHTML({ age: r.age && r.age.note, accessibility: r.accessibility, lastEntry: r.gateCloses }, { lastEntry:'Last entry' }));
+  s += sect('Principles', principlesHTML(r.principles));
+  if (b.vocabulary && b.vocabulary.length) s += sect('Words used here', '<dl class="kv vocab">' + b.vocabulary.map(function(v){
     return '<dt>'+esc(v.term)+'</dt><dd>'+esc(v.meaning)+'</dd>'; }).join('') + '</dl>');
-  if (b.nextEdition && !NEXTED[evId]) h += sect('Next edition', nextHTML(b.nextEdition));
-  if (att.length || attendeeCount(evId)) h += sect(past ? 'Who went' : 'Who’s going', '<div class="chips">' + att.map(function(pid){
+  if (b.nextEdition && !NEXTED[evId]) s += sect('Next edition', nextHTML(b.nextEdition));
+  if (att.length || attendeeCount(evId)) s += sect(past ? 'Who went' : 'Who’s going', '<div class="chips">' + att.map(function(pid){
          return '<button class="chip" data-act="open" data-type="person" data-id="'+pid+'">'+avHTML(pid,'a28')+esc(person(pid).displayName)+'</button>';
        }).join('') + (attendeeCount(evId) > att.length ? '<span class="chipmore">and '+(attendeeCount(evId)-att.length)+' more</span>' : '') + '</div>');
-  h += sect('On Event Horizons', onHz.length ? '<div class="chips">' + onHz.map(function(k){
+  s += sect('On Event Horizons', onHz.length ? '<div class="chips">' + onHz.map(function(k){
          return '<button class="chip" data-act="open" data-type="horizon" data-id="'+k+'">'+ic('horizon',16)+esc(HORIZONS[k].name)+' <span class="sub">'+esc(HORIZONS[k].ownerName)+'</span></button>';
        }).join('') + '</div>' : '');
-  var pv0 = provenance(evId), links = sourcesHTML(r);
-  h += sect('Links', links ? links + (pv0 ? '<div class="srcline">' + esc(pv0) + '</div>' : '') : '');
-  var pv = provenance(evId);
-  if (pv && !sourcesHTML(r)) h += '<div class="srcline">' + esc(pv) + '</div>';
-  h += '</div></div><div class="tail"></div></article>';
-  return h;
+  var pv = provenance(evId), links = sourcesHTML(r);
+  s += sect('Links', links ? links + (pv ? '<div class="srcline">' + esc(pv) + '</div>' : '') : '');
+  if (pv && !links) s += '<div class="srcline">' + esc(pv) + '</div>';
+  return pageHTML({ kind:'event', t:t, seed:evId, big:big, cover:sqHTML(evId, 160), eyebrow:eyebrowOf(e), title:e.title,
+    orn:{ stamp:stampText(evId), place:placeOf(evId) }, toolbar:bar, pre:entryHTML(evId) + editionsHTML(evId), facts:factsHTML(evId), body:s });
 }
 
-/* A horizon shows its own properties and state. No event verbs
-   on the horizon itself; the events inside it carry them, per row. */
 function compactVerbs(evId){
   var st = S.loggedIn ? RSVP[evId] : '';
   if (isPast(lastDay(EVENTS[evId]))) return S.loggedIn ? '<div class="cverbs"><button class="ib'+(WENT[evId]?' on':'')+'" data-act="v-went" data-id="'+evId+'" aria-label="Went" aria-pressed="'+!!WENT[evId]+'">'+ic('check')+'</button></div>' : '';
@@ -2240,61 +2210,48 @@ function eventCRow(e, withVerbs){
     '<div class="r-meta">'+esc([fmtShort(e.date), whereOf(e), hostLabel(e)].filter(Boolean).join(' · '))+'</div></div>' +
     (withVerbs ? compactVerbs(e.id) : '') + '</div>';
 }
-/* on a phone a horizon opens like a playlist: big cover, who made it, one primary action, then its events */
+/* ---- Event Horizon: its events are the page's track list. No event verbs on the horizon itself;
+   the events inside it carry them, per row. ---- */
+function hzTheme(hzId){ return HZTHEME[hzId] || plainTheme('◗'); }
 function playlistHTML(hzId, withTracks){
   var hz = HORIZONS[hzId], mine = hzOwnedByMe(hzId), fol = S.loggedIn && HZFOLLOW[hzId];
   var evs = hz.eventIds.map(function(id){ return EVENTS[id]; }).filter(Boolean).sort(byDate);
-  var owner = mine ? 'You' : hz.ownerName;
-  var t = HZTHEME[hzId];
-  var h = t ? '<div class="plist themed canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+artClass(t, hzId)+'" style="'+themeVars(t)+'">' +
-              artLayersHTML(t, hzId) + '<div class="surf u-'+t.surface+'"></div>'
-            : '<div class="plist">';
-  h += '<div class="pltop'+(t && hasOrn(t, hzId, 'torn') ? ' torn" style="'+tornStyle(hzId) : '')+'">' + (t ? heroArtHTML(t) + ornamentsHTML(t, hzId, hzOrnOpts(hzId)) : '') +
-       '<div class="plcover">' + (t && hasOrn(t, hzId, 'tape') ? tapeHTML() : '') + hzMosaic(hzId, 232) + '</div>';
-  h += '<div class="plhead"><div class="plk">Event Horizon'+(hz.isPublished ? '' : ' · Private')+'</div>' +
-       (t ? '<h1 class="pln hl h-'+t.headline+'">'+headlineHTML(t, hz.name)+'</h1>' + (t.mood ? '<p class="mood">'+esc(t.mood)+'</p>' : '')
-          : '<h1 class="pln">'+esc(hz.name)+'</h1>');
-  if (hz.description) h += '<p class="pld">'+esc(hz.description)+'</p>';
-  h += '<div class="plo">' + (!mine && hz.ownerId && PEOPLE[hz.ownerId] && hz.ownerId !== 'self'
-        ? '<button class="plown" data-act="open" data-type="person" data-id="'+hz.ownerId+'">'+avHTML(hz.ownerId)+esc(owner)+'</button>'
-        : '<span class="plown">'+ic('horizon',16)+esc(owner)+'</span>') + '</div>';
-  h += '<div class="plm">'+evs.length+' event'+(evs.length===1?'':'s')+' · '+hzFollowers(hzId)+' followers · '+esc(hzRange(hzId))+'</div></div></div>';
-  if (t && hasOrn(t, hzId, 'ribbon')) h += ribbonHTML(t, t.mood || hz.name);
-  h += '<div class="placts'+(mine ? ' many' : '')+'">';
-  if (!mine) h += '<button class="btn '+(fol?'on':'primary')+' plmain" data-act="followhz" data-id="'+hzId+'" aria-pressed="'+!!fol+'">'+ic(fol?'check':'plus')+(fol?'Following':'Follow')+'</button>' +
-                  '<button class="btn" data-act="share" data-type="horizon" data-id="'+hzId+'">'+ic('share')+'Share</button>';
+  var t = hzTheme(hzId), bar;
+  if (!mine) bar = toolbarHTML(vb('followhz', hzId, fol ? 'Following' : 'Follow', fol ? 'check' : 'plus', { on:fol, primary:!fol, pressed:!!fol, cls:'plmain' }),
+                               vb('share', hzId, 'Share', 'share', { attrs:' data-type="horizon"' }));
   else {
-    /* your own horizon: filling it is the job, so Add events leads */
-    h += '<button class="btn primary plmain" data-act="addevents" data-id="'+hzId+'">'+ic('plus')+'Add events</button>';
-    h += '<button class="btn" data-act="customizehz" data-id="'+hzId+'">'+ic('paint')+'Customize</button>';
-    h += '<button class="btn" data-act="renamehz" data-id="'+hzId+'">'+ic('edit')+'Edit details</button>';
-    /* a private horizon's next step is publishing it; a published one's is sharing it */
-    /* nobody else can open a private horizon, so it offers Publish, never a link */
-    if (!hz.isPublished && !hz.isPersonalDefault) h += '<button class="btn" data-act="publishhz" data-id="'+hzId+'" aria-pressed="false">'+ic('horizon')+'Publish</button>';
-    else if (hz.isPublished) h += '<button class="btn" data-act="share" data-type="horizon" data-id="'+hzId+'">'+ic('share')+'Share</button>';
-    h += '<button class="ib" data-act="hzmore" data-id="'+hzId+'" data-more="'+(hz.isPublished ? 'publish,delete' : 'delete')+'" aria-label="More" aria-haspopup="menu">'+ic('dots')+'</button>';
+    /* your own horizon: filling it is the job, so Add events leads; a private one's next step is publishing, a published one's is sharing */
+    bar = toolbarHTML(vb('addevents', hzId, 'Add events', 'plus', { primary:true, cls:'plmain' }),
+      vb('customizehz', hzId, 'Customize', 'paint') + vb('renamehz', hzId, 'Edit details', 'edit') +
+      (!hz.isPublished && !hz.isPersonalDefault ? vb('publishhz', hzId, 'Publish', 'horizon', { pressed:false }) : hz.isPublished ? vb('share', hzId, 'Share', 'share', { attrs:' data-type="horizon"' }) : '') +
+      vb('hzmore', hzId, '', 'dots', { aria:'More', attrs:' data-more="'+(hz.isPublished ? 'publish,delete' : 'delete')+'" aria-haspopup="menu"' }));
   }
-  h += '</div>';
-  if (withTracks === false) return h + '</div>';
-  /* what is still to come leads; what already happened folds away under "Past" */
-  var up = evs.filter(function(e){ return !isPast(lastDay(e)); }), past = evs.filter(function(e){ return isPast(lastDay(e)); }).reverse();
-  var inList = !L.phone && S.folder.kind === 'horizon' && S.folder.id === hzId;
-  var track = function(e){
-    var tag = cardTag({ type:'event', id:e.id });
-    return '<li class="track'+(isPast(lastDay(e))?' past':'')+(inList && isSel({ type:'event', id:e.id }) ? ' sel' : '')+'" data-act="'+(inList ? 'row' : 'open')+'" data-type="event" data-id="'+e.id+'" data-hz="'+hzId+'" role="button">' +
-      sqPx(e.id, 48) +
-      '<span class="tm"><span class="tt">'+esc(e.title)+'</span><span class="ts">'+esc([fmtShort(e.date), whereOf(e), hostLabel(e)].filter(Boolean).join(' · '))+'</span>' +
-      (tag ? tag.replace('ctag', 'ctag inline') : '') + '</span>' +
-      (mine ? '<button class="ib trm" data-act="unfile" data-id="'+e.id+'" data-hz="'+hzId+'" aria-label="Remove '+esc(e.title)+' from '+esc(hz.name)+'">'+ic('close',16)+'</button>' : '') + '</li>';
-  };
-  var open = !!HZPAST[hzId] || !up.length;
-  h += '<ol class="tracks">' + (evs.length ? up.map(track).join('') +
-      (past.length ? (up.length ? '<li class="trpast" data-act="hzpast" data-id="'+hzId+'" role="button" aria-expanded="'+open+'">'+ic(open ? 'down' : 'back', 16).replace('class="ic"', 'class="ic"'+(open ? '' : ' style="transform:scaleX(-1)"'))+'Past · '+past.length+'</li>' : '') +
-        (open ? past.map(track).join('') : '') : '')
-    : (mine ? '' : '<li class="empty">No events in this horizon yet.</li>')) + '</ol></div>';
-  if (inList) S.rows = up.concat(open ? past : []).map(function(e){ return { type:'event', id:e.id }; });
-  return h;
+  var owner = mine ? 'You' : hz.ownerName, ownerLink = !mine && hz.ownerId && PEOPLE[hz.ownerId] && hz.ownerId !== 'self' ? { type:'person', id:hz.ownerId } : null;
+  var facts = factGrid([['By', owner, '', ownerLink], ['Events', String(evs.length)], ['Followers', String(hzFollowers(hzId))], ['When', hzRange(hzId) || '—']]);
+  var body = '';
+  if (withTracks !== false){
+    /* what is still to come leads; what already happened folds away under "Past" */
+    var up = evs.filter(function(e){ return !isPast(lastDay(e)); }), past = evs.filter(function(e){ return isPast(lastDay(e)); }).reverse();
+    var inList = !L.phone && S.folder.kind === 'horizon' && S.folder.id === hzId;
+    var track = function(e){
+      var tag = cardTag({ type:'event', id:e.id });
+      return '<li class="track'+(isPast(lastDay(e))?' past':'')+(inList && isSel({ type:'event', id:e.id }) ? ' sel' : '')+'" data-act="'+(inList ? 'row' : 'open')+'" data-type="event" data-id="'+e.id+'" data-hz="'+hzId+'" role="button">' +
+        sqPx(e.id, 48) +
+        '<span class="tm"><span class="tt">'+esc(e.title)+'</span><span class="ts">'+esc([fmtShort(e.date), whereOf(e), hostLabel(e)].filter(Boolean).join(' · '))+'</span>' +
+        (tag ? tag.replace('ctag', 'ctag inline') : '') + '</span>' +
+        (mine ? '<button class="ib trm" data-act="unfile" data-id="'+e.id+'" data-hz="'+hzId+'" aria-label="Remove '+esc(e.title)+' from '+esc(hz.name)+'">'+ic('close',16)+'</button>' : '') + '</li>';
+    };
+    var open = !!HZPAST[hzId] || !up.length;
+    body = sect('Events', '<ol class="tracks">' + (evs.length ? up.map(track).join('') +
+        (past.length ? (up.length ? '<li class="trpast" data-act="hzpast" data-id="'+hzId+'" role="button" aria-expanded="'+open+'">'+ic(open ? 'down' : 'back', 16).replace('class="ic"', 'class="ic"'+(open ? '' : ' style="transform:scaleX(-1)"'))+'Past · '+past.length+'</li>' : '') +
+          (open ? past.map(track).join('') : '') : '')
+      : (mine ? '' : '<li class="empty">No events in this horizon yet.</li>')) + '</ol>') || sect('Events', '<ol class="tracks"></ol>');
+    if (inList) S.rows = up.concat(open ? past : []).map(function(e){ return { type:'event', id:e.id }; });
+  }
+  return pageHTML({ kind:'horizon', t:t, seed:hzId, cover:hzMosaic(hzId, 160), eyebrow:'Event Horizon' + (hz.isPublished ? '' : ' · Private'), title:hz.name,
+    sub:hz.description ? esc(hz.description) : '', orn:hzOrnOpts(hzId), toolbar:bar, facts:facts, body:body });
 }
+
 function hzYears(evs){
   var ys = evs.map(function(e){ return String(e.date || '').slice(0, 4); }).filter(Boolean).sort();
   return !ys.length ? '' : ys[0] === ys[ys.length - 1] ? ys[0] : ys[0] + '–' + ys[ys.length - 1];
@@ -2311,36 +2268,48 @@ function publishedHorizonsOf(pid){
     return h.isPublished && (h.ownerId === pid || (h.ownerGroupId && GROUPS[h.ownerGroupId] && GROUPS[h.ownerGroupId].adminIds.indexOf(pid) >= 0));
   });
 }
+/* ---- person ---- */
+var PTHEME = {};                 /* pid -> a customised look; people nobody customised are plain */
+function personTheme(pid){ return PTHEME[pid] || plainTheme('◉'); }
+function personOrnOpts(pid){
+  var p = person(pid), cs = citiesOf(p);
+  /* only what is true: a year they joined when known, else their first skill; their city */
+  return { stamp: p.since ? 'Since ' + p.since : (p.skills || []).length ? skillLabel(p.skills[0]) : '', place: cs[0] || '' };
+}
+function personCover(pid, px){
+  var t = PTHEME[pid];
+  return t ? sqT(t, px) : '<span class="av a'+px+'" style="background:'+(AVCOLOR[pid]||'#5a5a5a')+'" aria-hidden="true">'+esc(initials(person(pid).displayName))+'</span>';
+}
+function goingOf(pid){
+  if (pid === 'self') return S.loggedIn ? Object.keys(RSVP).filter(function(k){ return RSVP[k] === 'going' && EVENTS[k]; }).map(function(k){ return EVENTS[k]; }) : [];
+  return allEvents().filter(function(e){ return attendees(e.id).indexOf(pid) >= 0; });
+}
 function personHTML(pid){
-  var p = person(pid), hz = publishedHorizonsOf(pid), st = PRESENCE[pid] || 'offline', fol = S.loggedIn && PFOLLOW[pid];
+  var p = person(pid), hz = publishedHorizonsOf(pid), st = PRESENCE[pid] || 'offline', fol = S.loggedIn && PFOLLOW[pid], me = pid === 'self';
   var hosts = allEvents().filter(function(e){ return hostPersonOf(e) === PEOPLE[pid]; }).sort(byDate);
-  var h = '<div class="page">';
-  h += '<div class="phead2">' + avHTML(pid, 'a64') + '<div style="flex:1;min-width:0"><div class="pname">'+esc(p.displayName)+'</div>' +
-       '<div class="psub">@'+esc(p.handle)+(citiesOf(p).length?' · '+esc(citiesOf(p).join(', ')):'') +
-       (pid === 'self' ? '' : ' · <span class="pres '+st+'"></span>'+esc(st)) + '</div></div></div>';
-  if (p.bio) h += '<p class="pdesc">'+esc(p.bio)+'</p>';
-  if (pid === 'self' && S.loggedIn){
-    h += '<div class="acts"><button class="btn primary" data-act="editprofile">'+ic('edit')+'Edit profile</button></div>';
-  }
-  if (pid !== 'self'){
-    h += '<div class="acts"><button class="btn '+(fol?'on':'primary')+'" data-act="followp" data-id="'+pid+'" aria-pressed="'+!!fol+'">'+ic(fol?'check':'plus')+(fol?'Following':'Follow')+'</button>' +
-         '<button class="btn" data-act="dm" data-id="'+pid+'">'+ic('chat')+'Message</button></div>';
-  }
-  if ((p.skills||[]).length){
-    h += '<div class="subh">Skills</div><div class="tags">' + p.skills.map(function(s){ return '<span class="tag">'+esc(skillLabel(s))+'</span>'; }).join('') + '</div>';
-  }
-  if (citiesOf(p).length > 1 || pid === 'self'){
-    h += citiesOf(p).length ? '<div class="subh">Cities</div><div class="tags">' + citiesOf(p).map(function(c){ return '<span class="tag">'+esc(c)+'</span>'; }).join('') + '</div>' : '';
-  }
-  if (hz.length){
-    h += '<div class="subh">Published Event Horizons</div>' + hz.map(function(k){
+  var going = goingOf(pid).filter(function(e){ return !isPast(lastDay(e)); }).sort(byDate);
+  var calls = CALLOUTS.filter(function(c){ return c.hostId === pid && !c.closed; });
+  var bar = me ? (S.loggedIn ? toolbarHTML(vb('editprofile', 'self', 'Edit profile', 'edit', { primary:true })) : '')
+               : toolbarHTML(vb('followp', pid, fol ? 'Following' : 'Follow', fol ? 'check' : 'plus', { on:fol, primary:!fol, pressed:!!fol }), vb('dm', pid, 'Message', 'chat'));
+  var facts = factGrid([['Based in', citiesOf(p).join(', ') || '—'], ['Hosting', String(hosts.filter(function(e){ return !isPast(lastDay(e)); }).length)],
+                        ['Going', String(going.length)], ['Horizons', String(hz.length)]]);
+  var s = sect('About', p.bio ? '<p class="evdesc">'+esc(p.bio)+'</p>' : '');
+  s += sect('Skills', (p.skills || []).length ? '<div class="chips">' + p.skills.map(function(x){ return '<span class="chip plain">'+esc(skillLabel(x))+'</span>'; }).join('') + '</div>' : '');
+  if (citiesOf(p).length > 1) s += sect('Cities', chipsHTML(citiesOf(p)));
+  s += sect('Hosting', hosts.map(function(e){ return eventCRow(e, false); }).join(''));
+  s += sect('Going', going.map(function(e){ return eventCRow(e, false); }).join(''));
+  s += sect('Event Horizons', hz.map(function(k){
       return '<div class="crow">'+(hzOwnSquare(k) || hzCover(k) ? hzArt(k, 40) : '<span class="r-ic">'+ic('horizon')+'</span>')+
         '<div class="cm" data-act="open" data-type="horizon" data-id="'+k+'"><div class="r-title">'+esc(HORIZONS[k].name)+'</div>' +
         '<div class="r-meta">'+HORIZONS[k].eventIds.length+' events · '+hzFollowers(k)+' followers</div></div></div>';
-    }).join('');
-  }
-  if (hosts.length) h += '<div class="subh">Hosting</div>' + hosts.map(function(e){ return eventCRow(e, false); }).join('');
-  return h + '</div>';
+    }).join(''));
+  s += sect('Call outs', calls.map(function(c){
+      return '<div class="crow"><span class="r-ic">'+ic('callout')+'</span><div class="cm" data-act="open" data-type="callout" data-id="'+c.id+'"><div class="r-title">'+esc(c.title)+'</div>' +
+        '<div class="r-meta">open until '+esc(fmtDate(c.expiresAt))+'</div></div></div>';
+    }).join(''));
+  return pageHTML({ kind:'person', t:personTheme(pid), seed:pid, cover:personCover(pid, 160),
+    eyebrow:'@'+esc(p.handle) + (me ? '' : ' · <span class="pres '+st+'"></span>'+esc(st)), title:p.displayName || 'You',
+    orn:personOrnOpts(pid), toolbar:bar, facts:facts, body:s });
 }
 function isOwnCallout(c){ return !!c && S.loggedIn && !!c.hostAcct && c.hostAcct === S.acct; }
 /* a call out: what is wanted, by whom, for which event; you answer it once, and its author edits or closes it */
@@ -4959,7 +4928,8 @@ function applySnap(s){
   /* something you can't open (deleted, private, mistyped) is shown as such, never silently dropped */
   S.stack = (s.stack || []).map(function(it){ return validItem(it) ? { type:it.type, id:it.id } : { type:'missing', id:itemPath(it) }; });
   S.autoSel = false;
-  S.paneClosed = !!s.closed && !S.stack.length;
+  /* a horizon in the stack becomes the destination on a wide screen, so it doesn't count as something open */
+  S.paneClosed = !!s.closed && !S.stack.some(function(it){ return it.type !== 'horizon'; });
   S.query = S.folder.kind === 'search' ? (s.q || '') : '';
   S.phoneSearch = !!s.ps;
   /* a link without ?view= means the destination's first view, whatever you last used */

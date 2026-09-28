@@ -113,7 +113,7 @@ async function overflowEverywhere(p, label){
   await p.selectOption('select[data-cz="pal"]', '2'); await p.waitForTimeout(150);
   await p.tap('.dlg [data-act="wiz"][data-id="finish"]'); await p.waitForTimeout(250);
   await p.reload(); await p.waitForTimeout(700);
-  ok(await ev(p, h => HORIZONS[h] && HORIZONS[h].eventIds.length === 3 && HZTHEME[h] && HZTHEME[h].palette.bg === '#000000' && S.stack[0].id === h && !!document.querySelector('#dscroll .plist.themed'), hz), 'phone: horizon, its events and its look survive reload, page restored');
+  ok(await ev(p, h => HORIZONS[h] && HORIZONS[h].eventIds.length === 3 && HZTHEME[h] && HZTHEME[h].palette.bg === '#000000' && S.stack[0].id === h && !!document.querySelector('#dscroll .pg-horizon:not(.plain)'), hz), 'phone: horizon, its events and its look survive reload, page restored');
   // new group chat
   await p.tap('[data-act="newsheet"]'); await p.waitForTimeout(150);
   await p.tap('.sheetrow[data-id="newchat"]'); await p.waitForTimeout(200);
@@ -166,7 +166,7 @@ async function overflowEverywhere(p, label){
   await d.click('.dlg [data-cz="preset"][data-i="3"]'); await d.waitForTimeout(150);
   await d.click('.dlg [data-act="wiz"][data-id="finish"]'); await d.waitForTimeout(250);
   await d.reload(); await d.waitForTimeout(700);
-  ok(await ev(d, h => HORIZONS[h].eventIds.length === 2 && !!HZTHEME[h] && !!document.querySelector('#listbody .plist.themed') && S.folder.kind === 'horizon', dh), 'desktop: horizon + events + look survive reload');
+  ok(await ev(d, h => HORIZONS[h].eventIds.length === 2 && !!HZTHEME[h] && !!document.querySelector('#listbody .pg-horizon:not(.plain)') && S.folder.kind === 'horizon', dh), 'desktop: horizon + events + look survive reload');
   // right-click → Add to horizon
   await d.goto(URL + '#/home'); await d.waitForTimeout(500);
   const target = await ev(d, () => document.querySelectorAll('#listbody .row[data-type="event"]')[3].getAttribute('data-id'));
@@ -331,7 +331,7 @@ async function overflowEverywhere(p, label){
     for (const look of ['evt-world-borderland-2026', 'evt-fill-9', 'evt-fill-11', 'evt-deep-listening']){
       await c.goto(URL + '#/horizon/season'); await c.waitForTimeout(300);
       await ev(c, k => { HZTHEME.season = JSON.parse(JSON.stringify(TH(k))); render(); }, look); await c.waitForTimeout(400);
-      await measure('horizon ' + look, ['.plist.themed .plk', '.plist.themed .pln', '.plist.themed .mood', '.plist.themed .pld', '.plist.themed .plm', '.plist.themed .tt', '.plist.themed .ts']);
+      await measure('horizon ' + look, ['.pg-horizon .eyebrow', '.pg-horizon .hl', '.pg-horizon .mood', '.pg-horizon .psub2', '.pg-horizon .fk', '.pg-horizon .fv', '.pg-horizon .tt', '.pg-horizon .ts']);
     }
     async function measure(sl, sels){
       for (const shot of await contrastOf(c, sels)){
@@ -346,7 +346,7 @@ async function overflowEverywhere(p, label){
           cr.sort((a, b) => a - b); return cr[Math.floor(cr.length * .05)];
         }, shot);
         /* big display type needs 3:1, running text 4.5:1 (AA), measured at the 5th percentile of the background */
-        const need = /\.hl|\.pln/.test(shot.sel) ? 3 : 4.5;
+        const need = /\.hl/.test(shot.sel) ? 3 : 4.5;
         if (r / need < worst){ worst = r / need; where = sl + ' ' + shot.sel + ' ' + r.toFixed(2); }
         if (r < need) low.push(sl + ' ' + shot.sel + ' ' + r.toFixed(2));
       }
@@ -389,6 +389,26 @@ async function overflowEverywhere(p, label){
          e.closed && p.split && p.stack && !/pane=closed/.test(p.hash), 'pane: ' + name + ' closes (× and Esc), full width, survives reload, back reopens, a pick reopens');
     }
     ok(!c.errors.length, 'pane: no console errors ' + c.errors.join(' '));
+  }
+
+  /* ---------------- 2026-09-28: event, horizon and person are one page template ---------------- */
+  for (const kind of ['desk', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '', true);
+    const sigs = {};
+    for (const [type, h] of [['event', '#/event/ridge-dawn-stretch'], ['event', '#/event/afrikaburn-2027'], ['horizon', '#/horizon/season?pane=closed'], ['person', '#/person/anna'], ['person', '#/person/kai']]){
+      await c.goto(URL + h); await c.waitForTimeout(500);
+      sigs[h] = await ev(c, t => {
+        const pg = document.querySelector('.canvas.pg[data-page="' + t + '"]'); if (!pg) return 'missing';
+        /* the skeleton, ignoring optional pieces (a ribbon, an entry panel, editions, a second art layer) */
+        const top = [...pg.children].map(x => x.classList[0]).filter(k => /^(art|banner|actbar|layer|tail)$/.test(k)).filter((k, i, a) => a.indexOf(k) === i).join('>');
+        const q = s => !!pg.querySelector(s);
+        return top + '|' + ['header.banner > .bin > .sqwrap', 'header.banner > .bin > .btxt > h1.hl', '.actbar > .verbs', '.layer > .lin > .facts', '.layer > .lin > .sect'].map(q).join(',');
+      }, type);
+    }
+    const uniq = new Set(Object.values(sigs));
+    ok(uniq.size === 1 && !uniq.has('missing'), kind + ': event, horizon and person render through one template ' + JSON.stringify(sigs));
+    ok(!c.errors.length, kind + ': no console errors (template)');
   }
 
   /* ---------------- tablet ---------------- */

@@ -259,7 +259,17 @@ window.HYPERNET_THEMES = {
       "parallax": "gentle"
     }
   },
-  "fallbackNote": "Events without a hand-authored theme get a deterministic one from their id via HN_THEME(id)."
+  "fallbackNote": "Anything nobody customised (an event, horizon or person) wears HN_PLAIN: paper, hairlines, ink. HN_THEME(id) can still derive a deterministic look from an id, but the app no longer uses it for uncustomised things."
+};
+
+/* The plain look: what an event, horizon or profile wears until someone customises it.
+   The app's own monochrome language: paper, a hairline ruled backdrop, ink type, no particles, no ornaments. */
+window.HN_PLAIN = {
+  plain: true, mood: "",
+  palette: { bg: "#f8f7f3", ink: "#161616", accent: "#262626", accent2: "#dcd8cf", dim: "#5b5953" },
+  square: { pattern: "plain", glyph: "◆" },
+  surface: "none", type: "grotesk", headline: "huge", motion: "none", shape: "sharp", density: "airy",
+  backdrop: "paper", atmosphere: "none", ornaments: [], parallax: "none"
 };
 
 (function(){

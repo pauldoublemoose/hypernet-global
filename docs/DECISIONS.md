@@ -21,6 +21,11 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   bar, pressable chips) is the app's own bevel button — one height (`--act`), the app's hover / pressed / checked
   states, no event colour, border, font or shape. The action row is a chrome toolbar sitting on top of the event's
   world. Supersedes the earlier "themed, never illegible" verbs.
+- **2026-09-28 · Customize is optional; the default is plain.** Nothing has to be customised. An event, horizon or profile
+  nobody customised wears the plain look (`HN_PLAIN`): paper, a hairline-ruled backdrop, ink type, no particles, no
+  ornaments, a kind glyph on its square. The ten authored fixture themes stay; fixture events without one now go plain
+  instead of wearing a look derived from their id (`DERIVED_LOOKS` switches the old behaviour back). A new event can
+  be published from any wizard step, and a look is stored only when someone actually changed it.
 - **2026-09-28 · The reading pane can be closed.** A window close (×) in the pane's title bar, or Esc, closes it; the
   list or horizon then takes the whole centre and nothing is auto-picked until you choose something. `?pane=closed`
   in the URL keeps it closed across reload and history; back reopens what was open.

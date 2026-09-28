@@ -219,6 +219,8 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 /* ---------- 6. the event theme layer — the only colour in the product - */
 .sq{ position:relative; isolation:isolate; overflow:hidden; display:grid; place-items:center; flex:0 0 auto; background:var(--ebg); color:var(--eac); line-height:1; }
 .sq .g{ position:relative; z-index:2; }
+.sq.plain{ box-shadow:inset 0 0 0 1px rgba(0,0,0,.3); }
+.sq.plain .pat{ display:none; }
 .sq .pat{ position:absolute; inset:0; z-index:1; }
 .sq.s20{ width:20px; height:20px; font-size:12px; }
 .sq.s40{ width:40px; height:40px; font-size:22px; }
@@ -387,6 +389,11 @@ body.is-phone .canvas.px-deep{ --pf:1.1; }
 .canvas > .layer{ z-index:5; margin:28px clamp(0px, 3cqi, 40px) 0; background:color-mix(in srgb, var(--ebg) 93%, transparent);
   box-shadow:0 0 0 1px color-mix(in srgb, var(--eac2) 70%, transparent), 0 10px 40px rgba(0,0,0,.28); }
 .canvas.big > .layer{ margin-top:56px; }
+/* the plain look: paper, one hairline, ink; the hero is a quiet watermark */
+.canvas.plain > .layer{ background:#fff; box-shadow:0 0 0 1px var(--eac2); }
+.canvas.plain .heroart{ opacity:.55; }
+.canvas.plain .heroart .hpat{ display:none; }
+.canvas.plain > .banner{ border-bottom-color:var(--eac2); }
 .canvas > .layer ~ .tail{ height:48px; }
 .canvas > .entry, .canvas > .edition{ z-index:5; }
 .canvas > .entry{ background:color-mix(in srgb, var(--eac) 10%, var(--ebg)); }
@@ -1144,7 +1151,21 @@ function loadRealEvents(){
 /* =========================================================================
    1. THE THEME LAYER — every field must be visible
    ========================================================================= */
-function TH(id){ return window.HN_THEME(id); }
+/* An event wears its authored or customised look; anything else wears the plain one (paper and ink), with a glyph
+   for its kind so lists stay scannable. DERIVED_LOOKS brings back the old per-id generated looks. */
+var DERIVED_LOOKS = false;
+var PLAINGLYPH = { burn:'✦', burn_night:'✳', decompression:'☾', meetup:'◉', build:'▲', workshop:'■', volunteer_day:'✜', fundraiser:'◈',
+                   camp_meeting:'◗', town_hall:'▤', sale:'⬟', gathering:'✦', other:'◆' };
+var PLAINCACHE = {};
+function plainTheme(glyph){ var t = JSON.parse(JSON.stringify(window.HN_PLAIN)); if (glyph) t.square.glyph = glyph; return t; }
+function TH(id){
+  var T = window.HYPERNET_THEMES.themes;
+  if (T[id]) return T[id];
+  if (DERIVED_LOOKS) return window.HN_THEME(id);
+  if (!PLAINCACHE[id]){ var r = (typeof REC !== 'undefined' && REC[id]) || {}; PLAINCACHE[id] = plainTheme(PLAINGLYPH[r.kind] || PLAINGLYPH[r.scale] || '◆'); }
+  return PLAINCACHE[id];
+}
+function isPlain(t){ return !!(t && t.plain); }
 function hex2rgb(h){
   h = String(h||'#000').replace('#','');
   if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
@@ -1169,7 +1190,7 @@ function themeVars(t){
 }
 function sqHTML(id, size, extraCls){
   var t = TH(id);
-  return '<div class="sq s'+size+' sh-'+t.shape+(extraCls?' '+extraCls:'')+'" style="'+themeVars(t)+'">' +
+  return '<div class="sq s'+size+' sh-'+t.shape+(t.plain?' plain':'')+(extraCls?' '+extraCls:'')+'" style="'+themeVars(t)+'">' +
          '<div class="pat p-'+t.square.pattern+'"></div><span class="g">'+t.square.glyph+'</span></div>';
 }
 function headlineHTML(t, title){
@@ -1328,7 +1349,7 @@ function hzCover(hzId){
 }
 /* a square from a theme object (the event square, drawn for anything that has a theme) */
 function sqT(t, px, extra){
-  return '<div class="sq sh-'+t.shape+(extra?' '+extra:'')+'" style="'+themeVars(t)+'width:'+px+'px;height:'+px+'px;font-size:'+Math.round(px*0.54)+'px">' +
+  return '<div class="sq sh-'+t.shape+(t.plain?' plain':'')+(extra?' '+extra:'')+'" style="'+themeVars(t)+'width:'+px+'px;height:'+px+'px;font-size:'+Math.round(px*0.54)+'px">' +
          '<div class="pat p-'+t.square.pattern+'"></div><span class="g">'+t.square.glyph+'</span></div>';
 }
 function hzOwnSquare(hzId){ return HZCOVER[hzId] === 'own' && HZTHEME[hzId]; }
@@ -2154,7 +2175,7 @@ function canvasHTML(evId){
   var big = r.scale === 'burn' || !!r.burn;
   var hp = hostPersonOf(e), onHz = horizonsOf(evId), att = attendees(evId), past = isPast(lastDay(e));
   var torn = hasOrn(t, evId, 'torn');
-  var h = '<article class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+(big ? ' big' : '')+artClass(t, evId)+'" style="'+themeVars(t)+'">';
+  var h = '<article class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+(big ? ' big' : '')+(t.plain ? ' plain' : '')+artClass(t, evId)+'" style="'+themeVars(t)+'">';
   h += artLayersHTML(t, evId);
   h += '<header class="banner'+(torn ? ' torn" style="'+tornStyle(evId) : '')+'"><div class="surf u-'+t.surface+'"></div>' + heroArtHTML(t) + '<div class="wash"></div>' +
        ornamentsHTML(t, evId, { stamp:stampText(evId), place:placeOf(evId) }) +
@@ -2403,7 +2424,7 @@ function renderDetail(){
 /* an event square at any pixel size */
 function sqPx(id, px, extra){
   var t = TH(id);
-  return '<div class="sq sh-'+t.shape+(extra?' '+extra:'')+'" style="'+themeVars(t)+'width:'+px+'px;height:'+px+'px;font-size:'+Math.round(px*0.54)+'px">' +
+  return '<div class="sq sh-'+t.shape+(t.plain?' plain':'')+(extra?' '+extra:'')+'" style="'+themeVars(t)+'width:'+px+'px;height:'+px+'px;font-size:'+Math.round(px*0.54)+'px">' +
          '<div class="pat p-'+t.square.pattern+'"></div><span class="g">'+t.square.glyph+'</span></div>';
 }
 /* a horizon's cover: the owner's pick, or a 2×2 mosaic of its first four events */
@@ -3368,8 +3389,10 @@ var PALSETS = [
   { n:'Dust and gold',   p:{ bg:'#3a2a12', ink:'#fdf3df', accent:'#e6b23c', accent2:'#7a5a24', dim:'#b9a077' } },
   { n:'Nordic blue',     p:{ bg:'#0d1b2e', ink:'#eaf2ff', accent:'#5ea8ff', accent2:'#12304f', dim:'#7d97b8' } },
   { n:'Warning yellow',  p:{ bg:'#16181a', ink:'#f2f4f2', accent:'#ffd400', accent2:'#2e3438', dim:'#8a9196' } },
-  { n:'Violet static',   p:{ bg:'#101014', ink:'#ececf0', accent:'#a98cff', accent2:'#2a2440', dim:'#807c93' } }
+  { n:'Violet static',   p:{ bg:'#101014', ink:'#ececf0', accent:'#a98cff', accent2:'#2a2440', dim:'#807c93' } },
+  { n:'Plain paper',     p:window.HN_PLAIN.palette }
 ];
+function plainPal(){ for (var i = 0; i < PALSETS.length; i++) if (PALSETS[i].n === 'Plain paper') return i; return 0; }
 var SURFS = ['grain','paper','dither','halftone','scanlines','grid','rays','photocopy','plasma','none'];
 var TYPES = ['serif','grotesk','mono','stencil','display'];
 var HEADS = ['huge','condensed','stacked','outlined','marquee'];
@@ -3386,6 +3409,8 @@ var PRESETS = [
   { n:'Sunday paper', t:{ mood:'one cup, no talking, until the light lands', pal:3, surface:'paper', type:'serif', headline:'huge', motion:'none', shape:'rounded', density:'airy', pattern:'plain', glyph:'◗', backdrop:'map', atmosphere:'none', parallax:'gentle', orn:['tape','compass'] } }
 ];
 var DRAFT = null;
+/* the draft fields that make up a look (anything else is a fact about the thing) */
+var LOOKKEYS = /^(mood|pal|surface|type|headline|motion|shape|density|pattern|glyph|backdrop|atmosphere|parallax|orn)$/;
 function draftTheme(d){
   return { mood:d.mood, palette:PALSETS[d.pal].p, square:{ pattern:d.pattern, glyph:d.glyph },
            surface:d.surface, type:d.type, headline:d.headline, motion:d.motion, shape:d.shape, density:d.density,
@@ -3512,8 +3537,9 @@ function wizFootHTML(){
   if (!d.editing) setTimeout(function(){ syncDiscard('event'); }, 0);
   return '<button class="btn" data-act="closedlg">Cancel</button>' +
     (d.step > 1 && !d.editing ? '<button class="btn" data-act="wiz" data-id="back">'+ic('back')+'Back</button>' : '') +
-    (d.step < 3 ? '<button class="btn primary" data-act="wiz" data-id="next">Next</button>'
-                : '<button class="btn primary" data-act="wiz" data-id="finish">'+(d.editing?'Apply':'Publish event')+'</button>');
+    /* the look is optional: a new event can be published from any step, and wears the plain look until customised */
+    (!d.editing ? (d.step < 3 ? '<button class="btn" data-act="wiz" data-id="next">Next</button>' : '') + '<button class="btn primary" data-act="wiz" data-id="finish">Publish event</button>'
+                : '<button class="btn primary" data-act="wiz" data-id="finish">Apply</button>');
 }
 function paintWiz(){
   var d = DLGS[DLGS.length-1];
@@ -3528,8 +3554,8 @@ var FORMDRAFTS = {};
 var EVENTKINDS = ['meetup','build','workshop','volunteer_day','fundraiser','camp_meeting','burn_night','town_hall','decompression','burn','sale','other'];
 function blankEventDraft(){
   return { step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', city:'', privacy:'everyone', entry:'free', desc:'', bring:'',
-           mood:'', pal:0, surface:'grain', type:'serif', headline:'huge', motion:'drift', shape:'sharp', density:'airy', pattern:'moon', glyph:'☾',
-           backdrop:'contours', atmosphere:'dust', parallax:'gentle', orn:['stamp','tape'] };
+           mood:'', pal:plainPal(), surface:'none', type:'grotesk', headline:'huge', motion:'none', shape:'sharp', density:'airy', pattern:'plain', glyph:'◉',
+           backdrop:'paper', atmosphere:'none', parallax:'none', orn:[], lookTouched:false };
 }
 function eventDraftDirty(d){
   var b = blankEventDraft();
@@ -3551,8 +3577,6 @@ var newEventDialog = gated(function(){
   if (DRAFT.step === 1) focusIn('w-t');
 });
 /* a horizon is customised with the same controls, plus its cover */
-var HZDEFAULT = { mood:'', pal:5, surface:'grid', type:'grotesk', headline:'huge', motion:'none', shape:'sharp', density:'airy', pattern:'rays', glyph:'◗',
-                  backdrop:'stars', atmosphere:'fireflies', parallax:'gentle', orn:['stamp'] };
 var customizeHorizonDialog = gated(function(hzId){
   var hz = HORIZONS[hzId], t = HZTHEME[hzId], d = { step:3, editing:hzId, kind:'horizon', title:hz.name, date:TODAY_ISO, city:'' };
   if (t){
@@ -3561,7 +3585,7 @@ var customizeHorizonDialog = gated(function(hzId){
     if (pal < 0){ PALSETS.unshift({ n:'This horizon’s palette', p:t.palette }); pal = 0; }
     Object.assign(d, { mood:t.mood||'', pal:pal, surface:t.surface, type:t.type, headline:t.headline, motion:t.motion, shape:t.shape,
                        density:t.density, pattern:t.square.pattern, glyph:t.square.glyph }, artDraft(t, hzId));
-  } else Object.assign(d, HZDEFAULT, { orn:HZDEFAULT.orn.slice() });
+  } else Object.assign(d, lookOf(plainTheme('◗'), hzId));
   var has = hz.eventIds.some(function(id){ return EVENTS[id]; });
   d.cover = HZCOVER[hzId] || (t || !has ? 'own' : 'mosaic');
   if (!t && !has) d.cover = 'own';
@@ -3602,7 +3626,8 @@ function saveEventEdit(t){
   r.access = Object.assign({}, r.access || {}, { model:DRAFT.entry });
   r.whatToBring = String(DRAFT.bring || '').split('\n').map(function(x){ return x.trim(); }).filter(Boolean);
   if (!r.burn && r.scale !== 'burn') r.scale = r.endDate ? 'gathering' : 'meetup';
-  window.HYPERNET_THEMES.themes[id] = t;
+  if (t) window.HYPERNET_THEMES.themes[id] = t;
+  delete PLAINCACHE[id];
   EDITED[id] = true; SLUGS = null;
   closeDialogs(); render();
   toast('Saved', e.title);
@@ -3623,18 +3648,20 @@ function wizAct(which){
     DRAFT.step = Math.min(3, DRAFT.step+1); paintWiz(); return;
   }
   if (bad){ DRAFT.step = 1; DRAFT.showErr = true; paintWiz(); focusIn(miss.title ? 'w-t' : 'w-d'); return; }
-  var t = draftTheme(DRAFT);
+  /* a look is stored only when someone changed it: an untouched one stays plain (or stays what it was) */
+  var t = DRAFT.lookTouched ? draftTheme(DRAFT) : null;
   if (DRAFT.mode === 'edit'){ saveEventEdit(t); return; }
   if (DRAFT.kind === 'horizon'){
     var hid = DRAFT.editing;
-    HZTHEME[hid] = t;
+    if (t) HZTHEME[hid] = t;
+    else if (DRAFT.cover === 'own' && !HZTHEME[hid]) HZTHEME[hid] = draftTheme(DRAFT);
     if (DRAFT.cover === 'mosaic') delete HZCOVER[hid]; else HZCOVER[hid] = DRAFT.cover;
     closeDialogs(); render();
     toast('Look updated', HORIZONS[hid].name);
     return;
   }
   if (DRAFT.editing){
-    window.HYPERNET_THEMES.themes[DRAFT.editing] = t; EDITED[DRAFT.editing] = true;
+    if (t){ window.HYPERNET_THEMES.themes[DRAFT.editing] = t; EDITED[DRAFT.editing] = true; }
     closeDialogs(); render();
     toast('Look updated', EVENTS[DRAFT.editing].title);
     return;
@@ -3647,7 +3674,7 @@ function wizAct(which){
   REC[id] = { kind:DRAFT.kind || 'meetup', startTime:DRAFT.startTime || undefined, endTime:DRAFT.endTime || undefined, scale: end && end > start ? 'gathering' : 'meetup', endDate: end && end > start ? end : undefined,
               venueKind:'physical', city:DRAFT.city, venue:{ name:DRAFT.city, addressVisibility:'public' }, description:DRAFT.desc,
               access:{ model:DRAFT.entry }, whatToBring: String(DRAFT.bring||'').split('\n').map(function(s){ return s.trim(); }).filter(Boolean) };
-  window.HYPERNET_THEMES.themes[id] = t;
+  if (t) window.HYPERNET_THEMES.themes[id] = t;
   MYEVENTS.push(id); PROMOCOUNT[id] = 0; READ[id] = true;
   closeDialogs();
   goFolder({ kind:'hosting' });
@@ -3666,7 +3693,7 @@ function wizAct(which){
    from the square's glyph, and optional ornaments. Layers drift apart on
    scroll (parallax). prefers-reduced-motion stills all of it.
    ========================================================================= */
-var BACKDROPS = ['contours','rays','stars','dunes','halftone','synthwave','woodgrain','map','glyphs','none'];
+var BACKDROPS = ['contours','rays','stars','dunes','halftone','synthwave','woodgrain','map','glyphs','paper','none'];
 var ATMOS = ['dust','embers','sparks','fireflies','snow','rain','glyphs','smoke','none'];
 var ORNAMENTS = [['stamp','Stamp'],['tape','Tape'],['ribbon','Ribbon'],['torn','Torn edge'],['compass','Compass']];
 var PARALLAX = ['none','gentle','deep'];
@@ -3733,6 +3760,10 @@ function backdropSVG(kind, seed, glyph){
     for (i = 0; i < 9; i++){ rx = Math.max(60, Math.min(940, rx + (R() - .35) * 260)); ry -= 110 + R() * 60; route += ' L'+f1(rx)+' '+f1(ry); }
     h += '<path d="'+route+'" fill="none" stroke="'+ac+'" stroke-width="4" stroke-dasharray="14 12" opacity=".8"/>' +
          '<circle cx="120" cy="1300" r="12" fill="'+ac+'"/><path d="M'+f1(rx - 16)+' '+f1(ry - 16)+'L'+f1(rx + 16)+' '+f1(ry + 16)+'M'+f1(rx + 16)+' '+f1(ry - 16)+'L'+f1(rx - 16)+' '+f1(ry + 16)+'" stroke="'+ac+'" stroke-width="6"/>';
+  } else if (kind === 'paper'){
+    /* ruled paper: hairlines and a margin, nothing else */
+    for (i = 70; i < H; i += 46) h += '<line x1="0" y1="'+i+'" x2="'+W+'" y2="'+i+'" stroke="'+a2+'" stroke-width="1.4"/>';
+    h += '<line x1="92" y1="0" x2="92" y2="'+H+'" stroke="'+a2+'" stroke-width="2.4"/>';
   } else if (kind === 'glyphs'){
     for (i = 0; i < 9; i++) for (j = 0; j < 14; j++){
       h += '<text x="'+(i * 120 + (j % 2) * 60)+'" y="'+(j * 110 + 60)+'" font-size="'+(46 + ((i * 7 + j * 3) % 5) * 6)+'" fill="'+((i + j) % 6 ? a2 : ac)+'" opacity=".8" text-anchor="middle" transform="rotate('+(((i + j) % 2) ? 12 : -12)+' '+(i * 120 + (j % 2) * 60)+' '+(j * 110 + 40)+')">'+esc(glyph)+'</text>'; }
@@ -4698,9 +4729,10 @@ document.addEventListener('change', function(ev){
       /* ornaments are a set: each box adds or removes one */
       var cur = (DRAFT.orn || artOf(draftTheme(DRAFT), DRAFT.editing || 'draft').ornaments).filter(function(x){ return x !== n.value; });
       if (n.checked) cur.push(n.value);
-      DRAFT.orn = cur; paintWiz(); schedulePersist(); return;
+      DRAFT.orn = cur; DRAFT.lookTouched = true; paintWiz(); schedulePersist(); return;
     }
     DRAFT[k] = k === 'pal' ? +n.value : n.value;
+    if (LOOKKEYS.test(k)) DRAFT.lookTouched = true;
     /* text fields already updated the preview as you typed; repainting here would swallow the click that blurred them */
     if (DRAFT.step === 3 && n.tagName === 'SELECT') paintWiz(); else refreshWizFoot();
     schedulePersist();
@@ -4727,6 +4759,7 @@ document.addEventListener('input', function(ev){
   if (n.id === 'nc-name'){ NC.name = n.value; paintNewChat(true); saveChatDraft(); return; }
   if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT' || n.type === 'checkbox') return;
   DRAFT[n.getAttribute('data-cz')] = n.value;
+  if (LOOKKEYS.test(n.getAttribute('data-cz'))) DRAFT.lookTouched = true;
   if (n.getAttribute('aria-invalid') && String(n.value).trim()){
     n.removeAttribute('aria-invalid');
     var er = n.parentNode.querySelector('.ferr'); if (er) er.remove();
@@ -4739,7 +4772,7 @@ document.addEventListener('input', function(ev){
 });
 document.addEventListener('click', function(ev){
   var pz = ev.target.closest('[data-cz="preset"]');
-  if (pz && DRAFT){ applyPreset(+pz.getAttribute('data-i')); paintWiz(); }
+  if (pz && DRAFT){ applyPreset(+pz.getAttribute('data-i')); DRAFT.lookTouched = true; paintWiz(); }
 });
 document.addEventListener('mousedown', function(ev){ if (!ev.target.closest('.popmenu, [data-act="newmenu"], [data-act="acctmenu"]')) closePopup(); });
 

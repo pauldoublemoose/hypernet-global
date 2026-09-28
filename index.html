@@ -405,6 +405,7 @@ body.is-phone .canvas.px-deep{ --pf:1.1; }
 .pg .pres{ vertical-align:middle; }
 @container detail (max-width:620px){
   .pg-horizon .banner .sqwrap .mosaic{ zoom:.575; }
+  .pg-person .banner .sqwrap > .sq{ zoom:.575; }
   .banner .av.a160{ width:92px; height:92px; flex-basis:92px; font-size:32px; }
 }
 /* the plain look: paper, one hairline, ink; the hero is a quiet watermark */
@@ -884,6 +885,8 @@ input[type=search]::-webkit-search-cancel-button{ -webkit-appearance:none; displ
 #app.phone .acctcard .acrow{ display:flex; align-items:center; gap:14px; min-height:44px; }
 #app.phone .acctcard .acbio{ margin:0; font-size:15px; }
 #app.phone .acctcard .tags{ margin:0; }
+#app.phone .acctcard .acbtns{ display:flex; gap:6px; }
+#app.phone .acctcard .acbtns .btn{ flex:1; }
 #app.phone .acctcard .an{ flex:1; min-width:0; font-size:17px; font-weight:bold; }
 #app.phone .acctcard .an small{ display:block; font-size:13px; font-weight:normal; color:var(--dim); }
 #app.phone .logincard{ display:block; margin:16px; }
@@ -2270,6 +2273,7 @@ function publishedHorizonsOf(pid){
 }
 /* ---- person ---- */
 var PTHEME = {};                 /* pid -> a customised look; people nobody customised are plain */
+Object.keys(window.HYPERNET_THEMES.people || {}).forEach(function(k){ PTHEME[k] = window.HYPERNET_THEMES.people[k]; });
 function personTheme(pid){ return PTHEME[pid] || plainTheme('◉'); }
 function personOrnOpts(pid){
   var p = person(pid), cs = citiesOf(p);
@@ -2289,7 +2293,7 @@ function personHTML(pid){
   var hosts = allEvents().filter(function(e){ return hostPersonOf(e) === PEOPLE[pid]; }).sort(byDate);
   var going = goingOf(pid).filter(function(e){ return !isPast(lastDay(e)); }).sort(byDate);
   var calls = CALLOUTS.filter(function(c){ return c.hostId === pid && !c.closed; });
-  var bar = me ? (S.loggedIn ? toolbarHTML(vb('editprofile', 'self', 'Edit profile', 'edit', { primary:true })) : '')
+  var bar = me ? (S.loggedIn ? toolbarHTML(vb('editprofile', 'self', 'Edit profile', 'edit', { primary:true }), vb('customizeme', 'self', 'Customize', 'paint')) : '')
                : toolbarHTML(vb('followp', pid, fol ? 'Following' : 'Follow', fol ? 'check' : 'plus', { on:fol, primary:!fol, pressed:!!fol }), vb('dm', pid, 'Message', 'chat'));
   var facts = factGrid([['Based in', citiesOf(p).join(', ') || '—'], ['Hosting', String(hosts.filter(function(e){ return !isPast(lastDay(e)); }).length)],
                         ['Going', String(going.length)], ['Horizons', String(hz.length)]]);
@@ -2744,7 +2748,8 @@ function renderNav(){
          '<div class="an">'+esc(me.displayName)+'<small>@'+esc(me.handle)+(citiesOf(me).length ? ' · '+esc(citiesOf(me).join(', ')) : '')+'</small></div></div>' +
          (me.bio ? '<p class="acbio">'+esc(me.bio)+'</p>' : '') +
          ((me.skills||[]).length ? '<div class="tags">' + me.skills.map(function(x){ return '<span class="tag">'+esc(skillLabel(x))+'</span>'; }).join('') + '</div>' : '') +
-         '<button class="btn" data-act="editprofile">'+ic('edit')+'Edit profile</button></div>';
+         '<div class="acbtns"><button class="btn" data-act="editprofile">'+ic('edit')+'Edit profile</button>' +
+         '<button class="btn" data-act="customizeme">'+ic('paint')+'Customize</button></div></div>';
   }
   if (S.folder.kind === 'search' && S.query.trim() && !L.phone){
     h += '<div class="nrow sel search">'+ic('search')+'<span class="nlab">“'+esc(S.query)+'”</span>' +
@@ -3056,7 +3061,8 @@ function captureAcct(){
   var p = PEOPLE['self'];
   return { profile:{ displayName:p.displayName, handle:p.handle, bio:p.bio, skills:p.skills, cities:p.cities, city:p.city },
            rsvp:RSVP, went:WENT, promoted:PROMOTED, hzfollow:HZFOLLOW, pfollow:PFOLLOW, myevents:MYEVENTS, myhorizons:MYHORIZONS,
-           chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT, drafts:{ forms:FORMDRAFTS, chat:CHATDRAFT }, answered:ANSWERED, answering:ANSWERING, shift:SHIFT, read:READ };
+           chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT, drafts:{ forms:FORMDRAFTS, chat:CHATDRAFT }, answered:ANSWERED, answering:ANSWERING, shift:SHIFT, read:READ,
+           look:PTHEME['self'] || null };
 }
 function loadAcct(a){
   a = a || blankAcct({ displayName:'', handle:'', bio:'', skills:[], cities:[], city:'' });
@@ -3071,12 +3077,14 @@ function loadAcct(a){
   FORMDRAFTS = (a.drafts && a.drafts.forms) || {}; CHATDRAFT = (a.drafts && a.drafts.chat) || {};
   ANSWERED = a.answered || {}; ANSWERING = a.answering || {}; SHIFT = a.shift || {};
   if (a.read) Object.keys(a.read).forEach(function(k){ READ[k] = true; });
+  if (a.look) PTHEME['self'] = a.look; else delete PTHEME['self'];
   S.me = { name:p.displayName || 'You', handle:p.handle || 'you' };
 }
 /* an account that is not logged in is, to everyone else, just a person on the network */
 function syncAcctPeople(){
   Object.keys(ACCTS).forEach(function(k){
-    var pid = acctPid(k);
+    var pid = acctPid(k), look = ACCTS[k] && ACCTS[k].look;
+    if (!(S.loggedIn && S.acct === k)){ if (look) PTHEME[pid] = look; else if (k !== 'demo' || !window.HYPERNET_THEMES.people[pid]) delete PTHEME[pid]; }
     if (k === 'demo') return;
     if (S.loggedIn && S.acct === k) delete PEOPLE[pid];
     else PEOPLE[pid] = Object.assign({ id:pid }, ACCTS[k].profile);
@@ -3415,8 +3423,18 @@ function horizonPreviewHTML(){
   if (L.phone) return '<div class="previewbox compact">' + page + '</div>';
   return h.replace('<div class="previewbox">', '<div class="previewbox"><div class="plabel">Horizon page</div>' + page) + '</div>';
 }
+function personPreviewHTML(){
+  var d = DRAFT, t = draftTheme(d), vars = themeVars(t), seed = 'self', me = person('self'), torn = hasOrn(t, seed, 'torn');
+  var page = '<div class="minicanvas"><div class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+vars+'">' + artLayersHTML(t, seed, true) +
+       '<div class="banner'+(torn ? ' torn" style="'+tornStyle(seed) : '')+'"><div class="surf u-'+t.surface+'"></div>' + heroArtHTML(t) + '<div class="wash"></div>' + ornamentsHTML(t, seed, personOrnOpts(seed)) +
+       '<div class="bin"><div class="sqwrap">'+sqT(t, 72) + (hasOrn(t, seed, 'tape') ? tapeHTML() : '') + '</div>' +
+       '<div class="btxt"><div class="eyebrow">@'+esc(me.handle)+'</div><h1 class="hl h-'+t.headline+'">'+headlineHTML(t, me.displayName || 'You')+'</h1>'+(t.mood?'<p class="mood">'+esc(t.mood)+'</p>':'')+'</div></div></div>' +
+       (hasOrn(t, seed, 'ribbon') ? ribbonHTML(t, t.mood || me.displayName) : '') + '</div></div>';
+  return '<div class="previewbox'+(L.phone ? ' compact' : '')+'">' + (L.phone ? '' : '<div class="plabel">Profile page</div>') + page + '</div>';
+}
 function customizePreviewHTML(){
   if (DRAFT.kind === 'horizon') return horizonPreviewHTML();
+  if (DRAFT.kind === 'person') return personPreviewHTML();
   var d = DRAFT, t = draftTheme(d), vars = themeVars(t);
   var ev = { title:d.title || 'Untitled event', date:d.date, city:d.city, host:'You' };
   var sq = function(size){ return '<div class="sq s'+size+' sh-'+t.shape+'" style="'+vars+'"><div class="pat p-'+t.square.pattern+'"></div><span class="g">'+t.square.glyph+'</span></div>'; };
@@ -3601,6 +3619,12 @@ function saveEventEdit(t){
   closeDialogs(); render();
   toast('Saved', e.title);
 }
+/* your profile can wear a look too (never required); only yours, from your page or the You tab */
+var customizePersonDialog = gated(function(){
+  var t = personTheme('self');
+  DRAFT = Object.assign({ step:3, editing:'self', kind:'person', title:person('self').displayName, date:TODAY_ISO, city:'' }, lookOf(t, 'self'));
+  dialog('Customize your profile', wizBodyHTML(), wizFootHTML(), 900);
+});
 var customizeDialog = gated(function(evId){
   var t = TH(evId), e = EVENTS[evId], pal = palIndexOf(t.palette);
   DRAFT = { step:3, editing:evId, title:e.title, date:e.date, city:cityShort(e.city), privacy:e.privacy, host:hostLabel(e), desc:descOf(e),
@@ -3620,6 +3644,12 @@ function wizAct(which){
   /* a look is stored only when someone changed it: an untouched one stays plain (or stays what it was) */
   var t = DRAFT.lookTouched ? draftTheme(DRAFT) : null;
   if (DRAFT.mode === 'edit'){ saveEventEdit(t); return; }
+  if (DRAFT.kind === 'person'){
+    if (t) PTHEME['self'] = t;
+    closeDialogs(); render(); schedulePersist();
+    toast('Look updated', 'Your profile');
+    return;
+  }
   if (DRAFT.kind === 'horizon'){
     var hid = DRAFT.editing;
     if (t) HZTHEME[hid] = t;
@@ -4633,6 +4663,7 @@ document.addEventListener('click', function(ev){
     }
     case 'addevents':    addEventsDialog(id); break;
     case 'customizehz':  customizeHorizonDialog(id); break;
+    case 'customizeme':  customizePersonDialog(); break;
     case 'pkpick': {
       var pi = PK.sel.indexOf(id);
       if (n.checked && pi < 0) PK.sel.push(id); else if (!n.checked && pi >= 0) PK.sel.splice(pi, 1);

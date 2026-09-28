@@ -21,6 +21,11 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   bar, pressable chips) is the app's own bevel button — one height (`--act`), the app's hover / pressed / checked
   states, no event colour, border, font or shape. The action row is a chrome toolbar sitting on top of the event's
   world. Supersedes the earlier "themed, never illegible" verbs.
+- **2026-09-28 · Profiles can wear a look (optional).** Your own profile gets the same Customize as events and horizons
+  (palette, square, backdrop, atmosphere, parallax, ornaments, mood, type, headline), from your profile page's toolbar
+  and the You tab; it is saved with your account and seen by others. A customised profile shows its square in place of
+  the initials. Ornaments state only facts: city, first skill (a "since" year only when one is known). Three fixture
+  people (Anna, Rio, Mira) have looks; the rest stay plain.
 - **2026-09-28 · One page template for event, horizon and person.** `pageHTML(spec)` builds all three: canvas layers →
   title block (square, mosaic or avatar; title; subtitle; mood) → the grey toolbar → anything that must sit under it
   (an event's entry and editions) → facts grid → sections. Only the spec differs: an event's facts and timeline, a

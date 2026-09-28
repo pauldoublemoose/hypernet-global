@@ -411,6 +411,34 @@ async function overflowEverywhere(p, label){
     ok(!c.errors.length, kind + ': no console errors (template)');
   }
 
+  /* ---------------- 2026-09-28: customising is optional; a profile can be customised and keeps it ---------------- */
+  for (const kind of ['desk', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '', true);
+    await join(c, 'Plain Pat', 'plainpat' + kind);
+    /* an event published from the first step, and a new horizon, are plain */
+    await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
+    await c.fill('#w-t', 'Plain supper'); await c.fill('#w-d', '2026-11-02'); await c.fill('#w-c', 'Brno');
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(600);
+    const pe = await ev(c, () => { const id = MYEVENTS[MYEVENTS.length - 1]; return { stored:!!window.HYPERNET_THEMES.themes[id], page:!!document.querySelector('.pg-event.plain') }; });
+    ok(!pe.stored && pe.page, kind + ': an event published without a look wears the plain default');
+    await c.evaluate(() => runCmd('new-horizon')); await c.waitForTimeout(250);
+    await c.fill('#nh-n', 'Plain places'); await c.click('#nh-go'); await c.waitForTimeout(500);
+    const ph = await ev(c, () => { const k = MYHORIZONS[MYHORIZONS.length - 1]; return { stored:!!HZTHEME[k], page:!!document.querySelector('.pg-horizon.plain') }; });
+    ok(!ph.stored && ph.page, kind + ': a new horizon wears the plain default');
+    /* your profile: Customize from your page, keep it across reload; nobody else's page offers it */
+    await c.evaluate(() => { openItem('person', 'self'); }); await c.waitForTimeout(400);
+    await c.click('.pg-person .actbar [data-act="customizeme"]'); await c.waitForTimeout(250);
+    await c.click('.dlg [data-cz="preset"][data-i="1"]'); await c.waitForTimeout(150);
+    await c.click('.dlg [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(500);
+    await c.reload(); await c.waitForTimeout(800);
+    const pp = await ev(c, () => ({ look:!!PTHEME.self, page:!!document.querySelector('.pg-person:not(.plain)') }));
+    ok(pp.look && pp.page, kind + ': a customised profile persists across reload');
+    await c.goto(URL + '#/person/kai'); await c.waitForTimeout(400);
+    ok(await ev(c, () => !!document.querySelector('.pg-person.plain') && !document.querySelector('[data-act="customizeme"]:not(.acctcard *)')), kind + ': someone else\'s profile has no Customize, and an uncustomised one is plain');
+    ok(!c.errors.length, kind + ': no console errors (optional customize) ' + c.errors.join(' '));
+  }
+
   /* ---------------- tablet ---------------- */
   const t = await ctx('tab');
   await open(t, '', true);

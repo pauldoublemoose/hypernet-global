@@ -262,6 +262,31 @@ window.HYPERNET_THEMES = {
   "fallbackNote": "Anything nobody customised (an event, horizon or person) wears HN_PLAIN: paper, hairlines, ink. HN_THEME(id) can still derive a deterministic look from an id, but the app no longer uses it for uncustomised things."
 };
 
+/* People who customised their profile (the rest stay plain). Same shape as an event theme. */
+window.HYPERNET_THEMES.people = {
+  "p-anna": {
+    "mood": "long tones, short sentences",
+    "palette": { "bg": "#06080e", "ink": "#e9e7e0", "accent": "#6fd6c8", "accent2": "#17233a", "dim": "#7d8796" },
+    "square": { "pattern": "moon", "glyph": "☾" },
+    "surface": "grain", "type": "serif", "headline": "huge", "motion": "drift", "shape": "sharp", "density": "airy",
+    "backdrop": "contours", "atmosphere": "dust", "ornaments": ["stamp", "compass"], "parallax": "gentle"
+  },
+  "p-rio": {
+    "mood": "build it loud, strike it clean",
+    "palette": { "bg": "#12141f", "ink": "#e8ecff", "accent": "#ff8fb1", "accent2": "#262b45", "dim": "#8288a8" },
+    "square": { "pattern": "rays", "glyph": "✦" },
+    "surface": "scanlines", "type": "display", "headline": "outlined", "motion": "none", "shape": "cut", "density": "packed",
+    "backdrop": "synthwave", "atmosphere": "sparks", "ornaments": ["ribbon", "stamp"], "parallax": "deep"
+  },
+  "p-mira": {
+    "mood": "lights in the trees, nobody in charge",
+    "palette": { "bg": "#000000", "ink": "#d8ffe8", "accent": "#39ff88", "accent2": "#12301f", "dim": "#4c7f66" },
+    "square": { "pattern": "scan", "glyph": "✳" },
+    "surface": "none", "type": "mono", "headline": "stacked", "motion": "none", "shape": "sharp", "density": "airy",
+    "backdrop": "stars", "atmosphere": "fireflies", "ornaments": ["compass", "tape"], "parallax": "gentle"
+  }
+};
+
 /* The plain look: what an event, horizon or profile wears until someone customises it.
    The app's own monochrome language: paper, a hairline ruled backdrop, ink type, no particles, no ornaments. */
 window.HN_PLAIN = {

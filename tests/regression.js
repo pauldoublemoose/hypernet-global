@@ -362,6 +362,35 @@ async function overflowEverywhere(p, label){
     ok(!mo.raf && !mo.drawn && mo.pf === '0' && mo.ribbon === 'none', 'reduced motion: no particles, no parallax, no marquee ' + JSON.stringify(mo));
   }
 
+  /* ---------------- 2026-09-28: the reading pane closes, in every context, and the URL keeps it closed ---------------- */
+  {
+    const c = await ctx('desk');
+    await open(c, '', true);
+    await join(c, 'Pane Tester', 'panetest');
+    const st = () => ev(c, () => ({ hash:location.hash, split:$('app').classList.contains('split'), closed:$('app').classList.contains('pane-closed'), stack:S.stack.length,
+      full:$('listcol').getBoundingClientRect().width >= $('cbody').getBoundingClientRect().width - 2, dcol:getComputedStyle($('detailcol')).display }));
+    for (const [name, h, sel] of [['horizon → event', '#/horizon/season', '#listbody .track'], ['home', '#/home', '#listbody .row[data-type="event"]'],
+        ['home section', '#/home/soon', '#listbody .row[data-type="event"]'], ['show all', '#/home/announced', '#listbody .row[data-type="event"]'],
+        ['search', '#/search?q=burn', '#listbody .row[data-type="event"]'], ['people → person', '#/people', '#listbody .row']]){
+      await c.goto(URL + h); await c.waitForTimeout(450);
+      await c.click(sel + ' >> nth=1'); await c.waitForTimeout(350);
+      const a = await st();
+      await c.click('#dbar [data-act="closepane"]'); await c.waitForTimeout(300);
+      const b = await st();
+      await c.reload(); await c.waitForTimeout(650);
+      const r = await st();
+      await c.goBack(); await c.waitForTimeout(450);
+      const k = await st();
+      await c.keyboard.press('Escape'); await c.waitForTimeout(300);
+      const e = await st();
+      await c.click(sel + ' >> nth=0'); await c.waitForTimeout(350);
+      const p = await st();
+      ok(a.split && a.stack && !b.split && b.closed && b.full && b.dcol === 'none' && /pane=closed/.test(b.hash) && r.closed && !r.stack && k.split && k.stack &&
+         e.closed && p.split && p.stack && !/pane=closed/.test(p.hash), 'pane: ' + name + ' closes (× and Esc), full width, survives reload, back reopens, a pick reopens');
+    }
+    ok(!c.errors.length, 'pane: no console errors ' + c.errors.join(' '));
+  }
+
   /* ---------------- tablet ---------------- */
   const t = await ctx('tab');
   await open(t, '', true);

@@ -21,6 +21,9 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   bar, pressable chips) is the app's own bevel button — one height (`--act`), the app's hover / pressed / checked
   states, no event colour, border, font or shape. The action row is a chrome toolbar sitting on top of the event's
   world. Supersedes the earlier "themed, never illegible" verbs.
+- **2026-09-28 · The reading pane can be closed.** A window close (×) in the pane's title bar, or Esc, closes it; the
+  list or horizon then takes the whole centre and nothing is auto-picked until you choose something. `?pane=closed`
+  in the URL keeps it closed across reload and history; back reopens what was open.
 - **2026-09-27 · The canvas is layered art; reading stays calm.** Back to front: seeded backdrop, header hero,
   particle atmosphere, then content panels and the window's toolbar. Art never takes a click or covers a control;
   ornaments state only facts (edition year, entry model, city, a horizon's years), never invented ones. Text colours

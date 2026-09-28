@@ -168,6 +168,9 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 #dbar{ display:none; flex:0 0 auto; align-items:center; gap:10px; padding:0 0 6px; }
 #app.show-dbar #dbar{ display:flex; }
 #dbar .dcrumb{ color:var(--dim); font-size:var(--fs-s); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#dbar .dkind{ font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; }
+#dbar .dclose{ margin-left:auto; flex:0 0 auto; width:30px; height:26px; display:grid; place-items:center; border:0; padding:0; background:var(--face); color:#000; box-shadow:var(--out); }
+#dbar .dclose:active{ box-shadow:var(--in); }
 #dscroll{ position:relative; }
 
 /* rows */
@@ -1267,6 +1270,7 @@ var S = {
   rows:[],
   pending:null,
   autoSel:false,
+  paneClosed:false,           /* the reading pane was closed with its ×: the list takes the whole centre until you pick something */
   acct:null,                   /* which account is logged in: 'me' or 'demo' */
   lastTab:null
 };
@@ -2348,6 +2352,13 @@ function missingHTML(path){
   h += '<button class="btn'+(kind === 'chats' && !S.loggedIn ? '' : ' primary')+'" data-act="gohome">'+ic('home')+'Home</button>';
   return h + '</div></div>';
 }
+var KINDNAME = { event:'Event', horizon:'Event Horizon', person:'Person', callout:'Call out', missing:'' };
+/* close the reading pane: the list (or the horizon) gets the whole centre; picking something opens it again */
+function closePane(){
+  if (L.phone || !L.split) return;
+  S.stack = []; S.autoSel = false; S.paneClosed = true;
+  render();
+}
 function detailHTML(it){
   if (it && it.type === 'missing') return missingHTML(it.id);
   if (!it) return '<div class="empty" style="padding-top:25vh">'+ic('horizon',40).replace('class="ic"','class="ic" style="margin:0 auto 10px;opacity:.35"')+'</div>';
@@ -2370,11 +2381,15 @@ function renderDetail(){
   if (onEv){ var bt = TH(it.id); bar.className = 't-' + bt.type + ' sh-' + bt.shape; bar.setAttribute('style', themeVars(bt)); bar.innerHTML = evbarHTML(it.id); }
   else bar.innerHTML = '';
   /* the back bar: only when there is somewhere to go back to */
-  var show = !L.phone && ((L.split && S.stack.length > 1) || (!L.split && S.stack.length > 0));
+  /* in a split view the reading pane has a title bar with a window close; Back joins it when there is somewhere to go */
+  var show = !L.phone && ((L.split && S.stack.length > 0) || (!L.split && S.stack.length > 0));
   $('app').classList.toggle('show-dbar', show);
   if (show){
+    var back = !L.split || S.stack.length > 1;
     var prev = S.stack.length > 1 ? itemName(S.stack[S.stack.length-2]) : (isCal() ? folderName() + ' · Calendar' : folderName());
-    $('dbar').innerHTML = '<button class="btn" data-act="back">'+ic('back')+'Back</button><span class="dcrumb">'+esc(prev)+'</span>';
+    $('dbar').innerHTML = (back ? '<button class="btn" data-act="back">'+ic('back')+'Back</button><span class="dcrumb">'+esc(prev)+'</span>'
+                                : '<span class="dcrumb dkind">'+esc(KINDNAME[it.type] || '')+'</span>') +
+      (L.split ? '<button class="x dclose" data-act="closepane" aria-label="Close" title="Close (Esc)">'+ic('close',16)+'</button>' : '');
   }
 }
 </script>
@@ -4535,6 +4550,7 @@ document.addEventListener('click', function(ev){
     case 'open':     openItem(n.getAttribute('data-type'), id, 'push'); break;
     case 'open-reset': openItem(n.getAttribute('data-type'), id); break;
     case 'back':     navBack(); break;
+    case 'closepane': closePane(); break;
     case 'pback':    navBack(); break;
     case 'psearch':  S.phoneSearch = true; if (S.folder.kind !== 'search') rememberPlace(); render(); break;
     case 'clearsearch': leaveSearch(); render(); break;
@@ -4757,6 +4773,7 @@ document.addEventListener('keydown', function(ev){
     if (inField){ ae.blur(); return; }
     if (L.phone){ if (phoneCanBack()) navBack(); return; }
     if (S.stack.length > (L.split ? 1 : 0)){ navBack(); return; }
+    if (L.split && S.stack.length === 1){ closePane(); return; }
     return;
   }
   if (ev.key === 'Enter' && ae){
@@ -4833,12 +4850,13 @@ function snapNow(){
   var f = S.folder, v = viewsOf(f);
   return { hn:1, tab:S.tab, folder:{ kind:f.kind, id:f.id || null }, view: v.length ? viewOf(f) : null,
            stack: S.autoSel ? [] : S.stack.map(function(it){ return { type:it.type, id:it.id }; }),
+           closed: !L.phone && !!S.paneClosed && !S.stack.length,
            q:S.query, ps:!!S.phoneSearch, cal:{ mode:S.calMode, at:S.calAnchor, day:S.calDay },
            dock: L.phone ? null : { open:!!S.rightOpen, chat:S.chatOpen || null } };
 }
 function navKeyOf(s){
   return JSON.stringify([L.phone ? s.tab : '', s.folder.kind, s.folder.id || null, s.view || null,
-    (s.stack || []).map(function(it){ return it.type + ':' + it.id; }).join('>'), !!s.ps, (s.view === 'calendar' && s.cal && s.cal.day) || null]);
+    (s.stack || []).map(function(it){ return it.type + ':' + it.id; }).join('>'), !!s.ps, (s.view === 'calendar' && s.cal && s.cal.day) || null, !!s.closed]);
 }
 function hashOf(s){
   var top = s.stack[s.stack.length-1], p = [], path;
@@ -4848,6 +4866,7 @@ function hashOf(s){
     if (s.folder.kind !== home) p.push(['in', folderPath(s.folder)]);
   } else path = folderPath(s.folder);
   if (s.folder.kind === 'search' && s.q) p.push(['q', s.q]);
+  if (s.closed && !top) p.push(['pane', 'closed']);
   var views = viewsOf(s.folder);
   if (s.view && views.length && s.view !== views[0]) p.push(['view', s.view]);
   if (s.view === 'calendar' && s.cal){
@@ -4873,7 +4892,7 @@ function parseHash(h){
   });
   var seg = path.split('/').filter(Boolean).map(function(x){ try { return decodeURIComponent(x); } catch(e){ return x; } });
   var a = seg[0] || 'home', b = seg[1], it = null;
-  var s = { hn:1, folder:{ kind:'home', id:null }, stack:[], q:p.q || '', ps:false, view:p.view || null,
+  var s = { hn:1, folder:{ kind:'home', id:null }, stack:[], q:p.q || '', ps:false, view:p.view || null, closed:p.pane === 'closed',
             cal:{ mode:p.cal || 'month', at:isoDate(p.at) || null, day:isoDate(p.day) || null } };
   if (a === 'event') it = { type:'event', id:evBySlug(b) };
   else if (a === 'horizon') it = { type:'horizon', id:hzBySlug(b) };
@@ -4907,6 +4926,7 @@ function applySnap(s){
   /* something you can't open (deleted, private, mistyped) is shown as such, never silently dropped */
   S.stack = (s.stack || []).map(function(it){ return validItem(it) ? { type:it.type, id:it.id } : { type:'missing', id:itemPath(it) }; });
   S.autoSel = false;
+  S.paneClosed = !!s.closed && !S.stack.length;
   S.query = S.folder.kind === 'search' ? (s.q || '') : '';
   S.phoneSearch = !!s.ps;
   /* a link without ?view= means the destination's first view, whatever you last used */
@@ -5055,6 +5075,10 @@ function render(){
     if (S.tab !== 'horizons') S.folder = tabRootFolder(S.tab);
     S.stack = [{ type:'horizon', id:hid1 }].concat(S.stack);
   }
+  /* a closed reading pane stays closed until you pick something; the list then has the whole centre */
+  if (S.stack.length) S.paneClosed = false;
+  L.paneClosed = !L.phone && L.split && S.paneClosed && !isCal();
+  if (L.paneClosed) L.split = false;
   /* in a split view something is always open in the reading pane */
   var items = null;
   /* an item the app picked for the reading pane is not something you opened: without a reading pane, show the list */
@@ -5067,7 +5091,7 @@ function render(){
   if (!L.phone) app.style.setProperty('--nav-w', L.navW + 'px');
   app.className = [L.phone ? 'phone' : 'desk', L.left ? 'l-open' : '', L.right ? 'r-open' : '', L.narrowDock ? 'dock-narrow' : '', L.dockOver ? 'dock-over' : '', L.split ? 'split' : 'push',
     isCal() ? 'v-cal' : '', S.stack.length ? 'has-detail' : '', scr ? 'scr-' + scr : '',
-    conv && S.loggedIn ? 'conv-open' : '', !L.phone && S.loggedIn ? 'readmarks' : '', S.loggedIn ? '' : 'preview'].filter(Boolean).join(' ');
+    conv && S.loggedIn ? 'conv-open' : '', !L.phone && S.loggedIn ? 'readmarks' : '', S.loggedIn ? '' : 'preview', L.paneClosed ? 'pane-closed' : ''].filter(Boolean).join(' ');
   document.body.className = L.phone ? 'is-phone' : 'is-desk';
 
   if (L.phone){ renderAppbar(); renderTabbar(); } else renderToolbar();

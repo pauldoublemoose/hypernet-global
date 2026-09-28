@@ -168,6 +168,8 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 #dbar{ display:none; flex:0 0 auto; align-items:center; gap:10px; padding:0 0 6px; }
 #app.show-dbar #dbar{ display:flex; }
 #dbar .dcrumb{ color:var(--dim); font-size:var(--fs-s); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.panempty{ min-height:100%; display:grid; place-items:center; color:var(--face); background:#fff; }
+.panempty svg{ opacity:.9; }
 #dbar .dkind{ font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; }
 #dbar .dclose{ margin-left:auto; flex:0 0 auto; width:30px; height:26px; display:grid; place-items:center; border:0; padding:0; background:var(--face); color:#000; box-shadow:var(--out); }
 #dbar .dclose:active{ box-shadow:var(--in); }
@@ -2347,7 +2349,7 @@ function missingHTML(path){
   return h + '</div></div>';
 }
 var KINDNAME = { event:'Event', horizon:'Event Horizon', person:'Person', callout:'Call out', missing:'' };
-/* close the reading pane: the list (or the horizon) gets the whole centre; picking something opens it again */
+/* close the reading pane: it stays where it is, empty; picking something fills it again */
 function closePane(){
   if (L.phone || !L.split) return;
   S.stack = []; S.autoSel = false; S.paneClosed = true;
@@ -2355,7 +2357,8 @@ function closePane(){
 }
 function detailHTML(it){
   if (it && it.type === 'missing') return missingHTML(it.id);
-  if (!it) return '<div class="empty" style="padding-top:25vh">'+ic('horizon',40).replace('class="ic"','class="ic" style="margin:0 auto 10px;opacity:.35"')+'</div>';
+  /* an empty reading pane: a blank panel with the faint Hypernet mark, nothing to read */
+  if (!it) return '<div class="panempty" aria-hidden="true"><svg viewBox="0 0 32 32" width="72" height="72"><path d="M16 4 28 16 16 28 4 16z" fill="currentColor"/></svg></div>';
   if (it.type === 'event' && EVENTS[it.id])      return canvasHTML(it.id);
   if (it.type === 'horizon')                     return horizonHTML(it.id, true);
   if (it.type === 'person')                      return personHTML(it.id);
@@ -5109,15 +5112,14 @@ function render(){
     if (S.tab !== 'horizons') S.folder = tabRootFolder(S.tab);
     S.stack = [{ type:'horizon', id:hid1 }].concat(S.stack);
   }
-  /* a closed reading pane stays closed until you pick something; the list then has the whole centre */
+  /* a closed reading pane stays in the layout, empty, until you pick something: nothing is picked for you */
   if (S.stack.length) S.paneClosed = false;
   L.paneClosed = !L.phone && L.split && S.paneClosed && !isCal();
-  if (L.paneClosed) L.split = false;
-  /* in a split view something is always open in the reading pane */
+  /* in a split view something is open in the reading pane, unless you closed it */
   var items = null;
   /* an item the app picked for the reading pane is not something you opened: without a reading pane, show the list */
   if (!L.split && S.autoSel){ S.stack = []; S.autoSel = false; }
-  if (L.split && !S.stack.length){ items = orderedItems(); var first = items.filter(function(it){ return it.type !== 'more'; })[0];
+  if (L.split && !S.stack.length && !L.paneClosed){ items = orderedItems(); var first = items.filter(function(it){ return it.type !== 'more'; })[0];
     if (first){ S.stack = [first]; S.autoSel = true; } }
   var conv = phoneConv();
   var scr = L.phone ? ((conv || (S.tab === 'chats' && !S.stack.length)) ? 'chats' : (S.tab === 'you' && S.folder.kind === 'you' && !S.stack.length) ? 'you' : 'center') : '';

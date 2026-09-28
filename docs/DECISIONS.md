@@ -37,9 +37,10 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   ornaments, a kind glyph on its square. The ten authored fixture themes stay; fixture events without one now go plain
   instead of wearing a look derived from their id (`DERIVED_LOOKS` switches the old behaviour back). A new event can
   be published from any wizard step, and a look is stored only when someone actually changed it.
-- **2026-09-28 · The reading pane can be closed.** A window close (×) in the pane's title bar, or Esc, closes it; the
-  list or horizon then takes the whole centre and nothing is auto-picked until you choose something. `?pane=closed`
-  in the URL keeps it closed across reload and history; back reopens what was open.
+- **2026-09-28 · The reading pane can be closed — to an empty pane.** A window close (×) in the pane's title bar, or Esc,
+  empties it; the pane keeps its place and width (owner: "leave the space on the right empty, don't hide it") and shows
+  only a blank panel with the faint Hypernet mark. Nothing is auto-picked until you choose something, which fills it
+  again. `?pane=closed` keeps it empty across reload and history; back brings back what was open. Phone unchanged.
 - **2026-09-27 · The canvas is layered art; reading stays calm.** Back to front: seeded backdrop, header hero,
   particle atmosphere, then content panels and the window's toolbar. Art never takes a click or covers a control;
   ornaments state only facts (edition year, entry model, city, a horizon's years), never invented ones. Text colours

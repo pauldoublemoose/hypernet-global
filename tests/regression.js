@@ -11,7 +11,9 @@
    phone verb bar, private horizons, horizon as a desktop destination, volunteer shifts, safe Cancel/Discard;
    and the 2026-09-27 owner changes: the logged-out preview bar, one-view Home, the always-there sidebar;
    one button style on every event page; the canvas art (backdrop on every page, art takes no clicks and covers no
-   control, text AA over the art on events and customised horizons, reduced motion stills it). */
+   control, text AA over the art on events and customised horizons, reduced motion stills it); and 2026-09-28: the
+   reading pane closes to an empty pane (URL, back, Esc) in six contexts, event / horizon / person share one page
+   template, uncustomised things are plain, a customised profile persists. */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch(e){
   try { ({ chromium } = require('playwright-core')); } catch(e2){
@@ -367,8 +369,10 @@ async function overflowEverywhere(p, label){
     const c = await ctx('desk');
     await open(c, '', true);
     await join(c, 'Pane Tester', 'panetest');
+    /* closed = the pane keeps its place and width, and is empty */
     const st = () => ev(c, () => ({ hash:location.hash, split:$('app').classList.contains('split'), closed:$('app').classList.contains('pane-closed'), stack:S.stack.length,
-      full:$('listcol').getBoundingClientRect().width >= $('cbody').getBoundingClientRect().width - 2, dcol:getComputedStyle($('detailcol')).display }));
+      kept:$('detailcol').getBoundingClientRect().width > 300 && $('listcol').getBoundingClientRect().width < $('cbody').getBoundingClientRect().width - 300,
+      empty:!!$('dscroll').querySelector('.panempty') && !$('dscroll').querySelector('.canvas') }));
     for (const [name, h, sel] of [['horizon → event', '#/horizon/season', '#listbody .track'], ['home', '#/home', '#listbody .row[data-type="event"]'],
         ['home section', '#/home/soon', '#listbody .row[data-type="event"]'], ['show all', '#/home/announced', '#listbody .row[data-type="event"]'],
         ['search', '#/search?q=burn', '#listbody .row[data-type="event"]'], ['people → person', '#/people', '#listbody .row']]){
@@ -385,8 +389,8 @@ async function overflowEverywhere(p, label){
       const e = await st();
       await c.click(sel + ' >> nth=0'); await c.waitForTimeout(350);
       const p = await st();
-      ok(a.split && a.stack && !b.split && b.closed && b.full && b.dcol === 'none' && /pane=closed/.test(b.hash) && r.closed && !r.stack && k.split && k.stack &&
-         e.closed && p.split && p.stack && !/pane=closed/.test(p.hash), 'pane: ' + name + ' closes (× and Esc), full width, survives reload, back reopens, a pick reopens');
+      ok(a.split && a.stack && b.split && b.closed && b.kept && b.empty && !b.stack && /pane=closed/.test(b.hash) && r.closed && r.empty && !r.stack && k.split && k.stack &&
+         e.closed && e.empty && p.split && p.stack && !p.empty && !/pane=closed/.test(p.hash), 'pane: ' + name + ' closes (× and Esc) to an empty pane that keeps its place, survives reload, back reopens, a pick fills it');
     }
     ok(!c.errors.length, 'pane: no console errors ' + c.errors.join(' '));
   }

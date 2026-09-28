@@ -395,6 +395,7 @@ body.is-phone .canvas.px-deep{ --pf:1.1; }
 .psub2{ margin:12px 0 0; max-width:60ch; font-size:16px; line-height:1.45; color:var(--eink); }
 .banner .av.a160{ width:160px; height:160px; flex-basis:160px; font-size:56px; box-shadow:0 0 0 1px rgba(0,0,0,.25), 4px 4px 0 rgba(0,0,0,.18); }
 .pg-horizon .banner .mosaic{ box-shadow:0 0 0 1px var(--eac2), 4px 4px 0 rgba(0,0,0,.3); }
+.pg .banner .sqwrap > .sq:not(.plain){ box-shadow:0 0 0 1px color-mix(in srgb, var(--eink) 22%, transparent); }
 .pg .tracks{ margin:0; border-top:1px solid var(--eac2); }
 .pg .track, .pg .trpast{ padding-left:0; padding-right:0; border-color:var(--eac2); }
 .pg .track .ts, .pg .trpast{ color:var(--edim); }
@@ -406,8 +407,7 @@ body.is-phone .canvas.px-deep{ --pf:1.1; }
 .pg .crow .r-meta{ color:var(--edim); }
 .pg .pres{ vertical-align:middle; }
 @container detail (max-width:620px){
-  .pg-horizon .banner .sqwrap .mosaic{ zoom:.575; }
-  .pg-person .banner .sqwrap > .sq{ zoom:.575; }
+  .pg-horizon .banner .sqwrap, .pg-person .banner .sqwrap:has(> .sq){ zoom:.575; }
   .banner .av.a160{ width:92px; height:92px; flex-basis:92px; font-size:32px; }
 }
 /* the plain look: paper, one hairline, ink; the hero is a quiet watermark */

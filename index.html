@@ -1578,7 +1578,7 @@ var EVENTSHELVES = /^(week|soon|announced|followed)$/;
 function viewOf(f){ f = f || S.folder; var v = viewsOf(f); return v.length ? (S.view[destKey(f)] || v[0]) : 'list'; }
 function isCal(){ return viewOf() === 'calendar'; }
 function openCallouts(){
-  var open = CALLOUTS.filter(function(c){ return !c.closed; });
+  var open = CALLOUTS.filter(calloutOpen);
   var mine = S.loggedIn ? open.filter(function(c){ return c.hostId && PFOLLOW[c.hostId]; }) : [];
   return mine.concat(open.filter(function(c){ return mine.indexOf(c) < 0; }));
 }
@@ -4310,8 +4310,8 @@ function ctxOtherItems(t, only){
     if (mine) out.push({ code:'edit', label:'Edit…', icon:'edit', run:function(){ newCalloutDialog({ edit:id }); } },
                        { code:'close', label: c.closed ? 'Reopen' : 'Close call out', icon:'close', run:function(){ closeCallout(id); } });
     else if (ans) out.push({ code:'chat', label:'Open chat', icon:'chat', run:function(){ openChat(ans); } });
-    else if (!c.closed) out.push({ code:'answer', label:'Answer…', icon:'chat', run:function(){ answerCallout(id); } });
-    if (!c.closed) out.push({ code:'share', label:'Share…', icon:'share', run:function(){ shareDialog(id, 'callout'); } });
+    else if (calloutOpen(c) && calloutAuthor(c)) out.push({ code:'answer', label:'Answer…', icon:'chat', run:function(){ answerCallout(id); } });
+    if (calloutOpen(c)) out.push({ code:'share', label:'Share…', icon:'share', run:function(){ shareDialog(id, 'callout'); } });
   } else {
     var ch = CHATS[id];
     out = [{ code:'open', label:'Open', def:true, lead:chatAv(ch), run:function(){ openChat(id); } }, '-',
@@ -4733,7 +4733,9 @@ var shareToChat = gated(function(id, cid, type, text){
 var answerCallout = gated(function(coId){
   var c = calloutOf(coId); if (!c || isOwnCallout(c)) return;
   if (ANSWERED[coId] && CHATS[ANSWERED[coId]]){ openChat(ANSWERED[coId]); return; }
-  var cid = openDM(c.hostId || 'p-anna');
+  if (!calloutOpen(c)){ toast('This call out is closed', c.title); return; }
+  if (!calloutAuthor(c)){ toast('Can’t answer this call out', 'We don’t know who posted it'); return; }
+  var cid = openDM(calloutAuthor(c));
   if (!CHATDRAFT[cid]) CHATDRAFT[cid] = 'Re: ' + c.title + ' — I can do this. When do you need me?';
   ANSWERING[cid] = coId;
   openChat(cid);

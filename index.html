@@ -403,6 +403,7 @@ span.chip.strong{ border-color:transparent; background:color-mix(in srgb, var(--
 .vocab dt{ text-transform:none; letter-spacing:0; font:bold 14px var(--sys); color:var(--eink); }
 .srcline{ margin-top:12px; font:11px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--edim); }
 .av{ width:22px; height:22px; flex:0 0 22px; display:inline-grid; place-items:center; color:#fff; font:bold 10px var(--sys); }
+.av.img{ position:relative; overflow:hidden; background:var(--face); }
 .av.a40{ width:40px; height:40px; flex-basis:40px; font-size:14px; }
 .av.a64{ width:64px; height:64px; flex-basis:64px; font-size:22px; }
 .av.a28{ width:28px; height:28px; flex-basis:28px; font-size:11px; }
@@ -1191,8 +1192,10 @@ function titleCase(s){ return String(s).toLowerCase().replace(/(^|[\s\-\/&])([a-
 function cityShort(c){ if(!c) return ''; var b=String(c).split('|'); return titleCase(b[b.length-1]); }
 function initials(n){ var b=String(n).trim().split(/\s+/); return (b[0][0]+(b[1]?b[1][0]:'')).toUpperCase(); }
 function person(id){ return PEOPLE[id] || { id:id, displayName:id, handle:id, skills:[], city:'', bio:'' }; }
+/* a person's avatar: the photo on their look when they have one, else their initials */
 function avHTML(id, cls){
-  var p = person(id);
+  var p = person(id), lk = typeof PTHEME !== 'undefined' && PTHEME[id];
+  if (lk && lk.image) return '<span class="av img '+(cls||'')+'" aria-hidden="true"><img src="'+esc(lk.image)+'" alt="" draggable="false"></span>';
   return '<span class="av '+(cls||'')+'" style="background:'+(AVCOLOR[id]||'#5a5a5a')+'" aria-hidden="true">'+esc(initials(p.displayName))+'</span>';
 }
 function allEvents(){ return Object.keys(EVENTS).map(function(k){ return EVENTS[k]; }); }
@@ -2847,6 +2850,7 @@ function profileForm(){
   return '<div class="field"><label for="pf-name">Name</label><input type="text" id="pf-name" value="'+esc(PF.name)+'" placeholder="Your name" autocomplete="name"></div>' +
     '<div class="field"><label for="pf-handle">Handle</label><span class="handlein"><span>@</span><input type="text" id="pf-handle" value="'+esc(PF.handle)+'" placeholder="yourname" autocomplete="username" autocapitalize="off" spellcheck="false" aria-describedby="pf-herr"'+(taken?' aria-invalid="true"':'')+'></span>' +
       '<span class="ferr" id="pf-herr"'+(taken?'':' hidden')+'>'+(taken ? '@'+esc(PF.handle)+' is taken' : '')+'</span></div>' +
+    (PF.mode === 'edit' ? pfPhotoHTML() : '') +
     '<div class="field"><label for="pf-about">About you</label><input type="text" id="pf-about" maxlength="120" value="'+esc(PF.about)+'" placeholder="Builds shade, cooks for eighty, always on strike crew"></div>' +
     '<div class="field"><span class="flabel" id="pf-sk-l">What you can do</span><div class="pchips" role="group" aria-labelledby="pf-sk-l">' +
       SKILLCHOICES.map(function(c){ var on = PF.skills.indexOf(c[0]) >= 0;
@@ -2863,9 +2867,35 @@ function demoRowHTML(){
     '<div class="lr"><b>Try the demo account</b><div class="fhelp">'+esc(m.displayName)+' · @'+esc(m.handle)+'</div></div>' +
     ic('back',18).replace('class="ic"','class="ic" style="transform:scaleX(-1)"')+'</div></div>';
 }
+/* your photo is your profile look's image: the same picture as the square in Customize */
+function pfPhotoHTML(){
+  var me = person('self'), sq = PF.photo ? sqT(Object.assign({}, PTHEME.self || plainTheme('◉'), { image:PF.photo }), 80)
+    : '<span class="av" style="width:80px;height:80px;flex-basis:80px;font-size:28px;background:'+(AVCOLOR.self||'#5a5a5a')+'">'+esc(initials(PF.name || me.displayName || 'You'))+'</span>';
+  return '<div class="field"><span class="flabel" id="pf-ph-l">Photo</span><div class="czimg" role="group" aria-labelledby="pf-ph-l">' +
+    '<button type="button" class="czdrop" data-pfact="pick" data-czdrop="photo" aria-label="'+(PF.photo ? 'Replace your photo' : 'Choose a photo')+'">' + sq + '</button>' +
+    '<div class="czimgside"><input type="file" id="pf-photo" class="czfile" accept="image/*" data-czfile="photo" tabindex="-1" aria-hidden="true">' +
+      '<button type="button" class="btn" data-pfact="pick">'+(PF.photo ? 'Replace photo' : 'Upload photo')+'</button>' +
+      (PF.photo ? '<button type="button" class="btn" data-pfact="rm">Remove photo</button>' : '') +
+      '<p class="fhelp">Square, cropped from the centre, up to 10 MB. It is also your profile’s square in Customize.</p>' +
+      '<p class="ferr" id="pf-imgerr" role="alert"></p></div></div></div>';
+}
+function pfRepaint(){ pfSync(); var b = $('pfbody'); if (b) b.innerHTML = profileForm(); pfSync(); }
+function pfTakePhoto(file){
+  var err = $('pf-imgerr'), bad = imageProblem(file), pf = PF;
+  if (err) err.textContent = bad;
+  if (bad || !pf) return;
+  squareImage(file, (PTHEME.self || window.HN_PLAIN).bg).then(function(url){ if (PF !== pf) return; pf.photo = url; pfRepaint(); },
+    function(){ var e2 = $('pf-imgerr'); if (e2) e2.textContent = 'That image couldn’t be read. Try another file.'; });
+}
+document.addEventListener('click', function(ev){
+  var b = ev.target.closest && ev.target.closest('[data-pfact]');
+  if (!b || !PF) return;
+  if (b.getAttribute('data-pfact') === 'pick'){ var f = $('pf-photo'); if (f) f.click(); }
+  else { PF.photo = null; pfRepaint(); }
+});
 function profileDialog(mode){
   var p = PEOPLE['self'], up = mode === 'signup';
-  PF = { mode:mode, name: up ? '' : p.displayName, handle: up ? '' : p.handle,
+  PF = { mode:mode, name: up ? '' : p.displayName, handle: up ? '' : p.handle, photo: up ? null : (PTHEME.self && PTHEME.self.image) || null,
          about: up ? '' : (p.bio || ''), skills: up ? [] : (p.skills || []).slice(), cities: up ? [] : citiesOf(p).slice() };
   dialog(up ? (JOINFOR || 'Join Hypernet') : 'Edit profile', (up ? demoRowHTML() : '') + '<div id="pfbody">' + profileForm() + '</div>',
     '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="pfsave" id="pfsave"'+(up?' disabled':'')+'>'+(up ? 'Join' : 'Save')+'</button>', 560);
@@ -2919,6 +2949,10 @@ function pfSave(){
     return;
   }
   Object.keys(prof).forEach(function(k){ PEOPLE['self'][k] = prof[k]; });
+  if (PF.photo !== ((PTHEME.self && PTHEME.self.image) || null)){
+    var lk = asLook(Object.assign({}, PTHEME.self || plainTheme('◉'), { image:PF.photo || null }));
+    if (isPlain(lk) && !lk.image) delete PTHEME.self; else PTHEME.self = lk;
+  }
   S.me = { name:prof.displayName, handle:prof.handle }; closeDialogs(); render(); toast('Profile saved', '');
 }
 function loginDialog(){

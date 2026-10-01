@@ -1734,7 +1734,7 @@ function statePills(evId){
 function rowHTML(it){
   if (it.type === 'more') return '<div class="row more" data-act="shelfall" data-id="'+it.id+'" role="button" tabindex="-1"><div class="r-main"><div class="r-title">Show all '+it.n+'</div></div>' +
     ic('back',16).replace('class="ic"','class="ic" style="transform:scaleX(-1)"')+'</div>';
-  var cls = 'row' + (isSel(it) ? ' sel' : ''), lead, title, meta, date = '', side = '', act = 'data-act="row" data-type="'+it.type+'" data-id="'+it.id+'"';
+  var cls = 'row' + (isSel(it) ? ' sel' : ''), lead, title, meta, date = '', side = '', soc = '', act = 'data-act="row" data-type="'+it.type+'" data-id="'+it.id+'"';
   if (it.type === 'event'){
     var e = EVENTS[it.id];
     if (!READ[it.id]) cls += ' unread';
@@ -1750,6 +1750,7 @@ function rowHTML(it){
     date = dd ? fmtShort(e.date) + ' +' + (nDays(e.date, dd) - 1) + 'd' : fmtShort(e.date);
     side = statePills(it.id);
     if (S.folder.kind === 'search' && isPast(lastDay(e)) && !side) side = '<span class="pill dim"><span>Past</span></span>';
+    if (!isPast(lastDay(e))) soc = socialHTML(it.id, 'rsoc');
   } else if (it.type === 'horizon'){
     var hz = HORIZONS[it.id];
     lead = '<span class="r-ic">'+hzArt(it.id, 32)+'</span>';
@@ -1770,14 +1771,14 @@ function rowHTML(it){
     lead = '<span class="r-ic">'+ic('callout')+'</span>';
     title = esc(c.title);
     meta = esc([c.hostName, c.eventId && EVENTS[c.eventId] ? 'for ' + EVENTS[c.eventId].title : '', c.body].filter(Boolean).join(' · '));
-    date = c.closed ? 'closed' : 'until ' + fmtShort(c.expiresAt);
+    date = c.closed ? 'closed' : !calloutOpen(c) ? 'ended' : 'until ' + fmtShort(c.expiresAt);
     if (S.loggedIn && ANSWERED[it.id]) side = '<span class="pill going">'+ic('check',11)+'<span>Answered</span></span>';
   }
   var drag = it.type === 'event' && !L.phone ? ' draggable="true"' : '';
   if (it.type === 'event' && S.folder.kind === 'horizon' && hzOwnedByMe(S.folder.id))
     side += '<button class="ib rrm" data-act="unfile" data-id="'+it.id+'" data-hz="'+S.folder.id+'" aria-label="Remove from '+esc(HORIZONS[S.folder.id].name)+'">'+ic('close',14)+'</button>';
   return '<div class="'+cls+'" '+act+drag+' role="button" tabindex="-1">' + lead +
-    '<div class="r-main"><div class="r-title">'+title+'</div>'+((meta || date)?'<div class="r-meta">'+(date?'<span class="r-dm">'+date+(meta?' · ':'')+'</span>':'')+meta+'</div>':'')+'</div>' +
+    '<div class="r-main"><div class="r-title">'+title+'</div>'+((meta || date)?'<div class="r-meta">'+(date?'<span class="r-dm">'+date+(meta?' · ':'')+'</span>':'')+meta+'</div>':'')+soc+'</div>' +
     ((date || side) ? '<div class="r-side">'+(date?'<div class="r-date">'+date+'</div>':'')+(side?'<div class="r-states">'+side+'</div>':'')+'</div>' : '') +
     '</div>';
 }
@@ -2250,7 +2251,7 @@ function toolbarHTML(primary, secondary){ return '<div class="verbs">' + primary
 function canvasHTML(evId){
   var e = EVENTS[evId], t = TH(evId), r = recOf(evId), b = r.burn || {};
   var big = r.scale === 'burn' || !!r.burn;
-  var onHz = horizonsOf(evId), att = attendees(evId), past = isPast(lastDay(e));
+  var onHz = horizonsOf(evId), past = isPast(lastDay(e));
   var bar = !past ? verbsHTML(evId) : S.loggedIn ? toolbarHTML(vb('v-went', evId, 'Went', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] }), vb('share', evId, 'Share', 'share')) : '';
   var s = sect('About', descOf(e) ? '<p class="evdesc">'+esc(descOf(e))+'</p>' : '');
   if (r.theme) s += sect('Theme', '<div class="themeline">'+esc(typeof r.theme === 'object' ? (r.theme.name || '') : r.theme)+'</div>' +
@@ -2271,9 +2272,7 @@ function canvasHTML(evId){
   if (b.vocabulary && b.vocabulary.length) s += sect('Words used here', '<dl class="kv vocab">' + b.vocabulary.map(function(v){
     return '<dt>'+esc(v.term)+'</dt><dd>'+esc(v.meaning)+'</dd>'; }).join('') + '</dl>');
   if (b.nextEdition && !NEXTED[evId]) s += sect('Next edition', nextHTML(b.nextEdition));
-  if (att.length || attendeeCount(evId)) s += sect(past ? 'Who went' : 'Who’s going', '<div class="chips">' + att.map(function(pid){
-         return '<button class="chip" data-act="open" data-type="person" data-id="'+pid+'">'+avHTML(pid,'a28')+esc(person(pid).displayName)+'</button>';
-       }).join('') + (attendeeCount(evId) > att.length ? '<span class="chipmore">and '+(attendeeCount(evId)-att.length)+' more</span>' : '') + '</div>');
+  s += whoGoingHTML(evId, past);
   s += sect('On Event Horizons', onHz.length ? '<div class="chips">' + onHz.map(function(k){
          return '<button class="chip" data-act="open" data-type="horizon" data-id="'+k+'">'+ic('horizon',16)+esc(HORIZONS[k].name)+' <span class="sub">'+esc(HORIZONS[k].ownerName)+'</span></button>';
        }).join('') + '</div>' : '');
@@ -2502,11 +2501,12 @@ function cardTag(it){
   return '';
 }
 function cardHTML(it){
-  var art, t, sub, sub2 = '';
+  var art, t, sub, sub2 = '', soc = '';
   if (it.type === 'event'){
     var e = EVENTS[it.id], end = endOf(e);
     art = sqPx(it.id, 150);
     t = e.title; sub = relDay(e) + (end && dayDiff(e.date) > 6 ? ' +' + (nDays(e.date, end) - 1) + 'd' : ''); sub2 = whereOf(e);
+    soc = isPast(lastDay(e)) ? '' : socialHTML(it.id, 'csoc');
   } else if (it.type === 'horizon'){
     var hz = HORIZONS[it.id];
     art = hzMosaic(it.id, 150);
@@ -2517,7 +2517,7 @@ function cardHTML(it){
     t = c.hostName; sub = 'until ' + fmtShort(c.expiresAt);
   }
   return '<div class="card2" data-act="row" data-type="'+it.type+'" data-id="'+it.id+'" role="button">' +
-    '<div class="cart">'+art+cardTag(it)+'</div><div class="ct2">'+esc(t)+'</div><div class="cs2">'+esc(sub)+'</div>'+(sub2 ? '<div class="cs2">'+esc(sub2)+'</div>' : '')+'</div>';
+    '<div class="cart">'+art+cardTag(it)+'</div><div class="ct2">'+esc(t)+'</div><div class="cs2">'+esc(sub)+'</div>'+(sub2 ? '<div class="cs2">'+esc(sub2)+'</div>' : '')+soc+'</div>';
 }
 function upcoming(e){ return !isPast(lastDay(e)); }
 function plural(n, w){ return n + ' ' + w + (n === 1 ? '' : 's'); }

@@ -9,3 +9,7 @@ to be developed toward a real product. Upstream product repo is Sebastian's `pau
 - `docs/research/` — event-data and backend research.
 
 Run: `python3 -m http.server 8080` then open http://localhost:8080
+
+Test: `npx -y -p playwright node tests/regression.js` against that server (`HN_URL=…`), or with no server at all:
+`HN_ROOT=. npx -y -p playwright node tests/regression.js` (serves the folder through Playwright request routing).
+The browser clock is pinned to 2026-10-01 for the run (`HN_NOW=<date-time>` or `HN_NOW=real` to change it).

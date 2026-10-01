@@ -123,7 +123,8 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
 - **2026-10-01 · The network is every person here.** People in Explore, people search, New chat, Share, People you
   follow and the People to follow suggestions come from `networkPeople()`: the fixture people, Michal (the demo
   account) and every account joined in this browser — never you. Someone who joins is immediately a person others can
-  find, follow and message. Where two people share a first name, short names carry the handle ("Kai @kailow").
+  find, follow and message. Where two people share a first name, `shortName()` carries the handle ("Kai @kailow");
+  Home's sentences and the friends-of-friends line are to use it.
 - **2026-10-01 · One clock: the real one.** The app runs on today's date. The mock fixtures (written for 2026-09-20)
   move by the days between then and today — events, their sample records (shifts, blocks), call out expiries — and the
   activity seed counts back from the moment the app starts, so the mock world stays "alive" relative to now. The five

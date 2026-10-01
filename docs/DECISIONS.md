@@ -47,7 +47,8 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   particle atmosphere, then content panels and the window's toolbar. Art never takes a click or covers a control;
   ornaments state only facts (edition year, entry model, city, a horizon's years), never invented ones. Text colours
   are corrected to AA against the ground; reduced motion stills everything. Four theme fields (`backdrop`,
-  `atmosphere`, `ornaments`, `parallax`) are part of a look and editable in Customize.
+  `atmosphere`, `ornaments`, `parallax`) are part of a look and editable in Customize. *Superseded 2026-10-01: no canvas
+  art; every look renders on the calm plain layout.*
 - **2026-10-01 · Home is the network's activity.** Home is a reverse-chronological stream of what people did: going,
   interested, promoted, created an event, published / followed / filled an Event Horizon, posted a call out, followed
   someone. Day bands (Today, Yesterday, This week, Earlier) and relative times ("38m", "2h", "yesterday", "Mon"). Rows
@@ -84,8 +85,6 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   horizon a group owns still shows the group's name as its owner, and the old `#/group/<id>` link opens that horizon.
 - **2026-10-01 · Cut from the sidebar.** The top-level Horizons and People rows (now Explore's kinds) and Home's unread
   count (Home is no longer an inbox of events).
-  `atmosphere`, `ornaments`, `parallax`) are part of a look and editable in Customize. *Superseded 2026-10-01: no canvas
-  art; every look renders on the calm plain layout.*
 - **2026-10-01 · Customize is three colours and a square image.** Owner: "Keep pick your colors … just select colors and
   image for now." Customize (events, Event Horizons, your profile — one implementation) and the New event wizard's
   optional Look step now hold only: Background, Text and Accent (a colour picker and its hex each), six one-click

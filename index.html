@@ -923,7 +923,40 @@ body.is-phone .picklist{ max-height:none; }
    0. DATA ADAPTERS — same fixtures as every other concept
    ========================================================================= */
 var H = window.HYPERNET;
-var TODAY_ISO = H.meta.today;               /* 2026-09-20 */
+/* ONE CLOCK. The app runs on the real date: TODAY_ISO is today here, nowMs() is now (the instant every
+   timestamp is taken from). The mock fixtures were written for H.meta.today (2026-09-20), so their dates —
+   the mock events and their sample records, the call outs' expiries — move by the whole days between that
+   and today, and the mock world stays where it was relative to now. The five "World" events and everything
+   in data/real-events.json keep their real dates. Stored timestamps are UTC ISO strings (timestamptz in Neon). */
+function nowMs(){ return Date.now(); }
+var TODAY_ISO = (function(d){ return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); })(new Date(nowMs()));
+function utcDay(iso){ var p = String(iso).split('-'); return Date.UTC(+p[0], +p[1] - 1, +p[2]); }
+var FIXTODAY = H.meta.today;
+var FIXSHIFT = Math.round((utcDay(TODAY_ISO) - utcDay(FIXTODAY)) / 86400000);
+/* "2026-10-04" (or "2026-10-04T…") moved by n days; anything else untouched */
+function shiftIso(s, n){
+  var m = typeof s === 'string' && s.match(/^(\d{4})-(\d{2})-(\d{2})(.*)$/);
+  if (!m || !n) return s;
+  var d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3] + n));
+  return d.getUTCFullYear() + '-' + ('0' + (d.getUTCMonth() + 1)).slice(-2) + '-' + ('0' + d.getUTCDate()).slice(-2) + m[4];
+}
+function shiftDates(o, n){
+  Object.keys(o).forEach(function(k){
+    var v = o[k];
+    if (typeof v === 'string') o[k] = shiftIso(v, n);
+    else if (v && typeof v === 'object') shiftDates(v, n);
+  });
+}
+if (FIXSHIFT){
+  var SAMPLES = (window.HYPERNET_DETAILS && window.HYPERNET_DETAILS.records) || {};
+  H.events.forEach(function(e){
+    if (e.kind === 'world') return;
+    e.date = shiftIso(e.date, FIXSHIFT);
+    if (SAMPLES[e.id]) shiftDates(SAMPLES[e.id], FIXSHIFT);
+  });
+  H.callouts.forEach(function(c){ c.expiresAt = shiftIso(c.expiresAt, FIXSHIFT); });
+  H.meta.today = TODAY_ISO;
+}
 
 var PEOPLE = {};
 H.people.forEach(function(p){ PEOPLE[p.id] = p; });
@@ -2614,20 +2647,20 @@ function chatAv(c){ return avHTML(c.memberIds[0], 'a40'); }
 function lastMsg(c){ return c.messages[c.messages.length-1]; }
 /* when a message was sent: new ones carry a timestamp; the fixtures' "09:31" and "yesterday" are read on a
    morning clock that ends just before you arrived, so anything you send is newer */
-var BOOTNOW = Date.now();
+var BOOTNOW = nowMs();
 function msgTs(m){
   if (!m) return 0;
-  if (m.ts) return m.ts;
+  if (m.ts) return typeof m.ts === 'number' ? m.ts : isoMs(m.ts);
   var t = String(m.t || ''), hm = t.match(/^(\d{1,2}):(\d{2})$/), H = 3600000;
   if (/^yesterday$/i.test(t)) return BOOTNOW - 22 * H;
   if (hm){ var ago = (10 - +hm[1] - +hm[2] / 60) * H; if (ago < 0) ago += 24 * H; return BOOTNOW - 60000 - ago; }
   return BOOTNOW - 48 * H;
 }
-function stamp(){ return { t:nowClock(), ts:Date.now() }; }
+function stamp(){ return { t:nowClock(), ts:tsIso(nowMs()) }; }
 /* the chat list: newest message first; a chat with nothing in it yet is not listed */
 function chatList(){
   /* a chat is listed once it has a message, or something you started typing in it (a draft floats to the top) */
-  var ts = function(k){ return CHATDRAFT[k] && !CHATS[k].messages.length ? Date.now() : msgTs(lastMsg(CHATS[k])); };
+  var ts = function(k){ return CHATDRAFT[k] && !CHATS[k].messages.length ? nowMs() : msgTs(lastMsg(CHATS[k])); };
   return CHATORDER.filter(function(k){ return CHATS[k] && (CHATS[k].messages.length || CHATDRAFT[k]); })
     .sort(function(a, b){ return ts(b) - ts(a); });
 }
@@ -2724,14 +2757,14 @@ function renderChats(){
           created_horizon (a private horizon: only its author ever sees the row)
           posted_callout (callout) · followed_person (person)
    ========================================================================= */
-/* the app's clock: the fixtures' "now" is noon on the demo's today, and it runs on from there */
-var ACTBOOT = Date.now();
-var FIXNOW = (function(){ var d = dOf(TODAY_ISO); d.setHours(12, 0, 0, 0); return d.getTime(); })();
-function appNow(){ return FIXNOW + (Date.now() - ACTBOOT); }
-function tsIso(ms){ var d = new Date(ms); return isoOf(d) + 'T' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
-function isoMs(s){ var m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/); return m ? new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).getTime() : 0; }
-/* a row's time on the app clock. Rows made here also carry the real moment (at), so "5m" stays true across a reload */
-function actTime(a){ return a.at ? FIXNOW + (a.at - ACTBOOT) : isoMs(a.ts); }
+/* the app's clock is the real one (nowMs, section 0). The fixture rows are seeded back from the moment the app started */
+var FIXNOW = nowMs();
+function appNow(){ return nowMs(); }
+/* timestamps are UTC ISO strings, as timestamptz; rows kept from before (local "2026-09-20T12:00") still read as local */
+function tsIso(ms){ return new Date(ms).toISOString(); }
+function isoMs(s){ var t = Date.parse(s || ''); return isNaN(t) ? 0 : t; }
+/* a row's time. Rows made here also carry the real moment (at) */
+function actTime(a){ return a.at || isoMs(a.ts); }
 
 /* -------------------------------------------------------------------------
    ACTIVITY SEED (fixture) — generated from the people, events, horizons and call outs in
@@ -2839,7 +2872,7 @@ function actIsMe(a){ return !!a && a.actor === myActor(); }
 /* doing the same thing again moves it to the top; adding events to a horizon gathers into one row for an hour */
 function logAct(verb, objType, objId, extra){
   var me = myActor(); if (!me) return;
-  var now = Date.now();
+  var now = nowMs();
   if (verb === 'added_to_horizon'){
     var prev = LIVEACT.filter(function(a){ return a.actor === me && a.verb === verb && a.objId === objId && now - (a.at || 0) < 3600000; })[0];
     if (prev){
@@ -4616,7 +4649,7 @@ function openDM(pid){
 var messagePerson = gated(function(pid){ openChat(openDM(pid)); });
 /* sending keeps you on the page: the toast can take you to the chat */
 var shareToChat = gated(function(id, cid, type, text){
-  var hz = type === 'horizon', st = stamp(), m = { from:'self', t:st.t, ts:st.ts + 1, text:'' };
+  var hz = type === 'horizon', st = stamp(), m = { from:'self', t:st.t, ts:tsIso(isoMs(st.ts) + 1), text:'' };
   if (text) CHATS[cid].messages.push({ from:'self', t:st.t, ts:st.ts, text:text });
   m[hz ? 'hzcard' : type === 'callout' ? 'cocard' : 'card'] = id;
   CHATS[cid].messages.push(m);

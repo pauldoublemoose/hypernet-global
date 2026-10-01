@@ -1,326 +1,45 @@
-// Hypernet — per-event theme system. Load AFTER hypernet-data.js.
-// The app frame is deliberately quiet; each event controls its own world.
+// Hypernet — looks. Load AFTER hypernet-data.js.
+// The app frame is deliberately quiet; an event, horizon or profile may wear a look: three colours and a square.
+// A look is flat and serialisable (it becomes a JSON column):  { bg, ink, accent, image, glyph }
+//   bg, ink, accent  hex colours (ink is the text colour; the app keeps it AA-legible on bg)
+//   image            a square picture (a data URL for now, a storage URL later) or null
+//   glyph            one character drawn on the square when there is no image
 window.HYPERNET_THEMES = {
-  "_schema": {
-    "note": "Per-event theme. The app chrome stays neutral; THIS is where an event's personality lives. Discord-like, wilder.",
-    "palette": "bg / ink / accent / accent2 / dim — the event owns its whole colour world, not just an accent",
-    "square": "pattern + glyph — the thumbnail, drawn procedurally, no image files",
-    "surface": "grain | paper | dither | halftone | scanlines | grid | rays | photocopy | plasma | none",
-    "type": "serif | grotesk | mono | stencil | display",
-    "headline": "huge | condensed | stacked | outlined | marquee",
-    "motion": "none | drift | pulse | flicker | scroll",
-    "shape": "sharp | rounded | cut",
-    "density": "airy | packed",
-    "mood": "one line the host writes; render it, it is part of the art",
-    "backdrop": "contours | rays | stars | dunes | halftone | synthwave | woodgrain | map | glyphs | none — generative, seeded per event, behind everything",
-    "atmosphere": "dust | embers | sparks | fireflies | snow | rain | glyphs | smoke | none — particles in front of the art, behind content and controls",
-    "ornaments": "any of stamp | tape | ribbon | torn | compass",
-    "parallax": "none | gentle | deep — how far the layers drift apart as you scroll"
-  },
   "themes": {
-    "evt-deep-listening": {
-      "mood": "a basement, long tones, no phones",
-      "palette": {
-        "bg": "#06080e",
-        "ink": "#e9e7e0",
-        "accent": "#6fd6c8",
-        "accent2": "#17233a",
-        "dim": "#7d8796"
-      },
-      "square": {
-        "pattern": "moon",
-        "glyph": "☾"
-      },
-      "surface": "grain",
-      "type": "serif",
-      "headline": "huge",
-      "motion": "drift",
-      "shape": "sharp",
-      "density": "airy",
-      "backdrop": "contours",
-      "atmosphere": "dust",
-      "ornaments": ["stamp", "tape"],
-      "parallax": "gentle"
-    },
-    "evt-fill-1": {
-      "mood": "forty kilos of onions and a two-burner stove",
-      "palette": {
-        "bg": "#1a0703",
-        "ink": "#ffe9d6",
-        "accent": "#ff5a1f",
-        "accent2": "#7a1b06",
-        "dim": "#b4795e"
-      },
-      "square": {
-        "pattern": "stripe",
-        "glyph": "⚡"
-      },
-      "surface": "photocopy",
-      "type": "stencil",
-      "headline": "condensed",
-      "motion": "flicker",
-      "shape": "cut",
-      "density": "packed",
-      "backdrop": "glyphs",
-      "atmosphere": "embers",
-      "ornaments": ["stamp", "ribbon"],
-      "parallax": "gentle"
-    },
-    "evt-fill-3": {
-      "mood": "walk into the trees, the trees walk back",
-      "palette": {
-        "bg": "#000000",
-        "ink": "#d8ffe8",
-        "accent": "#39ff88",
-        "accent2": "#ff2fd0",
-        "dim": "#4c7f66"
-      },
-      "square": {
-        "pattern": "scan",
-        "glyph": "✳"
-      },
-      "surface": "scanlines",
-      "type": "mono",
-      "headline": "stacked",
-      "motion": "flicker",
-      "shape": "sharp",
-      "density": "packed",
-      "backdrop": "stars",
-      "atmosphere": "fireflies",
-      "ornaments": ["compass"],
-      "parallax": "deep"
-    },
-    "evt-fill-0": {
-      "mood": "cold air, warm bodies, the sun does the rest",
-      "palette": {
-        "bg": "#f6f0e4",
-        "ink": "#241f18",
-        "accent": "#d98d3f",
-        "accent2": "#e8dcc4",
-        "dim": "#8b8172"
-      },
-      "square": {
-        "pattern": "rays",
-        "glyph": "◗"
-      },
-      "surface": "paper",
-      "type": "serif",
-      "headline": "huge",
-      "motion": "none",
-      "shape": "rounded",
-      "density": "airy",
-      "backdrop": "rays",
-      "atmosphere": "dust",
-      "ornaments": ["tape", "stamp"],
-      "parallax": "gentle"
-    },
-    "evt-fill-11": {
-      "mood": "if it feeds back we start again",
-      "palette": {
-        "bg": "#16181a",
-        "ink": "#f2f4f2",
-        "accent": "#ffd400",
-        "accent2": "#2e3438",
-        "dim": "#8a9196"
-      },
-      "square": {
-        "pattern": "grid",
-        "glyph": "▤"
-      },
-      "surface": "grid",
-      "type": "grotesk",
-      "headline": "condensed",
-      "motion": "pulse",
-      "shape": "sharp",
-      "density": "packed",
-      "backdrop": "synthwave",
-      "atmosphere": "sparks",
-      "ornaments": ["ribbon"],
-      "parallax": "deep"
-    },
-    "evt-fill-9": {
-      "mood": "bring the thing that shouldn't drive",
-      "palette": {
-        "bg": "#2b1405",
-        "ink": "#ffe6c2",
-        "accent": "#ff9b2f",
-        "accent2": "#6b3410",
-        "dim": "#b8875a"
-      },
-      "square": {
-        "pattern": "halftone",
-        "glyph": "◉"
-      },
-      "surface": "halftone",
-      "type": "display",
-      "headline": "outlined",
-      "motion": "drift",
-      "shape": "cut",
-      "density": "airy",
-      "backdrop": "halftone",
-      "atmosphere": "smoke",
-      "ornaments": ["stamp", "torn"],
-      "parallax": "gentle"
-    },
-    "evt-world-burning-man-2026": {
-      "mood": "the big one. dust, and then more dust.",
-      "palette": {
-        "bg": "#3a2a12",
-        "ink": "#fdf3df",
-        "accent": "#e6b23c",
-        "accent2": "#7a5a24",
-        "dim": "#b9a077"
-      },
-      "square": {
-        "pattern": "rays",
-        "glyph": "✦"
-      },
-      "surface": "rays",
-      "type": "stencil",
-      "headline": "huge",
-      "motion": "drift",
-      "shape": "sharp",
-      "density": "airy",
-      "backdrop": "dunes",
-      "atmosphere": "dust",
-      "ornaments": ["stamp", "compass", "ribbon"],
-      "parallax": "deep"
-    },
-    "evt-world-borderland-2026": {
-      "mood": "a nordic field and everyone you know",
-      "palette": {
-        "bg": "#0d1b2e",
-        "ink": "#eaf2ff",
-        "accent": "#5ea8ff",
-        "accent2": "#12304f",
-        "dim": "#7d97b8"
-      },
-      "square": {
-        "pattern": "dither",
-        "glyph": "◆"
-      },
-      "surface": "dither",
-      "type": "grotesk",
-      "headline": "stacked",
-      "motion": "none",
-      "shape": "sharp",
-      "density": "airy",
-      "backdrop": "map",
-      "atmosphere": "fireflies",
-      "ornaments": ["stamp", "compass", "torn"],
-      "parallax": "gentle"
-    },
-    "evt-fill-6": {
-      "mood": "quiet work, no photographs",
-      "palette": {
-        "bg": "#f2eee9",
-        "ink": "#1d1a17",
-        "accent": "#8b6f4e",
-        "accent2": "#ded5c8",
-        "dim": "#8d8478"
-      },
-      "square": {
-        "pattern": "plain",
-        "glyph": "△"
-      },
-      "surface": "paper",
-      "type": "serif",
-      "headline": "huge",
-      "motion": "none",
-      "shape": "rounded",
-      "density": "airy",
-      "backdrop": "woodgrain",
-      "atmosphere": "none",
-      "ornaments": ["tape"],
-      "parallax": "none"
-    },
-    "evt-fill-7": {
-      "mood": "one cup, no talking, until the light lands",
-      "palette": {
-        "bg": "#fbe9d8",
-        "ink": "#3a2418",
-        "accent": "#c8552f",
-        "accent2": "#f3d2b0",
-        "dim": "#9c7a62"
-      },
-      "square": {
-        "pattern": "rays",
-        "glyph": "◠"
-      },
-      "surface": "grain",
-      "type": "serif",
-      "headline": "huge",
-      "motion": "drift",
-      "shape": "rounded",
-      "density": "airy",
-      "backdrop": "rays",
-      "atmosphere": "smoke",
-      "ornaments": ["stamp"],
-      "parallax": "gentle"
-    }
+    "evt-deep-listening":         { "bg": "#06080e", "ink": "#e9e7e0", "accent": "#6fd6c8", "image": null, "glyph": "☾" },
+    "evt-fill-1":                 { "bg": "#1a0703", "ink": "#ffe9d6", "accent": "#ff5a1f", "image": null, "glyph": "⚡" },
+    "evt-fill-3":                 { "bg": "#000000", "ink": "#d8ffe8", "accent": "#39ff88", "image": null, "glyph": "✳" },
+    "evt-fill-0":                 { "bg": "#f6f0e4", "ink": "#241f18", "accent": "#d98d3f", "image": null, "glyph": "◗" },
+    "evt-fill-11":                { "bg": "#16181a", "ink": "#f2f4f2", "accent": "#ffd400", "image": null, "glyph": "▤" },
+    "evt-fill-9":                 { "bg": "#2b1405", "ink": "#ffe6c2", "accent": "#ff9b2f", "image": null, "glyph": "◉" },
+    "evt-world-burning-man-2026": { "bg": "#3a2a12", "ink": "#fdf3df", "accent": "#e6b23c", "image": null, "glyph": "✦" },
+    "evt-world-borderland-2026":  { "bg": "#0d1b2e", "ink": "#eaf2ff", "accent": "#5ea8ff", "image": null, "glyph": "◆" },
+    "evt-fill-6":                 { "bg": "#f2eee9", "ink": "#1d1a17", "accent": "#8b6f4e", "image": null, "glyph": "△" },
+    "evt-fill-7":                 { "bg": "#fbe9d8", "ink": "#3a2418", "accent": "#c8552f", "image": null, "glyph": "◠" }
   },
-  "fallbackNote": "Anything nobody customised (an event, horizon or person) wears HN_PLAIN: paper, hairlines, ink. HN_THEME(id) can still derive a deterministic look from an id, but the app no longer uses it for uncustomised things."
-};
-
-/* People who customised their profile (the rest stay plain). Same shape as an event theme. */
-window.HYPERNET_THEMES.people = {
-  "p-anna": {
-    "mood": "long tones, short sentences",
-    "palette": { "bg": "#06080e", "ink": "#e9e7e0", "accent": "#6fd6c8", "accent2": "#17233a", "dim": "#7d8796" },
-    "square": { "pattern": "moon", "glyph": "☾" },
-    "surface": "grain", "type": "serif", "headline": "huge", "motion": "drift", "shape": "sharp", "density": "airy",
-    "backdrop": "contours", "atmosphere": "dust", "ornaments": ["stamp", "compass"], "parallax": "gentle"
-  },
-  "p-rio": {
-    "mood": "build it loud, strike it clean",
-    "palette": { "bg": "#12141f", "ink": "#e8ecff", "accent": "#ff8fb1", "accent2": "#262b45", "dim": "#8288a8" },
-    "square": { "pattern": "rays", "glyph": "✦" },
-    "surface": "scanlines", "type": "display", "headline": "outlined", "motion": "none", "shape": "cut", "density": "packed",
-    "backdrop": "synthwave", "atmosphere": "sparks", "ornaments": ["ribbon", "stamp"], "parallax": "deep"
-  },
-  "p-mira": {
-    "mood": "lights in the trees, nobody in charge",
-    "palette": { "bg": "#000000", "ink": "#d8ffe8", "accent": "#39ff88", "accent2": "#12301f", "dim": "#4c7f66" },
-    "square": { "pattern": "scan", "glyph": "✳" },
-    "surface": "none", "type": "mono", "headline": "stacked", "motion": "none", "shape": "sharp", "density": "airy",
-    "backdrop": "stars", "atmosphere": "fireflies", "ornaments": ["compass", "tape"], "parallax": "gentle"
+  /* people who customised their profile (the rest stay plain) */
+  "people": {
+    "p-anna": { "bg": "#06080e", "ink": "#e9e7e0", "accent": "#6fd6c8", "image": null, "glyph": "☾" },
+    "p-rio":  { "bg": "#12141f", "ink": "#e8ecff", "accent": "#ff8fb1", "image": null, "glyph": "✦" },
+    "p-mira": { "bg": "#000000", "ink": "#d8ffe8", "accent": "#39ff88", "image": null, "glyph": "✳" }
   }
 };
 
-/* The plain look: what an event, horizon or profile wears until someone customises it.
-   The app's own monochrome language: paper, a hairline ruled backdrop, ink type, no particles, no ornaments. */
-window.HN_PLAIN = {
-  plain: true, mood: "",
-  palette: { bg: "#f8f7f3", ink: "#161616", accent: "#262626", accent2: "#dcd8cf", dim: "#5b5953" },
-  square: { pattern: "plain", glyph: "◆" },
-  surface: "none", type: "grotesk", headline: "huge", motion: "none", shape: "sharp", density: "airy",
-  backdrop: "paper", atmosphere: "none", ornaments: [], parallax: "none"
-};
+/* The plain look: what anything wears until someone customises it. Paper, ink, a kind glyph on the square. */
+window.HN_PLAIN = { plain: true, bg: "#f8f7f3", ink: "#161616", accent: "#262626", image: null, glyph: "◆" };
 
-(function(){
-  var PALS=[{"bg": "#101014", "ink": "#ececf0", "accent": "#a98cff", "accent2": "#2a2440", "dim": "#807c93"}, {"bg": "#0b1410", "ink": "#e4f4ea", "accent": "#48c98a", "accent2": "#17372a", "dim": "#749a86"}, {"bg": "#f4f2ed", "ink": "#1c1c1c", "accent": "#d0452f", "accent2": "#e2ddd2", "dim": "#8a857c"}, {"bg": "#12141f", "ink": "#e8ecff", "accent": "#ff8fb1", "accent2": "#262b45", "dim": "#8288a8"}, {"bg": "#1e1405", "ink": "#ffeed4", "accent": "#d9a441", "accent2": "#4a3412", "dim": "#a98f68"}], SURF=["grain", "dither", "halftone", "scanlines", "grid", "paper"], TYPE=["grotesk", "mono", "serif", "stencil", "display"], HEAD=["huge", "condensed", "stacked", "outlined"], MOT=["none", "drift", "pulse"], SHAPE=["sharp", "rounded", "cut"], PAT=["plain", "stripe", "grid", "dither", "rays", "scan", "halftone", "moon"], GLY=["◆", "✳", "▲", "◉", "✦", "■", "☾", "◗", "⬟", "✜", "◈", "▤"];
-  var BD=["contours","rays","stars","dunes","halftone","synthwave","woodgrain","map","glyphs"], AT=["dust","embers","sparks","fireflies","snow","rain","glyphs","smoke","none"],
-      ORN=[["stamp"],["tape"],["ribbon"],["stamp","torn"],["compass","tape"],["stamp","ribbon"],["torn"]], PX=["gentle","deep","gentle","none"];
-  function hash(s){ var v=0; for(var i=0;i<s.length;i++){ v=(v*131+s.charCodeAt(i))>>>0; } return v; }
-  window.HN_THEME = function(id){
-    var T = window.HYPERNET_THEMES.themes;
-    if (T[id]) return T[id];
-    var v = hash(id||'x');
-    var t = {
-      mood: '',
-      palette: PALS[v % PALS.length],
-      square: { pattern: PAT[(v>>>3) % PAT.length], glyph: GLY[(v>>>7) % GLY.length] },
-      surface: SURF[(v>>>11) % SURF.length],
-      type: TYPE[(v>>>5) % TYPE.length],
-      headline: HEAD[(v>>>13) % HEAD.length],
-      motion: MOT[(v>>>17) % MOT.length],
-      shape: SHAPE[(v>>>19) % SHAPE.length],
-      density: (v>>23 & 1) ? 'packed' : 'airy',
-      backdrop: BD[(v>>>9) % BD.length],
-      atmosphere: AT[(v>>>15) % AT.length],
-      ornaments: ORN[(v>>>21) % ORN.length].slice(),
-      parallax: PX[(v>>>25) % PX.length]
-    };
-    T[id] = t; return t;
+/* Any saved look, old or new, in the flat shape. Looks saved before 2026-10-01 were
+   { mood, palette:{ bg, ink, accent, accent2, dim }, square:{ pattern, glyph }, surface, type, headline, motion, shape,
+     density, backdrop, atmosphere, ornaments, parallax }: their three colours and glyph are kept, the rest is dropped. */
+window.HN_MIGRATE_LOOK = function(t){
+  if (!t || typeof t !== "object") return null;
+  var p = t.palette || t, sq = t.square || {}, P = window.HN_PLAIN;
+  var hex = function(v, d){
+    v = String(v || "");
+    if (/^#[0-9a-f]{6}$/i.test(v)) return v.toLowerCase();
+    if (/^#[0-9a-f]{3}$/i.test(v)) return ("#" + v[1] + v[1] + v[2] + v[2] + v[3] + v[3]).toLowerCase();
+    return d;
   };
-})();
+  return { bg: hex(p.bg, P.bg), ink: hex(p.ink, P.ink), accent: hex(p.accent, P.accent),
+           image: typeof t.image === "string" && t.image ? t.image : null, glyph: t.glyph || sq.glyph || P.glyph };
+};

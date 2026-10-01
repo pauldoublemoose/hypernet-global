@@ -131,17 +131,11 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .nrow:hover{ background:var(--hover); }
 .nrow.sel{ background:var(--sel); color:#fff; }
 .nrow.sel .ic, .nrow.sel .ncnt, .nrow.sel .nsub{ color:var(--seldim); }
-.nrow.unread .nlab{ font-weight:bold; }
-.nrow.unread .ncnt{ color:var(--ink); font-weight:bold; }
-.nrow.sel.unread .ncnt{ color:#fff; }
 .nrow.search{ cursor:default; padding-right:4px; margin-bottom:6px; }
 .nrow .nx{ width:36px; height:32px; display:grid; place-items:center; border:0; padding:0; background:transparent; color:#fff; }
 .nrow .nx:hover{ background:#444; }
 .nrow.drop{ outline:2px dashed #000; outline-offset:-2px; background:#f4f2ec; }
 .nrow .sq, .nrow .av{ width:20px; height:20px; flex-basis:20px; font-size:11px; }
-/* the toolbar already carries Join on a desktop; the card is the phone's You tab entry */
-.logincard{ display:none; margin:14px 12px; padding:16px; background:var(--face-lt); box-shadow:var(--thin); }
-.logincard b{ display:block; font-size:var(--fs-m); margin-bottom:12px; }
 .acctcard{ display:none; }
 
 /* ---------- 5. centre: header, list, detail -------------------------- */
@@ -295,7 +289,7 @@ a.btn{ text-decoration:none; color:var(--ink) !important; }
 /* content sits on a calm panel: white on the plain look, a step away from the ground on a customised one */
 .canvas > .layer{ z-index:5; margin:28px clamp(0px, 3cqi, 40px) 0; background:var(--epanel, #fff); box-shadow:0 0 0 1px var(--eac2); }
 /* one page template for events, horizons and people: every page is its own container, wherever it is shown */
-.canvas.pg{ container:detail / inline-size; }
+.canvas.pg{ container:detail / inline-size; padding-bottom:48px; }
 .psub2{ margin:12px 0 0; max-width:60ch; font-size:16px; line-height:1.45; color:var(--eink); }
 .pgnote{ margin:10px 0 0; max-width:60ch; font-size:var(--fs-s); line-height:1.4; color:var(--edim); }
 .dlg .kdesc.inline{ margin:0 0 16px; padding:0; border:0; background:none; font-size:var(--fs-s); color:var(--dim); }
@@ -316,7 +310,6 @@ a.btn{ text-decoration:none; color:var(--ink) !important; }
   .pg-horizon .banner .sqwrap, .pg-person .banner .sqwrap:has(> .sq){ zoom:.575; }
   .banner .av.a160{ width:92px; height:92px; flex-basis:92px; font-size:32px; }
 }
-.canvas > .layer ~ .tail{ height:48px; }
 .canvas > .entry, .canvas > .edition{ z-index:5; }
 .canvas > .entry{ background:color-mix(in srgb, var(--eac) 10%, var(--ebg)); }
 .canvas > .edition .edcard{ background:color-mix(in srgb, var(--eac) 14%, var(--ebg)); }
@@ -352,7 +345,6 @@ button.chip .sub, a.chip .sub{ color:var(--dim); opacity:1; }
 .card .ctt{ margin:6px 0 4px; font-size:16px; font-weight:bold; line-height:1.3; }
 .card .cbd{ font-size:14px; }
 .card .cbd p{ margin:0; }
-.card .cdl{ margin-top:9px; font:12px var(--mono); color:var(--edim); }
 .tmodel{ display:inline-block; margin-bottom:10px; padding:4px 10px; border:2px solid var(--eac); font:bold 12px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--eac); }
 .blist{ margin:0; padding:0; list-style:none; max-width:70ch; }
 .blist li{ position:relative; padding:7px 0 7px 22px; border-bottom:1px dashed color-mix(in srgb, var(--eac2) 80%, transparent); }
@@ -440,12 +432,6 @@ span.chip.strong{ border-color:transparent; background:color-mix(in srgb, var(--
 .psub{ margin-top:5px; color:var(--dim); }
 .pdesc{ margin:14px 0 0; max-width:62ch; font-size:var(--fs-m); line-height:1.55; }
 .acts{ display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
-fieldset.props{ margin:24px 0 0; padding:8px 18px 12px; border:1px solid var(--shadow); box-shadow:inset 1px 1px 0 #fff, 1px 1px 0 #fff; }
-fieldset.props legend{ padding:0 6px; font-weight:bold; }
-.prow{ display:flex; align-items:center; gap:14px; min-height:40px; padding:6px 0; border-bottom:1px solid var(--line); }
-.prow:last-child{ border-bottom:0; }
-.pk{ flex:0 0 112px; color:var(--dim); }
-.pv{ flex:1; min-width:0; }
 .subh{ margin:30px 0 8px; font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dim); display:flex; gap:8px; }
 .crow{ display:flex; align-items:center; gap:13px; min-height:64px; padding:10px 0; border-bottom:1px solid var(--line); }
 .crow{ align-items:stretch; }
@@ -463,7 +449,6 @@ fieldset.props legend{ padding:0 6px; font-weight:bold; }
   .phead2{ gap:14px; }
   .pname{ font-size:22px; }
   .acts .btn{ flex:1 1 auto; }
-  .pk{ flex-basis:92px; }
 }
 
 /* ---------- 8. right: chats ------------------------------------------ */
@@ -565,9 +550,9 @@ body.is-phone .calall{ min-height:44px; }
 .ctxsheet .sheetrow .hzchk.on .ic{ display:block; }
 .ctxsheet .csep{ height:6px; background:var(--face); box-shadow:inset 0 1px 0 var(--shadow), inset 0 -1px 0 var(--white); }
 /* items that answer a long-press: no text selection, no callout */
-body.is-phone :is(.row[data-type], .card2[data-type], .qtile[data-type], .calev, .track[data-type], .crow, .nrow, .evcard, .chrow){
+body.is-phone :is(.row[data-type], .card2[data-type], .calev, .track[data-type], .crow, .nrow, .evcard, .chrow){
   -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
-@media (pointer:coarse){ :is(.row[data-type], .card2[data-type], .qtile[data-type], .calev, .track[data-type], .crow, .nrow, .evcard, .chrow){
+@media (pointer:coarse){ :is(.row[data-type], .card2[data-type], .calev, .track[data-type], .crow, .nrow, .evcard, .chrow){
   -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; } }
 #mask{ position:fixed; inset:0; z-index:60; display:none; background:rgba(0,0,0,.3); }
 .dlg{ position:fixed; z-index:70; display:flex; flex-direction:column; max-height:calc(100vh - 32px); padding:3px; background:var(--face);
@@ -593,14 +578,9 @@ body.is-phone .demolink button{ min-height:44px; }
 .pick .pm{ flex:1; min-width:0; }
 .pick .pm small{ display:block; color:var(--dim); font-size:var(--fs-s); }
 .picklist{ background:#fff; box-shadow:var(--in); max-height:300px; overflow:auto; }
-.tochips{ display:flex; flex-wrap:wrap; gap:6px; min-height:0; }
-.tochip{ display:inline-flex; align-items:center; gap:6px; min-height:30px; padding:0 4px 0 4px; background:#fff; box-shadow:var(--thin); font-size:var(--fs-s); }
-.tochip button{ width:24px; height:24px; border:0; background:transparent; display:grid; place-items:center; padding:0; }
 /* on a touch screen everything you can press is at least 44px */
 @media (pointer:coarse){
   button.chip, a.chip{ min-height:var(--ctl); }
-  .tochip{ min-height:var(--ctl); padding-right:0; }
-  .tochip button{ width:var(--ctl); height:var(--ctl); }
 }
 .pchips{ display:flex; flex-wrap:wrap; gap:6px; }
 .pchip{ height:var(--ctl); padding:0 14px; border:0; background:var(--face); box-shadow:var(--out); font-size:var(--fs-s); }
@@ -666,7 +646,6 @@ body.is-phone #sh-list{ max-height:none; }
 .ab-tap{ cursor:pointer; align-self:stretch; display:flex; flex-direction:column; justify-content:center; }
 .linkrow.static{ cursor:default; }
 .linkrow.static:hover{ background:#fff; }
-.chatsempty{ padding:36px 24px 26px; }
 .chrow .lstate{ font:12px var(--mono); color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
 .cmsg{ margin:0; max-width:46ch; font-size:var(--fs-m); line-height:1.5; }
 
@@ -850,7 +829,6 @@ input[type=search]::-webkit-search-cancel-button{ -webkit-appearance:none; displ
 #app.phone .acctcard .acbtns .btn{ flex:1; }
 #app.phone .acctcard .an{ flex:1; min-width:0; font-size:17px; font-weight:bold; }
 #app.phone .acctcard .an small{ display:block; font-size:13px; font-weight:normal; color:var(--dim); }
-#app.phone .logincard{ display:block; margin:16px; }
 #app.phone #tabbar{ display:flex; flex:0 0 auto; gap:4px; padding:5px 5px calc(5px + env(safe-area-inset-bottom)); background:var(--face); box-shadow:inset 0 1px 0 var(--white), 0 -1px 0 var(--shadow); }
 #app.phone.conv-open #tabbar{ display:none; }
 .tab{ position:relative; flex:1 1 0; min-width:0; min-height:54px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
@@ -1055,7 +1033,6 @@ function mergeReal(raw){
    that next edition: same world, new dates. The past edition stays reachable
    from it ("Previous: 2026") but leaves the feed. */
 var NEXTED = {};                 /* past edition id -> next edition id */
-function nextEditionOf(id){ return NEXTED[id] || null; }
 function makeNextEditions(){
   Object.keys(REC).forEach(function(id){
     var r = REC[id], b = r.burn, e = EVENTS[id];
@@ -1261,7 +1238,7 @@ function fixtureChats(){
 }
 
 var HZPAST = {};               /* horizons whose past events you unfolded */
-var HZCOVER = {};              /* hzId -> 'own' | 'plain' | an event id; nothing = mosaic of its events */
+var HZCOVER = {};              /* hzId -> 'own' (its own square) | an event id (an import's cover); nothing = mosaic of its events */
 var EDITED = {};               /* events a host changed after they existed (their look, their details) */
 var HZTHEME = {};              /* hzId -> a theme in the same shape as an event's */
 
@@ -1334,7 +1311,7 @@ function rsvpList(mode){ if (!S.loggedIn) return []; return allEvents().filter(f
 function horizonsOf(evId){ return Object.keys(HORIZONS).filter(function(k){ return HORIZONS[k].eventIds.indexOf(evId) >= 0 && (HORIZONS[k].isPublished || hzOwnedByMe(k)); }); }
 function hzCover(hzId){
   var hz = HORIZONS[hzId];
-  if (!hz || HZCOVER[hzId] === 'plain') return null;
+  if (!hz) return null;
   if (HZCOVER[hzId] === 'own') return hzEventIds(hzId)[0] || null;
   if (HZCOVER[hzId] && hzEventIds(hzId).indexOf(HZCOVER[hzId]) >= 0) return HZCOVER[hzId];
   return hzEventIds(hzId)[0] || null;
@@ -2265,7 +2242,7 @@ function pageHTML(o){
   h += titleBlockHTML(o.cover, o.eyebrow, o.title, o.sub, o.note);
   if (o.toolbar) h += '<div class="actbar">' + o.toolbar + '</div>';
   h += o.pre || '';
-  h += '<div class="layer"><div class="lin">' + (o.facts || '') + (o.body || '') + '</div></div><div class="tail"></div></article>';
+  h += '<div class="layer"><div class="lin">' + (o.facts || '') + (o.body || '') + '</div></div></article>';
   return h;
 }
 /* a facts grid: [label, value, small print, {type,id} to open] */
@@ -2377,7 +2354,6 @@ function horizonHTML(hzId, withContents){
   if (!hz) return '<div class="empty">This horizon no longer exists.</div>';
   return playlistHTML(hzId, withContents);
 }
-function prow(k, v){ return '<div class="prow"><span class="pk">'+esc(k)+'</span><span class="pv">'+v+'</span></div>'; }
 function publishedHorizonsOf(pid){
   return Object.keys(HORIZONS).filter(function(k){
     var h = HORIZONS[k];
@@ -2516,9 +2492,8 @@ function mosaicOf(ids, px){
 function hzMosaic(hzId, px){
   var hz = HORIZONS[hzId], ids = hzEventIds(hzId);
   if (hzOwnSquare(hzId)) return '<div class="mosaic one" style="width:'+px+'px;height:'+px+'px">' + sqT(HZTHEME[hzId], px) + '</div>';
-  if (HZCOVER[hzId] === 'plain' || !ids.length) return '<div class="mosaic empty" style="width:'+px+'px;height:'+px+'px">'+ic('horizon', Math.round(px/3))+'</div>';
-  if (HZCOVER[hzId] || ids.length < 4) return '<div class="mosaic one" style="width:'+px+'px;height:'+px+'px">' + sqPx(hzCover(hzId), px) + '</div>';
   if (!ids.length) return '<div class="mosaic empty" style="width:'+px+'px;height:'+px+'px">'+ic('horizon', Math.round(px/3))+'</div>';
+  if (HZCOVER[hzId] || ids.length < 4) return '<div class="mosaic one" style="width:'+px+'px;height:'+px+'px">' + sqPx(hzCover(hzId), px) + '</div>';
   var h = Math.floor(px/2);
   return '<div class="mosaic" style="width:'+(h*2)+'px;height:'+(h*2)+'px">' + ids.slice(0,4).map(function(id){ return sqPx(id, h); }).join('') + '</div>';
 }
@@ -3340,7 +3315,6 @@ function renderAppbar(){
   } else {
     h += '<div class="ab-title">'+esc(folderName())+'</div>';
     if (S.tab === 'home' || S.tab === 'explore') h += '<button class="ab-btn" data-act="psearch" aria-label="Search">'+ic('search',22)+'</button>';
-    if (S.tab === 'you' && S.folder.kind === 'you' && !S.loggedIn) h += '';
   }
   var ab = $('appbar'), hadFocus = document.activeElement && document.activeElement.id === 'pq';
   ab.innerHTML = h;
@@ -3700,7 +3674,7 @@ function shareListHTML(){
       '<div class="fhelp">Direct message</div></div>'+ic('chat')+'</div>');
   });
   ncPeopleAll().filter(function(pid){
-    return !Object.keys(CHATS).some(function(k){ return CHATS[k].kind === 'dm' && CHATS[k].memberIds[0] === pid && CHATS[k].messages.length; }) &&
+    return !Object.keys(CHATS).some(function(k){ return CHATS[k].memberIds[0] === pid && CHATS[k].messages.length; }) &&
            (!q || matches(person(pid).displayName, q) || matches(person(pid).handle, q));
   }).forEach(function(pid){
     var p = person(pid);
@@ -4218,7 +4192,7 @@ function wizAct(which){
    exists elsewhere (the verbs, the Horizon sheet, Share, Customize), so the
    menu is a shortcut, never a second implementation.
    ========================================================================= */
-var CTXSEL = '.row[data-type], .card2[data-type], .qtile[data-type], .calev[data-type], .calcell .dots i[data-type], ' +
+var CTXSEL = '.row[data-type], .card2[data-type], .calev[data-type], .calcell .dots i[data-type], ' +
              '.track[data-type], .crow, .nrow[data-kind="horizon"], .nrow[data-type="horizon"], .nrow[data-type="person"], .evcard[data-type], .chrow[data-act="chatsel"], ' +
              '.fcard[data-type], .fco[data-type], .cotile[data-type]';
 /* what was pressed: the item's element, the element that opens it, and what it stands for */
@@ -4624,16 +4598,14 @@ var toggleInHorizon = gated(function(evId, hzId){
 });
 /* taking an event out of a horizon is one tap, so it can be taken back */
 function unfile(evId, hzId){
-  var hz = HORIZONS[hzId], i = hz.eventIds.indexOf(evId), wasCover = HZCOVER[hzId] === evId;
+  var hz = HORIZONS[hzId], i = hz.eventIds.indexOf(evId);
   if (i < 0) return;
   hz.eventIds.splice(i, 1);
   unlogAct('added_to_horizon', hzId, evId);
-  if (wasCover) delete HZCOVER[hzId];
   render();
   if (DLGS.length && document.querySelector('[data-act="dofile"]')){ closeDialogs(); addToDialog(evId); }
   toast('Removed from ' + hz.name, EVENTS[evId].title, function(){
     if (hz.eventIds.indexOf(evId) < 0) hz.eventIds.splice(Math.min(i, hz.eventIds.length), 0, evId);
-    if (wasCover) HZCOVER[hzId] = evId;
     render(); toast('Back in ' + hz.name, EVENTS[evId].title);
   });
 }
@@ -4718,7 +4690,7 @@ function openChat(cid){
   setTimeout(function(){ var b = $('chatbox'); if (b) b.focus(); }, 30);
 }
 function openDM(pid){
-  var dm = Object.keys(CHATS).filter(function(k){ return CHATS[k].kind === 'dm' && CHATS[k].memberIds[0] === pid; })[0];
+  var dm = Object.keys(CHATS).filter(function(k){ return CHATS[k].memberIds[0] === pid; })[0];
   if (!dm){ dm = 'c-dm-'+pid; CHATS[dm] = { id:dm, name:person(pid).displayName, kind:'dm', memberIds:[pid], messages:[] }; CHATORDER.unshift(dm); }
   return dm;
 }
@@ -5376,10 +5348,9 @@ function render(){
   schedulePersist();
   syncRoute();
 }
-/* what you make and keep survives a reload: account, horizons, created events, states */
 /* what you make and keep survives a reload. The network (events, horizons and call outs people
    made here) is shared; each account keeps its own relations and chats. */
-var STORE = 'hypernet-feed:v2', STORE1 = 'hypernet-feed:v1';
+var STORE = 'hypernet-feed:v2';
 function isCreatedHz(k){ var h = HORIZONS[k]; return !!h && (!!h.ownerAcct || k === 'horizon-default'); }
 /* every write to this browser's storage goes through here: when it is full, say so once, quietly — never fail silently */
 var STOREFULL = false;
@@ -5414,25 +5385,9 @@ function persist(){
     if (json !== PERSISTED && storeSet(STORE, json)) PERSISTED = json;
   } catch(e){}
 }
-/* the single-account store of the first builds becomes the 'me' account */
-function migrateV1(d){
-  var a = d.account || {};
-  var net = { events:d.events || {}, recs:d.recs || {}, themes:d.themes || {}, horizons:d.horizons || {}, covers:d.covers || {}, hzthemes:d.hzthemes || {} };
-  Object.keys(net.events).forEach(function(k){ net.events[k].hostAcct = 'me'; if (net.events[k].hostName === 'You') net.events[k].hostName = a.name || 'You'; });
-  Object.keys(net.horizons).forEach(function(k){ if (k !== 'horizon-default'){ net.horizons[k].ownerAcct = 'me'; net.horizons[k].ownerId = 'u-me'; } });
-  var accounts = {};
-  if (a.hasAccount){
-    var me = blankAcct({ displayName:a.name || '', handle:a.handle || '', bio:a.bio || '', skills:a.skills || [], cities:a.cities || [], city:a.city || '' });
-    me.rsvp = d.rsvp || {}; me.went = d.went || {}; me.promoted = d.promoted || {}; me.hzfollow = d.hzfollow || {}; me.pfollow = d.pfollow || {};
-    me.myevents = Object.keys(net.events); me.myhorizons = (d.order || []).filter(function(k){ return k !== 'horizon-default'; });
-    accounts.me = me;
-  }
-  return { v:2, session:{ acct: a.hasAccount && a.loggedIn ? 'me' : null }, accounts:accounts, network:net };
-}
 function restore(){
   var d = null;
   try { d = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch(e){}
-  if (!d){ try { var d1 = JSON.parse(localStorage.getItem(STORE1) || 'null'); if (d1) d = migrateV1(d1); } catch(e){} }
   if (!d) return;
   var n = d.network || {};
   Object.keys(n.events || {}).forEach(function(k){ EVENTS[k] = n.events[k]; if (n.recs && n.recs[k]) REC[k] = n.recs[k];

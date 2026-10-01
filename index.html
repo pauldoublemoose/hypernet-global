@@ -115,7 +115,7 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 #previewbar .pva{ flex:0 0 auto; display:flex; gap:8px; }
 #previewbar .btn{ color:#000; }
 #app.phone #previewbar{ gap:10px; padding:8px 8px 8px 12px; }
-#app.phone #previewbar .pvl{ font-size:13px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+#app.phone #previewbar .pvl{ font-size:13px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
 #app.phone #previewbar .pva{ flex-direction:column; gap:4px; }
 #app.phone #previewbar .pva .btn{ height:36px; min-height:36px; padding:0 12px; }
 #app.phone #previewbar .pva .btn.pvlogin{ height:auto; min-height:0; padding:4px 12px; background:transparent; box-shadow:none; color:#fff; text-decoration:underline; font-size:13px; }
@@ -131,17 +131,11 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .nrow:hover{ background:var(--hover); }
 .nrow.sel{ background:var(--sel); color:#fff; }
 .nrow.sel .ic, .nrow.sel .ncnt, .nrow.sel .nsub{ color:var(--seldim); }
-.nrow.unread .nlab{ font-weight:bold; }
-.nrow.unread .ncnt{ color:var(--ink); font-weight:bold; }
-.nrow.sel.unread .ncnt{ color:#fff; }
 .nrow.search{ cursor:default; padding-right:4px; margin-bottom:6px; }
 .nrow .nx{ width:36px; height:32px; display:grid; place-items:center; border:0; padding:0; background:transparent; color:#fff; }
 .nrow .nx:hover{ background:#444; }
 .nrow.drop{ outline:2px dashed #000; outline-offset:-2px; background:#f4f2ec; }
 .nrow .sq, .nrow .av{ width:20px; height:20px; flex-basis:20px; font-size:11px; }
-/* the toolbar already carries Join on a desktop; the card is the phone's You tab entry */
-.logincard{ display:none; margin:14px 12px; padding:16px; background:var(--face-lt); box-shadow:var(--thin); }
-.logincard b{ display:block; font-size:var(--fs-m); margin-bottom:12px; }
 .acctcard{ display:none; }
 
 /* ---------- 5. centre: header, list, detail -------------------------- */
@@ -295,8 +289,10 @@ a.btn{ text-decoration:none; color:var(--ink) !important; }
 /* content sits on a calm panel: white on the plain look, a step away from the ground on a customised one */
 .canvas > .layer{ z-index:5; margin:28px clamp(0px, 3cqi, 40px) 0; background:var(--epanel, #fff); box-shadow:0 0 0 1px var(--eac2); }
 /* one page template for events, horizons and people: every page is its own container, wherever it is shown */
-.canvas.pg{ container:detail / inline-size; }
+.canvas.pg{ container:detail / inline-size; padding-bottom:48px; }
 .psub2{ margin:12px 0 0; max-width:60ch; font-size:16px; line-height:1.45; color:var(--eink); }
+.pgnote{ margin:10px 0 0; max-width:60ch; font-size:var(--fs-s); line-height:1.4; color:var(--edim); }
+.dlg .kdesc.inline{ margin:0 0 16px; padding:0; border:0; background:none; font-size:var(--fs-s); color:var(--dim); }
 .banner .av.a160{ width:160px; height:160px; flex-basis:160px; font-size:56px; box-shadow:0 0 0 1px rgba(0,0,0,.25), 4px 4px 0 rgba(0,0,0,.18); }
 .pg-horizon .banner .mosaic{ box-shadow:0 0 0 1px var(--eac2), 4px 4px 0 rgba(0,0,0,.3); }
 .pg .banner .sqwrap > .sq:not(.plain), .pg .banner .sqwrap > .sq.img{ box-shadow:0 0 0 1px color-mix(in srgb, var(--eink) 22%, transparent); }
@@ -314,7 +310,6 @@ a.btn{ text-decoration:none; color:var(--ink) !important; }
   .pg-horizon .banner .sqwrap, .pg-person .banner .sqwrap:has(> .sq){ zoom:.575; }
   .banner .av.a160{ width:92px; height:92px; flex-basis:92px; font-size:32px; }
 }
-.canvas > .layer ~ .tail{ height:48px; }
 .canvas > .entry, .canvas > .edition{ z-index:5; }
 .canvas > .entry{ background:color-mix(in srgb, var(--eac) 10%, var(--ebg)); }
 .canvas > .edition .edcard{ background:color-mix(in srgb, var(--eac) 14%, var(--ebg)); }
@@ -350,7 +345,6 @@ button.chip .sub, a.chip .sub{ color:var(--dim); opacity:1; }
 .card .ctt{ margin:6px 0 4px; font-size:16px; font-weight:bold; line-height:1.3; }
 .card .cbd{ font-size:14px; }
 .card .cbd p{ margin:0; }
-.card .cdl{ margin-top:9px; font:12px var(--mono); color:var(--edim); }
 .tmodel{ display:inline-block; margin-bottom:10px; padding:4px 10px; border:2px solid var(--eac); font:bold 12px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--eac); }
 .blist{ margin:0; padding:0; list-style:none; max-width:70ch; }
 .blist li{ position:relative; padding:7px 0 7px 22px; border-bottom:1px dashed color-mix(in srgb, var(--eac2) 80%, transparent); }
@@ -438,12 +432,6 @@ span.chip.strong{ border-color:transparent; background:color-mix(in srgb, var(--
 .psub{ margin-top:5px; color:var(--dim); }
 .pdesc{ margin:14px 0 0; max-width:62ch; font-size:var(--fs-m); line-height:1.55; }
 .acts{ display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
-fieldset.props{ margin:24px 0 0; padding:8px 18px 12px; border:1px solid var(--shadow); box-shadow:inset 1px 1px 0 #fff, 1px 1px 0 #fff; }
-fieldset.props legend{ padding:0 6px; font-weight:bold; }
-.prow{ display:flex; align-items:center; gap:14px; min-height:40px; padding:6px 0; border-bottom:1px solid var(--line); }
-.prow:last-child{ border-bottom:0; }
-.pk{ flex:0 0 112px; color:var(--dim); }
-.pv{ flex:1; min-width:0; }
 .subh{ margin:30px 0 8px; font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dim); display:flex; gap:8px; }
 .crow{ display:flex; align-items:center; gap:13px; min-height:64px; padding:10px 0; border-bottom:1px solid var(--line); }
 .crow{ align-items:stretch; }
@@ -461,7 +449,6 @@ fieldset.props legend{ padding:0 6px; font-weight:bold; }
   .phead2{ gap:14px; }
   .pname{ font-size:22px; }
   .acts .btn{ flex:1 1 auto; }
-  .pk{ flex-basis:92px; }
 }
 
 /* ---------- 8. right: chats ------------------------------------------ */
@@ -563,9 +550,9 @@ body.is-phone .calall{ min-height:44px; }
 .ctxsheet .sheetrow .hzchk.on .ic{ display:block; }
 .ctxsheet .csep{ height:6px; background:var(--face); box-shadow:inset 0 1px 0 var(--shadow), inset 0 -1px 0 var(--white); }
 /* items that answer a long-press: no text selection, no callout */
-body.is-phone :is(.row[data-type], .card2[data-type], .qtile[data-type], .calev, .track[data-type], .crow, .nrow, .evcard, .chrow){
+body.is-phone :is(.row[data-type], .card2[data-type], .calev, .track[data-type], .crow, .nrow, .evcard, .chrow){
   -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
-@media (pointer:coarse){ :is(.row[data-type], .card2[data-type], .qtile[data-type], .calev, .track[data-type], .crow, .nrow, .evcard, .chrow){
+@media (pointer:coarse){ :is(.row[data-type], .card2[data-type], .calev, .track[data-type], .crow, .nrow, .evcard, .chrow){
   -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; } }
 #mask{ position:fixed; inset:0; z-index:60; display:none; background:rgba(0,0,0,.3); }
 .dlg{ position:fixed; z-index:70; display:flex; flex-direction:column; max-height:calc(100vh - 32px); padding:3px; background:var(--face);
@@ -583,21 +570,17 @@ body.is-phone .dbar .dbtn{ height:44px; }
 .ferr{ font-size:var(--fs-s); font-weight:bold; color:var(--ink); }
 .ferr::before{ content:"\26A0\FE0E  "; }
 input[aria-invalid="true"]{ outline:1px solid #000; outline-offset:-4px; }
-.demorow{ margin:0 0 20px; }
-.demorow .linkrow .ic{ color:var(--dim); }
+.demolink{ margin:4px 0 0; font-size:var(--fs-s); color:var(--dim); }
+.demolink button{ min-height:32px; padding:0; border:0; background:none; color:var(--ink2); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+body.is-phone .demolink button{ min-height:44px; }
 .pick{ display:flex; align-items:center; gap:12px; min-height:52px; padding:6px 10px; border-bottom:1px solid var(--line); cursor:pointer; }
 .pick:hover{ background:var(--hover); }
 .pick .pm{ flex:1; min-width:0; }
 .pick .pm small{ display:block; color:var(--dim); font-size:var(--fs-s); }
 .picklist{ background:#fff; box-shadow:var(--in); max-height:300px; overflow:auto; }
-.tochips{ display:flex; flex-wrap:wrap; gap:6px; min-height:0; }
-.tochip{ display:inline-flex; align-items:center; gap:6px; min-height:30px; padding:0 4px 0 4px; background:#fff; box-shadow:var(--thin); font-size:var(--fs-s); }
-.tochip button{ width:24px; height:24px; border:0; background:transparent; display:grid; place-items:center; padding:0; }
 /* on a touch screen everything you can press is at least 44px */
 @media (pointer:coarse){
   button.chip, a.chip{ min-height:var(--ctl); }
-  .tochip{ min-height:var(--ctl); padding-right:0; }
-  .tochip button{ width:var(--ctl); height:var(--ctl); }
 }
 .pchips{ display:flex; flex-wrap:wrap; gap:6px; }
 .pchip{ height:var(--ctl); padding:0 14px; border:0; background:var(--face); box-shadow:var(--out); font-size:var(--fs-s); }
@@ -663,7 +646,6 @@ body.is-phone #sh-list{ max-height:none; }
 .ab-tap{ cursor:pointer; align-self:stretch; display:flex; flex-direction:column; justify-content:center; }
 .linkrow.static{ cursor:default; }
 .linkrow.static:hover{ background:#fff; }
-.chatsempty{ padding:36px 24px 26px; }
 .chrow .lstate{ font:12px var(--mono); color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
 .cmsg{ margin:0; max-width:46ch; font-size:var(--fs-m); line-height:1.5; }
 
@@ -927,7 +909,6 @@ input[type=search]::-webkit-search-cancel-button{ -webkit-appearance:none; displ
 #app.phone .acctcard .acbtns .btn{ flex:1; }
 #app.phone .acctcard .an{ flex:1; min-width:0; font-size:17px; font-weight:bold; }
 #app.phone .acctcard .an small{ display:block; font-size:13px; font-weight:normal; color:var(--dim); }
-#app.phone .logincard{ display:block; margin:16px; }
 #app.phone #tabbar{ display:flex; flex:0 0 auto; gap:4px; padding:5px 5px calc(5px + env(safe-area-inset-bottom)); background:var(--face); box-shadow:inset 0 1px 0 var(--white), 0 -1px 0 var(--shadow); }
 #app.phone.conv-open #tabbar{ display:none; }
 .tab{ position:relative; flex:1 1 0; min-width:0; min-height:54px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
@@ -1003,7 +984,40 @@ body.is-phone .picklist{ max-height:none; }
    0. DATA ADAPTERS — same fixtures as every other concept
    ========================================================================= */
 var H = window.HYPERNET;
-var TODAY_ISO = H.meta.today;               /* 2026-09-20 */
+/* ONE CLOCK. The app runs on the real date: TODAY_ISO is today here, nowMs() is now (the instant every
+   timestamp is taken from). The mock fixtures were written for H.meta.today (2026-09-20), so their dates —
+   the mock events and their sample records, the call outs' expiries — move by the whole days between that
+   and today, and the mock world stays where it was relative to now. The five "World" events and everything
+   in data/real-events.json keep their real dates. Stored timestamps are UTC ISO strings (timestamptz in Neon). */
+function nowMs(){ return Date.now(); }
+var TODAY_ISO = (function(d){ return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); })(new Date(nowMs()));
+function utcDay(iso){ var p = String(iso).split('-'); return Date.UTC(+p[0], +p[1] - 1, +p[2]); }
+var FIXTODAY = H.meta.today;
+var FIXSHIFT = Math.round((utcDay(TODAY_ISO) - utcDay(FIXTODAY)) / 86400000);
+/* "2026-10-04" (or "2026-10-04T…") moved by n days; anything else untouched */
+function shiftIso(s, n){
+  var m = typeof s === 'string' && s.match(/^(\d{4})-(\d{2})-(\d{2})(.*)$/);
+  if (!m || !n) return s;
+  var d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3] + n));
+  return d.getUTCFullYear() + '-' + ('0' + (d.getUTCMonth() + 1)).slice(-2) + '-' + ('0' + d.getUTCDate()).slice(-2) + m[4];
+}
+function shiftDates(o, n){
+  Object.keys(o).forEach(function(k){
+    var v = o[k];
+    if (typeof v === 'string') o[k] = shiftIso(v, n);
+    else if (v && typeof v === 'object') shiftDates(v, n);
+  });
+}
+if (FIXSHIFT){
+  var SAMPLES = (window.HYPERNET_DETAILS && window.HYPERNET_DETAILS.records) || {};
+  H.events.forEach(function(e){
+    if (e.kind === 'world') return;
+    e.date = shiftIso(e.date, FIXSHIFT);
+    if (SAMPLES[e.id]) shiftDates(SAMPLES[e.id], FIXSHIFT);
+  });
+  H.callouts.forEach(function(c){ c.expiresAt = shiftIso(c.expiresAt, FIXSHIFT); });
+  H.meta.today = TODAY_ISO;
+}
 
 var PEOPLE = {};
 H.people.forEach(function(p){ PEOPLE[p.id] = p; });
@@ -1034,6 +1048,7 @@ var CALLOUTS = H.callouts.map(function(c){
   return { id:c.id, title:c.title, body:c.body, expiresAt:c.expiresAt, hostName:c.hostName, hostId: host?host.id:null };
 });
 
+/* the fixture people (seed scaffolding: fake attendees and activity). The network itself is networkPeople() */
 var CREW = ['p-anna','p-rio','p-kai','p-mira','p-jon','p-sasha'];
 var PRESENCE = { 'p-anna':'online','p-rio':'online','p-kai':'idle','p-mira':'offline','p-jon':'offline','p-sasha':'offline' };
 /* people are chrome, so their avatars stay in the greys */
@@ -1098,7 +1113,6 @@ function mergeReal(raw){
    that next edition: same world, new dates. The past edition stays reachable
    from it ("Previous: 2026") but leaves the feed. */
 var NEXTED = {};                 /* past edition id -> next edition id */
-function nextEditionOf(id){ return NEXTED[id] || null; }
 function makeNextEditions(){
   Object.keys(REC).forEach(function(id){
     var r = REC[id], b = r.burn, e = EVENTS[id];
@@ -1165,10 +1179,16 @@ function asLook(t){
   m.ink = fixInk(m.bg, m.ink);
   return m;
 }
-function needsMigrate(t){ return !!t && (!!t.palette || !t.bg); }
+/* a look is drawn only when it is already clean: hex colours (HN_HEX), a picture or nothing (HN_IMAGE). Anything else —
+   an old shape, a stray value, a string from a database — goes through asLook first, which falls back to plain */
+function lookOk(t){
+  return !!t && typeof t === 'object' && !t.palette && window.HN_HEX(t.bg) === t.bg && window.HN_HEX(t.ink) === t.ink &&
+         window.HN_HEX(t.accent) === t.accent && (t.image == null || window.HN_IMAGE(t.image) === t.image);
+}
+function cleanLook(t){ return lookOk(t) ? t : (asLook(t) || window.HN_PLAIN); }
 function TH(id){
   var T = window.HYPERNET_THEMES.themes;
-  if (T[id]){ if (needsMigrate(T[id])) T[id] = asLook(T[id]); return T[id]; }
+  if (T[id]){ if (!lookOk(T[id])) T[id] = cleanLook(T[id]); return T[id]; }
   if (!PLAINCACHE[id]){ var r = (typeof REC !== 'undefined' && REC[id]) || {}; PLAINCACHE[id] = plainTheme(PLAINGLYPH[r.kind] || PLAINGLYPH[r.scale] || '◆'); }
   return PLAINCACHE[id];
 }
@@ -1205,6 +1225,7 @@ function lookPal(t){
 }
 var VARCACHE = {};
 function themeVars(t){
+  t = cleanLook(t);
   var k = t.bg + t.ink + t.accent + (isPlain(t) ? 'p' : '');
   if (!VARCACHE[k]){
     var p = lookPal(t), ac = safeAccent(p);
@@ -1213,8 +1234,8 @@ function themeVars(t){
   return VARCACHE[k];
 }
 /* the square: the look's image, or its glyph on its ground */
-function sqInner(t){ return t.image ? '<img src="'+esc(t.image)+'" alt="" draggable="false">' : '<span class="g">'+esc(t.glyph)+'</span>'; }
-function sqCls(t, extra){ return 'sq' + (isPlain(t) ? ' plain' : '') + (t.image ? ' img' : '') + (extra ? ' ' + extra : ''); }
+function sqInner(t){ var img = window.HN_IMAGE(t.image); return img ? '<img src="'+esc(img)+'" alt="" draggable="false">' : '<span class="g">'+esc(t.glyph)+'</span>'; }
+function sqCls(t, extra){ return 'sq' + (isPlain(t) ? ' plain' : '') + (window.HN_IMAGE(t.image) ? ' img' : '') + (extra ? ' ' + extra : ''); }
 function sqHTML(id, size, extraCls){
   var t = TH(id);
   return '<div class="'+sqCls(t, 's'+size+(extraCls?' '+extraCls:''))+'" style="'+themeVars(t)+'">'+sqInner(t)+'</div>';
@@ -1297,7 +1318,7 @@ function fixtureChats(){
 }
 
 var HZPAST = {};               /* horizons whose past events you unfolded */
-var HZCOVER = {};              /* hzId -> 'own' | 'plain' | an event id; nothing = mosaic of its events */
+var HZCOVER = {};              /* hzId -> 'own' (its own square) | an event id (an import's cover); nothing = mosaic of its events */
 var EDITED = {};               /* events a host changed after they existed (their look, their details) */
 var HZTHEME = {};              /* hzId -> a theme in the same shape as an event's */
 
@@ -1352,7 +1373,7 @@ function person(id){ return PEOPLE[id] || { id:id, displayName:id, handle:id, sk
 /* a person's avatar: the photo on their look when they have one, else their initials */
 function avHTML(id, cls){
   var p = person(id), lk = typeof PTHEME !== 'undefined' && PTHEME[id];
-  if (lk && lk.image) return '<span class="av img '+(cls||'')+'" aria-hidden="true"><img src="'+esc(lk.image)+'" alt="" draggable="false"></span>';
+  if (lk && window.HN_IMAGE(lk.image)) return '<span class="av img '+(cls||'')+'" aria-hidden="true"><img src="'+esc(lk.image)+'" alt="" draggable="false"></span>';
   return '<span class="av '+(cls||'')+'" style="background:'+(AVCOLOR[id]||'#5a5a5a')+'" aria-hidden="true">'+esc(initials(p.displayName))+'</span>';
 }
 function allEvents(){ return Object.keys(EVENTS).map(function(k){ return EVENTS[k]; }); }
@@ -1366,14 +1387,14 @@ function hostPersonOf(e){
   return k ? PEOPLE[k] : null;
 }
 function byDate(a,b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }
-function rsvpList(mode){ if (!S.loggedIn) return []; return allEvents().filter(function(e){ return RSVP[e.id] === mode; }).sort(byDate); }
+function rsvpList(mode){ if (!S.loggedIn) return []; return allEvents().filter(function(e){ return RSVP[e.id] === mode && canSeeEvent(e); }).sort(byDate); }
 function horizonsOf(evId){ return Object.keys(HORIZONS).filter(function(k){ return HORIZONS[k].eventIds.indexOf(evId) >= 0 && (HORIZONS[k].isPublished || hzOwnedByMe(k)); }); }
 function hzCover(hzId){
   var hz = HORIZONS[hzId];
-  if (!hz || HZCOVER[hzId] === 'plain') return null;
-  if (HZCOVER[hzId] === 'own') return hz.eventIds.filter(function(id){ return EVENTS[id]; })[0] || null;
-  if (HZCOVER[hzId] && hz.eventIds.indexOf(HZCOVER[hzId]) >= 0) return HZCOVER[hzId];
-  return hz.eventIds.filter(function(id){ return EVENTS[id]; })[0] || null;
+  if (!hz) return null;
+  if (HZCOVER[hzId] === 'own') return hzEventIds(hzId)[0] || null;
+  if (HZCOVER[hzId] && hzEventIds(hzId).indexOf(HZCOVER[hzId]) >= 0) return HZCOVER[hzId];
+  return hzEventIds(hzId)[0] || null;
 }
 /* a square from a look, at any pixel size (the event square, drawn for anything that has a look) */
 function sqT(t, px, extra){
@@ -1389,7 +1410,7 @@ function hzArt(hzId, px){
 function hzIconHTML(hzId, size){ return hzArt(hzId, size || 20); }
 function hzDates(hzId){
   var hz = HORIZONS[hzId];
-  return (hz ? hz.eventIds : []).map(function(id){ return EVENTS[id]; }).filter(Boolean).map(function(e){ return e.date; }).sort();
+  return hzEventIds(hzId).map(function(id){ return EVENTS[id].date; }).sort();
 }
 function hzRange(hzId){
   var d = hzDates(hzId);
@@ -1398,13 +1419,52 @@ function hzRange(hzId){
 }
 /* a horizon's date, said as what it means: its next event, or when its last one was */
 function hzWhen(hzId){
-  var hz = HORIZONS[hzId], evs = (hz ? hz.eventIds : []).map(function(id){ return EVENTS[id]; }).filter(Boolean);
+  var evs = hzEventIds(hzId).map(function(id){ return EVENTS[id]; });
   if (!evs.length) return '';
   var up = evs.filter(function(e){ return !isPast(lastDay(e)); }).sort(byDate)[0];
   if (up) return 'Next ' + fmtShort(up.date);
   return 'Ended ' + fmtShort(evs.map(lastDay).sort().pop());
 }
 function hzOwnedByMe(hzId){ return S.loggedIn && MYHORIZONS.indexOf(hzId) >= 0; }
+/* PRIVACY — who can see an event. One rule, used by every list, search, calendar, horizon and activity row:
+     everyone  anyone, logged out too
+     friends   its host, and the people its host follows
+     only_me   its host alone
+   Any other value counts as only_me (closed by default). With Neon this is the same predicate in SQL (a view or RLS). */
+var PRIVACY = { everyone:'Everyone', friends:'Friends', only_me:'Only me' };
+/* the person who hosts an event: an account's own, a fixture person by name, else its fixture owner ("self" there is the demo) */
+function eventHostPid(e){
+  if (e.hostAcct && typeof acctPid === 'function') return acctPid(e.hostAcct);
+  var k = Object.keys(PEOPLE).filter(function(k){ return k !== 'self' && !/^u-/.test(k) && PEOPLE[k].displayName === e.hostName; })[0];
+  if (k) return k;
+  var o = (e.ownerIds || []).map(function(x){ return x === 'self' ? 'p-michal' : x; }).filter(function(x){ return /^p-/.test(x); })[0];
+  return o || null;
+}
+/* who someone follows: you (what you follow now), another account in this browser (what it keeps), else the fixture graph */
+function followsOf(pid){
+  var keys = function(o){ return Object.keys(o || {}).filter(function(k){ return o[k]; }); };
+  if (pid && pid === myPid()) return keys(PFOLLOW);
+  if (typeof ACCTS !== 'undefined'){
+    var k = pid === 'p-michal' ? 'demo' : /^u-/.test(pid) ? pid.slice(2) : null;
+    if (k && ACCTS[k]) return keys(ACCTS[k].pfollow);
+  }
+  return (typeof NETFOLLOWS !== 'undefined' && NETFOLLOWS[pid]) || [];
+}
+/* the person you are on the network while logged in (null logged out) */
+function myPid(){ return S.loggedIn && S.acct && typeof acctPid === 'function' ? acctPid(S.acct) : null; }
+function canSeeEvent(e){
+  if (!e) return false;
+  var pv = e.privacy || 'everyone';
+  if (pv === 'everyone') return true;
+  if (ownEvent(e)) return true;
+  var me = myPid(), host = eventHostPid(e);
+  if (!me || !host) return false;
+  if (host === me) return true;
+  return pv === 'friends' && followsOf(host).indexOf(me) >= 0;
+}
+function canSee(evId){ return canSeeEvent(EVENTS[evId]); }
+/* a horizon's events as the one looking may see them */
+function hzEventIds(hzId){ var hz = HORIZONS[hzId]; return hz ? hz.eventIds.filter(canSee) : []; }
 /* who on the network is going, whoever is looking (Home's activity says the same as the event page) */
 function baseAttendees(evId){
   if (/^evt-new-/.test(evId)) return [];
@@ -1434,7 +1494,11 @@ function isMine(evId){ return S.loggedIn && ownEvent(EVENTS[evId]); }
 /* the entry point for someone without an account says so */
 function joinLabel(){ return ACCTS.me ? 'Log in' : 'Join / Log in'; }
 function calloutOf(id){ return CALLOUTS.filter(function(x){ return x.id === id; })[0]; }
-function calloutOpen(c){ return !!c && !c.closed && !(c.expiresAt && c.expiresAt < TODAY_ISO); }
+/* a call out can be answered while it is open: not closed by its author, and not past its "open until" day.
+   An expired one reads "Closed" everywhere. (Neon: the open_callouts view.) */
+function calloutOpen(c){ return !!c && !c.closed && (!c.expiresAt || c.expiresAt >= TODAY_ISO); }
+/* the person who posted it, when we know them; an answer only ever goes to them */
+function calloutAuthor(c){ return c && c.hostId && PEOPLE[c.hostId] ? c.hostId : null; }
 var TOASTT = null;
 var WELCOME = null;             /* the first confirmation after joining also says hello */
 var TOASTACT = null;            /* the one thing a toast can do: undo what it reports */
@@ -1465,19 +1529,21 @@ function placeToasts(){
   var top = bars.length ? Math.min.apply(null, bars.map(function(b){ return b.getBoundingClientRect().top; })) : window.innerHeight;
   box.style.bottom = Math.max(12, window.innerHeight - top + 10) + 'px';
 }
-/* the preview bar: one line, and the way in. Join when there is no account here yet; Log in when there is */
+/* the preview bar: what Hypernet is in one plain line, and the way in. Join when there is no account here yet; Log in when there is */
+var HN_PITCH = 'Hypernet — find the events your people are going to, and the people to build them with.';
 function renderPreview(){
   var el = $('previewbar'); if (!el) return;
   if (S.loggedIn){ el.innerHTML = ''; return; }
   var has = !!ACCTS.me;
-  el.innerHTML = '<div class="pvt"><div class="pvk">Preview of Hypernet</div><div class="pvl">Join to keep events, follow Event Horizons and chat.</div></div>' +
+  el.innerHTML = '<div class="pvt"><div class="pvk">Preview of Hypernet</div><div class="pvl">' + esc(HN_PITCH) + '</div></div>' +
     '<div class="pva">' + (has ? '<button class="btn primary" data-act="login">Log in</button>'
       : '<button class="btn primary" data-act="join">Join free</button><button class="btn pvlogin" data-act="loginpick">Log in</button>') + '</div>';
 }
 /* Log in without an account here yet: the only account to log in to is the demo */
 function loginPicker(){
   if (ACCTS.me){ loginDialog(); return; }
-  dialog('Log in to Hypernet', demoRowHTML(), '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="join">Join free</button>', 420);
+  dialog('Log in to Hypernet', '<p class="fhelp" style="margin:0 0 12px">There is no account in this browser yet. Join free with your name — it takes a few seconds.</p>' + demoRowHTML(),
+    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="join">Join free</button>', 420);
 }
 /* logged-out actions ask for a login, then carry on with what you asked for.
    Carried on means made so: a verb you asked for is switched on, never toggled back off. */
@@ -1516,7 +1582,7 @@ function itemName(it){
    A view is a way of looking at one destination, never a destination.
    ========================================================================= */
 function feedEvents(){
-  return allEvents().filter(function(e){ return !NEXTED[e.id]; }).sort(function(a,b){
+  return allEvents().filter(function(e){ return !NEXTED[e.id] && canSeeEvent(e); }).sort(function(a,b){
     var pa = isPast(a.date) ? 1 : 0, pb = isPast(b.date) ? 1 : 0;
     if (pa !== pb) return pa - pb;
     return byDate(a,b);
@@ -1525,7 +1591,21 @@ function feedEvents(){
 function browsableHorizons(){
   return Object.keys(HORIZONS).filter(function(k){ return HORIZONS[k].isPublished || hzOwnedByMe(k); });
 }
-function browsablePeople(){ var ids = CREW.slice(); if (S.loggedIn) ids.unshift('self'); return ids; }
+/* THE NETWORK — everyone on Hypernet here: the fixture people, then every account made in this browser
+   (Michal, the demo, and whoever joined), newest last. You are never in your own network list.
+   With Neon this is  select … from people  (minus you). */
+function networkPeople(){
+  var me = myPid();
+  var accts = Object.keys(PEOPLE).filter(function(k){ return CREW.indexOf(k) < 0 && (k === 'p-michal' || /^u-/.test(k)); });
+  return CREW.concat(accts).filter(function(k){ return PEOPLE[k] && k !== me && k !== 'self'; });
+}
+/* a first name, with the handle when someone else here has the same first name ("Kai @kai.lowend") */
+function firstOf(pid){ return String(person(pid).displayName || '').trim().split(/\s+/)[0]; }
+function shortName(pid){
+  var f = firstOf(pid), others = networkPeople().concat(S.loggedIn ? ['self'] : []).filter(function(k){ return k !== pid && k !== myPid(); });
+  return others.some(function(k){ return fold(firstOf(k)) === fold(f); }) ? f + ' @' + person(pid).handle : f;
+}
+function browsablePeople(){ var ids = networkPeople(); if (S.loggedIn) ids.unshift('self'); return ids; }
 /* Explore's kinds: each is a list of one family; the overview (no kind) is the categorical sections */
 var EXPLOREKINDS = [['events','Events','cal'], ['horizons','Event Horizons','horizon'], ['callouts','Call outs','callout'], ['people','People','people']];
 function isExploreKind(id){ return EXPLOREKINDS.some(function(k){ return k[0] === id; }); }
@@ -1560,7 +1640,7 @@ var EVENTSHELVES = /^(week|soon|announced|followed)$/;
 function viewOf(f){ f = f || S.folder; var v = viewsOf(f); return v.length ? (S.view[destKey(f)] || v[0]) : 'list'; }
 function isCal(){ return viewOf() === 'calendar'; }
 function openCallouts(){
-  var open = CALLOUTS.filter(function(c){ return !c.closed; });
+  var open = CALLOUTS.filter(calloutOpen);
   var mine = S.loggedIn ? open.filter(function(c){ return c.hostId && PFOLLOW[c.hostId]; }) : [];
   return mine.concat(open.filter(function(c){ return mine.indexOf(c) < 0; }));
 }
@@ -1582,16 +1662,16 @@ function folderItems(f){
   if (k === 'search')   return searchItems(S.query);
   if (k === 'interested') evs = rsvpList('interested');
   else if (k === 'going') evs = rsvpList('going');
-  else if (k === 'promoted') evs = S.loggedIn ? allEvents().filter(function(e){ return PROMOTED[e.id]; }).sort(byDate) : [];
+  else if (k === 'promoted') evs = S.loggedIn ? allEvents().filter(function(e){ return PROMOTED[e.id] && canSeeEvent(e); }).sort(byDate) : [];
   else if (k === 'hosting') evs = (S.loggedIn ? MYEVENTS : []).map(function(id){ return EVENTS[id]; }).filter(Boolean).sort(byDate);
-  else if (k === 'horizon') evs = (HORIZONS[f.id] ? HORIZONS[f.id].eventIds : []).map(function(id){ return EVENTS[id]; }).filter(Boolean).sort(byDate);
+  else if (k === 'horizon') evs = hzEventIds(f.id).map(function(id){ return EVENTS[id]; }).sort(byDate);
   return evs.map(function(e){ return { type:'event', id:e.id }; });
 }
 function destEvents(f){
   f = f || S.folder;
   if (f.kind === 'explore' && f.id === 'horizons'){
     var seen = {}, out = [];
-    browsableHorizons().forEach(function(k){ HORIZONS[k].eventIds.forEach(function(id){ if (EVENTS[id] && !seen[id]){ seen[id] = 1; out.push(EVENTS[id]); } }); });
+    browsableHorizons().forEach(function(k){ hzEventIds(k).forEach(function(id){ if (!seen[id]){ seen[id] = 1; out.push(EVENTS[id]); } }); });
     return out.sort(byDate);
   }
   if (f.kind === 'explore' && f.id === 'events') return feedEvents();
@@ -1613,7 +1693,7 @@ function folderSub(f){
   if (f.kind === 'explore' && f.id === 'callouts') return n + ' open';
   if (f.kind === 'explore' && f.id === 'people')   return n + ' people';
   if (f.kind === 'search')   return n + ' result' + (n === 1 ? '' : 's') + ' for “' + S.query + '”';
-  if (f.kind === 'horizon'){ var h = HORIZONS[f.id]; return h ? 'Event Horizon · ' + h.ownerName + ' · ' + h.eventIds.length + ' events' : ''; }
+  if (f.kind === 'horizon'){ var h = HORIZONS[f.id]; return h ? 'Event Horizon · ' + h.ownerName + ' · ' + hzEventIds(f.id).length + ' events' : ''; }
   return n + ' event' + (n === 1 ? '' : 's');
 }
 function sameFolder(a,b){ return a && b && a.kind === b.kind && (a.id||null) === (b.id||null); }
@@ -1651,7 +1731,7 @@ function searchItems(q){
   var out = [], dq = dateQuery(q);
   if (dq) return feedEvents().filter(function(e){ var a = dayDiff(e.date), b = dayDiff(lastDay(e)); return b >= dq[0] && a <= dq[1]; })
     .map(function(e){ return { type:'event', id:e.id }; });
-  allEvents().sort(function(a,b){
+  allEvents().filter(canSeeEvent).sort(function(a,b){
     var pa = isPast(lastDay(a)) ? 1 : 0, pb = isPast(lastDay(b)) ? 1 : 0;
     return pa !== pb ? pa - pb : (pa ? -byDate(a,b) : byDate(a,b));
   }).forEach(function(e){
@@ -1662,9 +1742,10 @@ function searchItems(q){
     if ((hz.isPublished || hzOwnedByMe(k)) && matchAll([hz.name, hz.description, hz.ownerName], q)) out.push({ type:'horizon', id:k });
   });
   CALLOUTS.forEach(function(c){ if (matchAll([c.title, c.body, c.hostName], q)) out.push({ type:'callout', id:c.id }); });
+  var net = networkPeople();
   Object.keys(PEOPLE).forEach(function(k){
     var p = PEOPLE[k];
-    if ((k === 'self' && !S.loggedIn) || k === 'p-michal' || /^u-/.test(k)) return;
+    if (k === 'self' ? !S.loggedIn : net.indexOf(k) < 0) return;
     if (matchAll([p.displayName, p.handle, p.bio, (p.skills||[]).map(skillLabel).join(' '), (p.skills||[]).join(' '), citiesOf(p).join(' ')], q)) out.push({ type:'person', id:k });
   });
   return out;
@@ -1943,7 +2024,7 @@ function eyebrowOf(e){
   if (b.edition && b.edition.year) parts.push(b.edition.year + (b.edition.number ? ' · No. ' + b.edition.number : ''));
   if (REGLAB[b.regionalStatus]) parts.push(REGLAB[b.regionalStatus]);
   if (r.venueKind === 'virtual') parts.push('Online');
-  parts.push({ everyone:'Public', friends:'Friends', only_me:'Private' }[e.privacy] || 'Public');
+  parts.push({ everyone:'Public', friends:'Friends' }[e.privacy || 'everyone'] || 'Private');
   if (isPast(lastDay(e))) parts.push('Past');
   if (r._prev) parts.push('Announced');
   return parts.map(esc).join(' · ');
@@ -2231,18 +2312,18 @@ function entryHTML(evId){
 /* ONE PAGE TEMPLATE. An event, an Event Horizon and a person are the same page with different contents:
    the title block (square or avatar, title, subtitle) → the window's grey toolbar → anything that must sit right
    under it → the facts grid → the sections. A look only changes the colours and the square. Only the spec differs. */
-function titleBlockHTML(cover, eyebrow, title, sub){
+function titleBlockHTML(cover, eyebrow, title, sub, note){
   return '<header class="banner"><div class="bin"><div class="sqwrap">' + cover + '</div>' +
          '<div class="btxt">' + (eyebrow ? '<div class="eyebrow">'+eyebrow+'</div>' : '') +
-         '<h1 class="hl">'+esc(title)+'</h1>' + (sub ? '<p class="psub2">'+sub+'</p>' : '') + '</div></div></header>';
+         '<h1 class="hl">'+esc(title)+'</h1>' + (sub ? '<p class="psub2">'+sub+'</p>' : '') + (note ? '<p class="pgnote">'+esc(note)+'</p>' : '') + '</div></div></header>';
 }
 function pageHTML(o){
   var t = o.t;
   var h = '<article class="canvas pg pg-'+o.kind+(isPlain(t) ? ' plain' : '')+'" data-page="'+o.kind+'" style="'+themeVars(t)+'">';
-  h += titleBlockHTML(o.cover, o.eyebrow, o.title, o.sub);
+  h += titleBlockHTML(o.cover, o.eyebrow, o.title, o.sub, o.note);
   if (o.toolbar) h += '<div class="actbar">' + o.toolbar + '</div>';
   h += o.pre || '';
-  h += '<div class="layer"><div class="lin">' + (o.facts || '') + (o.body || '') + '</div></div><div class="tail"></div></article>';
+  h += '<div class="layer"><div class="lin">' + (o.facts || '') + (o.body || '') + '</div></div></article>';
   return h;
 }
 /* a facts grid: [label, value, small print, {type,id} to open] */
@@ -2310,7 +2391,7 @@ function eventCRow(e, withVerbs){
 function hzTheme(hzId){ return HZTHEME[hzId] || plainTheme('◗'); }
 function playlistHTML(hzId, withTracks){
   var hz = HORIZONS[hzId], mine = hzOwnedByMe(hzId), fol = S.loggedIn && HZFOLLOW[hzId];
-  var evs = hz.eventIds.map(function(id){ return EVENTS[id]; }).filter(Boolean).sort(byDate);
+  var evs = hzEventIds(hzId).map(function(id){ return EVENTS[id]; }).sort(byDate);
   var t = hzTheme(hzId), bar;
   if (!mine) bar = toolbarHTML(vb('followhz', hzId, fol ? 'Following' : 'Follow', fol ? 'check' : 'plus', { on:fol, primary:!fol, pressed:!!fol, cls:'plmain' }),
                                vb('share', hzId, 'Share', 'share', { attrs:' data-type="horizon"' }));
@@ -2344,7 +2425,7 @@ function playlistHTML(hzId, withTracks){
     if (inList) S.rows = up.concat(open ? past : []).map(function(e){ return { type:'event', id:e.id }; });
   }
   return pageHTML({ kind:'horizon', t:t, cover:hzMosaic(hzId, 160), eyebrow:'Event Horizon' + (hz.isPublished ? '' : ' · Private'), title:hz.name,
-    sub:hz.description ? esc(hz.description) : '', toolbar:bar, facts:facts, body:body });
+    sub:hz.description ? esc(hz.description) : '', note:KINDDESC.horizons, toolbar:bar, facts:facts, body:body });
 }
 
 function horizonHTML(hzId, withContents){
@@ -2352,7 +2433,6 @@ function horizonHTML(hzId, withContents){
   if (!hz) return '<div class="empty">This horizon no longer exists.</div>';
   return playlistHTML(hzId, withContents);
 }
-function prow(k, v){ return '<div class="prow"><span class="pk">'+esc(k)+'</span><span class="pv">'+v+'</span></div>'; }
 function publishedHorizonsOf(pid){
   return Object.keys(HORIZONS).filter(function(k){
     var h = HORIZONS[k];
@@ -2369,13 +2449,13 @@ function personCover(pid, px){
 }
 function goingOf(pid){
   if (pid === 'self') return S.loggedIn ? Object.keys(RSVP).filter(function(k){ return RSVP[k] === 'going' && EVENTS[k]; }).map(function(k){ return EVENTS[k]; }) : [];
-  return allEvents().filter(function(e){ return attendees(e.id).indexOf(pid) >= 0; });
+  return allEvents().filter(function(e){ return canSeeEvent(e) && attendees(e.id).indexOf(pid) >= 0; });
 }
 function personHTML(pid){
   var p = person(pid), hz = publishedHorizonsOf(pid), st = PRESENCE[pid] || 'offline', fol = S.loggedIn && PFOLLOW[pid], me = pid === 'self';
-  var hosts = allEvents().filter(function(e){ return hostPersonOf(e) === PEOPLE[pid]; }).sort(byDate);
+  var hosts = allEvents().filter(function(e){ return canSeeEvent(e) && hostPersonOf(e) === PEOPLE[pid]; }).sort(byDate);
   var going = goingOf(pid).filter(function(e){ return !isPast(lastDay(e)); }).sort(byDate);
-  var calls = CALLOUTS.filter(function(c){ return c.hostId === pid && !c.closed; });
+  var calls = CALLOUTS.filter(function(c){ return c.hostId === pid && calloutOpen(c); });
   var bar = me ? (S.loggedIn ? toolbarHTML(vb('editprofile', 'self', 'Edit profile', 'edit', { primary:true }), vb('customizeme', 'self', 'Customize', 'paint')) : '')
                : toolbarHTML(vb('followp', pid, fol ? 'Following' : 'Follow', fol ? 'check' : 'plus', { on:fol, primary:!fol, pressed:!!fol }), vb('dm', pid, 'Message', 'chat'));
   var facts = factGrid([['Based in', citiesOf(p).join(', ') || '—'], ['Hosting', String(hosts.filter(function(e){ return !isPast(lastDay(e)); }).length)],
@@ -2388,7 +2468,7 @@ function personHTML(pid){
   s += sect('Event Horizons', hz.map(function(k){
       return '<div class="crow">'+(hzOwnSquare(k) || hzCover(k) ? hzArt(k, 40) : '<span class="r-ic">'+ic('horizon')+'</span>')+
         '<div class="cm" data-act="open" data-type="horizon" data-id="'+k+'"><div class="r-title">'+esc(HORIZONS[k].name)+'</div>' +
-        '<div class="r-meta">'+HORIZONS[k].eventIds.length+' events · '+hzFollowers(k)+' followers</div></div></div>';
+        '<div class="r-meta">'+hzEventIds(k).length+' events · '+hzFollowers(k)+' followers</div></div></div>';
     }).join(''));
   s += sect('Call outs', calls.map(function(c){
       return '<div class="crow"><span class="r-ic">'+ic('callout')+'</span><div class="cm" data-act="open" data-type="callout" data-id="'+c.id+'"><div class="r-title">'+esc(c.title)+'</div>' +
@@ -2414,7 +2494,7 @@ function calloutHTML(id){
   if (mine) h += '<button class="btn primary" data-act="editcallout" data-id="'+id+'">'+ic('edit')+'Edit</button>' +
     '<button class="btn" data-act="closecallout" data-id="'+id+'">'+(c.closed ? 'Reopen' : 'Close call out')+'</button>';
   else if (ans) h += '<span class="answered">'+ic('check',16)+'You answered</span><button class="btn primary" data-act="chatsel" data-id="'+ans+'">'+ic('chat')+'Open chat</button>';
-  else if (open && c.hostId) h += '<button class="btn primary" data-act="answercallout" data-id="'+id+'">'+ic('chat')+'Answer</button>';
+  else if (open && calloutAuthor(c)) h += '<button class="btn primary" data-act="answercallout" data-id="'+id+'">'+ic('chat')+'Answer</button>';
   if (!mine && c.hostId && PEOPLE[c.hostId]) h += '<button class="btn" data-act="open" data-type="person" data-id="'+c.hostId+'">'+avHTML(c.hostId)+esc(c.hostName)+'</button>';
   if (open) h += '<button class="btn" data-act="share" data-type="callout" data-id="'+id+'">'+ic('share')+'Share</button>';
   h += '</div>';
@@ -2433,7 +2513,7 @@ function calloutHTML(id){
 /* a link to something you can't see: say which kind of thing, and give a way on */
 function missingHTML(path){
   var kind = String(path).split('/')[0];
-  var t = { event:'This event is no longer on Hypernet', horizon:'This Event Horizon is private or no longer here',
+  var t = { event:'This event is private or no longer on Hypernet', horizon:'This Event Horizon is private or no longer here',
             callout:'This call out is closed or no longer here', person:'This person isn’t on Hypernet', chats:'This chat isn’t in your account' }[kind] || 'Nothing here';
   var h = '<div class="page missing"><span class="r-ic" style="width:64px;height:64px;flex-basis:64px">'+ic(kind === 'horizon' ? 'horizon' : kind === 'callout' ? 'callout' : kind === 'person' ? 'user' : kind === 'chats' ? 'chat' : 'star', 30)+'</span>' +
     '<div class="pname" style="margin-top:16px">'+esc(t)+'</div><div class="acts">';
@@ -2501,11 +2581,10 @@ function mosaicOf(ids, px){
   return '<div class="mosaic" style="width:'+(h*2)+'px;height:'+(h*2)+'px">' + ids.slice(0,4).map(function(id){ return sqPx(id, h); }).join('') + '</div>';
 }
 function hzMosaic(hzId, px){
-  var hz = HORIZONS[hzId], ids = hz ? hz.eventIds.filter(function(id){ return EVENTS[id]; }) : [];
+  var hz = HORIZONS[hzId], ids = hzEventIds(hzId);
   if (hzOwnSquare(hzId)) return '<div class="mosaic one" style="width:'+px+'px;height:'+px+'px">' + sqT(HZTHEME[hzId], px) + '</div>';
-  if (HZCOVER[hzId] === 'plain' || !ids.length) return '<div class="mosaic empty" style="width:'+px+'px;height:'+px+'px">'+ic('horizon', Math.round(px/3))+'</div>';
-  if (HZCOVER[hzId] || ids.length < 4) return '<div class="mosaic one" style="width:'+px+'px;height:'+px+'px">' + sqPx(hzCover(hzId), px) + '</div>';
   if (!ids.length) return '<div class="mosaic empty" style="width:'+px+'px;height:'+px+'px">'+ic('horizon', Math.round(px/3))+'</div>';
+  if (HZCOVER[hzId] || ids.length < 4) return '<div class="mosaic one" style="width:'+px+'px;height:'+px+'px">' + sqPx(hzCover(hzId), px) + '</div>';
   var h = Math.floor(px/2);
   return '<div class="mosaic" style="width:'+(h*2)+'px;height:'+(h*2)+'px">' + ids.slice(0,4).map(function(id){ return sqPx(id, h); }).join('') + '</div>';
 }
@@ -2564,7 +2643,7 @@ function shelfItems(id){
   var up = feedEvents().filter(upcoming);
   if (id === 'week') return ev(up.filter(function(e){ return dayDiff(e.date) <= 6; }));
   if (id === 'soon') return ev(up.filter(function(e){ return dayDiff(e.date) > 6; }).slice(0, 12));
-  if (id === 'announced') return ev(Object.keys(NEXTED).map(function(k){ return EVENTS[NEXTED[k]]; }).filter(Boolean).sort(byDate));
+  if (id === 'announced') return ev(Object.keys(NEXTED).map(function(k){ return EVENTS[NEXTED[k]]; }).filter(canSeeEvent).sort(byDate));
   if (id === 'horizons') return popularHorizons().filter(function(k){ return !(S.loggedIn && (HZFOLLOW[k] || MYHORIZONS.indexOf(k) >= 0)); }).map(function(k){ return { type:'horizon', id:k }; });
   if (id === 'yourhz') return !S.loggedIn ? [] : MYHORIZONS.slice().reverse().concat(Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k] && MYHORIZONS.indexOf(k) < 0; })).filter(function(k){ return HORIZONS[k]; }).map(function(k){ return { type:'horizon', id:k }; });
   if (id === 'callouts') return openCallouts().map(function(c){ return { type:'callout', id:c.id }; });
@@ -2707,20 +2786,20 @@ function chatAv(c){ return avHTML(c.memberIds[0], 'a40'); }
 function lastMsg(c){ return c.messages[c.messages.length-1]; }
 /* when a message was sent: new ones carry a timestamp; the fixtures' "09:31" and "yesterday" are read on a
    morning clock that ends just before you arrived, so anything you send is newer */
-var BOOTNOW = Date.now();
+var BOOTNOW = nowMs();
 function msgTs(m){
   if (!m) return 0;
-  if (m.ts) return m.ts;
+  if (m.ts) return typeof m.ts === 'number' ? m.ts : isoMs(m.ts);
   var t = String(m.t || ''), hm = t.match(/^(\d{1,2}):(\d{2})$/), H = 3600000;
   if (/^yesterday$/i.test(t)) return BOOTNOW - 22 * H;
   if (hm){ var ago = (10 - +hm[1] - +hm[2] / 60) * H; if (ago < 0) ago += 24 * H; return BOOTNOW - 60000 - ago; }
   return BOOTNOW - 48 * H;
 }
-function stamp(){ return { t:nowClock(), ts:Date.now() }; }
+function stamp(){ return { t:nowClock(), ts:tsIso(nowMs()) }; }
 /* the chat list: newest message first; a chat with nothing in it yet is not listed */
 function chatList(){
   /* a chat is listed once it has a message, or something you started typing in it (a draft floats to the top) */
-  var ts = function(k){ return CHATDRAFT[k] && !CHATS[k].messages.length ? Date.now() : msgTs(lastMsg(CHATS[k])); };
+  var ts = function(k){ return CHATDRAFT[k] && !CHATS[k].messages.length ? nowMs() : msgTs(lastMsg(CHATS[k])); };
   return CHATORDER.filter(function(k){ return CHATS[k] && (CHATS[k].messages.length || CHATDRAFT[k]); })
     .sort(function(a, b){ return ts(b) - ts(a); });
 }
@@ -2827,14 +2906,14 @@ function renderChats(){
           created_horizon (a private horizon: only its author ever sees the row)
           posted_callout (callout) · followed_person (person)
    ========================================================================= */
-/* the app's clock: the fixtures' "now" is noon on the demo's today, and it runs on from there */
-var ACTBOOT = Date.now();
-var FIXNOW = (function(){ var d = dOf(TODAY_ISO); d.setHours(12, 0, 0, 0); return d.getTime(); })();
-function appNow(){ return FIXNOW + (Date.now() - ACTBOOT); }
-function tsIso(ms){ var d = new Date(ms); return isoOf(d) + 'T' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
-function isoMs(s){ var m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/); return m ? new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).getTime() : 0; }
-/* a row's time on the app clock. Rows made here also carry the real moment (at), so "5m" stays true across a reload */
-function actTime(a){ return a.at ? FIXNOW + (a.at - ACTBOOT) : isoMs(a.ts); }
+/* the app's clock is the real one (nowMs, section 0). The fixture rows are seeded back from the moment the app started */
+var FIXNOW = nowMs();
+function appNow(){ return nowMs(); }
+/* timestamps are UTC ISO strings, as timestamptz; rows kept from before (local "2026-09-20T12:00") still read as local */
+function tsIso(ms){ return new Date(ms).toISOString(); }
+function isoMs(s){ var t = Date.parse(s || ''); return isNaN(t) ? 0 : t; }
+/* a row's time. Rows made here also carry the real moment (at) */
+function actTime(a){ return a.at || isoMs(a.ts); }
 
 /* -------------------------------------------------------------------------
    ACTIVITY SEED (fixture) — generated from the people, events, horizons and call outs in
@@ -2935,7 +3014,7 @@ function seedActivity(){
 var LIVEACT = [];
 var ACTSTORE = 'hypernet-feed:activity';
 function loadLiveAct(){ try { var v = JSON.parse(localStorage.getItem(ACTSTORE) || '[]'); LIVEACT = Array.isArray(v) ? v : []; } catch(e){ LIVEACT = []; } }
-function saveLiveAct(){ try { localStorage.setItem(ACTSTORE, JSON.stringify(LIVEACT.slice(0, 400))); } catch(e){} }
+function saveLiveAct(){ storeSet(ACTSTORE, JSON.stringify(LIVEACT.slice(0, 400))); }
 loadLiveAct();
 function myActor(){ return S.loggedIn && S.acct ? acctPid(S.acct) : null; }
 function actIsMe(a){ return !!a && a.actor === myActor(); }
@@ -2976,11 +3055,11 @@ function noticeNewEvents(){
 function actVisible(a){
   var id = a.objId, mine = actIsMe(a), hz = HORIZONS[id];
   if (!mine && !PEOPLE[a.actor]) return false;
-  if (a.objType === 'event' && !EVENTS[id]) return false;
+  if (a.objType === 'event' && !canSee(id)) return false;
   if (a.objType === 'horizon' && !(hz && (hz.isPublished || (mine && hzOwnedByMe(id))))) return false;
-  if (a.objType === 'callout' && !(calloutOf(id) && !calloutOf(id).closed)) return false;
+  if (a.objType === 'callout' && !calloutOpen(calloutOf(id))) return false;
   if (a.objType === 'person' && !PEOPLE[id]) return false;
-  if (a.verb === 'added_to_horizon' && !(a.extra && a.extra.eventIds || []).some(function(x){ return EVENTS[x]; })) return false;
+  if (a.verb === 'added_to_horizon' && !(a.extra && a.extra.eventIds || []).some(canSee)) return false;
   if (!mine) return a.verb !== 'created_horizon';
   if (a.verb === 'going' || a.verb === 'interested') return RSVP[id] === a.verb;
   if (a.verb === 'promoted') return !!PROMOTED[id];
@@ -2989,7 +3068,13 @@ function actVisible(a){
   if (a.verb === 'created_horizon') return !hz.isPublished;
   return true;
 }
-function activityRows(){ return LIVEACT.concat(seedActivity()).filter(actVisible); }
+function activityRows(){
+  /* a horizon's added events are only the ones the one looking may see */
+  return LIVEACT.concat(seedActivity()).filter(actVisible).map(function(a){
+    var ids = a.extra && a.extra.eventIds;
+    return ids && !ids.every(canSee) ? Object.assign({}, a, { extra:Object.assign({}, a.extra, { eventIds:ids.filter(canSee) }) }) : a;
+  });
+}
 
 /* =========================================================================
    9c. HOME — the network's activity, newest first
@@ -3233,7 +3318,7 @@ function upHTML(){
 /* the people the people you follow follow, and you don't yet: how you meet friends of friends */
 function fofPeople(){
   var me = myActor(), fol = followedPeople(), via = {};
-  fol.forEach(function(f){ (NETFOLLOWS[f] || []).forEach(function(x){
+  fol.forEach(function(f){ followsOf(f).forEach(function(x){
     if (x !== me && !PFOLLOW[x] && PEOPLE[x] && fol.indexOf(x) < 0) (via[x] = via[x] || []).push(f);
   }); });
   return Object.keys(via).sort(function(a, b){ return via[b].length - via[a].length || (person(a).displayName < person(b).displayName ? -1 : 1); })
@@ -3243,7 +3328,7 @@ function fofPeople(){
 function popularPeople(){
   var me = myActor(), by = {};
   Object.keys(NETFOLLOWS).forEach(function(a){ NETFOLLOWS[a].forEach(function(b){ (by[b] = by[b] || []).push(a); }); });
-  return CREW.filter(function(x){ return x !== me && !(S.loggedIn && PFOLLOW[x]); })
+  return networkPeople().filter(function(x){ return x !== me && !(S.loggedIn && PFOLLOW[x]); })
     .sort(function(a, b){ return (by[b] || []).length - (by[a] || []).length; }).map(function(x){ return { id:x, via:by[x] || [], popular:true }; });
 }
 /* first names, unless two people (or you and someone) share one: then their @handle */
@@ -3355,7 +3440,7 @@ function calloutAct(coId, small){
   var c = calloutOf(coId), ans = S.loggedIn && ANSWERED[coId] && CHATS[ANSWERED[coId]] ? ANSWERED[coId] : null;
   if (isOwnCallout(c)) return '';
   if (ans) return small ? '<span class="ctw">'+ic('check',12)+' Answered</span>' : '<button class="btn" data-act="chatsel" data-id="'+ans+'">'+ic('check',16)+'Answered · Open chat</button>';
-  return calloutOpen(c) && c.hostId ? '<button class="btn'+(small ? '' : ' primary')+'" data-act="answercallout" data-id="'+coId+'">'+ic('chat',16)+'Answer</button>' : '';
+  return calloutOpen(c) && calloutAuthor(c) ? '<button class="btn'+(small ? '' : ' primary')+'" data-act="answercallout" data-id="'+coId+'">'+ic('chat',16)+'Answer</button>' : '';
 }
 /* a call out is someone standing up in the room: the one inverted thing on Home, the ask in big type */
 function fCalloutCard(coId, ms){
@@ -3512,13 +3597,13 @@ function renderNav(){
   var npro = Object.keys(PROMOTED).filter(function(k){ return PROMOTED[k] && EVENTS[k]; }).length;
   if (npro) h += navRow({kind:'promoted'}, ic('promote'), 'Promoted', { count: npro });
   if (MYHORIZONS.length) h += '<div class="navh">Your horizons</div>';
-  MYHORIZONS.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { count: HORIZONS[k].eventIds.length || '', drop:true, hz: L.phone }); });
+  MYHORIZONS.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { count: hzEventIds(k).length || '', drop:true, hz: L.phone }); });
   var followed = Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k] && HORIZONS[k]; });
   if (followed.length){
     h += '<div class="navh">Following</div>';
     followed.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { sub: HORIZONS[k].ownerName !== HORIZONS[k].name ? HORIZONS[k].ownerName : '', hz: L.phone }); });
   }
-  var ppl = CREW.filter(function(p){ return PFOLLOW[p]; });
+  var ppl = networkPeople().filter(function(p){ return PFOLLOW[p]; });
   if (ppl.length){
     h += '<div class="navh">People you follow</div>';
     ppl.forEach(function(p){ h += navRow({kind:'person'}, avHTML(p), person(p).displayName, { person:p, sub: PRESENCE[p] === 'online' ? '· online' : '' }); });
@@ -3588,7 +3673,6 @@ function renderAppbar(){
   } else {
     h += '<div class="ab-title">'+esc(folderName())+'</div>';
     if (S.tab === 'home' || S.tab === 'explore') h += '<button class="ab-btn" data-act="psearch" aria-label="Search">'+ic('search',22)+'</button>';
-    if (S.tab === 'you' && S.folder.kind === 'you' && !S.loggedIn) h += '';
   }
   var ab = $('appbar'), hadFocus = document.activeElement && document.activeElement.id === 'pq';
   ab.innerHTML = h;
@@ -3720,12 +3804,10 @@ function profileForm(){
         return '<button type="button" class="pchip'+(on?' on':'')+'" data-act="pfcity" data-id="'+esc(c)+'" aria-pressed="'+on+'">'+esc(c)+'</button>'; }).join('') +
       '<span class="addcity"><input type="text" id="pf-city" placeholder="Another city" aria-label="Another city"><button type="button" class="btn" data-act="pfaddcity">Add</button></span></div></div>';
 }
-/* the demo account, one tap from every Join and Log in */
+/* the demo account: a small text link at the bottom of Join and Log in, never the main action, so someone
+   invited for real doesn't become Michal by accident */
 function demoRowHTML(){
-  var m = PEOPLE['p-michal'];
-  return '<div class="picklist demorow"><div class="linkrow" data-act="useacct" data-id="demo" role="button">'+avHTML('p-michal','a40') +
-    '<div class="lr"><b>Try the demo account</b><div class="fhelp">'+esc(m.displayName)+' · @'+esc(m.handle)+'</div></div>' +
-    ic('back',18).replace('class="ic"','class="ic" style="transform:scaleX(-1)"')+'</div></div>';
+  return '<p class="demolink">Just looking? <button type="button" data-act="useacct" data-id="demo">Explore as the demo account</button></p>';
 }
 /* your photo is your profile look's image: the same picture as the square in Customize */
 function pfPhotoHTML(){
@@ -3757,7 +3839,7 @@ function profileDialog(mode){
   var p = PEOPLE['self'], up = mode === 'signup';
   PF = { mode:mode, name: up ? '' : p.displayName, handle: up ? '' : p.handle, photo: up ? null : (PTHEME.self && PTHEME.self.image) || null,
          about: up ? '' : (p.bio || ''), skills: up ? [] : (p.skills || []).slice(), cities: up ? [] : citiesOf(p).slice() };
-  dialog(up ? (JOINFOR || 'Join Hypernet') : 'Edit profile', (up ? demoRowHTML() : '') + '<div id="pfbody">' + profileForm() + '</div>',
+  dialog(up ? (JOINFOR || 'Join Hypernet') : 'Edit profile', '<div id="pfbody">' + profileForm() + '</div>' + (up ? demoRowHTML() : ''),
     '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="pfsave" id="pfsave"'+(up?' disabled':'')+'>'+(up ? 'Join' : 'Save')+'</button>', 560);
   focusIn('pf-name');
 }
@@ -3912,7 +3994,7 @@ function renameHzDialog(hzId){
   focusIn('rh-n');
 }
 function addToDialog(evId){
-  var h = '<div class="picklist"><div class="linkrow" data-act="new-horizon" data-id="'+evId+'" role="button"><span class="r-ic">'+ic('plus')+'</span><div class="lr"><b>New Event Horizon</b></div></div>' +
+  var h = '<p class="kdesc inline">'+esc(KINDDESC.horizons)+'</p><div class="picklist"><div class="linkrow" data-act="new-horizon" data-id="'+evId+'" role="button"><span class="r-ic">'+ic('plus')+'</span><div class="lr"><b>New Event Horizon</b></div></div>' +
     MYHORIZONS.slice().reverse().map(function(k){
     var has = HORIZONS[k].eventIds.indexOf(evId) >= 0;
     return '<div class="linkrow" data-act="dofile" data-id="'+evId+'" data-hz="'+k+'" role="button">' + hzIconHTML(k, 32) +
@@ -3950,7 +4032,7 @@ function shareListHTML(){
       '<div class="fhelp">Direct message</div></div>'+ic('chat')+'</div>');
   });
   ncPeopleAll().filter(function(pid){
-    return !Object.keys(CHATS).some(function(k){ return CHATS[k].kind === 'dm' && CHATS[k].memberIds[0] === pid && CHATS[k].messages.length; }) &&
+    return !Object.keys(CHATS).some(function(k){ return CHATS[k].memberIds[0] === pid && CHATS[k].messages.length; }) &&
            (!q || matches(person(pid).displayName, q) || matches(person(pid).handle, q));
   }).forEach(function(pid){
     var p = person(pid);
@@ -3980,7 +4062,7 @@ function newChatDialog(){
 }
 /* everyone you could message: people you follow first */
 function ncPeopleAll(){
-  var ids = Object.keys(PEOPLE).filter(function(k){ return k !== 'self' && k !== 'p-michal' && !/^u-/.test(k); });
+  var ids = networkPeople();
   return ids.sort(function(a,b){ return (PFOLLOW[b]?1:0) - (PFOLLOW[a]?1:0) || (person(a).displayName < person(b).displayName ? -1 : 1); });
 }
 function paintNewChat(){
@@ -4076,7 +4158,7 @@ FORMFOOT.horizon = function(){
 };
 function newHorizonDialog(withEvent){
   HZWITH = withEvent && EVENTS[withEvent] ? withEvent : null;
-  dialog('New Event Horizon',
+  dialog('New Event Horizon', '<p class="kdesc inline">'+esc(KINDDESC.horizons)+'</p>' +
     '<div class="field"><label for="nh-n">Name</label><input type="text" id="nh-n" value="'+esc(draftVal('horizon','nh-n'))+'" placeholder="Autumn builds" autocomplete="off"></div>' +
     '<div class="field"><label for="nh-d">Description</label><textarea id="nh-d" rows="2" placeholder="Every build weekend on the ridge this autumn">'+esc(draftVal('horizon','nh-d'))+'</textarea></div>' +
     '<label class="pick" style="border:0;padding-left:0"><input type="checkbox" id="nh-p"'+(draftVal('horizon','nh-p')?' checked':'')+'><span class="pm">Publish it</span></label>',
@@ -4087,7 +4169,7 @@ function newHorizonDialog(withEvent){
 var PK = null;
 function pickerEvents(){
   var q = PK.q.toLowerCase().trim();
-  return allEvents().filter(function(e){ return !NEXTED[e.id] || PK.sel.indexOf(e.id) >= 0; })
+  return allEvents().filter(function(e){ return canSeeEvent(e) && (!NEXTED[e.id] || PK.sel.indexOf(e.id) >= 0); })
     .sort(function(a,b){ var pa = isPast(lastDay(a)) ? 1 : 0, pb = isPast(lastDay(b)) ? 1 : 0; return pa !== pb ? pa - pb : (pa ? -byDate(a,b) : byDate(a,b)); })
     .filter(function(e){ return !q || matchAll([e.title, whereOf(e), placeWords(e), hostLabel(e), descOf(e)], q); });
 }
@@ -4321,8 +4403,8 @@ function wizBodyHTML(){
            EVENTKINDS.map(function(k){ return '<option value="'+k+'"'+(k===(d.kind||'meetup')?' selected':'')+'>'+esc(KINDLAB[k])+'</option>'; }).join('') + '</select></div>' +
          '<div class="field"><label for="w-c">Where</label><input type="text" id="w-c" data-cz="city" value="'+esc(d.city)+'" placeholder="Stockholm"></div>' +
          '<div class="field"><label for="w-p">Who can see it</label><select id="w-p" data-cz="privacy">' +
-           [['everyone','Everyone'],['friends','Friends'],['only_me','Only me']].map(function(p){ return '<option value="'+p[0]+'"'+(p[0]===d.privacy?' selected':'')+'>'+p[1]+'</option>'; }).join('') +
-         '</select></div>' +
+           Object.keys(PRIVACY).map(function(p){ return '<option value="'+p+'"'+(p===d.privacy?' selected':'')+'>'+PRIVACY[p]+'</option>'; }).join('') +
+         '</select><p class="fhelp">Friends are the people you follow. Only me keeps it to you.</p></div>' +
          '<div class="field"><label for="w-k">Entry</label><select id="w-k" data-cz="entry">' +
            ['free','donation','pay_what_you_can','ticket','membership','invite'].concat(ACCESSLAB[d.entry] && ['free','donation','pay_what_you_can','ticket','membership','invite'].indexOf(d.entry) < 0 ? [d.entry] : []).map(function(p){ return '<option value="'+p+'"'+(p===d.entry?' selected':'')+'>'+ACCESSLAB[p]+'</option>'; }).join('') +
          '</select></div>';
@@ -4482,7 +4564,7 @@ function wizAct(which){
    exists elsewhere (the verbs, the Horizon sheet, Share, Customize), so the
    menu is a shortcut, never a second implementation.
    ========================================================================= */
-var CTXSEL = '.row[data-type], .card2[data-type], .qtile[data-type], .calev[data-type], .calcell .dots i[data-type], ' +
+var CTXSEL = '.row[data-type], .card2[data-type], .calev[data-type], .calcell .dots i[data-type], ' +
              '.track[data-type], .crow, .nrow[data-kind="horizon"], .nrow[data-type="horizon"], .nrow[data-type="person"], .evcard[data-type], .chrow[data-act="chatsel"], ' +
              '.fcard[data-type], .fco[data-type], .cotile[data-type]';
 /* what was pressed: the item's element, the element that opens it, and what it stands for */
@@ -4577,8 +4659,8 @@ function ctxOtherItems(t, only){
     if (mine) out.push({ code:'edit', label:'Edit…', icon:'edit', run:function(){ newCalloutDialog({ edit:id }); } },
                        { code:'close', label: c.closed ? 'Reopen' : 'Close call out', icon:'close', run:function(){ closeCallout(id); } });
     else if (ans) out.push({ code:'chat', label:'Open chat', icon:'chat', run:function(){ openChat(ans); } });
-    else if (calloutOpen(c) && c.hostId) out.push({ code:'answer', label:'Answer…', icon:'chat', run:function(){ answerCallout(id); } });
-    if (!c.closed) out.push({ code:'share', label:'Share…', icon:'share', run:function(){ shareDialog(id, 'callout'); } });
+    else if (calloutOpen(c) && calloutAuthor(c)) out.push({ code:'answer', label:'Answer…', icon:'chat', run:function(){ answerCallout(id); } });
+    if (calloutOpen(c)) out.push({ code:'share', label:'Share…', icon:'share', run:function(){ shareDialog(id, 'callout'); } });
   } else {
     var ch = CHATS[id];
     out = [{ code:'open', label:'Open', def:true, lead:chatAv(ch), run:function(){ openChat(id); } }, '-',
@@ -4888,16 +4970,14 @@ var toggleInHorizon = gated(function(evId, hzId){
 });
 /* taking an event out of a horizon is one tap, so it can be taken back */
 function unfile(evId, hzId){
-  var hz = HORIZONS[hzId], i = hz.eventIds.indexOf(evId), wasCover = HZCOVER[hzId] === evId;
+  var hz = HORIZONS[hzId], i = hz.eventIds.indexOf(evId);
   if (i < 0) return;
   hz.eventIds.splice(i, 1);
   unlogAct('added_to_horizon', hzId, evId);
-  if (wasCover) delete HZCOVER[hzId];
   render();
   if (DLGS.length && document.querySelector('[data-act="dofile"]')){ closeDialogs(); addToDialog(evId); }
   toast('Removed from ' + hz.name, EVENTS[evId].title, function(){
     if (hz.eventIds.indexOf(evId) < 0) hz.eventIds.splice(Math.min(i, hz.eventIds.length), 0, evId);
-    if (wasCover) HZCOVER[hzId] = evId;
     render(); toast('Back in ' + hz.name, EVENTS[evId].title);
   });
 }
@@ -4982,14 +5062,14 @@ function openChat(cid){
   setTimeout(function(){ var b = $('chatbox'); if (b) b.focus(); }, 30);
 }
 function openDM(pid){
-  var dm = Object.keys(CHATS).filter(function(k){ return CHATS[k].kind === 'dm' && CHATS[k].memberIds[0] === pid; })[0];
+  var dm = Object.keys(CHATS).filter(function(k){ return CHATS[k].memberIds[0] === pid; })[0];
   if (!dm){ dm = 'c-dm-'+pid; CHATS[dm] = { id:dm, name:person(pid).displayName, kind:'dm', memberIds:[pid], messages:[] }; CHATORDER.unshift(dm); }
   return dm;
 }
 var messagePerson = gated(function(pid){ openChat(openDM(pid)); });
 /* sending keeps you on the page: the toast can take you to the chat */
 var shareToChat = gated(function(id, cid, type, text){
-  var hz = type === 'horizon', st = stamp(), m = { from:'self', t:st.t, ts:st.ts + 1, text:'' };
+  var hz = type === 'horizon', st = stamp(), m = { from:'self', t:st.t, ts:tsIso(isoMs(st.ts) + 1), text:'' };
   if (text) CHATS[cid].messages.push({ from:'self', t:st.t, ts:st.ts, text:text });
   m[hz ? 'hzcard' : type === 'callout' ? 'cocard' : 'card'] = id;
   CHATS[cid].messages.push(m);
@@ -5001,10 +5081,11 @@ var shareToChat = gated(function(id, cid, type, text){
 var answerCallout = gated(function(coId){
   var c = calloutOf(coId); if (!c || isOwnCallout(c)) return;
   if (ANSWERED[coId] && CHATS[ANSWERED[coId]]){ openChat(ANSWERED[coId]); return; }
-  if (!calloutOpen(c) || !c.hostId){ toast('This call out is closed', c.title); return; }
-  var cid = openDM(c.hostId);
+  if (!calloutOpen(c)){ toast('This call out is closed', c.title); return; }
+  if (!calloutAuthor(c)){ toast('Can’t answer this call out', 'We don’t know who posted it'); return; }
+  var cid = openDM(calloutAuthor(c));
   CHATS[cid].pin = { callout:coId };
-  if (!CHATDRAFT[cid]) CHATDRAFT[cid] = 'Hi ' + firstName(c.hostId) + ', I can help with this. When do you need me?';
+  if (!CHATDRAFT[cid]) CHATDRAFT[cid] = 'Hi ' + firstName(calloutAuthor(c)) + ', I can help with this. When do you need me?';
   ANSWERING[cid] = coId;
   openChat(cid);
   setTimeout(function(){ var b = $('chatbox'); if (b){ b.focus(); b.setSelectionRange(b.value.length, b.value.length); } }, 60);
@@ -5462,7 +5543,7 @@ function parseHash(h){
 function validItem(it){
   if (!it) return false;
   if (it.type === 'missing') return true;
-  if (it.type === 'event') return !!EVENTS[it.id];
+  if (it.type === 'event') return canSee(it.id);
   if (it.type === 'horizon') return !!HORIZONS[it.id] && (HORIZONS[it.id].isPublished || hzOwnedByMe(it.id));
   if (it.type === 'person') return !!PEOPLE[it.id];
   if (it.type === 'callout') return !!calloutOf(it.id);
@@ -5579,8 +5660,9 @@ window.addEventListener('popstate', function(ev){
 /* a link (not a history step): its row, if the list has one, is lit and in view */
 function revealSel(){
   var el = document.querySelector('#listbody .row.sel, #listbody .track.sel, #listbody .fsel');
-  /* Home opens at its top: what the app picked for the reading pane is not worth scrolling to */
-  if (S.folder.kind === 'home' && S.autoSel) return;
+  /* Home and a horizon open at their top (a shared horizon link lands on its title and what a horizon is):
+     what the app picked for the reading pane is not worth scrolling to */
+  if (S.autoSel && (S.folder.kind === 'home' || S.folder.kind === 'horizon')) return;
   if (el && !L.phone){ el.scrollIntoView({ block:'center' }); CURSCROLL.list = $('listbody').scrollTop; }
 }
 function rootSnap(tab){
@@ -5659,15 +5741,29 @@ function render(){
   renderPreview();
   placeToasts();
   document.title = (S.stack.length && !S.autoSel ? itemName(S.stack[S.stack.length-1]) : folderName()) + ' · Hypernet';
-  persist();
+  schedulePersist();
   syncRoute();
 }
-/* what you make and keep survives a reload: account, horizons, created events, states */
 /* what you make and keep survives a reload. The network (events, horizons and call outs people
    made here) is shared; each account keeps its own relations and chats. */
-var STORE = 'hypernet-feed:v2', STORE1 = 'hypernet-feed:v1';
+var STORE = 'hypernet-feed:v2';
 function isCreatedHz(k){ var h = HORIZONS[k]; return !!h && (!!h.ownerAcct || k === 'horizon-default'); }
+/* every write to this browser's storage goes through here: when it is full, say so once, quietly — never fail silently */
+var STOREFULL = false;
+function storeSet(key, val){
+  try { localStorage.setItem(key, val); return true; }
+  catch(e){
+    var full = e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014 || /quota/i.test(String(e.message)));
+    /* after whatever the action itself says, so its own confirmation doesn't cover the warning */
+    if (full && !STOREFULL){ STOREFULL = true; setTimeout(function(){ toast('This browser’s storage is full', 'Recent changes are kept until you close the tab. Remove an image to make room.'); }, 0); }
+    return false;
+  }
+}
+/* saved on change, not on every render: render marks the store dirty and it is written once things settle (and when
+   the page goes away); a write that would store the same thing again is skipped */
+var PERSISTED = null;
 function persist(){
+  clearTimeout(PERSISTT); PERSISTT = null;
   try {
     if (S.loggedIn && S.acct) ACCTS[S.acct] = captureAcct();
     var evs = {}, recs = {}, themes = {}, hzs = {}, covers = {}, hzthemes = {};
@@ -5676,37 +5772,19 @@ function persist(){
     /* hosts can change events they did not create here (the demo's own), so those edits are kept too */
     var edits = {};
     Object.keys(EDITED).forEach(function(k){ if (EVENTS[k] && !/^evt-new-/.test(k)){ var th = window.HYPERNET_THEMES.themes[k] || null; edits[k] = { ev:EVENTS[k], rec:REC[k] || null, theme:th, plain:!th }; } });
-    localStorage.setItem(STORE, JSON.stringify({ v:2,
+    var json = JSON.stringify({ v:2,
       session:{ acct: S.loggedIn ? S.acct : null },
       ui:{ rightOpen:!!S.rightOpen, chatOpen:S.chatOpen || null, recent:RECENTQ },
       accounts:ACCTS,
       network:{ events:evs, recs:recs, themes:themes, horizons:hzs, covers:covers, hzthemes:hzthemes, edits:edits, deleted:DELETED,
                 callouts:CALLOUTS.filter(function(c){ return !!c.hostAcct; }) }
-    }));
-  } catch(e){
-    /* images make the store heavy: say once that this browser is full rather than losing changes silently */
-    if (/quota/i.test(String(e && (e.name + ' ' + e.message))) && !persist.warned){ persist.warned = true; toast('This browser’s storage is full', 'Recent changes are kept until you close the tab. Remove an image to make room.'); }
-  }
-}
-/* the single-account store of the first builds becomes the 'me' account */
-function migrateV1(d){
-  var a = d.account || {};
-  var net = { events:d.events || {}, recs:d.recs || {}, themes:d.themes || {}, horizons:d.horizons || {}, covers:d.covers || {}, hzthemes:d.hzthemes || {} };
-  Object.keys(net.events).forEach(function(k){ net.events[k].hostAcct = 'me'; if (net.events[k].hostName === 'You') net.events[k].hostName = a.name || 'You'; });
-  Object.keys(net.horizons).forEach(function(k){ if (k !== 'horizon-default'){ net.horizons[k].ownerAcct = 'me'; net.horizons[k].ownerId = 'u-me'; } });
-  var accounts = {};
-  if (a.hasAccount){
-    var me = blankAcct({ displayName:a.name || '', handle:a.handle || '', bio:a.bio || '', skills:a.skills || [], cities:a.cities || [], city:a.city || '' });
-    me.rsvp = d.rsvp || {}; me.went = d.went || {}; me.promoted = d.promoted || {}; me.hzfollow = d.hzfollow || {}; me.pfollow = d.pfollow || {};
-    me.myevents = Object.keys(net.events); me.myhorizons = (d.order || []).filter(function(k){ return k !== 'horizon-default'; });
-    accounts.me = me;
-  }
-  return { v:2, session:{ acct: a.hasAccount && a.loggedIn ? 'me' : null }, accounts:accounts, network:net };
+    });
+    if (json !== PERSISTED && storeSet(STORE, json)) PERSISTED = json;
+  } catch(e){}
 }
 function restore(){
   var d = null;
   try { d = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch(e){}
-  if (!d){ try { var d1 = JSON.parse(localStorage.getItem(STORE1) || 'null'); if (d1) d = migrateV1(d1); } catch(e){} }
   if (!d) return;
   var n = d.network || {};
   Object.keys(n.events || {}).forEach(function(k){ EVENTS[k] = n.events[k]; if (n.recs && n.recs[k]) REC[k] = n.recs[k];
@@ -5736,7 +5814,10 @@ function restore(){
   syncAcctPeople();
 }
 var PERSISTT = null;
-function schedulePersist(){ clearTimeout(PERSISTT); PERSISTT = setTimeout(persist, 400); }
+function schedulePersist(){ if (!PERSISTT) PERSISTT = setTimeout(persist, 300); }
+/* a reload, a closed tab or a phone putting the page away writes what is pending */
+window.addEventListener('pagehide', function(){ if (PERSISTT) persist(); });
+document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden' && PERSISTT) persist(); });
 var RZ = null;
 window.addEventListener('resize', function(){ clearTimeout(RZ); RZ = setTimeout(render, 60); });
 (function boot(){

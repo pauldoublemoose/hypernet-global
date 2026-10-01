@@ -47,7 +47,8 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   particle atmosphere, then content panels and the window's toolbar. Art never takes a click or covers a control;
   ornaments state only facts (edition year, entry model, city, a horizon's years), never invented ones. Text colours
   are corrected to AA against the ground; reduced motion stills everything. Four theme fields (`backdrop`,
-  `atmosphere`, `ornaments`, `parallax`) are part of a look and editable in Customize.
+  `atmosphere`, `ornaments`, `parallax`) are part of a look and editable in Customize. *Superseded 2026-10-01: no canvas
+  art; every look renders on the calm plain layout.*
 - **2026-10-01 · Home is the network's activity.** Home is a reverse-chronological stream of what people did: going,
   interested, promoted, created an event, published / followed / filled an Event Horizon, posted a call out, followed
   someone. Day bands (Today, Yesterday, This week, Earlier) and relative times ("38m", "2h", "yesterday", "Mon"). Rows
@@ -84,8 +85,6 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   horizon a group owns still shows the group's name as its owner, and the old `#/group/<id>` link opens that horizon.
 - **2026-10-01 · Cut from the sidebar.** The top-level Horizons and People rows (now Explore's kinds) and Home's unread
   count (Home is no longer an inbox of events).
-  `atmosphere`, `ornaments`, `parallax`) are part of a look and editable in Customize. *Superseded 2026-10-01: no canvas
-  art; every look renders on the calm plain layout.*
 - **2026-10-01 · Customize is three colours and a square image.** Owner: "Keep pick your colors … just select colors and
   image for now." Customize (events, Event Horizons, your profile — one implementation) and the New event wizard's
   optional Look step now hold only: Background, Text and Accent (a colour picker and its hex each), six one-click
@@ -163,3 +162,35 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   tile, coming-up row) is a plain element; its title is the button that opens it (stretched over the card for the
   pointer), and its verbs are buttons beside it — no `role="button"` wrapped around real buttons. Names and titles inside
   a line are buttons too.
+- **2026-10-01 · Who can see an event is enforced.** "Who can see it" has three values: **Everyone** (anyone, logged
+  out too), **Friends** — the host and **the people the host follows** (one-way: following someone lets them see your
+  Friends events; it doesn't let you see theirs), and **Only me** (the host). Anything else counts as Only me. One rule
+  (`canSeeEvent`) gates every place an event can show: Home's activity, Explore, search, calendars, horizon track lists
+  and their counts, person pages, the Add events picker, and direct links (which say "private or no longer here"). A
+  public horizon with a private event on it shows the others only. An event whose host is not a person yet (a camp —
+  groups are v2) and is not public is seen by nobody. With Neon this is `can_see_event` (docs/research/neon-schema-v1.md).
+- **2026-10-01 · The network is every person here.** People in Explore, people search, New chat, Share, People you
+  follow and the People to follow suggestions come from `networkPeople()`: the fixture people, Michal (the demo
+  account) and every account joined in this browser — never you. Someone who joins is immediately a person others can
+  find, follow and message. Where two people share a first name, `shortName()` carries the handle ("Kai @kailow");
+  Home's sentences and the friends-of-friends line are to use it.
+- **2026-10-01 · One clock: the real one.** The app runs on today's date. The mock fixtures (written for 2026-09-20)
+  move by the days between then and today — events, their sample records (shifts, blocks), call out expiries — and the
+  activity seed counts back from the moment the app starts, so the mock world stays "alive" relative to now. The five
+  World events and everything in `data/real-events.json` keep their real dates. Timestamps are stored as UTC ISO
+  strings (`timestamptz` with Neon). Regression runs pin the browser clock (`HN_NOW`, default 2026-10-01) so real
+  events stay where the checks expect them.
+- **2026-10-01 · An expired call out is closed.** A call out is open while its author hasn't closed it and its "open
+  until" day hasn't passed (`calloutOpen`). A closed one can't be answered from anywhere, and Explore lists only open
+  ones. An answer goes to the person who posted it (`calloutAuthor`); when we don't know who that is, there is no
+  Answer — never someone else instead.
+- **2026-10-01 · Looks are validated before they are drawn.** Only `#rgb` / `#rrggbb` colours and
+  `data:image/(png|jpeg|webp|gif);base64` images reach a `style` or `src`; anything else falls back to plain
+  (`HN_HEX`, `HN_IMAGE` in `_shared/hypernet-themes.js`; a CHECK in Postgres).
+- **2026-10-01 · The demo account is a footnote.** Join and Log in end with a small "Explore as the demo account" link
+  instead of opening with "Try the demo account", so an invitee doesn't become Michal by accident. The logged-out
+  preview bar says what Hypernet is: "Hypernet — find the events your people are going to, and the people to build
+  them with." A horizon page, New Event Horizon and Add to horizon say what a horizon is in one line, and a shared
+  horizon link opens at its title.
+- **2026-10-01 · Saved on change.** The browser store is written when something changed (and when the page goes
+  away), not on every render; both stores (the app's and the activity) say once, quietly, when the browser is full.

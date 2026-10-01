@@ -5,6 +5,11 @@
             the newest Chromium found in the Playwright cache (~/Library/Caches/ms-playwright, ~/.cache/ms-playwright).
             If none is found it says how to get one (npx playwright install chromium-headless-shell).
    HN_URL=<url> points it at another server.
+   HN_ROOT=<repo dir> serves that folder at http://hn.test/ through Playwright request routing instead: no port is bound,
+            so it runs where localhost is off limits (sandboxes, CI).  e.g.  HN_ROOT=. npx -y -p playwright node tests/regression.js
+   HN_NOW=<date-time> pins the browser's clock (default 2026-10-01T10:00:00, local); HN_NOW=real runs on the real clock.
+            The app runs on the real date and moves its mock fixtures with it, so a pinned clock keeps the real events
+            (data/real-events.json) where these checks expect them.
    Covers: open event → Going; create horizon → add events → customize → reload; new chat is a direct message;
    right-click → Add to horizon; long-press sheet; back/forward/reload restore; console errors, failed
    requests (404s) and horizontal overflow at 375 (touch), 768 and 1440; plus the round-2 majors: toasts vs the
@@ -24,7 +29,9 @@
    is one "You: …" line; lines group within three hours; @handle on name clashes; Who's going leads with people you
    follow and "and N more" opens everyone; Explore says who you follow is going; Answer opens the DM with the call out
    pinned, a textarea (Enter sends, Shift+Enter new line) and the poster sees who answered; New call out defaults to
-   the event you are on; no role=button around buttons on Home; whole call-out tiles with the dock and pane open. */
+   the event you are on; no role=button around buttons on Home; whole call-out tiles with the dock and pane open; and 2026-10-01 (trust): the app runs on today's
+   date, "Only me" / Friends events are seen only by who may, joined accounts are people to everyone, expired call outs
+   are closed, non-hex colours and non-picture images fall back to plain, storage writes on change and warns once. */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch(e){
   try { ({ chromium } = require('playwright-core')); } catch(e2){
@@ -32,7 +39,18 @@ try { ({ chromium } = require('playwright')); } catch(e){
   }
 }
 const path = require('path'), fs = require('fs'), os = require('os');
-const URL = process.env.HN_URL || 'http://127.0.0.1:8936/';
+const ROOT = process.env.HN_ROOT ? path.resolve(process.env.HN_ROOT) : null;
+const URL = process.env.HN_URL || (ROOT ? 'http://hn.test/' : 'http://127.0.0.1:8936/');
+const NOWPIN = process.env.HN_NOW === 'real' ? null : new Date(process.env.HN_NOW || '2026-10-01T10:00:00');
+const TYPES = { '.html':'text/html', '.js':'application/javascript', '.json':'application/json', '.css':'text/css', '.png':'image/png', '.svg':'image/svg+xml', '.ico':'image/x-icon' };
+/* HN_ROOT: answer every request to the test origin from the folder on disk */
+async function serveRoot(route){
+  const u = new (require('url').URL)(route.request().url());
+  let f = path.join(ROOT, decodeURIComponent(u.pathname));
+  if (f.endsWith(path.sep) || f.endsWith('/')) f = path.join(f, 'index.html');
+  if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) return route.fulfill({ status:404, body:'not found' });
+  return route.fulfill({ status:200, contentType:TYPES[path.extname(f)] || 'application/octet-stream', body:fs.readFileSync(f) });
+}
 const SHOTS = path.join(os.tmpdir(), 'hypernet-shots');
 fs.mkdirSync(SHOTS, { recursive: true });
 
@@ -72,6 +90,8 @@ const TAB = { viewport:{ width:768, height:1024 }, hasTouch:true };
 async function ctx(kind, opts){
   const b = await launch();
   const c = await b.newContext(Object.assign({}, kind === 'phone' ? PHONE : kind === 'tab' ? TAB : DESK, opts || {}));
+  if (ROOT) await c.route(new (require('url').URL)(URL).origin + '/**', serveRoot);
+  if (NOWPIN) await c.clock.install({ time:NOWPIN });
   const p = await c.newPage();
   p.errors = [];
   p.on('console', m => { if (m.type() === 'error') p.errors.push(m.text()); });
@@ -184,8 +204,10 @@ async function overflowEverywhere(p, label){
   ok(await ev(d, h => HORIZONS[h].eventIds.length === 2 && !!HZTHEME[h] && !!document.querySelector('#listbody .pg-horizon:not(.plain)') && S.folder.kind === 'horizon', dh), 'desktop: horizon + events + look survive reload');
   // right-click → Add to horizon
   await d.goto(URL + '#/explore/events'); await d.waitForTimeout(500);
-  const target = await ev(d, () => document.querySelectorAll('#listbody .row[data-type="event"]')[3].getAttribute('data-id'));
-  await d.click('#listbody .row[data-type="event"] >> nth=3', { button:'right' }); await d.waitForTimeout(150);
+  /* a row from the 4th on that is not on the horizon yet */
+  const ti = await ev(d, h => [...document.querySelectorAll('#listbody .row[data-type="event"]')].findIndex((r, i) => i >= 3 && HORIZONS[h].eventIds.indexOf(r.getAttribute('data-id')) < 0), dh);
+  const target = await ev(d, i => document.querySelectorAll('#listbody .row[data-type="event"]')[i].getAttribute('data-id'), ti);
+  await d.click('#listbody .row[data-type="event"] >> nth=' + ti, { button:'right' }); await d.waitForTimeout(150);
   await d.hover('.ctxmenu .ci:has-text("Add to horizon")'); await d.waitForTimeout(350);
   await d.click('.ctxmenu >> nth=1 >> .ci:has-text("Driftwood")'); await d.waitForTimeout(250);
   ok(await ev(d, ([h, t]) => HORIZONS[h].eventIds.indexOf(t) >= 0, [dh, target]), 'desktop: right-click → Add to horizon');
@@ -741,6 +763,135 @@ async function overflowEverywhere(p, label){
     await tb.click('.dlg [data-act="useacct"][data-id="demo"]'); await tb.waitForTimeout(300);
     await tb.evaluate(() => customizeDialog(MYEVENTS[0])); await tb.waitForTimeout(300);
     ok((await overflow(tb)) <= 0 && !tb.errors.length, '768: Customize open, no horizontal overflow, no console errors');
+  }
+
+  /* ---------------- 2026-10-01 (trust): privacy, the network, one clock, closed call outs, clean colours, storage ---------------- */
+  {
+    const c = await ctx('desk');
+    await open(c, '', true);
+    /* one clock: the app's today is the browser's today, and the mock world moved with it */
+    ok(await ev(c, () => { const d = new Date(), iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      return TODAY_ISO === iso && dayDiff(EVENTS['evt-deep-listening'].date) === 14 && EVENTS['evt-world-borderland-2026'].date === '2026-07-20'; }),
+      'trust: the app runs on today\'s date; mock events keep their place relative to it, real ones keep their dates');
+    await c.goto(URL + '#/explore/events?view=calendar'); await c.waitForTimeout(400);
+    ok(await ev(c, () => (document.querySelector('#calcol .calcell.today') || {}).getAttribute && document.querySelector('#calcol .calcell.today').getAttribute('data-id') === TODAY_ISO), 'trust: the calendar\'s Today is today');
+    ok(await ev(c, () => { const t = tsIso(Date.UTC(2026, 9, 1, 8, 30)); return t === '2026-10-01T08:30:00.000Z' && isoMs(t) === Date.UTC(2026, 9, 1, 8, 30); }), 'trust: timestamps are UTC ISO strings');
+    /* the logged-out bar says what Hypernet is */
+    ok(await ev(c, () => /find the events your people are going to/.test(document.getElementById('previewbar').textContent)), 'trust: logged out, the preview bar says what Hypernet is in one line');
+    /* the demo account is a small link at the bottom of Join, never the main action */
+    await c.evaluate(() => loginDialog()); await c.waitForTimeout(150);
+    ok(await ev(c, () => { const l = document.querySelector('.dlg .demolink [data-act="useacct"][data-id="demo"]'), f = document.getElementById('pfbody');
+      return !!l && !!f && !!(f.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING) && !document.querySelector('.dlg .linkrow[data-id="demo"]') && /demo account/.test(l.textContent); }),
+      'trust: Join shows the demo account as a small text link under the form');
+    await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+    /* an "Only me" event: its host sees it; logged out and another account see it nowhere */
+    await join(c, 'Pia Host', 'piahost');
+    await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
+    const when = await ev(c, () => shiftIso(TODAY_ISO, 10));
+    await c.fill('#w-t', 'Quiet supper zq'); await c.fill('#w-d', when); await c.selectOption('#w-p', 'only_me');
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(500);
+    const sid = await ev(c, () => MYEVENTS[MYEVENTS.length - 1]);
+    await c.evaluate(() => runCmd('new-horizon')); await c.waitForTimeout(200);
+    ok(await ev(c, () => /list of events someone curates/.test(document.querySelector('.dlg').textContent)), 'trust: New Event Horizon says what a horizon is');
+    await c.fill('#nh-n', 'Pia picks'); await c.check('#nh-p'); await c.click('#nh-go'); await c.waitForTimeout(400);
+    const phz = await ev(c, () => MYHORIZONS[MYHORIZONS.length - 1]);
+    await c.evaluate(([e, h]) => { toggleInHorizon(e, h); toggleInHorizon('evt-fill-3', h); setRSVP(e, 'going'); }, [sid, phz]); await c.waitForTimeout(300);
+    const seen = () => ev(c, ([id, h]) => {
+      const T = 'Quiet supper zq';
+      return { feed:feedEvents().some(e => e.id === id), search:searchItems('supper zq').some(it => it.id === id), act:activityRows().some(a => a.objId === id || ((a.extra && a.extra.eventIds) || []).indexOf(id) >= 0),
+               hz:hzEventIds(h).indexOf(id) >= 0, route:validItem({ type:'event', id }), cal:(S.folder = { kind:'explore', id:'events' }, destEvents().some(e => e.id === id)) };
+    }, [sid, phz]);
+    const host = await seen();
+    ok(host.feed && host.search && host.hz && host.route && host.cal, 'trust: the host sees their Only me event ' + JSON.stringify(host));
+    const path = await ev(c, id => '#/' + itemPath({ type:'event', id }), sid), hzPath = await ev(c, h => '#/' + itemPath({ type:'horizon', id:h }), phz);
+    const pageText = async h => { await c.goto(URL + h); await c.waitForTimeout(350); return ev(c, () => document.getElementById('app').innerText); };
+    await c.evaluate(() => doLogout()); await c.waitForTimeout(250);
+    for (const who of ['logged out', 'another account']){
+      if (who === 'another account'){ await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(300); }
+      const v = await seen();
+      ok(!v.feed && !v.search && !v.act && !v.hz && !v.route && !v.cal, 'trust: ' + who + ': an Only me event is in no list, search, activity, horizon, calendar or route ' + JSON.stringify(v));
+      const texts = [await pageText('#/home'), await pageText('#/explore/events'), await pageText('#/explore'), await pageText(hzPath), await pageText('#/search?q=zq'), await pageText(path)];
+      ok(texts.every(t => t.indexOf('Quiet supper zq') < 0) && /private or no longer/.test(texts[5]), 'trust: ' + who + ': and no screen shows it; its link says private');
+      if (who === 'another account') ok(await ev(c, h => hzEventIds(h).join() === 'evt-fill-3', phz), 'trust: another account sees the horizon\'s public event only');
+    }
+    /* Friends = the people the host follows */
+    await c.evaluate(() => doLogout()); await c.waitForTimeout(200);
+    await c.evaluate(id => { useAcct('me'); EVENTS[id].privacy = 'friends'; followP('p-michal'); doLogout(); useAcct('demo'); }, sid); await c.waitForTimeout(300);
+    ok(await ev(c, id => canSee(id) && feedEvents().some(e => e.id === id), sid), 'trust: Friends: someone the host follows sees it');
+    await c.evaluate(id => { doLogout(); }, sid); await c.waitForTimeout(200);
+    ok(await ev(c, id => !canSee(id), sid), 'trust: Friends: logged out does not');
+    /* a newly joined account is a person to everyone else: People, people search, New chat */
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(300);
+    await c.goto(URL + '#/explore/people'); await c.waitForTimeout(400);
+    ok(await ev(c, () => !!document.querySelector('#listbody .row[data-type="person"][data-id="u-me"]') && searchItems('Pia Host').some(it => it.type === 'person' && it.id === 'u-me')), 'trust: a newly joined account is in another account\'s People and people search');
+    await c.evaluate(() => runCmd('newchat')); await c.waitForTimeout(200);
+    ok(await ev(c, () => !!document.querySelector('#nc-list [data-act="ncdm"][data-id="u-me"]')), 'trust: and in New chat');
+    await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+    ok(!c.errors.length, 'trust: no console errors (privacy, network) ' + c.errors.join(' '));
+  }
+  {
+    /* two people called Kai: the handle tells them apart */
+    const c = await ctx('desk');
+    await open(c, '', true);
+    await join(c, 'Kai Lindqvist', 'kailow');
+    await c.evaluate(() => { doLogout(); useAcct('demo'); }); await c.waitForTimeout(300);
+    ok(await ev(c, () => shortName('p-kai') === 'Kai @kai' && shortName('u-me') === 'Kai @kailow' && shortName('p-anna') === 'Anna' && networkPeople().indexOf('u-me') >= 0),
+       'trust: two Kais are told apart by handle');
+    /* an expired call out is closed: not listed as open, no Answer, answering it opens no chat */
+    await c.evaluate(() => { CALLOUTS.filter(x => x.id === 'co-kitchen')[0].expiresAt = shiftIso(TODAY_ISO, -1); render(); }); await c.waitForTimeout(200);
+    await c.goto(URL + '#/explore/callouts'); await c.waitForTimeout(400);
+    const co = await ev(c, () => {
+      const k = calloutOf('co-kitchen'), n = Object.keys(CHATS).length, open0 = S.chatOpen;
+      answerCallout('co-kitchen');
+      return { open:calloutOpen(k), listed:!!document.querySelector('#listbody .row[data-id="co-kitchen"]'), menu:ctxItems({ type:'callout', id:'co-kitchen' }).some(i => i && i.code === 'answer'),
+               chat:Object.keys(CHATS).length !== n || S.chatOpen !== open0, act:activityRows().some(a => a.objId === 'co-kitchen'),
+               other:calloutOpen(calloutOf('co-sound')) && ctxItems({ type:'callout', id:'co-sound' }).some(i => i && i.code === 'answer') };
+    });
+    ok(!co.open && !co.listed && !co.menu && !co.chat && !co.act && co.other, 'trust: an expired call out is closed — not listed, no Answer, no chat, gone from activity ' + JSON.stringify(co));
+    /* a call out with nobody behind it cannot be answered (never someone else instead) */
+    ok(await ev(c, () => { const k = calloutOf('co-sound'); const h = k.hostId; k.hostId = null; const n = Object.keys(CHATS).length; answerCallout('co-sound');
+      const r = Object.keys(CHATS).length === n && !ctxItems({ type:'callout', id:'co-sound' }).some(i => i && i.code === 'answer'); k.hostId = h; return r; }), 'trust: a call out with no known author has no Answer');
+    /* colours that aren't hex never reach a style attribute; images must be picture data URLs */
+    const col = await ev(c, () => {
+      window.HYPERNET_THEMES.themes['evt-fill-2'] = { bg:'#000;" onmouseover="window.__x=1', ink:'red', accent:'#12345', image:'javascript:alert(1)', glyph:'◆' };
+      const t = TH('evt-fill-2'), v = themeVars({ bg:'url(x)', ink:'#000', accent:'expression(1)' });
+      openItem('event', 'evt-fill-2'); render();
+      return { bg:t.bg === HN_PLAIN.bg && t.ink === HN_PLAIN.ink && t.accent === HN_PLAIN.accent && t.image === null, vars:!/url|expression/.test(v),
+               attr:!document.querySelector('[onmouseover]'), page:!!document.querySelector('.pg-event.plain'),
+               img:HN_IMAGE('data:image/svg+xml;base64,PHN2Zz4=') === null && HN_IMAGE('data:image/png;base64,iVBORw0KGgo=') !== null && HN_IMAGE('https://evil.example/x.png') === null };
+    });
+    ok(Object.values(col).every(Boolean), 'trust: an invalid colour or image falls back to plain ' + JSON.stringify(col));
+    /* storage: render alone writes nothing; a full browser says so once, for both keys */
+    const st = await ev(c, async () => {
+      const sleep = ms => new Promise(r => setTimeout(r, ms)), orig = Storage.prototype.setItem; let n = 0;
+      await sleep(500);
+      Storage.prototype.setItem = function(){ n++; return orig.apply(this, arguments); };
+      for (let i = 0; i < 5; i++) render();
+      await sleep(500); const idle = n;
+      Storage.prototype.setItem = function(){ const e = new Error('full'); e.name = 'QuotaExceededError'; throw e; };
+      followP('p-jon'); await sleep(500);
+      const t1 = (document.querySelector('#toasts') || {}).textContent || '';
+      document.getElementById('toasts').innerHTML = '';
+      followP('p-mira'); await sleep(500);
+      const t2 = (document.querySelector('#toasts') || {}).textContent || '';
+      Storage.prototype.setItem = orig;
+      return { idle, full:/storage is full/.test(t1), once:!/storage is full/.test(t2) };
+    });
+    ok(st.idle === 0 && st.full && st.once, 'trust: renders with no change write nothing; a full store warns once ' + JSON.stringify(st));
+    ok(!c.errors.length, 'trust: no console errors (callouts, colours, storage) ' + c.errors.join(' '));
+  }
+  /* a shared horizon link opens at its title and says what a horizon is, at every width */
+  for (const kind of ['phone', 'tab', 'desk']){
+    const c = await ctx(kind);
+    await open(c, '#/horizon/baltic', true);
+    const hz = await ev(c, () => { const h1 = document.querySelector('.pg-horizon h1.hl'), sc = h1 && h1.closest('.panel');
+      const r = h1 && h1.getBoundingClientRect(), pr = sc && sc.getBoundingClientRect();
+      return { title:!!h1 && r.top >= pr.top - 1 && r.bottom <= pr.bottom, note:/list of events someone curates/.test((document.querySelector('.pg-horizon .pgnote') || {}).textContent || '') }; });
+    ok(hz.title && hz.note, kind + ': a shared horizon link opens at its title, with what a horizon is ' + JSON.stringify(hz));
+    ok((await overflow(c)) <= 0, kind + ': horizon page, no horizontal overflow');
+    await c.evaluate(() => loginDialog()); await c.waitForTimeout(200);
+    ok((await overflow(c)) <= 0, kind + ': Join dialog, no horizontal overflow');
+    ok(!c.errors.length, kind + ': no console errors (horizon link) ' + c.errors.join(' '));
   }
 
   /* ---------------- tablet ---------------- */

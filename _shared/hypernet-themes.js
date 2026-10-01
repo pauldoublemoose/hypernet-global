@@ -31,15 +31,24 @@ window.HN_PLAIN = { plain: true, bg: "#f8f7f3", ink: "#161616", accent: "#262626
 /* Any saved look, old or new, in the flat shape. Looks saved before 2026-10-01 were
    { mood, palette:{ bg, ink, accent, accent2, dim }, square:{ pattern, glyph }, surface, type, headline, motion, shape,
      density, backdrop, atmosphere, ornaments, parallax }: their three colours and glyph are kept, the rest is dropped. */
+/* The only colours a look may carry: #rgb or #rrggbb, given back as lower-case #rrggbb; anything else is null.
+   Colours go into style="" attributes, so nothing else ever gets through (Neon: a CHECK on the same pattern). */
+window.HN_HEX = function(v){
+  v = String(v == null ? "" : v);
+  if (/^#[0-9a-f]{6}$/i.test(v)) return v.toLowerCase();
+  if (/^#[0-9a-f]{3}$/i.test(v)) return ("#" + v[1] + v[1] + v[2] + v[2] + v[3] + v[3]).toLowerCase();
+  return null;
+};
+/* The only images a look may carry: a base64 PNG, JPEG, WebP or GIF data URL; anything else is null.
+   (With Neon this also accepts the app's own Blob storage URLs, and nothing else.) */
+window.HN_IMAGE = function(v){
+  return typeof v === "string" && /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+\/]+=*$/.test(v) ? v : null;
+};
 window.HN_MIGRATE_LOOK = function(t){
   if (!t || typeof t !== "object") return null;
   var p = t.palette || t, sq = t.square || {}, P = window.HN_PLAIN;
-  var hex = function(v, d){
-    v = String(v || "");
-    if (/^#[0-9a-f]{6}$/i.test(v)) return v.toLowerCase();
-    if (/^#[0-9a-f]{3}$/i.test(v)) return ("#" + v[1] + v[1] + v[2] + v[2] + v[3] + v[3]).toLowerCase();
-    return d;
-  };
+  var hex = function(v, d){ return window.HN_HEX(v) || d; };
+  var g = t.glyph || sq.glyph || P.glyph;
   return { bg: hex(p.bg, P.bg), ink: hex(p.ink, P.ink), accent: hex(p.accent, P.accent),
-           image: typeof t.image === "string" && t.image ? t.image : null, glyph: t.glyph || sq.glyph || P.glyph };
+           image: window.HN_IMAGE(t.image), glyph: typeof g === "string" && g ? g.slice(0, 4) : P.glyph };
 };

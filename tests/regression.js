@@ -399,7 +399,7 @@ async function overflowEverywhere(p, label){
     await join(c, 'Pane Tester', 'panetest');
     /* closed = the pane keeps its place and width, and is empty */
     const st = () => ev(c, () => ({ hash:location.hash, split:$('app').classList.contains('split'), closed:$('app').classList.contains('pane-closed'), stack:S.stack.length,
-      kept:$('detailcol').getBoundingClientRect().width > 300 && $('listcol').getBoundingClientRect().width < $('cbody').getBoundingClientRect().width - 300,
+      kept:$('detailcol').getBoundingClientRect().width > 300 && $('listcol').getBoundingClientRect().width < $('center').getBoundingClientRect().width - 300,
       empty:!!$('dscroll').querySelector('.panempty') && !$('dscroll').querySelector('.canvas') }));
     for (const [name, h, sel] of [['horizon → event', '#/horizon/season', '#listbody .track'], ['home', '#/home', '#listbody .fev .fct'],
         ['explore section', '#/explore/soon', '#listbody .row[data-type="event"]'], ['show all', '#/explore/announced', '#listbody .row[data-type="event"]'],

@@ -114,3 +114,52 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   same image as the profile look's, so changing either changes both. Wherever you appear — avatars in lists, chats,
   the toolbar's account button, the You tab — the photo replaces the initials. A horizon shows its own square when
   it has an image (or has no events yet), otherwise the mosaic of its events; the cover dropdown is gone.
+- **2026-10-01 · Call outs reach the right people, once.** Home's strip holds the open call outs (not closed, not past
+  their date — `calloutOpen`) that you have not answered and that reach you: from people you follow; matching a skill on
+  your profile; from a friend of a friend; in your city (the event's, else the author's). Logged out, or following fewer
+  than three people, every open call out on the network. Each tile says why when it is not someone you follow
+  ("Matches your skill: Kitchen", "Via Jon", "In your city: Stockholm"); skill matches lead. A call out in the strip is
+  never repeated in the stream; one you answered leaves the strip, and its card stays in the stream as "Answered · Open
+  chat". The call-out form gained an optional Skill (the profile's skill choices), stored as `callout.skill`; the two
+  fixture call outs carry Sound / PA and Kitchen. When there are more tiles than fit, the strip shows whole tiles only
+  (as many columns as fit) with ‹ › in its band — never a tile cut at the edge. Supersedes "Open call outs from your
+  network also run as a strip" (2026-10-01).
+- **2026-10-01 · Home blends until you follow a few.** Following nobody, Home is the whole network ("Make Home yours").
+  Following one or two people, Home is their activity first, then "Around the network" — the twelve newest entries from
+  everyone else, greyed avatars on a tinted ground, with a line saying it fades once you follow a few more. From three
+  follows on, Home is yours alone (plus friends of friends). Following one person never shrinks Home to that person.
+- **2026-10-01 · Coming up with your people.** Under the call outs, logged in and following someone: the events of the
+  next three weeks that people you follow are going to or interested in, sorted by event date, each with the date,
+  how far off, where, and tiny faces with "Anna + 2 you follow are going · Rio interested". Three rows, "Show N more"
+  opens the rest. This answers outcome #1 ("what do I do the next weekends with my people") on the first screen; its
+  events also lead Home's keyboard order, so the reading pane opens on the next one.
+- **2026-10-01 · You are one line.** What you did in the last day is a single line at the top of the stream — "You:
+  going to X, followed Kai, posted a call out: Rigger · now" (newest first, four parts, then "and N more"); older own
+  rows are not on Home. Your rows still say what is true now (un-going takes it off the line).
+- **2026-10-01 · Grouping is honest.** Rows group only within three hours of the line's newest row (the line takes the
+  newest time), never a whole day: many people on one event (going / interested / promoted), one person following
+  several people, and everything that happened to one Event Horizon ("Mira published an Event Horizon and added 2 events
+  · Jon and Sasha followed it"). Where two people (or you and someone) share a first name, lines say @handle. Times read
+  as ages: "now", "38m ago", "2h ago", "yesterday", "3 days ago", then the date; under a day old they are in ink, bold.
+- **2026-10-01 · Recency invites a message.** A going / interested line under a day old carries a small Message button
+  beside the time (it opens the DM with that person; logged out it asks you to join first).
+- **2026-10-01 · Who's going says who you know, and when.** On an event page the people you follow come first, each chip
+  with "you follow · going · 2h ago" when the activity knows when they decided. "and N more" is a button: a dialog of
+  everyone going (and interested), each with when and Message; the rest of the count is "N more going who keep their
+  name to themselves". Explore's event rows and cards carry the same social line ("Anna + 2 you follow are going") with
+  tiny faces whenever someone you follow is on it.
+- **2026-10-01 · Answering keeps its context.** Answer opens the DM with the call out pinned at the top ("Answering:
+  Kitchen lead · for Sunrise tea service"; "You answered: …" once sent) and a first line ready. Sending puts the call
+  out's card in the thread before your words. The poster's call-out page lists "Answers · n" — who, when, Open chat — and
+  in this browser the answer is delivered to the poster's account's chats (unread). With Neon: `callout_answers` plus a
+  message in the pair's thread. The chat box is a growing textarea: Enter sends, Shift+Enter is a new line. Answer is
+  only offered on an open call out with a known author (no fallback author).
+- **2026-10-01 · New → Call out knows where you are.** "For event" defaults to the event you are looking at, or the event
+  of the call out you are on; otherwise your next hosted event; a draft you started keeps its own choice.
+- **2026-10-01 · A closed reading pane gives the list the room.** At desktop widths, with the pane closed, the list takes
+  up to 720px (60%) and the empty pane stays beside it, narrower — the 2026-09-28 rule that a closed pane is an empty
+  panel stands. The desktop greeting no longer repeats the header's subtitle.
+- **2026-10-01 · Feed cards are containers, not buttons.** A card on Home (event, horizon, person, call out, call-out
+  tile, coming-up row) is a plain element; its title is the button that opens it (stretched over the card for the
+  pointer), and its verbs are buttons beside it — no `role="button"` wrapped around real buttons. Names and titles inside
+  a line are buttons too.

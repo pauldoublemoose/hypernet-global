@@ -1118,10 +1118,16 @@ function asLook(t){
   m.ink = fixInk(m.bg, m.ink);
   return m;
 }
-function needsMigrate(t){ return !!t && (!!t.palette || !t.bg); }
+/* a look is drawn only when it is already clean: hex colours (HN_HEX), a picture or nothing (HN_IMAGE). Anything else —
+   an old shape, a stray value, a string from a database — goes through asLook first, which falls back to plain */
+function lookOk(t){
+  return !!t && typeof t === 'object' && !t.palette && window.HN_HEX(t.bg) === t.bg && window.HN_HEX(t.ink) === t.ink &&
+         window.HN_HEX(t.accent) === t.accent && (t.image == null || window.HN_IMAGE(t.image) === t.image);
+}
+function cleanLook(t){ return lookOk(t) ? t : (asLook(t) || window.HN_PLAIN); }
 function TH(id){
   var T = window.HYPERNET_THEMES.themes;
-  if (T[id]){ if (needsMigrate(T[id])) T[id] = asLook(T[id]); return T[id]; }
+  if (T[id]){ if (!lookOk(T[id])) T[id] = cleanLook(T[id]); return T[id]; }
   if (!PLAINCACHE[id]){ var r = (typeof REC !== 'undefined' && REC[id]) || {}; PLAINCACHE[id] = plainTheme(PLAINGLYPH[r.kind] || PLAINGLYPH[r.scale] || '◆'); }
   return PLAINCACHE[id];
 }
@@ -1158,6 +1164,7 @@ function lookPal(t){
 }
 var VARCACHE = {};
 function themeVars(t){
+  t = cleanLook(t);
   var k = t.bg + t.ink + t.accent + (isPlain(t) ? 'p' : '');
   if (!VARCACHE[k]){
     var p = lookPal(t), ac = safeAccent(p);
@@ -1166,8 +1173,8 @@ function themeVars(t){
   return VARCACHE[k];
 }
 /* the square: the look's image, or its glyph on its ground */
-function sqInner(t){ return t.image ? '<img src="'+esc(t.image)+'" alt="" draggable="false">' : '<span class="g">'+esc(t.glyph)+'</span>'; }
-function sqCls(t, extra){ return 'sq' + (isPlain(t) ? ' plain' : '') + (t.image ? ' img' : '') + (extra ? ' ' + extra : ''); }
+function sqInner(t){ var img = window.HN_IMAGE(t.image); return img ? '<img src="'+esc(img)+'" alt="" draggable="false">' : '<span class="g">'+esc(t.glyph)+'</span>'; }
+function sqCls(t, extra){ return 'sq' + (isPlain(t) ? ' plain' : '') + (window.HN_IMAGE(t.image) ? ' img' : '') + (extra ? ' ' + extra : ''); }
 function sqHTML(id, size, extraCls){
   var t = TH(id);
   return '<div class="'+sqCls(t, 's'+size+(extraCls?' '+extraCls:''))+'" style="'+themeVars(t)+'">'+sqInner(t)+'</div>';
@@ -1305,7 +1312,7 @@ function person(id){ return PEOPLE[id] || { id:id, displayName:id, handle:id, sk
 /* a person's avatar: the photo on their look when they have one, else their initials */
 function avHTML(id, cls){
   var p = person(id), lk = typeof PTHEME !== 'undefined' && PTHEME[id];
-  if (lk && lk.image) return '<span class="av img '+(cls||'')+'" aria-hidden="true"><img src="'+esc(lk.image)+'" alt="" draggable="false"></span>';
+  if (lk && window.HN_IMAGE(lk.image)) return '<span class="av img '+(cls||'')+'" aria-hidden="true"><img src="'+esc(lk.image)+'" alt="" draggable="false"></span>';
   return '<span class="av '+(cls||'')+'" style="background:'+(AVCOLOR[id]||'#5a5a5a')+'" aria-hidden="true">'+esc(initials(p.displayName))+'</span>';
 }
 function allEvents(){ return Object.keys(EVENTS).map(function(k){ return EVENTS[k]; }); }

@@ -597,7 +597,6 @@ fieldset.props legend{ padding:0 6px; font-weight:bold; }
 .chrow .cside{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
 .ctime{ font:11px var(--mono); color:var(--dim); white-space:nowrap; }
 .udot{ width:10px; height:10px; background:#000; }
-.av.gav{ background:var(--face); color:var(--ink); box-shadow:var(--out); }
 .conv{ flex:1; min-height:0; display:flex; flex-direction:column; gap:8px; }
 .msgs{ flex:1; min-height:0; overflow:auto; padding:16px 14px; background:#fff; box-shadow:var(--in); display:flex; flex-direction:column; gap:12px; }
 .msg{ max-width:86%; align-self:flex-start; }
@@ -1448,7 +1447,6 @@ function whereOf(e){
 function isMine(evId){ return S.loggedIn && ownEvent(EVENTS[evId]); }
 /* the entry point for someone without an account says so */
 function joinLabel(){ return ACCTS.me ? 'Log in' : 'Join / Log in'; }
-function unreadCount(items){ return items.filter(function(it){ return it.type==='event' && !READ[it.id]; }).length; }
 function calloutOf(id){ return CALLOUTS.filter(function(x){ return x.id === id; })[0]; }
 var TOASTT = null;
 var WELCOME = null;             /* the first confirmation after joining also says hello */
@@ -2078,7 +2076,7 @@ function takePartHTML(r){
 /* an event's call outs: its own, and any posted for it; its host can post one from here */
 function calloutsHTML(ids, evId){
   var cs = (ids || []).map(calloutOf).filter(Boolean);
-  CALLOUTS.forEach(function(c){ if (evId && c.eventId === evId && cs.indexOf(c) < 0) cs.push(c); });
+  CALLOUTS.forEach(function(c){ if (evId && calloutEventId(c) === evId && cs.indexOf(c) < 0) cs.push(c); });
   cs = cs.filter(function(c){ return !c.closed; });
   var add = evId && isMine(evId) && !isPast(lastDay(EVENTS[evId])) ? '<button class="chip" data-act="newcalloutfor" data-id="'+evId+'">'+ic('plus',16)+'New call out</button>' : '';
   return cs.length || add ? '<div class="chips">' + cs.map(function(c){
@@ -2432,7 +2430,7 @@ function isOwnCallout(c){ return !!c && S.loggedIn && !!c.hostAcct && c.hostAcct
 /* a call out: what is wanted, by whom, for which event; you answer it once, and its author edits or closes it */
 function calloutHTML(id){
   var c = calloutOf(id), mine = isOwnCallout(c), ans = S.loggedIn && ANSWERED[id] && CHATS[ANSWERED[id]] ? ANSWERED[id] : null;
-  var ev = c.eventId && EVENTS[c.eventId];
+  var ev = EVENTS[calloutEventId(c)];
   var h = '<div class="page"><div class="phead2"><span class="r-ic" style="width:64px;height:64px;flex-basis:64px">'+ic('callout',30)+'</span>' +
     '<div style="flex:1;min-width:0"><div class="psub" style="margin:0 0 4px">Call out · Looking for'+(c.closed ? ' · Closed' : '')+'</div><div class="pname">'+esc(c.title)+'</div>' +
     '<div class="psub">'+esc(mine ? 'You' : c.hostName)+' · '+(c.closed ? 'closed' : 'open until '+fmtDate(c.expiresAt))+'</div></div></div>';
@@ -2503,9 +2501,9 @@ function renderDetail(){
 </script>
 <script>
 /* =========================================================================
-   7b. THE PHONE FEED — Spotify's structure in a 2000-era skin
-   A greeting, filter chips, quick tiles for the things you keep, then
-   sideways shelves of big squares. Event squares are the album art;
+   7b. EXPLORE'S OVERVIEW — Spotify's structure in a 2000-era skin
+   On a phone, sideways shelves of big squares (a desktop shows the same
+   sections as bands of rows). Event squares are the album art;
    horizons are playlists with a cover built from their events.
    ========================================================================= */
 /* an event square at any pixel size */

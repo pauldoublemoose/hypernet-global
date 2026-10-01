@@ -1346,11 +1346,16 @@ function hzWhen(hzId){
   return 'Ended ' + fmtShort(evs.map(lastDay).sort().pop());
 }
 function hzOwnedByMe(hzId){ return S.loggedIn && MYHORIZONS.indexOf(hzId) >= 0; }
-function attendees(evId){
-  if (/^evt-new-/.test(evId)) return (S.loggedIn && RSVP[evId] === 'going') ? ['self'] : [];
+/* who on the network is going, whoever is looking (Home's activity says the same as the event page) */
+function baseAttendees(evId){
+  if (/^evt-new-/.test(evId)) return [];
   var w = H.worlds.filter(function(x){ return x.eventId === evId; })[0];
   var ids = w && w.participantIds ? w.participantIds.filter(function(p){ return PEOPLE[p] && p !== 'self'; }) : [];
   if (!ids.length){ var n = hashId(evId); ids = CREW.filter(function(_,i){ return (n >> i) & 1; }); }
+  return ids;
+}
+function attendees(evId){
+  var ids = baseAttendees(evId);
   if (S.loggedIn && RSVP[evId] === 'going') ids = ['self'].concat(ids);
   return ids.slice(0,6);
 }
@@ -2727,6 +2732,181 @@ function renderChats(){
 </script>
 <script>
 /* =========================================================================
+   9b. ACTIVITY — what people on the network did
+   Home is built from these rows, newest first. One row per thing someone did,
+   shaped like the Postgres table it becomes when Neon is wired:
+     activity(id text pk, actor text, verb text, obj_type text, obj_id text, ts timestamptz, extra jsonb)
+   verbs: going · interested · promoted (obj event) · created_event (event)
+          published_horizon · followed_horizon · added_to_horizon (horizon; extra.eventIds)
+          created_horizon (a private horizon: only its author ever sees the row)
+          posted_callout (callout) · followed_person (person)
+   ========================================================================= */
+/* the app's clock: the fixtures' "now" is noon on the demo's today, and it runs on from there */
+var ACTBOOT = Date.now();
+var FIXNOW = (function(){ var d = dOf(TODAY_ISO); d.setHours(12, 0, 0, 0); return d.getTime(); })();
+function appNow(){ return FIXNOW + (Date.now() - ACTBOOT); }
+function tsIso(ms){ var d = new Date(ms); return isoOf(d) + 'T' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+function isoMs(s){ var m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/); return m ? new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).getTime() : 0; }
+/* a row's time on the app clock. Rows made here also carry the real moment (at), so "5m" stays true across a reload */
+function actTime(a){ return a.at ? FIXNOW + (a.at - ACTBOOT) : isoMs(a.ts); }
+
+/* -------------------------------------------------------------------------
+   ACTIVITY SEED (fixture) — generated from the people, events, horizons and call outs in
+   _shared/hypernet-data.js, and from the real events once they have loaded. Deterministic: the
+   same data always gives the same rows. Three weeks before the demo's today, denser toward now,
+   a few in the last hours. When Neon is wired this block goes; the rows come from
+     select * from activity where ts > now() - interval '21 days' order by ts desc
+   ------------------------------------------------------------------------- */
+var ACTWINDOW = 21;
+/* who follows whom: the fixture friendships both ways, plus a few one-way follows.
+   p-michal's are the demo account's (see demoAcct), so his rows agree with what the demo follows. */
+var NETFOLLOWS = (function(){
+  var g = {};
+  var add = function(a, b){ if (a === b || !/^p-/.test(a) || !/^p-/.test(b)) return; g[a] = g[a] || []; if (g[a].indexOf(b) < 0) g[a].push(b); };
+  (H.friendships || []).forEach(function(f){ add(f[0], f[1]); add(f[1], f[0]); });
+  [['p-anna','p-mira'], ['p-rio','p-mira'], ['p-kai','p-jon'], ['p-sasha','p-kai'], ['p-sasha','p-jon'], ['p-jon','p-kai'],
+   ['p-michal','p-anna'], ['p-michal','p-rio'], ['p-michal','p-kai'], ['p-michal','p-sasha']].forEach(function(x){ add(x[0], x[1]); });
+  return g;
+})();
+/* the fixture call outs name no event; these are the ones they are for when no event record lists them */
+var CALLOUTFOR = { 'co-sound':'evt-deep-listening', 'co-kitchen':'evt-fill-7' };
+function calloutEventId(c){
+  if (!c) return null;
+  if (c.eventId) return EVENTS[c.eventId] ? c.eventId : null;
+  var hit = Object.keys(REC).filter(function(k){ return EVENTS[k] && (REC[k].calloutIds || []).indexOf(c.id) >= 0 && !isPast(lastDay(EVENTS[k])); })[0];
+  return hit || (EVENTS[CALLOUTFOR[c.id]] ? CALLOUTFOR[c.id] : null);
+}
+/* a number in 0..1 that is always the same for the same key */
+function mix32(n){ n = Math.imul(n ^ (n >>> 16), 0x85ebca6b); n = Math.imul(n ^ (n >>> 13), 0xc2b2ae35); return (n ^ (n >>> 16)) >>> 0; }
+function seedU(key){ return mix32(hashId(key)) / 4294967296; }
+/* when someone did something: `min`..`max` days back (denser toward now unless flat), 07:00–22:00, never after now */
+function seedTs(key, max, min, flat){
+  max = max == null ? ACTWINDOW - 1 : max; min = min || 0;
+  var u = seedU(key), d = min + Math.floor((flat ? u : Math.pow(u, 1.35)) * (max - min + 1));
+  var day = new Date(FIXNOW); day.setHours(0, 0, 0, 0); day.setDate(day.getDate() - d);
+  var ms = day.getTime() + (7 * 60 + Math.floor(seedU(key + '#m') * 15 * 60)) * 60000;
+  if (ms > FIXNOW - 20 * 60000) ms = FIXNOW - (20 + Math.floor(seedU(key + '#r') * 280)) * 60000;   /* today: some time this morning */
+  return ms;
+}
+/* the person behind an event, whoever is looking (hostPersonOf answers "you" to its host) */
+function hostPid(e){
+  if (e.hostAcct) return acctPid(e.hostAcct);
+  return Object.keys(PEOPLE).filter(function(k){ return k !== 'self' && !/^u-/.test(k) && PEOPLE[k].displayName === e.hostName; })[0] || null;
+}
+var ACTSEED = null;
+function seedActivity(){
+  var key = Object.keys(EVENTS).length + ':' + Object.keys(HORIZONS).length + ':' + CALLOUTS.length;
+  if (ACTSEED && ACTSEED.key === key) return ACTSEED.rows;
+  var rows = [], lo = FIXNOW - ACTWINDOW * 86400000, byKey = {};
+  var row = function(actor, verb, objType, objId, ms, extra){
+    if (!PEOPLE[actor] || actor === 'self' || /^u-/.test(actor) || ms < lo || ms > FIXNOW) return null;
+    var r = { id:'a-' + verb + '-' + actor + '-' + objId, actor:actor, verb:verb, objType:objType, objId:objId, ts:tsIso(ms), extra:extra || null };
+    rows.push(r); byKey[verb + '|' + actor + '|' + objId] = r; return r;
+  };
+  /* after something that came first (an RSVP after the event was made): anywhere between then and now */
+  var after = function(key, from){ return from > lo ? from + (.05 + .95 * seedU(key + '#a')) * (FIXNOW - 30 * 60000 - from) : seedTs(key); };
+  var up = allEvents().filter(function(e){ return !NEXTED[e.id] && !/^evt-new-/.test(e.id) && !isPast(lastDay(e)); }).sort(byDate);
+  up.forEach(function(e){
+    var host = hostPid(e), made = host ? seedTs('made|' + e.id, 60, 2, true) : lo;
+    if (host) row(host, 'created_event', 'event', e.id, made);
+    var going = baseAttendees(e.id).filter(function(p){ return p !== host; }).slice(0, 3);
+    going.forEach(function(p){ row(p, 'going', 'event', e.id, after('going|' + p + '|' + e.id, made)); });
+    var others = CREW.filter(function(p){ return going.indexOf(p) < 0 && p !== host; });
+    if (others.length && seedU('int|' + e.id) < .6){ var ip = others[mix32(hashId(e.id)) % others.length]; row(ip, 'interested', 'event', e.id, after('int|' + ip + '|' + e.id, made)); }
+    if (going.length && (PROMOCOUNT[e.id] || 0) >= 12) row(going[0], 'promoted', 'event', e.id, after('promo|' + e.id, made));
+  });
+  Object.keys(HORIZONS).forEach(function(k){
+    var hz = HORIZONS[k], own = hz.ownerId, ids = hz.eventIds.filter(function(id){ return EVENTS[id]; });
+    if (hz.isPublished && own && !hz.ownerAcct){
+      var pub = seedTs('pub|' + k, 30, 0, true);
+      row(own, 'published_horizon', 'horizon', k, pub, { count:ids.length });
+      /* and it keeps being filled, a couple of events at a time */
+      if (ids.length >= 3) row(own, 'added_to_horizon', 'horizon', k, after('add|' + k, pub), { eventIds:ids.slice(-2) });
+    }
+    /* people follow the horizons they like (Michal's follows are the demo account's own) */
+    if (hz.isPublished && !hz.ownerAcct) CREW.forEach(function(p){
+      if (p !== own && seedU('fh|' + p + '|' + k) < .3) row(p, 'followed_horizon', 'horizon', k, seedTs('fh|' + p + '|' + k));
+    });
+  });
+  CALLOUTS.forEach(function(c){ if (c.hostId && !c.hostAcct && !c.closed) row(c.hostId, 'posted_callout', 'callout', c.id, seedTs('co|' + c.id, 9)); });
+  Object.keys(NETFOLLOWS).forEach(function(a){ NETFOLLOWS[a].forEach(function(b){
+    if (seedU('fp|' + a + '|' + b) < .55) row(a, 'followed_person', 'person', b, seedTs('fp|' + a + '|' + b));
+  }); });
+  /* the last hours: the first call out, the newest horizon, and someone going to the next thing on */
+  var fresh = function(r, mins){ if (r){ r.ts = tsIso(FIXNOW - mins * 60000); } };
+  var co0 = CALLOUTS.filter(function(c){ return c.hostId && !c.hostAcct && !c.closed; })[0];
+  if (co0) fresh(byKey['posted_callout|' + co0.hostId + '|' + co0.id] || row(co0.hostId, 'posted_callout', 'callout', co0.id, FIXNOW - 60000), 95);
+  var hz0 = Object.keys(HORIZONS).filter(function(k){ var h = HORIZONS[k]; return h.isPublished && h.ownerId && !h.ownerAcct && PEOPLE[h.ownerId]; }).pop();
+  if (hz0) fresh(byKey['published_horizon|' + HORIZONS[hz0].ownerId + '|' + hz0], 170);
+  var next = up.filter(function(e){ return dayDiff(e.date) >= 1 && baseAttendees(e.id).length; })[0];
+  if (next){ var p0 = baseAttendees(next.id)[0]; fresh(byKey['going|' + p0 + '|' + next.id] || row(p0, 'going', 'event', next.id, FIXNOW - 60000), 38); }
+  rows.sort(function(a, b){ return isoMs(b.ts) - isoMs(a.ts); });
+  ACTSEED = { key:key, rows:rows };
+  return rows;
+}
+
+/* ---- what you do here: rows the app adds, kept in this browser until there is a database ---- */
+var LIVEACT = [];
+var ACTSTORE = 'hypernet-feed:activity';
+function loadLiveAct(){ try { var v = JSON.parse(localStorage.getItem(ACTSTORE) || '[]'); LIVEACT = Array.isArray(v) ? v : []; } catch(e){ LIVEACT = []; } }
+function saveLiveAct(){ try { localStorage.setItem(ACTSTORE, JSON.stringify(LIVEACT.slice(0, 400))); } catch(e){} }
+loadLiveAct();
+function myActor(){ return S.loggedIn && S.acct ? acctPid(S.acct) : null; }
+function actIsMe(a){ return !!a && a.actor === myActor(); }
+/* doing the same thing again moves it to the top; adding events to a horizon gathers into one row for an hour */
+function logAct(verb, objType, objId, extra){
+  var me = myActor(); if (!me) return;
+  var now = Date.now();
+  if (verb === 'added_to_horizon'){
+    var prev = LIVEACT.filter(function(a){ return a.actor === me && a.verb === verb && a.objId === objId && now - (a.at || 0) < 3600000; })[0];
+    if (prev){
+      (extra.eventIds || []).forEach(function(id){ if (prev.extra.eventIds.indexOf(id) < 0) prev.extra.eventIds.push(id); });
+      LIVEACT.splice(LIVEACT.indexOf(prev), 1); prev.at = now; prev.ts = tsIso(appNow()); LIVEACT.unshift(prev); saveLiveAct(); return;
+    }
+  }
+  LIVEACT = LIVEACT.filter(function(a){ return !(a.actor === me && a.verb === verb && a.objId === objId); });
+  LIVEACT.unshift({ id:'a-' + now.toString(36) + '-' + verb, actor:me, verb:verb, objType:objType, objId:objId, ts:tsIso(appNow()), at:now, extra:extra || null });
+  saveLiveAct();
+}
+function unlogAct(verb, objId, evId){
+  var me = myActor(); if (!me) return;
+  LIVEACT = LIVEACT.filter(function(a){
+    if (a.actor !== me || a.verb !== verb || a.objId !== objId) return true;
+    if (!evId) return false;
+    a.extra.eventIds = a.extra.eventIds.filter(function(x){ return x !== evId; });
+    return a.extra.eventIds.length > 0;
+  });
+  saveLiveAct();
+}
+/* the events you publish are noticed when they appear, wherever they were made */
+function noticeNewEvents(){
+  var me = myActor(); if (!me) return;
+  MYEVENTS.forEach(function(id){
+    if (/^evt-new-/.test(id) && EVENTS[id] && !LIVEACT.some(function(a){ return a.verb === 'created_event' && a.objId === id; })) logAct('created_event', 'event', id);
+  });
+}
+/* a row is shown while what it points at is still there, and visible to the one looking.
+   Your own rows say what is true now: un-going, un-following or unpublishing takes them off Home. */
+function actVisible(a){
+  var id = a.objId, mine = actIsMe(a), hz = HORIZONS[id];
+  if (!mine && !PEOPLE[a.actor]) return false;
+  if (a.objType === 'event' && !EVENTS[id]) return false;
+  if (a.objType === 'horizon' && !(hz && (hz.isPublished || (mine && hzOwnedByMe(id))))) return false;
+  if (a.objType === 'callout' && !(calloutOf(id) && !calloutOf(id).closed)) return false;
+  if (a.objType === 'person' && !PEOPLE[id]) return false;
+  if (a.verb === 'added_to_horizon' && !(a.extra && a.extra.eventIds || []).some(function(x){ return EVENTS[x]; })) return false;
+  if (!mine) return a.verb !== 'created_horizon';
+  if (a.verb === 'going' || a.verb === 'interested') return RSVP[id] === a.verb;
+  if (a.verb === 'promoted') return !!PROMOTED[id];
+  if (a.verb === 'followed_horizon') return !!HZFOLLOW[id];
+  if (a.verb === 'followed_person') return !!PFOLLOW[id];
+  if (a.verb === 'created_horizon') return !hz.isPublished;
+  return true;
+}
+function activityRows(){ return LIVEACT.concat(seedActivity()).filter(actVisible); }
+</script>
+<script>
+/* =========================================================================
    10. CHROME — toolbar, header, navigation, phone shell
    ========================================================================= */
 function navRow(f, icon, label, opts){
@@ -3333,6 +3513,7 @@ function pickerDone(){
   var kept = hz.eventIds.filter(function(id){ return PK.sel.indexOf(id) >= 0; });
   var added = PK.sel.filter(function(id){ return kept.indexOf(id) < 0; });
   hz.eventIds = kept.concat(added);
+  if (added.length) logAct('added_to_horizon', 'horizon', PK.hz, { eventIds:added.slice() });
   closeDialogs(); render();
   if (added.length) toast('Added ' + added.length + ' event' + (added.length === 1 ? '' : 's'), hz.name);
 }
@@ -4279,6 +4460,7 @@ var setRSVP = gated(function(evId, mode){
   if (!RSVP[evId]) delete RSVP[evId];
   var dh = HORIZONS['horizon-default'];
   if (RSVP[evId] === 'interested' && MYHORIZONS.indexOf('horizon-default') >= 0 && dh.eventIds.indexOf(evId) < 0) dh.eventIds.push(evId);
+  if (RSVP[evId]) logAct(RSVP[evId], 'event', evId);
   markRead(evId);
   render();
   toast(RSVP[evId] ? (mode === 'going' ? 'Going' : 'Interested') : (mode === 'going' ? 'Not going' : 'Not interested'), EVENTS[evId].title);
@@ -4291,6 +4473,7 @@ var setWent = gated(function(evId){
 var doPromote = gated(function(evId){
   if (RESUMING && PROMOTED[evId]){ render(); toast('Promoted', EVENTS[evId].title); return; }
   PROMOTED[evId] = !PROMOTED[evId];
+  if (PROMOTED[evId]) logAct('promoted', 'event', evId);
   render();
   /* nothing here knows who follows you, so the toast doesn't claim an audience */
   toast(PROMOTED[evId] ? 'Promoted' : 'Not promoted', EVENTS[evId].title,
@@ -4298,7 +4481,7 @@ var doPromote = gated(function(evId){
 });
 var toggleInHorizon = gated(function(evId, hzId){
   var hz = HORIZONS[hzId], i = hz.eventIds.indexOf(evId);
-  if (i < 0){ hz.eventIds.push(evId); render(); toast('Added to ' + hz.name, EVENTS[evId].title); }
+  if (i < 0){ hz.eventIds.push(evId); logAct('added_to_horizon', 'horizon', hzId, { eventIds:[evId] }); render(); toast('Added to ' + hz.name, EVENTS[evId].title); }
   else { unfile(evId, hzId); return; }
   if (DLGS.length && document.querySelector('[data-act="dofile"]')){ closeDialogs(); addToDialog(evId); }
 });
@@ -4307,6 +4490,7 @@ function unfile(evId, hzId){
   var hz = HORIZONS[hzId], i = hz.eventIds.indexOf(evId), wasCover = HZCOVER[hzId] === evId;
   if (i < 0) return;
   hz.eventIds.splice(i, 1);
+  unlogAct('added_to_horizon', hzId, evId);
   if (wasCover) delete HZCOVER[hzId];
   render();
   if (DLGS.length && document.querySelector('[data-act="dofile"]')){ closeDialogs(); addToDialog(evId); }
@@ -4359,12 +4543,13 @@ function deleteHorizon(hzId){
 }
 var addToHorizonDrop = gated(function(evId, hzId){
   var hz = HORIZONS[hzId];
-  if (hz.eventIds.indexOf(evId) < 0){ hz.eventIds.push(evId); toast('Added to ' + hz.name, EVENTS[evId].title); }
+  if (hz.eventIds.indexOf(evId) < 0){ hz.eventIds.push(evId); logAct('added_to_horizon', 'horizon', hzId, { eventIds:[evId] }); toast('Added to ' + hz.name, EVENTS[evId].title); }
   render();
 });
 var followHz = gated(function(hzId){
   if (RESUMING && (HZFOLLOW[hzId] || hzOwnedByMe(hzId))){ render(); toast('Following', HORIZONS[hzId].name); return; }
   HZFOLLOW[hzId] = !HZFOLLOW[hzId];
+  if (HZFOLLOW[hzId]) logAct('followed_horizon', 'horizon', hzId);
   render();
   toast(HZFOLLOW[hzId] ? 'Following' : 'Unfollowed', HORIZONS[hzId].name);
 });
@@ -4376,11 +4561,13 @@ var renameHz = gated(function(hzId){
 });
 var publishHz = gated(function(hzId){
   HORIZONS[hzId].isPublished = !HORIZONS[hzId].isPublished;
+  if (HORIZONS[hzId].isPublished){ unlogAct('created_horizon', hzId); logAct('published_horizon', 'horizon', hzId); } else unlogAct('published_horizon', hzId);
   render();
   toast(HORIZONS[hzId].isPublished ? 'Published' : 'Private again', HORIZONS[hzId].name);
 });
 var followP = gated(function(pid){
   if (!(RESUMING && PFOLLOW[pid])) PFOLLOW[pid] = !PFOLLOW[pid];
+  if (PFOLLOW[pid]) logAct('followed_person', 'person', pid);
   render();
   toast(PFOLLOW[pid] ? 'Following' : 'Unfollowed', person(pid).displayName);
 });
@@ -4559,6 +4746,8 @@ document.addEventListener('click', function(ev){
       HORIZONS[hid] = { id:hid, name:nm, description:(($('nh-d')||{}).value||'').trim(), isPersonalDefault:false,
                         isPublished:!!($('nh-p')||{}).checked, ownerName:S.me.name, ownerId:acctPid(S.acct), ownerAcct:S.acct, eventIds: withEv ? [withEv] : [] };
       MYHORIZONS.push(hid); HZCOUNT[hid] = 0;
+      if (HORIZONS[hid].isPublished) logAct('published_horizon', 'horizon', hid); else logAct('created_horizon', 'horizon', hid);
+      if (withEv) logAct('added_to_horizon', 'horizon', hid, { eventIds:[withEv] });
       closeDialogs();
       if (withEv){ render(); toast('Added to ' + nm, EVENTS[withEv].title); break; }   /* from an event: stay on it */
       if (L.phone){ S.tab = 'you'; goFolder({ kind:'you' }); S.stack = [{ type:'horizon', id:hid }]; S.autoSel = false; }
@@ -4590,6 +4779,7 @@ document.addEventListener('click', function(ev){
       CALLOUTS.unshift({ id:cid3, title:cot, body:coBody, eventId:coEv,
                          expiresAt:coX || isoOf(month), hostName:S.me.name, hostId:acctPid(S.acct), hostAcct:S.acct });
       FORMDRAFTS.callout = null;
+      logAct('posted_callout', 'callout', cid3);
       closeDialogs();
       openItem('callout', cid3, S.stack.length && !S.autoSel ? 'push' : undefined);
       toast('Call out posted', cot);
@@ -4998,6 +5188,7 @@ function startRoutes(){
    ========================================================================= */
 function render(){
   L = computeLayout();
+  noticeNewEvents();
   var app = $('app');
   if (!L.phone){
     /* a phone conversation screen becomes the chat dock on a wider screen */

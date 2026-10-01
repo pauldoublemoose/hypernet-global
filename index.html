@@ -2919,7 +2919,7 @@ function actIsMe(a){ return !!a && a.actor === myActor(); }
 /* doing the same thing again moves it to the top; adding events to a horizon gathers into one row for an hour */
 function logAct(verb, objType, objId, extra){
   var me = myActor(); if (!me) return;
-  var now = nowMs();
+  var now = Date.now();
   if (verb === 'added_to_horizon'){
     var prev = LIVEACT.filter(function(a){ return a.actor === me && a.verb === verb && a.objId === objId && now - (a.at || 0) < 3600000; })[0];
     if (prev){

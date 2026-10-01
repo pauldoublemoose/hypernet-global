@@ -851,6 +851,14 @@ button.chip.chipmore{ align-self:stretch; padding:4px 13px; color:var(--ink); fo
 .fhint{ font-size:12px; line-height:1.4; color:var(--dim); }
 /* nothing in the reading pane: the list takes the room, the empty pane stays */
 #app.split.pane-closed #listcol{ flex:0 0 clamp(340px, 60%, 720px); }
+/* split: the reading pane starts level with the heading — the heading belongs to the list column only */
+#app.split #center{ display:grid; grid-template-columns:clamp(340px, 41%, 470px) minmax(0, 1fr); grid-template-rows:auto minmax(0, 1fr); column-gap:6px; }
+#app.split.pane-closed #center{ grid-template-columns:clamp(340px, 60%, 720px) minmax(0, 1fr); }
+#app.split.v-cal #center{ grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); }
+#app.split #cbody{ display:contents; }
+#app.split #chead{ grid-column:1; grid-row:1; }
+#app.split #listcol, #app.split #calcol{ grid-column:1; grid-row:2; }
+#app.split #detailcol{ grid-column:2; grid-row:1 / span 2; }
 /* people your friends follow */
 .ffof{ flex-direction:column; gap:8px; background:var(--face-lt); }
 .ffh{ margin:0; font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--ink2); }

@@ -2751,7 +2751,7 @@ function convHTML(cid){
   var h = '<div class="phead"><button class="ib" data-act="chatback" aria-label="All chats">'+ic('back')+'</button>' +
     '<div class="ptitle">'+esc(c.name)+'<small>'+esc(sub)+'</small></div>' +
     '<button class="ib" data-act="open" data-type="person" data-id="'+c.memberIds[0]+'" aria-label="Profile">'+ic('user')+'</button></div>';
-  h += '<div class="conv"><div class="msgs" id="msgs">' + (c.messages.length ? c.messages.map(function(m){
+  h += '<div class="conv">' + chatPinHTML(c) + '<div class="msgs" id="msgs">' + (c.messages.length ? c.messages.map(function(m){
     if (m.from === 'sys') return '<div class="msg sys">'+esc(m.text)+'</div>';
     var me = m.from === 'self';
     var head = '<div class="mfrom">'+(me ? '' : esc(person(m.from).displayName))+'<span class="mt">'+esc(m.t)+'</span></div>';
@@ -2772,10 +2772,20 @@ function convHTML(cid){
     }
     return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+'</div></div>';
   }).join('') : '<div class="msg sys">No messages yet</div>') + '</div>';
-  h += '<div class="composer"><input type="text" id="chatbox" value="'+esc(CHATDRAFT[cid] || '')+'" placeholder="Message '+esc(c.name.split(' ')[0])+'" autocomplete="off" aria-label="Message">' +
-       '<button class="btn primary" data-act="sendchat">Send</button></div></div>';
+  /* the box grows with what you write: Enter sends, Shift+Enter starts a new line */
+  h += '<div class="composer"><textarea id="chatbox" rows="1" placeholder="Message '+esc(c.name.split(' ')[0])+'" autocomplete="off" aria-label="Message" aria-describedby="chathint">'+esc(CHATDRAFT[cid] || '')+'</textarea>' +
+       '<button class="btn primary" data-act="sendchat">Send</button><span id="chathint" class="sr">Enter sends, Shift+Enter adds a new line</span></div></div>';
   return h;
 }
+/* a conversation started by answering a call out keeps that call out pinned at its top */
+function chatPinHTML(c){
+  var coId = c.pin && c.pin.callout, co = coId && calloutOf(coId); if (!co) return '';
+  var ev = EVENTS[calloutEventId(co)];
+  var lab = isOwnCallout(co) ? 'Answer to your call out' : ANSWERED[coId] === c.id ? 'You answered' : 'Answering';
+  return '<button type="button" class="cpin" data-act="open" data-type="callout" data-id="'+coId+'">'+ic('callout',16) +
+    '<span class="cpt"><b>'+esc(lab)+':</b> '+esc(co.title)+(ev ? ' · for '+esc(ev.title) : '')+'</span></button>';
+}
+function growBox(b){ if (!b) return; b.style.height = 'auto'; b.style.height = Math.min(b.scrollHeight + 2, 168) + 'px'; }
 /* on a phone a conversation is a screen pushed onto whatever tab you are in; on a desktop it sits in the dock */
 function phoneConv(){ var t = S.stack[S.stack.length-1]; return L.phone && t && t.type === 'chat' && CHATS[t.id] ? t.id : null; }
 function activeChat(){ return L.phone ? phoneConv() : (S.chatOpen && CHATS[S.chatOpen] ? S.chatOpen : null); }
@@ -2793,7 +2803,7 @@ function renderChats(){
   var cid = activeChat();
   if (cid){
     el.innerHTML = convHTML(cid);
-    var box = $('chatbox'); if (box && focused){ box.focus(); box.setSelectionRange(box.value.length, box.value.length); }
+    var box = $('chatbox'); growBox(box); if (box && focused){ box.focus(); box.setSelectionRange(box.value.length, box.value.length); }
     var ms = $('msgs'); if (ms) ms.scrollTop = ms.scrollHeight;
   } else el.innerHTML = chatListHTML();
 }
@@ -4979,24 +4989,44 @@ var shareToChat = gated(function(id, cid, type, text){
   closeDialogs(); render();
   toast('Sent to ' + CHATS[cid].name, itemName({ type: hz ? 'horizon' : 'event', id:id }), { label:'Open', run:function(){ openChat(cid); } });
 });
+/* answering opens the conversation with its author, the call out pinned at the top, a first line ready to send */
 var answerCallout = gated(function(coId){
   var c = calloutOf(coId); if (!c || isOwnCallout(c)) return;
   if (ANSWERED[coId] && CHATS[ANSWERED[coId]]){ openChat(ANSWERED[coId]); return; }
-  var cid = openDM(c.hostId || 'p-anna');
-  if (!CHATDRAFT[cid]) CHATDRAFT[cid] = 'Re: ' + c.title + ' — I can do this. When do you need me?';
+  if (!calloutOpen(c) || !c.hostId){ toast('This call out is closed', c.title); return; }
+  var cid = openDM(c.hostId);
+  CHATS[cid].pin = { callout:coId };
+  if (!CHATDRAFT[cid]) CHATDRAFT[cid] = 'Hi ' + firstName(c.hostId) + ', I can help with this. When do you need me?';
   ANSWERING[cid] = coId;
   openChat(cid);
   setTimeout(function(){ var b = $('chatbox'); if (b){ b.focus(); b.setSelectionRange(b.value.length, b.value.length); } }, 60);
 });
 function sendChat(){
   var box = $('chatbox'), cid = activeChat(); if (!box || !cid || !box.value.trim()) return;
-  var st = stamp();
-  CHATS[cid].messages.push({ from:'self', t:st.t, ts:st.ts, text:box.value.trim() });
+  var st = stamp(), text = box.value.trim(), coId = ANSWERING[cid], co = coId && calloutOf(coId);
+  /* an answer carries the call out it answers, so its author knows which ask it is */
+  if (co && !CHATS[cid].messages.some(function(m){ return m.cocard === coId; })) CHATS[cid].messages.push({ from:'self', t:st.t, ts:st.ts, cocard:coId, text:'' });
+  CHATS[cid].messages.push({ from:'self', t:st.t, ts:st.ts + 1, text:text });
   delete CHATDRAFT[cid];
-  if (ANSWERING[cid]){ ANSWERED[ANSWERING[cid]] = cid; delete ANSWERING[cid]; }
+  if (coId){ ANSWERED[coId] = cid; delete ANSWERING[cid]; recordAnswer(co, text); }
   box.value = '';
   render();
   var b = $('chatbox'); if (b) b.focus();
+}
+/* an answer is listed on the call out for its author, and reaches the author's chats — in this browser the author is
+   another account here. With Neon this is a row in callout_answers and a message in the pair's thread. */
+function recordAnswer(c, text){
+  var me = myActor(); if (!c || !me) return;
+  c.answers = (c.answers || []).filter(function(x){ return x.pid !== me; }).concat([{ pid:me, at:Date.now() }]);
+  var a = c.hostAcct && c.hostAcct !== S.acct && ACCTS[c.hostAcct]; if (!a) return;
+  a.chats = a.chats || { byId:{}, order:[] }; var by = a.chats.byId = a.chats.byId || {};
+  var k = Object.keys(by).filter(function(x){ return by[x].memberIds && by[x].memberIds[0] === me; })[0];
+  if (!k){ k = 'c-dm-' + me; by[k] = { id:k, name:S.me.name, kind:'dm', memberIds:[me], messages:[] }; }
+  by[k].pin = { callout:c.id };
+  var st = stamp();
+  by[k].messages.push({ from:me, t:st.t, ts:st.ts, cocard:c.id, text:'' }, { from:me, t:st.t, ts:st.ts + 1, text:text });
+  a.chats.order = [k].concat((a.chats.order || []).filter(function(x){ return x !== k; }));
+  a.unread = a.unread || {}; a.unread[k] = true;
 }
 /* search is a place of its own: where you were (and what you had open) is kept, and clearing takes you back */
 var SEARCHRET = null;
@@ -5233,7 +5263,7 @@ document.addEventListener('input', function(ev){
   if (n.id === 'pf-handle' && PF) PF.handleTouched = true;
   if (n.id === 'pf-name' && PF && PF.mode === 'signup' && !PF.handleTouched){ var hi0 = $('pf-handle'); if (hi0) hi0.value = suggestHandle(n.value); }
   if (/^pf-(name|handle|about)$/.test(n.id)){ pfSync(); return; }
-  if (n.id === 'chatbox'){ var ac = activeChat(); if (ac){ if (n.value) CHATDRAFT[ac] = n.value; else delete CHATDRAFT[ac]; schedulePersist(); } return; }
+  if (n.id === 'chatbox'){ growBox(n); var ac = activeChat(); if (ac){ if (n.value) CHATDRAFT[ac] = n.value; else delete CHATDRAFT[ac]; schedulePersist(); } return; }
   if (/^co-[tbx]$/.test(n.id)){ saveForm('callout'); return; }
   if (/^nh-[nd]$/.test(n.id)){ saveForm('horizon'); return; }
   if (n.id === 'sh-q' && SH){ SH.q = n.value; var sl = $('sh-list'); if (sl) sl.innerHTML = shareListHTML(); return; }
@@ -5285,7 +5315,7 @@ document.addEventListener('keydown', function(ev){
     return;
   }
   if (ev.key === 'Enter' && ae){
-    if (ae.id === 'chatbox'){ sendChat(); ev.preventDefault(); return; }
+    if (ae.id === 'chatbox'){ if (ev.shiftKey || ev.isComposing) return; sendChat(); ev.preventDefault(); return; }
     if (ae.id === 'q' || ae.id === 'pq'){ rememberQuery(ae.value); if (L.phone) ae.blur(); ev.preventDefault(); return; }
     if (ae.id === 'pf-city'){ pfAddCity(); ev.preventDefault(); return; }
     if (/^pf-(name|handle|about)$/.test(ae.id)){ pfSave(); ev.preventDefault(); return; }

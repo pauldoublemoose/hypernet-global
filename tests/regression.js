@@ -5,6 +5,11 @@
             the newest Chromium found in the Playwright cache (~/Library/Caches/ms-playwright, ~/.cache/ms-playwright).
             If none is found it says how to get one (npx playwright install chromium-headless-shell).
    HN_URL=<url> points it at another server.
+   HN_ROOT=<repo dir> serves that folder at http://hn.test/ through Playwright request routing instead: no port is bound,
+            so it runs where localhost is off limits (sandboxes, CI).  e.g.  HN_ROOT=. npx -y -p playwright node tests/regression.js
+   HN_NOW=<date-time> pins the browser's clock (default 2026-10-01T10:00:00, local); HN_NOW=real runs on the real clock.
+            The app runs on the real date and moves its mock fixtures with it, so a pinned clock keeps the real events
+            (data/real-events.json) where these checks expect them.
    Covers: open event → Going; create horizon → add events → customize → reload; new chat is a direct message;
    right-click → Add to horizon; long-press sheet; back/forward/reload restore; console errors, failed
    requests (404s) and horizontal overflow at 375 (touch), 768 and 1440; plus the round-2 majors: toasts vs the
@@ -26,7 +31,18 @@ try { ({ chromium } = require('playwright')); } catch(e){
   }
 }
 const path = require('path'), fs = require('fs'), os = require('os');
-const URL = process.env.HN_URL || 'http://127.0.0.1:8936/';
+const ROOT = process.env.HN_ROOT ? path.resolve(process.env.HN_ROOT) : null;
+const URL = process.env.HN_URL || (ROOT ? 'http://hn.test/' : 'http://127.0.0.1:8936/');
+const NOWPIN = process.env.HN_NOW === 'real' ? null : new Date(process.env.HN_NOW || '2026-10-01T10:00:00');
+const TYPES = { '.html':'text/html', '.js':'application/javascript', '.json':'application/json', '.css':'text/css', '.png':'image/png', '.svg':'image/svg+xml', '.ico':'image/x-icon' };
+/* HN_ROOT: answer every request to the test origin from the folder on disk */
+async function serveRoot(route){
+  const u = new (require('url').URL)(route.request().url());
+  let f = path.join(ROOT, decodeURIComponent(u.pathname));
+  if (f.endsWith(path.sep) || f.endsWith('/')) f = path.join(f, 'index.html');
+  if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) return route.fulfill({ status:404, body:'not found' });
+  return route.fulfill({ status:200, contentType:TYPES[path.extname(f)] || 'application/octet-stream', body:fs.readFileSync(f) });
+}
 const SHOTS = path.join(os.tmpdir(), 'hypernet-shots');
 fs.mkdirSync(SHOTS, { recursive: true });
 
@@ -66,6 +82,8 @@ const TAB = { viewport:{ width:768, height:1024 }, hasTouch:true };
 async function ctx(kind, opts){
   const b = await launch();
   const c = await b.newContext(Object.assign({}, kind === 'phone' ? PHONE : kind === 'tab' ? TAB : DESK, opts || {}));
+  if (ROOT) await c.route(new (require('url').URL)(URL).origin + '/**', serveRoot);
+  if (NOWPIN) await c.clock.install({ time:NOWPIN });
   const p = await c.newPage();
   p.errors = [];
   p.on('console', m => { if (m.type() === 'error') p.errors.push(m.text()); });

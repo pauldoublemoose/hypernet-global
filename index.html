@@ -2057,7 +2057,7 @@ function takePartHTML(r){
 function calloutsHTML(ids, evId){
   var cs = (ids || []).map(calloutOf).filter(Boolean);
   CALLOUTS.forEach(function(c){ if (evId && calloutEventId(c) === evId && cs.indexOf(c) < 0) cs.push(c); });
-  cs = cs.filter(function(c){ return !c.closed; });
+  cs = cs.filter(calloutOpen);
   var add = evId && isMine(evId) && !isPast(lastDay(EVENTS[evId])) ? '<button class="chip" data-act="newcalloutfor" data-id="'+evId+'">'+ic('plus',16)+'New call out</button>' : '';
   return cs.length || add ? '<div class="chips">' + cs.map(function(c){
     return '<button class="chip" data-act="open" data-type="callout" data-id="'+c.id+'">'+ic('callout',16)+esc(c.title)+' <span class="sub">'+esc(c.hostName)+'</span></button>'; }).join('') + add + '</div>' : '';
@@ -2391,13 +2391,14 @@ function personHTML(pid){
     toolbar:bar, facts:facts, body:s });
 }
 function isOwnCallout(c){ return !!c && S.loggedIn && !!c.hostAcct && c.hostAcct === S.acct; }
-/* a call out: what is wanted, by whom, for which event; you answer it once, and its author edits or closes it */
+/* a call out: what is wanted, by whom, for which event; you answer it once, and its author edits or closes it
+   and sees who answered */
 function calloutHTML(id){
   var c = calloutOf(id), mine = isOwnCallout(c), ans = S.loggedIn && ANSWERED[id] && CHATS[ANSWERED[id]] ? ANSWERED[id] : null;
-  var ev = EVENTS[calloutEventId(c)];
+  var ev = EVENTS[calloutEventId(c)], open = calloutOpen(c), sk = calloutSkill(c);
   var h = '<div class="page"><div class="phead2"><span class="r-ic" style="width:64px;height:64px;flex-basis:64px">'+ic('callout',30)+'</span>' +
-    '<div style="flex:1;min-width:0"><div class="psub" style="margin:0 0 4px">Call out · Looking for'+(c.closed ? ' · Closed' : '')+'</div><div class="pname">'+esc(c.title)+'</div>' +
-    '<div class="psub">'+esc(mine ? 'You' : c.hostName)+' · '+(c.closed ? 'closed' : 'open until '+fmtDate(c.expiresAt))+'</div></div></div>';
+    '<div style="flex:1;min-width:0"><div class="psub" style="margin:0 0 4px">Call out · Looking for'+(c.closed ? ' · Closed' : !open ? ' · Ended' : '')+'</div><div class="pname">'+esc(c.title)+'</div>' +
+    '<div class="psub">'+esc(mine ? 'You' : c.hostName)+' · '+(c.closed ? 'closed' : !open ? 'ended '+fmtDate(c.expiresAt) : 'open until '+fmtDate(c.expiresAt))+(sk ? ' · '+esc(skillLabel(sk)) : '')+'</div></div></div>';
   if (c.body) h += '<p class="pdesc">'+esc(c.body)+'</p>';
   if (ev) h += '<div class="subh">For</div><div class="crow">'+sqHTML(ev.id, 40)+'<div class="cm" data-act="open" data-type="event" data-id="'+ev.id+'"><div class="r-title">'+esc(ev.title)+'</div>' +
     '<div class="r-meta">'+esc([fmtShort(ev.date), whereOf(ev)].filter(Boolean).join(' · '))+'</div></div></div>';
@@ -2405,10 +2406,21 @@ function calloutHTML(id){
   if (mine) h += '<button class="btn primary" data-act="editcallout" data-id="'+id+'">'+ic('edit')+'Edit</button>' +
     '<button class="btn" data-act="closecallout" data-id="'+id+'">'+(c.closed ? 'Reopen' : 'Close call out')+'</button>';
   else if (ans) h += '<span class="answered">'+ic('check',16)+'You answered</span><button class="btn primary" data-act="chatsel" data-id="'+ans+'">'+ic('chat')+'Open chat</button>';
-  else if (!c.closed) h += '<button class="btn primary" data-act="answercallout" data-id="'+id+'">'+ic('chat')+'Answer</button>';
+  else if (open && c.hostId) h += '<button class="btn primary" data-act="answercallout" data-id="'+id+'">'+ic('chat')+'Answer</button>';
   if (!mine && c.hostId && PEOPLE[c.hostId]) h += '<button class="btn" data-act="open" data-type="person" data-id="'+c.hostId+'">'+avHTML(c.hostId)+esc(c.hostName)+'</button>';
-  if (!c.closed) h += '<button class="btn" data-act="share" data-type="callout" data-id="'+id+'">'+ic('share')+'Share</button>';
-  return h + '</div></div>';
+  if (open) h += '<button class="btn" data-act="share" data-type="callout" data-id="'+id+'">'+ic('share')+'Share</button>';
+  h += '</div>';
+  /* its author sees who answered, and goes straight to each conversation */
+  if (mine){
+    var an = (c.answers || []).filter(function(x){ return PEOPLE[x.pid]; });
+    h += '<div class="subh">Answers'+(an.length ? ' · ' + an.length : '')+'</div>';
+    h += an.length ? '<div class="wholist">' + an.map(function(x){
+      return '<div class="whorow"><button type="button" class="whomain" data-act="open" data-type="person" data-id="'+x.pid+'">'+avHTML(x.pid,'a40') +
+        '<span class="whon">'+esc(person(x.pid).displayName)+'<small>answered '+esc(x.at ? agoLabel(actTime({ at:x.at })) : '')+'</small></span></button>' +
+        '<button class="btn primary" data-act="dm" data-id="'+x.pid+'">'+ic('chat',16)+'Open chat</button></div>';
+    }).join('') + '</div>' : '<p class="whonote">No answers yet. When someone answers, their message lands in your chats and they are listed here.</p>';
+  }
+  return h + '</div>';
 }
 /* a link to something you can't see: say which kind of thing, and give a way on */
 function missingHTML(path){
@@ -3966,7 +3978,7 @@ function paintNewChat(){
   placeDlg();
 }
 /* the small create forms keep what you typed as a draft, field by field */
-var FORMFIELDS = { callout:['co-t','co-b','co-x','co-e'], horizon:['nh-n','nh-d','nh-p'] };
+var FORMFIELDS = { callout:['co-t','co-b','co-x','co-e','co-s'], horizon:['nh-n','nh-d','nh-p'] };
 var FORMFOOT = {};
 function formVal(id){
   var n = $(id); return !n ? '' : n.type === 'checkbox' ? n.checked : n.value;
@@ -4003,19 +4015,33 @@ function calloutEventChoices(pre){
   return ids;
 }
 var COEDIT = null;
+/* the event a new call out is for, unless you say otherwise: the event you are looking at (or the event of the
+   call out you are on), else the next event you host */
+function calloutContextEvent(){
+  var top = !S.autoSel && S.stack[S.stack.length - 1];
+  if (top && top.type === 'event' && EVENTS[top.id] && !isPast(lastDay(EVENTS[top.id]))) return top.id;
+  if (top && top.type === 'callout'){ var ce = calloutEventId(calloutOf(top.id)); if (ce && !isPast(lastDay(EVENTS[ce]))) return ce; }
+  return (S.loggedIn ? MYEVENTS : []).filter(function(id){ return EVENTS[id] && !isPast(lastDay(EVENTS[id])); })
+    .sort(function(a, b){ return byDate(EVENTS[a], EVENTS[b]); })[0] || '';
+}
 /* New call out, optionally for an event; the same form edits one you posted */
 function newCalloutDialog(opts){
   opts = opts || {};
   var c = opts.edit ? calloutOf(opts.edit) : null;
   COEDIT = c ? c.id : null;
   var v = function(id, field){ return c ? (c[field] || '') : draftVal('callout', id); };
-  var ev = c ? (c.eventId || '') : (opts.eventId || draftVal('callout', 'co-e'));
+  var ev = c ? (c.eventId || '') : (opts.eventId || (FORMDRAFTS.callout ? draftVal('callout', 'co-e') : calloutContextEvent()));
+  var sk = c ? (c.skill || '') : draftVal('callout', 'co-s');
   var evs = calloutEventChoices(ev);
   dialog(c ? 'Edit call out' : 'New call out',
     '<div class="field"><label for="co-t">Looking for</label><input type="text" id="co-t" value="'+esc(v('co-t','title'))+'" placeholder="Rigger" autocomplete="off"></div>' +
     '<div class="field"><label for="co-b">Details</label><textarea id="co-b" rows="4" placeholder="We need a pair of hands for the truss on the Friday build.">'+esc(v('co-b','body'))+'</textarea></div>' +
     (evs.length ? '<div class="field"><label for="co-e">For event</label><select id="co-e"><option value="">None</option>' +
       evs.map(function(id){ return '<option value="'+id+'"'+(id === ev ? ' selected' : '')+'>'+esc(EVENTS[id].title + ' · ' + fmtShort(EVENTS[id].date))+'</option>'; }).join('') + '</select></div>' : '') +
+    /* a skill reaches the people who have it on their profile, whether or not they follow you */
+    '<div class="field"><label for="co-s">Skill <span class="opt">optional</span></label><select id="co-s" aria-describedby="co-s-h"><option value="">Any</option>' +
+      SKILLCHOICES.map(function(o){ return '<option value="'+esc(o[0])+'"'+(o[0] === sk ? ' selected' : '')+'>'+esc(o[1])+'</option>'; }).join('') +
+      '</select><div class="fhint" id="co-s-h">People with this skill on their profile see your call out on Home.</div></div>' +
     '<div class="field"><label for="co-x">Open until</label><input type="date" id="co-x" value="'+esc(c ? c.expiresAt : draftVal('callout','co-x'))+'" min="'+TODAY_ISO+'"></div>',
     c ? '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="donewcallout" id="co-go">Save changes</button>' : FORMFOOT.callout(), 460);
   focusIn('co-t');
@@ -4533,7 +4559,7 @@ function ctxOtherItems(t, only){
     if (mine) out.push({ code:'edit', label:'Edit…', icon:'edit', run:function(){ newCalloutDialog({ edit:id }); } },
                        { code:'close', label: c.closed ? 'Reopen' : 'Close call out', icon:'close', run:function(){ closeCallout(id); } });
     else if (ans) out.push({ code:'chat', label:'Open chat', icon:'chat', run:function(){ openChat(ans); } });
-    else if (!c.closed) out.push({ code:'answer', label:'Answer…', icon:'chat', run:function(){ answerCallout(id); } });
+    else if (calloutOpen(c) && c.hostId) out.push({ code:'answer', label:'Answer…', icon:'chat', run:function(){ answerCallout(id); } });
     if (!c.closed) out.push({ code:'share', label:'Share…', icon:'share', run:function(){ shareDialog(id, 'callout'); } });
   } else {
     var ch = CHATS[id];
@@ -5133,14 +5159,14 @@ document.addEventListener('click', function(ev){
     case 'donewcallout': {
       var cot = (($('co-t')||{}).value || '').trim();
       if (!cot) break;
-      var coEv = ($('co-e')||{}).value || null, coBody = (($('co-b')||{}).value || '').trim(), coX = isoDate(($('co-x')||{}).value);
+      var coEv = ($('co-e')||{}).value || null, coSk = ($('co-s')||{}).value || null, coBody = (($('co-b')||{}).value || '').trim(), coX = isoDate(($('co-x')||{}).value);
       if (COEDIT){
         var ce = calloutOf(COEDIT);
-        ce.title = cot; ce.body = coBody; ce.eventId = coEv; if (coX) ce.expiresAt = coX;
+        ce.title = cot; ce.body = coBody; ce.eventId = coEv; ce.skill = coSk; if (coX) ce.expiresAt = coX;
         COEDIT = null; closeDialogs(); render(); toast('Saved', cot); break;
       }
       var cid3 = 'co-new-' + Date.now().toString(36), month = dOf(TODAY_ISO); month.setDate(month.getDate() + 30);
-      CALLOUTS.unshift({ id:cid3, title:cot, body:coBody, eventId:coEv,
+      CALLOUTS.unshift({ id:cid3, title:cot, body:coBody, eventId:coEv, skill:coSk,
                          expiresAt:coX || isoOf(month), hostName:S.me.name, hostId:acctPid(S.acct), hostAcct:S.acct });
       FORMDRAFTS.callout = null;
       logAct('posted_callout', 'callout', cid3);
@@ -5194,7 +5220,7 @@ document.addEventListener('change', function(ev){
     schedulePersist();
     return;
   }
-  if (/^co-[xe]$/.test(n.id)){ saveForm('callout'); return; }
+  if (/^co-[xes]$/.test(n.id)){ saveForm('callout'); return; }
   if (n.id === 'nh-p'){ saveForm('horizon'); return; }
   var act = n.getAttribute('data-act');
   if (act === 'calmine'){ S.calMine = n.checked; render(); }

@@ -617,35 +617,38 @@ input[aria-invalid="true"]{ outline:1px solid #000; outline-offset:-4px; }
 .wizsteps .ws{ flex:1; min-height:var(--ctl); padding:8px 4px; border:0; text-align:center; font:bold 12px var(--mono); letter-spacing:.06em; background:var(--face-dk); box-shadow:var(--out); color:var(--ink2); }
 .wizsteps .ws:hover{ color:#000; }
 .wizsteps .ws.on{ background:#fff; color:#000; box-shadow:var(--in); }
+/* Customize: three colours and a square image, with a live preview of the square and the title block */
 .custwrap{ display:flex; gap:18px; }
-.custcol{ flex:0 0 300px; }
+.custcol{ flex:0 0 340px; min-width:0; }
 .custprev{ flex:1; min-width:0; position:sticky; top:0; align-self:flex-start; }
-.crow2{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
-.crow2 > label{ flex:0 0 80px; font-size:var(--fs-s); font-weight:bold; }
-.crow2 select, .crow2 input{ flex:1; }
-.swatches{ display:flex; gap:5px; }
-.swatches .sw{ width:26px; height:22px; border:1px solid #6f6a60; }
-.presets{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
-.crow2.top{ align-items:flex-start; }
-.ornset{ flex:1; display:flex; flex-wrap:wrap; gap:2px 12px; }
-.ornck{ display:inline-flex; align-items:center; gap:6px; min-height:32px; font-size:var(--fs-s); cursor:pointer; }
-body.is-phone .ornck{ min-height:44px; }
-.minicanvas .banner .bin{ padding-top:46px; }
-.minicanvas .orn-stamp{ top:8px; right:10px; font-size:10px; padding:3px 8px; }
-.minicanvas .orn-compass{ top:8px; left:14px; font-size:10px; }
-.minicanvas .orn-compass svg{ width:22px; height:22px; }
-.minicanvas .orn-tape{ width:44px; height:14px; top:-6px; }
-.minicanvas .orn-tape.t1{ left:-14px; } .minicanvas .orn-tape.t2{ right:-14px; }
-.minicanvas .orn-ribbon{ font-size:11px; padding:4px 0; }
+.czsect{ margin:0 0 7px; font:bold 11px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dim); }
+.czstarts{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px; margin-bottom:16px; }
+.czstart{ justify-content:flex-start; gap:7px; padding:0 8px; font-size:var(--fs-s); white-space:nowrap; overflow:hidden; }
+.czstart .sw{ flex:0 0 18px; height:18px; display:grid; place-items:center; font-size:11px; line-height:1; box-shadow:inset 0 0 0 1px rgba(0,0,0,.35); }
+.czcolor{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.czcolor > label{ flex:0 0 84px; font-size:var(--fs-s); font-weight:bold; }
+.czcolor input[type=color]{ flex:0 0 46px; width:46px; height:var(--ctl); padding:3px; border:0; background:#fff; box-shadow:var(--in); cursor:pointer; }
+.czcolor .czhex{ flex:1; min-width:0; font-family:var(--mono); }
+.cznote{ margin:0 0 12px; font-size:var(--fs-s); color:var(--ink2); }
+.cznote[hidden]{ display:none; }
+.cznote .sw{ display:inline-block; width:12px; height:12px; margin:0 3px -1px 0; box-shadow:inset 0 0 0 1px rgba(0,0,0,.35); }
+.czimg{ display:flex; gap:12px; align-items:flex-start; margin-bottom:16px; }
+.czdrop{ flex:0 0 auto; position:relative; display:block; padding:0; border:0; background:none; cursor:pointer; outline-offset:3px; }
+.czdrop.over{ outline:2px dashed var(--sel); }
+.czdrop .czhint{ position:absolute; left:0; right:0; bottom:0; padding:3px 0; background:rgba(0,0,0,.55); color:#fff; font:bold 10px var(--mono); letter-spacing:.08em; text-align:center; text-transform:uppercase; }
+.czimgside{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:6px; }
+.czimgside .fhelp{ margin:0; line-height:1.4; }
+.czimgside .ferr:empty{ display:none; }
+.czfile{ position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; pointer-events:none; }
 .previewbox{ padding:12px; max-height:470px; overflow:auto; background:#fff; box-shadow:var(--in); }
 .plabel{ margin:10px 0 6px; font:bold 11px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dim); }
 .plabel:first-child{ margin-top:0; }
-.minicanvas{ height:300px; overflow:hidden; position:relative; container:detail / inline-size; }
-.minicanvas .banner{ min-height:0; }
+.minicanvas{ overflow:hidden; position:relative; container:detail / inline-size; }
 .minicanvas .banner .bin{ padding:14px 16px; gap:14px; }
 .minicanvas .hl{ font-size:26px !important; }
-.minicanvas .mood{ font-size:13px; margin-top:6px; }
-.minicanvas .lin{ padding:10px 16px; }
+.minicanvas .actbar{ position:relative; padding:6px 16px; }
+.minicanvas .lin{ padding:10px 16px 14px; }
+.minicanvas .canvas{ min-height:0; }
 #toasts{ position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:90; display:flex; flex-direction:column; align-items:center; pointer-events:none; }
 .toast{ min-width:220px; max-width:320px; padding:10px 14px; background:#ffffe1; border:1px solid #6d6a5e; box-shadow:2px 2px 6px rgba(0,0,0,.3); font-size:var(--fs-s); }
 .toast b{ display:block; font-size:var(--fs); }
@@ -792,9 +795,10 @@ body.is-phone .dlg.shsheet .dbody{ padding:18px 16px; }
 body.is-phone .custwrap{ flex-direction:column; }
 body.is-phone .custcol{ flex:0 0 auto; }
 body.is-phone .previewbox{ max-height:none; }
-body.is-phone .custprev{ order:-1; position:sticky; top:-18px; z-index:4; margin:-18px -16px 14px; padding:10px 16px; background:var(--face); box-shadow:0 1px 0 var(--shadow); }
+body.is-phone .custprev{ order:-1; align-self:stretch; position:sticky; top:-18px; z-index:4; margin:-18px -16px 14px; padding:10px 16px; background:var(--face); box-shadow:0 1px 0 var(--shadow); }
 .previewbox.compact{ padding:0; }
-.previewbox.compact .minicanvas{ height:auto; max-height:190px; }
+.previewbox.compact .minicanvas{ max-height:190px; }
+.previewbox.compact .actbar, .previewbox.compact .layer{ display:none; }
 body.is-phone input, body.is-phone select, body.is-phone textarea{ font-size:16px; }
 body.is-phone .picklist{ max-height:none; }
 .sheetrow{ display:flex; align-items:center; gap:14px; min-height:60px; padding:0 18px; border-bottom:1px solid var(--line); background:#fff; font-size:16px; cursor:pointer; }
@@ -3242,136 +3246,173 @@ function pickerDone(){
 /* =========================================================================
    12. THE HOST'S EDITOR — New Event wizard, ending in Customize
    ========================================================================= */
-var PALSETS = [
-  { n:'Basement teal',   p:{ bg:'#06080e', ink:'#e9e7e0', accent:'#6fd6c8', accent2:'#17233a', dim:'#7d8796' } },
-  { n:'Onion orange',    p:{ bg:'#1a0703', ink:'#ffe9d6', accent:'#ff5a1f', accent2:'#7a1b06', dim:'#b4795e' } },
-  { n:'Cathode green',   p:{ bg:'#000000', ink:'#d8ffe8', accent:'#39ff88', accent2:'#ff2fd0', dim:'#4c7f66' } },
-  { n:'Morning paper',   p:{ bg:'#f6f0e4', ink:'#241f18', accent:'#d98d3f', accent2:'#e8dcc4', dim:'#8b8172' } },
-  { n:'Dust and gold',   p:{ bg:'#3a2a12', ink:'#fdf3df', accent:'#e6b23c', accent2:'#7a5a24', dim:'#b9a077' } },
-  { n:'Nordic blue',     p:{ bg:'#0d1b2e', ink:'#eaf2ff', accent:'#5ea8ff', accent2:'#12304f', dim:'#7d97b8' } },
-  { n:'Warning yellow',  p:{ bg:'#16181a', ink:'#f2f4f2', accent:'#ffd400', accent2:'#2e3438', dim:'#8a9196' } },
-  { n:'Violet static',   p:{ bg:'#101014', ink:'#ececf0', accent:'#a98cff', accent2:'#2a2440', dim:'#807c93' } },
-  { n:'Plain paper',     p:window.HN_PLAIN.palette }
-];
-function plainPal(){ for (var i = 0; i < PALSETS.length; i++) if (PALSETS[i].n === 'Plain paper') return i; return 0; }
-var SURFS = ['grain','paper','dither','halftone','scanlines','grid','rays','photocopy','plasma','none'];
-var TYPES = ['serif','grotesk','mono','stencil','display'];
-var HEADS = ['huge','condensed','stacked','outlined','marquee'];
-var MOTS  = ['none','drift','pulse','flicker','scroll'];
-var SHAPES= ['sharp','rounded','cut'];
-var DENS  = ['airy','packed'];
-var PATS  = ['plain','stripe','grid','dither','rays','scan','halftone','moon'];
-var GLYS  = ['◆','✳','▲','◉','✦','■','☾','◗','⬟','✜','◈','▤','⚡','♫'];
-var PRESETS = [
-  { n:'A basement, no phones', t:{ mood:'a basement, long tones, no phones', pal:0, surface:'grain', type:'serif', headline:'huge', motion:'drift', shape:'sharp', density:'airy', pattern:'moon', glyph:'☾', backdrop:'contours', atmosphere:'dust', parallax:'gentle', orn:['stamp','tape'] } },
-  { n:'Photocopied flyer', t:{ mood:'bring cash, bring earplugs', pal:1, surface:'photocopy', type:'stencil', headline:'condensed', motion:'flicker', shape:'cut', density:'packed', pattern:'stripe', glyph:'⚡', backdrop:'halftone', atmosphere:'sparks', parallax:'none', orn:['stamp','torn'] } },
-  { n:'Dust and gold', t:{ mood:'the big one. dust, and then more dust.', pal:4, surface:'rays', type:'display', headline:'outlined', motion:'drift', shape:'sharp', density:'airy', pattern:'rays', glyph:'✦', backdrop:'dunes', atmosphere:'dust', parallax:'deep', orn:['stamp','compass','ribbon'] } },
-  { n:'Cathode church', t:{ mood:'walk into the trees, the trees walk back', pal:2, surface:'scanlines', type:'mono', headline:'stacked', motion:'flicker', shape:'sharp', density:'packed', pattern:'scan', glyph:'✳', backdrop:'synthwave', atmosphere:'fireflies', parallax:'deep', orn:['ribbon'] } },
-  { n:'Sunday paper', t:{ mood:'one cup, no talking, until the light lands', pal:3, surface:'paper', type:'serif', headline:'huge', motion:'none', shape:'rounded', density:'airy', pattern:'plain', glyph:'◗', backdrop:'map', atmosphere:'none', parallax:'gentle', orn:['tape','compass'] } }
+/* Customize is three colours and a square image (owner, 2026-10-01: "Keep pick your colors … just select colors and
+   image for now"). A few one-click starting points; the text colour is always kept legible on the background. */
+var LOOKSTARTS = [
+  { n:'Plain paper', bg:window.HN_PLAIN.bg, ink:window.HN_PLAIN.ink, accent:window.HN_PLAIN.accent },
+  { n:'Night',  bg:'#0e1018', ink:'#e8e9ef', accent:'#8fb4ff' },
+  { n:'Desert', bg:'#3a2a12', ink:'#fdf3df', accent:'#e6b23c' },
+  { n:'Sea',    bg:'#0d1b2e', ink:'#eaf2ff', accent:'#5ea8ff' },
+  { n:'Forest', bg:'#10201a', ink:'#e4f4ea', accent:'#48c98a' },
+  { n:'Neon',   bg:'#000000', ink:'#f5f5f5', accent:'#ff2fd0' }
 ];
 var DRAFT = null;
 /* the draft fields that make up a look (anything else is a fact about the thing) */
-var LOOKKEYS = /^(mood|pal|surface|type|headline|motion|shape|density|pattern|glyph|backdrop|atmosphere|parallax|orn)$/;
-function draftTheme(d){
-  return { mood:d.mood, palette:PALSETS[d.pal].p, square:{ pattern:d.pattern, glyph:d.glyph },
-           surface:d.surface, type:d.type, headline:d.headline, motion:d.motion, shape:d.shape, density:d.density,
-           backdrop:d.backdrop, atmosphere:d.atmosphere, parallax:d.parallax, ornaments:d.orn ? d.orn.slice() : undefined };
+var LOOKKEYS = /^(bg|ink|accent|image)$/;
+function lookDraft(t){ return { bg:t.bg, ink:t.ink, accent:t.accent, image:t.image || null, glyph:t.glyph }; }
+/* the look a draft stands for, its text colour corrected; draftLook is null when that is just the plain look */
+function draftTheme(d){ return asLook({ bg:d.bg, ink:d.ink, accent:d.accent, image:d.image || null, glyph:d.glyph }); }
+function draftLook(d){ var t = draftTheme(d); return isPlain(t) && !t.image ? null : t; }
+/* a horizon shows its own square when it has a picture, or no events to make a cover from */
+function hzOwnsSquare(hzId, lk){
+  var hz = HORIZONS[hzId];
+  return !!lk && (!!lk.image || !hz.eventIds.some(function(id){ return EVENTS[id]; }));
 }
-/* the art of a saved theme, as draft fields (a theme saved before the art existed gets its seeded art) */
-function artDraft(t, seed){ var a = artOf(t, seed); return { backdrop:a.backdrop, atmosphere:a.atmosphere, parallax:a.parallax, orn:a.ornaments.slice() }; }
-/* a preset is a look: palette, surface, type, headline, motion, shape, density and square. Never your words. */
-function applyPreset(i){ var p = PRESETS[i].t; ['pal','surface','type','headline','motion','shape','density','pattern','glyph','backdrop','atmosphere','parallax'].forEach(function(k){ DRAFT[k] = p[k]; }); DRAFT.orn = p.orn.slice(); }
-function czSel(name, list, cur, label){
-  return '<select data-cz="'+name+'" aria-label="'+esc(label||name)+'">' + list.map(function(v){ return '<option value="'+esc(v)+'"'+(v===cur?' selected':'')+'>'+esc(v)+'</option>'; }).join('') + '</select>';
-}
-function coverFromDraft(d, t, px){
-  if (d.cover === 'own') return '<div class="mosaic one" style="width:'+px+'px;height:'+px+'px">'+sqT(t, px)+'</div>';
-  if (d.cover === 'plain') return mosaicOf([], px);
-  var ids = HORIZONS[d.editing].eventIds;
-  if (d.cover !== 'mosaic' && EVENTS[d.cover]) return '<div class="mosaic one" style="width:'+px+'px;height:'+px+'px">'+sqPx(d.cover, px)+'</div>';
-  return mosaicOf(ids, px);
-}
-function horizonPreviewHTML(){
-  var d = DRAFT, t = draftTheme(d), vars = themeVars(t), hz = HORIZONS[d.editing];
-  var h = '<div class="previewbox">';
-  h += '<div class="plabel">Cover</div><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">'+coverFromDraft(d, t, 160)+coverFromDraft(d, t, 56)+'</div>';
-  h += '<div class="plabel">Card</div><div class="card2" style="cursor:default"><div class="cart">'+coverFromDraft(d, t, 150)+'</div>' +
-       '<div class="ct2">'+esc(hz.name)+'</div><div class="cs2">'+esc(hz.ownerName+' · '+hz.eventIds.length+' events')+'</div></div>';
-  var seed = d.editing, torn = hasOrn(t, seed, 'torn');
-  var page = '<div class="minicanvas"><div class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+vars+'">' + artLayersHTML(t, seed, true) +
-       '<div class="banner'+(torn ? ' torn" style="'+tornStyle(seed) : '')+'"><div class="surf u-'+t.surface+'"></div>' + heroArtHTML(t) + '<div class="wash"></div>' + ornamentsHTML(t, seed, hzOrnOpts(seed)) +
-       '<div class="bin"><div class="sqwrap">'+coverFromDraft(d, t, 72) + (hasOrn(t, seed, 'tape') ? tapeHTML() : '') + '</div>' +
-       '<div class="btxt"><div class="eyebrow">Event Horizon</div><h1 class="hl h-'+t.headline+'">'+headlineHTML(t, hz.name)+'</h1>'+(t.mood?'<p class="mood">'+esc(t.mood)+'</p>':'')+'</div></div></div>' +
-       (hasOrn(t, seed, 'ribbon') ? ribbonHTML(t, t.mood || hz.name) : '') + '</div></div>';
-  /* on a phone the preview is the page itself, small, and it stays in view while you change things */
-  if (L.phone) return '<div class="previewbox compact">' + page + '</div>';
-  return h.replace('<div class="previewbox">', '<div class="previewbox"><div class="plabel">Horizon page</div>' + page) + '</div>';
-}
-function personPreviewHTML(){
-  var d = DRAFT, t = draftTheme(d), vars = themeVars(t), seed = 'self', me = person('self'), torn = hasOrn(t, seed, 'torn');
-  var page = '<div class="minicanvas"><div class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+vars+'">' + artLayersHTML(t, seed, true) +
-       '<div class="banner'+(torn ? ' torn" style="'+tornStyle(seed) : '')+'"><div class="surf u-'+t.surface+'"></div>' + heroArtHTML(t) + '<div class="wash"></div>' + ornamentsHTML(t, seed, personOrnOpts(seed)) +
-       '<div class="bin"><div class="sqwrap">'+sqT(t, 72) + (hasOrn(t, seed, 'tape') ? tapeHTML() : '') + '</div>' +
-       '<div class="btxt"><div class="eyebrow">@'+esc(me.handle)+'</div><h1 class="hl h-'+t.headline+'">'+headlineHTML(t, me.displayName || 'You')+'</h1>'+(t.mood?'<p class="mood">'+esc(t.mood)+'</p>':'')+'</div></div></div>' +
-       (hasOrn(t, seed, 'ribbon') ? ribbonHTML(t, t.mood || me.displayName) : '') + '</div></div>';
-  return '<div class="previewbox'+(L.phone ? ' compact' : '')+'">' + (L.phone ? '' : '<div class="plabel">Profile page</div>') + page + '</div>';
-}
-function customizePreviewHTML(){
-  if (DRAFT.kind === 'horizon') return horizonPreviewHTML();
-  if (DRAFT.kind === 'person') return personPreviewHTML();
-  var d = DRAFT, t = draftTheme(d), vars = themeVars(t);
-  var ev = { title:d.title || 'Untitled event', date:d.date, city:d.city, host:'You' };
-  var sq = function(size){ return '<div class="sq s'+size+' sh-'+t.shape+'" style="'+vars+'"><div class="pat p-'+t.square.pattern+'"></div><span class="g">'+t.square.glyph+'</span></div>'; };
-  var h = '<div class="previewbox">';
-  h += '<div class="plabel">Square</div><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">'+sq(160)+sq(64)+sq(40)+sq(20)+'</div>';
-  h += '<div class="plabel">Row</div><div class="row unread" style="border:1px solid var(--line);cursor:default">'+sq(40)+
-       '<div class="r-main"><div class="r-title">'+esc(ev.title)+'</div><div class="r-meta">'+esc(ev.host)+' · '+esc(ev.city||'')+'</div></div>' +
-       '<div class="r-side"><div class="r-date">'+(isoDate(ev.date) ? fmtShort(ev.date) : '')+'</div></div></div>';
-  var seed = d.editing || 'draft', torn = hasOrn(t, seed, 'torn');
-  var orn = { stamp: d.editing ? stampText(d.editing) : (ENTRYSTAMP[d.entry] || KINDLAB[d.kind] || ''), place: d.editing ? placeOf(d.editing) : String(d.city || '').trim() };
-  var banner = '<div class="banner'+(torn ? ' torn" style="'+tornStyle(seed) : '')+'"><div class="surf u-'+t.surface+'"></div>' + heroArtHTML(t) + '<div class="wash"></div>' + ornamentsHTML(t, seed, orn) +
-       '<div class="bin"><div class="sqwrap">'+sq(64) + (hasOrn(t, seed, 'tape') ? tapeHTML() : '') + '</div>' +
-       '<div class="btxt"><h1 class="hl h-'+t.headline+'">'+headlineHTML(t, ev.title)+'</h1>'+(t.mood?'<p class="mood">'+esc(t.mood)+'</p>':'')+'</div></div></div>' +
-       (hasOrn(t, seed, 'ribbon') ? ribbonHTML(t, t.mood || ev.title) : '');
-  var open = '<div class="minicanvas"><div class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+vars+'">' + artLayersHTML(t, seed, true);
-  if (L.phone) return '<div class="previewbox compact">' + open + banner + '</div></div></div>';
-  h += '<div class="plabel">Event page</div>' + open + banner +
-       '<div class="actbar" style="position:relative"><div class="verbs"><div class="vgroup"><span class="btn vb">'+ic('heart',16)+'Interested</span><span class="btn vb on">'+ic('check',16)+'Going</span></div>' +
-       '<span class="btn vb">'+ic('promote',16)+'Promote</span></div></div></div></div>';
-  return h + '</div>';
-}
-function customizeHTML(){
-  var d = DRAFT;
-  var left = '<div class="custcol">';
+/* what the preview shows for the thing being customised: its square, eyebrow, title and two facts */
+function czSubject(d, t, px){
+  var lk = draftLook(d);
   if (d.kind === 'horizon'){
     var hz = HORIZONS[d.editing];
-    left += '<div class="crow2"><label>Cover</label><select data-cz="cover" aria-label="Cover">' +
-      [['own','Its own square'],['mosaic','Mosaic of its events'],['plain','Plain']].concat(hz.eventIds.filter(function(id){ return EVENTS[id]; }).map(function(id){ return [id, 'Square of ' + EVENTS[id].title]; }))
-        .map(function(o){ return '<option value="'+esc(o[0])+'"'+(o[0]===d.cover?' selected':'')+'>'+esc(o[1])+'</option>'; }).join('') + '</select></div>';
+    return { cover: hzOwnsSquare(d.editing, lk) ? '<div class="mosaic one" style="width:'+px+'px;height:'+px+'px">'+sqT(t, px)+'</div>' : mosaicOf(hz.eventIds, px),
+             eyebrow:'Event Horizon', title:hz.name, facts:[['By', 'You'], ['Events', String(hz.eventIds.length)]] };
   }
-  left += '<div class="flabel" style="margin-bottom:8px">Presets</div><div class="presets">' +
-    PRESETS.map(function(p,i){ return '<button class="btn" data-cz="preset" data-i="'+i+'">'+esc(p.n)+'</button>'; }).join('') + '</div>';
-  left += '<div class="crow2"><label>Mood</label><input type="text" data-cz="mood" value="'+esc(d.mood)+'"></div>';
-  left += '<div class="crow2"><label>Palette</label><select data-cz="pal" aria-label="Palette">' +
-    PALSETS.map(function(p,i){ return '<option value="'+i+'"'+(i===d.pal?' selected':'')+'>'+esc(p.n)+'</option>'; }).join('') + '</select></div>';
-  left += '<div class="crow2"><label></label><span class="swatches">' +
-    ['bg','ink','accent','accent2','dim'].map(function(k){ return '<span class="sw" style="background:'+PALSETS[d.pal].p[k]+'"></span>'; }).join('') + '</span></div>';
-  left += '<div class="crow2"><label>Surface</label>'+czSel('surface',SURFS,d.surface)+'</div>';
-  left += '<div class="crow2"><label>Typeface</label>'+czSel('type',TYPES,d.type)+'</div>';
-  left += '<div class="crow2"><label>Headline</label>'+czSel('headline',HEADS,d.headline)+'</div>';
-  left += '<div class="crow2"><label>Motion</label>'+czSel('motion',MOTS,d.motion)+'</div>';
-  left += '<div class="crow2"><label>Shape</label>'+czSel('shape',SHAPES,d.shape)+'</div>';
-  left += '<div class="crow2"><label>Density</label>'+czSel('density',DENS,d.density)+'</div>';
-  left += '<div class="crow2"><label>Square</label>'+czSel('pattern',PATS,d.pattern,'Pattern')+czSel('glyph',GLYS,d.glyph,'Glyph')+'</div>';
-  var art = artOf(draftTheme(d), d.editing || 'draft');
-  left += '<div class="crow2"><label>Backdrop</label>'+czSel('backdrop',BACKDROPS,art.backdrop)+'</div>';
-  left += '<div class="crow2"><label>Atmosphere</label>'+czSel('atmosphere',ATMOS,art.atmosphere)+'</div>';
-  left += '<div class="crow2"><label>Parallax</label>'+czSel('parallax',PARALLAX,art.parallax)+'</div>';
-  left += '<div class="crow2 top"><label>Ornaments</label><span class="ornset">' + ORNAMENTS.map(function(o){
-    return '<label class="ornck"><input type="checkbox" data-cz="orn" value="'+o[0]+'"'+(art.ornaments.indexOf(o[0]) >= 0 ? ' checked' : '')+'>'+esc(o[1])+'</label>'; }).join('') + '</span></div>';
-  left += '</div>';
+  if (d.kind === 'person'){
+    var me = person('self');
+    return { cover: lk ? sqT(t, px) : '<span class="av" style="width:'+px+'px;height:'+px+'px;flex-basis:'+px+'px;font-size:'+Math.round(px*.35)+'px;background:'+(AVCOLOR.self||'#5a5a5a')+'">'+esc(initials(me.displayName || 'You'))+'</span>',
+             eyebrow:'@'+esc(me.handle || 'you'), title:me.displayName || 'You', facts:[['Based in', citiesOf(me).join(', ') || '—'], ['Going', '3']] };
+  }
+  return { cover:sqT(t, px), eyebrow:esc(KINDLAB[d.kind] || 'Event'), title:d.title || 'Untitled event',
+           facts:[['When', isoDate(d.date) ? fmtDate(d.date) : '—'], ['Where', String(d.city || '').trim() || '—']] };
+}
+function customizePreviewHTML(){
+  var d = DRAFT, t = draftTheme(d), sub = czSubject(d, t, 72);
+  var page = '<div class="minicanvas"><div class="canvas pg'+(isPlain(t) ? ' plain' : '')+'" style="'+themeVars(t)+'">' +
+    titleBlockHTML(sub.cover, sub.eyebrow, sub.title, '') +
+    '<div class="actbar"><div class="verbs"><span class="btn vb">'+ic('heart',16)+'Interested</span><span class="btn vb on">'+ic('check',16)+'Going</span></div></div>' +
+    '<div class="layer"><div class="lin">' + factGrid(sub.facts) + '</div></div></div></div>';
+  /* on a phone the preview is the title block itself, small, and it stays in view while you change things */
+  if (L.phone) return '<div class="previewbox compact">' + page + '</div>';
+  var row = '<div class="row unread" style="border:1px solid var(--line);cursor:default">' + sqT(t, 40) +
+    '<div class="r-main"><div class="r-title">'+esc(sub.title)+'</div><div class="r-meta">'+esc(sub.facts.map(function(f){ return f[1]; }).join(' · '))+'</div></div></div>';
+  return '<div class="previewbox"><div class="plabel">Page</div>' + page +
+    '<div class="plabel">Square</div><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">' +
+    [120, 64, 40, 20].map(function(px){ return sqT(t, px); }).join('') + '</div>' +
+    '<div class="plabel">Row</div>' + row + '</div>';
+}
+function czColorRow(k, label, v){
+  return '<div class="czcolor"><label for="cz-'+k+'">'+label+'</label><input type="color" id="cz-'+k+'" data-cz="'+k+'" value="'+esc(v)+'">' +
+    '<input type="text" class="czhex" data-cz="'+k+'" value="'+esc(v)+'" maxlength="7" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="'+label+' colour, hex"></div>';
+}
+/* a text colour that is too faint for its background is corrected, and the editor says so, quietly */
+function czNoteHTML(d){
+  var t = draftTheme(d);
+  return t.ink !== String(d.ink).toLowerCase() ? 'Adjusted for readability: text shows as <span class="sw" style="background:'+t.ink+'"></span>'+t.ink : '';
+}
+function czDropHTML(d){ var t = draftTheme(d); return sqT(t, 96) + '<span class="czhint" aria-hidden="true">'+(t.image ? 'Replace' : 'Drop image')+'</span>'; }
+function customizeHTML(){
+  var d = DRAFT, note;
+  if (d.kind !== 'horizon' && d.kind !== 'person' && !d.editing) d.glyph = PLAINGLYPH[d.kind] || '◆';
+  note = czNoteHTML(d);
+  var left = '<div class="custcol">' +
+    '<div class="czsect" id="cz-start-l">Start from</div><div class="czstarts" role="group" aria-labelledby="cz-start-l">' + LOOKSTARTS.map(function(s, i){
+      return '<button type="button" class="btn czstart" data-czact="start" data-i="'+i+'"><span class="sw" style="background:'+s.bg+';color:'+s.accent+'" aria-hidden="true">'+esc(d.glyph || '◆')+'</span>'+esc(s.n)+'</button>'; }).join('') + '</div>' +
+    '<div class="czsect">Colours</div>' + czColorRow('bg', 'Background', d.bg) + czColorRow('ink', 'Text', d.ink) + czColorRow('accent', 'Accent', d.accent) +
+    '<p class="cznote" id="cz-note" role="status"'+(note ? '' : ' hidden')+'>'+note+'</p>' +
+    '<div class="czsect">Image</div><div class="czimg">' +
+      '<button type="button" class="czdrop" data-czact="pick" data-czdrop="look" aria-label="'+(d.image ? 'Replace the image' : 'Choose a square image')+'">'+czDropHTML(d)+'</button>' +
+      '<div class="czimgside"><input type="file" id="cz-file" class="czfile" accept="image/*" data-czfile="look" tabindex="-1" aria-hidden="true">' +
+        '<button type="button" class="btn" data-czact="pick">'+(d.image ? 'Replace image' : 'Upload image')+'</button>' +
+        (d.image ? '<button type="button" class="btn" data-czact="rmimg">Remove image</button>' : '') +
+        '<p class="fhelp">Shown as a square, cropped from the centre. JPG, PNG, WebP or GIF, up to 10 MB. Or drop one on the square.</p>' +
+        '<p class="ferr" id="cz-imgerr" role="alert"></p></div></div>' +
+    '<button type="button" class="btn" data-czact="reset">Reset to plain</button></div>';
   return '<div class="custwrap">' + left + '<div class="custprev">' + customizePreviewHTML() + '</div></div>';
 }
+/* a colour change repaints only what shows it, so a picker that is open stays open */
+function czRefresh(except){
+  var dlg = DLGS[DLGS.length-1];
+  if (!dlg || !DRAFT || !dlg.querySelector('.custwrap')) return;
+  ['bg','ink','accent'].forEach(function(k){ dlg.querySelectorAll('[data-cz="'+k+'"]').forEach(function(n){ if (n !== except && n.value !== DRAFT[k]) n.value = DRAFT[k]; }); });
+  var note = czNoteHTML(DRAFT), nb = $('cz-note'); if (nb){ nb.innerHTML = note; nb.hidden = !note; }
+  var dz = dlg.querySelector('.czdrop'); if (dz) dz.innerHTML = czDropHTML(DRAFT);
+  var box = dlg.querySelector('.custprev'); if (box) box.innerHTML = customizePreviewHTML();
+  refreshWizFoot(); schedulePersist();
+}
+function czSetColor(k, v, from){
+  v = String(v || '').trim().toLowerCase();
+  if (/^#?[0-9a-f]{3}$/.test(v)){ v = v.replace('#', ''); v = '#' + v[0] + v[0] + v[1] + v[1] + v[2] + v[2]; }
+  else if (/^#?[0-9a-f]{6}$/.test(v)) v = '#' + v.replace('#', '');
+  else return;
+  if (DRAFT[k] === v) return;
+  DRAFT[k] = v; DRAFT.lookTouched = true;
+  czRefresh(from);
+}
+
+/* ---- the square image: checked, centre-cropped and downscaled in the browser ----
+   STORAGE: for now the result is a data URL kept on the look (look.image) and saved with it in localStorage.
+   With the backend this is where the file goes to real storage instead (Vercel Blob; its URL is what look.image
+   holds in the look's JSON column in Neon). Only squareImage()'s callers change: they get a URL back, not a data URL. */
+var IMGMAX = 10 * 1024 * 1024, IMGPX = 512, IMGBUDGET = 150 * 1024;
+function imageProblem(file){
+  if (!file) return 'No file chosen.';
+  if (!/^image\//.test(file.type || '')) return 'That file isn’t an image. Choose a JPG, PNG, WebP or GIF.';
+  if (file.size > IMGMAX) return 'That image is ' + (file.size / 1048576).toFixed(1) + ' MB. The limit is 10 MB.';
+  return '';
+}
+function squareImage(file, bg){
+  return new Promise(function(resolve, reject){
+    var src = URL.createObjectURL(file), img = new Image();
+    img.onload = function(){
+      URL.revokeObjectURL(src);
+      var w = img.naturalWidth, h = img.naturalHeight, s = Math.min(w, h);
+      if (!s) return reject(new Error('empty image'));
+      var out = Math.min(IMGPX, s), c = document.createElement('canvas');
+      c.width = c.height = out;
+      var g = c.getContext('2d');
+      g.fillStyle = bg || '#ffffff'; g.fillRect(0, 0, out, out);          /* a transparent picture sits on the look's ground */
+      g.imageSmoothingQuality = 'high';
+      g.drawImage(img, (w - s) / 2, (h - s) / 2, s, s, 0, 0, out, out);
+      var url = '';
+      for (var q = .86; q >= .38; q -= .12){
+        url = c.toDataURL('image/webp', q);
+        if (!/^data:image\/webp/.test(url)) url = c.toDataURL('image/jpeg', q);   /* browsers that cannot write WebP */
+        if (url.length * .75 <= IMGBUDGET) break;
+      }
+      resolve(url);
+    };
+    img.onerror = function(){ URL.revokeObjectURL(src); reject(new Error('unreadable image')); };
+    img.src = src;
+  });
+}
+function czTakeFile(file){
+  var err = $('cz-imgerr'), bad = imageProblem(file), d = DRAFT;
+  if (err) err.textContent = bad;
+  if (bad || !d) return;
+  squareImage(file, d.bg).then(function(url){
+    if (DRAFT !== d) return;
+    d.image = url; d.lookTouched = true; paintWiz(); schedulePersist();
+  }, function(){ var e2 = $('cz-imgerr'); if (e2) e2.textContent = 'That image couldn’t be read. Try another file.'; });
+}
+document.addEventListener('click', function(ev){
+  var b = ev.target.closest && ev.target.closest('[data-czact]');
+  if (!b || !DRAFT) return;
+  var a = b.getAttribute('data-czact');
+  if (a === 'pick'){ var f = $('cz-file'); if (f) f.click(); return; }
+  if (a === 'start'){ var s = LOOKSTARTS[+b.getAttribute('data-i')]; DRAFT.bg = s.bg; DRAFT.ink = s.ink; DRAFT.accent = s.accent; }
+  else if (a === 'rmimg') DRAFT.image = null;
+  else if (a === 'reset') Object.assign(DRAFT, { bg:window.HN_PLAIN.bg, ink:window.HN_PLAIN.ink, accent:window.HN_PLAIN.accent, image:null });
+  DRAFT.lookTouched = true; paintWiz(); schedulePersist();
+});
+/* drop a picture on the square (the customize square, or the profile photo) */
+function dropZone(ev){ var z = ev.target.closest && ev.target.closest('[data-czdrop]'); return z && ev.dataTransfer && [].indexOf.call(ev.dataTransfer.types || [], 'Files') >= 0 ? z : null; }
+document.addEventListener('dragover', function(ev){ var z = dropZone(ev); if (z){ ev.preventDefault(); ev.dataTransfer.dropEffect = 'copy'; z.classList.add('over'); } });
+document.addEventListener('dragleave', function(ev){ var z = ev.target.closest && ev.target.closest('[data-czdrop]'); if (z) z.classList.remove('over'); });
+document.addEventListener('drop', function(ev){
+  var z = dropZone(ev); if (!z) return;
+  ev.preventDefault(); z.classList.remove('over');
+  var f = ev.dataTransfer.files && ev.dataTransfer.files[0];
+  if (z.getAttribute('data-czdrop') === 'photo') pfTakePhoto(f); else czTakeFile(f);
+});
 function wizBodyHTML(){
   var d = DRAFT, h = '';
   /* the steps are tabs you can use: any step, in any order; Publish checks what is still missing */
@@ -3418,19 +3459,17 @@ function paintWiz(){
   d.querySelector('.dbody').innerHTML = wizBodyHTML();
   d.querySelector('.dfoot').innerHTML = wizFootHTML();
   placeDlg(d);
-  pxSync();
 }
 /* a create form starts empty and is its own draft: closing it keeps what you typed, Discard throws it away */
 var FORMDRAFTS = {};
 var EVENTKINDS = ['meetup','build','workshop','volunteer_day','fundraiser','camp_meeting','burn_night','town_hall','decompression','burn','sale','other'];
 function blankEventDraft(){
-  return { step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', city:'', privacy:'everyone', entry:'free', desc:'', bring:'',
-           mood:'', pal:plainPal(), surface:'none', type:'grotesk', headline:'huge', motion:'none', shape:'sharp', density:'airy', pattern:'plain', glyph:'◉',
-           backdrop:'paper', atmosphere:'none', parallax:'none', orn:[], lookTouched:false };
+  return Object.assign({ step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', city:'', privacy:'everyone', entry:'free', desc:'', bring:'',
+           lookTouched:false }, lookDraft(plainTheme('◉')));
 }
 function eventDraftDirty(d){
   var b = blankEventDraft();
-  return Object.keys(b).some(function(k){ return k !== 'step' && k !== 'editing' && String(d[k] == null ? '' : d[k]) !== String(b[k]); });
+  return Object.keys(b).some(function(k){ return k !== 'step' && k !== 'editing' && k !== 'glyph' && String(d[k] == null ? '' : d[k]) !== String(b[k] == null ? '' : b[k]); });
 }
 function eventDraftMissing(d){ return { title: !String(d.title || '').trim(), date: !isoDate(d.date) }; }
 /* repaint the footer only when it changes: replacing a button under the pointer would swallow its click */
@@ -3442,38 +3481,26 @@ function refreshWizFoot(){
 }
 var newEventDialog = gated(function(){
   DRAFT = FORMDRAFTS.event || blankEventDraft();
+  /* a draft kept from before looks were three colours gets the plain look's */
+  if (!DRAFT.bg){ ['mood','pal','surface','type','headline','motion','shape','density','pattern','backdrop','atmosphere','parallax','orn'].forEach(function(k){ delete DRAFT[k]; });
+                  Object.assign(DRAFT, lookDraft(plainTheme('◉'))); }
   DRAFT.showErr = false;
   FORMDRAFTS.event = DRAFT;
   dialog('New event', wizBodyHTML(), wizFootHTML(), 900);
   if (DRAFT.step === 1) focusIn('w-t');
 });
-/* a horizon is customised with the same controls, plus its cover */
-var customizeHorizonDialog = gated(function(hzId){
-  var hz = HORIZONS[hzId], t = HZTHEME[hzId], d = { step:3, editing:hzId, kind:'horizon', title:hz.name, date:TODAY_ISO, city:'' };
-  if (t){
-    var pal = -1;
-    PALSETS.forEach(function(p,i){ if (p.p.bg === t.palette.bg) pal = i; });
-    if (pal < 0){ PALSETS.unshift({ n:'This horizon’s palette', p:t.palette }); pal = 0; }
-    Object.assign(d, { mood:t.mood||'', pal:pal, surface:t.surface, type:t.type, headline:t.headline, motion:t.motion, shape:t.shape,
-                       density:t.density, pattern:t.square.pattern, glyph:t.square.glyph }, artDraft(t, hzId));
-  } else Object.assign(d, lookOf(plainTheme('◗'), hzId));
-  var has = hz.eventIds.some(function(id){ return EVENTS[id]; });
-  d.cover = HZCOVER[hzId] || (t || !has ? 'own' : 'mosaic');
-  if (!t && !has) d.cover = 'own';
-  DRAFT = d;
-  dialog('Customize ' + hz.name, wizBodyHTML(), wizFootHTML(), 900);
-});
-/* an event's own palette joins the list when it is not one of the presets */
-function palIndexOf(palette, label){
-  var pal = -1;
-  PALSETS.forEach(function(p,i){ if (p.p.bg === palette.bg) pal = i; });
-  if (pal < 0){ PALSETS.unshift({ n:label || 'This event’s palette', p:palette }); pal = 0; }
-  return pal;
+/* events, horizons and your profile share one Customize: the same three colours and square */
+function openCustomize(what, id){
+  var t, d;
+  if (what === 'horizon'){ t = HZTHEME[id] ? asLook(HZTHEME[id]) : plainTheme('◗'); d = { kind:'horizon', title:HORIZONS[id].name }; }
+  else if (what === 'person'){ t = PTHEME[id] ? asLook(PTHEME[id]) : plainTheme('◉'); d = { kind:'person', title:person(id).displayName }; }
+  else { var e = EVENTS[id]; t = TH(id); d = { kind:recOf(id).kind || 'meetup', title:e.title, date:e.date, city:cityShort(e.city) }; }
+  DRAFT = Object.assign(d, { step:3, editing:id, lookTouched:false }, lookDraft(t));
+  dialog(what === 'person' ? 'Customize your profile' : 'Customize ' + d.title, wizBodyHTML(), wizFootHTML(), 900);
 }
-function lookOf(t, seed){
-  return Object.assign({ mood:t.mood || '', pal:palIndexOf(t.palette), surface:t.surface, type:t.type, headline:t.headline, motion:t.motion, shape:t.shape,
-           density:t.density, pattern:t.square.pattern, glyph:t.square.glyph }, artDraft(t, seed));
-}
+var customizeDialog = gated(function(evId){ openCustomize('event', evId); });
+var customizeHorizonDialog = gated(function(hzId){ openCustomize('horizon', hzId); });
+var customizePersonDialog = gated(function(){ openCustomize('person', 'self'); });
 /* Edit is the whole wizard again, filled in, saved from any step */
 var editEventDialog = gated(function(evId){
   var e = EVENTS[evId], r = recOf(evId);
@@ -3481,10 +3508,16 @@ var editEventDialog = gated(function(evId){
   DRAFT = Object.assign({ mode:'edit', step:1, editing:evId, title:e.title, date:e.date, end:r.endDate || '', city:r.city || cityShort(e.city),
             privacy:e.privacy || 'everyone', entry:(r.access && r.access.model) || 'free', desc:descOf(e),
             kind:r.kind || 'meetup', startTime:r.startTime || '', endTime:r.endTime || '',
-            bring: Array.isArray(r.whatToBring) ? r.whatToBring.join('\n') : (r.whatToBring || '') }, lookOf(TH(evId), evId));
+            bring: Array.isArray(r.whatToBring) ? r.whatToBring.join('\n') : (r.whatToBring || '') }, lookDraft(TH(evId)));
   dialog('Edit ' + e.title, wizBodyHTML(), wizFootHTML(), 900);
   focusIn('w-t');
 });
+/* store a look for an event: a look, or null for plain (undefined = the look was not touched) */
+function setEventLook(id, t){
+  if (t === undefined) return;
+  if (t) window.HYPERNET_THEMES.themes[id] = t; else delete window.HYPERNET_THEMES.themes[id];
+  delete PLAINCACHE[id];
+}
 function saveEventEdit(t){
   var id = DRAFT.editing, e = EVENTS[id], r = REC[id] || (REC[id] = {});
   var start = isoDate(DRAFT.date), end = isoDate(DRAFT.end), city = String(DRAFT.city || '').trim();
@@ -3497,26 +3530,12 @@ function saveEventEdit(t){
   r.access = Object.assign({}, r.access || {}, { model:DRAFT.entry });
   r.whatToBring = String(DRAFT.bring || '').split('\n').map(function(x){ return x.trim(); }).filter(Boolean);
   if (!r.burn && r.scale !== 'burn') r.scale = r.endDate ? 'gathering' : 'meetup';
-  if (t) window.HYPERNET_THEMES.themes[id] = t;
+  setEventLook(id, t);
   delete PLAINCACHE[id];
   EDITED[id] = true; SLUGS = null;
   closeDialogs(); render();
   toast('Saved', e.title);
 }
-/* your profile can wear a look too (never required); only yours, from your page or the You tab */
-var customizePersonDialog = gated(function(){
-  var t = personTheme('self');
-  DRAFT = Object.assign({ step:3, editing:'self', kind:'person', title:person('self').displayName, date:TODAY_ISO, city:'' }, lookOf(t, 'self'));
-  dialog('Customize your profile', wizBodyHTML(), wizFootHTML(), 900);
-});
-var customizeDialog = gated(function(evId){
-  var t = TH(evId), e = EVENTS[evId], pal = palIndexOf(t.palette);
-  DRAFT = { step:3, editing:evId, title:e.title, date:e.date, city:cityShort(e.city), privacy:e.privacy, host:hostLabel(e), desc:descOf(e),
-            mood:t.mood||'', pal:pal, surface:t.surface, type:t.type, headline:t.headline, motion:t.motion, shape:t.shape, density:t.density,
-            pattern:t.square.pattern, glyph:t.square.glyph };
-  Object.assign(DRAFT, artDraft(t, evId));
-  dialog('Customize ' + e.title, wizBodyHTML(), wizFootHTML(), 900);
-});
 function wizAct(which){
   if (which === 'back'){ DRAFT.step = Math.max(1, DRAFT.step-1); paintWiz(); return; }
   var miss = eventDraftMissing(DRAFT), bad = (!DRAFT.editing || DRAFT.mode === 'edit') && (miss.title || miss.date);
@@ -3525,26 +3544,25 @@ function wizAct(which){
     DRAFT.step = Math.min(3, DRAFT.step+1); paintWiz(); return;
   }
   if (bad){ DRAFT.step = 1; DRAFT.showErr = true; paintWiz(); focusIn(miss.title ? 'w-t' : 'w-d'); return; }
-  /* a look is stored only when someone changed it: an untouched one stays plain (or stays what it was) */
-  var t = DRAFT.lookTouched ? draftTheme(DRAFT) : null;
+  /* a look is stored only when someone changed it; changed back to plain (no image), it is removed */
+  var t = DRAFT.lookTouched ? draftLook(DRAFT) : undefined;
   if (DRAFT.mode === 'edit'){ saveEventEdit(t); return; }
   if (DRAFT.kind === 'person'){
-    if (t) PTHEME['self'] = t;
+    if (t !== undefined){ if (t) PTHEME['self'] = t; else delete PTHEME['self']; }
     closeDialogs(); render(); schedulePersist();
     toast('Look updated', 'Your profile');
     return;
   }
   if (DRAFT.kind === 'horizon'){
     var hid = DRAFT.editing;
-    if (t) HZTHEME[hid] = t;
-    else if (DRAFT.cover === 'own' && !HZTHEME[hid]) HZTHEME[hid] = draftTheme(DRAFT);
-    if (DRAFT.cover === 'mosaic') delete HZCOVER[hid]; else HZCOVER[hid] = DRAFT.cover;
+    if (t !== undefined){ if (t) HZTHEME[hid] = t; else delete HZTHEME[hid]; }
+    if (hzOwnsSquare(hid, HZTHEME[hid])) HZCOVER[hid] = 'own'; else if (HZCOVER[hid] === 'own') delete HZCOVER[hid];
     closeDialogs(); render();
     toast('Look updated', HORIZONS[hid].name);
     return;
   }
   if (DRAFT.editing){
-    if (t){ window.HYPERNET_THEMES.themes[DRAFT.editing] = t; EDITED[DRAFT.editing] = true; }
+    if (t !== undefined){ setEventLook(DRAFT.editing, t); EDITED[DRAFT.editing] = true; }
     closeDialogs(); render();
     toast('Look updated', EVENTS[DRAFT.editing].title);
     return;
@@ -3557,7 +3575,7 @@ function wizAct(which){
   REC[id] = { kind:DRAFT.kind || 'meetup', startTime:DRAFT.startTime || undefined, endTime:DRAFT.endTime || undefined, scale: end && end > start ? 'gathering' : 'meetup', endDate: end && end > start ? end : undefined,
               venueKind:'physical', city:DRAFT.city, venue:{ name:DRAFT.city, addressVisibility:'public' }, description:DRAFT.desc,
               access:{ model:DRAFT.entry }, whatToBring: String(DRAFT.bring||'').split('\n').map(function(s){ return s.trim(); }).filter(Boolean) };
-  if (t) window.HYPERNET_THEMES.themes[id] = t;
+  if (t){ t.glyph = PLAINGLYPH[REC[id].kind] || '◆'; window.HYPERNET_THEMES.themes[id] = t; }
   MYEVENTS.push(id); PROMOCOUNT[id] = 0; READ[id] = true;
   closeDialogs();
   goFolder({ kind:'hosting' });
@@ -4380,15 +4398,11 @@ document.addEventListener('click', function(ev){
 });
 document.addEventListener('change', function(ev){
   var n = ev.target;
+  if (n.getAttribute('data-czfile')){ var fl = n.files && n.files[0]; n.value = ''; if (n.getAttribute('data-czfile') === 'photo') pfTakePhoto(fl); else czTakeFile(fl); return; }
   if (n.closest('[data-cz]') && DRAFT){
-    var k = n.getAttribute('data-cz'); if (k === 'preset') return;
-    if (k === 'orn'){
-      /* ornaments are a set: each box adds or removes one */
-      var cur = (DRAFT.orn || artOf(draftTheme(DRAFT), DRAFT.editing || 'draft').ornaments).filter(function(x){ return x !== n.value; });
-      if (n.checked) cur.push(n.value);
-      DRAFT.orn = cur; DRAFT.lookTouched = true; paintWiz(); schedulePersist(); return;
-    }
-    DRAFT[k] = k === 'pal' ? +n.value : n.value;
+    var k = n.getAttribute('data-cz');
+    if (/^(bg|ink|accent)$/.test(k)){ czSetColor(k, n.value, n); return; }
+    DRAFT[k] = n.value;
     if (LOOKKEYS.test(k)) DRAFT.lookTouched = true;
     /* text fields already updated the preview as you typed; repainting here would swallow the click that blurred them */
     if (DRAFT.step === 3 && n.tagName === 'SELECT') paintWiz(); else refreshWizFoot();
@@ -4415,6 +4429,7 @@ document.addEventListener('input', function(ev){
   if (n.id === 'pk-q'){ PK.q = n.value; $('pk-list').innerHTML = pickerList(); return; }
   if (n.id === 'nc-name'){ NC.name = n.value; paintNewChat(true); saveChatDraft(); return; }
   if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT' || n.type === 'checkbox') return;
+  if (/^(bg|ink|accent)$/.test(n.getAttribute('data-cz'))){ czSetColor(n.getAttribute('data-cz'), n.value, n); return; }
   DRAFT[n.getAttribute('data-cz')] = n.value;
   if (LOOKKEYS.test(n.getAttribute('data-cz'))) DRAFT.lookTouched = true;
   if (n.getAttribute('aria-invalid') && String(n.value).trim()){
@@ -4422,14 +4437,7 @@ document.addEventListener('input', function(ev){
     var er = n.parentNode.querySelector('.ferr'); if (er) er.remove();
   }
   refreshWizFoot(); schedulePersist();
-  if (DRAFT.step === 3){
-    var box = DLGS[DLGS.length-1] && DLGS[DLGS.length-1].querySelector('.custprev');
-    if (box){ box.innerHTML = customizePreviewHTML(); pxSync(); }
-  }
-});
-document.addEventListener('click', function(ev){
-  var pz = ev.target.closest('[data-cz="preset"]');
-  if (pz && DRAFT){ applyPreset(+pz.getAttribute('data-i')); DRAFT.lookTouched = true; paintWiz(); }
+  if (DRAFT.step === 3) czRefresh(n);
 });
 document.addEventListener('mousedown', function(ev){ if (!ev.target.closest('.popmenu, [data-act="newmenu"], [data-act="acctmenu"]')) closePopup(); });
 

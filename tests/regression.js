@@ -10,10 +10,12 @@
    requests (404s) and horizontal overflow at 375 (touch), 768 and 1440; plus the round-2 majors: toasts vs the
    phone verb bar, private horizons, horizon as a desktop destination, volunteer shifts, safe Cancel/Discard;
    and the 2026-09-27 owner changes: the logged-out preview bar, one-view Home, the always-there sidebar;
-   one button style on every event page; the canvas art (backdrop on every page, art takes no clicks and covers no
-   control, text AA over the art on events and customised horizons, reduced motion stills it); and 2026-09-28: the
-   reading pane closes to an empty pane (URL, back, Esc) in six contexts, event / horizon / person share one page
-   template, uncustomised things are plain, a customised profile persists. */
+   one button style on every event page; 2026-09-28: the reading pane closes to an empty pane (URL, back, Esc) in six
+   contexts, event / horizon / person share one page template, uncustomised things are plain, a customised profile
+   persists; and 2026-10-01: a look is three colours and a square image on the calm plain layout (no canvas art, nothing
+   moves, nothing covers a control, text AA on every look), Customize shows exactly 3 colour inputs and 1 image upload,
+   an uploaded image shows in the page square and in list rows and survives reload, a too-faint text colour is
+   corrected, bad files are refused, the profile photo comes from Edit profile, old looks migrate. */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch(e){
   try { ({ chromium } = require('playwright-core')); } catch(e2){
@@ -112,10 +114,10 @@ async function overflowEverywhere(p, label){
   await p.tap('.dlg [data-act="pkdone"]'); await p.waitForTimeout(250);
   ok(await ev(p, h => HORIZONS[h].eventIds.length === 3, hz), 'phone: horizon filled with 3 events');
   await p.tap('#dscroll [data-act="customizehz"]'); await p.waitForTimeout(250);
-  await p.selectOption('select[data-cz="pal"]', '2'); await p.waitForTimeout(150);
+  await p.fill('#cz-bg', '#000000'); await p.waitForTimeout(150);
   await p.tap('.dlg [data-act="wiz"][data-id="finish"]'); await p.waitForTimeout(250);
   await p.reload(); await p.waitForTimeout(700);
-  ok(await ev(p, h => HORIZONS[h] && HORIZONS[h].eventIds.length === 3 && HZTHEME[h] && HZTHEME[h].palette.bg === '#000000' && S.stack[0].id === h && !!document.querySelector('#dscroll .pg-horizon:not(.plain)'), hz), 'phone: horizon, its events and its look survive reload, page restored');
+  ok(await ev(p, h => HORIZONS[h] && HORIZONS[h].eventIds.length === 3 && HZTHEME[h] && HZTHEME[h].bg === '#000000' && S.stack[0].id === h && !!document.querySelector('#dscroll .pg-horizon:not(.plain)'), hz), 'phone: horizon, its events and its look survive reload, page restored');
   // new group chat
   await p.tap('[data-act="newsheet"]'); await p.waitForTimeout(150);
   await p.tap('.sheetrow[data-id="newchat"]'); await p.waitForTimeout(200);
@@ -165,7 +167,7 @@ async function overflowEverywhere(p, label){
   await d.evaluate(() => { [...document.querySelectorAll('#pk-list input[data-act="pkpick"]')].slice(0, 2).forEach(i => i.click()); });
   await d.click('.dlg [data-act="pkdone"]'); await d.waitForTimeout(250);
   await d.click('#listbody [data-act="customizehz"]'); await d.waitForTimeout(250);
-  await d.click('.dlg [data-cz="preset"][data-i="3"]'); await d.waitForTimeout(150);
+  await d.click('.dlg [data-czact="start"][data-i="3"]'); await d.waitForTimeout(150);
   await d.click('.dlg [data-act="wiz"][data-id="finish"]'); await d.waitForTimeout(250);
   await d.reload(); await d.waitForTimeout(700);
   ok(await ev(d, h => HORIZONS[h].eventIds.length === 2 && !!HZTHEME[h] && !!document.querySelector('#listbody .pg-horizon:not(.plain)') && S.folder.kind === 'horizon', dh), 'desktop: horizon + events + look survive reload');
@@ -289,7 +291,7 @@ async function overflowEverywhere(p, label){
     ok(!c.errors.length, kind + ': no console errors (controls)');
   }
 
-  /* ---------------- the canvas art: layered, readable, never in the way ---------------- */
+  /* ---------------- 2026-10-01: a look is colours on the calm layout — readable, still, never in the way ---------------- */
   const ARTPAGES = ['burning-man-2027', 'ridge-dawn-stretch', 'led-forest-walk', 'borderland-2026', 'night-kitchen-line', 'deep-listening-lab'];
   /* worst-case contrast of text against what is actually painted behind it: hide the text, sample the pixels */
   const contrastOf = async (p, sels) => {
@@ -316,24 +318,24 @@ async function overflowEverywhere(p, label){
       await c.goto(URL + '#/event/' + sl); await c.waitForTimeout(500);
       const lay = await ev(c, () => {
         const cv = document.querySelector('#dscroll .canvas');
-        const arts = [...cv.querySelectorAll('.art, .heroart, .orn-stamp, .orn-compass, .orn-tape, .orn-ribbon')];
         /* every control in the page and its bar, scrolled into view one by one: under its centre is itself, or the window's own bars */
         const ctrls = [...document.querySelectorAll('#dscroll .canvas button, #dscroll .canvas a.btn, #evbar .btn')].filter(b => b.getBoundingClientRect().width);
         const blocked = ctrls.filter(b => { b.scrollIntoView({ block:'center' }); const r = b.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
           return hit && !b.contains(hit) && cv.contains(hit); });
         document.getElementById('dscroll').scrollTop = 0;
-        return { art:!!cv.querySelector('.art.bg svg'), inert:arts.every(a => getComputedStyle(a).pointerEvents === 'none'), ctrls:ctrls.length, blocked:blocked.map(b => b.textContent.trim()) };
+        return { art:document.querySelectorAll('#dscroll .art, #dscroll canvas, #dscroll .heroart, #dscroll .surf, #dscroll [class*="orn-"], #dscroll .mood').length,
+                 moving:document.getAnimations().filter(a => document.getElementById('dscroll').contains(a.effect && a.effect.target)).length,
+                 ctrls:ctrls.length, blocked:blocked.map(b => b.textContent.trim()) };
       });
-      ok(lay.art, kind + ' ' + sl + ': has a backdrop');
-      ok(lay.inert, kind + ' ' + sl + ': art layers take no clicks');
+      ok(!lay.art && !lay.moving, kind + ' ' + sl + ': no canvas art, nothing moves ' + JSON.stringify([lay.art, lay.moving]));
       ok(lay.ctrls > 0 && !lay.blocked.length, kind + ' ' + sl + ': nothing covers a control ' + JSON.stringify(lay.blocked));
-      await measure(sl, ['#dscroll .canvas .eyebrow', '#dscroll .canvas .hl', '#dscroll .canvas .mood', '#dscroll .canvas .fk', '#dscroll .canvas .fv', '#dscroll .canvas .evdesc', '#dscroll .canvas .sect h3', '#dscroll .canvas .fs']);
+      await measure(sl, ['#dscroll .canvas .eyebrow', '#dscroll .canvas .hl', '#dscroll .canvas .fk', '#dscroll .canvas .fv', '#dscroll .canvas .evdesc', '#dscroll .canvas .sect h3', '#dscroll .canvas .fs']);
     }
     /* a customised horizon, in four different looks */
     for (const look of ['evt-world-borderland-2026', 'evt-fill-9', 'evt-fill-11', 'evt-deep-listening']){
       await c.goto(URL + '#/horizon/season'); await c.waitForTimeout(300);
       await ev(c, k => { HZTHEME.season = JSON.parse(JSON.stringify(TH(k))); render(); }, look); await c.waitForTimeout(400);
-      await measure('horizon ' + look, ['.pg-horizon .eyebrow', '.pg-horizon .hl', '.pg-horizon .mood', '.pg-horizon .psub2', '.pg-horizon .fk', '.pg-horizon .fv', '.pg-horizon .tt', '.pg-horizon .ts']);
+      await measure('horizon ' + look, ['.pg-horizon .eyebrow', '.pg-horizon .hl', '.pg-horizon .psub2', '.pg-horizon .fk', '.pg-horizon .fv', '.pg-horizon .tt', '.pg-horizon .ts']);
     }
     async function measure(sl, sels){
       for (const shot of await contrastOf(c, sels)){
@@ -353,15 +355,8 @@ async function overflowEverywhere(p, label){
         if (r < need) low.push(sl + ' ' + shot.sel + ' ' + r.toFixed(2));
       }
     }
-    ok(worst >= 1, kind + ': canvas text meets AA over its art (worst: ' + where + ')' + (low.length ? '\n   ' + low.join('\n   ') : ''));
-    ok(!c.errors.length, kind + ': no console errors (canvas art)');
-  }
-  {
-    const c = await ctx('phone', { reducedMotion:'reduce' });
-    await open(c, '#/event/burning-man-2027', true); await c.waitForTimeout(600);
-    const mo = await ev(c, () => ({ raf:FX.raf, drawn:document.querySelectorAll('canvas.atmo').length + Object.keys(FX.states).length, pf:getComputedStyle(document.querySelector('#dscroll .canvas')).getPropertyValue('--pf').trim(),
-      ribbon:getComputedStyle(document.querySelector('.orn-ribbon b')).animationName }));
-    ok(!mo.raf && !mo.drawn && mo.pf === '0' && mo.ribbon === 'none', 'reduced motion: no particles, no parallax, no marquee ' + JSON.stringify(mo));
+    ok(worst >= 1, kind + ': page text meets AA on every look (worst: ' + where + ')' + (low.length ? '\n   ' + low.join('\n   ') : ''));
+    ok(!c.errors.length, kind + ': no console errors (looks)');
   }
 
   /* ---------------- 2026-09-28: the reading pane closes, in every context, and the URL keeps it closed ---------------- */
@@ -433,7 +428,7 @@ async function overflowEverywhere(p, label){
     /* your profile: Customize from your page, keep it across reload; nobody else's page offers it */
     await c.evaluate(() => { openItem('person', 'self'); }); await c.waitForTimeout(400);
     await c.click('.pg-person .actbar [data-act="customizeme"]'); await c.waitForTimeout(250);
-    await c.click('.dlg [data-cz="preset"][data-i="1"]'); await c.waitForTimeout(150);
+    await c.click('.dlg [data-czact="start"][data-i="1"]'); await c.waitForTimeout(150);
     await c.click('.dlg [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(500);
     await c.reload(); await c.waitForTimeout(800);
     const pp = await ev(c, () => ({ look:!!PTHEME.self, page:!!document.querySelector('.pg-person:not(.plain)') }));
@@ -441,6 +436,89 @@ async function overflowEverywhere(p, label){
     await c.goto(URL + '#/person/kai'); await c.waitForTimeout(400);
     ok(await ev(c, () => !!document.querySelector('.pg-person.plain') && !document.querySelector('[data-act="customizeme"]:not(.acctcard *)')), kind + ': someone else\'s profile has no Customize, and an uncustomised one is plain');
     ok(!c.errors.length, kind + ': no console errors (optional customize) ' + c.errors.join(' '));
+  }
+
+  /* ---------------- 2026-10-01: Customize is three colours and a square image ---------------- */
+  {
+    /* a generated picture: a 900×600 PNG, landscape, so the centre crop is visible */
+    const pngOf = async p => Buffer.from(await p.evaluate(() => {
+      const c = document.createElement('canvas'); c.width = 900; c.height = 600; const g = c.getContext('2d');
+      const gr = g.createLinearGradient(0, 0, 900, 600); gr.addColorStop(0, '#ff5a1f'); gr.addColorStop(1, '#2a64ff'); g.fillStyle = gr; g.fillRect(0, 0, 900, 600);
+      g.fillStyle = '#ffffff'; g.beginPath(); g.arc(450, 300, 160, 0, 6.3); g.fill(); return c.toDataURL('image/png').split(',')[1]; }), 'base64');
+    for (const kind of ['desk', 'phone']){
+      const c = await ctx(kind);
+      await open(c, '', true);
+      ok(await ev(c, () => JSON.stringify(window.HN_MIGRATE_LOOK({ mood:'x', palette:{ bg:'#06080E', ink:'#e9e7e0', accent:'#6fd6c8', accent2:'#17233a', dim:'#7d8796' }, square:{ pattern:'moon', glyph:'☾' }, surface:'grain', ornaments:['stamp'], parallax:'gentle' }))
+        === JSON.stringify({ bg:'#06080e', ink:'#e9e7e0', accent:'#6fd6c8', image:null, glyph:'☾' })), kind + ': an old look migrates to { bg, ink, accent, image, glyph }');
+      await c.evaluate(() => loginDialog()); await c.waitForTimeout(150);
+      await c.click('.dlg [data-act="useacct"][data-id="demo"]'); await c.waitForTimeout(300);
+      const own = await ev(c, () => MYEVENTS[0]);
+      const showPage = () => ev(c, id => { goFolder({ kind:'hosting' }); if (L.phone) S.tab = 'you'; S.stack = [{ type:'event', id }]; S.autoSel = false; render(); }, own);
+      const showList = () => ev(c, () => { goFolder({ kind:'hosting' }); if (L.phone) S.tab = 'you'; S.stack = []; render(); });
+      await showPage(); await c.waitForTimeout(300);
+      if (kind === 'desk') await c.click('#dscroll .actbar [data-act="customize"]'); else await c.evaluate(id => customizeDialog(id), own);
+      await c.waitForTimeout(300);
+      const ctl = await ev(c, () => ({ color:document.querySelectorAll('.dlg input[type=color]').length, file:document.querySelectorAll('.dlg input[type=file]').length,
+        selects:document.querySelectorAll('.dlg select').length, boxes:document.querySelectorAll('.dlg input[type=checkbox]').length }));
+      ok(ctl.color === 3 && ctl.file === 1 && !ctl.selects && !ctl.boxes, kind + ': Customize shows exactly 3 colour inputs and 1 image upload, no dropdowns ' + JSON.stringify(ctl));
+      ok((await overflow(c)) <= 0, kind + ': Customize open, no horizontal overflow');
+      const png = await pngOf(c);
+      await c.setInputFiles('#cz-file', { name:'square.png', mimeType:'image/png', buffer:png }); await c.waitForTimeout(700);
+      const up = await ev(c, async () => ({ img:/^data:image\/(webp|jpeg)/.test(DRAFT.image || ''), size:(DRAFT.image || '').length * .75,
+        dims:await new Promise(r => { const i = new Image(); i.onload = () => r(i.naturalWidth + 'x' + i.naturalHeight); i.onerror = () => r('unreadable'); i.src = DRAFT.image; }),
+        shown:!!document.querySelector('.dlg .czdrop img') && !!document.querySelector('.dlg .custprev .sqwrap img') }));
+      ok(up.img && up.size < 150 * 1024 && up.dims === '512x512' && up.shown, kind + ': an upload is centre-cropped to a 512×512 image under 150 KB and previewed ' + JSON.stringify(up));
+      /* a text colour too faint for its background is corrected, and the editor says so */
+      await c.fill('#cz-bg', '#ffffff'); await c.fill('#cz-ink', '#f0f0f0'); await c.waitForTimeout(200);
+      ok(await ev(c, () => !$('cz-note').hidden && /readability/i.test($('cz-note').textContent)), kind + ': a low-contrast text colour is flagged "adjusted for readability"');
+      await c.click('.dlg [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(500);
+      const st = await ev(c, id => { const t = window.HYPERNET_THEMES.themes[id]; return { keys:Object.keys(t).sort().join(','), cr:contrast(t.ink, t.bg), img:/^data:image/.test(t.image || '') }; }, own);
+      ok(st.keys === 'accent,bg,glyph,image,ink' && st.cr >= 4.5 && st.img, kind + ': the saved look is { bg, ink, accent, image, glyph }, its text corrected to AA ' + JSON.stringify(st));
+      await showPage(); await c.waitForTimeout(300);
+      const pageImg = () => ev(c, () => !!document.querySelector('#dscroll .pg-event .sqwrap .sq.img img') && !!document.querySelector('#dscroll .pg-event:not(.plain)'));
+      ok(await pageImg(), kind + ': the image is the page square');
+      await showList(); await c.waitForTimeout(300);
+      const rowImg = () => ev(c, id => !!document.querySelector('#listbody .row[data-id="' + id + '"] .sq.img img'), own);
+      ok(await rowImg(), kind + ': and the square in its list row');
+      await c.reload(); await c.waitForTimeout(800);
+      await showPage(); await c.waitForTimeout(300); const a1 = await pageImg();
+      await showList(); await c.waitForTimeout(300); const a2 = await rowImg();
+      ok(a1 && a2, kind + ': the image survives a reload');
+      /* the wrong file is refused, with a reason */
+      await c.evaluate(id => customizeDialog(id), own); await c.waitForTimeout(300);
+      await c.setInputFiles('#cz-file', { name:'huge.png', mimeType:'image/png', buffer:Buffer.alloc(10 * 1024 * 1024 + 1024, 7) }); await c.waitForTimeout(200);
+      const big = await c.textContent('#cz-imgerr');
+      await c.setInputFiles('#cz-file', { name:'notes.txt', mimeType:'text/plain', buffer:Buffer.from('not a picture') }); await c.waitForTimeout(200);
+      const txt = await c.textContent('#cz-imgerr');
+      ok(/10 MB/.test(big) && /isn.t an image/.test(txt) && await ev(c, () => /^data:image/.test(DRAFT.image || '')), kind + ': a file over 10 MB and a non-image are refused, the image kept');
+      /* Reset to plain removes the look */
+      await c.click('.dlg [data-czact="reset"]'); await c.waitForTimeout(150);
+      await c.click('.dlg [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(400);
+      ok(await ev(c, id => !window.HYPERNET_THEMES.themes[id], own), kind + ': Reset to plain removes the look');
+      /* the new-event wizard's look step is the same three colours and a square */
+      await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
+      await c.fill('#w-t', 'Lantern swap'); await c.fill('#w-d', '2026-11-05');
+      await c.click('.dlg [data-act="wizstep"][data-id="3"]'); await c.waitForTimeout(200);
+      ok(await ev(c, () => document.querySelectorAll('.dlg input[type=color]').length === 3 && document.querySelectorAll('.dlg input[type=file]').length === 1), kind + ': the New event look step is the same Customize');
+      await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+      /* your photo: from Edit profile, it is your avatar and your profile's square */
+      await c.evaluate(() => profileDialog('edit')); await c.waitForTimeout(200);
+      await c.setInputFiles('#pf-photo', { name:'me.png', mimeType:'image/png', buffer:png }); await c.waitForTimeout(700);
+      await c.click('#pfsave'); await c.waitForTimeout(400);
+      await c.evaluate(() => openItem('person', 'self')); await c.waitForTimeout(400);
+      const ph = await ev(c, () => ({ look:/^data:image/.test((PTHEME.self || {}).image || ''), page:!!document.querySelector('.pg-person .sqwrap img'),
+        av:document.querySelectorAll('.av.img img').length, plain:!!document.querySelector('.pg-person.plain') }));
+      ok(ph.look && ph.page && ph.plain && (kind === 'phone' || ph.av > 0), kind + ': Edit profile → Photo is the profile square and avatar ' + JSON.stringify(ph));
+      await c.reload(); await c.waitForTimeout(800);
+      ok(await ev(c, () => /^data:image/.test((PTHEME.self || {}).image || '')), kind + ': the photo survives a reload');
+      ok(!c.errors.length, kind + ': no console errors (customize) ' + c.errors.join(' '));
+    }
+    const tb = await ctx('tab');
+    await open(tb, '', true);
+    await tb.evaluate(() => loginDialog()); await tb.waitForTimeout(150);
+    await tb.click('.dlg [data-act="useacct"][data-id="demo"]'); await tb.waitForTimeout(300);
+    await tb.evaluate(() => customizeDialog(MYEVENTS[0])); await tb.waitForTimeout(300);
+    ok((await overflow(tb)) <= 0 && !tb.errors.length, '768: Customize open, no horizontal overflow, no console errors');
   }
 
   /* ---------------- tablet ---------------- */

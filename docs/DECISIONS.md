@@ -46,3 +46,39 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   ornaments state only facts (edition year, entry model, city, a horizon's years), never invented ones. Text colours
   are corrected to AA against the ground; reduced motion stills everything. Four theme fields (`backdrop`,
   `atmosphere`, `ornaments`, `parallax`) are part of a look and editable in Customize.
+- **2026-10-01 · Home is the network's activity.** Home is a reverse-chronological stream of what people did: going,
+  interested, promoted, created an event, published / followed / filled an Event Horizon, posted a call out, followed
+  someone. Day bands (Today, Yesterday, This week, Earlier) and relative times ("38m", "2h", "yesterday", "Mon"). Rows
+  that say the same thing in the same band are one entry ("Anna, Rio and 2 others are going"). Each entry carries the
+  thing itself — an event card with Interested / Going right on it, a horizon with Follow, a person with Follow — so you
+  act where you read. Logged in, Home shows you and the people you follow; logged out, or following nobody yet, it shows
+  the whole network (the latter with a "Make Home yours" card of people to follow). It covers the last three weeks and
+  ends with a way to all events. This supersedes "Home has one view" (2026-09-27): that categorical feed is now Explore.
+- **2026-10-01 · Activity is one table.** Every entry comes from rows shaped like the future Postgres table
+  `activity(id, actor, verb, obj_type, obj_id, ts, extra)`. The fixture rows are generated deterministically from the
+  people, events, horizons and call outs (section 9b, "ACTIVITY SEED", the block that goes when Neon is wired); what
+  you do here is added as rows of your own and kept in the browser (`hypernet-feed:activity`). Your own rows always
+  say what is true now: un-going, un-following or unpublishing takes them off Home; doing something again moves it to
+  the top. A private horizon's row is seen by its author only.
+- **2026-10-01 · Call outs are the loudest thing on Home.** A call out is the only inverted element in the app's chrome:
+  ink ground, paper type, a hairline inset frame, "CALL OUT" as a paper tag, the ask at headline size, the event it is
+  for, who asks and until when, and Answer. Open call outs from your network also run as a strip of inverted tiles at
+  the top of Home. Salience comes from inversion, size and weight — no colour. Your own call outs never ask you to
+  answer them.
+- **2026-10-01 · Friends of friends.** Every so often the stream carries "People your friends follow" — people followed
+  by the people you follow, with who ("Anna and Kai follow Jon") and Follow. Logged out it is "People to follow"
+  (the most followed on the network). Following someone adds their activity to Home straight away.
+- **2026-10-01 · Explore holds everything else.** A new destination with four kinds: Events (list + calendar, upcoming
+  first), Event Horizons (yours / following / popular; list + calendar), Call outs and People. With no kind it is the
+  old categorical Home (This week, From people you follow, Coming up, Announced burns, your horizons, horizons worth
+  following, call outs; Show all lists live at `#/explore/<section>`). Desktop shows the kinds as sub-rows under
+  Explore in the sidebar; the phone shows them as tabs across the top of the Explore tab. The phone's tabs are Home /
+  Explore / New / Chats / You (Explore replaces Horizons). The words Hypernet made up say what they are in a line
+  where they are listed ("A horizon is a list of events someone curates — like a playlist…"). Old `#/horizons`,
+  `#/people` and `#/home/<section>` links land on the matching Explore kind or section.
+- **2026-10-01 · Chat is between two people.** New chat picks one person and opens the conversation; there is no group
+  name, no multi-select, no rename / leave / add people. The fixture group chats became direct messages with whoever
+  spoke last in them, and group chats kept from before are put away on load. Group (camp) pages stay out of v1; a
+  horizon a group owns still shows the group's name as its owner, and the old `#/group/<id>` link opens that horizon.
+- **2026-10-01 · Cut from the sidebar.** The top-level Horizons and People rows (now Explore's kinds) and Home's unread
+  count (Home is no longer an inbox of events).

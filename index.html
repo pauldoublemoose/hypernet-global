@@ -2422,7 +2422,7 @@ function calloutHTML(id){
 /* a link to something you can't see: say which kind of thing, and give a way on */
 function missingHTML(path){
   var kind = String(path).split('/')[0];
-  var t = { event:'This event is no longer on Hypernet', horizon:'This Event Horizon is private or no longer here',
+  var t = { event:'This event is private or no longer on Hypernet', horizon:'This Event Horizon is private or no longer here',
             callout:'This call out is closed or no longer here', person:'This person isn’t on Hypernet', chats:'This chat isn’t in your account' }[kind] || 'Nothing here';
   var h = '<div class="page missing"><span class="r-ic" style="width:64px;height:64px;flex-basis:64px">'+ic(kind === 'horizon' ? 'horizon' : kind === 'callout' ? 'callout' : kind === 'person' ? 'user' : kind === 'chats' ? 'chat' : 'star', 30)+'</span>' +
     '<div class="pname" style="margin-top:16px">'+esc(t)+'</div><div class="acts">';

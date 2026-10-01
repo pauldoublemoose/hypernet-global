@@ -2932,7 +2932,7 @@ function seedActivity(){
 var LIVEACT = [];
 var ACTSTORE = 'hypernet-feed:activity';
 function loadLiveAct(){ try { var v = JSON.parse(localStorage.getItem(ACTSTORE) || '[]'); LIVEACT = Array.isArray(v) ? v : []; } catch(e){ LIVEACT = []; } }
-function saveLiveAct(){ try { localStorage.setItem(ACTSTORE, JSON.stringify(LIVEACT.slice(0, 400))); } catch(e){} }
+function saveLiveAct(){ storeSet(ACTSTORE, JSON.stringify(LIVEACT.slice(0, 400))); }
 loadLiveAct();
 function myActor(){ return S.loggedIn && S.acct ? acctPid(S.acct) : null; }
 function actIsMe(a){ return !!a && a.actor === myActor(); }
@@ -5369,7 +5369,7 @@ function render(){
   renderPreview();
   placeToasts();
   document.title = (S.stack.length && !S.autoSel ? itemName(S.stack[S.stack.length-1]) : folderName()) + ' · Hypernet';
-  persist();
+  schedulePersist();
   syncRoute();
 }
 /* what you make and keep survives a reload: account, horizons, created events, states */
@@ -5377,7 +5377,21 @@ function render(){
    made here) is shared; each account keeps its own relations and chats. */
 var STORE = 'hypernet-feed:v2', STORE1 = 'hypernet-feed:v1';
 function isCreatedHz(k){ var h = HORIZONS[k]; return !!h && (!!h.ownerAcct || k === 'horizon-default'); }
+/* every write to this browser's storage goes through here: when it is full, say so once, quietly — never fail silently */
+var STOREFULL = false;
+function storeSet(key, val){
+  try { localStorage.setItem(key, val); return true; }
+  catch(e){
+    var full = e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014 || /quota/i.test(String(e.message)));
+    if (full && !STOREFULL){ STOREFULL = true; toast('This browser’s storage is full', 'Recent changes are kept until you close the tab. Remove an image to make room.'); }
+    return false;
+  }
+}
+/* saved on change, not on every render: render marks the store dirty and it is written once things settle (and when
+   the page goes away); a write that would store the same thing again is skipped */
+var PERSISTED = null;
 function persist(){
+  clearTimeout(PERSISTT); PERSISTT = null;
   try {
     if (S.loggedIn && S.acct) ACCTS[S.acct] = captureAcct();
     var evs = {}, recs = {}, themes = {}, hzs = {}, covers = {}, hzthemes = {};
@@ -5386,17 +5400,15 @@ function persist(){
     /* hosts can change events they did not create here (the demo's own), so those edits are kept too */
     var edits = {};
     Object.keys(EDITED).forEach(function(k){ if (EVENTS[k] && !/^evt-new-/.test(k)){ var th = window.HYPERNET_THEMES.themes[k] || null; edits[k] = { ev:EVENTS[k], rec:REC[k] || null, theme:th, plain:!th }; } });
-    localStorage.setItem(STORE, JSON.stringify({ v:2,
+    var json = JSON.stringify({ v:2,
       session:{ acct: S.loggedIn ? S.acct : null },
       ui:{ rightOpen:!!S.rightOpen, chatOpen:S.chatOpen || null, recent:RECENTQ },
       accounts:ACCTS,
       network:{ events:evs, recs:recs, themes:themes, horizons:hzs, covers:covers, hzthemes:hzthemes, edits:edits, deleted:DELETED,
                 callouts:CALLOUTS.filter(function(c){ return !!c.hostAcct; }) }
-    }));
-  } catch(e){
-    /* images make the store heavy: say once that this browser is full rather than losing changes silently */
-    if (/quota/i.test(String(e && (e.name + ' ' + e.message))) && !persist.warned){ persist.warned = true; toast('This browser’s storage is full', 'Recent changes are kept until you close the tab. Remove an image to make room.'); }
-  }
+    });
+    if (json !== PERSISTED && storeSet(STORE, json)) PERSISTED = json;
+  } catch(e){}
 }
 /* the single-account store of the first builds becomes the 'me' account */
 function migrateV1(d){
@@ -5446,7 +5458,10 @@ function restore(){
   syncAcctPeople();
 }
 var PERSISTT = null;
-function schedulePersist(){ clearTimeout(PERSISTT); PERSISTT = setTimeout(persist, 400); }
+function schedulePersist(){ if (!PERSISTT) PERSISTT = setTimeout(persist, 300); }
+/* a reload, a closed tab or a phone putting the page away writes what is pending */
+window.addEventListener('pagehide', function(){ if (PERSISTT) persist(); });
+document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden' && PERSISTT) persist(); });
 var RZ = null;
 window.addEventListener('resize', function(){ clearTimeout(RZ); RZ = setTimeout(render, 60); });
 (function boot(){

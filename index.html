@@ -297,6 +297,8 @@ a.btn{ text-decoration:none; color:var(--ink) !important; }
 /* one page template for events, horizons and people: every page is its own container, wherever it is shown */
 .canvas.pg{ container:detail / inline-size; }
 .psub2{ margin:12px 0 0; max-width:60ch; font-size:16px; line-height:1.45; color:var(--eink); }
+.pgnote{ margin:10px 0 0; max-width:60ch; font-size:var(--fs-s); line-height:1.4; color:var(--edim); }
+.dlg .kdesc.inline{ margin:0 0 16px; padding:0; border:0; background:none; font-size:var(--fs-s); color:var(--dim); }
 .banner .av.a160{ width:160px; height:160px; flex-basis:160px; font-size:56px; box-shadow:0 0 0 1px rgba(0,0,0,.25), 4px 4px 0 rgba(0,0,0,.18); }
 .pg-horizon .banner .mosaic{ box-shadow:0 0 0 1px var(--eac2), 4px 4px 0 rgba(0,0,0,.3); }
 .pg .banner .sqwrap > .sq:not(.plain), .pg .banner .sqwrap > .sq.img{ box-shadow:0 0 0 1px color-mix(in srgb, var(--eink) 22%, transparent); }
@@ -2252,15 +2254,15 @@ function entryHTML(evId){
 /* ONE PAGE TEMPLATE. An event, an Event Horizon and a person are the same page with different contents:
    the title block (square or avatar, title, subtitle) → the window's grey toolbar → anything that must sit right
    under it → the facts grid → the sections. A look only changes the colours and the square. Only the spec differs. */
-function titleBlockHTML(cover, eyebrow, title, sub){
+function titleBlockHTML(cover, eyebrow, title, sub, note){
   return '<header class="banner"><div class="bin"><div class="sqwrap">' + cover + '</div>' +
          '<div class="btxt">' + (eyebrow ? '<div class="eyebrow">'+eyebrow+'</div>' : '') +
-         '<h1 class="hl">'+esc(title)+'</h1>' + (sub ? '<p class="psub2">'+sub+'</p>' : '') + '</div></div></header>';
+         '<h1 class="hl">'+esc(title)+'</h1>' + (sub ? '<p class="psub2">'+sub+'</p>' : '') + (note ? '<p class="pgnote">'+esc(note)+'</p>' : '') + '</div></div></header>';
 }
 function pageHTML(o){
   var t = o.t;
   var h = '<article class="canvas pg pg-'+o.kind+(isPlain(t) ? ' plain' : '')+'" data-page="'+o.kind+'" style="'+themeVars(t)+'">';
-  h += titleBlockHTML(o.cover, o.eyebrow, o.title, o.sub);
+  h += titleBlockHTML(o.cover, o.eyebrow, o.title, o.sub, o.note);
   if (o.toolbar) h += '<div class="actbar">' + o.toolbar + '</div>';
   h += o.pre || '';
   h += '<div class="layer"><div class="lin">' + (o.facts || '') + (o.body || '') + '</div></div><div class="tail"></div></article>';
@@ -2367,7 +2369,7 @@ function playlistHTML(hzId, withTracks){
     if (inList) S.rows = up.concat(open ? past : []).map(function(e){ return { type:'event', id:e.id }; });
   }
   return pageHTML({ kind:'horizon', t:t, cover:hzMosaic(hzId, 160), eyebrow:'Event Horizon' + (hz.isPublished ? '' : ' · Private'), title:hz.name,
-    sub:hz.description ? esc(hz.description) : '', toolbar:bar, facts:facts, body:body });
+    sub:hz.description ? esc(hz.description) : '', note:KINDDESC.horizons, toolbar:bar, facts:facts, body:body });
 }
 
 function horizonHTML(hzId, withContents){
@@ -3660,7 +3662,7 @@ function renameHzDialog(hzId){
   focusIn('rh-n');
 }
 function addToDialog(evId){
-  var h = '<div class="picklist"><div class="linkrow" data-act="new-horizon" data-id="'+evId+'" role="button"><span class="r-ic">'+ic('plus')+'</span><div class="lr"><b>New Event Horizon</b></div></div>' +
+  var h = '<p class="kdesc inline">'+esc(KINDDESC.horizons)+'</p><div class="picklist"><div class="linkrow" data-act="new-horizon" data-id="'+evId+'" role="button"><span class="r-ic">'+ic('plus')+'</span><div class="lr"><b>New Event Horizon</b></div></div>' +
     MYHORIZONS.slice().reverse().map(function(k){
     var has = HORIZONS[k].eventIds.indexOf(evId) >= 0;
     return '<div class="linkrow" data-act="dofile" data-id="'+evId+'" data-hz="'+k+'" role="button">' + hzIconHTML(k, 32) +
@@ -3810,7 +3812,7 @@ FORMFOOT.horizon = function(){
 };
 function newHorizonDialog(withEvent){
   HZWITH = withEvent && EVENTS[withEvent] ? withEvent : null;
-  dialog('New Event Horizon',
+  dialog('New Event Horizon', '<p class="kdesc inline">'+esc(KINDDESC.horizons)+'</p>' +
     '<div class="field"><label for="nh-n">Name</label><input type="text" id="nh-n" value="'+esc(draftVal('horizon','nh-n'))+'" placeholder="Autumn builds" autocomplete="off"></div>' +
     '<div class="field"><label for="nh-d">Description</label><textarea id="nh-d" rows="2" placeholder="Every build weekend on the ridge this autumn">'+esc(draftVal('horizon','nh-d'))+'</textarea></div>' +
     '<label class="pick" style="border:0;padding-left:0"><input type="checkbox" id="nh-p"'+(draftVal('horizon','nh-p')?' checked':'')+'><span class="pm">Publish it</span></label>',
@@ -5290,8 +5292,9 @@ window.addEventListener('popstate', function(ev){
 /* a link (not a history step): its row, if the list has one, is lit and in view */
 function revealSel(){
   var el = document.querySelector('#listbody .row.sel, #listbody .track.sel, #listbody .fsel');
-  /* Home opens at its top: what the app picked for the reading pane is not worth scrolling to */
-  if (S.folder.kind === 'home' && S.autoSel) return;
+  /* Home and a horizon open at their top (a shared horizon link lands on its title and what a horizon is):
+     what the app picked for the reading pane is not worth scrolling to */
+  if (S.autoSel && (S.folder.kind === 'home' || S.folder.kind === 'horizon')) return;
   if (el && !L.phone){ el.scrollIntoView({ block:'center' }); CURSCROLL.list = $('listbody').scrollTop; }
 }
 function rootSnap(tab){

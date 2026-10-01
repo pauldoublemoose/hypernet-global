@@ -597,7 +597,6 @@ fieldset.props legend{ padding:0 6px; font-weight:bold; }
 .chrow .cside{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
 .ctime{ font:11px var(--mono); color:var(--dim); white-space:nowrap; }
 .udot{ width:10px; height:10px; background:#000; }
-.av.gav{ background:var(--face); color:var(--ink); box-shadow:var(--out); }
 .conv{ flex:1; min-height:0; display:flex; flex-direction:column; gap:8px; }
 .msgs{ flex:1; min-height:0; overflow:auto; padding:16px 14px; background:#fff; box-shadow:var(--in); display:flex; flex-direction:column; gap:12px; }
 .msg{ max-width:86%; align-self:flex-start; }
@@ -839,6 +838,79 @@ body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 1
   font:bold 11px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dim); }
 .track .ts{ margin-top:2px; font-size:13px; color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .track.past .tt{ color:#6f6f6f; }
+
+/* ---------- 10c. Home: the network's activity ------------------------ */
+.fgreet{ border-bottom:0; padding-bottom:10px; }
+.fgreet p{ margin:4px 0 0; color:var(--dim); font-size:14px; }
+.fitem{ display:flex; gap:12px; padding:14px 16px 16px; border-bottom:1px solid var(--line); }
+.fav{ flex:0 0 32px; display:flex; flex-direction:column; align-items:flex-start; }
+.av.a32{ width:32px; height:32px; flex-basis:32px; font-size:12px; }
+.fav.two .av + .av{ width:20px; height:20px; flex-basis:20px; font-size:8px; margin:-12px 0 0 16px; box-shadow:0 0 0 2px #fff; }
+.fbody{ flex:1; min-width:0; display:flex; flex-direction:column; gap:10px; }
+.fline{ display:flex; align-items:baseline; gap:10px; }
+.fsent{ flex:1; min-width:0; font-size:15px; line-height:1.35; color:var(--ink2); }
+.fwho{ color:var(--ink); cursor:pointer; }
+.fwho:hover{ text-decoration:underline; }
+.ftime{ flex:0 0 auto; font:12px var(--mono); letter-spacing:.04em; color:var(--dim); white-space:nowrap; }
+.fexpl{ margin:-2px 0 0; font-size:13px; line-height:1.4; color:var(--dim); }
+.fcard{ display:grid; grid-template-columns:auto minmax(0, 1fr); align-items:center; column-gap:12px; row-gap:10px; padding:10px; background:#fff; cursor:pointer;
+  box-shadow:0 0 0 1px rgba(0,0,0,.16), 2px 2px 0 rgba(0,0,0,.1); }
+.fcard:hover{ background:var(--hover); }
+.fcard .fverbs{ grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:6px; }
+.fcard.fp{ display:flex; align-items:center; gap:12px; }
+.fcard.fp .fcm{ flex:1; }
+.fcm{ min-width:0; }
+.fct{ font-size:16px; font-weight:bold; line-height:1.25; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.fcard.small .fct, .fcard.fp .fct{ font-size:15px; }
+.fck{ margin-bottom:2px; font:bold 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dim); }
+.fcs{ margin-top:3px; font-size:13px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fcard.fp .fcs{ white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.fcard.sel{ background:var(--face-lt); box-shadow:0 0 0 2px var(--ink), 2px 2px 0 rgba(0,0,0,.1); }
+.fvb{ font-size:13px; padding:0 12px; }
+.fmore{ align-self:flex-start; min-height:32px; padding:0; border:0; background:transparent; font-size:13px; color:var(--ink2); text-decoration:underline; }
+.fmore.static{ text-decoration:none; }
+.fend{ display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:22px 16px 32px; color:var(--dim); font-size:var(--fs-s); }
+/* call outs: the one inverted thing on Home — ink ground, paper type, the ask at headline size */
+.fitem.fitco{ display:block; padding:16px 16px 18px; }
+.fco{ position:relative; padding:16px 18px 18px; background:var(--ink); color:#fff; cursor:pointer;
+  outline:1px solid #fff; outline-offset:-6px; box-shadow:4px 4px 0 var(--face-dk); }
+.fcok{ display:flex; align-items:center; gap:10px; }
+.fcotag{ display:inline-flex; align-items:center; gap:6px; padding:3px 8px; background:#fff; color:#000; font:bold 11px var(--mono); letter-spacing:.16em; text-transform:uppercase; }
+.fco .ftime{ margin-left:auto; color:#c4c4c4; }
+.fcol{ margin-top:16px; font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:#c4c4c4; }
+.fcoa{ margin-top:2px; font-size:32px; font-weight:bold; line-height:1.05; letter-spacing:-.01em; overflow-wrap:anywhere; }
+.fcob{ margin:10px 0 0; max-width:56ch; font-size:15px; line-height:1.45; color:#e6e6e6; }
+.fcoe{ display:flex; align-items:center; gap:10px; margin-top:14px; padding:8px; background:#242424; box-shadow:inset 0 0 0 1px #4a4a4a; }
+.fcoe > span{ min-width:0; font-size:14px; font-weight:bold; line-height:1.3; }
+.fcoe small{ display:block; font:normal 11px var(--mono); letter-spacing:.06em; color:#c4c4c4; }
+.fcof{ display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-top:16px; }
+.fcoby{ flex:1 1 160px; min-width:0; display:flex; align-items:center; gap:10px; font-size:14px; font-weight:bold; }
+.fcoby small{ display:block; font:normal 11px var(--mono); letter-spacing:.04em; color:#c4c4c4; }
+.fco .av{ box-shadow:0 0 0 1px #fff; }
+.fco .btn, .cotile .btn{ color:#000; }
+.fco.sel, .cotile.sel{ outline-width:3px; outline-offset:-7px; }
+.costrip.srow{ padding:12px 16px 14px; border-bottom:1px solid var(--line); scroll-snap-type:x proximity; }
+.cotile{ flex:0 0 228px; width:228px; min-height:168px; display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:14px; background:var(--ink); color:#fff;
+  outline:1px solid #fff; outline-offset:-5px; scroll-snap-align:start; cursor:pointer; }
+.cotile .cta{ font-size:20px; line-height:1.12; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.cotile .ctw{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:12px; line-height:1.35; color:#d0d0d0; }
+.cotile .btn{ margin-top:auto; }
+/* people your friends follow */
+.ffof{ flex-direction:column; gap:8px; background:var(--face-lt); }
+.ffh{ margin:0; font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--ink2); }
+.ffn{ margin:0 0 4px; font-size:14px; line-height:1.4; color:var(--ink2); }
+/* Explore: a line that says what a kind is; on a phone its kinds are tabs */
+.kdesc{ margin:0; padding:12px 16px; border-bottom:1px solid var(--line); background:var(--face-lt); font-size:14px; line-height:1.45; color:var(--ink2); }
+.nrow.nsubrow{ min-height:34px; padding-left:42px; font-size:var(--fs-s); }
+.navnote{ margin:16px 20px; color:var(--dim); font-size:var(--fs-s); line-height:1.45; }
+.kinds{ display:flex; gap:6px; min-width:0; overflow-x:auto; scrollbar-width:none; }
+.kinds::-webkit-scrollbar{ display:none; }
+.kinds{ gap:4px; }
+.kind{ flex:1 0 auto; height:38px; padding:0 10px; border:0; background:var(--face); box-shadow:var(--out); color:var(--ink); font-size:13px; white-space:nowrap; }
+.kind.on{ background:var(--sel); color:#fff; font-weight:bold; box-shadow:inset 1px 1px 0 #000; }
+#app.phone #chead.kindhead .ctools{ flex-direction:column; align-items:stretch; gap:8px; min-width:0; }
+.ctrow{ display:flex; gap:8px; }
+.ctrow .seg{ flex:1 1 auto; }
 
 /* ---------- 11. phone: its own shell, not a squeezed desktop --------- */
 #app.phone{ --act:48px; font-size:15px; }
@@ -1166,6 +1238,7 @@ function headlineHTML(t, title){
 /* one small monochrome icon set, drawn in the 20px grid */
 var IC = {
   home:'<path d="M3 10 10 3.5 17 10M5 8.5V17h4v-4.5h2V17h4V8.5"/>',
+  explore:'<circle cx="10" cy="10" r="7.2"/><path d="m13 7-1.8 4.2L7 13l1.8-4.2z"/>',
   horizon:'<path d="M1.5 13.5h17M4.5 13.5a5.5 5.5 0 0 1 11 0M10 3.2v2M3.6 6.4l1.4 1.4M16.4 6.4 15 7.8M5 16.5h10"/>',
   people:'<circle cx="7.5" cy="7" r="3"/><path d="M1.8 17c.6-3.3 2.6-5 5.7-5s5.1 1.7 5.7 5"/><circle cx="14.2" cy="6.4" r="2.3"/><path d="M14 10.6c2.5.1 4 1.5 4.4 4.4"/>',
   check:'<path d="M3.5 10.5 8 15l8.5-9.5"/>',
@@ -1224,12 +1297,16 @@ var CHATS = {}, CHATORDER = [], UNREADCHAT = {};
 var CHATDRAFT = {};             /* chat id -> what you typed and haven't sent */
 var SHIFT = {};                 /* event -> the shift you took */
 var ANSWERED = {}, ANSWERING = {};   /* call out -> the chat you answered it in; chat -> the call out its draft answers */
+/* chat is between two people (groups are v2): a fixture group chat becomes a direct message with whoever spoke last in it */
 function fixtureChats(){
   var byId = {}, order = [];
   H.chats.forEach(function(c){
-    byId[c.id] = { id:c.id, name:c.name, kind:c.kind, memberIds:c.memberIds.slice(),
-      messages: c.messages.map(function(m){ return { from:m.from, t:m.t, text:m.text }; }) };
-    order.push(c.id);
+    var pid = c.kind === 'dm' ? c.memberIds[0] : c.messages.filter(function(m){ return m.from !== 'self'; }).map(function(m){ return m.from; }).pop();
+    if (!pid || !PEOPLE[pid] || Object.keys(byId).some(function(k){ return byId[k].memberIds[0] === pid; })) return;
+    var id = c.kind === 'dm' ? c.id : 'c-' + pid.replace(/^p-/, '');
+    byId[id] = { id:id, name:person(pid).displayName, kind:'dm', memberIds:[pid],
+      messages: c.messages.filter(function(m){ return m.from === pid || m.from === 'self'; }).map(function(m){ return { from:m.from, t:m.t, text:m.text }; }) };
+    order.push(id);
   });
   return { byId:byId, order:order };
 }
@@ -1342,11 +1419,16 @@ function hzWhen(hzId){
   return 'Ended ' + fmtShort(evs.map(lastDay).sort().pop());
 }
 function hzOwnedByMe(hzId){ return S.loggedIn && MYHORIZONS.indexOf(hzId) >= 0; }
-function attendees(evId){
-  if (/^evt-new-/.test(evId)) return (S.loggedIn && RSVP[evId] === 'going') ? ['self'] : [];
+/* who on the network is going, whoever is looking (Home's activity says the same as the event page) */
+function baseAttendees(evId){
+  if (/^evt-new-/.test(evId)) return [];
   var w = H.worlds.filter(function(x){ return x.eventId === evId; })[0];
   var ids = w && w.participantIds ? w.participantIds.filter(function(p){ return PEOPLE[p] && p !== 'self'; }) : [];
   if (!ids.length){ var n = hashId(evId); ids = CREW.filter(function(_,i){ return (n >> i) & 1; }); }
+  return ids;
+}
+function attendees(evId){
+  var ids = baseAttendees(evId);
   if (S.loggedIn && RSVP[evId] === 'going') ids = ['self'].concat(ids);
   return ids.slice(0,6);
 }
@@ -1365,7 +1447,6 @@ function whereOf(e){
 function isMine(evId){ return S.loggedIn && ownEvent(EVENTS[evId]); }
 /* the entry point for someone without an account says so */
 function joinLabel(){ return ACCTS.me ? 'Log in' : 'Join / Log in'; }
-function unreadCount(items){ return items.filter(function(it){ return it.type==='event' && !READ[it.id]; }).length; }
 function calloutOf(id){ return CALLOUTS.filter(function(x){ return x.id === id; })[0]; }
 var TOASTT = null;
 var WELCOME = null;             /* the first confirmation after joining also says hello */
@@ -1443,7 +1524,8 @@ function itemName(it){
 <script>
 /* =========================================================================
    4. DESTINATIONS
-   Home (FEED / LIST / CALENDAR), Horizons, People — plus the things you keep.
+   Home (the network's activity), Explore (events, Event Horizons, call outs, people, and
+   the categorical overview that used to be Home) — plus the things you keep.
    A view is a way of looking at one destination, never a destination.
    ========================================================================= */
 function feedEvents(){
@@ -1457,9 +1539,19 @@ function browsableHorizons(){
   return Object.keys(HORIZONS).filter(function(k){ return HORIZONS[k].isPublished || hzOwnedByMe(k); });
 }
 function browsablePeople(){ var ids = CREW.slice(); if (S.loggedIn) ids.unshift('self'); return ids; }
-/* Home on a desktop is the phone's shelves as bands: the same sections, in the same order */
+/* Explore's kinds: each is a list of one family; the overview (no kind) is the categorical sections */
+var EXPLOREKINDS = [['events','Events','cal'], ['horizons','Event Horizons','horizon'], ['callouts','Call outs','callout'], ['people','People','people']];
+function isExploreKind(id){ return EXPLOREKINDS.some(function(k){ return k[0] === id; }); }
+function isOverview(f){ f = f || S.folder; return f.kind === 'explore' && !f.id; }
+/* plain words for the words Hypernet made up */
+var KINDDESC = {
+  horizons:'A horizon is a list of events someone curates — like a playlist. Follow it to see what they pick.',
+  callouts:'A call out is someone asking for a hand with their event. Answer it to start a chat with them.',
+  people:'Follow people to see on Home what they are going to, promoting and curating.'
+};
+/* the overview on a desktop is the phone's shelves as bands: the same sections, in the same order */
 var HOMEBAND = 8;
-function homeItems(){
+function exploreItems(){
   var out = [];
   homeSections().forEach(function(sec){
     sec.items.slice(0, HOMEBAND).forEach(function(it){ out.push({ type:it.type, id:it.id, band:sec.title, total:sec.items.length, sec:sec.id }); });
@@ -1467,27 +1559,38 @@ function homeItems(){
   });
   return out;
 }
-/* Home is the feed and only the feed; lists of your own keep a calendar */
-var VIEWS = { home:['feed'], horizons:['list','calendar'], going:['list','calendar'], interested:['list','calendar'],
-              hosting:['list','calendar'], promoted:['list','calendar'] };
+/* Home is the activity and only that; lists of events keep a calendar */
+var VIEWS = { going:['list','calendar'], interested:['list','calendar'], hosting:['list','calendar'], promoted:['list','calendar'] };
 function destKey(f){ f = f || S.folder; return f.kind + (f.id ? ':' + f.id : ''); }
 function viewsOf(f){
   f = f || S.folder;
   /* Show all keeps the switcher: an event shelf is a list you can also see as a calendar */
   if (f.kind === 'shelf') return EVENTSHELVES.test(f.id || '') ? ['list','calendar'] : [];
+  if (f.kind === 'explore') return f.id === 'events' || f.id === 'horizons' ? ['list','calendar'] : [];
   return VIEWS[f.kind] || [];
 }
-var EVENTSHELVES = /^(week|soon|announced|people)$/;
+var EVENTSHELVES = /^(week|soon|announced|followed)$/;
 function viewOf(f){ f = f || S.folder; var v = viewsOf(f); return v.length ? (S.view[destKey(f)] || v[0]) : 'list'; }
 function isCal(){ return viewOf() === 'calendar'; }
+function openCallouts(){
+  var open = CALLOUTS.filter(function(c){ return !c.closed; });
+  var mine = S.loggedIn ? open.filter(function(c){ return c.hostId && PFOLLOW[c.hostId]; }) : [];
+  return mine.concat(open.filter(function(c){ return mine.indexOf(c) < 0; }));
+}
 
 function folderItems(f){
   f = f || S.folder;
   var evs = [];
   var k = f.kind;
-  if (k === 'home')  return viewOf(f) === 'feed' ? homeItems() : feedEvents().map(function(e){ return { type:'event', id:e.id }; });
-  if (k === 'horizons') return browsableHorizons().sort(function(a, b){ return hzFollowers(b) - hzFollowers(a); }).map(function(h){ return { type:'horizon', id:h }; });
-  if (k === 'people')   return browsablePeople().map(function(p){ return { type:'person', id:p }; });
+  if (k === 'home')  return homeItems();
+  if (k === 'explore'){
+    if (!f.id) return exploreItems();
+    if (f.id === 'events')   return feedEvents().map(function(e){ return { type:'event', id:e.id }; });
+    if (f.id === 'horizons') return browsableHorizons().sort(function(a, b){ return hzFollowers(b) - hzFollowers(a); }).map(function(h){ return { type:'horizon', id:h }; });
+    if (f.id === 'callouts') return openCallouts().map(function(c){ return { type:'callout', id:c.id }; });
+    if (f.id === 'people')   return browsablePeople().map(function(p){ return { type:'person', id:p }; });
+    return [];
+  }
   if (k === 'shelf')    return shelfItems(f.id);
   if (k === 'search')   return searchItems(S.query);
   if (k === 'interested') evs = rsvpList('interested');
@@ -1499,25 +1602,29 @@ function folderItems(f){
 }
 function destEvents(f){
   f = f || S.folder;
-  if (f.kind === 'horizons'){
+  if (f.kind === 'explore' && f.id === 'horizons'){
     var seen = {}, out = [];
     browsableHorizons().forEach(function(k){ HORIZONS[k].eventIds.forEach(function(id){ if (EVENTS[id] && !seen[id]){ seen[id] = 1; out.push(EVENTS[id]); } }); });
     return out.sort(byDate);
   }
-  if (f.kind === 'home') return feedEvents();
+  if (f.kind === 'explore' && f.id === 'events') return feedEvents();
   return folderItems(f).filter(function(it){ return it.type === 'event'; }).map(function(it){ return EVENTS[it.id]; });
 }
 function folderName(f){
   f = f || S.folder;
-  return { home:'Home', horizons:'Horizons', people:'People', interested:'Interested', going:'Going', hosting:'Hosting', promoted:'Promoted',
+  if (f.kind === 'explore') return f.id ? (EXPLOREKINDS.filter(function(k){ return k[0] === f.id; })[0] || [0, 'Explore'])[1] : 'Explore';
+  return { home:'Home', interested:'Interested', going:'Going', hosting:'Hosting', promoted:'Promoted',
            search:'Search', you:'You', chats:'Chats', shelf: shelfTitle(f.id) }[f.kind] || (f.kind === 'horizon' && HORIZONS[f.id] ? HORIZONS[f.id].name : 'Home');
 }
 function folderSub(f){
   f = f || S.folder;
+  if (f.kind === 'home') return S.loggedIn && followedPeople().length ? 'What the people you follow are doing' : 'What people on Hypernet are doing';
+  if (isOverview(f)) return 'Events, Event Horizons, call outs and people on Hypernet';
   var n = folderItems(f).length;
-  if (f.kind === 'home')     return viewOf(f) === 'feed' ? '' : destEvents(f).length + ' events';
-  if (f.kind === 'horizons') return n + ' horizons';
-  if (f.kind === 'people')   return n + ' people';
+  if (f.kind === 'explore' && f.id === 'events')   return destEvents(f).length + ' events';
+  if (f.kind === 'explore' && f.id === 'horizons') return n + ' Event Horizons';
+  if (f.kind === 'explore' && f.id === 'callouts') return n + ' open';
+  if (f.kind === 'explore' && f.id === 'people')   return n + ' people';
   if (f.kind === 'search')   return n + ' result' + (n === 1 ? '' : 's') + ' for “' + S.query + '”';
   if (f.kind === 'horizon'){ var h = HORIZONS[f.id]; return h ? 'Event Horizon · ' + h.ownerName + ' · ' + h.eventIds.length + ' events' : ''; }
   return n + ' event' + (n === 1 ? '' : 's');
@@ -1581,7 +1688,7 @@ function searchItems(q){
    ========================================================================= */
 function sortItems(items){
   var k = S.sort;
-  if (S.folder.kind === 'home' && viewOf() === 'feed') return items;
+  if (S.folder.kind === 'home' || isOverview()) return items;
   if (items.some(function(it){ return it.type !== 'event'; }) && S.folder.kind !== 'horizon') return items;
   var head = items.filter(function(it){ return it.type !== 'event'; }), evs = items.filter(function(it){ return it.type === 'event'; });
   evs.sort(function(a,b){
@@ -1600,11 +1707,12 @@ function bandOf(it){
   var k = S.folder.kind;
   if (k === 'shelf') return null;
   if (k === 'search') return SEARCHBAND[it.type];
-  if (k === 'home' && viewOf() === 'feed')
-    return it.band;
-  if (k === 'horizons') return hzOwnedByMe(it.id) ? 'Yours' : (S.loggedIn && HZFOLLOW[it.id]) ? 'Following' : 'Popular';
+  if (k === 'home' || isOverview()) return it.band;
+  var x = k === 'explore' ? S.folder.id : '';
+  if (x === 'horizons') return hzOwnedByMe(it.id) ? 'Yours' : (S.loggedIn && HZFOLLOW[it.id]) ? 'Following' : 'Popular';
   /* one list in a steady order: following someone marks them in place instead of moving the rows under your thumb */
-  if (k === 'people') return it.id === 'self' ? 'You' : 'People';
+  if (x === 'people') return it.id === 'self' ? 'You' : 'People';
+  if (x === 'callouts') return S.loggedIn && calloutOf(it.id).hostId && PFOLLOW[calloutOf(it.id).hostId] ? 'From people you follow' : 'Open';
   if (it.type === 'horizon') return 'Event Horizon';
   if (S.sort !== 'date') return null;
   return timeBand(EVENTS[it.id]);
@@ -1619,13 +1727,13 @@ function timeBand(e){
   return MONFULL[dt.getMonth()] + (dt.getFullYear() !== NOW.getFullYear() ? ' ' + dt.getFullYear() : '');
 }
 var BANDORDER = ['Event Horizon','Happening soon','Announced','This week','Past',
-                 'Events','Event Horizons','You','People','Yours','Following','Popular'];
+                 'Events','Event Horizons','You','People','Yours','Following','Popular','From people you follow','Open'];
 function groupItems(items){
   var groups = {}, order = [];
   items.forEach(function(it){ var b = bandOf(it) || ''; if (!groups[b]){ groups[b] = []; order.push(b); } groups[b].push(it); });
   /* date-sorted events already come in time order, months included */
   var timed = S.sort === 'date' && items.length && items.every(function(it){ return it.type === 'event'; }) && S.folder.kind !== 'search';
-  if (!(S.folder.kind === 'home' && viewOf() === 'feed') && !timed)
+  if (!(S.folder.kind === 'home' || isOverview()) && !timed)
     order.sort(function(a,b){ var ia = BANDORDER.indexOf(a), ib = BANDORDER.indexOf(b); return (ia<0?99:ia) - (ib<0?99:ib); });
   return { groups:groups, order:order };
 }
@@ -1667,7 +1775,7 @@ function rowHTML(it){
     var hz = HORIZONS[it.id];
     lead = '<span class="r-ic">'+hzArt(it.id, 32)+'</span>';
     title = esc(hz.name);
-    var onTab = S.folder.kind === 'horizons';
+    var onTab = S.folder.kind === 'explore' && S.folder.id === 'horizons';
     meta = esc((onTab ? '' : 'Event Horizon · ') + hz.ownerName + ' · ' + plural(hz.eventIds.length, 'event'));
     date = hzWhen(it.id);
     /* on the Horizons tab the section already says Yours / Following */
@@ -1694,7 +1802,7 @@ function rowHTML(it){
     ((date || side) ? '<div class="r-side">'+(date?'<div class="r-date">'+date+'</div>':'')+(side?'<div class="r-states">'+side+'</div>':'')+'</div>' : '') +
     '</div>';
 }
-/* an empty phone search offers the directories that have no tab of their own */
+/* an empty phone search offers your recent searches and Explore's kinds */
 var RECENTQ = [];                /* the last searches you ran, newest first */
 function rememberQuery(q){
   q = String(q || '').trim(); if (q.length < 2) return;
@@ -1704,11 +1812,10 @@ function rememberQuery(q){
 function browseHTML(){
   var rec = RECENTQ.length ? '<div class="band">Recent</div>' + RECENTQ.map(function(q){
     return '<div class="row" data-act="dosearch" data-id="'+esc(q)+'" role="button"><span class="r-ic">'+ic('search')+'</span><div class="r-main"><div class="r-title">'+esc(q)+'</div></div></div>'; }).join('') : '';
-  return rec + '<div class="band">Browse</div>' +
-    '<div class="row" data-act="folder" data-kind="people" role="button">'+'<span class="r-ic">'+ic('people')+'</span><div class="r-main"><div class="r-title">People</div>' +
-      '<div class="r-meta">'+browsablePeople().filter(function(k){ return k !== 'self'; }).length+' on Hypernet</div></div></div>' +
-    '<div class="row" data-act="shelfall" data-id="callouts" role="button">'+'<span class="r-ic">'+ic('callout')+'</span><div class="r-main"><div class="r-title">Call outs</div>' +
-      '<div class="r-meta">'+shelfItems('callouts').length+' open</div></div></div>';
+  return rec + '<div class="band">Explore</div>' + EXPLOREKINDS.map(function(k){
+    return '<div class="row" data-act="explorekind" data-id="'+k[0]+'" role="button"><span class="r-ic">'+ic(k[2])+'</span><div class="r-main"><div class="r-title">'+esc(k[1])+'</div>' +
+      '<div class="r-meta">'+esc(folderSub({ kind:'explore', id:k[0] }))+'</div></div></div>';
+  }).join('');
 }
 function renderList(){
   if (L.phone && S.phoneSearch && S.folder.kind !== 'search'){ $('listbody').innerHTML = browseHTML(); S.rows = []; return; }
@@ -1716,6 +1823,7 @@ function renderList(){
     var lb0 = $('listbody'), top0 = lb0.scrollTop;
     lb0.innerHTML = horizonHTML(S.folder.id, true); lb0.scrollTop = top0; return;
   }
+  if (S.folder.kind === 'home'){ renderHome(); return; }
   if (isShelfFeed()){ renderShelves(); return; }
   var items = sortItems(folderItems());
   var g = groupItems(items), h = '', rows = [];
@@ -1737,9 +1845,7 @@ function renderList(){
       : k === 'hosting' ? 'You are not hosting anything yet.<br><button class="btn primary" data-act="new-event">'+ic('plus')+'New event</button>'
       : 'Nothing here yet.') + '</div>';
   } else {
-    var feed = S.folder.kind === 'home' && viewOf() === 'feed';
-    /* desktop Home opens with what Hypernet is, like the phone */
-    if (feed) h += '<div class="greet deskgreet"><h2>'+esc(greeting())+'</h2>' + (S.loggedIn ? '' : '<p>Burns, builds and the people who make them.</p>') + '</div>';
+    var feed = isOverview();
     g.order.forEach(function(b){
       var its = g.groups[b], first = its[0] || {};
       /* a section's count is the whole section, as on its Show all page */
@@ -1753,6 +1859,9 @@ function renderList(){
       its.forEach(function(it){ h += rowHTML(it); if (it.type !== 'more') rows.push(it); });
     });
   }
+  /* an Explore kind says in a line what it is */
+  var kd = S.folder.kind === 'explore' && KINDDESC[S.folder.id];
+  if (kd && items.length) h = '<p class="kdesc">' + esc(kd) + '</p>' + h;
   /* on a phone Sort sits above the list it sorts, so FEED / LIST / CALENDAR never move */
   if (L.phone && viewOf() === 'list' && items.length && items.every(function(it){ return it.type === 'event'; }) && S.folder.kind !== 'search')
     h = '<label class="sortrow">Sort <select data-act="sort" aria-label="Sort">' +
@@ -1967,7 +2076,7 @@ function takePartHTML(r){
 /* an event's call outs: its own, and any posted for it; its host can post one from here */
 function calloutsHTML(ids, evId){
   var cs = (ids || []).map(calloutOf).filter(Boolean);
-  CALLOUTS.forEach(function(c){ if (evId && c.eventId === evId && cs.indexOf(c) < 0) cs.push(c); });
+  CALLOUTS.forEach(function(c){ if (evId && calloutEventId(c) === evId && cs.indexOf(c) < 0) cs.push(c); });
   cs = cs.filter(function(c){ return !c.closed; });
   var add = evId && isMine(evId) && !isPast(lastDay(EVENTS[evId])) ? '<button class="chip" data-act="newcalloutfor" data-id="'+evId+'">'+ic('plus',16)+'New call out</button>' : '';
   return cs.length || add ? '<div class="chips">' + cs.map(function(c){
@@ -2321,7 +2430,7 @@ function isOwnCallout(c){ return !!c && S.loggedIn && !!c.hostAcct && c.hostAcct
 /* a call out: what is wanted, by whom, for which event; you answer it once, and its author edits or closes it */
 function calloutHTML(id){
   var c = calloutOf(id), mine = isOwnCallout(c), ans = S.loggedIn && ANSWERED[id] && CHATS[ANSWERED[id]] ? ANSWERED[id] : null;
-  var ev = c.eventId && EVENTS[c.eventId];
+  var ev = EVENTS[calloutEventId(c)];
   var h = '<div class="page"><div class="phead2"><span class="r-ic" style="width:64px;height:64px;flex-basis:64px">'+ic('callout',30)+'</span>' +
     '<div style="flex:1;min-width:0"><div class="psub" style="margin:0 0 4px">Call out · Looking for'+(c.closed ? ' · Closed' : '')+'</div><div class="pname">'+esc(c.title)+'</div>' +
     '<div class="psub">'+esc(mine ? 'You' : c.hostName)+' · '+(c.closed ? 'closed' : 'open until '+fmtDate(c.expiresAt))+'</div></div></div>';
@@ -2392,9 +2501,9 @@ function renderDetail(){
 </script>
 <script>
 /* =========================================================================
-   7b. THE PHONE FEED — Spotify's structure in a 2000-era skin
-   A greeting, filter chips, quick tiles for the things you keep, then
-   sideways shelves of big squares. Event squares are the album art;
+   7b. EXPLORE'S OVERVIEW — Spotify's structure in a 2000-era skin
+   On a phone, sideways shelves of big squares (a desktop shows the same
+   sections as bands of rows). Event squares are the album art;
    horizons are playlists with a cover built from their events.
    ========================================================================= */
 /* an event square at any pixel size */
@@ -2467,8 +2576,8 @@ function popularHorizons(){
     return (nb - na) || (hzFollowers(b) - hzFollowers(a));
   });
 }
-/* the sections of Home, in order. Each one also backs a "Show all" list. */
-var HOMESECTIONS = ['week','people','soon','announced','yourhz','horizons','callouts'];
+/* the sections of Explore's overview, in order. Each one also backs a "Show all" list. */
+var HOMESECTIONS = ['week','followed','soon','announced','yourhz','horizons','callouts'];
 function shelfItems(id){
   var ev = function(list){ return list.map(function(e){ return { type:'event', id:e.id }; }); };
   var up = feedEvents().filter(upcoming);
@@ -2477,12 +2586,8 @@ function shelfItems(id){
   if (id === 'announced') return ev(Object.keys(NEXTED).map(function(k){ return EVENTS[NEXTED[k]]; }).filter(Boolean).sort(byDate));
   if (id === 'horizons') return popularHorizons().filter(function(k){ return !(S.loggedIn && (HZFOLLOW[k] || MYHORIZONS.indexOf(k) >= 0)); }).map(function(k){ return { type:'horizon', id:k }; });
   if (id === 'yourhz') return !S.loggedIn ? [] : MYHORIZONS.slice().reverse().concat(Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k] && MYHORIZONS.indexOf(k) < 0; })).filter(function(k){ return HORIZONS[k]; }).map(function(k){ return { type:'horizon', id:k }; });
-  if (id === 'callouts'){
-    var open = CALLOUTS.filter(function(c){ return !c.closed; });
-    var mine = S.loggedIn ? open.filter(function(c){ return c.hostId && PFOLLOW[c.hostId]; }) : [];
-    return mine.concat(open.filter(function(c){ return mine.indexOf(c) < 0; })).map(function(c){ return { type:'callout', id:c.id }; });
-  }
-  if (id === 'people'){
+  if (id === 'callouts') return openCallouts().map(function(c){ return { type:'callout', id:c.id }; });
+  if (id === 'followed'){
     if (!S.loggedIn) return [];
     return ev(up.filter(function(e){ var hp = hostPersonOf(e); return hp && hp.id !== 'self' && PFOLLOW[hp.id]; }));
   }
@@ -2491,9 +2596,9 @@ function shelfItems(id){
 function shelfTitle(id){
   return { week:'This week', soon:'Coming up', announced:'Announced burns', yourhz:'Your Event Horizons', horizons:'Event Horizons worth following',
            callouts:'Call outs',
-           people:'From people you follow' }[id] || '';
+           followed:'From people you follow' }[id] || '';
 }
-/* each event shows up once on Home, in the first section that has it */
+/* each event shows up once in the overview, in the first section that has it */
 function homeSections(){
   var seen = {};
   return HOMESECTIONS.map(function(id){
@@ -2511,7 +2616,6 @@ function greeting(){
 }
 function shelvesHTML(){
   var h = '<div class="shelves">';
-  h += '<div class="greet"><h2>'+esc(greeting())+'</h2>' + (S.loggedIn ? '' : '<p>Burns, builds and the people who make them.</p>') + '</div>';
   homeSections().forEach(function(sec){
     var more = sec.items.length > 2;
     h += '<section class="shelf"><div class="shh"><h3>'+esc(sec.title)+'</h3>' +
@@ -2528,7 +2632,7 @@ function renderShelves(){
   lb.scrollTop = top;
   S.rows = [];
 }
-function isShelfFeed(){ return L.phone && S.folder.kind === 'home' && viewOf() === 'feed'; }
+function isShelfFeed(){ return L.phone && isOverview(); }
 
 /* =========================================================================
    8. CALENDAR — a view of the destination you are in
@@ -2618,10 +2722,7 @@ function renderCalendar(){
 /* =========================================================================
    9. THE RIGHT PANE — chats, and nothing else
    ========================================================================= */
-function chatAv(c){
-  if (c.kind === 'dm') return avHTML(c.memberIds[0], 'a40');
-  return '<span class="av a40 gav" aria-hidden="true">'+esc(initials(c.name))+'</span>';
-}
+function chatAv(c){ return avHTML(c.memberIds[0], 'a40'); }
 function lastMsg(c){ return c.messages[c.messages.length-1]; }
 /* when a message was sent: new ones carry a timestamp; the fixtures' "09:31" and "yesterday" are read on a
    morning clock that ends just before you arrived, so anything you send is newer */
@@ -2644,7 +2745,7 @@ function chatList(){
 }
 function msgPreview(m, c){
   if (!m) return 'No messages yet';
-  var who = m.from === 'self' ? 'You: ' : (c.kind === 'group' && m.from !== 'sys' ? person(m.from).displayName.split(' ')[0] + ': ' : '');
+  var who = m.from === 'self' ? 'You: ' : '';
   if (m.from === 'sys') return m.text;
   if (m.card) return who + 'shared ' + (EVENTS[m.card] ? EVENTS[m.card].title : 'an event');
   if (m.hzcard) return who + 'shared ' + (HORIZONS[m.hzcard] ? HORIZONS[m.hzcard].name : 'a horizon');
@@ -2676,8 +2777,7 @@ function convHTML(cid){
   var sub = chatSub(c);
   var h = '<div class="phead"><button class="ib" data-act="chatback" aria-label="All chats">'+ic('back')+'</button>' +
     '<div class="ptitle">'+esc(c.name)+'<small>'+esc(sub)+'</small></div>' +
-    (c.kind === 'group' ? '' : '<button class="ib" data-act="open" data-type="person" data-id="'+c.memberIds[0]+'" aria-label="Profile">'+ic('user')+'</button>') +
-    '<button class="ib" data-act="chatinfo" data-id="'+cid+'" aria-label="Chat details" aria-haspopup="dialog">'+ic('dots')+'</button></div>';
+    '<button class="ib" data-act="open" data-type="person" data-id="'+c.memberIds[0]+'" aria-label="Profile">'+ic('user')+'</button></div>';
   h += '<div class="conv"><div class="msgs" id="msgs">' + (c.messages.length ? c.messages.map(function(m){
     if (m.from === 'sys') return '<div class="msg sys">'+esc(m.text)+'</div>';
     var me = m.from === 'self';
@@ -2699,14 +2799,14 @@ function convHTML(cid){
     }
     return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+'</div></div>';
   }).join('') : '<div class="msg sys">No messages yet</div>') + '</div>';
-  h += '<div class="composer"><input type="text" id="chatbox" value="'+esc(CHATDRAFT[cid] || '')+'" placeholder="Message '+esc(c.kind === 'dm' ? c.name.split(' ')[0] : c.name)+'" autocomplete="off" aria-label="Message">' +
+  h += '<div class="composer"><input type="text" id="chatbox" value="'+esc(CHATDRAFT[cid] || '')+'" placeholder="Message '+esc(c.name.split(' ')[0])+'" autocomplete="off" aria-label="Message">' +
        '<button class="btn primary" data-act="sendchat">Send</button></div></div>';
   return h;
 }
 /* on a phone a conversation is a screen pushed onto whatever tab you are in; on a desktop it sits in the dock */
 function phoneConv(){ var t = S.stack[S.stack.length-1]; return L.phone && t && t.type === 'chat' && CHATS[t.id] ? t.id : null; }
 function activeChat(){ return L.phone ? phoneConv() : (S.chatOpen && CHATS[S.chatOpen] ? S.chatOpen : null); }
-function chatSub(c){ return c.kind === 'dm' ? (PRESENCE[c.memberIds[0]] || 'offline') : (c.memberIds.length + 1) + ' members'; }
+function chatSub(c){ return PRESENCE[c.memberIds[0]] || 'offline'; }
 function renderChats(){
   var el = $('chats');
   var visible = L.phone ? L.scr === 'chats' : L.right;
@@ -2727,13 +2827,401 @@ function renderChats(){
 </script>
 <script>
 /* =========================================================================
+   9b. ACTIVITY — what people on the network did
+   Home is built from these rows, newest first. One row per thing someone did,
+   shaped like the Postgres table it becomes when Neon is wired:
+     activity(id text pk, actor text, verb text, obj_type text, obj_id text, ts timestamptz, extra jsonb)
+   verbs: going · interested · promoted (obj event) · created_event (event)
+          published_horizon · followed_horizon · added_to_horizon (horizon; extra.eventIds)
+          created_horizon (a private horizon: only its author ever sees the row)
+          posted_callout (callout) · followed_person (person)
+   ========================================================================= */
+/* the app's clock: the fixtures' "now" is noon on the demo's today, and it runs on from there */
+var ACTBOOT = Date.now();
+var FIXNOW = (function(){ var d = dOf(TODAY_ISO); d.setHours(12, 0, 0, 0); return d.getTime(); })();
+function appNow(){ return FIXNOW + (Date.now() - ACTBOOT); }
+function tsIso(ms){ var d = new Date(ms); return isoOf(d) + 'T' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+function isoMs(s){ var m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/); return m ? new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).getTime() : 0; }
+/* a row's time on the app clock. Rows made here also carry the real moment (at), so "5m" stays true across a reload */
+function actTime(a){ return a.at ? FIXNOW + (a.at - ACTBOOT) : isoMs(a.ts); }
+
+/* -------------------------------------------------------------------------
+   ACTIVITY SEED (fixture) — generated from the people, events, horizons and call outs in
+   _shared/hypernet-data.js, and from the real events once they have loaded. Deterministic: the
+   same data always gives the same rows. Three weeks before the demo's today, denser toward now,
+   a few in the last hours. When Neon is wired this block goes; the rows come from
+     select * from activity where ts > now() - interval '21 days' order by ts desc
+   ------------------------------------------------------------------------- */
+var ACTWINDOW = 21;
+/* who follows whom: the fixture friendships both ways, plus a few one-way follows.
+   p-michal's are the demo account's (see demoAcct), so his rows agree with what the demo follows. */
+var NETFOLLOWS = (function(){
+  var g = {};
+  var add = function(a, b){ if (a === b || !/^p-/.test(a) || !/^p-/.test(b)) return; g[a] = g[a] || []; if (g[a].indexOf(b) < 0) g[a].push(b); };
+  (H.friendships || []).forEach(function(f){ add(f[0], f[1]); add(f[1], f[0]); });
+  [['p-anna','p-mira'], ['p-rio','p-mira'], ['p-kai','p-jon'], ['p-sasha','p-kai'], ['p-sasha','p-jon'], ['p-jon','p-kai'],
+   ['p-michal','p-anna'], ['p-michal','p-rio'], ['p-michal','p-kai'], ['p-michal','p-sasha']].forEach(function(x){ add(x[0], x[1]); });
+  return g;
+})();
+/* the fixture call outs name no event; these are the ones they are for when no event record lists them */
+var CALLOUTFOR = { 'co-sound':'evt-deep-listening', 'co-kitchen':'evt-fill-7' };
+function calloutEventId(c){
+  if (!c) return null;
+  if (c.eventId) return EVENTS[c.eventId] ? c.eventId : null;
+  var hit = Object.keys(REC).filter(function(k){ return EVENTS[k] && (REC[k].calloutIds || []).indexOf(c.id) >= 0 && !isPast(lastDay(EVENTS[k])); })[0];
+  return hit || (EVENTS[CALLOUTFOR[c.id]] ? CALLOUTFOR[c.id] : null);
+}
+/* a number in 0..1 that is always the same for the same key */
+function mix32(n){ n = Math.imul(n ^ (n >>> 16), 0x85ebca6b); n = Math.imul(n ^ (n >>> 13), 0xc2b2ae35); return (n ^ (n >>> 16)) >>> 0; }
+function seedU(key){ return mix32(hashId(key)) / 4294967296; }
+/* when someone did something: `min`..`max` days back (denser toward now unless flat), 07:00–22:00, never after now */
+function seedTs(key, max, min, flat){
+  max = max == null ? ACTWINDOW - 1 : max; min = min || 0;
+  var u = seedU(key), d = min + Math.floor((flat ? u : Math.pow(u, 1.35)) * (max - min + 1));
+  var day = new Date(FIXNOW); day.setHours(0, 0, 0, 0); day.setDate(day.getDate() - d);
+  var ms = day.getTime() + (7 * 60 + Math.floor(seedU(key + '#m') * 15 * 60)) * 60000;
+  if (ms > FIXNOW - 20 * 60000) ms = FIXNOW - (20 + Math.floor(seedU(key + '#r') * 280)) * 60000;   /* today: some time this morning */
+  return ms;
+}
+/* the person behind an event, whoever is looking (hostPersonOf answers "you" to its host) */
+function hostPid(e){
+  if (e.hostAcct) return acctPid(e.hostAcct);
+  return Object.keys(PEOPLE).filter(function(k){ return k !== 'self' && !/^u-/.test(k) && PEOPLE[k].displayName === e.hostName; })[0] || null;
+}
+var ACTSEED = null;
+function seedActivity(){
+  var key = Object.keys(EVENTS).length + ':' + Object.keys(HORIZONS).length + ':' + CALLOUTS.length;
+  if (ACTSEED && ACTSEED.key === key) return ACTSEED.rows;
+  var rows = [], lo = FIXNOW - ACTWINDOW * 86400000, byKey = {};
+  var row = function(actor, verb, objType, objId, ms, extra){
+    if (!PEOPLE[actor] || actor === 'self' || /^u-/.test(actor) || ms < lo || ms > FIXNOW) return null;
+    var r = { id:'a-' + verb + '-' + actor + '-' + objId, actor:actor, verb:verb, objType:objType, objId:objId, ts:tsIso(ms), extra:extra || null };
+    rows.push(r); byKey[verb + '|' + actor + '|' + objId] = r; return r;
+  };
+  /* after something that came first (an RSVP after the event was made): anywhere between then and now */
+  var after = function(key, from){ return from > lo ? from + (.05 + .95 * seedU(key + '#a')) * (FIXNOW - 30 * 60000 - from) : seedTs(key); };
+  var up = allEvents().filter(function(e){ return !NEXTED[e.id] && !/^evt-new-/.test(e.id) && !isPast(lastDay(e)); }).sort(byDate);
+  up.forEach(function(e){
+    var host = hostPid(e), made = host ? seedTs('made|' + e.id, 60, 2, true) : lo;
+    if (host) row(host, 'created_event', 'event', e.id, made);
+    var going = baseAttendees(e.id).filter(function(p){ return p !== host; }).slice(0, 3);
+    going.forEach(function(p){ row(p, 'going', 'event', e.id, after('going|' + p + '|' + e.id, made)); });
+    var others = CREW.filter(function(p){ return going.indexOf(p) < 0 && p !== host; });
+    if (others.length && seedU('int|' + e.id) < .6){ var ip = others[mix32(hashId(e.id)) % others.length]; row(ip, 'interested', 'event', e.id, after('int|' + ip + '|' + e.id, made)); }
+    if (going.length && (PROMOCOUNT[e.id] || 0) >= 12) row(going[0], 'promoted', 'event', e.id, after('promo|' + e.id, made));
+  });
+  Object.keys(HORIZONS).forEach(function(k){
+    var hz = HORIZONS[k], own = hz.ownerId, ids = hz.eventIds.filter(function(id){ return EVENTS[id]; });
+    if (hz.isPublished && own && !hz.ownerAcct){
+      var pub = seedTs('pub|' + k, 30, 0, true);
+      row(own, 'published_horizon', 'horizon', k, pub, { count:ids.length });
+      /* and it keeps being filled, a couple of events at a time */
+      if (ids.length >= 3) row(own, 'added_to_horizon', 'horizon', k, after('add|' + k, pub), { eventIds:ids.slice(-2) });
+    }
+    /* people follow the horizons they like (Michal's follows are the demo account's own) */
+    if (hz.isPublished && !hz.ownerAcct) CREW.forEach(function(p){
+      if (p !== own && seedU('fh|' + p + '|' + k) < .3) row(p, 'followed_horizon', 'horizon', k, seedTs('fh|' + p + '|' + k));
+    });
+  });
+  CALLOUTS.forEach(function(c){ if (c.hostId && !c.hostAcct && !c.closed) row(c.hostId, 'posted_callout', 'callout', c.id, seedTs('co|' + c.id, 9)); });
+  Object.keys(NETFOLLOWS).forEach(function(a){ NETFOLLOWS[a].forEach(function(b){
+    if (seedU('fp|' + a + '|' + b) < .55) row(a, 'followed_person', 'person', b, seedTs('fp|' + a + '|' + b));
+  }); });
+  /* the last hours: the first call out, the newest horizon, and someone going to the next thing on */
+  var fresh = function(r, mins){ if (r){ r.ts = tsIso(FIXNOW - mins * 60000); } };
+  var co0 = CALLOUTS.filter(function(c){ return c.hostId && !c.hostAcct && !c.closed; })[0];
+  if (co0) fresh(byKey['posted_callout|' + co0.hostId + '|' + co0.id] || row(co0.hostId, 'posted_callout', 'callout', co0.id, FIXNOW - 60000), 95);
+  var hz0 = Object.keys(HORIZONS).filter(function(k){ var h = HORIZONS[k]; return h.isPublished && h.ownerId && !h.ownerAcct && PEOPLE[h.ownerId]; }).pop();
+  if (hz0) fresh(byKey['published_horizon|' + HORIZONS[hz0].ownerId + '|' + hz0], 170);
+  var next = up.filter(function(e){ return dayDiff(e.date) >= 1 && baseAttendees(e.id).length; })[0];
+  if (next){ var p0 = baseAttendees(next.id)[0]; fresh(byKey['going|' + p0 + '|' + next.id] || row(p0, 'going', 'event', next.id, FIXNOW - 60000), 38); }
+  rows.sort(function(a, b){ return isoMs(b.ts) - isoMs(a.ts); });
+  ACTSEED = { key:key, rows:rows };
+  return rows;
+}
+
+/* ---- what you do here: rows the app adds, kept in this browser until there is a database ---- */
+var LIVEACT = [];
+var ACTSTORE = 'hypernet-feed:activity';
+function loadLiveAct(){ try { var v = JSON.parse(localStorage.getItem(ACTSTORE) || '[]'); LIVEACT = Array.isArray(v) ? v : []; } catch(e){ LIVEACT = []; } }
+function saveLiveAct(){ try { localStorage.setItem(ACTSTORE, JSON.stringify(LIVEACT.slice(0, 400))); } catch(e){} }
+loadLiveAct();
+function myActor(){ return S.loggedIn && S.acct ? acctPid(S.acct) : null; }
+function actIsMe(a){ return !!a && a.actor === myActor(); }
+/* doing the same thing again moves it to the top; adding events to a horizon gathers into one row for an hour */
+function logAct(verb, objType, objId, extra){
+  var me = myActor(); if (!me) return;
+  var now = Date.now();
+  if (verb === 'added_to_horizon'){
+    var prev = LIVEACT.filter(function(a){ return a.actor === me && a.verb === verb && a.objId === objId && now - (a.at || 0) < 3600000; })[0];
+    if (prev){
+      (extra.eventIds || []).forEach(function(id){ if (prev.extra.eventIds.indexOf(id) < 0) prev.extra.eventIds.push(id); });
+      LIVEACT.splice(LIVEACT.indexOf(prev), 1); prev.at = now; prev.ts = tsIso(appNow()); LIVEACT.unshift(prev); saveLiveAct(); return;
+    }
+  }
+  LIVEACT = LIVEACT.filter(function(a){ return !(a.actor === me && a.verb === verb && a.objId === objId); });
+  LIVEACT.unshift({ id:'a-' + now.toString(36) + '-' + verb, actor:me, verb:verb, objType:objType, objId:objId, ts:tsIso(appNow()), at:now, extra:extra || null });
+  saveLiveAct();
+}
+function unlogAct(verb, objId, evId){
+  var me = myActor(); if (!me) return;
+  LIVEACT = LIVEACT.filter(function(a){
+    if (a.actor !== me || a.verb !== verb || a.objId !== objId) return true;
+    if (!evId) return false;
+    a.extra.eventIds = a.extra.eventIds.filter(function(x){ return x !== evId; });
+    return a.extra.eventIds.length > 0;
+  });
+  saveLiveAct();
+}
+/* the events you publish are noticed when they appear, wherever they were made */
+function noticeNewEvents(){
+  var me = myActor(); if (!me) return;
+  MYEVENTS.forEach(function(id){
+    if (/^evt-new-/.test(id) && EVENTS[id] && !LIVEACT.some(function(a){ return a.verb === 'created_event' && a.objId === id; })) logAct('created_event', 'event', id);
+  });
+}
+/* a row is shown while what it points at is still there, and visible to the one looking.
+   Your own rows say what is true now: un-going, un-following or unpublishing takes them off Home. */
+function actVisible(a){
+  var id = a.objId, mine = actIsMe(a), hz = HORIZONS[id];
+  if (!mine && !PEOPLE[a.actor]) return false;
+  if (a.objType === 'event' && !EVENTS[id]) return false;
+  if (a.objType === 'horizon' && !(hz && (hz.isPublished || (mine && hzOwnedByMe(id))))) return false;
+  if (a.objType === 'callout' && !(calloutOf(id) && !calloutOf(id).closed)) return false;
+  if (a.objType === 'person' && !PEOPLE[id]) return false;
+  if (a.verb === 'added_to_horizon' && !(a.extra && a.extra.eventIds || []).some(function(x){ return EVENTS[x]; })) return false;
+  if (!mine) return a.verb !== 'created_horizon';
+  if (a.verb === 'going' || a.verb === 'interested') return RSVP[id] === a.verb;
+  if (a.verb === 'promoted') return !!PROMOTED[id];
+  if (a.verb === 'followed_horizon') return !!HZFOLLOW[id];
+  if (a.verb === 'followed_person') return !!PFOLLOW[id];
+  if (a.verb === 'created_horizon') return !hz.isPublished;
+  return true;
+}
+function activityRows(){ return LIVEACT.concat(seedActivity()).filter(actVisible); }
+
+/* =========================================================================
+   9c. HOME — the network's activity, newest first
+   Open call outs across the top, then day bands (Today, Yesterday, This week,
+   Earlier). Each entry says who did what, when, and carries the thing itself
+   so you can act on it right there. Every so often: people your friends follow.
+   ========================================================================= */
+function followedPeople(){ return Object.keys(PFOLLOW).filter(function(k){ return PFOLLOW[k] && PEOPLE[k] && k !== 'self'; }); }
+/* whose rows Home shows: yours and the people you follow; logged out, or following nobody yet, the whole network */
+function homeScope(){ var fol = S.loggedIn ? followedPeople() : []; return { all:!fol.length, fol:fol }; }
+function dayBand(ms){
+  var d0 = new Date(appNow()); d0.setHours(0, 0, 0, 0);
+  var t = new Date(ms); t.setHours(0, 0, 0, 0);
+  var dd = Math.round((d0 - t) / 86400000);
+  return dd <= 0 ? 'Today' : dd === 1 ? 'Yesterday' : dd <= 6 ? 'This week' : 'Earlier';
+}
+function agoLabel(ms){
+  var m = Math.floor(Math.max(0, appNow() - ms) / 60000), b = dayBand(ms), d = new Date(ms);
+  if (m < 1) return 'now';
+  if (m < 60) return m + 'm';
+  if (b === 'Today') return Math.floor(m / 60) + 'h';
+  if (b === 'Yesterday') return 'yesterday';
+  if (b === 'This week') return DAY[d.getDay()];
+  return d.getDate() + ' ' + MON[d.getMonth()];
+}
+/* rows that say the same thing in the same day band are one entry: many people and one event or horizon
+   (going, interested, promoted, followed); one person following several people; one person filling one horizon */
+var MANYACTORS = { going:1, interested:1, promoted:1, followed_horizon:1 };
+function homeEntries(){
+  var sc = homeScope();
+  var rows = activityRows().filter(function(a){ return actIsMe(a) || sc.all || sc.fol.indexOf(a.actor) >= 0; })
+    .map(function(a){ return { a:a, ms:actTime(a) }; }).sort(function(x, y){ return y.ms - x.ms; });
+  var out = [], idx = {};
+  rows.forEach(function(r){
+    var a = r.a, band = dayBand(r.ms), ids = (a.extra && a.extra.eventIds) || [];
+    var k = MANYACTORS[a.verb] ? band + '|' + a.verb + '|' + a.objId : a.verb === 'followed_person' ? band + '|fp|' + a.actor
+          : a.verb === 'added_to_horizon' ? band + '|add|' + a.actor + '|' + a.objId : null;
+    var e = k && idx[k];
+    if (e){
+      if (e.actors.indexOf(a.actor) < 0) e.actors.push(a.actor);
+      if (e.objs.indexOf(a.objId) < 0) e.objs.push(a.objId);
+      ids.forEach(function(x){ if (EVENTS[x] && e.eventIds.indexOf(x) < 0) e.eventIds.push(x); });
+      return;
+    }
+    e = { band:band, ms:r.ms, verb:a.verb, objType:a.objType, objId:a.objId, actors:[a.actor], objs:[a.objId], eventIds:ids.filter(function(x){ return EVENTS[x]; }) };
+    if (k) idx[k] = e;
+    out.push(e);
+  });
+  return out;
+}
+/* what an entry opens, in feed order: Home's list for the reading pane and the arrow keys */
+function homeItems(){
+  var seen = {}, out = [];
+  var push = function(t, id){ var k = t + ':' + id; if (!seen[k]){ seen[k] = 1; out.push({ type:t, id:id }); } };
+  homeEntries().forEach(function(e){
+    if (e.verb === 'added_to_horizon') e.eventIds.slice(0, 2).forEach(function(id){ push('event', id); });
+    else e.objs.slice(0, 3).forEach(function(id){ push(e.objType, id); });
+  });
+  return out;
+}
+/* the call outs still open among the people Home follows (everyone's, logged out), newest first; never your own */
+function homeCallouts(){
+  var sc = homeScope(), posted = {};
+  activityRows().forEach(function(a){ if (a.verb === 'posted_callout') posted[a.objId] = Math.max(posted[a.objId] || 0, actTime(a)); });
+  return CALLOUTS.filter(function(c){ return !c.closed && !isOwnCallout(c) && c.expiresAt >= TODAY_ISO && (sc.all || (!!c.hostId && sc.fol.indexOf(c.hostId) >= 0)); })
+    .sort(function(a, b){ return (posted[b.id] || 0) - (posted[a.id] || 0); }).map(function(c){ return c.id; });
+}
+/* the people the people you follow follow, and you don't yet: how you meet friends of friends */
+function fofPeople(){
+  var me = myActor(), fol = followedPeople(), via = {};
+  fol.forEach(function(f){ (NETFOLLOWS[f] || []).forEach(function(x){
+    if (x !== me && !PFOLLOW[x] && PEOPLE[x] && fol.indexOf(x) < 0) (via[x] = via[x] || []).push(f);
+  }); });
+  return Object.keys(via).sort(function(a, b){ return via[b].length - via[a].length || (person(a).displayName < person(b).displayName ? -1 : 1); })
+    .map(function(x){ return { id:x, via:via[x] }; });
+}
+/* logged out, or following nobody: the people most followed on the network */
+function popularPeople(){
+  var me = myActor(), by = {};
+  Object.keys(NETFOLLOWS).forEach(function(a){ NETFOLLOWS[a].forEach(function(b){ (by[b] = by[b] || []).push(a); }); });
+  return CREW.filter(function(x){ return x !== me && !(S.loggedIn && PFOLLOW[x]); })
+    .sort(function(a, b){ return (by[b] || []).length - (by[a] || []).length; }).map(function(x){ return { id:x, via:by[x] || [], popular:true }; });
+}
+function whoName(pid, full){ if (pid === myActor() || pid === 'self') return 'You'; var n = person(pid).displayName || ''; return full ? n : n.split(' ')[0]; }
+function whoLink(pid, full){
+  var me = pid === myActor();
+  return '<b class="fwho" data-act="row" data-type="person" data-id="'+(me ? 'self' : pid)+'" role="link">'+esc(whoName(pid, full))+'</b>';
+}
+/* one name in full; two or three by first name; more as "Anna, Rio and 2 others". You come first. */
+function namesHTML(ids, link){
+  var me = myActor(), f = function(x){ return link ? whoLink(x, ids.length === 1) : esc(whoName(x, ids.length === 1)); };
+  ids = ids.slice().sort(function(a, b){ return (b === me) - (a === me); });
+  if (ids.length === 1) return f(ids[0]);
+  if (ids.length <= 3) return ids.slice(0, -1).map(f).join(', ') + ' and ' + f(ids[ids.length - 1]);
+  return f(ids[0]) + ', ' + f(ids[1]) + ' and ' + (ids.length - 2) + ' others';
+}
+function hzLink(hzId){ return '<b class="fwho" data-act="row" data-type="horizon" data-id="'+hzId+'" role="link">'+esc(HORIZONS[hzId].name)+'</b>'; }
+function actSentence(e){
+  var who = namesHTML(e.actors, true), be = e.actors.length > 1 || e.actors[0] === myActor() ? ' are ' : ' is ';
+  switch (e.verb){
+    case 'going':             return who + be + 'going';
+    case 'interested':        return who + be + 'interested';
+    case 'promoted':          return who + ' promoted an event';
+    case 'created_event':     return who + ' created an event';
+    case 'published_horizon': return who + ' published an Event Horizon';
+    case 'created_horizon':   return who + ' made a private Event Horizon';
+    case 'followed_horizon':  return who + ' followed an Event Horizon';
+    case 'added_to_horizon':  return who + ' added ' + plural(e.eventIds.length, 'event') + ' to ' + hzLink(e.objId);
+    case 'followed_person':   return who + ' followed ' + namesHTML(e.objs, true);
+  }
+  return who;
+}
+function selCls(type, id){ return isSel({ type:type, id:id }) ? ' sel fsel' : ''; }
+function fbtn(act, id, on, label, onLabel, icon, onIcon, primary){
+  return '<button class="btn fvb'+(on ? ' on' : primary ? ' primary' : '')+'" data-act="'+act+'" data-id="'+id+'" aria-pressed="'+!!on+'">'+ic(on ? onIcon : icon, 16)+esc(on ? onLabel : label)+'</button>';
+}
+/* an event as Home carries it: square, title, when, where — and Interested / Going right there */
+function fEventCard(evId, small){
+  var e = EVENTS[evId], past = isPast(lastDay(e)), st = S.loggedIn ? RSVP[evId] : '';
+  var verbs = past ? '' : isMine(evId) ? '<div class="fverbs"><span class="pill host">'+ic('star',11)+'<span>Hosting</span></span></div>'
+    : '<div class="fverbs">' + fbtn('v-interested', evId, st === 'interested', 'Interested', 'Interested', 'heart', 'heart') +
+      fbtn('v-going', evId, st === 'going', 'Going', 'Going', 'check', 'check') + '</div>';
+  return '<div class="fcard fev'+(small ? ' small' : '')+selCls('event', evId)+'" data-act="row" data-type="event" data-id="'+evId+'" role="button" tabindex="-1">' + sqPx(evId, small ? 48 : 64) +
+    '<div class="fcm"><div class="fct">'+esc(e.title)+'</div><div class="fcs">'+esc([relDay(e), whereOf(e)].filter(Boolean).join(' · '))+'</div></div>' + verbs + '</div>';
+}
+function fHorizonCard(hzId){
+  var hz = HORIZONS[hzId], mine = hzOwnedByMe(hzId), fol = S.loggedIn && HZFOLLOW[hzId];
+  var meta = ['by ' + (mine ? 'you' : hz.ownerName), plural(hz.eventIds.filter(function(id){ return EVENTS[id]; }).length, 'event'), hzWhen(hzId)].filter(Boolean).join(' · ');
+  return '<div class="fcard fhz'+selCls('horizon', hzId)+'" data-act="row" data-type="horizon" data-id="'+hzId+'" role="button" tabindex="-1">' + hzMosaic(hzId, 64) +
+    '<div class="fcm"><div class="fck">Event Horizon'+(hz.isPublished ? '' : ' · Private')+'</div><div class="fct">'+esc(hz.name)+'</div><div class="fcs">'+esc(meta)+'</div></div>' +
+    (mine ? '' : '<div class="fverbs">' + fbtn('followhz', hzId, fol, 'Follow', 'Following', 'plus', 'check', true) + '</div>') + '</div>';
+}
+function fPersonCard(pid, sub){
+  var p = person(pid), fol = S.loggedIn && PFOLLOW[pid], me = pid === myActor() || pid === 'self';
+  return '<div class="fcard fp'+selCls('person', pid)+'" data-act="row" data-type="person" data-id="'+pid+'" role="button" tabindex="-1">' + avHTML(pid, 'a40') +
+    '<div class="fcm"><div class="fct">'+esc(p.displayName)+'</div><div class="fcs">'+esc(sub || ['@' + p.handle, p.bio].filter(Boolean).join(' · '))+'</div></div>' +
+    (me ? '' : fbtn('followp', pid, fol, 'Follow', 'Following', 'plus', 'check', true)) + '</div>';
+}
+/* a call out is someone standing up in the room: the one inverted thing on Home, the ask in big type */
+function fCalloutCard(coId, ms){
+  var c = calloutOf(coId), evId = calloutEventId(c), mine = isOwnCallout(c), ans = S.loggedIn && ANSWERED[coId] && CHATS[ANSWERED[coId]] ? ANSWERED[coId] : null;
+  var act = mine ? '' : ans ? '<button class="btn" data-act="chatsel" data-id="'+ans+'">'+ic('check',16)+'Answered · Open chat</button>'
+          : '<button class="btn primary" data-act="answercallout" data-id="'+coId+'">'+ic('chat',16)+'Answer</button>';
+  return '<div class="fco'+selCls('callout', coId)+'" data-act="row" data-type="callout" data-id="'+coId+'" role="button" tabindex="-1">' +
+    '<div class="fcok"><span class="fcotag">'+ic('callout',14)+'Call out</span>'+(ms ? '<time class="ftime">'+esc(agoLabel(ms))+'</time>' : '')+'</div>' +
+    '<div class="fcol">Looking for</div><div class="fcoa">'+esc(c.title)+'</div>' + (c.body ? '<p class="fcob">'+esc(c.body)+'</p>' : '') +
+    (evId ? '<div class="fcoe" data-act="row" data-type="event" data-id="'+evId+'" role="button">'+sqPx(evId, 36)+'<span><small>For</small>'+esc(EVENTS[evId].title)+'<small>'+esc(relDay(EVENTS[evId]) + ' · ' + whereOf(EVENTS[evId]))+'</small></span></div>' : '') +
+    '<div class="fcof"><span class="fcoby">' + (c.hostId && PEOPLE[c.hostId] ? avHTML(c.hostId) : '') + '<span>'+esc(mine ? 'You' : c.hostName)+'<small>open until '+esc(fmtShort(c.expiresAt))+'</small></span></span>' + act + '</div></div>';
+}
+function coTileHTML(coId){
+  var c = calloutOf(coId), evId = calloutEventId(c), ans = S.loggedIn && ANSWERED[coId] && CHATS[ANSWERED[coId]];
+  return '<div class="cotile'+selCls('callout', coId)+'" data-act="row" data-type="callout" data-id="'+coId+'" role="button" tabindex="-1">' +
+    '<span class="fcotag">'+ic('callout',14)+'Call out</span><b class="cta">'+esc(c.title)+'</b>' +
+    '<span class="ctw">'+esc(c.hostName + (evId ? ' · for ' + EVENTS[evId].title : ''))+'</span>' +
+    (ans ? '<span class="ctw">'+ic('check',12)+' Answered</span>' : '<button class="btn" data-act="answercallout" data-id="'+coId+'">'+ic('chat',16)+'Answer</button>') + '</div>';
+}
+function viaText(x){
+  var n = x.via.map(function(v){ return whoName(v); });
+  var names = n.length <= 2 ? n.join(' and ') : n[0] + ', ' + n[1] + ' and ' + (n.length - 2) + ' more';
+  if (x.popular) return n.length ? 'Followed by ' + names : person(x.id).bio || '';
+  return names + (n.length === 1 ? ' follows ' : ' follow ') + person(x.id).displayName.split(' ')[0];
+}
+function peopleCardHTML(list, title, note){
+  return '<section class="fitem ffof"><h3 class="ffh">'+esc(title)+'</h3>' + (note ? '<p class="ffn">'+esc(note)+'</p>' : '') +
+    list.map(function(x){ return fPersonCard(x.id, viaText(x)); }).join('') + '</section>';
+}
+var HZEXPLAINED = false;
+function feedEntryHTML(e){
+  var at = ' data-ts="'+tsIso(e.ms)+'" data-verb="'+e.verb+'"';
+  if (e.verb === 'posted_callout') return '<article class="fitem fitco"'+at+'>' + fCalloutCard(e.objId, e.ms) + '</article>';
+  var lead = e.actors.slice(0, 2), body = '';
+  if (e.objType === 'event') body = fEventCard(e.objId);
+  else if (e.verb === 'added_to_horizon'){
+    body = e.eventIds.slice(0, 2).map(function(id){ return fEventCard(id, true); }).join('');
+    if (e.eventIds.length > 2) body += '<button class="fmore" data-act="row" data-type="horizon" data-id="'+e.objId+'">and '+(e.eventIds.length - 2)+' more on '+esc(HORIZONS[e.objId].name)+'</button>';
+  } else if (e.objType === 'horizon'){
+    body = fHorizonCard(e.objId);
+    if (!HZEXPLAINED){ HZEXPLAINED = true; body = '<p class="fexpl">'+esc(KINDDESC.horizons)+'</p>' + body; }
+  } else if (e.objType === 'person') body = e.objs.slice(0, 3).map(function(pid){ return fPersonCard(pid); }).join('') +
+    (e.objs.length > 3 ? '<div class="fmore static">and '+(e.objs.length - 3)+' more</div>' : '');
+  return '<article class="fitem"'+at+'><div class="fav'+(lead.length > 1 ? ' two' : '')+'">' + lead.map(function(p){ return avHTML(p === myActor() ? 'self' : p, 'a32'); }).join('') + '</div>' +
+    '<div class="fbody"><div class="fline"><span class="fsent">'+actSentence(e)+'</span><time class="ftime">'+esc(agoLabel(e.ms))+'</time></div>' + body + '</div></article>';
+}
+function homeHTML(){
+  var sc = homeScope(), entries = homeEntries(), cos = homeCallouts(), h = '';
+  HZEXPLAINED = false;
+  h += '<div class="greet deskgreet fgreet"><h2>'+esc(greeting())+'</h2><p>'+esc(folderSub({ kind:'home' }))+'</p></div>';
+  /* following nobody: Home is the whole network until you follow someone */
+  if (S.loggedIn && sc.all) h += peopleCardHTML(popularPeople().slice(0, 3), 'Make Home yours',
+    'Home shows what the people you follow do. You don’t follow anyone yet, so here is everyone on Hypernet.');
+  if (cos.length) h += '<div class="band coband">Open call outs' + (S.loggedIn && !sc.all ? ' in your network' : '') + ' <span class="cnt">'+cos.length+'</span></div>' +
+    '<div class="srow costrip" data-shelf="callouts">' + cos.map(coTileHTML).join('') + '</div>';
+  /* every so often, the people your friends follow (logged out: the people most followed) */
+  var fof = !S.loggedIn ? popularPeople().slice(0, 3) : sc.all ? [] : fofPeople(), fi = 0, band = '';
+  entries.forEach(function(e, i){
+    if (e.band !== band){ band = e.band; h += '<div class="band">'+esc(band)+'</div>'; }
+    h += feedEntryHTML(e);
+    if ((i === 2 || (i > 2 && (i - 2) % 9 === 0)) && fi < fof.length){
+      var chunk = S.loggedIn ? fof.slice(fi, fi + 2) : fof; fi += chunk.length;
+      h += peopleCardHTML(chunk, S.loggedIn ? 'People your friends follow' : 'People to follow');
+    }
+  });
+  if (!entries.length) h += '<div class="empty">Nothing has happened in your network in the last three weeks.<br><button class="btn primary" data-act="explorekind" data-id="">'+ic('explore')+'Explore</button></div>';
+  else h += '<div class="fend">That’s the last three weeks. <button class="btn" data-act="explorekind" data-id="events">'+ic('cal')+'All events</button></div>';
+  return h;
+}
+function renderHome(){
+  var lb = $('listbody'), top = lb.scrollTop, cs0 = lb.querySelector('.costrip'), left = cs0 ? cs0.scrollLeft : 0;
+  lb.innerHTML = homeHTML();
+  var cs = lb.querySelector('.costrip'); if (cs && left) cs.scrollLeft = left;
+  lb.scrollTop = top;
+  S.rows = homeItems();
+}
+</script>
+<script>
+/* =========================================================================
    10. CHROME — toolbar, header, navigation, phone shell
    ========================================================================= */
 function navRow(f, icon, label, opts){
   opts = opts || {};
   var top = S.stack[S.stack.length-1];
   /* a horizon is a page, not a folder: its row is lit while its page is open */
-  var sel = opts.hz ? !!top && !S.autoSel && top.type === 'horizon' && top.id === f.id
+  var sel = opts.sel != null ? opts.sel : opts.hz ? !!top && !S.autoSel && top.type === 'horizon' && top.id === f.id
           : !opts.person && sameFolder(S.folder, f) && !(L.phone && S.folder.kind === 'you');
   var cnt = opts.count != null ? opts.count : '';
   return '<div class="nrow'+(sel?' sel':'')+(opts.unread?' unread':'')+(opts.cls?' '+opts.cls:'')+'" role="button" ' +
@@ -2758,12 +3246,15 @@ function renderNav(){
     h += '<div class="nrow sel search">'+ic('search')+'<span class="nlab">“'+esc(S.query)+'”</span>' +
          '<button class="nx" data-act="clearsearch" aria-label="Clear search">'+ic('close',14)+'</button></div>';
   }
-  /* unread only means something to someone with an account */
-  var homeUnread = S.loggedIn ? unreadCount(homeItems()) : 0;
-  h += navRow({kind:'home'}, ic('home'), 'Home', { count: homeUnread || '', unread: homeUnread > 0, cls:'dup-tab' });
-  h += navRow({kind:'horizons'}, ic('horizon'), 'Horizons', { cls:'dup-tab' });
-  h += navRow({kind:'people'}, ic('people'), 'People', { cls: S.loggedIn ? 'dup-tab' : '' });
+  /* Home, then Explore with its four kinds under it (a Show all list lights the kind it belongs to) */
+  var f = S.folder, shelfKind = f.kind === 'shelf' ? (EVENTSHELVES.test(f.id || '') ? 'events' : null) : null;
+  h += navRow({kind:'home'}, ic('home'), 'Home', { cls:'dup-tab' });
+  h += navRow({kind:'explore'}, ic('explore'), 'Explore', { cls:'dup-tab', sel: isOverview() || (f.kind === 'shelf' && !shelfKind) });
+  EXPLOREKINDS.forEach(function(k){
+    h += navRow({kind:'explore', id:k[0]}, ic(k[2], 16), k[1], { cls:'dup-tab nsubrow', sel: (f.kind === 'explore' && f.id === k[0]) || shelfKind === k[0] });
+  });
   if (!S.loggedIn){
+    h += '<p class="navnote">Join to keep the events you’re going to, your Event Horizons and the people you follow here.</p>';
     $('navbody').innerHTML = h;
     return;
   }
@@ -2806,16 +3297,26 @@ function renderCHead(){
   /* a horizon's own page is its header */
   if (S.folder.kind === 'horizon'){ el.className = 'none hzhead'; el.innerHTML = ''; return; }
   var tools = '';
-  if (!L.phone && v === 'list' && !isCal() && (S.folder.kind === 'home' || viewsOf().length) && S.folder.kind !== 'horizons'){
+  if (!L.phone && v === 'list' && !isCal() && viewsOf().length && !(S.folder.kind === 'explore' && S.folder.id === 'horizons')){
     tools += '<label class="sortsel"><span class="sl">Sort</span><select data-act="sort" aria-label="Sort">' +
       [['date','Date'],['title','Title'],['host','Host'],['city','City']].map(function(o){ return '<option value="'+o[0]+'"'+(S.sort===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('') +
       '</select></label>';
   }
   if (views.length > 1) tools += '<span class="seg" role="tablist">' + views.map(function(x){
     return '<button role="tab" class="'+(x===v?'on':'')+'" aria-selected="'+(x===v)+'" data-act="setview" data-id="'+x+'">'+x.toUpperCase()+'</button>'; }).join('') + '</span>';
+  /* on a phone Explore's kinds are tabs across its top (a desktop has them in the sidebar) */
+  var kinds = L.phone && S.folder.kind === 'explore' && !S.phoneSearch;
+  if (kinds) tools = exploreKindsHTML() + (tools ? '<div class="ctrow">' + tools + '</div>' : '');
   if (L.phone && S.phoneSearch && S.folder.kind !== 'search') tools = '';
-  el.className = tools ? '' : 'none';
+  el.className = (tools ? '' : 'none') + (kinds ? ' kindhead' : '');
   el.innerHTML = '<div class="ct"><h2>'+esc(folderName())+'</h2><div class="csub">'+esc(folderSub())+'</div></div>' + (tools ? '<div class="ctools">'+tools+'</div>' : '');
+}
+function exploreKindsHTML(){
+  var cur = S.folder.kind === 'explore' ? (S.folder.id || '') : null;
+  return '<div class="kinds" role="tablist" aria-label="Explore">' + [['', 'All']].concat(EXPLOREKINDS).map(function(k){
+    var on = cur === k[0];
+    return '<button role="tab" class="kind'+(on?' on':'')+'" aria-selected="'+on+'" data-act="explorekind" data-id="'+k[0]+'">'+esc(k[0] === 'horizons' ? 'Horizons' : k[1])+'</button>';
+  }).join('') + '</div>';
 }
 /* ---- the phone shell: an app bar on top, five tabs at the bottom ---- */
 function phoneCanBack(){
@@ -2826,8 +3327,8 @@ function renderAppbar(){
   if (back) h += '<button class="ab-btn" data-act="pback" aria-label="Back">'+ic('back',22)+'</button>';
   if (S.stack.length){
     var it = S.stack[S.stack.length-1];
-    if (it.type === 'chat' && CHATS[it.id]) h += '<div class="ab-title ab-tap" data-act="chatinfo" data-id="'+it.id+'" role="button">'+esc(CHATS[it.id].name)+'<small>'+esc(chatSub(CHATS[it.id]))+'</small></div>' +
-      '<button class="ab-btn" data-act="chatinfo" data-id="'+it.id+'" aria-label="Chat details" aria-haspopup="dialog">'+ic('dots',22)+'</button>';
+    if (it.type === 'chat' && CHATS[it.id]) h += '<div class="ab-title ab-tap" data-act="open" data-type="person" data-id="'+CHATS[it.id].memberIds[0]+'" role="button">'+esc(CHATS[it.id].name)+'<small>'+esc(chatSub(CHATS[it.id]))+'</small></div>' +
+      '<button class="ab-btn" data-act="open" data-type="person" data-id="'+CHATS[it.id].memberIds[0]+'" aria-label="Profile">'+ic('user',22)+'</button>';
     /* a long name takes both lines; the kind of thing it is gives way */
     else h += '<div class="ab-title"><span class="abn">'+esc(itemName(it))+'</span>' +
       (itemName(it).length > 26 ? '' : '<small>'+esc({event:'Event',horizon:'Event Horizon',person:'Person',callout:'Call out'}[it.type]||'')+'</small>') + '</div>';
@@ -2839,7 +3340,7 @@ function renderAppbar(){
       (S.query ? '<button class="abclear" data-act="clearq" aria-label="Clear search">'+ic('close',16)+'</button>' : '') + '</label>';
   } else {
     h += '<div class="ab-title">'+esc(folderName())+'</div>';
-    if (S.tab === 'home' || S.tab === 'horizons') h += '<button class="ab-btn" data-act="psearch" aria-label="Search">'+ic('search',22)+'</button>';
+    if (S.tab === 'home' || S.tab === 'explore') h += '<button class="ab-btn" data-act="psearch" aria-label="Search">'+ic('search',22)+'</button>';
     if (S.tab === 'you' && S.folder.kind === 'you' && !S.loggedIn) h += '';
   }
   var ab = $('appbar'), hadFocus = document.activeElement && document.activeElement.id === 'pq';
@@ -2848,7 +3349,7 @@ function renderAppbar(){
 }
 function renderTabbar(){
   var un = unreadChats();
-  var tabs = [['home','home','Home'],['horizons','horizon','Horizons'],['new','plus','New'],['chats','chat','Chats'],['you','user','You']];
+  var tabs = [['home','home','Home'],['explore','explore','Explore'],['new','plus','New'],['chats','chat','Chats'],['you','user','You']];
   $('tabbar').innerHTML = tabs.map(function(t){
     if (t[0] === 'new') return '<button class="tab new" data-act="newsheet" aria-label="New"><span class="tnew">'+ic('plus',22)+'</span>New</button>';
     return '<button class="tab'+(S.tab===t[0]?' on':'')+'" data-act="tab" data-id="'+t[0]+'" aria-current="'+(S.tab===t[0]?'page':'false')+'">' +
@@ -3057,7 +3558,7 @@ function demoAcct(){
   a.hzfollow = { 'horizon-baltic':true, 'horizon-dust':true, 'horizon-quiet':true };
   a.pfollow = { 'p-anna':true, 'p-rio':true, 'p-kai':true, 'p-sasha':true };
   a.myevents = DEMOHOST.slice(); a.myhorizons = ['horizon-default'];
-  a.chats = fixtureChats(); a.unread = { 'c-baltic':true };
+  a.chats = fixtureChats(); a.unread = { 'c-kai':true };
   return a;
 }
 function captureAcct(){
@@ -3075,7 +3576,10 @@ function loadAcct(a){
   RSVP = a.rsvp || {}; WENT = a.went || {}; PROMOTED = a.promoted || {}; HZFOLLOW = a.hzfollow || {}; PFOLLOW = a.pfollow || {};
   MYEVENTS = (a.myevents || []).filter(function(id){ return EVENTS[id]; });
   MYHORIZONS = (a.myhorizons || []).filter(function(k){ return HORIZONS[k]; });
-  CHATS = (a.chats && a.chats.byId) || {}; CHATORDER = ((a.chats && a.chats.order) || Object.keys(CHATS)).filter(function(k){ return CHATS[k]; });
+  CHATS = (a.chats && a.chats.byId) || {};
+  /* group chats kept from before chat was person to person are put away */
+  Object.keys(CHATS).forEach(function(k){ if (CHATS[k].kind !== 'dm') delete CHATS[k]; });
+  CHATORDER = ((a.chats && a.chats.order) || Object.keys(CHATS)).filter(function(k){ return CHATS[k]; });
   UNREADCHAT = a.unread || {};
   FORMDRAFTS = (a.drafts && a.drafts.forms) || {}; CHATDRAFT = (a.drafts && a.drafts.chat) || {};
   ANSWERED = a.answered || {}; ANSWERING = a.answering || {}; SHIFT = a.shift || {};
@@ -3116,7 +3620,7 @@ function doLogout(){
   if (S.acct) ACCTS[S.acct] = captureAcct();
   S.loggedIn = false; S.acct = null; loadAcct(null); syncAcctPeople();
   S.chatOpen = null; S.rightOpen = false;
-  var open = { home:1, horizons:1, people:1, horizon:1, search:1, you:1 };
+  var open = { home:1, explore:1, horizon:1, search:1, you:1 };
   if (!open[S.folder.kind] || (S.folder.kind === 'horizon' && !validItem({ type:'horizon', id:S.folder.id }))) goFolder({ kind:'home' });
   S.stack = S.stack.filter(validItem);
   closeDialogs(); closePopup(); render();
@@ -3165,7 +3669,7 @@ function shareListHTML(){
     var c = CHATS[k];
     if (!c || (q && !matches(c.name, q))) return;
     rows.push('<div class="linkrow" data-act="doshare" data-chat="'+k+'" role="button">'+chatAv(c)+'<div class="lr">'+esc(c.name)+
-      '<div class="fhelp">'+(c.kind==='dm'?'Direct message':(c.memberIds.length+1)+' members')+'</div></div>'+ic('chat')+'</div>');
+      '<div class="fhelp">Direct message</div></div>'+ic('chat')+'</div>');
   });
   ncPeopleAll().filter(function(pid){
     return !Object.keys(CHATS).some(function(k){ return CHATS[k].kind === 'dm' && CHATS[k].memberIds[0] === pid && CHATS[k].messages.length; }) &&
@@ -3187,53 +3691,30 @@ function nativeShare(){
   if (!SH || !navigator.share) return;
   navigator.share({ title:itemName({ type:SH.type, id:SH.id }), url:linkOf(SH.type, SH.id) }).catch(function(){});
 }
-/* ---- new chat: pick people; one person is a direct message, two or more is a group you name ---- */
+/* ---- new chat: a chat is with one person. Pick them and you are in the conversation. ---- */
 var NC = null;
-function newChatDialog(preset, addTo){
-  var dr = !preset && !addTo && FORMDRAFTS.chat;
-  NC = { sel: preset ? [preset] : dr ? dr.sel.filter(function(k){ return PEOPLE[k]; }) : [], q:'', name: dr ? dr.name || '' : '', addTo:addTo || null };
-  dialog(addTo ? 'Add people' : 'New chat', '<div id="ncbody"></div>', '<span id="ncfoot" style="display:contents"></span>', 480);
+function newChatDialog(){
+  NC = { q:'' };
+  dialog('New chat', '<div class="field"><label for="nc-q">To</label><input type="search" id="nc-q" placeholder="Search people" autocomplete="off"></div>' +
+    '<div class="picklist" id="nc-list"></div>', '<button class="btn" data-act="closedlg">Cancel</button>', 480);
   paintNewChat();
-  if (!addTo) setTimeout(function(){ syncDiscard('chat'); }, 0);
   focusIn('nc-q');
 }
-/* a group is named after its people until you name it */
-function ncAutoName(){ return NC ? NC.sel.map(function(k){ return person(k).displayName.split(' ')[0]; }).join(', ') : ''; }
 /* everyone you could message: people you follow first */
 function ncPeopleAll(){
   var ids = Object.keys(PEOPLE).filter(function(k){ return k !== 'self' && k !== 'p-michal' && !/^u-/.test(k); });
   return ids.sort(function(a,b){ return (PFOLLOW[b]?1:0) - (PFOLLOW[a]?1:0) || (person(a).displayName < person(b).displayName ? -1 : 1); });
 }
-function ncPeople(){
-  var into = NC.addTo && CHATS[NC.addTo];
-  var ids = ncPeopleAll().filter(function(k){ return !into || into.memberIds.indexOf(k) < 0; });
+function paintNewChat(){
+  var el = $('nc-list'); if (!NC || !el) return;
   var q = NC.q.toLowerCase().trim();
-  return ids.filter(function(k){ var p = person(k); return !q || matches(p.displayName, q) || matches(p.handle, q) || matches((p.skills||[]).join(' '), q); });
-}
-function paintNewChat(skipBody){
-  if (!NC || !$('ncbody')) return;
-  var n = NC.sel.length;
-  if (!skipBody){
-    var h = '';
-    h += '<div class="field"><label for="nc-q">To</label>' +
-      (n ? '<div class="tochips">' + NC.sel.map(function(k){ return '<span class="tochip">'+avHTML(k)+esc(person(k).displayName)+
-        '<button data-act="ncdrop" data-id="'+k+'" aria-label="Remove '+esc(person(k).displayName)+'">'+ic('close',14)+'</button></span>'; }).join('') + '</div>' : '') +
-      '<input type="search" id="nc-q" placeholder="Search people" value="'+esc(NC.q)+'" autocomplete="off"></div>';
-    h += '<div class="field" id="nc-namefield"'+(n >= 2 && !NC.addTo ? '' : ' hidden')+'><label for="nc-name">Group name</label>' +
-      '<input type="text" id="nc-name" value="'+esc(NC.name)+'" placeholder="'+esc(ncAutoName())+'" autocomplete="off"></div>';
-    h += '<div class="picklist" id="nc-list">' + ncPeople().map(function(k){
-      var p = person(k), on = NC.sel.indexOf(k) >= 0;
-      return '<label class="pick"><input type="checkbox" data-act="ncpick" data-id="'+k+'"'+(on?' checked':'')+'>'+avHTML(k,'a40') +
-        '<span class="pm">'+esc(p.displayName)+'<small>@'+esc(p.handle)+(p.bio?' · '+esc(p.bio):'')+'</small></span>' +
-        (PFOLLOW[k] ? '<span class="lstate">Following</span>' : '') + '</label>';
-    }).join('') + (ncPeople().length ? '' : '<div class="empty">Nobody matches.</div>') + '</div>';
-    $('ncbody').innerHTML = h;
-  }
-  var nf = $('nc-namefield'); if (nf) nf.hidden = n < 2 || !!NC.addTo;
-  var label = NC.addTo ? (n ? 'Add ' + firstNames(NC.sel) : 'Add people') : n === 0 ? 'Start chat' : n === 1 ? 'Message ' + person(NC.sel[0]).displayName.split(' ')[0] : 'Create group';
-  var dis = n === 0;
-  var ni = $('nc-name'); if (ni) ni.placeholder = ncAutoName();
-  $('ncfoot').innerHTML = '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="donewchat"'+(dis?' disabled':'')+'>'+esc(label)+'</button>';
+  var ids = ncPeopleAll().filter(function(k){ var p = person(k); return !q || matches(p.displayName, q) || matches(p.handle, q) || matches((p.skills||[]).join(' '), q); });
+  el.innerHTML = ids.map(function(k){
+    var p = person(k);
+    return '<div class="linkrow" data-act="ncdm" data-id="'+k+'" role="button">'+avHTML(k,'a40') +
+      '<div class="lr">'+esc(p.displayName)+'<div class="fhelp">@'+esc(p.handle)+(p.bio?' · '+esc(p.bio):'')+'</div></div>' +
+      (PFOLLOW[k] ? '<span class="lstate">Following</span>' : '') + ic('chat') + '</div>';
+  }).join('') || '<div class="empty">Nobody matches.</div>';
   placeDlg();
 }
 /* the small create forms keep what you typed as a draft, field by field */
@@ -3353,6 +3834,7 @@ function pickerDone(){
   var kept = hz.eventIds.filter(function(id){ return PK.sel.indexOf(id) >= 0; });
   var added = PK.sel.filter(function(id){ return kept.indexOf(id) < 0; });
   hz.eventIds = kept.concat(added);
+  if (added.length) logAct('added_to_horizon', 'horizon', PK.hz, { eventIds:added.slice() });
   closeDialogs(); render();
   if (added.length) toast('Added ' + added.length + ' event' + (added.length === 1 ? '' : 's'), hz.name);
 }
@@ -3922,7 +4404,8 @@ document.addEventListener('scroll', function(ev){ var t = ev.target; if (t && (t
    menu is a shortcut, never a second implementation.
    ========================================================================= */
 var CTXSEL = '.row[data-type], .card2[data-type], .qtile[data-type], .calev[data-type], .calcell .dots i[data-type], ' +
-             '.track[data-type], .crow, .nrow[data-kind="horizon"], .nrow[data-type="horizon"], .nrow[data-type="person"], .evcard[data-type], .chrow[data-act="chatsel"]';
+             '.track[data-type], .crow, .nrow[data-kind="horizon"], .nrow[data-type="horizon"], .nrow[data-type="person"], .evcard[data-type], .chrow[data-act="chatsel"], ' +
+             '.fcard[data-type], .fco[data-type], .cotile[data-type]';
 /* what was pressed: the item's element, the element that opens it, and what it stands for */
 function ctxTarget(node){
   var el = node && node.closest ? node.closest(CTXSEL) : null;
@@ -4019,11 +4502,8 @@ function ctxOtherItems(t, only){
     if (!c.closed) out.push({ code:'share', label:'Share…', icon:'share', run:function(){ shareDialog(id, 'callout'); } });
   } else {
     var ch = CHATS[id];
-    out = [{ code:'open', label:'Open', def:true, lead:chatAv(ch), run:function(){ openChat(id); } }, '-'];
-    if (ch.kind === 'group') out.push({ code:'rename', label:'Rename…', icon:'edit', run:function(){ chatRenameDialog(id); } },
-                                      { code:'add', label:'Add people…', icon:'plus', run:function(){ newChatDialog(null, id); } },
-                                      '-', { code:'leave', label:'Leave group…', icon:'back', run:function(){ chatLeave(id); } });
-    else out.push({ code:'profile', label:'Profile', icon:'user', run:function(){ openItem('person', ch.memberIds[0], 'push'); } });
+    out = [{ code:'open', label:'Open', def:true, lead:chatAv(ch), run:function(){ openChat(id); } }, '-',
+           { code:'profile', label:'Profile', icon:'user', run:function(){ openItem('person', ch.memberIds[0], 'push'); } }];
   }
   if (only) out = out.filter(function(it){ return it !== '-' && only.indexOf(it.code) >= 0; });
   return out;
@@ -4276,10 +4756,10 @@ function phoneBack(){
   if (S.folder.kind === 'search'){ leaveSearch(); S.phoneSearch = false; render(); return; }
   if (S.folder.kind !== tabRootFolder(S.tab).kind){ goFolder(tabRootFolder(S.tab)); render(); return; }
 }
-function tabRootFolder(t){ return { kind: t === 'horizons' || t === 'chats' || t === 'you' ? t : 'home', id:null }; }
+function tabRootFolder(t){ return { kind: t === 'explore' || t === 'chats' || t === 'you' ? t : 'home', id:null }; }
 function tabOfFolder(f){
   var k = (f || S.folder).kind;
-  return k === 'horizons' || k === 'horizon' ? 'horizons' : k === 'chats' ? 'chats' : /^(you|going|interested|hosting|promoted|people)$/.test(k) ? 'you' : 'home';
+  return /^(explore|shelf|horizon)$/.test(k) ? 'explore' : k === 'chats' ? 'chats' : /^(you|going|interested|hosting|promoted)$/.test(k) ? 'you' : 'home';
 }
 /* each tab keeps its own place: switching back returns you there; tapping the tab you are on goes to its top */
 var TABMEM = {};
@@ -4302,6 +4782,7 @@ var setRSVP = gated(function(evId, mode){
   if (!RSVP[evId]) delete RSVP[evId];
   var dh = HORIZONS['horizon-default'];
   if (RSVP[evId] === 'interested' && MYHORIZONS.indexOf('horizon-default') >= 0 && dh.eventIds.indexOf(evId) < 0) dh.eventIds.push(evId);
+  if (RSVP[evId]) logAct(RSVP[evId], 'event', evId);
   markRead(evId);
   render();
   toast(RSVP[evId] ? (mode === 'going' ? 'Going' : 'Interested') : (mode === 'going' ? 'Not going' : 'Not interested'), EVENTS[evId].title);
@@ -4314,6 +4795,7 @@ var setWent = gated(function(evId){
 var doPromote = gated(function(evId){
   if (RESUMING && PROMOTED[evId]){ render(); toast('Promoted', EVENTS[evId].title); return; }
   PROMOTED[evId] = !PROMOTED[evId];
+  if (PROMOTED[evId]) logAct('promoted', 'event', evId);
   render();
   /* nothing here knows who follows you, so the toast doesn't claim an audience */
   toast(PROMOTED[evId] ? 'Promoted' : 'Not promoted', EVENTS[evId].title,
@@ -4321,7 +4803,7 @@ var doPromote = gated(function(evId){
 });
 var toggleInHorizon = gated(function(evId, hzId){
   var hz = HORIZONS[hzId], i = hz.eventIds.indexOf(evId);
-  if (i < 0){ hz.eventIds.push(evId); render(); toast('Added to ' + hz.name, EVENTS[evId].title); }
+  if (i < 0){ hz.eventIds.push(evId); logAct('added_to_horizon', 'horizon', hzId, { eventIds:[evId] }); render(); toast('Added to ' + hz.name, EVENTS[evId].title); }
   else { unfile(evId, hzId); return; }
   if (DLGS.length && document.querySelector('[data-act="dofile"]')){ closeDialogs(); addToDialog(evId); }
 });
@@ -4330,6 +4812,7 @@ function unfile(evId, hzId){
   var hz = HORIZONS[hzId], i = hz.eventIds.indexOf(evId), wasCover = HZCOVER[hzId] === evId;
   if (i < 0) return;
   hz.eventIds.splice(i, 1);
+  unlogAct('added_to_horizon', hzId, evId);
   if (wasCover) delete HZCOVER[hzId];
   render();
   if (DLGS.length && document.querySelector('[data-act="dofile"]')){ closeDialogs(); addToDialog(evId); }
@@ -4382,12 +4865,13 @@ function deleteHorizon(hzId){
 }
 var addToHorizonDrop = gated(function(evId, hzId){
   var hz = HORIZONS[hzId];
-  if (hz.eventIds.indexOf(evId) < 0){ hz.eventIds.push(evId); toast('Added to ' + hz.name, EVENTS[evId].title); }
+  if (hz.eventIds.indexOf(evId) < 0){ hz.eventIds.push(evId); logAct('added_to_horizon', 'horizon', hzId, { eventIds:[evId] }); toast('Added to ' + hz.name, EVENTS[evId].title); }
   render();
 });
 var followHz = gated(function(hzId){
   if (RESUMING && (HZFOLLOW[hzId] || hzOwnedByMe(hzId))){ render(); toast('Following', HORIZONS[hzId].name); return; }
   HZFOLLOW[hzId] = !HZFOLLOW[hzId];
+  if (HZFOLLOW[hzId]) logAct('followed_horizon', 'horizon', hzId);
   render();
   toast(HZFOLLOW[hzId] ? 'Following' : 'Unfollowed', HORIZONS[hzId].name);
 });
@@ -4399,11 +4883,13 @@ var renameHz = gated(function(hzId){
 });
 var publishHz = gated(function(hzId){
   HORIZONS[hzId].isPublished = !HORIZONS[hzId].isPublished;
+  if (HORIZONS[hzId].isPublished){ unlogAct('created_horizon', hzId); logAct('published_horizon', 'horizon', hzId); } else unlogAct('published_horizon', hzId);
   render();
   toast(HORIZONS[hzId].isPublished ? 'Published' : 'Private again', HORIZONS[hzId].name);
 });
 var followP = gated(function(pid){
   if (!(RESUMING && PFOLLOW[pid])) PFOLLOW[pid] = !PFOLLOW[pid];
+  if (PFOLLOW[pid]) logAct('followed_person', 'person', pid);
   render();
   toast(PFOLLOW[pid] ? 'Following' : 'Unfollowed', person(pid).displayName);
 });
@@ -4441,67 +4927,6 @@ var answerCallout = gated(function(coId){
   openChat(cid);
   setTimeout(function(){ var b = $('chatbox'); if (b){ b.focus(); b.setSelectionRange(b.value.length, b.value.length); } }, 60);
 });
-function firstNames(ids){ return ids.map(function(k){ return person(k).displayName.split(' ')[0]; }).join(', '); }
-function saveChatDraft(){
-  if (!NC || NC.addTo) return;
-  FORMDRAFTS.chat = NC.sel.length || NC.name.trim() ? { sel:NC.sel.slice(), name:NC.name } : null;
-  schedulePersist(); syncDiscard('chat');
-}
-function createChat(){
-  if (!NC || !NC.sel.length) return;
-  if (!NC.addTo) FORMDRAFTS.chat = null;
-  var into = NC.addTo && CHATS[NC.addTo], st = stamp();
-  if (into && into.kind === 'group'){
-    /* adding people to a group keeps the group */
-    NC.sel.forEach(function(k){ if (into.memberIds.indexOf(k) < 0) into.memberIds.push(k); });
-    into.messages.push({ from:'sys', t:st.t, ts:st.ts, text:'You added ' + firstNames(NC.sel) });
-    closeDialogs(); render(); toast('Added to ' + into.name, firstNames(NC.sel)); return;
-  }
-  var sel = into ? into.memberIds.concat(NC.sel.filter(function(k){ return into.memberIds.indexOf(k) < 0; })) : NC.sel.slice();
-  if (sel.length === 1){ closeDialogs(); openChat(openDM(sel[0])); return; }
-  var name = NC.name.trim() || firstNames(sel);
-  var cid = 'c-new-' + Date.now().toString(36);
-  CHATS[cid] = { id:cid, name:name, kind:'group', memberIds:sel,
-    messages:[{ from:'sys', t:st.t, ts:st.ts, text:'You created “'+name+'” with ' + firstNames(sel) }] };
-  CHATORDER.unshift(cid);
-  closeDialogs(); openChat(cid);
-  toast('Group created', name);
-}
-/* a conversation's details: who is in it (each opens their page), add people, rename, leave */
-function chatInfoDialog(cid){
-  var c = CHATS[cid]; if (!c) return;
-  var rows = '<div class="linkrow static">'+avHTML('self','a40')+'<div class="lr">'+esc(PEOPLE['self'].displayName)+'<div class="fhelp">You</div></div></div>' +
-    c.memberIds.map(function(pid){ var p = person(pid);
-      return '<div class="linkrow" data-act="chatperson" data-id="'+pid+'" role="button">'+avHTML(pid,'a40')+'<div class="lr">'+esc(p.displayName)+'<div class="fhelp">@'+esc(p.handle)+'</div></div>' +
-        ic('back',18).replace('class="ic"','class="ic" style="transform:scaleX(-1)"')+'</div>'; }).join('');
-  var acts = '<div class="linkrow" data-act="chatadd" data-id="'+cid+'" role="button"><span class="r-ic">'+ic('plus')+'</span><div class="lr"><b>Add people</b></div></div>';
-  if (c.kind === 'group') acts += '<div class="linkrow" data-act="chatrename" data-id="'+cid+'" role="button"><span class="r-ic">'+ic('edit')+'</span><div class="lr"><b>Rename</b></div></div>' +
-    '<div class="linkrow" data-act="chatleave" data-id="'+cid+'" role="button"><span class="r-ic">'+ic('back')+'</span><div class="lr"><b>Leave group</b></div></div>';
-  dialog(c.name, '<div class="flabel" style="margin-bottom:8px">'+(c.kind === 'group' ? (c.memberIds.length + 1) + ' members' : 'Direct message')+'</div>' +
-    '<div class="picklist">'+rows+'</div><div class="picklist" style="margin-top:16px">'+acts+'</div>', '<button class="btn" data-act="closedlg">Done</button>', 420);
-}
-function chatRenameDialog(cid){
-  var c = CHATS[cid];
-  dialog('Rename group', '<div class="field"><label for="cr-n">Name</label><input type="text" id="cr-n" value="'+esc(c.name)+'" autocomplete="off"></div>',
-    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="dochatrename" data-id="'+cid+'">Save changes</button>', 420);
-  focusIn('cr-n');
-}
-function chatRename(cid){
-  var c = CHATS[cid], v = (($('cr-n')||{}).value || '').trim(), st = stamp();
-  if (!c || !v || v === c.name){ closeDialogs(); return; }
-  c.name = v; c.messages.push({ from:'sys', t:st.t, ts:st.ts, text:'You renamed the group to “' + v + '”' });
-  closeDialogs(); render(); toast('Renamed', v);
-}
-function chatLeave(cid){
-  var c = CHATS[cid]; if (!c) return;
-  confirmDialog('Leave group', 'Leave “' + c.name + '”? It leaves your chats; the others keep talking.', 'Leave group', function(){
-    delete CHATS[cid]; delete UNREADCHAT[cid]; delete CHATDRAFT[cid];
-    CHATORDER = CHATORDER.filter(function(k){ return k !== cid; });
-    if (S.chatOpen === cid) S.chatOpen = null;
-    S.stack = S.stack.filter(validItem); ROUTE.replace = true;
-    closeDialogs(); render(); toast('Left', c.name);
-  });
-}
 function sendChat(){
   var box = $('chatbox'), cid = activeChat(); if (!box || !cid || !box.value.trim()) return;
   var st = stamp();
@@ -4539,7 +4964,7 @@ function stepItem(delta){
   var n = i < 0 ? 0 : Math.max(0, Math.min(list.length-1, i + delta));
   ROUTE.replace = true;   /* stepping through a list is not a trail you want to walk back */
   openItem(list[n].type, list[n].id);
-  var el = document.querySelector('#listbody .row.sel'); if (el && el.scrollIntoView) el.scrollIntoView({ block:'nearest' });
+  var el = document.querySelector('#listbody .row.sel, #listbody .fsel'); if (el && el.scrollIntoView) el.scrollIntoView({ block:'nearest' });
 }
 function runCmd(cmd, arg){
   closePopup();
@@ -4572,7 +4997,9 @@ document.addEventListener('click', function(ev){
     case 'newsheet': newSheet(); break;
     case 'runcmd':   runCmd(id); break;
     case 'folder':   goFolder({ kind:n.getAttribute('data-kind'), id:id || null }); render(); $('listbody').scrollTop = 0; break;
-    case 'shelfall':    goFolder({ kind:'shelf', id:id }); render(); $('listbody').scrollTop = 0; break;
+    case 'shelfall':    goFolder(isExploreKind(id) ? { kind:'explore', id:id } : { kind:'shelf', id:id }); render(); $('listbody').scrollTop = 0; break;
+    case 'explorekind': if (L.phone && S.tab !== 'explore') setTab('explore'); else if (L.phone && S.folder.kind === 'explore') ROUTE.replace = true;
+                        goFolder({ kind:'explore', id:id || null }); render(); $('listbody').scrollTop = 0; break;
     case 'dosearch':     { var qq = $('pq') || $('q'); if (qq) qq.value = id; doSearch(id); rememberQuery(id); break; }
     case 'takeshift':    takeShift(id, +n.getAttribute('data-i')); break;
     case 'clearq':       { doSearch(''); var pq0 = $('pq'); if (pq0){ pq0.value = ''; pq0.focus(); } break; }
@@ -4613,23 +5040,10 @@ document.addEventListener('click', function(ev){
     case 'dm':           messagePerson(id); break;
     case 'answercallout': answerCallout(id); break;
     case 'chatsel':      openChat(id); break;
-    case 'chatinfo':     chatInfoDialog(id); break;
-    case 'chatperson':   closeDialogs(); openItem('person', id, 'push'); break;
-    case 'chatadd':      closeDialogs(); newChatDialog(null, id); break;
-    case 'chatrename':   closeDialogs(); chatRenameDialog(id); break;
-    case 'dochatrename': chatRename(id); break;
-    case 'chatleave':    closeDialogs(); chatLeave(id); break;
     case 'chatback':     if (L.phone) navBack(); else { S.chatOpen = null; render(); } break;
     case 'sendchat':     sendChat(); break;
     case 'newchat':      runCmd('newchat'); break;
-    case 'ncpick': {
-      var k = id, i = NC.sel.indexOf(k);
-      if (n.checked && i < 0) NC.sel.push(k); else if (!n.checked && i >= 0) NC.sel.splice(i, 1);
-      var q = $('nc-q'); NC.q = q ? q.value : NC.q;
-      paintNewChat(); saveChatDraft(); break;
-    }
-    case 'ncdrop':       NC.sel = NC.sel.filter(function(x){ return x !== id; }); paintNewChat(); saveChatDraft(); break;
-    case 'donewchat':    createChat(); break;
+    case 'ncdm':         closeDialogs(); NC = null; messagePerson(id); break;
     case 'new-event':    runCmd('new-event'); break;
     case 'new-horizon':  runCmd('new-horizon', id); break;
     case 'login':        loginDialog(); break;
@@ -4656,6 +5070,8 @@ document.addEventListener('click', function(ev){
       HORIZONS[hid] = { id:hid, name:nm, description:(($('nh-d')||{}).value||'').trim(), isPersonalDefault:false,
                         isPublished:!!($('nh-p')||{}).checked, ownerName:S.me.name, ownerId:acctPid(S.acct), ownerAcct:S.acct, eventIds: withEv ? [withEv] : [] };
       MYHORIZONS.push(hid); HZCOUNT[hid] = 0;
+      if (HORIZONS[hid].isPublished) logAct('published_horizon', 'horizon', hid); else logAct('created_horizon', 'horizon', hid);
+      if (withEv) logAct('added_to_horizon', 'horizon', hid, { eventIds:[withEv] });
       closeDialogs();
       if (withEv){ render(); toast('Added to ' + nm, EVENTS[withEv].title); break; }   /* from an event: stay on it */
       if (L.phone){ S.tab = 'you'; goFolder({ kind:'you' }); S.stack = [{ type:'horizon', id:hid }]; S.autoSel = false; }
@@ -4687,6 +5103,7 @@ document.addEventListener('click', function(ev){
       CALLOUTS.unshift({ id:cid3, title:cot, body:coBody, eventId:coEv,
                          expiresAt:coX || isoOf(month), hostName:S.me.name, hostId:acctPid(S.acct), hostAcct:S.acct });
       FORMDRAFTS.callout = null;
+      logAct('posted_callout', 'callout', cid3);
       closeDialogs();
       openItem('callout', cid3, S.stack.length && !S.autoSel ? 'push' : undefined);
       toast('Call out posted', cot);
@@ -4706,7 +5123,7 @@ document.addEventListener('click', function(ev){
     case 'copylink':     copyLink(); break;
     case 'nativeshare':  nativeShare(); break;
     case 'discarddraft': {
-      var kept = FORMDRAFTS[id]; FORMDRAFTS[id] = null; if (id === 'chat') NC = null;
+      var kept = FORMDRAFTS[id]; FORMDRAFTS[id] = null;
       closeDialogs(); schedulePersist();
       toast('Draft discarded', '', function(){ FORMDRAFTS[id] = kept; schedulePersist(); toast('Draft restored', ''); });
       break;
@@ -4750,7 +5167,7 @@ document.addEventListener('change', function(ev){
 document.addEventListener('input', function(ev){
   var n = ev.target;
   if (n.id === 'q' || n.id === 'pq'){ doSearch(n.value); return; }
-  if (n.id === 'nc-q'){ NC.q = n.value; var sel = NC.sel.slice(); paintNewChat(); var q = $('nc-q'); if (q){ q.focus(); q.setSelectionRange(q.value.length, q.value.length); } return; }
+  if (n.id === 'nc-q' && NC){ NC.q = n.value; paintNewChat(); return; }
   if (n.id === 'pf-handle' && PF) PF.handleTouched = true;
   if (n.id === 'pf-name' && PF && PF.mode === 'signup' && !PF.handleTouched){ var hi0 = $('pf-handle'); if (hi0) hi0.value = suggestHandle(n.value); }
   if (/^pf-(name|handle|about)$/.test(n.id)){ pfSync(); return; }
@@ -4759,7 +5176,6 @@ document.addEventListener('input', function(ev){
   if (/^nh-[nd]$/.test(n.id)){ saveForm('horizon'); return; }
   if (n.id === 'sh-q' && SH){ SH.q = n.value; var sl = $('sh-list'); if (sl) sl.innerHTML = shareListHTML(); return; }
   if (n.id === 'pk-q'){ PK.q = n.value; $('pk-list').innerHTML = pickerList(); return; }
-  if (n.id === 'nc-name'){ NC.name = n.value; paintNewChat(true); saveChatDraft(); return; }
   if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT' || n.type === 'checkbox') return;
   DRAFT[n.getAttribute('data-cz')] = n.value;
   if (LOOKKEYS.test(n.getAttribute('data-cz'))) DRAFT.lookTouched = true;
@@ -4817,8 +5233,7 @@ document.addEventListener('keydown', function(ev){
     if (ae.id === 'q' || ae.id === 'pq'){ rememberQuery(ae.value); if (L.phone) ae.blur(); ev.preventDefault(); return; }
     if (ae.id === 'pf-city'){ pfAddCity(); ev.preventDefault(); return; }
     if (/^pf-(name|handle|about)$/.test(ae.id)){ pfSave(); ev.preventDefault(); return; }
-    if (ae.id === 'nc-name'){ createChat(); ev.preventDefault(); return; }
-    if (ae.id === 'cr-n'){ var rb = document.querySelector('[data-act="dochatrename"]'); if (rb) chatRename(rb.getAttribute('data-id')); ev.preventDefault(); return; }
+    if (ae.id === 'nc-q'){ var nf = document.querySelector('#nc-list [data-act="ncdm"]'); if (nf) nf.click(); ev.preventDefault(); return; }
     if (ae.id === 'nh-n'){ var go = $('nh-go'); if (go && !go.disabled) go.click(); ev.preventDefault(); return; }
     if (ae.classList.contains('pi')){ ae.click(); ev.preventDefault(); return; }
   }
@@ -4878,7 +5293,9 @@ function itemPath(it){
   return { event:'event/' + evSlug(it.id), horizon:'horizon/' + hzSlug(it.id), person:'person/' + personSlug(it.id),
            callout:'callout/' + coSlug(it.id), group:'group/' + it.id, chat:'chats/' + chatSlug(it.id) }[it.type] || 'home';
 }
-function folderPath(f){ return f.kind === 'shelf' ? 'home/' + f.id : f.kind === 'horizon' ? 'horizon/' + hzSlug(f.id) : f.kind; }
+function folderPath(f){
+  return f.kind === 'shelf' ? 'explore/' + f.id : f.kind === 'explore' ? 'explore' + (f.id ? '/' + f.id : '') : f.kind === 'horizon' ? 'horizon/' + hzSlug(f.id) : f.kind;
+}
 /* the link to one thing, as anyone can open it */
 function linkOf(type, id){ return location.origin + location.pathname + '#/' + itemPath({ type:type, id:id }); }
 
@@ -4912,9 +5329,13 @@ function hashOf(s){
   }
   return '#/' + path + (p.length ? '?' + p.map(function(x){ return x[0] + '=' + encodeURIComponent(x[1]).replace(/%2F/g, '/'); }).join('&') : '');
 }
-var FOLDERKINDS = /^(home|horizons|people|going|interested|hosting|promoted|you|search|chats)$/;
+var FOLDERKINDS = /^(home|explore|going|interested|hosting|promoted|you|search|chats)$/;
+var SHELFIDS = /^(week|soon|announced|followed|yourhz)$/;
 function folderFrom(a, b){
-  if (a === 'home' && b) return { kind:'shelf', id:b };
+  /* Explore and its kinds; the old Horizons and People destinations, and Home's old Show all lists, land there too */
+  if (a === 'explore') return isExploreKind(b) ? { kind:'explore', id:b } : SHELFIDS.test(b || '') ? { kind:'shelf', id:b } : { kind:'explore', id:null };
+  if (a === 'horizons' || a === 'people') return { kind:'explore', id:a };
+  if (a === 'home' && b) return isExploreKind(b) && b !== 'people' ? { kind:'explore', id:b } : SHELFIDS.test(b) ? { kind:'shelf', id:b } : b === 'people' ? { kind:'shelf', id:'followed' } : { kind:'explore', id:null };
   if (a === 'horizon'){ var hz = hzBySlug(b); return hz ? { kind:'horizon', id:hz } : null; }
   return FOLDERKINDS.test(a || '') ? { kind:a, id:null } : null;
 }
@@ -4939,7 +5360,7 @@ function parseHash(h){
   if (it){
     s.stack = [it.id ? it : { type:'missing', id:a + '/' + (b || '') }];
     if (p.in){ var ps = p.in.split('/'); s.folder = folderFrom(ps[0], ps[1]) || s.folder; }
-    else if (it.type === 'horizon') s.folder = { kind:'horizons', id:null };
+    else if (it.type === 'horizon') s.folder = { kind:'explore', id:'horizons' };
   } else s.folder = folderFrom(a, b) || s.folder;
   s.tab = tabOfFolder(s.folder);
   return s;
@@ -5063,7 +5484,9 @@ window.addEventListener('popstate', function(ev){
 });
 /* a link (not a history step): its row, if the list has one, is lit and in view */
 function revealSel(){
-  var el = document.querySelector('#listbody .row.sel, #listbody .track.sel');
+  var el = document.querySelector('#listbody .row.sel, #listbody .track.sel, #listbody .fsel');
+  /* Home opens at its top: what the app picked for the reading pane is not worth scrolling to */
+  if (S.folder.kind === 'home' && S.autoSel) return;
   if (el && !L.phone){ el.scrollIntoView({ block:'center' }); CURSCROLL.list = $('listbody').scrollTop; }
 }
 function rootSnap(tab){
@@ -5097,6 +5520,7 @@ function startRoutes(){
    ========================================================================= */
 function render(){
   L = computeLayout();
+  noticeNewEvents();
   var app = $('app');
   if (!L.phone){
     /* a phone conversation screen becomes the chat dock on a wider screen */
@@ -5108,8 +5532,8 @@ function render(){
     if (hi >= 0){ var hid0 = S.stack[hi].id; S.stack = S.stack.slice(hi + 1); S.folder = { kind:'horizon', id:hid0 }; if (!S.stack.length) S.autoSel = false; }
   } else if (S.folder.kind === 'horizon'){
     /* and on a phone it is a page on the Horizons tab */
-    var hid1 = S.folder.id; S.folder = { kind:'horizons', id:null }; S.tab = S.tab === 'home' || !S.tab ? 'horizons' : S.tab;
-    if (S.tab !== 'horizons') S.folder = tabRootFolder(S.tab);
+    var hid1 = S.folder.id; S.folder = { kind:'explore', id:'horizons' }; S.tab = S.tab === 'home' || !S.tab ? 'explore' : S.tab;
+    if (S.tab !== 'explore') S.folder = tabRootFolder(S.tab);
     S.stack = [{ type:'horizon', id:hid1 }].concat(S.stack);
   }
   /* a closed reading pane stays in the layout, empty, until you pick something: nothing is picked for you */

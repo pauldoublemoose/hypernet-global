@@ -5358,7 +5358,8 @@ function storeSet(key, val){
   try { localStorage.setItem(key, val); return true; }
   catch(e){
     var full = e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014 || /quota/i.test(String(e.message)));
-    if (full && !STOREFULL){ STOREFULL = true; toast('This browser’s storage is full', 'Recent changes are kept until you close the tab. Remove an image to make room.'); }
+    /* after whatever the action itself says, so its own confirmation doesn't cover the warning */
+    if (full && !STOREFULL){ STOREFULL = true; setTimeout(function(){ toast('This browser’s storage is full', 'Recent changes are kept until you close the tab. Remove an image to make room.'); }, 0); }
     return false;
   }
 }

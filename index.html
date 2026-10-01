@@ -779,6 +779,78 @@ body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 1
 .cotile .cta{ font-size:20px; line-height:1.12; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .cotile .ctw{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:12px; line-height:1.35; color:#d0d0d0; }
 .cotile .btn{ margin-top:auto; }
+/* a feed card is a container: its title is the button that opens it, and covers the card for the pointer */
+.fcard, .fco, .cotile, .fuprow{ position:relative; }
+.flink{ display:block; width:100%; min-width:0; padding:0; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.flink::after{ content:""; position:absolute; inset:0; }
+.flink:focus-visible{ outline:2px solid currentColor; outline-offset:2px; }
+.fcard .btn, .fcard .pill, .fco .btn, .fcoe, .cotile .btn, .fuprow .soc{ position:relative; z-index:1; }
+.fcoa{ display:block; }
+button.fcoe{ width:100%; border:0; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.fwho{ display:inline; padding:0; border:0; background:none; font:inherit; font-weight:bold; color:var(--ink); cursor:pointer; text-align:left; }
+.fwho:hover{ text-decoration:underline; }
+/* how long ago is legible; under a day old it is in ink */
+.ftime{ font-size:13px; letter-spacing:0; color:var(--ink2); }
+.ftime.fresh{ color:var(--ink); font-weight:bold; }
+.fco .ftime{ color:#e0e0e0; }
+.fco .ftime.fresh{ color:#fff; }
+.fline{ flex-wrap:wrap; }
+.fsent{ flex:1 1 180px; }
+.fmsg{ flex:0 0 auto; align-self:center; display:inline-flex; align-items:center; gap:5px; height:28px; padding:0 9px; border:0; background:var(--face); box-shadow:var(--out); font-size:12px; color:var(--ink); }
+.fmsg:active{ box-shadow:var(--in); }
+/* you, in one line */
+.fitem.fyou{ padding:10px 16px 12px; background:var(--face-lt); }
+.fyou .fsent{ font-size:14px; }
+/* following only a few: the rest of the network, below your people */
+.fnet{ background:#fbfaf8; }
+.fnet .fav{ opacity:.6; filter:grayscale(1); }
+.fnetnote{ margin:0; padding:8px 16px 10px; border-bottom:1px solid var(--line); font-size:13px; line-height:1.4; color:var(--ink2); }
+/* coming up with your people */
+.band .bsub{ margin-left:auto; font-weight:normal; letter-spacing:.06em; color:var(--dim); }
+.fuprow{ display:flex; align-items:center; gap:12px; padding:8px 16px; border-bottom:1px solid var(--line); }
+.fuprow:hover{ background:var(--hover); }
+.fuprow.sel{ background:var(--face-lt); box-shadow:inset 3px 0 0 var(--ink); }
+.fupd{ flex:0 0 40px; display:flex; flex-direction:column; align-items:center; font:10px var(--mono); letter-spacing:.04em; text-transform:uppercase; color:var(--ink2); }
+.fupd b{ font:bold 20px var(--sys); line-height:1.05; color:var(--ink); }
+.fuprow .fcm{ flex:1; min-width:0; }
+.fuprow .fct{ font-size:15px; }
+.fup .fupmore{ margin:6px 16px 6px; }
+/* who you follow is on it: tiny faces and a few words */
+.soc{ display:flex; align-items:center; gap:6px; margin-top:5px; min-width:0; font-size:12px; line-height:1.3; color:var(--ink2); }
+.socav{ display:flex; flex:0 0 auto; }
+.socav .av{ width:18px; height:18px; flex-basis:18px; font-size:7px; box-shadow:0 0 0 1.5px #fff; }
+.socav .av + .av{ margin-left:-5px; }
+.soct{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.row.sel .soc{ color:var(--seldim); }
+.card2 .soc{ margin-top:4px; }
+/* the call-out strip: whole tiles only, and a way to the next ones */
+.costrip .cotile{ flex:0 0 var(--tw, 228px); width:var(--tw, 228px); min-width:0; }
+.costrip.srow{ gap:16px; scroll-snap-type:x mandatory; scroll-padding:0 16px; }
+.costrip.srow::after{ display:none; }
+.cotile .ctwhy{ display:inline-block; max-width:100%; padding:2px 6px; box-shadow:inset 0 0 0 1px #fff; font:bold 10px var(--mono); letter-spacing:.06em; text-transform:uppercase; color:#fff; }
+.costep{ display:none; margin-left:auto; gap:4px; }
+.coband.more .costep{ display:inline-flex; }
+.costep .ib{ width:30px; height:26px; }
+/* who's going: people you follow first, with when they decided */
+.chip.who{ padding-right:12px; }
+.chip.who .whon, .whorow .whon{ display:flex; flex-direction:column; min-width:0; line-height:1.25; text-align:left; }
+.chip.who small, .whorow small{ font-size:11px; font-weight:normal; color:var(--dim); }
+.chip.who.fol .whon{ font-weight:bold; }
+button.chip.chipmore{ align-self:stretch; padding:4px 13px; color:var(--ink); font-size:13px; }
+.wholist{ display:flex; flex-direction:column; }
+.whorow{ display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); }
+.whomain{ flex:1; min-width:0; display:flex; align-items:center; gap:10px; padding:0; border:0; background:none; text-align:left; color:var(--ink); cursor:pointer; }
+.whonote{ margin:10px 0 0; font-size:13px; line-height:1.4; color:var(--dim); }
+/* a chat that answers a call out keeps it pinned at the top */
+.cpin{ flex:0 0 auto; display:flex; align-items:center; gap:8px; width:100%; padding:8px 12px; border:0; background:var(--ink); color:#fff; text-align:left; font-size:13px; line-height:1.35; cursor:pointer; outline:1px solid #fff; outline-offset:-4px; }
+.cpin .cpt{ min-width:0; }
+.composer{ align-items:flex-end; }
+.composer textarea{ flex:1; min-width:0; height:var(--ctl); min-height:var(--ctl); max-height:168px; padding:7px 10px; resize:none; overflow-y:auto; line-height:1.4; }
+.mbody{ white-space:pre-wrap; }
+.field .opt{ font-weight:normal; font-size:12px; color:var(--dim); }
+.fhint{ font-size:12px; line-height:1.4; color:var(--dim); }
+/* nothing in the reading pane: the list takes the room, the empty pane stays */
+#app.split.pane-closed #listcol{ flex:0 0 clamp(340px, 60%, 720px); }
 /* people your friends follow */
 .ffof{ flex-direction:column; gap:8px; background:var(--face-lt); }
 .ffh{ margin:0; font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--ink2); }
@@ -1354,6 +1426,7 @@ function isMine(evId){ return S.loggedIn && ownEvent(EVENTS[evId]); }
 /* the entry point for someone without an account says so */
 function joinLabel(){ return ACCTS.me ? 'Log in' : 'Join / Log in'; }
 function calloutOf(id){ return CALLOUTS.filter(function(x){ return x.id === id; })[0]; }
+function calloutOpen(c){ return !!c && !c.closed && !(c.expiresAt && c.expiresAt < TODAY_ISO); }
 var TOASTT = null;
 var WELCOME = null;             /* the first confirmation after joining also says hello */
 var TOASTACT = null;            /* the one thing a toast can do: undo what it reports */
@@ -2895,65 +2968,238 @@ function activityRows(){ return LIVEACT.concat(seedActivity()).filter(actVisible
    so you can act on it right there. Every so often: people your friends follow.
    ========================================================================= */
 function followedPeople(){ return Object.keys(PFOLLOW).filter(function(k){ return PFOLLOW[k] && PEOPLE[k] && k !== 'self'; }); }
-/* whose rows Home shows: yours and the people you follow; logged out, or following nobody yet, the whole network */
-function homeScope(){ var fol = S.loggedIn ? followedPeople() : []; return { all:!fol.length, fol:fol }; }
+/* whose rows Home shows: yours and the people you follow. Logged out, or following nobody yet, the whole network;
+   following only a few, your people first and then the rest of the network, marked as such ("few") */
+var FEWFOLLOWS = 3;
+function homeScope(){ var fol = S.loggedIn ? followedPeople() : []; return { all:!fol.length, fol:fol, few:fol.length > 0 && fol.length < FEWFOLLOWS }; }
 function dayBand(ms){
   var d0 = new Date(appNow()); d0.setHours(0, 0, 0, 0);
   var t = new Date(ms); t.setHours(0, 0, 0, 0);
   var dd = Math.round((d0 - t) / 86400000);
   return dd <= 0 ? 'Today' : dd === 1 ? 'Yesterday' : dd <= 6 ? 'This week' : 'Earlier';
 }
+/* how long ago, said as an age ("2h ago", "3 days ago") so it never reads as an event's date */
 function agoLabel(ms){
   var m = Math.floor(Math.max(0, appNow() - ms) / 60000), b = dayBand(ms), d = new Date(ms);
+  var d0 = new Date(appNow()); d0.setHours(0, 0, 0, 0); var t = new Date(ms); t.setHours(0, 0, 0, 0);
   if (m < 1) return 'now';
-  if (m < 60) return m + 'm';
-  if (b === 'Today') return Math.floor(m / 60) + 'h';
+  if (m < 60) return m + 'm ago';
+  if (b === 'Today') return Math.floor(m / 60) + 'h ago';
   if (b === 'Yesterday') return 'yesterday';
-  if (b === 'This week') return DAY[d.getDay()];
+  if (b === 'This week') return Math.round((d0 - t) / 86400000) + ' days ago';
   return d.getDate() + ' ' + MON[d.getMonth()];
 }
-/* rows that say the same thing in the same day band are one entry: many people and one event or horizon
-   (going, interested, promoted, followed); one person following several people; one person filling one horizon */
-var MANYACTORS = { going:1, interested:1, promoted:1, followed_horizon:1 };
-function homeEntries(){
-  var sc = homeScope();
-  var rows = activityRows().filter(function(a){ return actIsMe(a) || sc.all || sc.fol.indexOf(a.actor) >= 0; })
-    .map(function(a){ return { a:a, ms:actTime(a) }; }).sort(function(x, y){ return y.ms - x.ms; });
+/* under a day old: recent enough to reach out about */
+function isFresh(ms){ return !!ms && appNow() - ms < 86400000; }
+function timeHTML(ms){ return '<time class="ftime'+(isFresh(ms) ? ' fresh' : '')+'">'+esc(agoLabel(ms))+'</time>'; }
+
+/* ---- who on the network is going where, and since when (one index per render) ---- */
+var NETIDX = null;
+function netIndex(){
+  var key = LIVEACT.length + ':' + (ACTSEED ? ACTSEED.key : '');
+  if (NETIDX && NETIDX.key === key) return NETIDX.ev;
+  var ev = {};
+  activityRows().forEach(function(a){
+    if (a.objType !== 'event' || (a.verb !== 'going' && a.verb !== 'interested') || actIsMe(a)) return;
+    var o = (ev[a.objId] = ev[a.objId] || {}), ms = actTime(a), cur = o[a.actor];
+    if (!cur || (a.verb === 'going' && cur.verb !== 'going') || (a.verb === cur.verb && ms > cur.ms)) o[a.actor] = { verb:a.verb, ms:ms };
+  });
+  NETIDX = { key:key, ev:ev };
+  setTimeout(function(){ NETIDX = null; }, 0);
+  return ev;
+}
+/* everyone (but you) going to or interested in an event: { pid, verb, ms } — ms is when they decided, 0 when unknown */
+function eventPeople(evId){
+  var o = {}, act = netIndex()[evId] || {}, me = myActor();
+  baseAttendees(evId).forEach(function(p){ if (p !== me) o[p] = { pid:p, verb:'going', ms:0 }; });
+  Object.keys(act).forEach(function(p){
+    if (p === me || !PEOPLE[p]) return;
+    var a = act[p], cur = o[p];
+    if (!cur) o[p] = { pid:p, verb:a.verb, ms:a.ms }; else if (a.verb === 'going') cur.ms = a.ms;
+  });
+  return Object.keys(o).map(function(k){ return o[k]; });
+}
+/* the people you follow on an event, going before interested, most recent first */
+function followSocial(evId){
+  if (!S.loggedIn) return null;
+  var l = eventPeople(evId).filter(function(x){ return PFOLLOW[x.pid]; })
+    .sort(function(a, b){ return (b.verb === 'going') - (a.verb === 'going') || b.ms - a.ms; });
+  return l.length ? l : null;
+}
+/* "Anna is going" · "Anna + 2 you follow are going" · "Anna is going · Rio interested" · "Rio is interested" */
+function socialText(l){
+  var g = l.filter(function(x){ return x.verb === 'going'; }), i = l.filter(function(x){ return x.verb === 'interested'; });
+  var say = function(list, verb){ return whoName(list[0].pid) + (list.length === 1 ? ' is ' : ' + ' + (list.length - 1) + ' you follow are ') + verb; };
+  if (!g.length) return say(i, 'interested');
+  return say(g, 'going') + (i.length ? ' · ' + (i.length === 1 ? whoName(i[0].pid) : i.length) + ' interested' : '');
+}
+function socialHTML(evId, cls){
+  var l = followSocial(evId); if (!l) return '';
+  return '<div class="soc'+(cls ? ' ' + cls : '')+'"><span class="socav">' + l.slice(0, 3).map(function(x){ return avHTML(x.pid); }).join('') + '</span>' +
+    '<span class="soct">'+esc(socialText(l))+'</span></div>';
+}
+
+/* ---- an event page's "Who's going": the people you follow first, each with when they decided ---- */
+var WHOMAX = 6;
+function whoGoing(evId){
+  var fol = function(x){ return S.loggedIn && PFOLLOW[x.pid] ? 1 : 0; };
+  var l = eventPeople(evId).filter(function(x){ return x.verb === 'going'; }).sort(function(a, b){ return fol(b) - fol(a) || b.ms - a.ms; });
+  if (S.loggedIn && RSVP[evId] === 'going'){
+    var mine = LIVEACT.filter(function(a){ return actIsMe(a) && a.verb === 'going' && a.objId === evId; })[0];
+    l.unshift({ pid:'self', verb:'going', ms: mine ? actTime(mine) : 0 });
+  }
+  return l;
+}
+function whoInterested(evId){
+  var fol = function(x){ return S.loggedIn && PFOLLOW[x.pid] ? 1 : 0; };
+  return eventPeople(evId).filter(function(x){ return x.verb === 'interested'; }).sort(function(a, b){ return fol(b) - fol(a) || b.ms - a.ms; });
+}
+/* "you follow · going · 2h ago" */
+function whoSub(x, past){
+  var f = S.loggedIn && x.pid !== 'self' && PFOLLOW[x.pid];
+  return (f ? 'you follow · ' : '') + (past ? (x.verb === 'going' ? 'went' : 'was interested') : x.verb + (x.ms ? ' · ' + agoLabel(x.ms) : ''));
+}
+function whoName2(pid){ return pid === 'self' ? 'You' : person(pid).displayName; }
+function whoChip(x, past){
+  var f = S.loggedIn && x.pid !== 'self' && PFOLLOW[x.pid];
+  return '<button class="chip who'+(f ? ' fol' : '')+'" data-act="open" data-type="person" data-id="'+x.pid+'">'+avHTML(x.pid,'a28') +
+    '<span class="whon">'+esc(whoName2(x.pid))+'<small>'+esc(whoSub(x, past))+'</small></span></button>';
+}
+function whoTotal(evId, l){ return Math.max(attendeeCount(evId), l.length); }
+function whoGoingHTML(evId, past){
+  var l = whoGoing(evId), total = whoTotal(evId, l), shown = l.slice(0, WHOMAX), more = total - shown.length;
+  if (!total) return '';
+  return sect(past ? 'Who went' : 'Who’s going', '<div class="chips whochips">' + shown.map(function(x){ return whoChip(x, past); }).join('') +
+    (more > 0 ? '<button class="chip chipmore" data-act="whoall" data-id="'+evId+'" aria-haspopup="dialog">and '+more+' more</button>' : '') + '</div>');
+}
+/* "and N more" opens everyone: who is going (and who is interested), when they decided, and a way to message them */
+function whoAllDialog(evId){
+  var e = EVENTS[evId]; if (!e) return;
+  var past = isPast(lastDay(e)), l = whoGoing(evId), total = whoTotal(evId, l), ints = past ? [] : whoInterested(evId);
+  var row = function(x){
+    return '<div class="whorow"><button type="button" class="whomain" data-act="whoopen" data-id="'+x.pid+'">'+avHTML(x.pid,'a40') +
+      '<span class="whon">'+esc(whoName2(x.pid))+'<small>'+esc(whoSub(x, past))+'</small></span></button>' +
+      (x.pid === 'self' ? '' : '<button class="btn" data-act="whodm" data-id="'+x.pid+'">'+ic('chat',16)+'Message</button>') + '</div>';
+  };
+  var h = '<div class="wholist">' + l.map(row).join('') + '</div>';
+  if (total > l.length) h += '<p class="whonote">and '+(total - l.length)+' more '+(past ? 'went' : 'going')+' who keep their name to themselves</p>';
+  if (ints.length) h += '<div class="pkband">Interested</div><div class="wholist">' + ints.map(row).join('') + '</div>';
+  dialog((past ? 'Who went' : 'Who’s going') + ' · ' + e.title, h, '<button class="btn" data-act="closedlg">Close</button>', 460);
+}
+/* rows that say the same thing about the same thing within a few hours are one entry — never a whole day:
+   many people and one event (going, interested, promoted); one person following several people; and everything
+   that happened to one Event Horizon (published, filled, followed). The entry's time is its newest row's. */
+var GROUPWIN = 3 * 3600000;
+var MANYACTORS = { going:1, interested:1, promoted:1 };
+var HZVERBS = { published_horizon:4, created_horizon:3, added_to_horizon:2, followed_horizon:1 };
+function groupRows(rows){
   var out = [], idx = {};
   rows.forEach(function(r){
-    var a = r.a, band = dayBand(r.ms), ids = (a.extra && a.extra.eventIds) || [];
-    var k = MANYACTORS[a.verb] ? band + '|' + a.verb + '|' + a.objId : a.verb === 'followed_person' ? band + '|fp|' + a.actor
-          : a.verb === 'added_to_horizon' ? band + '|add|' + a.actor + '|' + a.objId : null;
+    var a = r.a, band = dayBand(r.ms), ids = ((a.extra && a.extra.eventIds) || []).filter(function(x){ return EVENTS[x]; });
+    var k = MANYACTORS[a.verb] ? a.verb + '|' + a.objId : a.verb === 'followed_person' ? 'fp|' + a.actor : HZVERBS[a.verb] ? 'hz|' + a.objId : null;
     var e = k && idx[k];
-    if (e){
+    if (e && e.band === band && e.ms - r.ms <= GROUPWIN){
       if (e.actors.indexOf(a.actor) < 0) e.actors.push(a.actor);
       if (e.objs.indexOf(a.objId) < 0) e.objs.push(a.objId);
-      ids.forEach(function(x){ if (EVENTS[x] && e.eventIds.indexOf(x) < 0) e.eventIds.push(x); });
+      ids.forEach(function(x){ if (e.eventIds.indexOf(x) < 0) e.eventIds.push(x); });
+      if (HZVERBS[a.verb]){
+        var pl = (e.parts[a.verb] = e.parts[a.verb] || []); if (pl.indexOf(a.actor) < 0) pl.push(a.actor);
+        if (HZVERBS[a.verb] > HZVERBS[e.verb]) e.verb = a.verb;
+      }
       return;
     }
-    e = { band:band, ms:r.ms, verb:a.verb, objType:a.objType, objId:a.objId, actors:[a.actor], objs:[a.objId], eventIds:ids.filter(function(x){ return EVENTS[x]; }) };
+    e = { band:band, ms:r.ms, verb:a.verb, objType:a.objType, objId:a.objId, actors:[a.actor], objs:[a.objId], eventIds:ids.slice(), parts:{} };
+    if (HZVERBS[a.verb]) e.parts[a.verb] = [a.actor];
     if (k) idx[k] = e;
     out.push(e);
   });
   return out;
 }
+/* Home's stream, in three parts:
+   mine — your own rows of the last day, which Home says in one line at the top;
+   stream — the people Home follows (everyone, when it follows nobody);
+   net — following only a few, the rest of the network, below your people.
+   A call out already in the strip at the top is never repeated in the stream. */
+function homeParts(){
+  var sc = homeScope(), strip = {}, mine = [], fol = [], net = [], now = appNow();
+  homeCallouts().forEach(function(x){ strip[x.id] = 1; });
+  activityRows().forEach(function(a){
+    if (a.verb === 'posted_callout' && (strip[a.objId] || !calloutOpen(calloutOf(a.objId)))) return;
+    var r = { a:a, ms:actTime(a) };
+    if (actIsMe(a)){ if (now - r.ms < 86400000) mine.push(r); return; }
+    if (sc.all || sc.fol.indexOf(a.actor) >= 0) fol.push(r);
+    else if (sc.few) net.push(r);
+  });
+  var byTime = function(x, y){ return y.ms - x.ms; };
+  return { mine:mine.sort(byTime), stream:groupRows(fol.sort(byTime)), net:groupRows(net.sort(byTime)).slice(0, NETMAX) };
+}
+var NETMAX = 12;
+function homeEntries(){ var p = homeParts(); return p.stream.concat(p.net); }
 /* what an entry opens, in feed order: Home's list for the reading pane and the arrow keys */
 function homeItems(){
   var seen = {}, out = [];
   var push = function(t, id){ var k = t + ':' + id; if (!seen[k]){ seen[k] = 1; out.push({ type:t, id:id }); } };
+  upWithPeople().slice(0, UPALL ? 99 : UPMAX).forEach(function(x){ push('event', x.e.id); });
   homeEntries().forEach(function(e){
     if (e.verb === 'added_to_horizon') e.eventIds.slice(0, 2).forEach(function(id){ push('event', id); });
     else e.objs.slice(0, 3).forEach(function(id){ push(e.objType, id); });
   });
   return out;
 }
-/* the call outs still open among the people Home follows (everyone's, logged out), newest first; never your own */
-function homeCallouts(){
-  var sc = homeScope(), posted = {};
-  activityRows().forEach(function(a){ if (a.verb === 'posted_callout') posted[a.objId] = Math.max(posted[a.objId] || 0, actTime(a)); });
-  return CALLOUTS.filter(function(c){ return !c.closed && !isOwnCallout(c) && c.expiresAt >= TODAY_ISO && (sc.all || (!!c.hostId && sc.fol.indexOf(c.hostId) >= 0)); })
-    .sort(function(a, b){ return (posted[b.id] || 0) - (posted[a.id] || 0); }).map(function(c){ return c.id; });
+
+/* ---- call outs: the ones still open, that you have not answered, which reach you ----
+   from people you follow; matching a skill on your profile; from a friend of a friend; in your city.
+   Logged out, or following fewer than a few people, every open call out on the network. */
+var CALLOUTSKILL = { 'co-sound':'SOUND/SOUND ENGINEERING / PA', 'co-kitchen':'CAMP OPERATIONS/KITCHEN & COOKING' };
+function calloutSkill(c){ return c ? (c.skill || CALLOUTSKILL[c.id] || null) : null; }
+/* where a call out is: the event it is for, else where its author is */
+function calloutCity(c){
+  var ev = EVENTS[calloutEventId(c)]; if (ev) return whereOf(ev);
+  var h = c.hostId && PEOPLE[c.hostId]; return h ? (citiesOf(h)[0] || '') : '';
 }
+function calloutWhy(c, sc, fof){
+  var me = PEOPLE['self'], sk = calloutSkill(c), city = calloutCity(c);
+  if (S.loggedIn && sk && (me.skills || []).indexOf(sk) >= 0) return { k:'skill', t:'Matches your skill: ' + skillLabel(sk) };
+  if (S.loggedIn && c.hostId && PFOLLOW[c.hostId]) return { k:'follow', t:'' };
+  if (S.loggedIn && c.hostId && fof[c.hostId]) return { k:'fof', t:'Via ' + fof[c.hostId].map(function(v){ return whoName(v); }).slice(0, 2).join(' and ') };
+  if (S.loggedIn && city && citiesOf(me).some(function(x){ return fold(x) === fold(city); })) return { k:'city', t:'In your city: ' + city };
+  if (!S.loggedIn || sc.all || sc.few) return { k:'net', t:'' };
+  return null;
+}
+function homeCallouts(){
+  var sc = homeScope(), posted = {}, fof = {}, me = myActor();
+  if (S.loggedIn && !sc.all) fofPeople().forEach(function(x){ fof[x.id] = x.via; });
+  activityRows().forEach(function(a){ if (a.verb === 'posted_callout') posted[a.objId] = Math.max(posted[a.objId] || 0, actTime(a)); });
+  return CALLOUTS.filter(function(c){ return calloutOpen(c) && !isOwnCallout(c) && !(me && c.hostId === me) && !(S.loggedIn && ANSWERED[c.id]); })
+    .map(function(c){ return { id:c.id, why:calloutWhy(c, sc, fof), ms:posted[c.id] || 0 }; })
+    .filter(function(x){ return x.why; })
+    .sort(function(a, b){ return (b.why.k === 'skill') - (a.why.k === 'skill') || b.ms - a.ms; });
+}
+
+/* ---- coming up with your people: the next three weeks that the people you follow are going to ---- */
+var UPDAYS = 21, UPMAX = 3, UPALL = false;
+function upWithPeople(){
+  if (!S.loggedIn || !followedPeople().length) return [];
+  return feedEvents().filter(function(e){ return !isPast(lastDay(e)) && dayDiff(e.date) <= UPDAYS; })
+    .map(function(e){ return { e:e, l:followSocial(e.id) }; }).filter(function(x){ return x.l; })
+    .sort(function(a, b){ return byDate(a.e, b.e); });
+}
+/* the date is beside it, so only how far off: "Today", "Tomorrow", "in 5 days" */
+function upWhen(e){ var d = dayDiff(e.date); return d < 0 ? 'On now' : d === 0 ? 'Today' : d === 1 ? 'Tomorrow' : 'in ' + d + ' days'; }
+function upHTML(){
+  var all = upWithPeople(); if (!all.length) return '';
+  var list = all.slice(0, UPALL ? all.length : UPMAX);
+  return '<section class="fup" aria-label="Coming up with your people"><div class="band fupband">Coming up with your people <span class="cnt">'+all.length+'</span>' +
+    '<span class="bsub">next 3 weeks</span></div>' + list.map(function(x){
+      var e = x.e, d = dOf(e.date);
+      return '<div class="fuprow'+selCls('event', e.id)+'" data-type="event" data-id="'+e.id+'">' +
+        '<span class="fupd" aria-hidden="true"><b>'+d.getDate()+'</b>'+esc(DAY[d.getDay()] + ' ' + MON[d.getMonth()])+'</span>' + sqPx(e.id, 40) +
+        '<div class="fcm"><button type="button" class="flink" data-act="row" data-type="event" data-id="'+e.id+'"><span class="fct">'+esc(e.title)+'</span></button>' +
+        '<div class="fcs">'+esc([upWhen(e), whereOf(e)].filter(Boolean).join(' · '))+'</div>' + socialHTML(e.id) + '</div></div>';
+    }).join('') +
+    (all.length > UPMAX ? '<button class="fmore fupmore" data-act="upall" aria-expanded="'+UPALL+'">'+(UPALL ? 'Show fewer' : 'Show '+(all.length - UPMAX)+' more')+'</button>' : '') + '</section>';
+}
+
 /* the people the people you follow follow, and you don't yet: how you meet friends of friends */
 function fofPeople(){
   var me = myActor(), fol = followedPeople(), via = {};
@@ -2970,11 +3216,20 @@ function popularPeople(){
   return CREW.filter(function(x){ return x !== me && !(S.loggedIn && PFOLLOW[x]); })
     .sort(function(a, b){ return (by[b] || []).length - (by[a] || []).length; }).map(function(x){ return { id:x, via:by[x] || [], popular:true }; });
 }
-function whoName(pid, full){ if (pid === myActor() || pid === 'self') return 'You'; var n = person(pid).displayName || ''; return full ? n : n.split(' ')[0]; }
-function whoLink(pid, full){
-  var me = pid === myActor();
-  return '<b class="fwho" data-act="row" data-type="person" data-id="'+(me ? 'self' : pid)+'" role="link">'+esc(whoName(pid, full))+'</b>';
+/* first names, unless two people (or you and someone) share one: then their @handle */
+function firstName(pid){ return String(person(pid).displayName || '').split(' ')[0]; }
+function nameClash(pid){
+  var f = fold(firstName(pid)), me = myActor();
+  return !!f && Object.keys(PEOPLE).some(function(k){ return k !== pid && k !== me && !(k === 'self' && !S.loggedIn) && fold(firstName(k)) === f; });
 }
+function whoName(pid, full){
+  if (pid === myActor() || pid === 'self') return 'You';
+  var p = person(pid);
+  if (full) return p.displayName || '';
+  return nameClash(pid) && p.handle ? '@' + p.handle : firstName(pid);
+}
+function objLink(type, id, label){ return '<button type="button" class="fwho" data-act="row" data-type="'+type+'" data-id="'+id+'">'+esc(label)+'</button>'; }
+function whoLink(pid, full){ return objLink('person', pid === myActor() ? 'self' : pid, whoName(pid, full)); }
 /* one name in full; two or three by first name; more as "Anna, Rio and 2 others". You come first. */
 function namesHTML(ids, link){
   var me = myActor(), f = function(x){ return link ? whoLink(x, ids.length === 1) : esc(whoName(x, ids.length === 1)); };
@@ -2983,102 +3238,158 @@ function namesHTML(ids, link){
   if (ids.length <= 3) return ids.slice(0, -1).map(f).join(', ') + ' and ' + f(ids[ids.length - 1]);
   return f(ids[0]) + ', ' + f(ids[1]) + ' and ' + (ids.length - 2) + ' others';
 }
-function hzLink(hzId){ return '<b class="fwho" data-act="row" data-type="horizon" data-id="'+hzId+'" role="link">'+esc(HORIZONS[hzId].name)+'</b>'; }
+function hzLink(hzId){ return objLink('horizon', hzId, HORIZONS[hzId].name); }
+function evLink(evId){ return objLink('event', evId, EVENTS[evId].title); }
+/* everything that happened to one horizon: "Mira published an Event Horizon and added 2 events · Jon and Sasha followed it" */
+function hzSentence(e){
+  var p = e.parts, n = e.eventIds.length, segs = [], made = p.published_horizon || p.created_horizon;
+  var main = p.published_horizon ? namesHTML(p.published_horizon, true) + ' published an Event Horizon'
+           : p.created_horizon ? namesHTML(p.created_horizon, true) + ' made a private Event Horizon' : '';
+  if (p.added_to_horizon && n){
+    var same = made && p.added_to_horizon.every(function(x){ return made.indexOf(x) >= 0; });
+    if (same) main += ' and added ' + plural(n, 'event');
+    else segs.push(namesHTML(p.added_to_horizon, true) + ' added ' + plural(n, 'event') + ' to ' + hzLink(e.objId));
+  }
+  if (p.followed_horizon) segs.push(namesHTML(p.followed_horizon, true) + (main || segs.length ? ' followed it' : ' followed an Event Horizon'));
+  return [main].concat(segs).filter(Boolean).join(' · ');
+}
 function actSentence(e){
+  if (HZVERBS[e.verb]) return hzSentence(e);
   var who = namesHTML(e.actors, true), be = e.actors.length > 1 || e.actors[0] === myActor() ? ' are ' : ' is ';
   switch (e.verb){
     case 'going':             return who + be + 'going';
     case 'interested':        return who + be + 'interested';
     case 'promoted':          return who + ' promoted an event';
     case 'created_event':     return who + ' created an event';
-    case 'published_horizon': return who + ' published an Event Horizon';
-    case 'created_horizon':   return who + ' made a private Event Horizon';
-    case 'followed_horizon':  return who + ' followed an Event Horizon';
-    case 'added_to_horizon':  return who + ' added ' + plural(e.eventIds.length, 'event') + ' to ' + hzLink(e.objId);
+    case 'posted_callout':    return who + ' posted a call out';
     case 'followed_person':   return who + ' followed ' + namesHTML(e.objs, true);
   }
   return who;
+}
+/* everything you did in the last day, said once: "You: going to X, followed Kai, posted a call out" */
+function youLineHTML(rows){
+  if (!rows.length) return '';
+  var by = {}, order = [];
+  rows.forEach(function(r){ var v = r.a.verb; if (!by[v]){ by[v] = []; order.push(v); } if (by[v].indexOf(r.a) < 0) by[v].push(r.a); });
+  var list = function(objs, link){ var u = []; objs.forEach(function(a){ if (u.indexOf(a.objId) < 0) u.push(a.objId); });
+    return u.length <= 2 ? u.map(link).join(' and ') : link(u[0]) + ' and ' + (u.length - 1) + ' more'; };
+  var frag = {
+    going:function(l){ return 'going to ' + list(l, evLink); },
+    interested:function(l){ return 'interested in ' + list(l, evLink); },
+    promoted:function(l){ return 'promoted ' + list(l, evLink); },
+    created_event:function(l){ return 'created ' + list(l, evLink); },
+    published_horizon:function(l){ return 'published ' + list(l, hzLink); },
+    created_horizon:function(l){ return 'made ' + list(l, hzLink) + ' (private)'; },
+    followed_horizon:function(l){ return 'followed ' + list(l, hzLink); },
+    added_to_horizon:function(l){ var n = 0; l.forEach(function(a){ n += ((a.extra && a.extra.eventIds) || []).filter(function(x){ return EVENTS[x]; }).length; });
+      return 'added ' + plural(n, 'event') + ' to ' + list(l, hzLink); },
+    posted_callout:function(l){ return l.length === 1 ? 'posted a call out: ' + objLink('callout', l[0].objId, calloutOf(l[0].objId).title) : 'posted ' + l.length + ' call outs'; },
+    followed_person:function(l){ return 'followed ' + list(l, function(pid){ return objLink('person', pid, whoName(pid)); }); }
+  };
+  var parts = order.filter(function(v){ return frag[v]; }).map(function(v){ return frag[v](by[v]); });
+  var shown = parts.slice(0, 4), more = parts.length - shown.length;
+  return '<article class="fitem fyou" data-ts="'+tsIso(rows[0].ms)+'" data-verb="you"><div class="fav">'+avHTML('self', 'a32')+'</div>' +
+    '<div class="fbody"><div class="fline"><span class="fsent"><b>You</b>: '+shown.join(', ')+(more ? ' and ' + more + ' more' : '')+'</span>'+timeHTML(rows[0].ms)+'</div></div></article>';
 }
 function selCls(type, id){ return isSel({ type:type, id:id }) ? ' sel fsel' : ''; }
 function fbtn(act, id, on, label, onLabel, icon, onIcon, primary){
   return '<button class="btn fvb'+(on ? ' on' : primary ? ' primary' : '')+'" data-act="'+act+'" data-id="'+id+'" aria-pressed="'+!!on+'">'+ic(on ? onIcon : icon, 16)+esc(on ? onLabel : label)+'</button>';
 }
+/* a feed card is a plain container: its title is the button that opens it (and covers the card for the mouse),
+   its verbs are buttons beside it — never a button inside a button */
+function flink(type, id, inner){ return '<button type="button" class="flink" data-act="row" data-type="'+type+'" data-id="'+id+'">'+inner+'</button>'; }
 /* an event as Home carries it: square, title, when, where — and Interested / Going right there */
 function fEventCard(evId, small){
   var e = EVENTS[evId], past = isPast(lastDay(e)), st = S.loggedIn ? RSVP[evId] : '';
   var verbs = past ? '' : isMine(evId) ? '<div class="fverbs"><span class="pill host">'+ic('star',11)+'<span>Hosting</span></span></div>'
     : '<div class="fverbs">' + fbtn('v-interested', evId, st === 'interested', 'Interested', 'Interested', 'heart', 'heart') +
       fbtn('v-going', evId, st === 'going', 'Going', 'Going', 'check', 'check') + '</div>';
-  return '<div class="fcard fev'+(small ? ' small' : '')+selCls('event', evId)+'" data-act="row" data-type="event" data-id="'+evId+'" role="button" tabindex="-1">' + sqPx(evId, small ? 48 : 64) +
-    '<div class="fcm"><div class="fct">'+esc(e.title)+'</div><div class="fcs">'+esc([relDay(e), whereOf(e)].filter(Boolean).join(' · '))+'</div></div>' + verbs + '</div>';
+  return '<div class="fcard fev'+(small ? ' small' : '')+selCls('event', evId)+'" data-type="event" data-id="'+evId+'">' + sqPx(evId, small ? 48 : 64) +
+    '<div class="fcm">'+flink('event', evId, '<span class="fct">'+esc(e.title)+'</span>')+'<div class="fcs">'+esc([relDay(e), whereOf(e)].filter(Boolean).join(' · '))+'</div></div>' + verbs + '</div>';
 }
 function fHorizonCard(hzId){
   var hz = HORIZONS[hzId], mine = hzOwnedByMe(hzId), fol = S.loggedIn && HZFOLLOW[hzId];
   var meta = ['by ' + (mine ? 'you' : hz.ownerName), plural(hz.eventIds.filter(function(id){ return EVENTS[id]; }).length, 'event'), hzWhen(hzId)].filter(Boolean).join(' · ');
-  return '<div class="fcard fhz'+selCls('horizon', hzId)+'" data-act="row" data-type="horizon" data-id="'+hzId+'" role="button" tabindex="-1">' + hzMosaic(hzId, 64) +
-    '<div class="fcm"><div class="fck">Event Horizon'+(hz.isPublished ? '' : ' · Private')+'</div><div class="fct">'+esc(hz.name)+'</div><div class="fcs">'+esc(meta)+'</div></div>' +
+  return '<div class="fcard fhz'+selCls('horizon', hzId)+'" data-type="horizon" data-id="'+hzId+'">' + hzMosaic(hzId, 64) +
+    '<div class="fcm"><div class="fck">Event Horizon'+(hz.isPublished ? '' : ' · Private')+'</div>'+flink('horizon', hzId, '<span class="fct">'+esc(hz.name)+'</span>')+'<div class="fcs">'+esc(meta)+'</div></div>' +
     (mine ? '' : '<div class="fverbs">' + fbtn('followhz', hzId, fol, 'Follow', 'Following', 'plus', 'check', true) + '</div>') + '</div>';
 }
 function fPersonCard(pid, sub){
   var p = person(pid), fol = S.loggedIn && PFOLLOW[pid], me = pid === myActor() || pid === 'self';
-  return '<div class="fcard fp'+selCls('person', pid)+'" data-act="row" data-type="person" data-id="'+pid+'" role="button" tabindex="-1">' + avHTML(pid, 'a40') +
-    '<div class="fcm"><div class="fct">'+esc(p.displayName)+'</div><div class="fcs">'+esc(sub || ['@' + p.handle, p.bio].filter(Boolean).join(' · '))+'</div></div>' +
+  return '<div class="fcard fp'+selCls('person', pid)+'" data-type="person" data-id="'+pid+'">' + avHTML(pid, 'a40') +
+    '<div class="fcm">'+flink('person', pid, '<span class="fct">'+esc(p.displayName)+'</span>')+'<div class="fcs">'+esc(sub || ['@' + p.handle, p.bio].filter(Boolean).join(' · '))+'</div></div>' +
     (me ? '' : fbtn('followp', pid, fol, 'Follow', 'Following', 'plus', 'check', true)) + '</div>';
+}
+/* what a call out offers you: Answer while it is open; your answer's chat once you have */
+function calloutAct(coId, small){
+  var c = calloutOf(coId), ans = S.loggedIn && ANSWERED[coId] && CHATS[ANSWERED[coId]] ? ANSWERED[coId] : null;
+  if (isOwnCallout(c)) return '';
+  if (ans) return small ? '<span class="ctw">'+ic('check',12)+' Answered</span>' : '<button class="btn" data-act="chatsel" data-id="'+ans+'">'+ic('check',16)+'Answered · Open chat</button>';
+  return calloutOpen(c) && c.hostId ? '<button class="btn'+(small ? '' : ' primary')+'" data-act="answercallout" data-id="'+coId+'">'+ic('chat',16)+'Answer</button>' : '';
 }
 /* a call out is someone standing up in the room: the one inverted thing on Home, the ask in big type */
 function fCalloutCard(coId, ms){
-  var c = calloutOf(coId), evId = calloutEventId(c), mine = isOwnCallout(c), ans = S.loggedIn && ANSWERED[coId] && CHATS[ANSWERED[coId]] ? ANSWERED[coId] : null;
-  var act = mine ? '' : ans ? '<button class="btn" data-act="chatsel" data-id="'+ans+'">'+ic('check',16)+'Answered · Open chat</button>'
-          : '<button class="btn primary" data-act="answercallout" data-id="'+coId+'">'+ic('chat',16)+'Answer</button>';
-  return '<div class="fco'+selCls('callout', coId)+'" data-act="row" data-type="callout" data-id="'+coId+'" role="button" tabindex="-1">' +
-    '<div class="fcok"><span class="fcotag">'+ic('callout',14)+'Call out</span>'+(ms ? '<time class="ftime">'+esc(agoLabel(ms))+'</time>' : '')+'</div>' +
-    '<div class="fcol">Looking for</div><div class="fcoa">'+esc(c.title)+'</div>' + (c.body ? '<p class="fcob">'+esc(c.body)+'</p>' : '') +
-    (evId ? '<div class="fcoe" data-act="row" data-type="event" data-id="'+evId+'" role="button">'+sqPx(evId, 36)+'<span><small>For</small>'+esc(EVENTS[evId].title)+'<small>'+esc(relDay(EVENTS[evId]) + ' · ' + whereOf(EVENTS[evId]))+'</small></span></div>' : '') +
-    '<div class="fcof"><span class="fcoby">' + (c.hostId && PEOPLE[c.hostId] ? avHTML(c.hostId) : '') + '<span>'+esc(mine ? 'You' : c.hostName)+'<small>open until '+esc(fmtShort(c.expiresAt))+'</small></span></span>' + act + '</div></div>';
+  var c = calloutOf(coId), evId = calloutEventId(c), mine = isOwnCallout(c);
+  return '<div class="fco'+selCls('callout', coId)+'" data-type="callout" data-id="'+coId+'">' +
+    '<div class="fcok"><span class="fcotag">'+ic('callout',14)+'Call out</span>'+(ms ? timeHTML(ms) : '')+'</div>' +
+    '<div class="fcol">Looking for</div>' + flink('callout', coId, '<span class="fcoa">'+esc(c.title)+'</span>') + (c.body ? '<p class="fcob">'+esc(c.body)+'</p>' : '') +
+    (evId ? '<button type="button" class="fcoe" data-act="row" data-type="event" data-id="'+evId+'">'+sqPx(evId, 36)+'<span><small>For</small>'+esc(EVENTS[evId].title)+'<small>'+esc(relDay(EVENTS[evId]) + ' · ' + whereOf(EVENTS[evId]))+'</small></span></button>' : '') +
+    '<div class="fcof"><span class="fcoby">' + (c.hostId && PEOPLE[c.hostId] ? avHTML(c.hostId) : '') + '<span>'+esc(mine ? 'You' : c.hostName)+'<small>open until '+esc(fmtShort(c.expiresAt))+'</small></span></span>' + calloutAct(coId) + '</div></div>';
 }
-function coTileHTML(coId){
-  var c = calloutOf(coId), evId = calloutEventId(c), ans = S.loggedIn && ANSWERED[coId] && CHATS[ANSWERED[coId]];
-  return '<div class="cotile'+selCls('callout', coId)+'" data-act="row" data-type="callout" data-id="'+coId+'" role="button" tabindex="-1">' +
-    '<span class="fcotag">'+ic('callout',14)+'Call out</span><b class="cta">'+esc(c.title)+'</b>' +
+function coTileHTML(x){
+  var coId = x.id || x, c = calloutOf(coId), evId = calloutEventId(c), why = x.why && x.why.t;
+  return '<div class="cotile'+selCls('callout', coId)+'" data-type="callout" data-id="'+coId+'">' +
+    '<span class="fcotag">'+ic('callout',14)+'Call out</span>' + flink('callout', coId, '<b class="cta">'+esc(c.title)+'</b>') +
     '<span class="ctw">'+esc(c.hostName + (evId ? ' · for ' + EVENTS[evId].title : ''))+'</span>' +
-    (ans ? '<span class="ctw">'+ic('check',12)+' Answered</span>' : '<button class="btn" data-act="answercallout" data-id="'+coId+'">'+ic('chat',16)+'Answer</button>') + '</div>';
+    (why ? '<span class="ctwhy">'+esc(why)+'</span>' : '') + calloutAct(coId, true) + '</div>';
 }
 function viaText(x){
   var n = x.via.map(function(v){ return whoName(v); });
   var names = n.length <= 2 ? n.join(' and ') : n[0] + ', ' + n[1] + ' and ' + (n.length - 2) + ' more';
   if (x.popular) return n.length ? 'Followed by ' + names : person(x.id).bio || '';
-  return names + (n.length === 1 ? ' follows ' : ' follow ') + person(x.id).displayName.split(' ')[0];
+  return names + (n.length === 1 ? ' follows ' : ' follow ') + whoName(x.id);
 }
 function peopleCardHTML(list, title, note){
   return '<section class="fitem ffof"><h3 class="ffh">'+esc(title)+'</h3>' + (note ? '<p class="ffn">'+esc(note)+'</p>' : '') +
     list.map(function(x){ return fPersonCard(x.id, viaText(x)); }).join('') + '</section>';
 }
 var HZEXPLAINED = false;
-function feedEntryHTML(e){
+function feedEntryHTML(e, cls){
   var at = ' data-ts="'+tsIso(e.ms)+'" data-verb="'+e.verb+'"';
-  if (e.verb === 'posted_callout') return '<article class="fitem fitco"'+at+'>' + fCalloutCard(e.objId, e.ms) + '</article>';
+  if (e.verb === 'posted_callout') return '<article class="fitem fitco'+(cls ? ' ' + cls : '')+'"'+at+'>' + fCalloutCard(e.objId, e.ms) + '</article>';
   var lead = e.actors.slice(0, 2), body = '';
   if (e.objType === 'event') body = fEventCard(e.objId);
-  else if (e.verb === 'added_to_horizon'){
-    body = e.eventIds.slice(0, 2).map(function(id){ return fEventCard(id, true); }).join('');
-    if (e.eventIds.length > 2) body += '<button class="fmore" data-act="row" data-type="horizon" data-id="'+e.objId+'">and '+(e.eventIds.length - 2)+' more on '+esc(HORIZONS[e.objId].name)+'</button>';
-  } else if (e.objType === 'horizon'){
-    body = fHorizonCard(e.objId);
-    if (!HZEXPLAINED){ HZEXPLAINED = true; body = '<p class="fexpl">'+esc(KINDDESC.horizons)+'</p>' + body; }
+  else if (e.objType === 'horizon'){
+    var onlyAdded = !e.parts.published_horizon && !e.parts.created_horizon && e.parts.added_to_horizon && e.eventIds.length;
+    if (onlyAdded){
+      body = e.eventIds.slice(0, 2).map(function(id){ return fEventCard(id, true); }).join('');
+      if (e.eventIds.length > 2) body += '<button class="fmore" data-act="row" data-type="horizon" data-id="'+e.objId+'">and '+(e.eventIds.length - 2)+' more on '+esc(HORIZONS[e.objId].name)+'</button>';
+    } else {
+      body = fHorizonCard(e.objId);
+      if (!HZEXPLAINED && !hzOwnedByMe(e.objId)){ HZEXPLAINED = true; body = '<p class="fexpl">'+esc(KINDDESC.horizons)+'</p>' + body; }
+    }
   } else if (e.objType === 'person') body = e.objs.slice(0, 3).map(function(pid){ return fPersonCard(pid); }).join('') +
     (e.objs.length > 3 ? '<div class="fmore static">and '+(e.objs.length - 3)+' more</div>' : '');
-  return '<article class="fitem"'+at+'><div class="fav'+(lead.length > 1 ? ' two' : '')+'">' + lead.map(function(p){ return avHTML(p === myActor() ? 'self' : p, 'a32'); }).join('') + '</div>' +
-    '<div class="fbody"><div class="fline"><span class="fsent">'+actSentence(e)+'</span><time class="ftime">'+esc(agoLabel(e.ms))+'</time></div>' + body + '</div></article>';
+  /* fresh news of someone deciding to go is the moment to reach out */
+  var who = e.actors.filter(function(p){ return p !== myActor(); })[0];
+  var msg = (e.verb === 'going' || e.verb === 'interested') && isFresh(e.ms) && who && PEOPLE[who]
+    ? '<button type="button" class="fmsg" data-act="dm" data-id="'+who+'" aria-label="Message '+esc(person(who).displayName)+'">'+ic('chat',14)+'Message</button>' : '';
+  return '<article class="fitem'+(cls ? ' ' + cls : '')+'"'+at+'><div class="fav'+(lead.length > 1 ? ' two' : '')+'">' + lead.map(function(p){ return avHTML(p === myActor() ? 'self' : p, 'a32'); }).join('') + '</div>' +
+    '<div class="fbody"><div class="fline"><span class="fsent">'+actSentence(e)+'</span>'+msg+timeHTML(e.ms)+'</div>' + body + '</div></article>';
 }
 function homeHTML(){
-  var sc = homeScope(), entries = homeEntries(), cos = homeCallouts(), h = '';
+  var sc = homeScope(), parts = homeParts(), entries = parts.stream, cos = homeCallouts(), h = '';
   HZEXPLAINED = false;
-  h += '<div class="greet deskgreet fgreet"><h2>'+esc(greeting())+'</h2><p>'+esc(folderSub({ kind:'home' }))+'</p></div>';
+  h += '<div class="greet deskgreet fgreet"><h2>'+esc(greeting())+'</h2>'+(L.phone ? '<p>'+esc(folderSub({ kind:'home' }))+'</p>' : '')+'</div>';
   /* following nobody: Home is the whole network until you follow someone */
   if (S.loggedIn && sc.all) h += peopleCardHTML(popularPeople().slice(0, 3), 'Make Home yours',
     'Home shows what the people you follow do. You don’t follow anyone yet, so here is everyone on Hypernet.');
-  if (cos.length) h += '<div class="band coband">Open call outs' + (S.loggedIn && !sc.all ? ' in your network' : '') + ' <span class="cnt">'+cos.length+'</span></div>' +
+  if (cos.length) h += '<div class="band coband">Open call outs' + (S.loggedIn && !sc.all && !sc.few ? ' for you' : '') + ' <span class="cnt">'+cos.length+'</span>' +
+    '<span class="costep"><button type="button" class="ib" data-act="costep" data-id="-1" aria-label="Previous call outs">'+ic('back',14)+'</button>' +
+    '<button type="button" class="ib" data-act="costep" data-id="1" aria-label="Next call outs">'+ic('back',14).replace('class="ic"', 'class="ic" style="transform:scaleX(-1)"')+'</button></span></div>' +
     '<div class="srow costrip" data-shelf="callouts">' + cos.map(coTileHTML).join('') + '</div>';
+  h += upHTML();
+  h += youLineHTML(parts.mine);
   /* every so often, the people your friends follow (logged out: the people most followed) */
   var fof = !S.loggedIn ? popularPeople().slice(0, 3) : sc.all ? [] : fofPeople(), fi = 0, band = '';
   entries.forEach(function(e, i){
@@ -3089,13 +3400,31 @@ function homeHTML(){
       h += peopleCardHTML(chunk, S.loggedIn ? 'People your friends follow' : 'People to follow');
     }
   });
-  if (!entries.length) h += '<div class="empty">Nothing has happened in your network in the last three weeks.<br><button class="btn primary" data-act="explorekind" data-id="">'+ic('explore')+'Explore</button></div>';
-  else h += '<div class="fend">That’s the last three weeks. <button class="btn" data-act="explorekind" data-id="events">'+ic('cal')+'All events</button></div>';
+  if (!entries.length) h += '<div class="empty">'+(sc.few ? 'The people you follow haven’t done anything in the last three weeks.' : 'Nothing has happened in your network in the last three weeks.') +
+    (sc.few ? '' : '<br><button class="btn primary" data-act="explorekind" data-id="">'+ic('explore')+'Explore</button>') + '</div>';
+  /* following only a few people: the rest of the network keeps Home alive, below your people and marked as such */
+  if (parts.net.length){
+    h += '<div class="band netband">Around the network</div><p class="fnetnote">From people you don’t follow yet. Follow a few more and Home becomes yours.</p>';
+    parts.net.forEach(function(e){ h += feedEntryHTML(e, 'fnet'); });
+  }
+  if (entries.length || parts.net.length) h += '<div class="fend">That’s the last three weeks. <button class="btn" data-act="explorekind" data-id="events">'+ic('cal')+'All events</button></div>';
   return h;
+}
+/* the call-out strip shows whole tiles only: as many columns as fit, the rest a step away */
+function fitStrip(){
+  var s = document.querySelector('#listbody .costrip'); if (!s) return;
+  var w = s.clientWidth - 32, cols = Math.max(1, Math.min(3, Math.floor((w + 16) / 216)));
+  s.style.setProperty('--tw', Math.max(160, Math.floor((w - (cols - 1) * 16) / cols)) + 'px');
+  var band = s.previousElementSibling; if (band) band.classList.toggle('more', s.querySelectorAll('.cotile').length > cols);
+}
+function stepStrip(dir){
+  var s = document.querySelector('#listbody .costrip'); if (!s) return;
+  s.scrollBy({ left: dir * Math.max(160, s.clientWidth - 32 + 16), behavior:'smooth' });
 }
 function renderHome(){
   var lb = $('listbody'), top = lb.scrollTop, cs0 = lb.querySelector('.costrip'), left = cs0 ? cs0.scrollLeft : 0;
   lb.innerHTML = homeHTML();
+  fitStrip();
   var cs = lb.querySelector('.costrip'); if (cs && left) cs.scrollLeft = left;
   lb.scrollTop = top;
   S.rows = homeItems();
@@ -4116,7 +4445,7 @@ var CTXSEL = '.row[data-type], .card2[data-type], .qtile[data-type], .calev[data
 function ctxTarget(node){
   var el = node && node.closest ? node.closest(CTXSEL) : null;
   if (!el || el.closest('.dlg, .ctxmenu')) return null;
-  var act = el.classList.contains('crow') ? el.querySelector('.cm[data-type]') : el;
+  var act = el.classList.contains('crow') ? el.querySelector('.cm[data-type]') : (!el.hasAttribute('data-act') && el.querySelector('.flink[data-type]')) || el;
   if (!act) return null;
   var type = act.getAttribute('data-kind') === 'horizon' ? 'horizon' : act.getAttribute('data-act') === 'chatsel' ? 'chat' : act.getAttribute('data-type'), id = act.getAttribute('data-id');
   if (!((type === 'event' && EVENTS[id]) || (type === 'horizon' && HORIZONS[id]) || (type === 'person' && PEOPLE[id]) ||
@@ -4745,6 +5074,11 @@ document.addEventListener('click', function(ev){
     case 'followp':      followP(id); break;
     case 'dm':           messagePerson(id); break;
     case 'answercallout': answerCallout(id); break;
+    case 'costep':       stepStrip(+id); break;
+    case 'upall':        UPALL = !UPALL; render(); break;
+    case 'whoall':       whoAllDialog(id); break;
+    case 'whoopen':      closeDialogs(); openItem('person', id, 'push'); break;
+    case 'whodm':        closeDialogs(); messagePerson(id); break;
     case 'chatsel':      openChat(id); break;
     case 'chatback':     if (L.phone) navBack(); else { S.chatOpen = null; render(); } break;
     case 'sendchat':     sendChat(); break;

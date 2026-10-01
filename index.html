@@ -583,8 +583,9 @@ body.is-phone .dbar .dbtn{ height:44px; }
 .ferr{ font-size:var(--fs-s); font-weight:bold; color:var(--ink); }
 .ferr::before{ content:"\26A0\FE0E  "; }
 input[aria-invalid="true"]{ outline:1px solid #000; outline-offset:-4px; }
-.demorow{ margin:0 0 20px; }
-.demorow .linkrow .ic{ color:var(--dim); }
+.demolink{ margin:4px 0 0; font-size:var(--fs-s); color:var(--dim); }
+.demolink button{ min-height:32px; padding:0; border:0; background:none; color:var(--ink2); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+body.is-phone .demolink button{ min-height:44px; }
 .pick{ display:flex; align-items:center; gap:12px; min-height:52px; padding:6px 10px; border-bottom:1px solid var(--line); cursor:pointer; }
 .pick:hover{ background:var(--hover); }
 .pick .pm{ flex:1; min-width:0; }
@@ -1481,7 +1482,8 @@ function renderPreview(){
 /* Log in without an account here yet: the only account to log in to is the demo */
 function loginPicker(){
   if (ACCTS.me){ loginDialog(); return; }
-  dialog('Log in to Hypernet', demoRowHTML(), '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="join">Join free</button>', 420);
+  dialog('Log in to Hypernet', '<p class="fhelp" style="margin:0 0 12px">There is no account in this browser yet. Join free with your name — it takes a few seconds.</p>' + demoRowHTML(),
+    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="join">Join free</button>', 420);
 }
 /* logged-out actions ask for a login, then carry on with what you asked for.
    Carried on means made so: a verb you asked for is switched on, never toggled back off. */
@@ -3467,12 +3469,10 @@ function profileForm(){
         return '<button type="button" class="pchip'+(on?' on':'')+'" data-act="pfcity" data-id="'+esc(c)+'" aria-pressed="'+on+'">'+esc(c)+'</button>'; }).join('') +
       '<span class="addcity"><input type="text" id="pf-city" placeholder="Another city" aria-label="Another city"><button type="button" class="btn" data-act="pfaddcity">Add</button></span></div></div>';
 }
-/* the demo account, one tap from every Join and Log in */
+/* the demo account: a small text link at the bottom of Join and Log in, never the main action, so someone
+   invited for real doesn't become Michal by accident */
 function demoRowHTML(){
-  var m = PEOPLE['p-michal'];
-  return '<div class="picklist demorow"><div class="linkrow" data-act="useacct" data-id="demo" role="button">'+avHTML('p-michal','a40') +
-    '<div class="lr"><b>Try the demo account</b><div class="fhelp">'+esc(m.displayName)+' · @'+esc(m.handle)+'</div></div>' +
-    ic('back',18).replace('class="ic"','class="ic" style="transform:scaleX(-1)"')+'</div></div>';
+  return '<p class="demolink">Just looking? <button type="button" data-act="useacct" data-id="demo">Explore as the demo account</button></p>';
 }
 /* your photo is your profile look's image: the same picture as the square in Customize */
 function pfPhotoHTML(){
@@ -3504,7 +3504,7 @@ function profileDialog(mode){
   var p = PEOPLE['self'], up = mode === 'signup';
   PF = { mode:mode, name: up ? '' : p.displayName, handle: up ? '' : p.handle, photo: up ? null : (PTHEME.self && PTHEME.self.image) || null,
          about: up ? '' : (p.bio || ''), skills: up ? [] : (p.skills || []).slice(), cities: up ? [] : citiesOf(p).slice() };
-  dialog(up ? (JOINFOR || 'Join Hypernet') : 'Edit profile', (up ? demoRowHTML() : '') + '<div id="pfbody">' + profileForm() + '</div>',
+  dialog(up ? (JOINFOR || 'Join Hypernet') : 'Edit profile', '<div id="pfbody">' + profileForm() + '</div>' + (up ? demoRowHTML() : ''),
     '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="pfsave" id="pfsave"'+(up?' disabled':'')+'>'+(up ? 'Join' : 'Save')+'</button>', 560);
   focusIn('pf-name');
 }

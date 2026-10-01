@@ -987,6 +987,7 @@ var CALLOUTS = H.callouts.map(function(c){
   return { id:c.id, title:c.title, body:c.body, expiresAt:c.expiresAt, hostName:c.hostName, hostId: host?host.id:null };
 });
 
+/* the fixture people (seed scaffolding: fake attendees and activity). The network itself is networkPeople() */
 var CREW = ['p-anna','p-rio','p-kai','p-mira','p-jon','p-sasha'];
 var PRESENCE = { 'p-anna':'online','p-rio':'online','p-kai':'idle','p-mira':'offline','p-jon':'offline','p-sasha':'offline' };
 /* people are chrome, so their avatars stay in the greys */
@@ -1679,9 +1680,10 @@ function searchItems(q){
     if ((hz.isPublished || hzOwnedByMe(k)) && matchAll([hz.name, hz.description, hz.ownerName], q)) out.push({ type:'horizon', id:k });
   });
   CALLOUTS.forEach(function(c){ if (matchAll([c.title, c.body, c.hostName], q)) out.push({ type:'callout', id:c.id }); });
+  var net = networkPeople();
   Object.keys(PEOPLE).forEach(function(k){
     var p = PEOPLE[k];
-    if ((k === 'self' && !S.loggedIn) || k === 'p-michal' || /^u-/.test(k)) return;
+    if (k === 'self' ? !S.loggedIn : net.indexOf(k) < 0) return;
     if (matchAll([p.displayName, p.handle, p.bio, (p.skills||[]).map(skillLabel).join(' '), (p.skills||[]).join(' '), citiesOf(p).join(' ')], q)) out.push({ type:'person', id:k });
   });
   return out;
@@ -3071,7 +3073,7 @@ function fofPeople(){
 function popularPeople(){
   var me = myActor(), by = {};
   Object.keys(NETFOLLOWS).forEach(function(a){ NETFOLLOWS[a].forEach(function(b){ (by[b] = by[b] || []).push(a); }); });
-  return CREW.filter(function(x){ return x !== me && !(S.loggedIn && PFOLLOW[x]); })
+  return networkPeople().filter(function(x){ return x !== me && !(S.loggedIn && PFOLLOW[x]); })
     .sort(function(a, b){ return (by[b] || []).length - (by[a] || []).length; }).map(function(x){ return { id:x, via:by[x] || [], popular:true }; });
 }
 function whoName(pid, full){ if (pid === myActor() || pid === 'self') return 'You'; var n = person(pid).displayName || ''; return full ? n : n.split(' ')[0]; }
@@ -3263,7 +3265,7 @@ function renderNav(){
     h += '<div class="navh">Following</div>';
     followed.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { sub: HORIZONS[k].ownerName !== HORIZONS[k].name ? HORIZONS[k].ownerName : '', hz: L.phone }); });
   }
-  var ppl = CREW.filter(function(p){ return PFOLLOW[p]; });
+  var ppl = networkPeople().filter(function(p){ return PFOLLOW[p]; });
   if (ppl.length){
     h += '<div class="navh">People you follow</div>';
     ppl.forEach(function(p){ h += navRow({kind:'person'}, avHTML(p), person(p).displayName, { person:p, sub: PRESENCE[p] === 'online' ? '· online' : '' }); });
@@ -3725,7 +3727,7 @@ function newChatDialog(){
 }
 /* everyone you could message: people you follow first */
 function ncPeopleAll(){
-  var ids = Object.keys(PEOPLE).filter(function(k){ return k !== 'self' && k !== 'p-michal' && !/^u-/.test(k); });
+  var ids = networkPeople();
   return ids.sort(function(a,b){ return (PFOLLOW[b]?1:0) - (PFOLLOW[a]?1:0) || (person(a).displayName < person(b).displayName ? -1 : 1); });
 }
 function paintNewChat(){

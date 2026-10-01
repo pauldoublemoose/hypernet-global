@@ -18,7 +18,13 @@
    corrected, bad files are refused, the profile photo comes from Edit profile, old looks migrate; and 2026-10-01 (v1): Home is the network's
    activity (newest first, an inverted call-out card, friends of friends, your own actions live at the top, the whole
    network when logged out or following nobody), Explore holds events / Event Horizons / call outs / people (old
-   #/horizons and #/people land there), chat is person to person only. */
+   #/horizons and #/people land there), chat is person to person only; and 2026-10-01 (v1 social): a call out is in the
+   strip or the stream, never both; a skill-matched call out from beyond your follows reaches a new account, saying why;
+   following one person keeps "Around the network"; "Coming up with your people" is sorted by event date; your own day
+   is one "You: …" line; lines group within three hours; @handle on name clashes; Who's going leads with people you
+   follow and "and N more" opens everyone; Explore says who you follow is going; Answer opens the DM with the call out
+   pinned, a textarea (Enter sends, Shift+Enter new line) and the poster sees who answered; New call out defaults to
+   the event you are on; no role=button around buttons on Home; whole call-out tiles with the dock and pane open. */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch(e){
   try { ({ chromium } = require('playwright-core')); } catch(e2){
@@ -451,10 +457,10 @@ async function overflowEverywhere(p, label){
     /* logged out: the public activity, newest first, with the call outs popping */
     const pub = await ev(c, () => {
       const its = [...document.querySelectorAll('#listbody .fitem[data-ts]')], ts = its.map(x => x.getAttribute('data-ts'));
-      const co = document.querySelector('#listbody .fitco .fco'), st = co && getComputedStyle(co), lb = getComputedStyle(document.getElementById('listbody'));
+      const co = document.querySelector('#listbody .costrip .cotile'), st = co && getComputedStyle(co), lb = getComputedStyle(document.getElementById('listbody'));
       const cards = [...document.querySelectorAll('#listbody .fcard')].map(x => getComputedStyle(x).backgroundColor);
       return { n:its.length, sorted:ts.every((t, i) => !i || ts[i - 1] >= t), bands:[...document.querySelectorAll('#listbody > .band')].map(b => b.textContent.trim()),
-               co:!!co, coBg:st && st.backgroundColor, coFg:st && st.color, coSize:co && parseFloat(getComputedStyle(co.querySelector('.fcoa')).fontSize),
+               co:!!co, coBg:st && st.backgroundColor, coFg:st && st.color, coSize:co && parseFloat(getComputedStyle(co.querySelector('.cta')).fontSize),
                bodySize:parseFloat(getComputedStyle(document.querySelector('#listbody .fsent')).fontSize), listBg:lb.backgroundColor, cards,
                strip:document.querySelectorAll('#listbody .costrip .cotile').length, fof:!!document.querySelector('#listbody .ffof .fcard.fp [data-act="followp"]'),
                verbs:!!document.querySelector('#listbody .fev [data-act="v-going"]') && !!document.querySelector('#listbody .fev [data-act="v-interested"]'),
@@ -462,8 +468,8 @@ async function overflowEverywhere(p, label){
     });
     ok(pub.n >= 20 && pub.sorted, kind + ': logged out, Home is the network\'s activity, newest first (' + pub.n + ' entries)');
     ok(pub.bands[0] && /call outs/i.test(pub.bands[0]) && pub.bands.indexOf('Today') > 0 && pub.bands.indexOf('Yesterday') > pub.bands.indexOf('Today'), kind + ': open call outs on top, then day bands ' + JSON.stringify(pub.bands));
-    ok(pub.times.every(t => /^(now|\d+m|\d+h|yesterday|Mon|Tue|Wed|Thu|Fri|Sat|Sun|\d+ \w{3})$/.test(t)), kind + ': relative times ' + JSON.stringify(pub.times));
-    ok(pub.co && lum(pub.coBg) < .12 && lum(pub.coFg) > .9 && lum(pub.listBg) > .9 && pub.coSize >= 1.8 * pub.bodySize, kind + ': a call out is an inverted card with the ask in big type');
+    ok(pub.times.every(t => /^(now|\d+m ago|\d+h ago|yesterday|\d+ days ago|\d+ \w{3})$/.test(t)), kind + ': relative times read as ages ' + JSON.stringify(pub.times));
+    ok(pub.co && lum(pub.coBg) < .12 && lum(pub.coFg) > .9 && lum(pub.listBg) > .9 && pub.coSize >= 1.3 * pub.bodySize, kind + ': a call out is an inverted tile with the ask in big type');
     ok(pub.cards.every(b => lum(b) > .8), kind + ': and nothing else on Home is inverted');
     ok(pub.strip >= 1 && pub.fof && pub.verbs, kind + ': call out strip, people to follow, and Interested / Going on event cards');
     /* Explore: the four kinds; the old destinations land on them */
@@ -489,21 +495,169 @@ async function overflowEverywhere(p, label){
        kind + ': demo: people your friends follow, never someone you already follow');
     const target = await ev(c, () => { const b = [...document.querySelectorAll('#listbody .fev [data-act="v-going"]')].find(x => !x.classList.contains('on')); return b.getAttribute('data-id'); });
     await c.click('#listbody .fev [data-act="v-going"][data-id="' + target + '"] >> nth=0'); await c.waitForTimeout(400);
-    const live = await ev(c, id => { const f = document.querySelector('#listbody .fitem[data-ts]'), fe = f.querySelector('.fev');
-      return { s:f.querySelector('.fsent').textContent, t:f.querySelector('.ftime').textContent, id:fe && fe.getAttribute('data-id'), on:RSVP[id] === 'going' }; }, target);
-    ok(live.on && /^You( and|,| are going)/.test(live.s) && live.id === target && live.t === 'now', kind + ': Going from a card puts "You … going" at the top, now ' + JSON.stringify(live));
+    const live = await ev(c, id => { const f = document.querySelector('#listbody .fitem[data-ts]');
+      return { you:f.classList.contains('fyou'), s:f.querySelector('.fsent').textContent, t:f.querySelector('.ftime').textContent, title:EVENTS[id].title, on:RSVP[id] === 'going' }; }, target);
+    ok(live.on && live.you && /^You: /.test(live.s) && live.s.indexOf('going to ' + live.title) >= 0 && live.t === 'now', kind + ': Going from a card puts "You: going to …" at the top, now ' + JSON.stringify(live));
     await c.evaluate(() => followP('p-jon')); await c.waitForTimeout(300);
-    ok(await ev(c, () => [...document.querySelectorAll('#listbody .fitem[data-verb="followed_person"]')].some(x => /^You followed Jon/.test(x.querySelector('.fsent').textContent))), kind + ': following someone shows up as "You followed …"');
+    const youl = await ev(c, () => ({ s:(document.querySelector('#listbody .fyou .fsent') || {}).textContent || '',
+      yous:[...document.querySelectorAll('#listbody .fitem .fsent')].filter(x => /^You\b/.test(x.textContent)).length }));
+    ok(/followed Jon/.test(youl.s) && youl.yous === 1, kind + ': what you did is one line at the top ("You: …, followed Jon"), never a run of "You …" items ' + JSON.stringify(youl));
     await c.click('#listbody .fitem .fev [data-act="v-going"][data-id="' + target + '"] >> nth=0'); await c.waitForTimeout(400);
-    ok(await ev(c, id => !RSVP[id] && ![...document.querySelectorAll('#listbody .fitem[data-verb="going"] .fsent')].some(x => /^You/.test(x.textContent)), target), kind + ': un-going takes your row off Home');
+    ok(await ev(c, id => !RSVP[id] && ((document.querySelector('#listbody .fyou .fsent') || {}).textContent || '').indexOf(EVENTS[id].title) < 0, target), kind + ': un-going takes it off your line');
     await c.reload(); await c.waitForTimeout(700);
-    ok(await ev(c, () => [...document.querySelectorAll('#listbody .fitem')].some(x => /^You followed/.test((x.querySelector('.fsent') || {}).textContent || ''))), kind + ': your activity survives a reload');
+    ok(await ev(c, () => /^You: .*followed/.test((document.querySelector('#listbody .fyou .fsent') || {}).textContent || '')), kind + ': your activity survives a reload');
     /* a new account follows nobody: the whole network, and a nudge to follow people */
     await c.evaluate(() => doLogout()); await c.waitForTimeout(200);
     await join(c, 'Nora Field', 'nora' + kind);
     ok(await ev(c, () => /Make Home yours/.test(document.querySelector('#listbody').textContent) && document.querySelectorAll('#listbody .fitem[data-ts]').length >= 20), kind + ': following nobody, Home is the whole network with a nudge to follow people');
     ok(!c.errors.length, kind + ': no console errors (v1 Home / Explore) ' + c.errors.join(' '));
     ok((await overflow(c)) <= 0, kind + ': no overflow (v1 Home)');
+  }
+
+  /* ---------------- 2026-10-01 (v1 social): call outs reach the right people once; Home blends; your people's next weeks ---------------- */
+  for (const kind of ['desk', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '#/home', true);
+    const a11y = () => ev(c, () => [...document.querySelectorAll('#listbody [role="button"]')].filter(x => x.querySelector('button, a, [role="button"]')).length +
+                                   document.querySelectorAll('#listbody button button').length);
+    const noDup = () => ev(c, () => { const strip = [...document.querySelectorAll('#listbody .costrip .cotile')].map(x => x.getAttribute('data-id'));
+      const stream = [...document.querySelectorAll('#listbody .fitco .fco')].map(x => x.getAttribute('data-id'));
+      return { strip, dup: stream.filter(x => strip.indexOf(x) >= 0) }; });
+    let nd = await noDup();
+    ok(nd.strip.length >= 2 && !nd.dup.length, kind + ': logged out, every open call out is in the strip and none is repeated in the stream ' + JSON.stringify(nd));
+    ok((await a11y()) === 0, kind + ': no role=button wrapper around real buttons on Home (logged out)');
+    /* the demo follows four people: what they are going to in the next three weeks, by date, with faces */
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    const up = await ev(c, () => { const rows = [...document.querySelectorAll('#listbody .fup .fuprow')];
+      return { n:rows.length, dates:rows.map(r => EVENTS[r.getAttribute('data-id')].date), soc:rows.map(r => (r.querySelector('.soc') || {}).textContent || ''),
+               av:rows.every(r => r.querySelectorAll('.soc .av').length >= 1), head:(document.querySelector('#listbody .fupband') || {}).textContent || '' }; });
+    ok(up.n >= 2 && up.dates.every((d, i) => !i || up.dates[i - 1] <= d) && up.av && up.soc.every(t => /(is|are) (going|interested)/.test(t)) && /Coming up with your people/.test(up.head),
+       kind + ': "Coming up with your people" lists the next weeks by event date, with who you follow ' + JSON.stringify(up));
+    nd = await noDup();
+    ok(!nd.dup.length && (await a11y()) === 0, kind + ': logged in, no call out twice and no nested buttons ' + JSON.stringify(nd));
+    if (kind === 'desk'){
+      /* "Show N more" opens the rest of the next weeks */
+      const more = await ev(c, () => { const b = document.querySelector('#listbody [data-act="upall"]'); if (!b) return null; const n0 = document.querySelectorAll('#listbody .fuprow').length; b.click(); return { n0, n1:document.querySelectorAll('#listbody .fuprow').length }; });
+      ok(!more || more.n1 > more.n0, kind + ': the shelf opens to all of the next weeks ' + JSON.stringify(more));
+      /* a fresh "going" invites a message */
+      ok(await ev(c, () => [...document.querySelectorAll('#listbody .fitem[data-verb="going"], #listbody .fitem[data-verb="interested"]')].some(x => x.querySelector('.ftime.fresh') && x.querySelector('.fmsg[data-act="dm"]'))),
+         kind + ': a fresh going / interested line carries Message');
+      /* grouping stays within a few hours */
+      /* a line groups rows within three hours of its newest one: every actor on it acted in that window */
+      ok(await ev(c, () => homeParts().stream.every(e => { if (e.actors.length < 2 || !MANYACTORS[e.verb]) return true;
+           return e.actors.every(p => activityRows().some(a => a.actor === p && a.verb === e.verb && a.objId === e.objId && actTime(a) <= e.ms && e.ms - actTime(a) <= GROUPWIN)); })),
+         kind + ': lines group only rows within three hours of each other');
+      /* the event page: people you follow first, with when they decided; "and N more" opens everyone */
+      const evId = await ev(c, () => upWithPeople().map(x => x.e.id).find(id => whoGoing(id).some(x => PFOLLOW[x.pid] && x.ms)) || upWithPeople()[0].e.id);
+      await c.evaluate(id => openItem('event', id), evId); await c.waitForTimeout(400);
+      const who = await ev(c, () => { const ch = [...document.querySelectorAll('#dscroll .whochips .chip.who')];
+        return { n:ch.length, firstFol:ch[0] && ch[0].classList.contains('fol'), subs:ch.map(x => x.querySelector('small').textContent),
+                 order:ch.map(x => x.classList.contains('fol') ? 1 : 0), more:!!document.querySelector('#dscroll .whochips button[data-act="whoall"]') }; });
+      ok(who.n >= 1 && who.firstFol && who.order.every((v, i) => !i || who.order[i - 1] >= v) && who.subs.some(t => /going · (\d+m ago|\d+h ago|yesterday|\d+ days ago|\d+ \w{3})/.test(t)),
+         kind + ': Who’s going puts the people you follow first, each with when they decided ' + JSON.stringify(who));
+      if (who.more){
+        await c.click('#dscroll .whochips [data-act="whoall"]'); await c.waitForTimeout(300);
+        ok(await ev(c, () => document.querySelectorAll('.dlg .whorow').length >= 1 && !!document.querySelector('.dlg .whorow [data-act="whodm"]')), kind + ': "and N more" opens everyone going, with Message');
+        await c.evaluate(() => closeDialogs()); await c.waitForTimeout(150);
+      }
+      await shot(c, 'v1-social-event-who');
+      /* Explore's events carry who you follow */
+      await c.goto(URL + '#/explore/events'); await c.waitForTimeout(450);
+      ok(await ev(c, () => [...document.querySelectorAll('#listbody .row .rsoc')].some(x => /(is|are) (going|interested)/.test(x.textContent) && x.querySelector('.av'))), kind + ': Explore → Events rows say who you follow is going');
+      /* New → Call out is for the event you are looking at, or the event of the call out you are on */
+      const host = await ev(c, () => MYEVENTS.filter(id => EVENTS[id] && !isPast(lastDay(EVENTS[id])))[0]);
+      const other = await ev(c, h => feedEvents().filter(e => !isPast(lastDay(e)) && e.id !== h && MYEVENTS.indexOf(e.id) < 0)[3].id, host);
+      await c.evaluate(id => openItem('event', id), other); await c.waitForTimeout(300);
+      await c.evaluate(() => runCmd('new-callout')); await c.waitForTimeout(250);
+      ok(await ev(c, id => document.getElementById('co-e').value === id, other), kind + ': New → Call out defaults to the event you are looking at');
+      await c.evaluate(() => { closeDialogs(); FORMDRAFTS.callout = null; }); await c.evaluate(() => openItem('callout', 'co-kitchen')); await c.waitForTimeout(300);
+      await c.evaluate(() => runCmd('new-callout')); await c.waitForTimeout(250);
+      ok(await ev(c, () => document.getElementById('co-e').value === calloutEventId(calloutOf('co-kitchen'))), kind + ': … or the event of the call out you are on');
+      await c.evaluate(() => { closeDialogs(); FORMDRAFTS.callout = null; S.stack = []; S.paneClosed = true; render(); }); await c.waitForTimeout(200);
+      await c.evaluate(() => runCmd('new-callout')); await c.waitForTimeout(250);
+      ok(await ev(c, h => document.getElementById('co-e').value === h && !!document.querySelector('#co-s option[value="CAMP OPERATIONS/KITCHEN & COOKING"]'), host), kind + ': … otherwise your next hosted event; the form has a skill');
+      await c.evaluate(() => closeDialogs());
+      /* width: nothing in the reading pane, the list takes the room */
+      await c.evaluate(() => { closeDialogs(); goFolder({ kind:'home' }); S.stack = []; render(); }); await c.waitForTimeout(300); await c.evaluate(() => closePane()); await c.waitForTimeout(300);
+      ok(await ev(c, () => S.folder.kind === 'home' && document.getElementById('listcol').offsetWidth >= 640 && document.getElementById('detailcol').offsetWidth > 200), kind + ': at 1440 with the pane closed the list takes the room, the empty pane stays');
+      await shot(c, 'v1-social-home-desk');
+    } else {
+      await c.goto(URL + '#/explore'); await c.waitForTimeout(450);
+      ok(await ev(c, () => [...document.querySelectorAll('#listbody .card2 .csoc')].some(x => /(is|are) (going|interested)/.test(x.textContent) && x.querySelector('.av'))), kind + ': Explore cards say who you follow is going');
+    }
+    /* the demo posts a call out for Kitchen, for no event: it must reach a stranger who cooks */
+    await c.evaluate(() => { closeDialogs(); FORMDRAFTS.callout = null; runCmd('new-callout'); }); await c.waitForTimeout(250);
+    await c.fill('#co-t', 'Second cook'); await c.selectOption('#co-e', ''); await c.selectOption('#co-s', 'CAMP OPERATIONS/KITCHEN & COOKING');
+    await c.click('#co-go'); await c.waitForTimeout(300);
+    ok(await ev(c, () => CALLOUTS[0].title === 'Second cook' && CALLOUTS[0].skill === 'CAMP OPERATIONS/KITCHEN & COOKING' && !CALLOUTS[0].eventId), kind + ': the call out keeps its skill');
+    /* a new account with a skill, following three strangers: the Kitchen call outs still reach it, saying why */
+    await c.evaluate(() => { closeDialogs(); S.tab = 'home'; goFolder({ kind:'home' }); S.stack = []; doLogout(); }); await c.waitForTimeout(200);
+    await c.evaluate(() => loginDialog()); await c.waitForTimeout(150);
+    await c.fill('#pf-name', 'Cora Pan'); await c.fill('#pf-handle', 'cora' + kind);
+    await c.evaluate(() => document.querySelector('.pchip[data-id="CAMP OPERATIONS/KITCHEN & COOKING"]').click()); await c.waitForTimeout(100);
+    await c.click('#pfsave'); await c.waitForTimeout(300);
+    /* following one person: Home still shows the network around them */
+    await c.evaluate(() => followP('p-mira')); await c.waitForTimeout(300);
+    const blend = await ev(c, () => ({ net:document.querySelectorAll('#listbody .fitem.fnet').length, band:[...document.querySelectorAll('#listbody .band')].some(b => /Around the network/.test(b.textContent)),
+      mine:homeParts().stream.every(e => e.actors.every(a => a === 'p-mira')), strip:document.querySelectorAll('#listbody .costrip .cotile').length }));
+    ok(blend.net >= 3 && blend.band && blend.mine && blend.strip >= 2, kind + ': following one person, Home is theirs first, then "Around the network" — and the network’s call outs stay ' + JSON.stringify(blend));
+    await c.evaluate(() => { followP('p-jon'); followP('p-sasha'); }); await c.waitForTimeout(300);
+    const reach = await ev(c, () => { const t = [...document.querySelectorAll('#listbody .costrip .cotile')];
+      return t.map(x => (x.querySelector('.cta') || {}).textContent + ' | ' + ((x.querySelector('.ctwhy') || {}).textContent || '')); });
+    ok(reach.some(t => /^Second cook \| Matches your skill: Kitchen/.test(t)) && reach.some(t => /^Kitchen lead \| Matches your skill: Kitchen/.test(t)),
+       kind + ': a skill-matched call out from beyond your follows reaches you, labelled why ' + JSON.stringify(reach));
+    ok(await ev(c, () => !document.querySelector('#listbody .fnet')), kind + ': following three people, Home is yours (no network section)');
+    ok(await ev(c, () => { PEOPLE['u-tmpkai'] = { id:'u-tmpkai', displayName:'Kai Lindqvist', handle:'kai.l', skills:[] };
+      const r = whoName('p-kai') === '@kai' && whoName('u-tmpkai') === '@kai.l' && whoName('p-jon') === 'Jon'; delete PEOPLE['u-tmpkai']; return r && whoName('p-kai') === 'Kai'; }),
+       kind + ': where two first names collide, lines say @handle');
+    /* answering: the DM opens with the call out pinned, the box grows, Enter sends, Shift+Enter is a new line */
+    if (kind === 'phone') await c.evaluate(() => { const t = document.querySelector('#listbody .cotile[data-id^="co-new-"]'); t.scrollIntoView(); });
+    await c.evaluate(() => document.querySelector('#listbody .cotile[data-id^="co-new-"] [data-act="answercallout"]').click()); await c.waitForTimeout(400);
+    const dm = await ev(c, () => ({ pin:(document.querySelector('.cpin') || {}).textContent || '', tag:(document.getElementById('chatbox') || {}).tagName, draft:(document.getElementById('chatbox') || {}).value }));
+    ok(/^Answering: Second cook/.test(dm.pin.trim()) && dm.tag === 'TEXTAREA' && /I can help/.test(dm.draft), kind + ': Answer opens the DM with "Answering: <call out>" pinned and a textarea ' + JSON.stringify(dm));
+    await c.focus('#chatbox'); await c.keyboard.press('End'); await c.keyboard.press('Shift+Enter'); await c.keyboard.type('I run a camp kitchen.');
+    const h0 = await ev(c, () => document.getElementById('chatbox').offsetHeight);
+    ok(await ev(c, () => /\nI run a camp kitchen\.$/.test(document.getElementById('chatbox').value)), kind + ': Shift+Enter adds a new line');
+    await c.keyboard.press('Enter'); await c.waitForTimeout(300);
+    const sent = await ev(c, () => { const cid = activeChat(); const m = CHATS[cid].messages; return { n:m.length, card:m.some(x => x.cocard), last:m[m.length - 1].text, pin:(document.querySelector('.cpin') || {}).textContent || '', box:document.getElementById('chatbox').value }; });
+    ok(sent.card && /I run a camp kitchen/.test(sent.last) && /You answered/.test(sent.pin) && !sent.box && h0 > 30, kind + ': Enter sends the answer with the call out card ' + JSON.stringify(sent));
+    if (kind === 'desk') await shot(c, 'v1-social-answer-dm');
+    /* answered: it leaves the strip */
+    await c.goto(URL + '#/home'); await c.waitForTimeout(400);
+    ok(await ev(c, () => ![...document.querySelectorAll('#listbody .costrip .cotile')].some(x => calloutOf(x.getAttribute('data-id')).title === 'Second cook')), kind + ': an answered call out leaves the strip');
+    /* the poster sees who answered, and the answer is in their chats */
+    await c.evaluate(() => doLogout()); await c.waitForTimeout(200);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    const coId = await ev(c, () => CALLOUTS.filter(x => x.title === 'Second cook')[0].id);
+    await c.evaluate(id => openItem('callout', id), coId); await c.waitForTimeout(350);
+    const poster = await ev(c, () => { const r = [...document.querySelectorAll('#dscroll .whorow, #app .whorow')]; return { n:r.length, name:r[0] && r[0].textContent, dm:!!(r[0] && r[0].querySelector('[data-act="dm"]')),
+      chat:Object.keys(CHATS).some(k => CHATS[k].messages.some(m => /I run a camp kitchen/.test(m.text || ''))) }; });
+    ok(poster.n === 1 && /Cora Pan/.test(poster.name) && poster.dm && poster.chat, kind + ': the poster’s call out lists who answered, with their chat ' + JSON.stringify(poster));
+    ok(!c.errors.length, kind + ': no console errors (v1 social) ' + c.errors.join(' '));
+    ok((await overflow(c)) <= 0, kind + ': no overflow (v1 social)');
+  }
+  /* 1440 with the chat dock and the reading pane open: call-out tiles are whole, never cut */
+  {
+    const c = await ctx('desk');
+    await open(c, '#/home', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(300);
+    await c.evaluate(() => { S.rightOpen = true; render(); }); await c.waitForTimeout(300);
+    await c.evaluate(() => openItem('event', upWithPeople()[0].e.id)); await c.waitForTimeout(300);
+    const cut = await ev(c, () => { const s = document.querySelector('#listbody .costrip'), r = s.getBoundingClientRect();
+      return { cols:document.getElementById('app').className, cut:[...s.querySelectorAll('.cotile')].map(t => t.getBoundingClientRect()).filter(t => t.right > r.left + 1 && t.left < r.right - 1 && (t.left < r.left - 1 || t.right > r.right + 1)).length,
+               more:document.querySelector('#listbody .coband').classList.contains('more') }; });
+    ok(/r-open/.test(cut.cols) && /split/.test(cut.cols) && cut.cut === 0 && cut.more, '1440 dock + pane: no call-out tile is cut off, and the strip says there are more ' + JSON.stringify(cut));
+    await c.click('#listbody .coband [data-act="costep"][data-id="1"]'); await c.waitForTimeout(600);
+    ok(await ev(c, () => document.querySelector('#listbody .costrip').scrollLeft > 50), '1440 dock + pane: the strip steps to the next tiles');
+    ok(!c.errors.length && (await overflow(c)) <= 0, '1440 dock + pane: no console errors, no overflow');
+  }
+  /* phone Home, logged in */
+  {
+    const c = await ctx('phone');
+    await open(c, '#/home', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(600);
+    await shot(c, 'v1-social-home-phone');
+    ok(!c.errors.length && (await overflow(c)) <= 0, 'phone Home (demo): no console errors, no overflow');
   }
 
   /* ---------------- 2026-10-01: Customize is three colours and a square image ---------------- */

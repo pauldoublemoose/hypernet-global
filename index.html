@@ -218,12 +218,11 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
   .row.sel .r-dm{ color:#fff; }
 }
 
-/* ---------- 6. the event theme layer — the only colour in the product - */
-.sq{ position:relative; isolation:isolate; overflow:hidden; display:grid; place-items:center; flex:0 0 auto; background:var(--ebg); color:var(--eac); line-height:1; }
-.sq .g{ position:relative; z-index:2; }
-.sq.plain{ box-shadow:inset 0 0 0 1px rgba(0,0,0,.3); }
-.sq.plain .pat{ display:none; }
-.sq .pat{ position:absolute; inset:0; z-index:1; }
+/* ---------- 6. looks — the only colour in the product: three colours and a square ---------- */
+.sq{ position:relative; overflow:hidden; display:grid; place-items:center; flex:0 0 auto; background:var(--ebg); color:var(--eac); line-height:1; }
+.sq .g{ position:relative; }
+.sq img, .av.img img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+.sq.plain:not(.img){ box-shadow:inset 0 0 0 1px rgba(0,0,0,.3); }
 .sq.s20{ width:20px; height:20px; font-size:12px; }
 .sq.s40{ width:40px; height:40px; font-size:22px; }
 .sq.s64{ width:64px; height:64px; font-size:34px; }
@@ -232,63 +231,16 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .sq.s56{ width:56px; height:56px; font-size:30px; }
 .sq.s32{ width:32px; height:32px; font-size:18px; }
 .sq.s16{ width:16px; height:16px; font-size:10px; }
-.sq.sh-rounded{ border-radius:14%; }
-.sq.sh-cut{ clip-path:polygon(0 0,100% 0,100% 78%,78% 100%,0 100%); }
 .row.sel .sq{ box-shadow:0 0 0 2px #fff; }
-.pat.p-plain{ background:radial-gradient(circle at 30% 24%, rgba(255,255,255,.18), rgba(0,0,0,0) 62%); }
-.pat.p-stripe{ background:repeating-linear-gradient(45deg, var(--eac2, rgba(255,255,255,.16)) 0 6px, transparent 6px 12px); }
-.pat.p-grid{ background:linear-gradient(var(--eac2) 1px, transparent 1px) 0 0/9px 9px, linear-gradient(90deg, var(--eac2) 1px, transparent 1px) 0 0/9px 9px; }
-.pat.p-dither{ background:radial-gradient(var(--eac2) 40%, transparent 41%) 0 0/6px 6px, radial-gradient(var(--eac2) 40%, transparent 41%) 3px 3px/6px 6px; }
-.pat.p-rays{ background:repeating-conic-gradient(from 0deg at 50% 116%, var(--eac2) 0deg 7deg, transparent 7deg 16deg); }
-.pat.p-scan{ background:repeating-linear-gradient(0deg, rgba(0,0,0,.34) 0 2px, transparent 2px 4px); }
-.pat.p-halftone{ background:radial-gradient(var(--eac) 22%, transparent 23%) 0 0/10px 10px, radial-gradient(var(--eac2) 32%, transparent 33%) 5px 5px/10px 10px; opacity:.85; }
-.pat.p-moon{ background:radial-gradient(circle at 66% 32%, var(--eac2) 0 30%, transparent 31%), radial-gradient(circle at 26% 74%, var(--eac2) 0 16%, transparent 17%); }
 
-.surf{ position:absolute; inset:0; pointer-events:none; z-index:1; }
-.surf.u-none{ display:none; }
-.surf.u-grain{ background:radial-gradient(rgba(255,255,255,.055) 1px, transparent 1px) 0 0/3px 3px, radial-gradient(rgba(0,0,0,.09) 1px, transparent 1px) 2px 1px/5px 5px; }
-.surf.u-paper{ background:repeating-linear-gradient(92deg, rgba(0,0,0,.035) 0 1px, transparent 1px 4px), repeating-linear-gradient(3deg, rgba(0,0,0,.03) 0 1px, transparent 1px 7px), radial-gradient(circle at 20% 15%, rgba(0,0,0,.05), transparent 55%); }
-.surf.u-dither{ background:radial-gradient(var(--eac2) 32%, transparent 33%) 0 0/4px 4px, radial-gradient(var(--eac2) 32%, transparent 33%) 2px 2px/4px 4px; opacity:.55; }
-.surf.u-halftone{ background:radial-gradient(var(--eac) 15%, transparent 16%) 0 0/14px 14px, radial-gradient(var(--eac2) 26%, transparent 27%) 7px 7px/14px 14px; opacity:.5; }
-.surf.u-scanlines{ background:repeating-linear-gradient(0deg, rgba(0,0,0,.30) 0 1px, transparent 1px 3px); }
-.surf.u-grid{ background:linear-gradient(var(--eac2) 1px, transparent 1px) 0 0/26px 26px, linear-gradient(90deg, var(--eac2) 1px, transparent 1px) 0 0/26px 26px; opacity:.85; }
-.surf.u-rays{ background:repeating-conic-gradient(from 0deg at 50% 112%, var(--eac2) 0deg 4deg, transparent 4deg 11deg); opacity:.8; }
-.surf.u-photocopy{ background:repeating-linear-gradient(88deg, rgba(0,0,0,.22) 0 2px, transparent 2px 9px), radial-gradient(circle at 78% 10%, rgba(255,255,255,.14), transparent 46%), repeating-linear-gradient(0deg, rgba(0,0,0,.12) 0 1px, transparent 1px 6px); }
-.surf.u-plasma{ background:radial-gradient(circle at 18% 22%, var(--eac2) 0, transparent 46%), radial-gradient(circle at 76% 64%, var(--eac) 0, transparent 38%), radial-gradient(circle at 44% 88%, var(--eac2) 0, transparent 42%); opacity:.55; filter:blur(.4px); }
-@keyframes hn-drift{ 0%{ transform:translate3d(0,0,0);} 50%{ transform:translate3d(-14px,-9px,0);} 100%{ transform:translate3d(0,0,0);} }
-@keyframes hn-pulse{ 0%,100%{ opacity:.42; } 50%{ opacity:1; } }
-@keyframes hn-flicker{ 0%,100%{ opacity:.95;} 6%{opacity:.35;} 9%{opacity:1;} 23%{opacity:.55;} 26%{opacity:1;} 61%{opacity:.4;} 64%{opacity:1;} }
-@keyframes hn-scroll{ from{ background-position:0 0, 0 0, 0 0; } to{ background-position:0 120px, 0 -120px, 60px 0; } }
-@keyframes hn-marquee{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
-.mo-drift .surf{ animation:hn-drift 13s ease-in-out infinite; }
-.mo-pulse .surf{ animation:hn-pulse 3.4s ease-in-out infinite; }
-.mo-flicker .surf{ animation:hn-flicker 5s steps(1,end) infinite; }
-.mo-scroll .surf{ animation:hn-scroll 9s linear infinite; }
-@media (prefers-reduced-motion: reduce){ .surf, .hl.h-marquee b{ animation:none !important; } }
-
-/* the canvas: the event's own world, edge to edge inside the reading pane */
-.canvas{ position:relative; min-height:100%; background:var(--ebg); color:var(--eink); overflow:clip; }
-.t-serif{ font-family:Georgia,"Times New Roman",Times,serif; }
-.t-grotesk{ font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; }
-.t-mono{ font-family:"Courier New",Courier,monospace; letter-spacing:.01em; }
-.t-stencil{ font-family:"Arial Black","Arial Bold",Impact,sans-serif; }
-.t-display{ font-family:Impact,Haettenschweiler,"Arial Narrow Bold","Franklin Gothic Heavy",sans-serif; letter-spacing:.01em; }
-.t-stencil .hl{ letter-spacing:.04em; text-transform:uppercase; }
-.banner{ position:relative; display:flex; min-height:250px; border-bottom:1px solid var(--eac2); }
-.banner .wash{ position:absolute; inset:0; z-index:2; background:linear-gradient(180deg, transparent 35%, color-mix(in srgb, var(--ebg) 80%, transparent) 100%); }
-.banner .bin{ position:relative; z-index:3; width:100%; display:flex; align-items:flex-end; gap:26px; padding:30px 34px 28px; }
+/* the page: the plain layout, in the look's colours — paper, hairlines, ink. Nothing moves. */
+.canvas{ position:relative; min-height:100%; background:var(--ebg); color:var(--eink); overflow:clip; isolation:isolate;
+  font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; line-height:1.68; }
+.banner{ position:relative; display:flex; border-bottom:1px solid var(--eac2); }
+.banner .bin{ position:relative; width:100%; display:flex; align-items:flex-end; gap:26px; padding:30px 34px 28px; }
 .btxt{ flex:1; min-width:0; }
 .eyebrow{ margin-bottom:10px; font:bold 12px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--edim); }
-.hl{ margin:0; color:var(--eink); overflow-wrap:anywhere; }
-.hl.h-huge{ font-size:clamp(34px, 7.4cqi, 58px); line-height:.98; letter-spacing:-.018em; }
-.hl.h-condensed{ font-size:clamp(32px, 6.6cqi, 52px); line-height:1; transform:scaleX(.84); transform-origin:left center; }
-.hl.h-stacked{ font-size:clamp(28px, 5.4cqi, 42px); line-height:.98; }
-.hl.h-stacked span{ display:block; }
-.hl.h-outlined{ font-size:clamp(32px, 7cqi, 54px); line-height:1; color:transparent; -webkit-text-stroke:1.5px var(--eink); text-shadow:3px 3px 0 var(--eac2); }
-.hl.h-marquee{ font-size:clamp(28px, 5.8cqi, 44px); line-height:1.1; white-space:nowrap; overflow:hidden; }
-.hl.h-marquee b{ display:inline-block; font-weight:inherit; animation:hn-marquee 15s linear infinite; }
-.mood{ margin:14px 0 0; font-size:18px; line-height:1.45; font-style:italic; color:var(--eac); border-left:3px solid var(--eac); padding-left:12px; max-width:52ch; }
-.t-stencil .mood, .t-mono .mood{ font-style:normal; }
+.hl{ margin:0; color:var(--eink); overflow-wrap:anywhere; font-size:clamp(34px, 7.4cqi, 58px); line-height:.98; letter-spacing:-.018em; }
 
 /* The verbs are the window's controls, not the event's: one toolbar in the app's own bevel style, sitting on top of
    the event's world. No event colour, border, font or shape ever reaches a control. */
@@ -318,7 +270,6 @@ a.btn{ text-decoration:none; color:var(--ink) !important; }
 .edprev{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
 .edprev .chip{ min-height:44px; }
 .ednote{ flex:1 1 260px; font-size:13px; color:var(--edim); }
-.sh-rounded .card{ border-radius:10px; }
 /* the way in: a burn's tickets or membership, summarised, one tap from the top */
 .entry{ position:relative; z-index:3; display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin:18px 34px 0; padding:14px 16px;
   border:2px solid var(--eac); background:color-mix(in srgb, var(--eac) 10%, transparent); font-family:var(--sys); }
@@ -326,7 +277,6 @@ a.btn{ text-decoration:none; color:var(--ink) !important; }
 .entry .enk{ font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--eac); }
 .entry .env{ margin-top:4px; font-size:16px; font-weight:bold; color:var(--eink); }
 .entry .ens{ margin-top:2px; font-size:13px; color:var(--edim); }
-.sh-rounded .entry{ border-radius:10px; }
 /* on a phone the event's verbs live in a bar at the bottom of the screen, always in reach */
 #evbar{ display:none; flex:0 0 auto; padding:6px 8px; background:var(--face); color:var(--ink); box-shadow:inset 0 1px 0 var(--white), 0 -1px 0 var(--shadow); font-family:var(--sys); }
 #app.phone.has-evbar #evbar{ display:block; }
@@ -336,66 +286,20 @@ a.btn{ text-decoration:none; color:var(--ink) !important; }
 #evbar .vgroup{ flex:1 1 auto; min-width:0; }
 #evbar .vb{ flex:1 1 auto; min-width:0; padding:0 6px; font-size:13px; gap:5px; }
 #evbar .vb.icononly{ flex:0 0 var(--act); }
-.sh-cut .card{ clip-path:polygon(0 0,100% 0,100% 72%,94% 100%,0 100%); }
 
 .layer{ position:relative; }
 .lin{ position:relative; z-index:3; padding:6px 34px 44px; }
 
-/* The canvas art. Back to front: the backdrop (a generative scene, pinned while the page moves over it), the header
-   and its hero, the atmosphere (particles, never over reading text), then calm content panels and the window's toolbar.
-   Nothing here takes a click. */
-.canvas{ isolation:isolate; --pf:0; }
-.canvas.px-gentle{ --pf:1; }
-.canvas.px-deep{ --pf:2.2; }
-body.is-phone .canvas.px-gentle{ --pf:.5; }
-body.is-phone .canvas.px-deep{ --pf:1.1; }
-.art{ position:sticky; top:0; left:0; display:block; width:100%; height:100vh; margin-bottom:-100vh; pointer-events:none; overflow:hidden; }
-.art.bg{ z-index:0; }
-.art.fg{ z-index:4; }
-.art.still{ position:absolute; inset:0; height:auto; margin:0; }
-.art .bd{ position:absolute; left:0; top:0; width:100%; height:135%; opacity:.5;
-  transform:translate3d(0, max(-26%, calc(var(--sy, 0) * -.05px * var(--pf))), 0); }
-.art canvas{ display:block; width:100%; height:100%; }
-.canvas > .banner{ z-index:1; overflow:hidden; }
 .canvas > .banner .eyebrow{ color:var(--eink); }
-.canvas > .banner .wash{ background:linear-gradient(180deg, color-mix(in srgb, var(--ebg) 25%, transparent) 0%, color-mix(in srgb, var(--ebg) 58%, transparent) 45%, color-mix(in srgb, var(--ebg) 90%, transparent) 100%); }
-/* the hero: the square's glyph at poster scale, drifting slower than the page */
-.heroart{ position:absolute; z-index:1; right:-6%; top:50%; width:min(64%, 540px); aspect-ratio:1; pointer-events:none;
-  transform:translate3d(0, calc(-50% + var(--sy, 0) * .16px * var(--pf)), 0) rotate(-8deg); }
-.heroart .hpat{ position:absolute; inset:8%; border-radius:50%; opacity:.3;
-  -webkit-mask:radial-gradient(circle, #000 50%, transparent 71%); mask:radial-gradient(circle, #000 50%, transparent 71%); }
-.heroart .hg{ position:absolute; inset:0; display:grid; place-items:center; font-size:min(30cqi, 360px); line-height:1; color:var(--eac); opacity:.24; }
-.canvas.big > .banner{ min-height:min(470px, 72vh); }
-.canvas.big .heroart{ width:min(86%, 720px); right:-10%; }
-.canvas.big .heroart .hg{ font-size:min(44cqi, 520px); opacity:.3; }
-/* ornaments: only true things (an edition number, how you get in, the city) */
-.heroart, .orn-stamp, .orn-compass, .orn-tape, .orn-ribbon{ pointer-events:none; }
-.orn-stamp{ position:absolute; z-index:4; top:18px; right:22px; padding:5px 11px; border:3px double var(--eac); border-radius:3px; color:var(--eac);
-  font:bold 13px var(--mono); letter-spacing:.16em; text-transform:uppercase; background:color-mix(in srgb, var(--ebg) 70%, transparent); }
-.orn-compass{ position:absolute; z-index:4; top:18px; left:34px; display:flex; align-items:center; gap:8px; color:var(--eink);
-  font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; }
-.orn-compass svg{ color:var(--eac); }
 .sqwrap{ position:relative; flex:0 0 auto; }
-.orn-tape{ position:absolute; z-index:2; top:-9px; width:70px; height:22px; background:color-mix(in srgb, var(--eink) 32%, transparent);
-  box-shadow:0 1px 2px rgba(0,0,0,.25); clip-path:polygon(0 8%, 6% 0, 12% 10%, 20% 0, 100% 0, 100% 92%, 94% 100%, 86% 90%, 78% 100%, 0 100%); }
-.orn-tape.t1{ left:-22px; transform:rotate(-34deg); }
-.orn-tape.t2{ right:-22px; transform:rotate(30deg); }
-.orn-ribbon{ position:relative; z-index:2; overflow:hidden; white-space:nowrap; padding:7px 0; background:var(--eac); color:var(--eon);
-  font:bold 13px var(--mono); letter-spacing:.16em; text-transform:uppercase; box-shadow:0 2px 0 var(--eac2); }
-.orn-ribbon b{ display:inline-block; animation:hn-marquee 48s linear infinite; }
-/* a torn header is a sheet of its own, ripped along the bottom */
-.canvas > .banner.torn{ border-bottom:0; background:color-mix(in srgb, var(--eink) 9%, var(--ebg)); }
-.canvas > .banner.torn .bin{ padding-bottom:40px; }
-/* content sits on calm panels so the art never competes with reading */
-.canvas > .layer{ z-index:5; margin:28px clamp(0px, 3cqi, 40px) 0; background:color-mix(in srgb, var(--ebg) 93%, transparent);
-  box-shadow:0 0 0 1px color-mix(in srgb, var(--eac2) 70%, transparent), 0 10px 40px rgba(0,0,0,.28); }
-.canvas.big > .layer{ margin-top:56px; }
+/* content sits on a calm panel: white on the plain look, a step away from the ground on a customised one */
+.canvas > .layer{ z-index:5; margin:28px clamp(0px, 3cqi, 40px) 0; background:var(--epanel, #fff); box-shadow:0 0 0 1px var(--eac2); }
 /* one page template for events, horizons and people: every page is its own container, wherever it is shown */
 .canvas.pg{ container:detail / inline-size; }
 .psub2{ margin:12px 0 0; max-width:60ch; font-size:16px; line-height:1.45; color:var(--eink); }
 .banner .av.a160{ width:160px; height:160px; flex-basis:160px; font-size:56px; box-shadow:0 0 0 1px rgba(0,0,0,.25), 4px 4px 0 rgba(0,0,0,.18); }
 .pg-horizon .banner .mosaic{ box-shadow:0 0 0 1px var(--eac2), 4px 4px 0 rgba(0,0,0,.3); }
-.pg .banner .sqwrap > .sq:not(.plain){ box-shadow:0 0 0 1px color-mix(in srgb, var(--eink) 22%, transparent); }
+.pg .banner .sqwrap > .sq:not(.plain), .pg .banner .sqwrap > .sq.img{ box-shadow:0 0 0 1px color-mix(in srgb, var(--eink) 22%, transparent); }
 .pg .tracks{ margin:0; border-top:1px solid var(--eac2); }
 .pg .track, .pg .trpast{ padding-left:0; padding-right:0; border-color:var(--eac2); }
 .pg .track .ts, .pg .trpast{ color:var(--edim); }
@@ -410,33 +314,14 @@ body.is-phone .canvas.px-deep{ --pf:1.1; }
   .pg-horizon .banner .sqwrap, .pg-person .banner .sqwrap:has(> .sq){ zoom:.575; }
   .banner .av.a160{ width:92px; height:92px; flex-basis:92px; font-size:32px; }
 }
-/* the plain look: paper, one hairline, ink; the hero is a quiet watermark */
-.canvas.plain > .layer{ background:#fff; box-shadow:0 0 0 1px var(--eac2); }
-.canvas.plain .heroart{ opacity:.55; }
-.canvas.plain .heroart .hpat{ display:none; }
-.canvas.plain > .banner{ border-bottom-color:var(--eac2); }
 .canvas > .layer ~ .tail{ height:48px; }
 .canvas > .entry, .canvas > .edition{ z-index:5; }
 .canvas > .entry{ background:color-mix(in srgb, var(--eac) 10%, var(--ebg)); }
 .canvas > .edition .edcard{ background:color-mix(in srgb, var(--eac) 14%, var(--ebg)); }
 .canvas > .edition .edcard:hover{ background:color-mix(in srgb, var(--eac) 24%, var(--ebg)); }
-@media (prefers-reduced-motion: reduce){ .canvas{ --pf:0 !important; } .orn-ribbon b{ animation:none !important; } }
 @container detail (max-width:620px){
   .canvas > .layer{ margin:18px 10px 0; }
-  .canvas.big > .layer{ margin-top:34px; }
-  .canvas.big > .banner{ min-height:380px; }
-  .canvas.big > .banner .bin{ justify-content:flex-end; }
-  .heroart{ width:92%; right:-26%; top:36%; }
-  .canvas.big .heroart{ width:120%; right:-40%; }
-  .heroart .hg{ font-size:62cqi; }
-  .canvas.big .heroart .hg{ font-size:84cqi; }
-  .orn-compass{ left:18px; top:14px; }
-  .canvas > .banner .bin{ padding-top:66px; }
-  .orn-stamp{ right:14px; top:14px; font-size:11px; }
 }
-.d-packed .lin{ padding-top:0; }
-.d-packed{ line-height:1.38; }
-.d-airy{ line-height:1.68; }
 .facts{ display:grid; grid-template-columns:repeat(auto-fill, minmax(168px, 1fr)); margin-top:24px; border-top:1px solid var(--eac2); border-left:1px solid var(--eac2); }
 .fact{ padding:12px 14px 13px; border-right:1px solid var(--eac2); border-bottom:1px solid var(--eac2); min-width:0; }
 .fk{ font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--edim); }
@@ -518,19 +403,15 @@ span.chip.strong{ border-color:transparent; background:color-mix(in srgb, var(--
 .vocab dt{ text-transform:none; letter-spacing:0; font:bold 14px var(--sys); color:var(--eink); }
 .srcline{ margin-top:12px; font:11px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--edim); }
 .av{ width:22px; height:22px; flex:0 0 22px; display:inline-grid; place-items:center; color:#fff; font:bold 10px var(--sys); }
+.av.img{ position:relative; overflow:hidden; background:var(--face); }
 .av.a40{ width:40px; height:40px; flex-basis:40px; font-size:14px; }
 .av.a64{ width:64px; height:64px; flex-basis:64px; font-size:22px; }
 .av.a28{ width:28px; height:28px; flex-basis:28px; font-size:11px; }
 
 @container detail (max-width:620px){
-  .banner{ min-height:0; }
   .banner .bin{ flex-direction:column; align-items:flex-start; gap:16px; padding:22px 18px 20px; }
   .banner .sq.s160{ width:92px; height:92px; font-size:50px; }
-  .hl.h-huge{ font-size:clamp(32px, 11cqi, 46px); }
-  .hl.h-outlined{ font-size:clamp(30px, 10cqi, 44px); }
-  .hl.h-condensed{ font-size:clamp(30px, 10cqi, 44px); }
-  .hl.h-stacked{ font-size:clamp(26px, 9cqi, 38px); }
-  .mood{ font-size:16px; }
+  .hl{ font-size:clamp(32px, 11cqi, 46px); }
   .actbar{ padding:8px 14px; }
   .lin{ padding:4px 18px 36px; }
   .edition{ padding:14px 14px 0; }
@@ -736,35 +617,38 @@ input[aria-invalid="true"]{ outline:1px solid #000; outline-offset:-4px; }
 .wizsteps .ws{ flex:1; min-height:var(--ctl); padding:8px 4px; border:0; text-align:center; font:bold 12px var(--mono); letter-spacing:.06em; background:var(--face-dk); box-shadow:var(--out); color:var(--ink2); }
 .wizsteps .ws:hover{ color:#000; }
 .wizsteps .ws.on{ background:#fff; color:#000; box-shadow:var(--in); }
+/* Customize: three colours and a square image, with a live preview of the square and the title block */
 .custwrap{ display:flex; gap:18px; }
-.custcol{ flex:0 0 300px; }
+.custcol{ flex:0 0 340px; min-width:0; }
 .custprev{ flex:1; min-width:0; position:sticky; top:0; align-self:flex-start; }
-.crow2{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
-.crow2 > label{ flex:0 0 80px; font-size:var(--fs-s); font-weight:bold; }
-.crow2 select, .crow2 input{ flex:1; }
-.swatches{ display:flex; gap:5px; }
-.swatches .sw{ width:26px; height:22px; border:1px solid #6f6a60; }
-.presets{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
-.crow2.top{ align-items:flex-start; }
-.ornset{ flex:1; display:flex; flex-wrap:wrap; gap:2px 12px; }
-.ornck{ display:inline-flex; align-items:center; gap:6px; min-height:32px; font-size:var(--fs-s); cursor:pointer; }
-body.is-phone .ornck{ min-height:44px; }
-.minicanvas .banner .bin{ padding-top:46px; }
-.minicanvas .orn-stamp{ top:8px; right:10px; font-size:10px; padding:3px 8px; }
-.minicanvas .orn-compass{ top:8px; left:14px; font-size:10px; }
-.minicanvas .orn-compass svg{ width:22px; height:22px; }
-.minicanvas .orn-tape{ width:44px; height:14px; top:-6px; }
-.minicanvas .orn-tape.t1{ left:-14px; } .minicanvas .orn-tape.t2{ right:-14px; }
-.minicanvas .orn-ribbon{ font-size:11px; padding:4px 0; }
+.czsect{ margin:0 0 7px; font:bold 11px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dim); }
+.czstarts{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px; margin-bottom:16px; }
+.czstart{ justify-content:flex-start; gap:7px; padding:0 8px; font-size:var(--fs-s); white-space:nowrap; overflow:hidden; }
+.czstart .sw{ flex:0 0 18px; height:18px; display:grid; place-items:center; font-size:11px; line-height:1; box-shadow:inset 0 0 0 1px rgba(0,0,0,.35); }
+.czcolor{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.czcolor > label{ flex:0 0 84px; font-size:var(--fs-s); font-weight:bold; }
+.czcolor input[type=color]{ flex:0 0 46px; width:46px; height:var(--ctl); padding:3px; border:0; background:#fff; box-shadow:var(--in); cursor:pointer; }
+.czcolor .czhex{ flex:1; min-width:0; font-family:var(--mono); }
+.cznote{ margin:0 0 12px; font-size:var(--fs-s); color:var(--ink2); }
+.cznote[hidden]{ display:none; }
+.cznote .sw{ display:inline-block; width:12px; height:12px; margin:0 3px -1px 0; box-shadow:inset 0 0 0 1px rgba(0,0,0,.35); }
+.czimg{ display:flex; gap:12px; align-items:flex-start; margin-bottom:16px; }
+.czdrop{ flex:0 0 auto; position:relative; display:block; padding:0; border:0; background:none; cursor:pointer; outline-offset:3px; }
+.czdrop.over{ outline:2px dashed var(--sel); }
+.czdrop .czhint{ position:absolute; left:0; right:0; bottom:0; padding:3px 0; background:rgba(0,0,0,.55); color:#fff; font:bold 10px var(--mono); letter-spacing:.08em; text-align:center; text-transform:uppercase; }
+.czimgside{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:6px; }
+.czimgside .fhelp{ margin:0; line-height:1.4; }
+.czimgside .ferr:empty{ display:none; }
+.czfile{ position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; pointer-events:none; }
 .previewbox{ padding:12px; max-height:470px; overflow:auto; background:#fff; box-shadow:var(--in); }
 .plabel{ margin:10px 0 6px; font:bold 11px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dim); }
 .plabel:first-child{ margin-top:0; }
-.minicanvas{ height:300px; overflow:hidden; position:relative; container:detail / inline-size; }
-.minicanvas .banner{ min-height:0; }
+.minicanvas{ overflow:hidden; position:relative; container:detail / inline-size; }
 .minicanvas .banner .bin{ padding:14px 16px; gap:14px; }
 .minicanvas .hl{ font-size:26px !important; }
-.minicanvas .mood{ font-size:13px; margin-top:6px; }
-.minicanvas .lin{ padding:10px 16px; }
+.minicanvas .actbar{ position:relative; padding:6px 16px; }
+.minicanvas .lin{ padding:10px 16px 14px; }
+.minicanvas .canvas{ min-height:0; }
 #toasts{ position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:90; display:flex; flex-direction:column; align-items:center; pointer-events:none; }
 .toast{ min-width:220px; max-width:320px; padding:10px 14px; background:#ffffe1; border:1px solid #6d6a5e; box-shadow:2px 2px 6px rgba(0,0,0,.3); font-size:var(--fs-s); }
 .toast b{ display:block; font-size:var(--fs); }
@@ -984,9 +868,10 @@ body.is-phone .dlg.shsheet .dbody{ padding:18px 16px; }
 body.is-phone .custwrap{ flex-direction:column; }
 body.is-phone .custcol{ flex:0 0 auto; }
 body.is-phone .previewbox{ max-height:none; }
-body.is-phone .custprev{ order:-1; position:sticky; top:-18px; z-index:4; margin:-18px -16px 14px; padding:10px 16px; background:var(--face); box-shadow:0 1px 0 var(--shadow); }
+body.is-phone .custprev{ order:-1; align-self:stretch; position:sticky; top:-18px; z-index:4; margin:-18px -16px 14px; padding:10px 16px; background:var(--face); box-shadow:0 1px 0 var(--shadow); }
 .previewbox.compact{ padding:0; }
-.previewbox.compact .minicanvas{ height:auto; max-height:190px; }
+.previewbox.compact .minicanvas{ max-height:190px; }
+.previewbox.compact .actbar, .previewbox.compact .layer{ display:none; }
 body.is-phone input, body.is-phone select, body.is-phone textarea{ font-size:16px; }
 body.is-phone .picklist{ max-height:none; }
 .sheetrow{ display:flex; align-items:center; gap:14px; min-height:60px; padding:0 18px; border-bottom:1px solid var(--line); background:#fff; font-size:16px; cursor:pointer; }
@@ -1185,23 +1070,30 @@ function loadRealEvents(){
 }
 
 /* =========================================================================
-   1. THE THEME LAYER — every field must be visible
+   1. LOOKS — three colours and a square
+   A look is { bg, ink, accent, image, glyph } (see _shared/hypernet-themes.js). Anything nobody customised wears
+   the plain one, with a glyph for its kind so lists stay scannable. Every look renders on the same calm layout.
    ========================================================================= */
-/* An event wears its authored or customised look; anything else wears the plain one (paper and ink), with a glyph
-   for its kind so lists stay scannable. DERIVED_LOOKS brings back the old per-id generated looks. */
-var DERIVED_LOOKS = false;
 var PLAINGLYPH = { burn:'✦', burn_night:'✳', decompression:'☾', meetup:'◉', build:'▲', workshop:'■', volunteer_day:'✜', fundraiser:'◈',
                    camp_meeting:'◗', town_hall:'▤', sale:'⬟', gathering:'✦', other:'◆' };
 var PLAINCACHE = {};
-function plainTheme(glyph){ var t = JSON.parse(JSON.stringify(window.HN_PLAIN)); if (glyph) t.square.glyph = glyph; return t; }
+function plainTheme(glyph){ var t = Object.assign({}, window.HN_PLAIN); if (glyph) t.glyph = glyph; return t; }
+/* any stored look, old or new, in the flat shape, its text colour legible on its ground */
+function asLook(t){
+  if (!t) return null;
+  var m = window.HN_MIGRATE_LOOK(t);
+  m.ink = fixInk(m.bg, m.ink);
+  return m;
+}
+function needsMigrate(t){ return !!t && (!!t.palette || !t.bg); }
 function TH(id){
   var T = window.HYPERNET_THEMES.themes;
-  if (T[id]) return T[id];
-  if (DERIVED_LOOKS) return window.HN_THEME(id);
+  if (T[id]){ if (needsMigrate(T[id])) T[id] = asLook(T[id]); return T[id]; }
   if (!PLAINCACHE[id]){ var r = (typeof REC !== 'undefined' && REC[id]) || {}; PLAINCACHE[id] = plainTheme(PLAINGLYPH[r.kind] || PLAINGLYPH[r.scale] || '◆'); }
   return PLAINCACHE[id];
 }
-function isPlain(t){ return !!(t && t.plain); }
+/* plain = the plain colours (a plain look may still carry an image) */
+function isPlain(t){ var P = window.HN_PLAIN; return !!t && (!!t.plain || (t.bg === P.bg && t.ink === P.ink && t.accent === P.accent)); }
 function hex2rgb(h){
   h = String(h||'#000').replace('#','');
   if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
@@ -1213,26 +1105,39 @@ function relLum(h){
 }
 function contrast(a,b){ var l1=relLum(a), l2=relLum(b); if (l1<l2){ var t=l1; l1=l2; l2=t; } return (l1+0.05)/(l2+0.05); }
 function onColor(bg){ return contrast('#ffffff',bg) >= contrast('#000000',bg) ? '#ffffff' : '#000000'; }
-/* text colours reach AA against the event's ground (with room for the art that shows through the panels):
-   a colour that falls short is nudged toward the ink until it clears, keeping its hue */
+/* text colours reach AA against the ground: a colour that falls short is nudged until it clears, keeping its hue */
 function mixHex(a, b, t){ var x = hex2rgb(a), y = hex2rgb(b); return '#' + x.map(function(v, i){ return ('0' + Math.round(v + (y[i] - v) * t).toString(16)).slice(-2); }).join(''); }
 function readable(c, p, need){ for (var t = 0; t <= 1.001; t += .05){ var m = mixHex(c, p.ink, t); if (contrast(m, p.bg) >= need) return m; } return p.ink; }
 function safeAccent(p){ return readable(p.accent, p, 4.8); }
 function safeDim(p){ return readable(p.dim, p, 5.2); }
-function themeVars(t){
-  var p = t.palette;
-  return '--ebg:'+p.bg+';--eink:'+p.ink+';--eac:'+safeAccent(p)+';--eac2:'+p.accent2+
-         ';--edim:'+safeDim(p)+';--eon:'+onColor(safeAccent(p))+';';
+/* the text colour itself: AA (4.5:1) on the ground, pushed toward black or white, whichever the ground allows */
+function fixInk(bg, ink){
+  if (contrast(ink, bg) >= 4.5) return ink;
+  var to = onColor(bg);
+  for (var t = .05; t <= 1.001; t += .05){ var m = mixHex(ink, to, t); if (contrast(m, bg) >= 4.5) return m; }
+  return to;
 }
+/* the five colours a page needs, from the three a person picks */
+function lookPal(t){
+  var ink = fixInk(t.bg, t.ink), away = relLum(ink) < relLum(t.bg) ? '#ffffff' : '#000000';
+  return { bg:t.bg, ink:ink, accent:t.accent, accent2:mixHex(t.bg, ink, .2), dim:mixHex(ink, t.bg, .4),
+           panel: isPlain(t) ? '#ffffff' : mixHex(t.bg, away, away === '#ffffff' ? .5 : .22) };
+}
+var VARCACHE = {};
+function themeVars(t){
+  var k = t.bg + t.ink + t.accent + (isPlain(t) ? 'p' : '');
+  if (!VARCACHE[k]){
+    var p = lookPal(t), ac = safeAccent(p);
+    VARCACHE[k] = '--ebg:'+p.bg+';--eink:'+p.ink+';--eac:'+ac+';--eac2:'+p.accent2+';--edim:'+safeDim(p)+';--eon:'+onColor(ac)+';--epanel:'+p.panel+';';
+  }
+  return VARCACHE[k];
+}
+/* the square: the look's image, or its glyph on its ground */
+function sqInner(t){ return t.image ? '<img src="'+esc(t.image)+'" alt="" draggable="false">' : '<span class="g">'+esc(t.glyph)+'</span>'; }
+function sqCls(t, extra){ return 'sq' + (isPlain(t) ? ' plain' : '') + (t.image ? ' img' : '') + (extra ? ' ' + extra : ''); }
 function sqHTML(id, size, extraCls){
   var t = TH(id);
-  return '<div class="sq s'+size+' sh-'+t.shape+(t.plain?' plain':'')+(extraCls?' '+extraCls:'')+'" style="'+themeVars(t)+'">' +
-         '<div class="pat p-'+t.square.pattern+'"></div><span class="g">'+t.square.glyph+'</span></div>';
-}
-function headlineHTML(t, title){
-  if (t.headline === 'stacked') return title.split(' ').map(function(w){ return '<span>'+esc(w)+'</span>'; }).join('');
-  if (t.headline === 'marquee'){ var s = esc(title) + ' &nbsp;·&nbsp; '; return '<b>'+s+s+'</b>'; }
-  return esc(title);
+  return '<div class="'+sqCls(t, 's'+size+(extraCls?' '+extraCls:''))+'" style="'+themeVars(t)+'">'+sqInner(t)+'</div>';
 }
 
 /* one small monochrome icon set, drawn in the 20px grid */
@@ -1364,8 +1269,10 @@ function titleCase(s){ return String(s).toLowerCase().replace(/(^|[\s\-\/&])([a-
 function cityShort(c){ if(!c) return ''; var b=String(c).split('|'); return titleCase(b[b.length-1]); }
 function initials(n){ var b=String(n).trim().split(/\s+/); return (b[0][0]+(b[1]?b[1][0]:'')).toUpperCase(); }
 function person(id){ return PEOPLE[id] || { id:id, displayName:id, handle:id, skills:[], city:'', bio:'' }; }
+/* a person's avatar: the photo on their look when they have one, else their initials */
 function avHTML(id, cls){
-  var p = person(id);
+  var p = person(id), lk = typeof PTHEME !== 'undefined' && PTHEME[id];
+  if (lk && lk.image) return '<span class="av img '+(cls||'')+'" aria-hidden="true"><img src="'+esc(lk.image)+'" alt="" draggable="false"></span>';
   return '<span class="av '+(cls||'')+'" style="background:'+(AVCOLOR[id]||'#5a5a5a')+'" aria-hidden="true">'+esc(initials(p.displayName))+'</span>';
 }
 function allEvents(){ return Object.keys(EVENTS).map(function(k){ return EVENTS[k]; }); }
@@ -1388,10 +1295,9 @@ function hzCover(hzId){
   if (HZCOVER[hzId] && hz.eventIds.indexOf(HZCOVER[hzId]) >= 0) return HZCOVER[hzId];
   return hz.eventIds.filter(function(id){ return EVENTS[id]; })[0] || null;
 }
-/* a square from a theme object (the event square, drawn for anything that has a theme) */
+/* a square from a look, at any pixel size (the event square, drawn for anything that has a look) */
 function sqT(t, px, extra){
-  return '<div class="sq sh-'+t.shape+(t.plain?' plain':'')+(extra?' '+extra:'')+'" style="'+themeVars(t)+'width:'+px+'px;height:'+px+'px;font-size:'+Math.round(px*0.54)+'px">' +
-         '<div class="pat p-'+t.square.pattern+'"></div><span class="g">'+t.square.glyph+'</span></div>';
+  return '<div class="'+sqCls(t, extra)+'" style="'+themeVars(t)+'width:'+px+'px;height:'+px+'px;font-size:'+Math.round(px*0.54)+'px">'+sqInner(t)+'</div>';
 }
 function hzOwnSquare(hzId){ return HZCOVER[hzId] === 'own' && HZTHEME[hzId]; }
 /* one square standing for a horizon: its own, its chosen event's, or the first event's */
@@ -1668,7 +1574,7 @@ function searchItems(q){
     var pa = isPast(lastDay(a)) ? 1 : 0, pb = isPast(lastDay(b)) ? 1 : 0;
     return pa !== pb ? pa - pb : (pa ? -byDate(a,b) : byDate(a,b));
   }).forEach(function(e){
-    if (matchAll([e.title, descOf(e), placeWords(e), e.hostName, TH(e.id).mood, KINDLAB[recOf(e.id).kind]], q)) out.push({ type:'event', id:e.id });
+    if (matchAll([e.title, descOf(e), placeWords(e), e.hostName, KINDLAB[recOf(e.id).kind]], q)) out.push({ type:'event', id:e.id });
   });
   Object.keys(HORIZONS).forEach(function(k){
     var hz = HORIZONS[k];
@@ -2241,22 +2147,17 @@ function entryHTML(evId){
    explainer, what's provided, rules and safety, camps and art money, and
    its own vocabulary. Empty sections are never drawn. */
 /* ONE PAGE TEMPLATE. An event, an Event Horizon and a person are the same page with different contents:
-   the canvas layers (backdrop, atmosphere, header art, ornaments) → the title block (square or avatar, title,
-   subtitle, mood line) → the window's grey toolbar → anything that must sit right under it → the facts grid →
-   the sections. Only the spec differs. */
+   the title block (square or avatar, title, subtitle) → the window's grey toolbar → anything that must sit right
+   under it → the facts grid → the sections. A look only changes the colours and the square. Only the spec differs. */
+function titleBlockHTML(cover, eyebrow, title, sub){
+  return '<header class="banner"><div class="bin"><div class="sqwrap">' + cover + '</div>' +
+         '<div class="btxt">' + (eyebrow ? '<div class="eyebrow">'+eyebrow+'</div>' : '') +
+         '<h1 class="hl">'+esc(title)+'</h1>' + (sub ? '<p class="psub2">'+sub+'</p>' : '') + '</div></div></header>';
+}
 function pageHTML(o){
-  var t = o.t, seed = o.seed, torn = hasOrn(t, seed, 'torn');
-  var h = '<article class="canvas pg pg-'+o.kind+' t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+(o.big ? ' big' : '')+(t.plain ? ' plain' : '')+artClass(t, seed)+'"' +
-          ' data-page="'+o.kind+'" style="'+themeVars(t)+'">';
-  h += artLayersHTML(t, seed);
-  h += '<header class="banner'+(torn ? ' torn" style="'+tornStyle(seed) : '')+'"><div class="surf u-'+t.surface+'"></div>' + heroArtHTML(t) + '<div class="wash"></div>' +
-       ornamentsHTML(t, seed, o.orn || {}) +
-       '<div class="bin"><div class="sqwrap">' + o.cover + (hasOrn(t, seed, 'tape') ? tapeHTML() : '') + '</div>' +
-       '<div class="btxt">' + (o.eyebrow ? '<div class="eyebrow">'+o.eyebrow+'</div>' : '') +
-       '<h1 class="hl h-'+t.headline+'">'+headlineHTML(t, o.title)+'</h1>' +
-       (o.sub ? '<p class="psub2">'+o.sub+'</p>' : '') +
-       (t.mood ? '<p class="mood">'+esc(t.mood)+'</p>' : '') + '</div></div></header>';
-  if (hasOrn(t, seed, 'ribbon')) h += ribbonHTML(t, t.mood || o.title);
+  var t = o.t;
+  var h = '<article class="canvas pg pg-'+o.kind+(isPlain(t) ? ' plain' : '')+'" data-page="'+o.kind+'" style="'+themeVars(t)+'">';
+  h += titleBlockHTML(o.cover, o.eyebrow, o.title, o.sub);
   if (o.toolbar) h += '<div class="actbar">' + o.toolbar + '</div>';
   h += o.pre || '';
   h += '<div class="layer"><div class="lin">' + (o.facts || '') + (o.body || '') + '</div></div><div class="tail"></div></article>';
@@ -2306,8 +2207,8 @@ function canvasHTML(evId){
   var pv = provenance(evId), links = sourcesHTML(r);
   s += sect('Links', links ? links + (pv ? '<div class="srcline">' + esc(pv) + '</div>' : '') : '');
   if (pv && !links) s += '<div class="srcline">' + esc(pv) + '</div>';
-  return pageHTML({ kind:'event', t:t, seed:evId, big:big, cover:sqHTML(evId, 160), eyebrow:eyebrowOf(e), title:e.title,
-    orn:{ stamp:stampText(evId), place:placeOf(evId) }, toolbar:bar, pre:entryHTML(evId) + editionsHTML(evId), facts:factsHTML(evId), body:s });
+  return pageHTML({ kind:'event', t:t, cover:sqHTML(evId, 160), eyebrow:eyebrowOf(e), title:e.title,
+    toolbar:bar, pre:entryHTML(evId) + editionsHTML(evId), facts:factsHTML(evId), body:s });
 }
 
 function compactVerbs(evId){
@@ -2362,14 +2263,10 @@ function playlistHTML(hzId, withTracks){
       : (mine ? '' : '<li class="empty">No events in this horizon yet.</li>')) + '</ol>') || sect('Events', '<ol class="tracks"></ol>');
     if (inList) S.rows = up.concat(open ? past : []).map(function(e){ return { type:'event', id:e.id }; });
   }
-  return pageHTML({ kind:'horizon', t:t, seed:hzId, cover:hzMosaic(hzId, 160), eyebrow:'Event Horizon' + (hz.isPublished ? '' : ' · Private'), title:hz.name,
-    sub:hz.description ? esc(hz.description) : '', orn:hzOrnOpts(hzId), toolbar:bar, facts:facts, body:body });
+  return pageHTML({ kind:'horizon', t:t, cover:hzMosaic(hzId, 160), eyebrow:'Event Horizon' + (hz.isPublished ? '' : ' · Private'), title:hz.name,
+    sub:hz.description ? esc(hz.description) : '', toolbar:bar, facts:facts, body:body });
 }
 
-function hzYears(evs){
-  var ys = evs.map(function(e){ return String(e.date || '').slice(0, 4); }).filter(Boolean).sort();
-  return !ys.length ? '' : ys[0] === ys[ys.length - 1] ? ys[0] : ys[0] + '–' + ys[ys.length - 1];
-}
 function horizonHTML(hzId, withContents){
   var hz = HORIZONS[hzId];
   if (!hz) return '<div class="empty">This horizon no longer exists.</div>';
@@ -2386,11 +2283,6 @@ function publishedHorizonsOf(pid){
 var PTHEME = {};                 /* pid -> a customised look; people nobody customised are plain */
 Object.keys(window.HYPERNET_THEMES.people || {}).forEach(function(k){ PTHEME[k] = window.HYPERNET_THEMES.people[k]; });
 function personTheme(pid){ return PTHEME[pid] || plainTheme('◉'); }
-function personOrnOpts(pid){
-  var p = person(pid), cs = citiesOf(p);
-  /* only what is true: a year they joined when known, else their first skill; their city */
-  return { stamp: p.since ? 'Since ' + p.since : (p.skills || []).length ? skillLabel(p.skills[0]) : '', place: cs[0] || '' };
-}
 function personCover(pid, px){
   var t = PTHEME[pid];
   return t ? sqT(t, px) : '<span class="av a'+px+'" style="background:'+(AVCOLOR[pid]||'#5a5a5a')+'" aria-hidden="true">'+esc(initials(person(pid).displayName))+'</span>';
@@ -2422,9 +2314,9 @@ function personHTML(pid){
       return '<div class="crow"><span class="r-ic">'+ic('callout')+'</span><div class="cm" data-act="open" data-type="callout" data-id="'+c.id+'"><div class="r-title">'+esc(c.title)+'</div>' +
         '<div class="r-meta">open until '+esc(fmtDate(c.expiresAt))+'</div></div></div>';
     }).join(''));
-  return pageHTML({ kind:'person', t:personTheme(pid), seed:pid, cover:personCover(pid, 160),
+  return pageHTML({ kind:'person', t:personTheme(pid), cover:personCover(pid, 160),
     eyebrow:'@'+esc(p.handle) + (me ? '' : ' · <span class="pres '+st+'"></span>'+esc(st)), title:p.displayName || 'You',
-    orn:personOrnOpts(pid), toolbar:bar, facts:facts, body:s });
+    toolbar:bar, facts:facts, body:s });
 }
 function isOwnCallout(c){ return !!c && S.loggedIn && !!c.hostAcct && c.hostAcct === S.acct; }
 /* a call out: what is wanted, by whom, for which event; you answer it once, and its author edits or closes it */
@@ -2484,7 +2376,7 @@ function renderDetail(){
   LASTDETAIL = key;
   var bar = $('evbar'), onEv = L.phone && it && it.type === 'event' && EVENTS[it.id];
   $('app').classList.toggle('has-evbar', !!onEv);
-  if (onEv){ var bt = TH(it.id); bar.className = 't-' + bt.type + ' sh-' + bt.shape; bar.setAttribute('style', themeVars(bt)); bar.innerHTML = evbarHTML(it.id); }
+  if (onEv){ bar.className = ''; bar.setAttribute('style', themeVars(TH(it.id))); bar.innerHTML = evbarHTML(it.id); }
   else bar.innerHTML = '';
   /* the back bar: only when there is somewhere to go back to */
   /* in a split view the reading pane has a title bar with a window close; Back joins it when there is somewhere to go */
@@ -2507,11 +2399,7 @@ function renderDetail(){
    horizons are playlists with a cover built from their events.
    ========================================================================= */
 /* an event square at any pixel size */
-function sqPx(id, px, extra){
-  var t = TH(id);
-  return '<div class="sq sh-'+t.shape+(t.plain?' plain':'')+(extra?' '+extra:'')+'" style="'+themeVars(t)+'width:'+px+'px;height:'+px+'px;font-size:'+Math.round(px*0.54)+'px">' +
-         '<div class="pat p-'+t.square.pattern+'"></div><span class="g">'+t.square.glyph+'</span></div>';
-}
+function sqPx(id, px, extra){ return sqT(TH(id), px, extra); }
 /* a horizon's cover: the owner's pick, or a 2×2 mosaic of its first four events */
 function mosaicOf(ids, px){
   ids = ids.filter(function(id){ return EVENTS[id]; });
@@ -2647,7 +2535,7 @@ function eventsOn(iso){
 function calBlock(e){
   var t = TH(e.id);
   return '<div class="calev" style="'+themeVars(t)+'" data-act="open-reset" data-type="event" data-id="'+e.id+'">' +
-    '<span class="cg">'+t.square.glyph+'</span><span>'+esc(e.title)+'</span>' +
+    '<span class="cg">'+esc(t.glyph)+'</span><span>'+esc(e.title)+'</span>' +
     (S.loggedIn && RSVP[e.id]==='going' ? '<span style="margin-left:auto">'+ic('check',12)+'</span>' : '') + '</div>';
 }
 function narrowCal(){ return L.phone || L.cw < 640; }
@@ -3463,6 +3351,7 @@ function profileForm(){
   return '<div class="field"><label for="pf-name">Name</label><input type="text" id="pf-name" value="'+esc(PF.name)+'" placeholder="Your name" autocomplete="name"></div>' +
     '<div class="field"><label for="pf-handle">Handle</label><span class="handlein"><span>@</span><input type="text" id="pf-handle" value="'+esc(PF.handle)+'" placeholder="yourname" autocomplete="username" autocapitalize="off" spellcheck="false" aria-describedby="pf-herr"'+(taken?' aria-invalid="true"':'')+'></span>' +
       '<span class="ferr" id="pf-herr"'+(taken?'':' hidden')+'>'+(taken ? '@'+esc(PF.handle)+' is taken' : '')+'</span></div>' +
+    (PF.mode === 'edit' ? pfPhotoHTML() : '') +
     '<div class="field"><label for="pf-about">About you</label><input type="text" id="pf-about" maxlength="120" value="'+esc(PF.about)+'" placeholder="Builds shade, cooks for eighty, always on strike crew"></div>' +
     '<div class="field"><span class="flabel" id="pf-sk-l">What you can do</span><div class="pchips" role="group" aria-labelledby="pf-sk-l">' +
       SKILLCHOICES.map(function(c){ var on = PF.skills.indexOf(c[0]) >= 0;
@@ -3479,9 +3368,35 @@ function demoRowHTML(){
     '<div class="lr"><b>Try the demo account</b><div class="fhelp">'+esc(m.displayName)+' · @'+esc(m.handle)+'</div></div>' +
     ic('back',18).replace('class="ic"','class="ic" style="transform:scaleX(-1)"')+'</div></div>';
 }
+/* your photo is your profile look's image: the same picture as the square in Customize */
+function pfPhotoHTML(){
+  var me = person('self'), sq = PF.photo ? sqT(Object.assign({}, PTHEME.self || plainTheme('◉'), { image:PF.photo }), 80)
+    : '<span class="av" style="width:80px;height:80px;flex-basis:80px;font-size:28px;background:'+(AVCOLOR.self||'#5a5a5a')+'">'+esc(initials(PF.name || me.displayName || 'You'))+'</span>';
+  return '<div class="field"><span class="flabel" id="pf-ph-l">Photo</span><div class="czimg" role="group" aria-labelledby="pf-ph-l">' +
+    '<button type="button" class="czdrop" data-pfact="pick" data-czdrop="photo" aria-label="'+(PF.photo ? 'Replace your photo' : 'Choose a photo')+'">' + sq + '</button>' +
+    '<div class="czimgside"><input type="file" id="pf-photo" class="czfile" accept="image/*" data-czfile="photo" tabindex="-1" aria-hidden="true">' +
+      '<button type="button" class="btn" data-pfact="pick">'+(PF.photo ? 'Replace photo' : 'Upload photo')+'</button>' +
+      (PF.photo ? '<button type="button" class="btn" data-pfact="rm">Remove photo</button>' : '') +
+      '<p class="fhelp">Square, cropped from the centre, up to 10 MB. It is also your profile’s square in Customize.</p>' +
+      '<p class="ferr" id="pf-imgerr" role="alert"></p></div></div></div>';
+}
+function pfRepaint(){ pfSync(); var b = $('pfbody'); if (b) b.innerHTML = profileForm(); pfSync(); }
+function pfTakePhoto(file){
+  var err = $('pf-imgerr'), bad = imageProblem(file), pf = PF;
+  if (err) err.textContent = bad;
+  if (bad || !pf) return;
+  squareImage(file, (PTHEME.self || window.HN_PLAIN).bg).then(function(url){ if (PF !== pf) return; pf.photo = url; pfRepaint(); },
+    function(){ var e2 = $('pf-imgerr'); if (e2) e2.textContent = 'That image couldn’t be read. Try another file.'; });
+}
+document.addEventListener('click', function(ev){
+  var b = ev.target.closest && ev.target.closest('[data-pfact]');
+  if (!b || !PF) return;
+  if (b.getAttribute('data-pfact') === 'pick'){ var f = $('pf-photo'); if (f) f.click(); }
+  else { PF.photo = null; pfRepaint(); }
+});
 function profileDialog(mode){
   var p = PEOPLE['self'], up = mode === 'signup';
-  PF = { mode:mode, name: up ? '' : p.displayName, handle: up ? '' : p.handle,
+  PF = { mode:mode, name: up ? '' : p.displayName, handle: up ? '' : p.handle, photo: up ? null : (PTHEME.self && PTHEME.self.image) || null,
          about: up ? '' : (p.bio || ''), skills: up ? [] : (p.skills || []).slice(), cities: up ? [] : citiesOf(p).slice() };
   dialog(up ? (JOINFOR || 'Join Hypernet') : 'Edit profile', (up ? demoRowHTML() : '') + '<div id="pfbody">' + profileForm() + '</div>',
     '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="pfsave" id="pfsave"'+(up?' disabled':'')+'>'+(up ? 'Join' : 'Save')+'</button>', 560);
@@ -3535,6 +3450,10 @@ function pfSave(){
     return;
   }
   Object.keys(prof).forEach(function(k){ PEOPLE['self'][k] = prof[k]; });
+  if (PF.photo !== ((PTHEME.self && PTHEME.self.image) || null)){
+    var lk = asLook(Object.assign({}, PTHEME.self || plainTheme('◉'), { image:PF.photo || null }));
+    if (isPlain(lk) && !lk.image) delete PTHEME.self; else PTHEME.self = lk;
+  }
   S.me = { name:prof.displayName, handle:prof.handle }; closeDialogs(); render(); toast('Profile saved', '');
 }
 function loginDialog(){
@@ -3584,13 +3503,13 @@ function loadAcct(a){
   FORMDRAFTS = (a.drafts && a.drafts.forms) || {}; CHATDRAFT = (a.drafts && a.drafts.chat) || {};
   ANSWERED = a.answered || {}; ANSWERING = a.answering || {}; SHIFT = a.shift || {};
   if (a.read) Object.keys(a.read).forEach(function(k){ READ[k] = true; });
-  if (a.look) PTHEME['self'] = a.look; else delete PTHEME['self'];
+  if (a.look) PTHEME['self'] = a.look = asLook(a.look); else delete PTHEME['self'];
   S.me = { name:p.displayName || 'You', handle:p.handle || 'you' };
 }
 /* an account that is not logged in is, to everyone else, just a person on the network */
 function syncAcctPeople(){
   Object.keys(ACCTS).forEach(function(k){
-    var pid = acctPid(k), look = ACCTS[k] && ACCTS[k].look;
+    var pid = acctPid(k), look = ACCTS[k] && ACCTS[k].look && asLook(ACCTS[k].look);
     if (!(S.loggedIn && S.acct === k)){ if (look) PTHEME[pid] = look; else if (k !== 'demo' || !window.HYPERNET_THEMES.people[pid]) delete PTHEME[pid]; }
     if (k === 'demo') return;
     if (S.loggedIn && S.acct === k) delete PEOPLE[pid];
@@ -3843,136 +3762,173 @@ function pickerDone(){
 /* =========================================================================
    12. THE HOST'S EDITOR — New Event wizard, ending in Customize
    ========================================================================= */
-var PALSETS = [
-  { n:'Basement teal',   p:{ bg:'#06080e', ink:'#e9e7e0', accent:'#6fd6c8', accent2:'#17233a', dim:'#7d8796' } },
-  { n:'Onion orange',    p:{ bg:'#1a0703', ink:'#ffe9d6', accent:'#ff5a1f', accent2:'#7a1b06', dim:'#b4795e' } },
-  { n:'Cathode green',   p:{ bg:'#000000', ink:'#d8ffe8', accent:'#39ff88', accent2:'#ff2fd0', dim:'#4c7f66' } },
-  { n:'Morning paper',   p:{ bg:'#f6f0e4', ink:'#241f18', accent:'#d98d3f', accent2:'#e8dcc4', dim:'#8b8172' } },
-  { n:'Dust and gold',   p:{ bg:'#3a2a12', ink:'#fdf3df', accent:'#e6b23c', accent2:'#7a5a24', dim:'#b9a077' } },
-  { n:'Nordic blue',     p:{ bg:'#0d1b2e', ink:'#eaf2ff', accent:'#5ea8ff', accent2:'#12304f', dim:'#7d97b8' } },
-  { n:'Warning yellow',  p:{ bg:'#16181a', ink:'#f2f4f2', accent:'#ffd400', accent2:'#2e3438', dim:'#8a9196' } },
-  { n:'Violet static',   p:{ bg:'#101014', ink:'#ececf0', accent:'#a98cff', accent2:'#2a2440', dim:'#807c93' } },
-  { n:'Plain paper',     p:window.HN_PLAIN.palette }
-];
-function plainPal(){ for (var i = 0; i < PALSETS.length; i++) if (PALSETS[i].n === 'Plain paper') return i; return 0; }
-var SURFS = ['grain','paper','dither','halftone','scanlines','grid','rays','photocopy','plasma','none'];
-var TYPES = ['serif','grotesk','mono','stencil','display'];
-var HEADS = ['huge','condensed','stacked','outlined','marquee'];
-var MOTS  = ['none','drift','pulse','flicker','scroll'];
-var SHAPES= ['sharp','rounded','cut'];
-var DENS  = ['airy','packed'];
-var PATS  = ['plain','stripe','grid','dither','rays','scan','halftone','moon'];
-var GLYS  = ['◆','✳','▲','◉','✦','■','☾','◗','⬟','✜','◈','▤','⚡','♫'];
-var PRESETS = [
-  { n:'A basement, no phones', t:{ mood:'a basement, long tones, no phones', pal:0, surface:'grain', type:'serif', headline:'huge', motion:'drift', shape:'sharp', density:'airy', pattern:'moon', glyph:'☾', backdrop:'contours', atmosphere:'dust', parallax:'gentle', orn:['stamp','tape'] } },
-  { n:'Photocopied flyer', t:{ mood:'bring cash, bring earplugs', pal:1, surface:'photocopy', type:'stencil', headline:'condensed', motion:'flicker', shape:'cut', density:'packed', pattern:'stripe', glyph:'⚡', backdrop:'halftone', atmosphere:'sparks', parallax:'none', orn:['stamp','torn'] } },
-  { n:'Dust and gold', t:{ mood:'the big one. dust, and then more dust.', pal:4, surface:'rays', type:'display', headline:'outlined', motion:'drift', shape:'sharp', density:'airy', pattern:'rays', glyph:'✦', backdrop:'dunes', atmosphere:'dust', parallax:'deep', orn:['stamp','compass','ribbon'] } },
-  { n:'Cathode church', t:{ mood:'walk into the trees, the trees walk back', pal:2, surface:'scanlines', type:'mono', headline:'stacked', motion:'flicker', shape:'sharp', density:'packed', pattern:'scan', glyph:'✳', backdrop:'synthwave', atmosphere:'fireflies', parallax:'deep', orn:['ribbon'] } },
-  { n:'Sunday paper', t:{ mood:'one cup, no talking, until the light lands', pal:3, surface:'paper', type:'serif', headline:'huge', motion:'none', shape:'rounded', density:'airy', pattern:'plain', glyph:'◗', backdrop:'map', atmosphere:'none', parallax:'gentle', orn:['tape','compass'] } }
+/* Customize is three colours and a square image (owner, 2026-10-01: "Keep pick your colors … just select colors and
+   image for now"). A few one-click starting points; the text colour is always kept legible on the background. */
+var LOOKSTARTS = [
+  { n:'Plain paper', bg:window.HN_PLAIN.bg, ink:window.HN_PLAIN.ink, accent:window.HN_PLAIN.accent },
+  { n:'Night',  bg:'#0e1018', ink:'#e8e9ef', accent:'#8fb4ff' },
+  { n:'Desert', bg:'#3a2a12', ink:'#fdf3df', accent:'#e6b23c' },
+  { n:'Sea',    bg:'#0d1b2e', ink:'#eaf2ff', accent:'#5ea8ff' },
+  { n:'Forest', bg:'#10201a', ink:'#e4f4ea', accent:'#48c98a' },
+  { n:'Neon',   bg:'#000000', ink:'#f5f5f5', accent:'#ff2fd0' }
 ];
 var DRAFT = null;
 /* the draft fields that make up a look (anything else is a fact about the thing) */
-var LOOKKEYS = /^(mood|pal|surface|type|headline|motion|shape|density|pattern|glyph|backdrop|atmosphere|parallax|orn)$/;
-function draftTheme(d){
-  return { mood:d.mood, palette:PALSETS[d.pal].p, square:{ pattern:d.pattern, glyph:d.glyph },
-           surface:d.surface, type:d.type, headline:d.headline, motion:d.motion, shape:d.shape, density:d.density,
-           backdrop:d.backdrop, atmosphere:d.atmosphere, parallax:d.parallax, ornaments:d.orn ? d.orn.slice() : undefined };
+var LOOKKEYS = /^(bg|ink|accent|image)$/;
+function lookDraft(t){ return { bg:t.bg, ink:t.ink, accent:t.accent, image:t.image || null, glyph:t.glyph }; }
+/* the look a draft stands for, its text colour corrected; draftLook is null when that is just the plain look */
+function draftTheme(d){ return asLook({ bg:d.bg, ink:d.ink, accent:d.accent, image:d.image || null, glyph:d.glyph }); }
+function draftLook(d){ var t = draftTheme(d); return isPlain(t) && !t.image ? null : t; }
+/* a horizon shows its own square when it has a picture, or no events to make a cover from */
+function hzOwnsSquare(hzId, lk){
+  var hz = HORIZONS[hzId];
+  return !!lk && (!!lk.image || !hz.eventIds.some(function(id){ return EVENTS[id]; }));
 }
-/* the art of a saved theme, as draft fields (a theme saved before the art existed gets its seeded art) */
-function artDraft(t, seed){ var a = artOf(t, seed); return { backdrop:a.backdrop, atmosphere:a.atmosphere, parallax:a.parallax, orn:a.ornaments.slice() }; }
-/* a preset is a look: palette, surface, type, headline, motion, shape, density and square. Never your words. */
-function applyPreset(i){ var p = PRESETS[i].t; ['pal','surface','type','headline','motion','shape','density','pattern','glyph','backdrop','atmosphere','parallax'].forEach(function(k){ DRAFT[k] = p[k]; }); DRAFT.orn = p.orn.slice(); }
-function czSel(name, list, cur, label){
-  return '<select data-cz="'+name+'" aria-label="'+esc(label||name)+'">' + list.map(function(v){ return '<option value="'+esc(v)+'"'+(v===cur?' selected':'')+'>'+esc(v)+'</option>'; }).join('') + '</select>';
-}
-function coverFromDraft(d, t, px){
-  if (d.cover === 'own') return '<div class="mosaic one" style="width:'+px+'px;height:'+px+'px">'+sqT(t, px)+'</div>';
-  if (d.cover === 'plain') return mosaicOf([], px);
-  var ids = HORIZONS[d.editing].eventIds;
-  if (d.cover !== 'mosaic' && EVENTS[d.cover]) return '<div class="mosaic one" style="width:'+px+'px;height:'+px+'px">'+sqPx(d.cover, px)+'</div>';
-  return mosaicOf(ids, px);
-}
-function horizonPreviewHTML(){
-  var d = DRAFT, t = draftTheme(d), vars = themeVars(t), hz = HORIZONS[d.editing];
-  var h = '<div class="previewbox">';
-  h += '<div class="plabel">Cover</div><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">'+coverFromDraft(d, t, 160)+coverFromDraft(d, t, 56)+'</div>';
-  h += '<div class="plabel">Card</div><div class="card2" style="cursor:default"><div class="cart">'+coverFromDraft(d, t, 150)+'</div>' +
-       '<div class="ct2">'+esc(hz.name)+'</div><div class="cs2">'+esc(hz.ownerName+' · '+hz.eventIds.length+' events')+'</div></div>';
-  var seed = d.editing, torn = hasOrn(t, seed, 'torn');
-  var page = '<div class="minicanvas"><div class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+vars+'">' + artLayersHTML(t, seed, true) +
-       '<div class="banner'+(torn ? ' torn" style="'+tornStyle(seed) : '')+'"><div class="surf u-'+t.surface+'"></div>' + heroArtHTML(t) + '<div class="wash"></div>' + ornamentsHTML(t, seed, hzOrnOpts(seed)) +
-       '<div class="bin"><div class="sqwrap">'+coverFromDraft(d, t, 72) + (hasOrn(t, seed, 'tape') ? tapeHTML() : '') + '</div>' +
-       '<div class="btxt"><div class="eyebrow">Event Horizon</div><h1 class="hl h-'+t.headline+'">'+headlineHTML(t, hz.name)+'</h1>'+(t.mood?'<p class="mood">'+esc(t.mood)+'</p>':'')+'</div></div></div>' +
-       (hasOrn(t, seed, 'ribbon') ? ribbonHTML(t, t.mood || hz.name) : '') + '</div></div>';
-  /* on a phone the preview is the page itself, small, and it stays in view while you change things */
-  if (L.phone) return '<div class="previewbox compact">' + page + '</div>';
-  return h.replace('<div class="previewbox">', '<div class="previewbox"><div class="plabel">Horizon page</div>' + page) + '</div>';
-}
-function personPreviewHTML(){
-  var d = DRAFT, t = draftTheme(d), vars = themeVars(t), seed = 'self', me = person('self'), torn = hasOrn(t, seed, 'torn');
-  var page = '<div class="minicanvas"><div class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+vars+'">' + artLayersHTML(t, seed, true) +
-       '<div class="banner'+(torn ? ' torn" style="'+tornStyle(seed) : '')+'"><div class="surf u-'+t.surface+'"></div>' + heroArtHTML(t) + '<div class="wash"></div>' + ornamentsHTML(t, seed, personOrnOpts(seed)) +
-       '<div class="bin"><div class="sqwrap">'+sqT(t, 72) + (hasOrn(t, seed, 'tape') ? tapeHTML() : '') + '</div>' +
-       '<div class="btxt"><div class="eyebrow">@'+esc(me.handle)+'</div><h1 class="hl h-'+t.headline+'">'+headlineHTML(t, me.displayName || 'You')+'</h1>'+(t.mood?'<p class="mood">'+esc(t.mood)+'</p>':'')+'</div></div></div>' +
-       (hasOrn(t, seed, 'ribbon') ? ribbonHTML(t, t.mood || me.displayName) : '') + '</div></div>';
-  return '<div class="previewbox'+(L.phone ? ' compact' : '')+'">' + (L.phone ? '' : '<div class="plabel">Profile page</div>') + page + '</div>';
-}
-function customizePreviewHTML(){
-  if (DRAFT.kind === 'horizon') return horizonPreviewHTML();
-  if (DRAFT.kind === 'person') return personPreviewHTML();
-  var d = DRAFT, t = draftTheme(d), vars = themeVars(t);
-  var ev = { title:d.title || 'Untitled event', date:d.date, city:d.city, host:'You' };
-  var sq = function(size){ return '<div class="sq s'+size+' sh-'+t.shape+'" style="'+vars+'"><div class="pat p-'+t.square.pattern+'"></div><span class="g">'+t.square.glyph+'</span></div>'; };
-  var h = '<div class="previewbox">';
-  h += '<div class="plabel">Square</div><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">'+sq(160)+sq(64)+sq(40)+sq(20)+'</div>';
-  h += '<div class="plabel">Row</div><div class="row unread" style="border:1px solid var(--line);cursor:default">'+sq(40)+
-       '<div class="r-main"><div class="r-title">'+esc(ev.title)+'</div><div class="r-meta">'+esc(ev.host)+' · '+esc(ev.city||'')+'</div></div>' +
-       '<div class="r-side"><div class="r-date">'+(isoDate(ev.date) ? fmtShort(ev.date) : '')+'</div></div></div>';
-  var seed = d.editing || 'draft', torn = hasOrn(t, seed, 'torn');
-  var orn = { stamp: d.editing ? stampText(d.editing) : (ENTRYSTAMP[d.entry] || KINDLAB[d.kind] || ''), place: d.editing ? placeOf(d.editing) : String(d.city || '').trim() };
-  var banner = '<div class="banner'+(torn ? ' torn" style="'+tornStyle(seed) : '')+'"><div class="surf u-'+t.surface+'"></div>' + heroArtHTML(t) + '<div class="wash"></div>' + ornamentsHTML(t, seed, orn) +
-       '<div class="bin"><div class="sqwrap">'+sq(64) + (hasOrn(t, seed, 'tape') ? tapeHTML() : '') + '</div>' +
-       '<div class="btxt"><h1 class="hl h-'+t.headline+'">'+headlineHTML(t, ev.title)+'</h1>'+(t.mood?'<p class="mood">'+esc(t.mood)+'</p>':'')+'</div></div></div>' +
-       (hasOrn(t, seed, 'ribbon') ? ribbonHTML(t, t.mood || ev.title) : '');
-  var open = '<div class="minicanvas"><div class="canvas t-'+t.type+' d-'+t.density+' sh-'+t.shape+' mo-'+t.motion+'" style="'+vars+'">' + artLayersHTML(t, seed, true);
-  if (L.phone) return '<div class="previewbox compact">' + open + banner + '</div></div></div>';
-  h += '<div class="plabel">Event page</div>' + open + banner +
-       '<div class="actbar" style="position:relative"><div class="verbs"><div class="vgroup"><span class="btn vb">'+ic('heart',16)+'Interested</span><span class="btn vb on">'+ic('check',16)+'Going</span></div>' +
-       '<span class="btn vb">'+ic('promote',16)+'Promote</span></div></div></div></div>';
-  return h + '</div>';
-}
-function customizeHTML(){
-  var d = DRAFT;
-  var left = '<div class="custcol">';
+/* what the preview shows for the thing being customised: its square, eyebrow, title and two facts */
+function czSubject(d, t, px){
+  var lk = draftLook(d);
   if (d.kind === 'horizon'){
     var hz = HORIZONS[d.editing];
-    left += '<div class="crow2"><label>Cover</label><select data-cz="cover" aria-label="Cover">' +
-      [['own','Its own square'],['mosaic','Mosaic of its events'],['plain','Plain']].concat(hz.eventIds.filter(function(id){ return EVENTS[id]; }).map(function(id){ return [id, 'Square of ' + EVENTS[id].title]; }))
-        .map(function(o){ return '<option value="'+esc(o[0])+'"'+(o[0]===d.cover?' selected':'')+'>'+esc(o[1])+'</option>'; }).join('') + '</select></div>';
+    return { cover: hzOwnsSquare(d.editing, lk) ? '<div class="mosaic one" style="width:'+px+'px;height:'+px+'px">'+sqT(t, px)+'</div>' : mosaicOf(hz.eventIds, px),
+             eyebrow:'Event Horizon', title:hz.name, facts:[['By', 'You'], ['Events', String(hz.eventIds.length)]] };
   }
-  left += '<div class="flabel" style="margin-bottom:8px">Presets</div><div class="presets">' +
-    PRESETS.map(function(p,i){ return '<button class="btn" data-cz="preset" data-i="'+i+'">'+esc(p.n)+'</button>'; }).join('') + '</div>';
-  left += '<div class="crow2"><label>Mood</label><input type="text" data-cz="mood" value="'+esc(d.mood)+'"></div>';
-  left += '<div class="crow2"><label>Palette</label><select data-cz="pal" aria-label="Palette">' +
-    PALSETS.map(function(p,i){ return '<option value="'+i+'"'+(i===d.pal?' selected':'')+'>'+esc(p.n)+'</option>'; }).join('') + '</select></div>';
-  left += '<div class="crow2"><label></label><span class="swatches">' +
-    ['bg','ink','accent','accent2','dim'].map(function(k){ return '<span class="sw" style="background:'+PALSETS[d.pal].p[k]+'"></span>'; }).join('') + '</span></div>';
-  left += '<div class="crow2"><label>Surface</label>'+czSel('surface',SURFS,d.surface)+'</div>';
-  left += '<div class="crow2"><label>Typeface</label>'+czSel('type',TYPES,d.type)+'</div>';
-  left += '<div class="crow2"><label>Headline</label>'+czSel('headline',HEADS,d.headline)+'</div>';
-  left += '<div class="crow2"><label>Motion</label>'+czSel('motion',MOTS,d.motion)+'</div>';
-  left += '<div class="crow2"><label>Shape</label>'+czSel('shape',SHAPES,d.shape)+'</div>';
-  left += '<div class="crow2"><label>Density</label>'+czSel('density',DENS,d.density)+'</div>';
-  left += '<div class="crow2"><label>Square</label>'+czSel('pattern',PATS,d.pattern,'Pattern')+czSel('glyph',GLYS,d.glyph,'Glyph')+'</div>';
-  var art = artOf(draftTheme(d), d.editing || 'draft');
-  left += '<div class="crow2"><label>Backdrop</label>'+czSel('backdrop',BACKDROPS,art.backdrop)+'</div>';
-  left += '<div class="crow2"><label>Atmosphere</label>'+czSel('atmosphere',ATMOS,art.atmosphere)+'</div>';
-  left += '<div class="crow2"><label>Parallax</label>'+czSel('parallax',PARALLAX,art.parallax)+'</div>';
-  left += '<div class="crow2 top"><label>Ornaments</label><span class="ornset">' + ORNAMENTS.map(function(o){
-    return '<label class="ornck"><input type="checkbox" data-cz="orn" value="'+o[0]+'"'+(art.ornaments.indexOf(o[0]) >= 0 ? ' checked' : '')+'>'+esc(o[1])+'</label>'; }).join('') + '</span></div>';
-  left += '</div>';
+  if (d.kind === 'person'){
+    var me = person('self');
+    return { cover: lk ? sqT(t, px) : '<span class="av" style="width:'+px+'px;height:'+px+'px;flex-basis:'+px+'px;font-size:'+Math.round(px*.35)+'px;background:'+(AVCOLOR.self||'#5a5a5a')+'">'+esc(initials(me.displayName || 'You'))+'</span>',
+             eyebrow:'@'+esc(me.handle || 'you'), title:me.displayName || 'You', facts:[['Based in', citiesOf(me).join(', ') || '—'], ['Going', '3']] };
+  }
+  return { cover:sqT(t, px), eyebrow:esc(KINDLAB[d.kind] || 'Event'), title:d.title || 'Untitled event',
+           facts:[['When', isoDate(d.date) ? fmtDate(d.date) : '—'], ['Where', String(d.city || '').trim() || '—']] };
+}
+function customizePreviewHTML(){
+  var d = DRAFT, t = draftTheme(d), sub = czSubject(d, t, 72);
+  var page = '<div class="minicanvas"><div class="canvas pg'+(isPlain(t) ? ' plain' : '')+'" style="'+themeVars(t)+'">' +
+    titleBlockHTML(sub.cover, sub.eyebrow, sub.title, '') +
+    '<div class="actbar"><div class="verbs"><span class="btn vb">'+ic('heart',16)+'Interested</span><span class="btn vb on">'+ic('check',16)+'Going</span></div></div>' +
+    '<div class="layer"><div class="lin">' + factGrid(sub.facts) + '</div></div></div></div>';
+  /* on a phone the preview is the title block itself, small, and it stays in view while you change things */
+  if (L.phone) return '<div class="previewbox compact">' + page + '</div>';
+  var row = '<div class="row unread" style="border:1px solid var(--line);cursor:default">' + sqT(t, 40) +
+    '<div class="r-main"><div class="r-title">'+esc(sub.title)+'</div><div class="r-meta">'+esc(sub.facts.map(function(f){ return f[1]; }).join(' · '))+'</div></div></div>';
+  return '<div class="previewbox"><div class="plabel">Page</div>' + page +
+    '<div class="plabel">Square</div><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">' +
+    [120, 64, 40, 20].map(function(px){ return sqT(t, px); }).join('') + '</div>' +
+    '<div class="plabel">Row</div>' + row + '</div>';
+}
+function czColorRow(k, label, v){
+  return '<div class="czcolor"><label for="cz-'+k+'">'+label+'</label><input type="color" id="cz-'+k+'" data-cz="'+k+'" value="'+esc(v)+'">' +
+    '<input type="text" class="czhex" data-cz="'+k+'" value="'+esc(v)+'" maxlength="7" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="'+label+' colour, hex"></div>';
+}
+/* a text colour that is too faint for its background is corrected, and the editor says so, quietly */
+function czNoteHTML(d){
+  var t = draftTheme(d);
+  return t.ink !== String(d.ink).toLowerCase() ? 'Adjusted for readability: text shows as <span class="sw" style="background:'+t.ink+'"></span>'+t.ink : '';
+}
+function czDropHTML(d){ var t = draftTheme(d); return sqT(t, 96) + '<span class="czhint" aria-hidden="true">'+(t.image ? 'Replace' : 'Drop image')+'</span>'; }
+function customizeHTML(){
+  var d = DRAFT, note;
+  if (d.kind !== 'horizon' && d.kind !== 'person' && !d.editing) d.glyph = PLAINGLYPH[d.kind] || '◆';
+  note = czNoteHTML(d);
+  var left = '<div class="custcol">' +
+    '<div class="czsect" id="cz-start-l">Start from</div><div class="czstarts" role="group" aria-labelledby="cz-start-l">' + LOOKSTARTS.map(function(s, i){
+      return '<button type="button" class="btn czstart" data-czact="start" data-i="'+i+'"><span class="sw" style="background:'+s.bg+';color:'+s.accent+'" aria-hidden="true">'+esc(d.glyph || '◆')+'</span>'+esc(s.n)+'</button>'; }).join('') + '</div>' +
+    '<div class="czsect">Colours</div>' + czColorRow('bg', 'Background', d.bg) + czColorRow('ink', 'Text', d.ink) + czColorRow('accent', 'Accent', d.accent) +
+    '<p class="cznote" id="cz-note" role="status"'+(note ? '' : ' hidden')+'>'+note+'</p>' +
+    '<div class="czsect">Image</div><div class="czimg">' +
+      '<button type="button" class="czdrop" data-czact="pick" data-czdrop="look" aria-label="'+(d.image ? 'Replace the image' : 'Choose a square image')+'">'+czDropHTML(d)+'</button>' +
+      '<div class="czimgside"><input type="file" id="cz-file" class="czfile" accept="image/*" data-czfile="look" tabindex="-1" aria-hidden="true">' +
+        '<button type="button" class="btn" data-czact="pick">'+(d.image ? 'Replace image' : 'Upload image')+'</button>' +
+        (d.image ? '<button type="button" class="btn" data-czact="rmimg">Remove image</button>' : '') +
+        '<p class="fhelp">Shown as a square, cropped from the centre. JPG, PNG, WebP or GIF, up to 10 MB. Or drop one on the square.</p>' +
+        '<p class="ferr" id="cz-imgerr" role="alert"></p></div></div>' +
+    '<button type="button" class="btn" data-czact="reset">Reset to plain</button></div>';
   return '<div class="custwrap">' + left + '<div class="custprev">' + customizePreviewHTML() + '</div></div>';
 }
+/* a colour change repaints only what shows it, so a picker that is open stays open */
+function czRefresh(except){
+  var dlg = DLGS[DLGS.length-1];
+  if (!dlg || !DRAFT || !dlg.querySelector('.custwrap')) return;
+  ['bg','ink','accent'].forEach(function(k){ dlg.querySelectorAll('[data-cz="'+k+'"]').forEach(function(n){ if (n !== except && n.value !== DRAFT[k]) n.value = DRAFT[k]; }); });
+  var note = czNoteHTML(DRAFT), nb = $('cz-note'); if (nb){ nb.innerHTML = note; nb.hidden = !note; }
+  var dz = dlg.querySelector('.czdrop'); if (dz) dz.innerHTML = czDropHTML(DRAFT);
+  var box = dlg.querySelector('.custprev'); if (box) box.innerHTML = customizePreviewHTML();
+  refreshWizFoot(); schedulePersist();
+}
+function czSetColor(k, v, from){
+  v = String(v || '').trim().toLowerCase();
+  if (/^#?[0-9a-f]{3}$/.test(v)){ v = v.replace('#', ''); v = '#' + v[0] + v[0] + v[1] + v[1] + v[2] + v[2]; }
+  else if (/^#?[0-9a-f]{6}$/.test(v)) v = '#' + v.replace('#', '');
+  else return;
+  if (DRAFT[k] === v) return;
+  DRAFT[k] = v; DRAFT.lookTouched = true;
+  czRefresh(from);
+}
+
+/* ---- the square image: checked, centre-cropped and downscaled in the browser ----
+   STORAGE: for now the result is a data URL kept on the look (look.image) and saved with it in localStorage.
+   With the backend this is where the file goes to real storage instead (Vercel Blob; its URL is what look.image
+   holds in the look's JSON column in Neon). Only squareImage()'s callers change: they get a URL back, not a data URL. */
+var IMGMAX = 10 * 1024 * 1024, IMGPX = 512, IMGBUDGET = 150 * 1024;
+function imageProblem(file){
+  if (!file) return 'No file chosen.';
+  if (!/^image\//.test(file.type || '')) return 'That file isn’t an image. Choose a JPG, PNG, WebP or GIF.';
+  if (file.size > IMGMAX) return 'That image is ' + (file.size / 1048576).toFixed(1) + ' MB. The limit is 10 MB.';
+  return '';
+}
+function squareImage(file, bg){
+  return new Promise(function(resolve, reject){
+    var src = URL.createObjectURL(file), img = new Image();
+    img.onload = function(){
+      URL.revokeObjectURL(src);
+      var w = img.naturalWidth, h = img.naturalHeight, s = Math.min(w, h);
+      if (!s) return reject(new Error('empty image'));
+      var out = Math.min(IMGPX, s), c = document.createElement('canvas');
+      c.width = c.height = out;
+      var g = c.getContext('2d');
+      g.fillStyle = bg || '#ffffff'; g.fillRect(0, 0, out, out);          /* a transparent picture sits on the look's ground */
+      g.imageSmoothingQuality = 'high';
+      g.drawImage(img, (w - s) / 2, (h - s) / 2, s, s, 0, 0, out, out);
+      var url = '';
+      for (var q = .86; q >= .38; q -= .12){
+        url = c.toDataURL('image/webp', q);
+        if (!/^data:image\/webp/.test(url)) url = c.toDataURL('image/jpeg', q);   /* browsers that cannot write WebP */
+        if (url.length * .75 <= IMGBUDGET) break;
+      }
+      resolve(url);
+    };
+    img.onerror = function(){ URL.revokeObjectURL(src); reject(new Error('unreadable image')); };
+    img.src = src;
+  });
+}
+function czTakeFile(file){
+  var err = $('cz-imgerr'), bad = imageProblem(file), d = DRAFT;
+  if (err) err.textContent = bad;
+  if (bad || !d) return;
+  squareImage(file, d.bg).then(function(url){
+    if (DRAFT !== d) return;
+    d.image = url; d.lookTouched = true; paintWiz(); schedulePersist();
+  }, function(){ var e2 = $('cz-imgerr'); if (e2) e2.textContent = 'That image couldn’t be read. Try another file.'; });
+}
+document.addEventListener('click', function(ev){
+  var b = ev.target.closest && ev.target.closest('[data-czact]');
+  if (!b || !DRAFT) return;
+  var a = b.getAttribute('data-czact');
+  if (a === 'pick'){ var f = $('cz-file'); if (f) f.click(); return; }
+  if (a === 'start'){ var s = LOOKSTARTS[+b.getAttribute('data-i')]; DRAFT.bg = s.bg; DRAFT.ink = s.ink; DRAFT.accent = s.accent; }
+  else if (a === 'rmimg') DRAFT.image = null;
+  else if (a === 'reset') Object.assign(DRAFT, { bg:window.HN_PLAIN.bg, ink:window.HN_PLAIN.ink, accent:window.HN_PLAIN.accent, image:null });
+  DRAFT.lookTouched = true; paintWiz(); schedulePersist();
+});
+/* drop a picture on the square (the customize square, or the profile photo) */
+function dropZone(ev){ var z = ev.target.closest && ev.target.closest('[data-czdrop]'); return z && ev.dataTransfer && [].indexOf.call(ev.dataTransfer.types || [], 'Files') >= 0 ? z : null; }
+document.addEventListener('dragover', function(ev){ var z = dropZone(ev); if (z){ ev.preventDefault(); ev.dataTransfer.dropEffect = 'copy'; z.classList.add('over'); } });
+document.addEventListener('dragleave', function(ev){ var z = ev.target.closest && ev.target.closest('[data-czdrop]'); if (z) z.classList.remove('over'); });
+document.addEventListener('drop', function(ev){
+  var z = dropZone(ev); if (!z) return;
+  ev.preventDefault(); z.classList.remove('over');
+  var f = ev.dataTransfer.files && ev.dataTransfer.files[0];
+  if (z.getAttribute('data-czdrop') === 'photo') pfTakePhoto(f); else czTakeFile(f);
+});
 function wizBodyHTML(){
   var d = DRAFT, h = '';
   /* the steps are tabs you can use: any step, in any order; Publish checks what is still missing */
@@ -4019,19 +3975,17 @@ function paintWiz(){
   d.querySelector('.dbody').innerHTML = wizBodyHTML();
   d.querySelector('.dfoot').innerHTML = wizFootHTML();
   placeDlg(d);
-  pxSync();
 }
 /* a create form starts empty and is its own draft: closing it keeps what you typed, Discard throws it away */
 var FORMDRAFTS = {};
 var EVENTKINDS = ['meetup','build','workshop','volunteer_day','fundraiser','camp_meeting','burn_night','town_hall','decompression','burn','sale','other'];
 function blankEventDraft(){
-  return { step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', city:'', privacy:'everyone', entry:'free', desc:'', bring:'',
-           mood:'', pal:plainPal(), surface:'none', type:'grotesk', headline:'huge', motion:'none', shape:'sharp', density:'airy', pattern:'plain', glyph:'◉',
-           backdrop:'paper', atmosphere:'none', parallax:'none', orn:[], lookTouched:false };
+  return Object.assign({ step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', city:'', privacy:'everyone', entry:'free', desc:'', bring:'',
+           lookTouched:false }, lookDraft(plainTheme('◉')));
 }
 function eventDraftDirty(d){
   var b = blankEventDraft();
-  return Object.keys(b).some(function(k){ return k !== 'step' && k !== 'editing' && String(d[k] == null ? '' : d[k]) !== String(b[k]); });
+  return Object.keys(b).some(function(k){ return k !== 'step' && k !== 'editing' && k !== 'glyph' && String(d[k] == null ? '' : d[k]) !== String(b[k] == null ? '' : b[k]); });
 }
 function eventDraftMissing(d){ return { title: !String(d.title || '').trim(), date: !isoDate(d.date) }; }
 /* repaint the footer only when it changes: replacing a button under the pointer would swallow its click */
@@ -4043,38 +3997,26 @@ function refreshWizFoot(){
 }
 var newEventDialog = gated(function(){
   DRAFT = FORMDRAFTS.event || blankEventDraft();
+  /* a draft kept from before looks were three colours gets the plain look's */
+  if (!DRAFT.bg){ ['mood','pal','surface','type','headline','motion','shape','density','pattern','backdrop','atmosphere','parallax','orn'].forEach(function(k){ delete DRAFT[k]; });
+                  Object.assign(DRAFT, lookDraft(plainTheme('◉'))); }
   DRAFT.showErr = false;
   FORMDRAFTS.event = DRAFT;
   dialog('New event', wizBodyHTML(), wizFootHTML(), 900);
   if (DRAFT.step === 1) focusIn('w-t');
 });
-/* a horizon is customised with the same controls, plus its cover */
-var customizeHorizonDialog = gated(function(hzId){
-  var hz = HORIZONS[hzId], t = HZTHEME[hzId], d = { step:3, editing:hzId, kind:'horizon', title:hz.name, date:TODAY_ISO, city:'' };
-  if (t){
-    var pal = -1;
-    PALSETS.forEach(function(p,i){ if (p.p.bg === t.palette.bg) pal = i; });
-    if (pal < 0){ PALSETS.unshift({ n:'This horizon’s palette', p:t.palette }); pal = 0; }
-    Object.assign(d, { mood:t.mood||'', pal:pal, surface:t.surface, type:t.type, headline:t.headline, motion:t.motion, shape:t.shape,
-                       density:t.density, pattern:t.square.pattern, glyph:t.square.glyph }, artDraft(t, hzId));
-  } else Object.assign(d, lookOf(plainTheme('◗'), hzId));
-  var has = hz.eventIds.some(function(id){ return EVENTS[id]; });
-  d.cover = HZCOVER[hzId] || (t || !has ? 'own' : 'mosaic');
-  if (!t && !has) d.cover = 'own';
-  DRAFT = d;
-  dialog('Customize ' + hz.name, wizBodyHTML(), wizFootHTML(), 900);
-});
-/* an event's own palette joins the list when it is not one of the presets */
-function palIndexOf(palette, label){
-  var pal = -1;
-  PALSETS.forEach(function(p,i){ if (p.p.bg === palette.bg) pal = i; });
-  if (pal < 0){ PALSETS.unshift({ n:label || 'This event’s palette', p:palette }); pal = 0; }
-  return pal;
+/* events, horizons and your profile share one Customize: the same three colours and square */
+function openCustomize(what, id){
+  var t, d;
+  if (what === 'horizon'){ t = HZTHEME[id] ? asLook(HZTHEME[id]) : plainTheme('◗'); d = { kind:'horizon', title:HORIZONS[id].name }; }
+  else if (what === 'person'){ t = PTHEME[id] ? asLook(PTHEME[id]) : plainTheme('◉'); d = { kind:'person', title:person(id).displayName }; }
+  else { var e = EVENTS[id]; t = TH(id); d = { kind:recOf(id).kind || 'meetup', title:e.title, date:e.date, city:cityShort(e.city) }; }
+  DRAFT = Object.assign(d, { step:3, editing:id, lookTouched:false }, lookDraft(t));
+  dialog(what === 'person' ? 'Customize your profile' : 'Customize ' + d.title, wizBodyHTML(), wizFootHTML(), 900);
 }
-function lookOf(t, seed){
-  return Object.assign({ mood:t.mood || '', pal:palIndexOf(t.palette), surface:t.surface, type:t.type, headline:t.headline, motion:t.motion, shape:t.shape,
-           density:t.density, pattern:t.square.pattern, glyph:t.square.glyph }, artDraft(t, seed));
-}
+var customizeDialog = gated(function(evId){ openCustomize('event', evId); });
+var customizeHorizonDialog = gated(function(hzId){ openCustomize('horizon', hzId); });
+var customizePersonDialog = gated(function(){ openCustomize('person', 'self'); });
 /* Edit is the whole wizard again, filled in, saved from any step */
 var editEventDialog = gated(function(evId){
   var e = EVENTS[evId], r = recOf(evId);
@@ -4082,10 +4024,16 @@ var editEventDialog = gated(function(evId){
   DRAFT = Object.assign({ mode:'edit', step:1, editing:evId, title:e.title, date:e.date, end:r.endDate || '', city:r.city || cityShort(e.city),
             privacy:e.privacy || 'everyone', entry:(r.access && r.access.model) || 'free', desc:descOf(e),
             kind:r.kind || 'meetup', startTime:r.startTime || '', endTime:r.endTime || '',
-            bring: Array.isArray(r.whatToBring) ? r.whatToBring.join('\n') : (r.whatToBring || '') }, lookOf(TH(evId), evId));
+            bring: Array.isArray(r.whatToBring) ? r.whatToBring.join('\n') : (r.whatToBring || '') }, lookDraft(TH(evId)));
   dialog('Edit ' + e.title, wizBodyHTML(), wizFootHTML(), 900);
   focusIn('w-t');
 });
+/* store a look for an event: a look, or null for plain (undefined = the look was not touched) */
+function setEventLook(id, t){
+  if (t === undefined) return;
+  if (t) window.HYPERNET_THEMES.themes[id] = t; else delete window.HYPERNET_THEMES.themes[id];
+  delete PLAINCACHE[id];
+}
 function saveEventEdit(t){
   var id = DRAFT.editing, e = EVENTS[id], r = REC[id] || (REC[id] = {});
   var start = isoDate(DRAFT.date), end = isoDate(DRAFT.end), city = String(DRAFT.city || '').trim();
@@ -4098,26 +4046,12 @@ function saveEventEdit(t){
   r.access = Object.assign({}, r.access || {}, { model:DRAFT.entry });
   r.whatToBring = String(DRAFT.bring || '').split('\n').map(function(x){ return x.trim(); }).filter(Boolean);
   if (!r.burn && r.scale !== 'burn') r.scale = r.endDate ? 'gathering' : 'meetup';
-  if (t) window.HYPERNET_THEMES.themes[id] = t;
+  setEventLook(id, t);
   delete PLAINCACHE[id];
   EDITED[id] = true; SLUGS = null;
   closeDialogs(); render();
   toast('Saved', e.title);
 }
-/* your profile can wear a look too (never required); only yours, from your page or the You tab */
-var customizePersonDialog = gated(function(){
-  var t = personTheme('self');
-  DRAFT = Object.assign({ step:3, editing:'self', kind:'person', title:person('self').displayName, date:TODAY_ISO, city:'' }, lookOf(t, 'self'));
-  dialog('Customize your profile', wizBodyHTML(), wizFootHTML(), 900);
-});
-var customizeDialog = gated(function(evId){
-  var t = TH(evId), e = EVENTS[evId], pal = palIndexOf(t.palette);
-  DRAFT = { step:3, editing:evId, title:e.title, date:e.date, city:cityShort(e.city), privacy:e.privacy, host:hostLabel(e), desc:descOf(e),
-            mood:t.mood||'', pal:pal, surface:t.surface, type:t.type, headline:t.headline, motion:t.motion, shape:t.shape, density:t.density,
-            pattern:t.square.pattern, glyph:t.square.glyph };
-  Object.assign(DRAFT, artDraft(t, evId));
-  dialog('Customize ' + e.title, wizBodyHTML(), wizFootHTML(), 900);
-});
 function wizAct(which){
   if (which === 'back'){ DRAFT.step = Math.max(1, DRAFT.step-1); paintWiz(); return; }
   var miss = eventDraftMissing(DRAFT), bad = (!DRAFT.editing || DRAFT.mode === 'edit') && (miss.title || miss.date);
@@ -4126,26 +4060,25 @@ function wizAct(which){
     DRAFT.step = Math.min(3, DRAFT.step+1); paintWiz(); return;
   }
   if (bad){ DRAFT.step = 1; DRAFT.showErr = true; paintWiz(); focusIn(miss.title ? 'w-t' : 'w-d'); return; }
-  /* a look is stored only when someone changed it: an untouched one stays plain (or stays what it was) */
-  var t = DRAFT.lookTouched ? draftTheme(DRAFT) : null;
+  /* a look is stored only when someone changed it; changed back to plain (no image), it is removed */
+  var t = DRAFT.lookTouched ? draftLook(DRAFT) : undefined;
   if (DRAFT.mode === 'edit'){ saveEventEdit(t); return; }
   if (DRAFT.kind === 'person'){
-    if (t) PTHEME['self'] = t;
+    if (t !== undefined){ if (t) PTHEME['self'] = t; else delete PTHEME['self']; }
     closeDialogs(); render(); schedulePersist();
     toast('Look updated', 'Your profile');
     return;
   }
   if (DRAFT.kind === 'horizon'){
     var hid = DRAFT.editing;
-    if (t) HZTHEME[hid] = t;
-    else if (DRAFT.cover === 'own' && !HZTHEME[hid]) HZTHEME[hid] = draftTheme(DRAFT);
-    if (DRAFT.cover === 'mosaic') delete HZCOVER[hid]; else HZCOVER[hid] = DRAFT.cover;
+    if (t !== undefined){ if (t) HZTHEME[hid] = t; else delete HZTHEME[hid]; }
+    if (hzOwnsSquare(hid, HZTHEME[hid])) HZCOVER[hid] = 'own'; else if (HZCOVER[hid] === 'own') delete HZCOVER[hid];
     closeDialogs(); render();
     toast('Look updated', HORIZONS[hid].name);
     return;
   }
   if (DRAFT.editing){
-    if (t){ window.HYPERNET_THEMES.themes[DRAFT.editing] = t; EDITED[DRAFT.editing] = true; }
+    if (t !== undefined){ setEventLook(DRAFT.editing, t); EDITED[DRAFT.editing] = true; }
     closeDialogs(); render();
     toast('Look updated', EVENTS[DRAFT.editing].title);
     return;
@@ -4158,7 +4091,7 @@ function wizAct(which){
   REC[id] = { kind:DRAFT.kind || 'meetup', startTime:DRAFT.startTime || undefined, endTime:DRAFT.endTime || undefined, scale: end && end > start ? 'gathering' : 'meetup', endDate: end && end > start ? end : undefined,
               venueKind:'physical', city:DRAFT.city, venue:{ name:DRAFT.city, addressVisibility:'public' }, description:DRAFT.desc,
               access:{ model:DRAFT.entry }, whatToBring: String(DRAFT.bring||'').split('\n').map(function(s){ return s.trim(); }).filter(Boolean) };
-  if (t) window.HYPERNET_THEMES.themes[id] = t;
+  if (t){ t.glyph = PLAINGLYPH[REC[id].kind] || '◆'; window.HYPERNET_THEMES.themes[id] = t; }
   MYEVENTS.push(id); PROMOCOUNT[id] = 0; READ[id] = true;
   closeDialogs();
   goFolder({ kind:'hosting' });
@@ -4167,233 +4100,6 @@ function wizAct(which){
   render();
   toast('Published', EVENTS[id].title);
 }
-</script>
-<script>
-/* =========================================================================
-   12a. THE CANVAS ART — an event's (and a horizon's) world, in layers
-   Controls are the app's; identity lives here. Behind: a generative backdrop,
-   seeded per event. In front of the art (never in front of content or
-   controls): an atmosphere of particles. The header gets a hero composition
-   from the square's glyph, and optional ornaments. Layers drift apart on
-   scroll (parallax). prefers-reduced-motion stills all of it.
-   ========================================================================= */
-var BACKDROPS = ['contours','rays','stars','dunes','halftone','synthwave','woodgrain','map','glyphs','paper','none'];
-var ATMOS = ['dust','embers','sparks','fireflies','snow','rain','glyphs','smoke','none'];
-var ORNAMENTS = [['stamp','Stamp'],['tape','Tape'],['ribbon','Ribbon'],['torn','Torn edge'],['compass','Compass']];
-var PARALLAX = ['none','gentle','deep'];
-/* themes saved before these fields existed get the same seeded defaults as any unthemed event */
-function artOf(t, seed){
-  var v = hashId(seed || 'x');
-  var DEF_ORN = [['stamp'],['tape'],['ribbon'],['stamp','torn'],['compass','tape'],['stamp','ribbon'],['torn']];
-  return { backdrop: t.backdrop || BACKDROPS[(v >>> 9) % 9], atmosphere: t.atmosphere || ATMOS[(v >>> 15) % 9],
-           ornaments: t.ornaments || DEF_ORN[(v >>> 21) % DEF_ORN.length], parallax: t.parallax || ['gentle','deep','gentle','none'][(v >>> 25) % 4] };
-}
-function rng(seed){ var a = hashId(seed) || 1; return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-function f1(n){ return Math.round(n * 10) / 10; }
-var BDCACHE = {};
-/* the backdrop: one SVG, drawn from the theme and seeded by the event, in the event's own colours */
-function backdropSVG(kind, seed, glyph){
-  var key = kind + '|' + seed + '|' + glyph;
-  if (BDCACHE[key]) return BDCACHE[key];
-  var R = rng(kind + seed), W = 1000, H = 1500, h = '', i, j;
-  var ac = 'var(--eac)', a2 = 'var(--eac2)', ink = 'var(--eink)';
-  if (kind === 'contours'){
-    var cx = 250 + R() * 500, cy = 300 + R() * 500;
-    for (i = 1; i <= 18; i++){
-      var pts = [], ph = R() * 6.28, rr = i * 70;
-      for (j = 0; j <= 64; j++){ var a = j / 64 * 6.283, w = 1 + .1 * Math.sin(3 * a + ph) + .06 * Math.sin(7 * a + ph * 2);
-        pts.push(f1(cx + Math.cos(a) * rr * w) + ',' + f1(cy + Math.sin(a) * rr * w * 1.15)); }
-      h += '<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+(i % 5 ? a2 : ac)+'" stroke-width="'+(i % 5 ? 2 : 2.5)+'" opacity="'+(i % 5 ? .8 : .45)+'"/>';
-    }
-  } else if (kind === 'rays'){
-    var ox = 200 + R() * 600, n = 28 + Math.floor(R() * 12);
-    for (i = 0; i < n; i += 2){ var a1 = i / n * Math.PI * 2, a2b = (i + 1) / n * Math.PI * 2;
-      h += '<polygon points="'+ox+',-80 '+f1(ox + Math.cos(a1) * 2600)+','+f1(-80 + Math.sin(a1) * 2600)+' '+f1(ox + Math.cos(a2b) * 2600)+','+f1(-80 + Math.sin(a2b) * 2600)+'" fill="'+a2+'" opacity=".55"/>'; }
-    h += '<circle cx="'+ox+'" cy="-80" r="260" fill="'+ac+'" opacity=".22"/>';
-  } else if (kind === 'stars'){
-    for (i = 0; i < 190; i++){ var r0 = R(); h += '<circle cx="'+f1(R() * W)+'" cy="'+f1(R() * H)+'" r="'+f1(.6 + r0 * r0 * 2.4)+'" fill="'+(r0 > .92 ? ac : ink)+'" opacity="'+f1(.15 + R() * .6)+'"/>'; }
-    for (i = 0; i < 6; i++){ var sx = R() * W, sy = R() * H, s = 8 + R() * 10;
-      h += '<path d="M'+f1(sx)+' '+f1(sy - s)+'L'+f1(sx + s * .25)+' '+f1(sy)+'L'+f1(sx)+' '+f1(sy + s)+'L'+f1(sx - s * .25)+' '+f1(sy)+'Z M'+f1(sx - s)+' '+f1(sy)+'L'+f1(sx)+' '+f1(sy - s * .25)+'L'+f1(sx + s)+' '+f1(sy)+'L'+f1(sx)+' '+f1(sy + s * .25)+'Z" fill="'+ac+'" opacity=".7"/>'; }
-  } else if (kind === 'dunes'){
-    for (i = 0; i < 10; i++){ var y0 = 520 + i * 105, amp = 30 + R() * 60, per = 300 + R() * 400, off = R() * 1000, d = 'M0 '+H+' L0 '+y0;
-      for (var x = 0; x <= W; x += 25) d += ' L'+x+' '+f1(y0 + Math.sin((x + off) / per * 6.283) * amp + Math.sin((x + off) / (per * .37) * 6.283) * amp * .25);
-      h += '<path d="'+d+' L'+W+' '+H+'Z" fill="'+(i % 2 ? a2 : ac)+'" opacity="'+f1(.12 + i * .045)+'"/>'; }
-  } else if (kind === 'halftone'){
-    var gx = R() > .5 ? 0 : W, gy = R() > .5 ? 0 : H, md = Math.sqrt(W * W + H * H) * .8;
-    for (i = 0; i <= W; i += 28) for (j = 0; j <= H; j += 28){ var dd = Math.sqrt((i - gx) * (i - gx) + (j - gy) * (j - gy)), rd = 11 * (1 - dd / md);
-      if (rd > .6) h += '<circle cx="'+i+'" cy="'+j+'" r="'+f1(rd)+'" fill="'+(((i + j) / 28) % 7 ? a2 : ac)+'" opacity=".75"/>'; }
-  } else if (kind === 'synthwave'){
-    var hz = 560 + R() * 120, sr = 170 + R() * 60;
-    h += '<circle cx="500" cy="'+f1(hz - sr * .35)+'" r="'+f1(sr)+'" fill="'+ac+'" opacity=".5"/>';
-    for (i = 0; i < 7; i++) h += '<rect x="300" y="'+f1(hz - sr * .35 + i * 20 + 10)+'" width="400" height="'+(3 + i * 1.6)+'" fill="var(--ebg)"/>';
-    h += '<rect x="0" y="'+f1(hz)+'" width="'+W+'" height="'+f1(H - hz)+'" fill="var(--ebg)"/>';
-    for (i = 1; i < 18; i++){ var yy = hz + Math.pow(i / 17, 2.2) * (H - hz); h += '<line x1="0" y1="'+f1(yy)+'" x2="'+W+'" y2="'+f1(yy)+'" stroke="'+ac+'" stroke-width="2" opacity=".55"/>'; }
-    for (i = -12; i <= 12; i++) h += '<line x1="500" y1="'+f1(hz)+'" x2="'+(500 + i * 170)+'" y2="'+H+'" stroke="'+ac+'" stroke-width="2" opacity=".45"/>';
-  } else if (kind === 'woodgrain'){
-    for (i = 0; i < 46; i++){ var yb = i * 34 + R() * 10, d2 = 'M-20 '+f1(yb), am = 4 + R() * 10, pr = 180 + R() * 260, of = R() * 900;
-      for (var x2 = 0; x2 <= W + 20; x2 += 20) d2 += ' L'+x2+' '+f1(yb + Math.sin((x2 + of) / pr * 6.283) * am);
-      h += '<path d="'+d2+'" fill="none" stroke="'+(i % 9 ? a2 : ac)+'" stroke-width="'+(1.5 + R() * 2)+'" opacity=".8"/>'; }
-    for (i = 0; i < 3; i++){ var kx = R() * W, ky = R() * H; for (j = 1; j < 6; j++) h += '<ellipse cx="'+f1(kx)+'" cy="'+f1(ky)+'" rx="'+(j * 14)+'" ry="'+(j * 6)+'" fill="none" stroke="'+a2+'" stroke-width="2"/>'; }
-  } else if (kind === 'map'){
-    for (i = 0; i <= W; i += 100) h += '<line x1="'+i+'" y1="0" x2="'+i+'" y2="'+H+'" stroke="'+a2+'" stroke-width="1.5"/>';
-    for (i = 0; i <= H; i += 100) h += '<line x1="0" y1="'+i+'" x2="'+W+'" y2="'+i+'" stroke="'+a2+'" stroke-width="1.5"/>';
-    for (i = 0; i < 4; i++){ var mx = R() * W, my = R() * H; for (j = 1; j < 5; j++){ var pp = [];
-      for (var k = 0; k <= 40; k++){ var ang = k / 40 * 6.283; pp.push(f1(mx + Math.cos(ang) * j * 38 * (1 + .2 * Math.sin(ang * 3 + i))) + ',' + f1(my + Math.sin(ang) * j * 30 * (1 + .2 * Math.cos(ang * 2 + i)))); }
-      h += '<polyline points="'+pp.join(' ')+'" fill="none" stroke="'+a2+'" stroke-width="2"/>'; } }
-    var rx = 120, ry = 1300, route = 'M'+rx+' '+ry;
-    for (i = 0; i < 9; i++){ rx = Math.max(60, Math.min(940, rx + (R() - .35) * 260)); ry -= 110 + R() * 60; route += ' L'+f1(rx)+' '+f1(ry); }
-    h += '<path d="'+route+'" fill="none" stroke="'+ac+'" stroke-width="4" stroke-dasharray="14 12" opacity=".8"/>' +
-         '<circle cx="120" cy="1300" r="12" fill="'+ac+'"/><path d="M'+f1(rx - 16)+' '+f1(ry - 16)+'L'+f1(rx + 16)+' '+f1(ry + 16)+'M'+f1(rx + 16)+' '+f1(ry - 16)+'L'+f1(rx - 16)+' '+f1(ry + 16)+'" stroke="'+ac+'" stroke-width="6"/>';
-  } else if (kind === 'paper'){
-    /* ruled paper: hairlines and a margin, nothing else */
-    for (i = 70; i < H; i += 46) h += '<line x1="0" y1="'+i+'" x2="'+W+'" y2="'+i+'" stroke="'+a2+'" stroke-width="1.4"/>';
-    h += '<line x1="92" y1="0" x2="92" y2="'+H+'" stroke="'+a2+'" stroke-width="2.4"/>';
-  } else if (kind === 'glyphs'){
-    for (i = 0; i < 9; i++) for (j = 0; j < 14; j++){
-      h += '<text x="'+(i * 120 + (j % 2) * 60)+'" y="'+(j * 110 + 60)+'" font-size="'+(46 + ((i * 7 + j * 3) % 5) * 6)+'" fill="'+((i + j) % 6 ? a2 : ac)+'" opacity=".8" text-anchor="middle" transform="rotate('+(((i + j) % 2) ? 12 : -12)+' '+(i * 120 + (j % 2) * 60)+' '+(j * 110 + 40)+')">'+esc(glyph)+'</text>'; }
-  }
-  var svg = h ? '<svg class="bd bd-'+kind+'" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid slice" aria-hidden="true">'+h+'</svg>' : '';
-  BDCACHE[key] = svg;
-  return svg;
-}
-/* the two art layers: behind (backdrop) and in front of it (atmosphere); in a preview they fill their box */
-function artLayersHTML(t, seed, still){
-  var a = artOf(t, seed), cls = still ? ' still' : '';
-  return '<div class="art bg'+cls+'" aria-hidden="true">' + backdropSVG(a.backdrop, seed, t.square.glyph) + '</div>' +
-    (a.atmosphere !== 'none' && !FX.reduce ? '<div class="art fg'+cls+'" aria-hidden="true"><canvas class="atmo" data-kind="'+a.atmosphere+'" data-key="'+esc(seed)+'" data-glyph="'+esc(t.square.glyph)+'"></canvas></div>' : '');
-}
-function artClass(t, seed){ return ' px-' + artOf(t, seed).parallax; }
-/* a stamp only says what is true about the event */
-function stampText(evId){
-  var r = recOf(evId), b = r.burn || {}, m = r.access && r.access.model;
-  if (b.edition && b.edition.year) return (KINDLAB[r.kind] || 'Burn') + ' ' + b.edition.year;
-  return ENTRYSTAMP[m] || KINDLAB[r.kind] || '';
-}
-var ENTRYSTAMP = { membership:'Members only', members_only:'Members only', invite:'Invite only', free:'Free entry', donation:'By donation',
-                   pay_what_you_can:'Pay what you can', lottery:'By lottery' };
-/* a horizon's true things: the years it spans, and its city when every event shares one */
-function hzOrnOpts(hzId){
-  var evs = HORIZONS[hzId].eventIds.map(function(id){ return EVENTS[id]; }).filter(Boolean);
-  var cs = evs.map(function(e){ return placeOf(e.id); }).filter(Boolean);
-  return { stamp:hzYears(evs), place:cs.length && cs.every(function(c){ return c === cs[0]; }) ? cs[0] : '' };
-}
-function placeOf(evId){
-  var e = EVENTS[evId], r = recOf(evId);
-  if (!e || r.venueKind === 'virtual') return '';
-  var w = whereOf(e) || '';
-  return r.country && w !== r.country && w !== COUNTRY[r.country] ? w + ' · ' + r.country : w;
-}
-function compassSVG(){
-  return '<svg viewBox="0 0 40 40" width="34" height="34" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="1.5"/>' +
-    '<path d="M20 4 24 20 20 36 16 20Z" fill="currentColor" opacity=".35"/><path d="M20 4 24 20 16 20Z" fill="currentColor"/><path d="M4 20 20 17 36 20 20 23Z" fill="currentColor" opacity=".5"/></svg>';
-}
-/* ornaments for a header: stamp, tape (on the square), compass; ribbon and torn edge go after it */
-function ornamentsHTML(t, seed, o){
-  var a = artOf(t, seed), h = '';
-  if (a.ornaments.indexOf('stamp') >= 0 && o.stamp) h += '<div class="orn-stamp" style="transform:rotate('+(-4 - hashId(seed) % 7)+'deg)">'+esc(o.stamp)+'</div>';
-  if (a.ornaments.indexOf('compass') >= 0 && o.place) h += '<div class="orn-compass">'+compassSVG()+'<span>'+esc(o.place)+'</span></div>';
-  return h;
-}
-function hasOrn(t, seed, k){ return artOf(t, seed).ornaments.indexOf(k) >= 0; }
-function tapeHTML(){ return '<span class="orn-tape t1" aria-hidden="true"></span><span class="orn-tape t2" aria-hidden="true"></span>'; }
-function ribbonHTML(t, text){
-  if (!text) return '';
-  var one = esc(text) + ' &nbsp;' + esc(t.square.glyph) + '&nbsp; ';
-  return '<div class="orn-ribbon" aria-hidden="true"><b>' + one + one + one + one + '</b></div>';
-}
-/* a torn edge: the header's own bottom, ripped along a seeded line */
-function tornStyle(seed){
-  var R = rng('torn' + seed), pts = ['0 0', '100% 0'], x = 100;
-  while (x > 0){ pts.push(f1(Math.max(0, x)) + '% calc(100% - ' + f1(R() * 14) + 'px)'); x -= 1 + R() * 2.4; }
-  pts.push('0 calc(100% - 6px)');
-  return 'clip-path:polygon(' + pts.join(',') + ')';
-}
-/* the hero: the square's glyph at the scale of a poster, behind the title */
-function heroArtHTML(t){
-  return '<div class="heroart" aria-hidden="true"><div class="hpat pat p-'+t.square.pattern+'"></div><span class="hg">'+esc(t.square.glyph)+'</span></div>';
-}
-
-/* ---- the atmosphere: one small particle engine, shared by every visible canvas ---- */
-var FX = { states:{}, raf:0, reduce: window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false };
-var FXN = { dust:36, embers:30, sparks:26, fireflies:22, snow:60, rain:70, glyphs:14, smoke:9 };
-function fxSpawn(kind, w, h, fresh){
-  var p = { x: Math.random() * w, y: fresh ? Math.random() * h : (kind === 'snow' || kind === 'rain' ? -10 : h + 10), a: Math.random(), t: Math.random() * 6.28 };
-  if (kind === 'dust'){ p.r = .6 + Math.random() * 1.8; p.vx = .08 + Math.random() * .2; p.vy = -.05 - Math.random() * .12; }
-  else if (kind === 'embers'){ p.r = 1 + Math.random() * 2; p.vx = (Math.random() - .5) * .3; p.vy = -.35 - Math.random() * .6; }
-  else if (kind === 'sparks'){ p.r = 1; p.vx = (Math.random() - .3) * 2.2; p.vy = -2 - Math.random() * 2.5; p.life = 40 + Math.random() * 50; }
-  else if (kind === 'fireflies'){ p.r = 1.4 + Math.random() * 1.6; p.vx = (Math.random() - .5) * .4; p.vy = (Math.random() - .5) * .4; }
-  else if (kind === 'snow'){ p.r = 1 + Math.random() * 2.4; p.vx = (Math.random() - .5) * .3; p.vy = .3 + Math.random() * .7; }
-  else if (kind === 'rain'){ p.r = 1; p.vx = -1.2; p.vy = 7 + Math.random() * 5; }
-  else if (kind === 'glyphs'){ p.r = 12 + Math.random() * 12; p.vx = (Math.random() - .5) * .2; p.vy = -.15 - Math.random() * .25; }
-  else { p.r = 40 + Math.random() * 60; p.vx = (Math.random() - .5) * .15; p.vy = -.2 - Math.random() * .25; }
-  return p;
-}
-function fxScan(){
-  if (FX.reduce) return;
-  var any = false;
-  document.querySelectorAll('canvas.atmo').forEach(function(c){
-    var key = c.getAttribute('data-key') + ':' + c.getAttribute('data-kind');
-    /* particles keep their places across re-renders; colours follow the theme as it is edited */
-    var st = FX.states[key] || (FX.states[key] = { kind:c.getAttribute('data-kind'), ps:[], w:0, h:0 });
-    var cs = getComputedStyle(c);
-    st.glyph = c.getAttribute('data-glyph');
-    st.ac = cs.getPropertyValue('--eac').trim() || '#fff'; st.ink = cs.getPropertyValue('--eink').trim() || '#fff';
-    c._fx = st; any = true;
-  });
-  if (any && !FX.raf) FX.raf = requestAnimationFrame(fxFrame);
-}
-function fxFrame(){
-  FX.raf = 0;
-  if (document.hidden){ FX.raf = requestAnimationFrame(fxFrame); return; }
-  var live = 0, phone = document.body.classList.contains('is-phone');
-  document.querySelectorAll('canvas.atmo').forEach(function(c){
-    var st = c._fx; if (!st) return;
-    var r = c.getBoundingClientRect();
-    if (r.bottom <= 0 || r.top >= window.innerHeight || r.width < 2 || !c.offsetParent) return;   /* off screen: no work */
-    live++;
-    var dpr = Math.min(window.devicePixelRatio || 1, 2), w = Math.round(r.width), h = Math.round(r.height);
-    if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)){ c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
-    var n = Math.min(60, Math.round((FXN[st.kind] || 20) * (phone ? .45 : 1) * Math.min(1.4, (w * h) / (900 * 700) + .4)));
-    if (st.w !== w || st.h !== h || st.ps.length !== n){ st.w = w; st.h = h; st.ps = []; for (var i = 0; i < n; i++) st.ps.push(fxSpawn(st.kind, w, h, true)); }
-    var g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
-    st.ps.forEach(function(p, i){
-      p.t += .02; p.x += p.vx + (st.kind === 'dust' || st.kind === 'snow' ? Math.sin(p.t) * .2 : 0); p.y += p.vy;
-      if (st.kind === 'fireflies'){ p.vx += (Math.random() - .5) * .05; p.vy += (Math.random() - .5) * .05; p.vx *= .98; p.vy *= .98; }
-      if (st.kind === 'sparks'){ p.vy += .06; if (--p.life < 0){ st.ps[i] = fxSpawn(st.kind, w, h, false); st.ps[i].y = h * (.4 + Math.random() * .6); return; } }
-      if (p.y < -100 || p.y > h + 100 || p.x < -100 || p.x > w + 100){ st.ps[i] = fxSpawn(st.kind, w, h, false); if (st.kind === 'fireflies' || st.kind === 'dust'){ st.ps[i].y = Math.random() * h; st.ps[i].x = Math.random() < .5 ? -10 : w + 10; } return; }
-      var k = st.kind;
-      if (k === 'dust'){ g.globalAlpha = .18 + .3 * p.a; g.fillStyle = st.ink; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.283); g.fill(); }
-      else if (k === 'embers'){ g.globalAlpha = Math.max(0, Math.min(1, p.y / h)) * (.5 + .5 * Math.sin(p.t * 4)); g.fillStyle = st.ac; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.283); g.fill(); }
-      else if (k === 'sparks'){ g.globalAlpha = Math.min(1, p.life / 30); g.strokeStyle = st.ac; g.lineWidth = 1.5; g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(p.x - p.vx * 3, p.y - p.vy * 3); g.stroke(); }
-      else if (k === 'fireflies'){ var al = .35 + .65 * Math.max(0, Math.sin(p.t * 2 + p.a * 6)); g.globalAlpha = al * .35; g.fillStyle = st.ac; g.beginPath(); g.arc(p.x, p.y, p.r * 4, 0, 6.283); g.fill(); g.globalAlpha = al; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.283); g.fill(); }
-      else if (k === 'snow'){ g.globalAlpha = .5 + .4 * p.a; g.fillStyle = st.ink; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.283); g.fill(); }
-      else if (k === 'rain'){ g.globalAlpha = .22; g.strokeStyle = st.ink; g.lineWidth = 1; g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(p.x + p.vx * 2, p.y + p.vy * 2); g.stroke(); }
-      else if (k === 'glyphs'){ g.globalAlpha = .18 + .2 * p.a; g.fillStyle = st.ac; g.font = Math.round(p.r) + 'px serif'; g.fillText(st.glyph, p.x, p.y); }
-      else { var gr = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r); gr.addColorStop(0, st.ink); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.globalAlpha = .06; g.fillStyle = gr; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.283); g.fill(); }
-    });
-    g.globalAlpha = 1;
-  });
-  /* nothing on screen: the loop sleeps until the next render finds a canvas */
-  if (live) FX.raf = requestAnimationFrame(fxFrame);
-}
-document.addEventListener('visibilitychange', function(){ if (!document.hidden) fxScan(); });
-/* parallax: the scroll position, handed to the page's layers through one CSS variable */
-var PXRAF = 0;
-function pxSync(el){
-  if (PXRAF) return;
-  PXRAF = requestAnimationFrame(function(){
-    PXRAF = 0;
-    [$('dscroll'), $('listbody')].forEach(function(sc){
-      if (!sc || FX.reduce) return;
-      /* only the moving layers get the value, so a scroll never restyles the page's text */
-      var y = sc.scrollTop;
-      sc.querySelectorAll('.canvas:not(.px-none) .art.bg .bd, .canvas:not(.px-none) .heroart').forEach(function(n){ n.style.setProperty('--sy', y); });
-    });
-    /* the particle loop sleeps when nothing is on screen; a scroll or a render wakes it */
-    if (!FX.raf || !el) fxScan();
-  });
-}
-document.addEventListener('scroll', function(ev){ var t = ev.target; if (t && (t.id === 'dscroll' || t.id === 'listbody')) pxSync(t); }, true);
 </script>
 <script>
 /* =========================================================================
@@ -5143,15 +4849,11 @@ document.addEventListener('click', function(ev){
 });
 document.addEventListener('change', function(ev){
   var n = ev.target;
+  if (n.getAttribute('data-czfile')){ var fl = n.files && n.files[0]; n.value = ''; if (n.getAttribute('data-czfile') === 'photo') pfTakePhoto(fl); else czTakeFile(fl); return; }
   if (n.closest('[data-cz]') && DRAFT){
-    var k = n.getAttribute('data-cz'); if (k === 'preset') return;
-    if (k === 'orn'){
-      /* ornaments are a set: each box adds or removes one */
-      var cur = (DRAFT.orn || artOf(draftTheme(DRAFT), DRAFT.editing || 'draft').ornaments).filter(function(x){ return x !== n.value; });
-      if (n.checked) cur.push(n.value);
-      DRAFT.orn = cur; DRAFT.lookTouched = true; paintWiz(); schedulePersist(); return;
-    }
-    DRAFT[k] = k === 'pal' ? +n.value : n.value;
+    var k = n.getAttribute('data-cz');
+    if (/^(bg|ink|accent)$/.test(k)){ czSetColor(k, n.value, n); return; }
+    DRAFT[k] = n.value;
     if (LOOKKEYS.test(k)) DRAFT.lookTouched = true;
     /* text fields already updated the preview as you typed; repainting here would swallow the click that blurred them */
     if (DRAFT.step === 3 && n.tagName === 'SELECT') paintWiz(); else refreshWizFoot();
@@ -5177,6 +4879,7 @@ document.addEventListener('input', function(ev){
   if (n.id === 'sh-q' && SH){ SH.q = n.value; var sl = $('sh-list'); if (sl) sl.innerHTML = shareListHTML(); return; }
   if (n.id === 'pk-q'){ PK.q = n.value; $('pk-list').innerHTML = pickerList(); return; }
   if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT' || n.type === 'checkbox') return;
+  if (/^(bg|ink|accent)$/.test(n.getAttribute('data-cz'))){ czSetColor(n.getAttribute('data-cz'), n.value, n); return; }
   DRAFT[n.getAttribute('data-cz')] = n.value;
   if (LOOKKEYS.test(n.getAttribute('data-cz'))) DRAFT.lookTouched = true;
   if (n.getAttribute('aria-invalid') && String(n.value).trim()){
@@ -5184,14 +4887,7 @@ document.addEventListener('input', function(ev){
     var er = n.parentNode.querySelector('.ferr'); if (er) er.remove();
   }
   refreshWizFoot(); schedulePersist();
-  if (DRAFT.step === 3){
-    var box = DLGS[DLGS.length-1] && DLGS[DLGS.length-1].querySelector('.custprev');
-    if (box){ box.innerHTML = customizePreviewHTML(); pxSync(); }
-  }
-});
-document.addEventListener('click', function(ev){
-  var pz = ev.target.closest('[data-cz="preset"]');
-  if (pz && DRAFT){ applyPreset(+pz.getAttribute('data-i')); DRAFT.lookTouched = true; paintWiz(); }
+  if (DRAFT.step === 3) czRefresh(n);
 });
 document.addEventListener('mousedown', function(ev){ if (!ev.target.closest('.popmenu, [data-act="newmenu"], [data-act="acctmenu"]')) closePopup(); });
 
@@ -5567,7 +5263,6 @@ function render(){
   document.title = (S.stack.length && !S.autoSel ? itemName(S.stack[S.stack.length-1]) : folderName()) + ' · Hypernet';
   persist();
   syncRoute();
-  pxSync();
 }
 /* what you make and keep survives a reload: account, horizons, created events, states */
 /* what you make and keep survives a reload. The network (events, horizons and call outs people
@@ -5582,7 +5277,7 @@ function persist(){
     Object.keys(HORIZONS).filter(isCreatedHz).forEach(function(k){ hzs[k] = HORIZONS[k]; if (HZCOVER[k]) covers[k] = HZCOVER[k]; if (HZTHEME[k]) hzthemes[k] = HZTHEME[k]; });
     /* hosts can change events they did not create here (the demo's own), so those edits are kept too */
     var edits = {};
-    Object.keys(EDITED).forEach(function(k){ if (EVENTS[k] && !/^evt-new-/.test(k)) edits[k] = { ev:EVENTS[k], rec:REC[k] || null, theme:window.HYPERNET_THEMES.themes[k] || null }; });
+    Object.keys(EDITED).forEach(function(k){ if (EVENTS[k] && !/^evt-new-/.test(k)){ var th = window.HYPERNET_THEMES.themes[k] || null; edits[k] = { ev:EVENTS[k], rec:REC[k] || null, theme:th, plain:!th }; } });
     localStorage.setItem(STORE, JSON.stringify({ v:2,
       session:{ acct: S.loggedIn ? S.acct : null },
       ui:{ rightOpen:!!S.rightOpen, chatOpen:S.chatOpen || null, recent:RECENTQ },
@@ -5590,7 +5285,10 @@ function persist(){
       network:{ events:evs, recs:recs, themes:themes, horizons:hzs, covers:covers, hzthemes:hzthemes, edits:edits, deleted:DELETED,
                 callouts:CALLOUTS.filter(function(c){ return !!c.hostAcct; }) }
     }));
-  } catch(e){}
+  } catch(e){
+    /* images make the store heavy: say once that this browser is full rather than losing changes silently */
+    if (/quota/i.test(String(e && (e.name + ' ' + e.message))) && !persist.warned){ persist.warned = true; toast('This browser’s storage is full', 'Recent changes are kept until you close the tab. Remove an image to make room.'); }
+  }
 }
 /* the single-account store of the first builds becomes the 'me' account */
 function migrateV1(d){
@@ -5614,15 +5312,15 @@ function restore(){
   if (!d) return;
   var n = d.network || {};
   Object.keys(n.events || {}).forEach(function(k){ EVENTS[k] = n.events[k]; if (n.recs && n.recs[k]) REC[k] = n.recs[k];
-    if (n.themes && n.themes[k]) window.HYPERNET_THEMES.themes[k] = n.themes[k]; READ[k] = true; PROMOCOUNT[k] = PROMOCOUNT[k] || 0; });
+    if (n.themes && n.themes[k]) window.HYPERNET_THEMES.themes[k] = asLook(n.themes[k]); READ[k] = true; PROMOCOUNT[k] = PROMOCOUNT[k] || 0; });
   Object.keys(n.horizons || {}).forEach(function(k){ HORIZONS[k] = n.horizons[k]; if (HZCOUNT[k] == null) HZCOUNT[k] = 0; });
   Object.keys(n.covers || {}).forEach(function(k){ HZCOVER[k] = n.covers[k]; });
-  Object.keys(n.hzthemes || {}).forEach(function(k){ HZTHEME[k] = n.hzthemes[k]; });
+  Object.keys(n.hzthemes || {}).forEach(function(k){ if (n.hzthemes[k]) HZTHEME[k] = asLook(n.hzthemes[k]); });
   Object.keys(n.edits || {}).forEach(function(k){
     var x = n.edits[k]; EDITED[k] = true;
     EVENTS[k] = Object.assign(EVENTS[k] || {}, x.ev);
     if (x.rec) REC[k] = x.rec;
-    if (x.theme) window.HYPERNET_THEMES.themes[k] = x.theme;
+    if (x.theme) window.HYPERNET_THEMES.themes[k] = asLook(x.theme); else if (x.plain) delete window.HYPERNET_THEMES.themes[k];
   });
   if (n.callouts && n.callouts.length){
     var ids = n.callouts.map(function(c){ return c.id; });

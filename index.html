@@ -851,6 +851,14 @@ body.is-phone .rpdel{ min-height:40px; }
 .corall, .corwho{ position:relative; z-index:1; }
 .fcq{ margin-top:4px; font-size:14px; line-height:1.4; color:var(--ink2); display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
 .evcos{ display:flex; flex-direction:column; gap:16px; padding:4px 4px 0 0; }
+/* a chat's name and its people's names open their profile, in a window over the chat */
+.ptbtn{ display:block; padding:0; border:0; background:none; text-align:left; color:var(--ink); }
+.ptbtn:hover{ text-decoration:underline; }
+.mwho{ padding:0; border:0; background:none; color:inherit; }
+.mwho:hover{ text-decoration:underline; }
+.dlg.pfwin .dbody{ padding:0; }
+.dlg .dback{ display:none; }
+body.is-phone .dlg.pfwin .dback{ display:grid; margin-left:-10px; }
 .composer{ align-items:flex-end; }
 .composer textarea{ flex:1; min-width:0; height:var(--ctl); min-height:var(--ctl); max-height:168px; padding:7px 10px; resize:none; overflow-y:auto; line-height:1.4; }
 .mbody{ white-space:pre-wrap; }
@@ -920,7 +928,7 @@ input[type=search]::-webkit-search-cancel-button{ -webkit-appearance:none; displ
 #app.phone .phead{ display:none; }
 #app.phone .conv{ gap:0; }
 #app.phone .msgs{ box-shadow:none; }
-#app.phone .composer{ padding:8px 8px calc(8px + env(safe-area-inset-bottom)); background:var(--face); box-shadow:inset 0 1px 0 #fff, 0 -1px 0 var(--shadow); }
+#app.phone .composer{ padding:8px; background:var(--face); box-shadow:inset 0 1px 0 #fff, 0 -1px 0 var(--shadow); }
 #app.phone .row{ min-height:74px; padding:11px 14px; }
 #app.phone .nrow{ min-height:52px; margin:0; padding:0 18px; font-size:16px; border-bottom:1px solid var(--line); }
 #app.phone .nrow .sq, #app.phone .nrow .av{ width:26px; height:26px; flex-basis:26px; }
@@ -935,7 +943,6 @@ input[type=search]::-webkit-search-cancel-button{ -webkit-appearance:none; displ
 #app.phone .acctcard .an{ flex:1; min-width:0; font-size:17px; font-weight:bold; }
 #app.phone .acctcard .an small{ display:block; font-size:13px; font-weight:normal; color:var(--dim); }
 #app.phone #tabbar{ display:flex; flex:0 0 auto; gap:4px; padding:5px 5px calc(5px + env(safe-area-inset-bottom)); background:var(--face); box-shadow:inset 0 1px 0 var(--white), 0 -1px 0 var(--shadow); }
-#app.phone.conv-open #tabbar{ display:none; }
 .tab{ position:relative; flex:1 1 0; min-width:0; min-height:54px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
   border:0; background:transparent; color:var(--ink2); font-size:11px; }
 .tab.on{ background:#fff; color:#000; font-weight:bold; box-shadow:var(--in); }
@@ -2880,15 +2887,16 @@ function chatListHTML(){
     }).join('') + '</div>';
 }
 function convHTML(cid){
-  var c = CHATS[cid];
+  var c = CHATS[cid], pid = c.memberIds[0];
   var sub = chatSub(c);
+  /* their name and the profile button open their profile in a window over the chat; closing it leaves you here */
   var h = '<div class="phead"><button class="ib" data-act="chatback" aria-label="All chats">'+ic('back')+'</button>' +
-    '<div class="ptitle">'+esc(c.name)+'<small>'+esc(sub)+'</small></div>' +
-    '<button class="ib" data-act="open" data-type="person" data-id="'+c.memberIds[0]+'" aria-label="Profile">'+ic('user')+'</button></div>';
-  h += '<div class="conv"><div class="msgs" id="msgs">' + (c.messages.length ? c.messages.map(function(m){
+    '<button type="button" class="ptitle ptbtn" data-act="chatprofile" data-id="'+pid+'">'+esc(c.name)+'<small>'+esc(sub)+'</small></button>' +
+    '<button class="ib" data-act="chatprofile" data-id="'+pid+'" aria-label="Profile">'+ic('user')+'</button></div>';
+  h += '<div class="conv"><div class="msgs" id="msgs" data-chat="'+cid+'">' + (c.messages.length ? c.messages.map(function(m){
     if (m.from === 'sys') return '<div class="msg sys">'+esc(m.text)+'</div>';
     var me = m.from === 'self';
-    var head = '<div class="mfrom">'+(me ? '' : esc(person(m.from).displayName))+'<span class="mt">'+esc(m.t)+'</span></div>';
+    var head = '<div class="mfrom">'+(me ? '' : '<button type="button" class="mwho" data-act="chatprofile" data-id="'+esc(m.from)+'">'+esc(person(m.from).displayName)+'</button>')+'<span class="mt">'+esc(m.t)+'</span></div>';
     if (m.card && EVENTS[m.card]){
       var e = EVENTS[m.card];
       return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="evcard" data-act="open" data-type="event" data-id="'+m.card+'">'+sqHTML(m.card,40)+
@@ -2907,8 +2915,8 @@ function convHTML(cid){
   return h;
 }
 function growBox(b){ if (!b) return; b.style.height = 'auto'; b.style.height = Math.min(b.scrollHeight + 2, 168) + 'px'; }
-/* on a phone a conversation is a screen pushed onto whatever tab you are in; on a desktop it sits in the dock */
-function phoneConv(){ var t = S.stack[S.stack.length-1]; return L.phone && t && t.type === 'chat' && CHATS[t.id] ? t.id : null; }
+/* the open conversation (S.chatOpen) sits in the dock on a desktop or tablet, and is the Chats tab on a phone */
+function phoneConv(){ return L.phone && S.tab === 'chats' && !S.stack.length && S.chatOpen && CHATS[S.chatOpen] ? S.chatOpen : null; }
 function activeChat(){ return L.phone ? phoneConv() : (S.chatOpen && CHATS[S.chatOpen] ? S.chatOpen : null); }
 function chatSub(c){ return PRESENCE[c.memberIds[0]] || 'offline'; }
 function renderChats(){
@@ -2925,9 +2933,15 @@ function renderChats(){
   if (cid){
     el.innerHTML = convHTML(cid);
     var box = $('chatbox'); growBox(box); if (box && focused){ box.focus(); box.setSelectionRange(box.value.length, box.value.length); }
-    var ms = $('msgs'); if (ms) ms.scrollTop = ms.scrollHeight;
+    var ms = $('msgs'); if (ms) ms.scrollTop = CHATSCROLL[cid] == null ? ms.scrollHeight : CHATSCROLL[cid];
   } else el.innerHTML = chatListHTML();
 }
+/* where you were in each conversation, kept while you go elsewhere; at the bottom, it follows new messages */
+var CHATSCROLL = {};
+document.addEventListener('scroll', function(ev){
+  var t = ev.target, cid = t && t.id === 'msgs' && t.getAttribute('data-chat'); if (!cid || !t.clientHeight) return;
+  if (t.scrollHeight - t.scrollTop - t.clientHeight < 24) delete CHATSCROLL[cid]; else CHATSCROLL[cid] = t.scrollTop;
+}, true);
 </script>
 <script>
 /* =========================================================================
@@ -3730,14 +3744,17 @@ function phoneCanBack(){
   return S.stack.length > 0 || S.phoneSearch || S.folder.kind !== tabRootFolder(S.tab).kind;
 }
 function renderAppbar(){
-  var h = '', back = phoneCanBack();
-  if (back) h += '<button class="ab-btn" data-act="pback" aria-label="Back">'+ic('back',22)+'</button>';
-  if (S.stack.length){
+  var h = '', conv = phoneConv(), back = conv || phoneCanBack();
+  /* in a conversation, back is all chats; its name and the profile button open their profile over it */
+  if (back) h += conv ? '<button class="ab-btn" data-act="chatback" aria-label="All chats">'+ic('back',22)+'</button>' : '<button class="ab-btn" data-act="pback" aria-label="Back">'+ic('back',22)+'</button>';
+  if (conv){
+    var cc = CHATS[conv], cp = cc.memberIds[0];
+    h += '<div class="ab-title ab-tap" data-act="chatprofile" data-id="'+cp+'" role="button">'+esc(cc.name)+'<small>'+esc(chatSub(cc))+'</small></div>' +
+      '<button class="ab-btn" data-act="chatprofile" data-id="'+cp+'" aria-label="Profile">'+ic('user',22)+'</button>';
+  } else if (S.stack.length){
     var it = S.stack[S.stack.length-1];
-    if (it.type === 'chat' && CHATS[it.id]) h += '<div class="ab-title ab-tap" data-act="open" data-type="person" data-id="'+CHATS[it.id].memberIds[0]+'" role="button">'+esc(CHATS[it.id].name)+'<small>'+esc(chatSub(CHATS[it.id]))+'</small></div>' +
-      '<button class="ab-btn" data-act="open" data-type="person" data-id="'+CHATS[it.id].memberIds[0]+'" aria-label="Profile">'+ic('user',22)+'</button>';
     /* a long name takes both lines; the kind of thing it is gives way */
-    else h += '<div class="ab-title"><span class="abn">'+esc(itemName(it))+'</span>' +
+    h += '<div class="ab-title"><span class="abn">'+esc(itemName(it))+'</span>' +
       (itemName(it).length > 26 ? '' : '<small>'+esc({event:'Event',horizon:'Event Horizon',person:'Person',callout:'Call out'}[it.type]||'')+'</small>') + '</div>';
   } else if (S.tab === 'chats'){
     h += '<div class="ab-title">Chats</div>';
@@ -4740,7 +4757,7 @@ function ctxOtherItems(t, only){
   } else {
     var ch = CHATS[id];
     out = [{ code:'open', label:'Open', def:true, lead:chatAv(ch), run:function(){ openChat(id); } }, '-',
-           { code:'profile', label:'Profile', icon:'user', run:function(){ openItem('person', ch.memberIds[0], 'push'); } }];
+           { code:'profile', label:'Profile', icon:'user', run:function(){ chatProfile(ch.memberIds[0]); } }];
   }
   if (only) out = out.filter(function(it){ return it !== '-' && only.indexOf(it.code) >= 0; });
   return out;
@@ -5000,9 +5017,12 @@ function tabOfFolder(f){
 }
 /* each tab keeps its own place: switching back returns you there; tapping the tab you are on goes to its top */
 var TABMEM = {};
+function rememberTab(){ TABMEM[S.tab] = { folder:S.folder, stack:S.stack.slice(), query:S.query, ps:S.phoneSearch, searchret:SEARCHRET, scroll:copyScroll(CURSCROLL) }; }
 function setTab(t){
   var m = S.tab === t ? null : TABMEM[t];
-  if (S.tab !== t) TABMEM[S.tab] = { folder:S.folder, stack:S.stack.slice(), query:S.query, ps:S.phoneSearch, searchret:SEARCHRET, scroll:copyScroll(CURSCROLL) };
+  if (S.tab !== t) rememberTab();
+  /* the open conversation is the Chats tab's place; tapping Chats while in it goes back to all chats */
+  else if (t === 'chats' && phoneConv()){ CONVUP = false; S.chatOpen = null; }
   S.tab = t;
   if (m){
     S.folder = m.folder; S.stack = m.stack.filter(validItem); S.query = m.query; S.phoneSearch = m.ps; SEARCHRET = m.searchret;
@@ -5128,14 +5148,31 @@ var followP = gated(function(pid){
   render();
   toast(PFOLLOW[pid] ? 'Following' : 'Unfollowed', person(pid).displayName);
 });
-/* chats open in the right pane on a desktop, and in the Chats tab on a phone */
+/* a conversation is never a page of its own: it opens in the chat dock on a desktop or tablet, and in the Chats tab on a
+   phone. Whichever it is stays the open one (S.chatOpen) while you go elsewhere, and across a reload, until you go
+   back to all chats. */
+var CONVUP = false;            /* phone: the open conversation was opened from the chat list, so ‹ steps back to it */
 function openChat(cid){
   UNREADCHAT[cid] = false;
   var i = CHATORDER.indexOf(cid); if (i > 0){ CHATORDER.splice(i, 1); CHATORDER.unshift(cid); }
-  if (L.phone){ openItem('chat', cid, 'push'); return; }
+  if (L.phone){
+    CONVUP = S.tab === 'chats' && !S.stack.length && !phoneConv();
+    S.chatOpen = cid;
+    if (S.tab !== 'chats'){ rememberTab(); S.tab = 'chats'; }
+    goFolder({ kind:'chats' }); S.autoSel = false;
+    render();
+    return;
+  }
   S.chatOpen = cid; S.rightOpen = true; S.lastOpened = 'right';
   render();
   setTimeout(function(){ var b = $('chatbox'); if (b) b.focus(); }, 30);
+}
+/* back to all chats: the conversation is closed, its draft kept */
+function chatUp(){
+  if (L.phone && CONVUP && history.state && history.state.idx > 0){ CONVUP = false; history.back(); return; }
+  CONVUP = false; S.chatOpen = null;
+  if (L.phone) ROUTE.replace = true;
+  render();
 }
 function openDM(pid){
   var dm = Object.keys(CHATS).filter(function(k){ return CHATS[k].memberIds[0] === pid; })[0];
@@ -5143,6 +5180,20 @@ function openDM(pid){
   return dm;
 }
 var messagePerson = gated(function(pid){ openChat(openDM(pid)); });
+/* a profile opened from a chat is a window over everything: × (or Esc, or the phone's back) closes it and leaves
+   you exactly where you were, the conversation still open. Going anywhere from inside it closes it first. */
+function chatProfile(pid){
+  if (!PEOPLE[pid]) return;
+  var d = dialog(person(pid).displayName, '<div id="pfwin" data-id="'+pid+'">'+personHTML(pid)+'</div>', '', 680, 'pfwin');
+  d.querySelector('.dbar').insertAdjacentHTML('afterbegin', '<button class="x dback" data-act="closedlg" aria-label="Back to the chat">'+ic('back',16)+'</button>');
+  d.style.top = Math.max(16, (window.innerHeight - d.offsetHeight) / 2.4) + 'px';
+  placeDlg(d);
+}
+function paintChatProfile(){
+  var w = $('pfwin'); if (!w) return;
+  var b = w.parentNode, top = b.scrollTop;
+  w.innerHTML = personHTML(w.getAttribute('data-id')); b.scrollTop = top;
+}
 /* sending keeps you on the page: the toast can take you to the chat */
 var shareToChat = gated(function(id, cid, type, text){
   var hz = type === 'horizon', st = stamp(), m = { from:'self', t:st.t, ts:tsIso(isoMs(st.ts) + 1), text:'' };
@@ -5157,7 +5208,7 @@ function sendChat(){
   var box = $('chatbox'), cid = activeChat(); if (!box || !cid || !box.value.trim()) return;
   var st = stamp();
   CHATS[cid].messages.push({ from:'self', t:st.t, ts:st.ts, text:box.value.trim() });
-  delete CHATDRAFT[cid];
+  delete CHATDRAFT[cid]; delete CHATSCROLL[cid];
   box.value = '';
   render();
   var b = $('chatbox'); if (b) b.focus();
@@ -5246,6 +5297,8 @@ document.addEventListener('click', function(ev){
   var act = n.getAttribute('data-act'), id = n.getAttribute('data-id');
   if (act !== 'newmenu' && act !== 'acctmenu') closePopup();
   if (n.tagName === 'A') ev.preventDefault();
+  /* going anywhere from a profile opened over a chat closes that window first */
+  if (n.closest('.dlg.pfwin') && act !== 'closedlg' && act !== 'followp') closeDialogs();
   switch (act){
     case 'newmenu':  if (POP){ closePopup(); break; } popup(n, NEWITEMS); break;
     case 'acctmenu': if (POP){ closePopup(); break; } popup(n, [{ label:'Your profile', cmd:'profile', icon:'user' }, { label:'Edit profile', cmd:'editprofile', icon:'edit' }, '-', { label:'Log out', cmd:'logout', icon:'back' }]); break;
@@ -5291,18 +5344,19 @@ document.addEventListener('click', function(ev){
     case 'renamehz':     gated(renameHzDialog)(id); break;
     case 'dorename':     renameHz(id); break;
     case 'publishhz':    publishHz(id); break;
-    case 'followp':      followP(id); break;
+    case 'followp':      followP(id); paintChatProfile(); break;
     case 'dm':           messagePerson(id); break;
     case 'answercallout': answerCallout(id); break;
     case 'postreply':    postReply(id); break;
     case 'delreply':     deleteReply(id); break;
+    case 'chatprofile':  chatProfile(id); break;
     case 'costep':       stepStrip(+id); break;
     case 'upall':        UPALL = !UPALL; render(); break;
     case 'whoall':       whoAllDialog(id); break;
     case 'whoopen':      closeDialogs(); openItem('person', id, 'push'); break;
     case 'whodm':        closeDialogs(); messagePerson(id); break;
     case 'chatsel':      openChat(id); break;
-    case 'chatback':     if (L.phone) navBack(); else { S.chatOpen = null; render(); } break;
+    case 'chatback':     chatUp(); break;
     case 'sendchat':     sendChat(); break;
     case 'newchat':      runCmd('newchat'); break;
     case 'ncdm':         closeDialogs(); NC = null; messagePerson(id); break;
@@ -5476,7 +5530,7 @@ document.addEventListener('keydown', function(ev){
     if (POP){ closePopup(); return; }
     if (ae && ae.id === 'q' && S.folder.kind === 'search'){ leaveSearch(); render(); ae.blur(); return; }
     if (inField){ ae.blur(); return; }
-    if (L.phone){ if (phoneCanBack()) navBack(); return; }
+    if (L.phone){ if (phoneConv()) chatUp(); else if (phoneCanBack()) navBack(); return; }
     if (S.stack.length > (L.split ? 1 : 0)){ navBack(); return; }
     if (L.split && S.stack.length === 1){ closePane(); return; }
     return;
@@ -5556,7 +5610,7 @@ function linkOf(type, id){ return location.origin + location.pathname + '#/' + i
 function snapNow(){
   var f = S.folder, v = viewsOf(f);
   return { hn:1, tab:S.tab, folder:{ kind:f.kind, id:f.id || null }, view: v.length ? viewOf(f) : null,
-           stack: S.autoSel ? [] : S.stack.map(function(it){ return { type:it.type, id:it.id }; }),
+           stack: phoneConv() ? [{ type:'chat', id:S.chatOpen }] : S.autoSel ? [] : S.stack.map(function(it){ return { type:it.type, id:it.id }; }),
            closed: !L.phone && !!S.paneClosed && !S.stack.length,
            q:S.query, ps:!!S.phoneSearch, cal:{ mode:S.calMode, at:S.calAnchor, day:S.calDay },
            dock: L.phone ? null : { open:!!S.rightOpen, chat:S.chatOpen || null } };
@@ -5646,6 +5700,8 @@ function applySnap(s){
   else delete S.view[destKey(S.folder)];
   if (s.cal){ if (s.cal.mode) S.calMode = s.cal.mode; S.calAnchor = s.cal.at || TODAY_ISO; S.calDay = s.cal.day || null; }
   if (s.dock && window.innerWidth >= 760){ S.rightOpen = !!s.dock.open; S.chatOpen = s.dock.chat && CHATS[s.dock.chat] ? s.dock.chat : null; }
+  /* a phone's Chats tab with nothing open on it is all chats (a conversation comes back as a chat in the stack) */
+  if (window.innerWidth < 760 && S.tab === 'chats' && S.folder.kind === 'chats' && !S.stack.length){ S.chatOpen = null; CONVUP = false; }
   if (S.folder.kind === 'search' && !SEARCHRET) SEARCHRET = { folder:{ kind:'home' }, stack:[] };
   if (S.folder.kind !== 'search') SEARCHRET = null;
   if (S.stack.some(function(it){ return it.type === 'event'; })) S.stack.forEach(function(it){ if (it.type === 'event') markRead(it.id); });
@@ -5785,6 +5841,10 @@ function render(){
     /* a horizon opened as a page (a phone habit, or a link) becomes the destination on a wide screen */
     var hi = -1; S.stack.forEach(function(it, i){ if (it.type === 'horizon' && HORIZONS[it.id]) hi = i; });
     if (hi >= 0){ var hid0 = S.stack[hi].id; S.stack = S.stack.slice(hi + 1); S.folder = { kind:'horizon', id:hid0 }; if (!S.stack.length) S.autoSel = false; }
+  } else if (S.stack.some(function(it){ return it.type === 'chat'; })){
+    /* and a conversation in the stack (a link, a desktop's dock) becomes the phone's Chats tab */
+    S.chatOpen = S.stack.filter(function(it){ return it.type === 'chat'; }).pop().id;
+    S.stack = []; S.tab = 'chats'; S.folder = { kind:'chats', id:null };
   } else if (S.folder.kind === 'horizon'){
     /* and on a phone it is a page on the Horizons tab */
     var hid1 = S.folder.id; S.folder = { kind:'explore', id:'horizons' }; S.tab = S.tab === 'home' || !S.tab ? 'explore' : S.tab;

@@ -2,3 +2,5 @@ docs
 README.md
 .git
 tests
+.env.enc
+.env.example

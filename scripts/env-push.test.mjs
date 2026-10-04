@@ -25,12 +25,12 @@ test("parseDotenv: comments, quotes, = inside values, spaces in values", () => {
 test("production: _MAIN values replace the dev ones; tooling keys and empty values stay home", () => {
   const p = plan("production", env);
   assert.deepEqual(p.errors, []);
-  assert.deepEqual(keys(p), ["AUTH_SECRET", "DATABASE_URL", "NEON_STORAGE_ACCESS_KEY_ID"]);
-  const db = p.send.find((s) => s.key === "DATABASE_URL");
+  assert.deepEqual(keys(p), ["AUTH_SECRET", "DATABASE_URL", "EMAIL_FROM", "NEON_STORAGE_ACCESS_KEY_ID", "RESEND_API_KEY"]);
+  const db =p.send.find((s) => s.key === "DATABASE_URL");
   assert.equal(db.value, "fake-db-url-main-pooled?sslmode=require&a=b");
   assert.equal(db.from, "DATABASE_URL_MAIN");
   const skipped = Object.fromEntries(p.skipped.map((s) => [s.key, s.reason]));
-  for (const k of ["NEON_API_KEY", "VERCEL_TOKEN", "RESEND_API_KEY", "EMAIL_FROM", "NEON_PROJECT_ID", "DATABASE_URL_UNPOOLED"]) {
+  for (const k of ["NEON_API_KEY", "VERCEL_TOKEN", "NEON_PROJECT_ID", "DATABASE_URL_UNPOOLED"]) {
     assert.equal(skipped[k], "not for Vercel", k);
   }
   assert.equal(skipped.NEON_STORAGE_SECRET_ACCESS_KEY, "empty");
@@ -39,7 +39,7 @@ test("production: _MAIN values replace the dev ones; tooling keys and empty valu
 test("preview and development: dev values, never the main branch's", () => {
   for (const target of ["preview", "development"]) {
     const p = plan(target, env);
-    assert.deepEqual(keys(p), ["AUTH_SECRET", "DATABASE_URL", "NEON_STORAGE_ACCESS_KEY_ID"]);
+    assert.deepEqual(keys(p), ["AUTH_SECRET", "DATABASE_URL", "EMAIL_FROM", "NEON_STORAGE_ACCESS_KEY_ID", "RESEND_API_KEY"]);
     assert.equal(p.send.find((s) => s.key === "DATABASE_URL").value, "fake-db-url-dev-pooled");
     assert.ok(p.send.every((s) => !s.value.includes("main")));
   }

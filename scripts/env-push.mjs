@@ -28,9 +28,8 @@ export const SKIP = new Set([
   "NEON_API_KEY", // manages every Neon project of the account: never in an app runtime
   "NEON_PROJECT_ID", // tooling (the app has it in lib/branch.ts)
   "VERCEL_TOKEN", // used by this script to log the CLI in
-  "RESEND_API_KEY", // login emails are sent by Neon Auth (its SMTP setting), not by the app
-  "EMAIL_FROM",
-  "DATABASE_URL_UNPOOLED", // migrations only (run through the Neon MCP), never at runtime
+  "DATABASE_URL_UNPOOLED", // migrations only (scripts/sql-payload.mjs through with-secrets), never at runtime
+  // RESEND_API_KEY + EMAIL_FROM do go: app/api/hooks/neon-auth sends the login email once that webhook is on
 ]);
 
 /** Keys production must take from the main branch — sending the dev value there would be a disaster. */

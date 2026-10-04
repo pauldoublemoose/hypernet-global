@@ -12,30 +12,34 @@
    A Windows 2000 / Outlook frame, in greys only, so the events — and only
    the events — carry colour. Retro surface, modern hierarchy:
    one primary action per view, one type scale, one control height.
+   The rhythm (2026-10-04, "document window"): one font (Tahoma) at three
+   sizes, 12 / 14 / 20, on lines of 16 (UI), 20 (prose), 24 (titles);
+   spacing 8 / 16 / 24 (4 only between buttons in a group); 32 for a person
+   doing something, 48 for a thing; controls 36, 44 on touch.
    ======================================================================= */
 
 /* ---------- 1. tokens ------------------------------------------------ */
 :root{
   --face:#d4d0c8; --face-lt:#e8e5df; --face-dk:#c2beb5;
   --white:#fff; --shadow:#808080; --dark:#404040;
-  --ink:#141414; --ink2:#3a3a3a; --dim:#666; --line:#e2dfd8; --hover:#f0eee9;
+  --ink:#141414; --ink2:#3a3a3a; --dim:#666; --line:#e2dfd8; --hover:#f0eee9; --rule:#c9c5bc; --gb:#bdb9b0;
   --sel:#262626; --seldim:#c8c8c8;
   --bar:linear-gradient(90deg,#262626 0%,#555 58%,#9b9b9b 100%);
   --sys:Tahoma,"Segoe UI",Verdana,Geneva,sans-serif;
-  --mono:"Lucida Console",Monaco,Consolas,"Courier New",monospace;
-  --fs-xs:11px; --fs-s:13px; --fs:14px; --fs-m:16px; --fs-l:20px; --fs-xl:26px;
+  --mono:var(--sys);     /* one font: what used to be monospaced is Tahoma too */
+  --fs-xs:12px; --fs-s:12px; --fs:14px; --fs-m:14px; --fs-l:20px; --fs-xl:20px;
   --ctl:36px;     /* every button, field and toggle */
-  --act:44px;     /* the event verbs */
+  --act:36px;     /* the event verbs: the same */
   --nav-w:252px; --chat-w:344px;
   --out: inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white), inset -2px -2px 0 var(--shadow), inset 2px 2px 0 var(--face-lt);
   --in:  inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white), inset 2px 2px 0 var(--dark), inset -2px -2px 0 var(--face);
   --thin: inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white);
 }
-@media (pointer:coarse){ :root{ --ctl:44px; } }
+@media (pointer:coarse){ :root{ --ctl:44px; --act:44px; } }
 *{ box-sizing:border-box; }
 html,body{ height:100%; }
 body{ margin:0; overflow:hidden; background:var(--face); color:var(--ink);
-  font:var(--fs)/1.45 var(--sys); -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent; }
+  font:14px/20px var(--sys); -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent; }
 button,input,select,textarea{ font:inherit; color:inherit; }
 button{ cursor:pointer; }
 [data-act]{ cursor:pointer; }
@@ -60,24 +64,24 @@ a{ color:inherit; }
 .ib.on{ background:var(--sel); color:#fff; box-shadow:inset 1px 1px 0 #000, inset -1px -1px 0 #777; }
 .ib.on .fillable{ fill:currentColor; }
 .badge-n{ min-width:20px; height:20px; padding:0 6px; display:inline-grid; place-items:center; background:#000; color:#fff;
-  font:bold 11px var(--mono); border-radius:10px; }
+  font:bold 12px var(--sys); border-radius:10px; }
 input[type=text], input[type=search], input[type=date], select, textarea{
   height:var(--ctl); padding:0 10px; border:0; border-radius:0; background:#fff; box-shadow:var(--in); font-size:var(--fs); min-width:0; }
 textarea{ height:auto; padding:8px 10px; resize:vertical; line-height:1.45; }
 input:focus, select:focus, textarea:focus{ outline:1px dotted #000; outline-offset:-5px; }
 input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .seg{ display:inline-flex; }
-.seg button{ height:var(--ctl); padding:0 16px; border:0; background:var(--face); font:bold 12px var(--mono); letter-spacing:.08em;
+.seg button{ height:var(--ctl); padding:0 16px; border:0; background:var(--face); font:bold 12px var(--sys);
   color:var(--ink2); box-shadow:var(--out); }
 .seg button.on{ background:#fff; color:#000; box-shadow:var(--in); }
 
 /* ---------- 3. frame ------------------------------------------------- */
 #app{ position:fixed; inset:0; display:flex; flex-direction:column; }
-#titlebar{ flex:0 0 30px; display:flex; align-items:center; gap:9px; padding:0 10px; color:#fff; background:var(--bar); font-size:13px; }
-#titlebar .tglyph{ width:18px; height:18px; display:grid; place-items:center; background:var(--face); color:#000; font-size:11px;
+#titlebar{ flex:0 0 32px; display:flex; align-items:center; gap:8px; padding:0 8px; color:#fff; background:var(--bar); font-size:12px; }
+#titlebar .tglyph{ width:18px; height:18px; display:grid; place-items:center; background:var(--face); color:#000; font-size:12px;
   box-shadow:inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white); }
 #titlebar #wintitle{ opacity:.8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-#toolbar{ flex:0 0 auto; display:flex; align-items:center; gap:10px; padding:9px 10px; border-bottom:1px solid var(--shadow); box-shadow:0 1px 0 var(--white); }
+#toolbar{ flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:8px; border-bottom:1px solid var(--shadow); box-shadow:0 1px 0 var(--white); }
 #toolbar .spring{ flex:1; }
 .tsep:has(+ #acct:empty){ display:none; }
 .tsep{ width:2px; align-self:stretch; margin:3px 0; box-shadow:inset 1px 0 0 var(--shadow), inset -1px 0 0 var(--white); }
@@ -87,14 +91,14 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .searchbox:focus-within{ outline:1px dotted #000; outline-offset:-5px; }
 .acct .av{ width:24px; height:24px; flex-basis:24px; font-size:10px; }
 
-#main{ flex:1; min-height:0; display:flex; gap:6px; padding:6px; }
+#main{ flex:1; min-height:0; display:flex; gap:8px; padding:8px; }
 .pane{ display:flex; flex-direction:column; min-height:0; min-width:0; }
 #nav{ flex:0 0 var(--nav-w); display:none; }
 #chats{ flex:0 0 var(--chat-w); display:none; }
 #app.l-open #nav, #app.r-open #chats{ display:flex; }
 #app.dock-narrow #chats{ flex-basis:300px; }
 #main{ position:relative; }
-#app.dock-over #chats{ position:absolute; top:6px; right:6px; bottom:6px; z-index:20; width:min(344px, calc(100% - var(--nav-w) - 40px));
+#app.dock-over #chats{ position:absolute; top:8px; right:8px; bottom:8px; z-index:20; width:min(344px, calc(100% - var(--nav-w) - 40px));
   background:var(--face); padding:0 0 0 6px; box-shadow:-3px 0 0 var(--face), -4px 0 0 var(--shadow), -8px 0 16px rgba(0,0,0,.18); }
 #center{ flex:1 1 auto; }
 .panel{ flex:1; min-height:0; overflow:auto; background:#fff; box-shadow:var(--in); overscroll-behavior:contain; }
@@ -110,105 +114,116 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
   background:linear-gradient(90deg,#1c1c1c 0%,#3a3a3a 60%,#5a5a5a 100%); box-shadow:inset 0 1px 0 #7a7a7a; }
 #app.preview #previewbar{ display:flex; }
 #previewbar .pvt{ flex:1; min-width:0; }
-#previewbar .pvk{ font:bold 11px var(--mono); letter-spacing:.16em; text-transform:uppercase; color:#cfcfcf; }
+#previewbar .pvk{ font:bold 12px var(--sys); color:#cfcfcf; }
 #previewbar .pvl{ margin-top:2px; font-size:var(--fs); line-height:1.3; }
 #previewbar .pva{ flex:0 0 auto; display:flex; gap:8px; }
 #previewbar .btn{ color:#000; }
 #app.phone #previewbar{ gap:10px; padding:8px 8px 8px 12px; }
-#app.phone #previewbar .pvl{ font-size:13px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+#app.phone #previewbar .pvl{ font-size:12px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
 #app.phone #previewbar .pva{ flex-direction:column; gap:4px; }
 #app.phone #previewbar .pva .btn{ height:36px; min-height:36px; padding:0 12px; }
-#app.phone #previewbar .pva .btn.pvlogin{ height:auto; min-height:0; padding:4px 12px; background:transparent; box-shadow:none; color:#fff; text-decoration:underline; font-size:13px; }
+#app.phone #previewbar .pva .btn.pvlogin{ height:auto; min-height:0; padding:4px 12px; background:transparent; box-shadow:none; color:#fff; text-decoration:underline; font-size:12px; }
 
 /* ---------- 4. left: navigation -------------------------------------- */
-#navbody{ padding:6px 0 18px; }
-.navh{ padding:18px 20px 6px; font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dim); }
-.nrow{ display:flex; align-items:center; gap:11px; min-height:40px; margin:0 6px; padding:0 12px 0 14px; white-space:nowrap; color:var(--ink); }
+#navbody{ padding:8px 0 16px; }
+.navh{ padding:16px 16px 8px; font:bold 12px/16px var(--sys); color:var(--dim); }
+.nrow{ display:flex; align-items:center; gap:8px; min-height:32px; margin:0 4px; padding:0 8px 0 12px; white-space:nowrap; color:var(--ink); }
 .nrow .ic{ color:var(--ink2); }
 .nrow .nlab{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
-.nrow .nsub{ color:var(--dim); font-size:var(--fs-s); }
-.nrow .ncnt{ font:12px var(--mono); color:var(--dim); }
+.nrow .nsub{ color:var(--dim); font-size:12px; }
+.nrow .ncnt{ font:12px var(--sys); color:var(--dim); }
 .nrow:hover{ background:var(--hover); }
 .nrow.sel{ background:var(--sel); color:#fff; }
+.nrow.open{ background:var(--face-lt); box-shadow:inset 3px 0 0 var(--ink); font-weight:bold; }
 .nrow.sel .ic, .nrow.sel .ncnt, .nrow.sel .nsub{ color:var(--seldim); }
-.nrow.search{ cursor:default; padding-right:4px; margin-bottom:6px; }
+.nrow.search{ cursor:default; padding-right:4px; margin-bottom:8px; }
 .nrow .nx{ width:36px; height:32px; display:grid; place-items:center; border:0; padding:0; background:transparent; color:#fff; }
 .nrow .nx:hover{ background:#444; }
 .nrow.drop{ outline:2px dashed #000; outline-offset:-2px; background:#f4f2ec; }
-.nrow .sq, .nrow .av{ width:20px; height:20px; flex-basis:20px; font-size:11px; }
+.nrow .sq, .nrow .av{ width:20px; height:20px; flex-basis:20px; font-size:9px; }
+.nrow .sq{ font-size:12px; }
 .acctcard{ display:none; }
 
-/* ---------- 5. centre: header, list, detail -------------------------- */
-#chead{ flex:0 0 auto; display:flex; align-items:center; gap:12px; padding:4px 2px 10px 4px; min-height:54px; flex-wrap:wrap; }
+/* ---------- 5. centre: one column, and the window over it ------------- */
+#chead{ flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:0 4px 8px; min-height:56px; flex-wrap:wrap; }
 #chead .ct{ flex:1 1 220px; min-width:0; }
-#chead h2{ margin:0; font-size:var(--fs-l); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-#chead .csub{ color:var(--dim); font-size:var(--fs-s); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-#chead .ctools{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.sortsel{ display:flex; align-items:center; gap:8px; font-size:var(--fs-s); color:var(--dim); }
+#chead h2{ margin:0; font-size:20px; line-height:24px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#chead .csub{ color:var(--dim); font-size:12px; line-height:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#chead .ctools{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.sortsel{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--dim); }
 .sortsel select{ height:var(--ctl); }
-#cbody{ flex:1; min-height:0; display:flex; gap:6px; }
-#listcol, #calcol, #detailcol{ min-width:0; min-height:0; flex-direction:column; }
+#cbody{ flex:1; min-height:0; display:flex; }
+#listcol, #calcol{ flex:1; min-width:0; min-height:0; flex-direction:column; }
 #listcol{ display:flex; container:list / inline-size; }
-#calcol{ display:none; flex:1; container:cal / inline-size; }
-#detailcol{ display:flex; container:detail / inline-size; }
-#app.split #listcol{ flex:0 0 clamp(340px, 41%, 470px); }
-#app.split #detailcol{ flex:1; }
-#app.push #listcol{ flex:1; }
-#app.push #detailcol{ display:none; flex:1; }
+#calcol{ display:none; container:cal / inline-size; }
 #app.v-cal #listcol{ display:none; }
 #app.v-cal #calcol{ display:flex; }
-#app.push.has-detail #listcol, #app.push.has-detail #calcol{ display:none; }
-#app.push.has-detail #detailcol{ display:flex; }
-#dbar{ display:none; flex:0 0 auto; align-items:center; gap:10px; padding:0 0 6px; }
-#app.show-dbar #dbar{ display:flex; }
-#dbar .dcrumb{ color:var(--dim); font-size:var(--fs-s); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.panempty{ min-height:100%; display:grid; place-items:center; color:var(--face); background:#fff; }
-.panempty svg{ opacity:.9; }
-#dbar .dkind{ font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; }
-#dbar .dclose{ margin-left:auto; flex:0 0 auto; width:30px; height:26px; display:grid; place-items:center; border:0; padding:0; background:var(--face); color:#000; box-shadow:var(--out); }
-#dbar .dclose:active{ box-shadow:var(--in); }
+/* desktop and tablet: the list is one column in the middle of what the sidebar and the chat dock leave */
+#app.desk #center{ align-items:center; }
+#app.desk #chead, #app.desk #cbody{ width:100%; max-width:var(--col-w, 680px); }
+/* the window: a Windows 2000 frame over the list, dragged by its title bar */
+#win{ position:absolute; z-index:30; display:flex; flex-direction:column; min-width:0; padding:4px; background:var(--face);
+  box-shadow:var(--out), 0 0 0 1px #000, 6px 6px 0 rgba(0,0,0,.2); }
+#win[hidden]{ display:none; }
+#app.dock-front #chats{ z-index:35; }
+#win > .dbar{ flex:0 0 24px; gap:4px; padding:0 2px 0 4px; font-size:12px; cursor:move; touch-action:none; }
+#win.max > .dbar{ cursor:default; }
+#win > .dbar .dtitle{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#win > .dbar .x{ width:20px; height:18px; flex:0 0 auto; }
+#win > .dbar .x:active{ box-shadow:var(--in); }
+#win > .dbar .wmax + .wclose{ margin-left:2px; }
+#win > .dbar .wback{ margin-right:2px; }
+.wicon{ flex:0 0 16px; height:16px; display:grid; place-items:center; overflow:hidden; }
+.wicon .sq, .wicon .av{ width:16px; height:16px; flex-basis:16px; font-size:10px; }
+.wicon .wglyph{ width:16px; height:16px; display:grid; place-items:center; background:var(--face); color:#000; }
+#win > #dscroll{ flex:1; min-height:0; margin-top:4px; container:detail / inline-size; }
+#win.dragging{ user-select:none; }
+#win.dragging #dscroll{ pointer-events:none; }
 #dscroll{ position:relative; }
+.panempty{ display:none; }
 
 /* rows */
-.band{ position:sticky; top:0; z-index:6; display:flex; align-items:baseline; gap:8px; padding:14px 16px 7px; background:#fff;
-  border-bottom:1px solid var(--line); font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--ink2); }
-.band .cnt{ color:var(--dim); font-weight:normal; letter-spacing:.04em; }
-.row{ display:flex; align-items:center; gap:13px; min-height:66px; padding:10px 16px; border-bottom:1px solid var(--line); }
+/* a band is Outlook's "group by" bar: grey, one line, the group's name and how many */
+.band{ position:sticky; top:0; z-index:6; display:flex; align-items:center; gap:8px; min-height:32px; padding:0 16px; background:var(--face-lt);
+  border-top:1px solid #fff; border-bottom:1px solid var(--rule); font:bold 12px/16px var(--sys); color:var(--ink); }
+.band .cnt{ color:var(--dim); font-weight:normal; }
+/* a thing in a list: its square (48), title over its facts, its date and states at the right */
+.row{ display:flex; align-items:center; gap:8px; min-height:64px; padding:8px 16px; border-bottom:1px solid var(--line); }
 .row:hover{ background:var(--hover); }
 .row.sel{ background:var(--sel); color:#fff; }
 .row.static{ cursor:default; }
 .row.static:hover{ background:transparent; }
 .r-main{ flex:1; min-width:0; }
-.r-title{ font-size:15px; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.r-title{ font-size:14px; line-height:16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 /* bold for unread only where reading is tracked: a desktop with an account */
 #app.readmarks .row.unread .r-title{ font-weight:bold; }
 .row.past .r-title{ color:#6f6f6f; }
 .row.sel.past .r-title{ color:#ddd; }
-.r-meta{ margin-top:3px; font-size:var(--fs-s); color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.r-meta{ font-size:12px; line-height:16px; color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .row.sel .r-meta{ color:var(--seldim); }
-.r-side{ flex:0 0 auto; display:flex; flex-direction:column; align-items:flex-end; gap:5px; }
-.r-date{ font:12px var(--mono); letter-spacing:.04em; text-transform:uppercase; color:var(--ink2); white-space:nowrap; }
+.r-side{ flex:0 0 auto; display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+.r-date{ font:12px/16px var(--sys); color:var(--ink2); white-space:nowrap; }
 .row.sel .r-date{ color:#fff; }
 .r-states{ display:flex; gap:4px; }
-.r-ic{ width:40px; height:40px; flex:0 0 40px; display:grid; place-items:center; background:var(--face); box-shadow:var(--out); color:var(--ink2); }
+.r-ic{ width:48px; height:48px; flex:0 0 48px; display:grid; place-items:center; background:var(--face); box-shadow:var(--out); color:var(--ink2); }
 .row.sel .r-ic{ background:#444; color:#fff; box-shadow:none; }
-.pill{ display:inline-flex; align-items:center; gap:4px; height:21px; padding:0 7px; font:bold 10px var(--mono); letter-spacing:.06em;
-  text-transform:uppercase; border:1px solid var(--ink); color:var(--ink); background:#fff; white-space:nowrap; }
+.pill{ display:inline-flex; align-items:center; gap:4px; height:20px; padding:0 4px; font:bold 12px/16px var(--sys);
+ border:1px solid var(--ink); color:var(--ink); background:#fff; white-space:nowrap; }
 .pill .ic{ width:11px; height:11px; }
 .pill.going{ background:var(--ink); color:#fff; }
 .pill.host{ background:var(--face); }
 .pill.dim{ border-color:#aaa; color:var(--dim); }
 .row.sel .pill{ border-color:#fff; background:transparent; color:#fff; }
 .row.sel .pill.going{ background:#fff; color:var(--sel); }
-.empty{ padding:40px 24px; color:var(--dim); text-align:center; font-size:var(--fs-m); }
-.empty .btn{ margin-top:14px; }
+.empty{ padding:40px 24px; color:var(--dim); text-align:center; font-size:14px; }
+.empty .btn{ margin-top:16px; }
 @container list (max-width:300px){ .r-states .pill span{ display:none; } }
 .r-dm{ display:none; }
 /* a narrow list gives the title the width: it may take two lines, and the date moves under it */
 @container list (max-width:440px){
   .r-title{ white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
   .r-side .r-date{ display:none; }
-  .r-dm{ display:inline; font:12px var(--mono); letter-spacing:.02em; text-transform:uppercase; color:var(--ink2); }
+  .r-dm{ display:inline; font:12px var(--sys); color:var(--ink2); }
   .row.sel .r-dm{ color:#fff; }
 }
 
@@ -225,229 +240,214 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .sq.s56{ width:56px; height:56px; font-size:30px; }
 .sq.s32{ width:32px; height:32px; font-size:18px; }
 .sq.s16{ width:16px; height:16px; font-size:10px; }
+.sq.s48{ width:48px; height:48px; font-size:26px; }
+.sq.s96{ width:96px; height:96px; font-size:52px; }
 .row.sel .sq{ box-shadow:0 0 0 2px #fff; }
 
-/* the page: the plain layout, in the look's colours — paper, hairlines, ink. Nothing moves. */
-.canvas{ position:relative; min-height:100%; background:var(--ebg); color:var(--eink); overflow:clip; isolation:isolate;
-  font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; line-height:1.68; }
-.banner{ position:relative; display:flex; border-bottom:1px solid var(--eac2); }
-.banner .bin{ position:relative; width:100%; display:flex; align-items:flex-end; gap:26px; padding:30px 34px 28px; }
+/* the page: a document in the app's window. One font, the app's greys and hairlines; the look's three colours reach
+   only its square and its title band. Sections are group boxes, their caption in the line; labels in one column,
+   values in the other. Nothing moves. */
+.canvas{ position:relative; min-height:100%; background:#fff; color:var(--ink); overflow:clip; isolation:isolate; font-family:var(--sys); line-height:20px; }
+.banner{ position:relative; display:flex; background:var(--ebg); color:var(--eink); border-bottom:1px solid var(--rule); }
+.banner .bin{ position:relative; width:100%; display:flex; align-items:center; gap:16px; padding:24px; }
 .btxt{ flex:1; min-width:0; }
-.eyebrow{ margin-bottom:10px; font:bold 12px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--edim); }
-.hl{ margin:0; color:var(--eink); overflow-wrap:anywhere; font-size:clamp(34px, 7.4cqi, 58px); line-height:.98; letter-spacing:-.018em; }
+.eyebrow{ margin:0; font:bold 12px/16px var(--sys); color:var(--eac); }
+.hl{ margin:0; color:var(--eink); overflow-wrap:anywhere; font-size:20px; line-height:24px; font-weight:bold; }
+.psub2{ margin:4px 0 0; max-width:60ch; font-size:14px; line-height:20px; color:var(--eink); }
+.pgnote{ margin:4px 0 0; max-width:60ch; font-size:12px; line-height:16px; color:var(--edim); }
+.dlg .kdesc.inline{ margin:0 0 16px; padding:0; border:0; background:none; font-size:12px; color:var(--dim); }
+.sqwrap{ position:relative; flex:0 0 auto; }
+.pg .banner .sqwrap > .sq:not(.plain), .pg .banner .sqwrap > .sq.img{ box-shadow:0 0 0 1px color-mix(in srgb, var(--eink) 22%, transparent); }
+.pg-horizon .banner .mosaic{ box-shadow:0 0 0 1px var(--rule); }
+/* below the band everything is the app's: the look's variables are put back to the app's greys */
+.canvas > .actbar, .canvas > .entry, .canvas > .edition, .canvas > .layer{ --ebg:#fff; --eink:var(--ink); --eac:var(--ink); --eac2:var(--rule); --edim:var(--dim); --eon:#fff; --epanel:#fff; }
 
-/* The verbs are the window's controls, not the event's: one toolbar in the app's own bevel style, sitting on top of
-   the event's world. No event colour, border, font or shape ever reaches a control. */
-.actbar{ position:sticky; top:0; z-index:6; margin:0; padding:8px 34px; background:var(--face); color:var(--ink); font-family:var(--sys);
-  box-shadow:inset 0 1px 0 var(--white), inset 0 -1px 0 var(--shadow), 0 1px 0 var(--dark), 0 3px 8px rgba(0,0,0,.25); }
-.verbs{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
-.vgroup{ display:flex; }
-.vgroup .btn + .btn{ margin-left:2px; }
-.vsec{ display:flex; flex-wrap:wrap; gap:6px; margin-left:auto; }
+/* The verbs are the window's controls, not the event's: one toolbar in the app's own bevel style. */
+.actbar{ position:sticky; top:0; z-index:6; margin:0; padding:8px 16px; background:var(--face); color:var(--ink); font-family:var(--sys);
+  box-shadow:inset 0 1px 0 var(--white), inset 0 -1px 0 var(--shadow); }
+.verbs{ display:flex; flex-wrap:wrap; align-items:center; gap:4px; }
+.vgroup{ display:flex; gap:4px; }
+.vsec{ display:flex; flex-wrap:wrap; gap:4px; margin-left:auto; }
 /* one size for every control on an event or horizon page */
-.vb{ height:var(--act); min-width:var(--act); padding:0 14px; font-size:var(--fs); }
-.vb .n{ font:12px var(--mono); color:var(--dim); }
+.vb{ height:var(--act); min-width:var(--act); padding:0 12px; font-size:14px; }
+.vb .n{ font:12px var(--sys); color:var(--dim); }
 .vb.on .n{ color:var(--ink2); }
 .vb.icononly{ padding:0; width:var(--act); }
 .btn.on .fillable{ fill:currentColor; }
 a.btn{ text-decoration:none; color:var(--ink) !important; }
-.edition{ position:relative; z-index:3; padding:18px 34px 0; }
-.edcard{ width:100%; display:grid; grid-template-columns:1fr auto; column-gap:16px; align-items:center; padding:16px 18px; text-align:left;
-  background:color-mix(in srgb, var(--eac) 14%, transparent); border:2px solid var(--eac); color:var(--eink); font-family:var(--sys); }
-.edcard:hover{ background:color-mix(in srgb, var(--eac) 24%, transparent); }
+/* the way in (tickets, membership) and the next edition: a framed box under the toolbar */
+.edition{ position:relative; padding:24px 24px 0; }
+.edcard{ width:100%; display:grid; grid-template-columns:1fr auto; column-gap:16px; align-items:center; padding:16px; text-align:left;
+  background:var(--face-lt); border:1px solid var(--gb); box-shadow:inset 1px 1px 0 #fff; color:var(--ink); font-family:var(--sys); }
+.edcard:hover{ background:var(--hover); }
 .edcard > span:not(.edgo){ grid-column:1; }
-.edk{ font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--eac); }
-.edt{ margin-top:4px; font-size:20px; font-weight:bold; line-height:1.2; }
-.edd{ margin-top:3px; font-size:15px; }
-.eds{ margin-top:8px; font:bold 12px var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--eac); }
-.edgo{ grid-column:2; grid-row:1 / span 4; width:44px; height:44px; display:grid; place-items:center; border:1px solid var(--eac); color:var(--eac); }
-.edprev{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-.edprev .chip{ min-height:44px; }
-.ednote{ flex:1 1 260px; font-size:13px; color:var(--edim); }
-/* the way in: a burn's tickets or membership, summarised, one tap from the top */
-.entry{ position:relative; z-index:3; display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin:18px 34px 0; padding:14px 16px;
-  border:2px solid var(--eac); background:color-mix(in srgb, var(--eac) 10%, transparent); font-family:var(--sys); }
+.edk{ font:bold 12px/16px var(--sys); color:var(--dim); }
+.edt{ font-size:14px; font-weight:bold; line-height:16px; }
+.edd{ font-size:12px; line-height:16px; }
+.eds{ margin-top:8px; font:bold 12px/16px var(--sys); color:var(--ink2); }
+.edgo{ grid-column:2; grid-row:1 / span 4; width:var(--ctl); height:var(--ctl); display:grid; place-items:center; background:var(--face); box-shadow:var(--out); color:var(--ink); }
+.edprev{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.edprev .chip{ min-height:var(--ctl); }
+.ednote{ flex:1 1 260px; font-size:12px; line-height:16px; color:var(--dim); }
+.entry{ position:relative; display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin:24px 24px 0; padding:16px;
+  border:1px solid var(--gb); box-shadow:inset 1px 1px 0 #fff; background:var(--face-lt); font-family:var(--sys); }
 .entry .ensum{ flex:1 1 240px; min-width:0; }
-.entry .enk{ font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--eac); }
-.entry .env{ margin-top:4px; font-size:16px; font-weight:bold; color:var(--eink); }
-.entry .ens{ margin-top:2px; font-size:13px; color:var(--edim); }
-/* on a phone the event's verbs live in a bar at the bottom of the screen, always in reach */
-#evbar{ display:none; flex:0 0 auto; padding:6px 8px; background:var(--face); color:var(--ink); box-shadow:inset 0 1px 0 var(--white), 0 -1px 0 var(--shadow); font-family:var(--sys); }
+.entry .enk{ font:bold 12px/16px var(--sys); color:var(--dim); }
+.entry .env{ font-size:14px; line-height:16px; font-weight:bold; color:var(--ink); }
+.entry .ens{ font-size:12px; line-height:16px; color:var(--dim); }
+/* on a phone the event's verbs live in a bar at the bottom of its sheet, always in reach */
+#evbar{ display:none; flex:0 0 auto; padding:8px; background:var(--face); color:var(--ink); box-shadow:inset 0 1px 0 var(--white), 0 -1px 0 var(--shadow); font-family:var(--sys); }
 #app.phone.has-evbar #evbar{ display:block; }
 #app.phone .pg-event > .actbar{ display:none; }
-#evbar .verbs{ flex-wrap:nowrap; }
-#evbar .verbs{ gap:4px; }
+#evbar .verbs{ flex-wrap:nowrap; gap:4px; }
 #evbar .vgroup{ flex:1 1 auto; min-width:0; }
-#evbar .vb{ flex:1 1 auto; min-width:0; padding:0 6px; font-size:13px; gap:5px; }
+#evbar .vb{ flex:1 1 auto; min-width:0; padding:0 8px; font-size:12px; gap:4px; }
 #evbar .vb.icononly{ flex:0 0 var(--act); }
 
 .layer{ position:relative; }
-.lin{ position:relative; z-index:3; padding:6px 34px 44px; }
-
-.canvas > .banner .eyebrow{ color:var(--eink); }
-.sqwrap{ position:relative; flex:0 0 auto; }
-/* content sits on a calm panel: white on the plain look, a step away from the ground on a customised one */
-.canvas > .layer{ z-index:5; margin:28px clamp(0px, 3cqi, 40px) 0; background:var(--epanel, #fff); box-shadow:0 0 0 1px var(--eac2); }
+.lin{ position:relative; display:flex; flex-direction:column; gap:24px; padding:24px 24px 32px; }
 /* one page template for events, horizons and people: every page is its own container, wherever it is shown */
-.canvas.pg{ container:detail / inline-size; padding-bottom:48px; }
-.psub2{ margin:12px 0 0; max-width:60ch; font-size:16px; line-height:1.45; color:var(--eink); }
-.pgnote{ margin:10px 0 0; max-width:60ch; font-size:var(--fs-s); line-height:1.4; color:var(--edim); }
-.dlg .kdesc.inline{ margin:0 0 16px; padding:0; border:0; background:none; font-size:var(--fs-s); color:var(--dim); }
-.banner .av.a160{ width:160px; height:160px; flex-basis:160px; font-size:56px; box-shadow:0 0 0 1px rgba(0,0,0,.25), 4px 4px 0 rgba(0,0,0,.18); }
-.pg-horizon .banner .mosaic{ box-shadow:0 0 0 1px var(--eac2), 4px 4px 0 rgba(0,0,0,.3); }
-.pg .banner .sqwrap > .sq:not(.plain), .pg .banner .sqwrap > .sq.img{ box-shadow:0 0 0 1px color-mix(in srgb, var(--eink) 22%, transparent); }
-.pg .tracks{ margin:0; border-top:1px solid var(--eac2); }
-.pg .track, .pg .trpast{ padding-left:0; padding-right:0; border-color:var(--eac2); }
-.pg .track .ts, .pg .trpast{ color:var(--edim); }
-.pg .track.past .tt{ color:var(--edim); }
-.pg .track:hover, .pg .track:active{ background:color-mix(in srgb, var(--eac) 10%, transparent); }
-.pg .track.sel{ background:var(--sel); color:#fff; margin:0 -12px; padding-left:12px; padding-right:12px; }
-.pg .track.sel .tt, .pg .track.sel .ts{ color:#fff; }
-.pg .crow{ border-color:var(--eac2); }
-.pg .crow .r-meta{ color:var(--edim); }
-.pg .pres{ vertical-align:middle; }
-@container detail (max-width:620px){
-  .pg-horizon .banner .sqwrap, .pg-person .banner .sqwrap:has(> .sq){ zoom:.575; }
-  .banner .av.a160{ width:92px; height:92px; flex-basis:92px; font-size:32px; }
-}
-.canvas > .entry, .canvas > .edition{ z-index:5; }
-.canvas > .entry{ background:color-mix(in srgb, var(--eac) 10%, var(--ebg)); }
-.canvas > .edition .edcard{ background:color-mix(in srgb, var(--eac) 14%, var(--ebg)); }
-.canvas > .edition .edcard:hover{ background:color-mix(in srgb, var(--eac) 24%, var(--ebg)); }
-@container detail (max-width:620px){
-  .canvas > .layer{ margin:18px 10px 0; }
-}
-.facts{ display:grid; grid-template-columns:repeat(auto-fill, minmax(168px, 1fr)); margin-top:24px; border-top:1px solid var(--eac2); border-left:1px solid var(--eac2); }
-.fact{ padding:12px 14px 13px; border-right:1px solid var(--eac2); border-bottom:1px solid var(--eac2); min-width:0; }
-.fk{ font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--edim); }
-.fvlink{ padding:0; border:0; background:transparent; color:inherit; font:inherit; text-align:left; text-decoration:underline; text-decoration-color:var(--eac); text-underline-offset:3px; cursor:pointer; min-height:0; }
-@media (pointer:coarse){ .fvlink{ min-height:44px; } }
-.fv{ margin-top:5px; font-size:16px; font-weight:bold; line-height:1.3; overflow-wrap:anywhere; }
-.fs{ margin-top:3px; font-size:13px; color:var(--edim); line-height:1.4; }
-.sect{ margin-top:30px; }
-.sect > h3{ margin:0 0 12px; padding-bottom:7px; border-bottom:1px solid var(--eac2); font:bold 12px var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--edim); }
-.sect p{ margin:0 0 10px; max-width:66ch; }
-.evdesc{ font-size:17px; }
-.themeline{ font-size:24px; font-weight:bold; line-height:1.2; margin-bottom:6px; color:var(--eac); }
+.canvas.pg{ container:detail / inline-size; }
+.banner .av.a96{ box-shadow:0 0 0 1px rgba(0,0,0,.25); }
+
+/* a group box: a hairline frame, its caption in the line */
+.sect, .facts{ position:relative; margin:0; padding:16px; border:1px solid var(--gb); box-shadow:inset 1px 1px 0 #fff; min-width:0; }
+.sect > h3, .facts > .fh{ position:absolute; top:-9px; left:8px; margin:0; padding:0 8px; background:#fff; font:bold 12px/16px var(--sys); color:var(--ink); }
+.sect > h3 .cnt, .facts > .fh .cnt{ font-weight:normal; color:var(--dim); }
+.sect p{ margin:0 0 8px; max-width:66ch; }
+.sect p:last-child{ margin-bottom:0; }
+/* Details: labels in one column, values in the other */
+.facts{ display:flex; flex-direction:column; gap:8px; }
+.fact{ display:grid; grid-template-columns:112px minmax(0, 1fr); column-gap:16px; min-width:0; }
+.fk{ grid-row:1 / span 2; font:14px/16px var(--sys); color:var(--dim); }
+.fv{ font-size:14px; line-height:16px; overflow-wrap:anywhere; }
+.fs{ font-size:12px; line-height:16px; color:var(--dim); }
+.fvlink{ padding:0; border:0; background:transparent; color:inherit; font:inherit; text-align:left; text-decoration:underline; text-underline-offset:2px; cursor:pointer; min-height:0; }
+@media (pointer:coarse){ .fvlink{ min-height:32px; } }
+.evdesc{ font-size:14px; line-height:20px; }
+.themeline{ font-size:14px; font-weight:bold; line-height:20px; }
 .chips{ display:flex; flex-wrap:wrap; gap:8px; }
-.chip{ display:inline-flex; align-items:center; gap:8px; min-height:38px; padding:4px 13px 4px 6px; border:1px solid var(--eac2); background:transparent;
-  color:var(--eink); font:13px var(--sys); text-align:left; }
-.chip.plain{ padding:4px 13px; }
-/* a chip you can press is a control, so it is the app's button; a chip that is only a label stays in the event's world */
+.chip{ display:inline-flex; align-items:center; gap:8px; min-height:32px; padding:4px 12px 4px 4px; border:1px solid var(--rule); background:transparent;
+  color:var(--ink); font:12px/16px var(--sys); text-align:left; }
+.chip.plain{ padding:4px 12px; }
+/* a chip you can press is a control, so it is the app's button; a chip that is only a label is a tag */
 button.chip, .canvas a.chip, a.chip{ border:0; background:var(--face); color:var(--ink); box-shadow:var(--out); text-decoration:none; }
 button.chip:active, a.chip:active{ box-shadow:var(--in); }
 button.chip .sub, a.chip .sub{ color:var(--dim); opacity:1; }
 .canvas a.chip.strong, a.chip.strong{ color:var(--ink); font-weight:bold; box-shadow:0 0 0 1px #000, var(--out); }
 .chip .sub{ opacity:.7; }
-.cards{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:10px; }
-.card{ border:1px solid var(--eac2); padding:14px 16px 15px; }
-.card .ck{ font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--eac); }
-.card .ctt{ margin:6px 0 4px; font-size:16px; font-weight:bold; line-height:1.3; }
-.card .cbd{ font-size:14px; }
+.cards{ display:grid; grid-template-columns:repeat(auto-fill, minmax(208px, 1fr)); gap:8px; }
+.card{ border:1px solid var(--rule); padding:8px 16px; }
+.card .ck{ font:bold 12px/16px var(--sys); color:var(--dim); }
+.card .ctt{ font-size:14px; font-weight:bold; line-height:20px; }
+.card .cbd{ font-size:12px; line-height:16px; }
 .card .cbd p{ margin:0; }
-.tmodel{ display:inline-block; margin-bottom:10px; padding:4px 10px; border:2px solid var(--eac); font:bold 12px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--eac); }
+.tmodel{ display:inline-block; margin-bottom:8px; font:bold 14px/20px var(--sys); color:var(--ink); }
 .blist{ margin:0; padding:0; list-style:none; max-width:70ch; }
-.blist li{ position:relative; padding:7px 0 7px 22px; border-bottom:1px dashed color-mix(in srgb, var(--eac2) 80%, transparent); }
-.blist li::before{ content:""; position:absolute; left:3px; top:calc(.72em + 3px); width:7px; height:7px; background:var(--eac); }
-.irows{ display:flex; flex-direction:column; gap:0; max-width:70ch; }
-.irow{ padding:9px 0; border-bottom:1px dashed color-mix(in srgb, var(--eac2) 80%, transparent); }
+.blist li{ position:relative; padding:0 0 0 12px; }
+.blist li + li{ margin-top:8px; }
+.blist li::before{ content:""; position:absolute; left:0; top:8px; width:4px; height:4px; background:var(--ink); }
+.irows{ display:flex; flex-direction:column; gap:8px; max-width:70ch; }
 .irow .it{ font-weight:bold; }
-.irow .iw{ margin-top:3px; font:12px var(--mono); color:var(--edim); }
-.kv{ display:grid; grid-template-columns:minmax(110px, 30%) 1fr; gap:8px 16px; margin:8px 0 0; max-width:70ch; }
-.kv dt{ color:var(--edim); font:12px var(--mono); letter-spacing:.06em; text-transform:uppercase; padding-top:2px; }
-.kv dd{ margin:0; }
+.irow .iw{ font:12px/16px var(--sys); color:var(--dim); }
+.kv{ display:grid; grid-template-columns:112px minmax(0, 1fr); gap:8px 16px; margin:0; max-width:70ch; }
+.kv dt{ color:var(--dim); font:14px/20px var(--sys); }
+.kv dd{ margin:0; line-height:20px; min-width:0; }
+.kv dd small{ display:block; font-size:12px; line-height:16px; color:var(--dim); }
 .kv dd p{ margin:0; }
-.canvas a{ color:var(--eac); }
-/* timeline: build, gates, burns, strike — the event is a sequence, not a date */
-.tl{ list-style:none; margin:0; padding:0; max-width:70ch; }
-.tl li{ position:relative; display:flex; gap:18px; padding:0 0 16px 22px; }
-.tl li::before{ content:""; position:absolute; left:4px; top:7px; width:9px; height:9px; background:var(--eac); }
-.tl li::after{ content:""; position:absolute; left:8px; top:18px; bottom:-4px; width:1px; background:var(--eac2); }
-.tl li:last-child::after{ display:none; }
-.tl .tld{ flex:0 0 150px; font:bold 12px var(--mono); letter-spacing:.04em; text-transform:uppercase; color:var(--eink); padding-top:2px; }
-.tl .tld span{ display:block; font-weight:normal; color:var(--edim); margin-top:2px; }
+.canvas .layer a{ color:var(--ink); }
+/* shifts: each a row you can take */
+.tl{ list-style:none; margin:0; padding:0; max-width:70ch; display:flex; flex-direction:column; gap:8px; }
+.tl li{ position:relative; display:flex; gap:16px; }
+.tl .tld{ flex:0 0 112px; font:14px/20px var(--sys); color:var(--dim); }
+.tl .tld span{ display:block; font-size:12px; line-height:16px; }
 .tl .tlb{ flex:1; min-width:0; }
 .tl .tlt{ font-weight:bold; }
-.tln{ font-size:14px; color:var(--edim); margin-top:2px; }
+.tln{ font-size:12px; line-height:16px; color:var(--dim); }
 .tl.shifts li{ align-items:center; }
 .shiftbtn{ flex:0 0 auto; }
-.tiers{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; margin:14px 0; }
-.tier{ border:1px solid var(--eac2); padding:12px 14px; }
-.tiname{ font:bold 11px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--edim); }
-.tiprice{ font-size:22px; font-weight:bold; margin-top:4px; }
-.tinote{ font-size:13px; color:var(--edim); margin-top:4px; }
-.sales{ margin:6px 0 14px; border-top:1px solid var(--eac2); }
-.sale{ display:flex; gap:18px; padding:11px 0; border-bottom:1px solid var(--eac2); }
-.sale .sd{ flex:0 0 150px; font:bold 12px var(--mono); letter-spacing:.04em; text-transform:uppercase; padding-top:2px; }
+.tiers{ display:grid; grid-template-columns:repeat(auto-fill, minmax(144px, 1fr)); gap:8px; margin:8px 0 16px; }
+.tier{ border:1px solid var(--rule); padding:8px 16px; }
+.tiname{ font:bold 12px/16px var(--sys); color:var(--dim); }
+.tiprice{ font-size:14px; font-weight:bold; line-height:20px; }
+.tinote{ font-size:12px; line-height:16px; color:var(--dim); }
+.sales{ margin:8px 0 16px; border-top:1px solid var(--line); }
+.sale{ display:flex; gap:16px; padding:8px 0; border-bottom:1px solid var(--line); }
+.sale .sd{ flex:0 0 112px; font:14px/20px var(--sys); color:var(--dim); }
 .sale .sm2{ flex:1; min-width:0; }
 .sale .sn{ font-weight:bold; }
-.sst{ display:inline-block; margin-left:6px; padding:1px 7px; border:1px solid var(--edim); font:bold 10px var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--edim); vertical-align:2px; }
-.sst.on{ border-color:var(--eac); background:var(--eac); color:var(--eon); }
-.asof{ margin-top:10px; font:11px var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--edim); }
-.prov{ list-style:none; margin:0 0 10px; padding:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:8px; }
-.prov li{ display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--eac2); }
-.prov li::before{ content:""; flex:0 0 12px; height:12px; border:2px solid var(--eac); }
-.prov li.y::before{ background:var(--eac); }
-.prov li.n{ color:var(--edim); }
-span.chip.strong{ color:var(--eac); font-weight:bold; }
-/* a label is not a button: tags and facts are filled and borderless; only what you can press has an outline */
-span.chip{ border-color:transparent; background:color-mix(in srgb, var(--eac2) 55%, transparent); padding:4px 11px; }
-span.chip.strong{ border-color:transparent; background:color-mix(in srgb, var(--eac) 16%, transparent); }
-.chipmore{ align-self:center; padding:0 4px; font-size:13px; color:var(--edim); }
-.vocab dt{ text-transform:none; letter-spacing:0; font:bold 14px var(--sys); color:var(--eink); }
-.srcline{ margin-top:12px; font:11px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--edim); }
+.sst{ display:inline-block; margin-left:8px; padding:0 4px; border:1px solid var(--dim); font:bold 12px/14px var(--sys); color:var(--dim); vertical-align:1px; }
+.sst.on{ border-color:var(--ink); background:var(--ink); color:#fff; }
+.asof{ margin-top:8px; font:12px/16px var(--sys); color:var(--dim); }
+.prov{ list-style:none; margin:0 0 8px; padding:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(208px, 1fr)); gap:8px; }
+.prov li{ display:flex; align-items:center; gap:8px; }
+.prov li::before{ content:""; flex:0 0 12px; height:12px; box-shadow:var(--in); background:#fff; }
+.prov li.y::before{ background:var(--ink); }
+.prov li.n{ color:var(--dim); }
+span.chip.strong{ color:var(--ink); font-weight:bold; }
+/* a label is not a button: tags are filled and borderless; only what you can press has an outline */
+span.chip{ border-color:transparent; background:var(--face-lt); box-shadow:var(--thin); padding:4px 12px; }
+.chipmore{ align-self:center; padding:0 4px; font-size:12px; color:var(--dim); }
+.vocab dt{ font:bold 14px/20px var(--sys); color:var(--ink); }
+.srcline{ font:12px/16px var(--sys); color:var(--dim); }
 .av{ width:22px; height:22px; flex:0 0 22px; display:inline-grid; place-items:center; color:#fff; font:bold 10px var(--sys); }
 .av.img{ position:relative; overflow:hidden; background:var(--face); }
+.av.a16{ width:16px; height:16px; flex-basis:16px; font-size:7px; }
+.av.a32{ width:32px; height:32px; flex-basis:32px; font-size:12px; }
 .av.a40{ width:40px; height:40px; flex-basis:40px; font-size:14px; }
-.av.a64{ width:64px; height:64px; flex-basis:64px; font-size:22px; }
+.av.a48{ width:48px; height:48px; flex-basis:48px; font-size:14px; }
+.av.a64{ width:64px; height:64px; flex-basis:64px; font-size:20px; }
+.av.a96{ width:96px; height:96px; flex-basis:96px; font-size:28px; }
 .av.a28{ width:28px; height:28px; flex-basis:28px; font-size:11px; }
 
-@container detail (max-width:620px){
-  .banner .bin{ flex-direction:column; align-items:flex-start; gap:16px; padding:22px 18px 20px; }
-  .banner .sq.s160{ width:92px; height:92px; font-size:50px; }
-  .hl{ font-size:clamp(32px, 11cqi, 46px); }
-  .actbar{ padding:8px 14px; }
-  .lin{ padding:4px 18px 36px; }
-  .edition{ padding:14px 14px 0; }
-  .entry{ margin:14px 14px 0; }
+@container detail (max-width:560px){
+  .banner .bin{ align-items:flex-start; padding:16px; }
+  .banner .sq.s96, .banner .av.a96{ width:64px; height:64px; flex-basis:64px; font-size:34px; }
+  .banner .av.a96{ font-size:20px; }
+  .pg-horizon .banner .sqwrap, .pg-person .banner .sqwrap:has(> .sq){ zoom:.667; }
+  .actbar{ padding:8px; position:relative; }
+  .lin{ padding:24px 16px 24px; }
+  .edition{ padding:16px 16px 0; }
+  .entry{ margin:16px 16px 0; }
   .vgroup{ flex:1 1 100%; }
   .vgroup .vb{ flex:1; }
-  .actbar{ position:relative; }
   .vsec{ display:contents; }
   .verbs > .vb, .vsec > .vb{ flex:1 1 auto; padding:0 8px; }
   .vb.icononly{ flex:0 0 var(--act); }
-  .facts{ grid-template-columns:1fr 1fr; }
-  .evdesc{ font-size:16px; }
-  .kv{ grid-template-columns:1fr; gap:2px; }
-  .tl li, .sale{ flex-direction:column; gap:2px; }
-  .tl .tld, .sale .sd{ flex-basis:auto; }
-  .tl.shifts li{ align-items:flex-start; gap:6px; }
-  .kv dd{ margin-bottom:8px; }
+  .sect, .facts{ padding:16px 8px 16px 16px; }
+  .fact, .kv{ grid-template-columns:88px minmax(0, 1fr); column-gap:8px; }
+  .tl .tld, .sale .sd{ flex-basis:88px; }
+  .tl li, .sale{ gap:8px; }
+  .tl.shifts li{ flex-wrap:wrap; }
 }
 
-/* ---------- 7. app-chrome detail pages (horizon, person, call out) --- */
-.page{ padding:26px 30px 40px; max-width:820px; }
-.phead2{ display:flex; gap:18px; align-items:flex-start; }
-.pname{ font-size:var(--fs-xl); font-weight:bold; line-height:1.15; overflow-wrap:anywhere; }
-.psub{ margin-top:5px; color:var(--dim); }
-.pdesc{ margin:14px 0 0; max-width:62ch; font-size:var(--fs-m); line-height:1.55; }
-.acts{ display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
-.subh{ margin:30px 0 8px; font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dim); display:flex; gap:8px; }
-.crow{ display:flex; align-items:center; gap:13px; min-height:64px; padding:10px 0; border-bottom:1px solid var(--line); }
-.crow{ align-items:stretch; }
+/* ---------- 7. app-chrome pages (a call out) and their rows ----------- */
+.page{ padding:24px; max-width:820px; }
+.phead2{ display:flex; gap:16px; align-items:flex-start; }
+.pname{ font-size:20px; font-weight:bold; line-height:24px; overflow-wrap:anywhere; }
+.psub{ color:var(--dim); font-size:12px; line-height:16px; }
+.pdesc{ margin:8px 0 0; max-width:62ch; font-size:14px; line-height:20px; }
+.acts{ display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+.subh{ margin:24px 0 8px; font:bold 12px/16px var(--sys); color:var(--ink); display:flex; gap:8px; }
+/* a thing on a page: its square (48) and three lines */
+.crow{ display:flex; align-items:center; gap:8px; min-height:64px; padding:8px 0; border-bottom:1px solid var(--line); }
+.crow:last-child{ border-bottom:0; }
 .crow > .sq, .crow > .av, .crow > .r-ic, .crow > .cverbs{ align-self:center; }
-.crow .cm{ flex:1; min-width:0; min-height:44px; display:flex; flex-direction:column; justify-content:center; cursor:pointer; }
+.crow .cm{ flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; cursor:pointer; }
+.crow .cm .r-title{ font-weight:bold; line-height:16px; }
+.crow .cm .r-meta{ margin:0; line-height:16px; }
 .crow .cm .r-title:hover{ text-decoration:underline; }
-.cverbs{ display:flex; gap:6px; flex:0 0 auto; }
-.tags{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
-.tag{ display:inline-flex; align-items:center; height:28px; padding:0 10px; background:var(--face-lt); box-shadow:var(--thin); font-size:var(--fs-s); }
-.pres{ display:inline-block; width:9px; height:9px; border-radius:50%; border:1.5px solid #000; vertical-align:middle; margin-right:4px; }
-.pres.online{ background:#000; }
-.pres.idle{ background:linear-gradient(90deg,#000 50%,transparent 50%); }
+.cverbs{ display:flex; gap:4px; flex:0 0 auto; }
+.sect .track, .sect .trpast{ padding-left:0; padding-right:0; }
+.sect .track:hover{ background:transparent; }
+.sect .track:hover .tt{ text-decoration:underline; }
+.tags{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.tag{ display:inline-flex; align-items:center; height:28px; padding:0 8px; background:var(--face-lt); box-shadow:var(--thin); font-size:12px; }
+.pres{ display:inline-block; width:8px; height:8px; border-radius:50%; border:1.5px solid currentColor; vertical-align:middle; margin:0 4px 1px 0; }
+.pres.online{ background:currentColor; }
+.pres.idle{ background:linear-gradient(90deg,currentColor 50%,transparent 50%); }
 @container detail (max-width:560px){
-  .page{ padding:20px 16px 36px; }
-  .phead2{ gap:14px; }
-  .pname{ font-size:22px; }
+  .page{ padding:16px; }
   .acts .btn{ flex:1 1 auto; }
 }
 
@@ -458,52 +458,52 @@ span.chip.strong{ border-color:transparent; background:color-mix(in srgb, var(--
 .chrow{ display:flex; align-items:center; gap:12px; min-height:68px; padding:10px 14px; border-bottom:1px solid var(--line); }
 .chrow:hover{ background:var(--hover); }
 .chrow .cmn{ flex:1; min-width:0; }
-.chrow .cnm{ font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.chrow .cnm{ font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .chrow.unread .cnm{ font-weight:bold; }
 .chrow .cpv{ margin-top:2px; font-size:var(--fs-s); color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .chrow.unread .cpv{ color:var(--ink); }
 .chrow .cside{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
-.ctime{ font:11px var(--mono); color:var(--dim); white-space:nowrap; }
+.ctime{ font:12px var(--sys); color:var(--dim); white-space:nowrap; }
 .udot{ width:10px; height:10px; background:#000; }
 .conv{ flex:1; min-height:0; display:flex; flex-direction:column; gap:8px; }
 .msgs{ flex:1; min-height:0; overflow:auto; padding:16px 14px; background:#fff; box-shadow:var(--in); display:flex; flex-direction:column; gap:12px; }
 .msg{ max-width:86%; align-self:flex-start; }
 .msg.me{ align-self:flex-end; text-align:right; }
 .mfrom{ margin-bottom:3px; font-size:12px; color:var(--dim); }
-.mfrom .mt{ font-family:var(--mono); font-size:11px; margin-left:6px; }
+.mfrom .mt{ font-family:var(--sys); font-size:12px; margin-left:6px; }
 .mbody{ display:inline-block; padding:8px 12px; background:var(--face-lt); border:1px solid #d8d4cb; text-align:left; line-height:1.4; overflow-wrap:anywhere; }
 .msg.me .mbody{ background:#2a2a2a; border-color:#2a2a2a; color:#fff; }
-.msg.sys{ align-self:center; font:12px var(--mono); color:var(--dim); text-align:center; }
+.msg.sys{ align-self:center; font:12px var(--sys); color:var(--dim); text-align:center; }
 .composer{ flex:0 0 auto; display:flex; gap:8px; }
 .composer input{ flex:1; }
 .members{ display:flex; gap:4px; }
 
 /* ---------- 9. calendar ---------------------------------------------- */
 .calbar{ flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:0 0 8px; flex-wrap:wrap; }
-.calbar .ttl{ font-size:18px; font-weight:bold; min-width:0; margin-right:6px; }
+.calbar .ttl{ font-size:20px; font-weight:bold; min-width:0; margin-right:6px; }
 .calbar .spring{ flex:1; }
 .calbar label{ display:flex; gap:8px; align-items:center; min-height:var(--ctl); padding:0 4px; font-size:var(--fs-s); cursor:pointer; }
 .calgrid{ flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column; }
 .caldow{ display:flex; background:var(--face-lt); border-bottom:1px solid #b9b4a8; position:sticky; top:0; z-index:2; }
-.caldow div{ flex:1; padding:6px 8px; font:bold 11px var(--mono); letter-spacing:.1em; text-transform:uppercase; border-left:1px solid #d7d3ca; }
+.caldow div{ flex:1; padding:6px 8px; font:bold 12px var(--sys); border-left:1px solid #d7d3ca; }
 .caldow div:first-child{ border-left:0; }
 .calrow{ display:flex; flex:1 0 auto; min-height:104px; border-top:1px solid #d6d2c9; }
 .calcell{ flex:1; min-width:0; border-left:1px solid #e3e0d9; padding:4px 4px 6px; overflow:hidden; }
 .calcell:first-child{ border-left:0; }
 .calcell.oth{ background:#f6f5f1; color:#a09c94; }
 .calcell.today .dn{ background:var(--sel); color:#fff; }
-.calcell .dn{ display:inline-block; padding:1px 6px; font:bold 12px var(--mono); }
+.calcell .dn{ display:inline-block; padding:1px 6px; font:bold 12px var(--sys); }
 .calev{ display:flex; align-items:center; gap:5px; margin:3px 0; min-height:24px; padding:2px 6px 2px 0; overflow:hidden; white-space:nowrap;
   background:var(--ebg); color:var(--eink); border-left:4px solid var(--eac); font-size:12px; }
 .calev .cg{ color:var(--eac); padding-left:4px; }
 .calev span{ overflow:hidden; text-overflow:ellipsis; }
 .calev:hover{ outline:2px solid #000; outline-offset:-1px; }
 .weekcol{ flex:1; min-width:0; border-left:1px solid #e3e0d9; display:flex; flex-direction:column; }
-.weekcol .wh{ padding:8px; background:var(--face-lt); border-bottom:1px solid #b9b4a8; font:bold 12px var(--mono); }
+.weekcol .wh{ padding:8px; background:var(--face-lt); border-bottom:1px solid #b9b4a8; font:bold 12px var(--sys); }
 .weekcol.today .wh{ background:var(--sel); color:#fff; }
 .weekcol .wb{ flex:1; padding:4px; }
 .dayband{ display:flex; border-top:1px solid #d6d2c9; min-height:42px; }
-.dayband .hr{ flex:0 0 66px; padding:4px 8px; text-align:right; font:12px var(--mono); color:var(--dim); background:var(--face-lt); border-right:1px solid #b9b4a8; }
+.dayband .hr{ flex:0 0 66px; padding:4px 8px; text-align:right; font:12px var(--sys); color:var(--dim); background:var(--face-lt); border-right:1px solid #b9b4a8; }
 .dayband .slot{ flex:1; padding:3px; display:flex; flex-direction:column; gap:3px; }
 .calcell .dots{ display:flex; flex-wrap:wrap; gap:3px; margin-top:4px; }
 .calcell .dots i{ width:100%; height:6px; background:var(--eac); pointer-events:none; }
@@ -511,13 +511,13 @@ span.chip.strong{ border-color:transparent; background:color-mix(in srgb, var(--
 .calcell[data-act]:hover{ background:var(--hover); }
 .calcell.picked{ outline:2px solid #000; outline-offset:-2px; background:#fff; }
 .weekcol .wh[data-act]{ cursor:pointer; }
-.calall{ margin-left:auto; min-height:32px; padding:0 8px; border:0; background:transparent; font:bold 11px var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--ink2); text-decoration:underline; }
+.calall{ margin-left:auto; min-height:32px; padding:0 8px; border:0; background:transparent; font:bold 12px var(--sys); color:var(--ink2); text-decoration:underline; }
 body.is-phone .calall{ min-height:44px; }
 .agenda{ border-top:1px solid #b9b4a8; }
 @container cal (max-width:640px){
   .calrow{ min-height:58px; }
   .calcell{ padding:3px 2px; }
-  .calcell .dn{ font-size:11px; padding:1px 3px; }
+  .calcell .dn{ font-size:12px; padding:1px 3px; }
   .caldow div{ padding:6px 3px; text-align:center; }
 }
 
@@ -592,13 +592,13 @@ body.is-phone .demolink button{ min-height:44px; }
 .linkrow{ display:flex; align-items:center; gap:12px; min-height:52px; padding:6px 12px; border-bottom:1px solid var(--line); background:#fff; cursor:pointer; }
 .linkrow:hover{ background:var(--hover); }
 .linkrow .lr{ flex:1; min-width:0; }
-.linkrow .lstate{ font:12px var(--mono); color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
+.linkrow .lstate{ font:12px var(--sys); color:var(--dim); }
 .wizsteps{ display:flex; margin:0 0 18px; }
-.wizsteps .ws{ flex:1; min-height:var(--ctl); padding:8px 4px; border:0; text-align:center; font:bold 12px var(--mono); letter-spacing:.06em; background:var(--face-dk); box-shadow:var(--out); color:var(--ink2); }
+.wizsteps .ws{ flex:1; min-height:var(--ctl); padding:8px 4px; border:0; text-align:center; font:bold 12px var(--sys); background:var(--face-dk); box-shadow:var(--out); color:var(--ink2); }
 .wizsteps .ws:hover{ color:#000; }
 .wizsteps .ws.on{ background:#fff; color:#000; box-shadow:var(--in); }
 .wizsteps .ws[aria-disabled="true"]{ color:#8a8a8a; text-shadow:1px 1px 0 #fff; cursor:default; }
-.wizsteps .wsopt{ font-weight:normal; letter-spacing:.02em; color:var(--dim); text-transform:lowercase; }
+.wizsteps .wsopt{ font-weight:normal; color:var(--dim); text-transform:lowercase; }
 .wherein{ display:flex; align-items:center; gap:14px; }
 .wherein input[type="text"]{ flex:1; min-width:0; }
 .wherein input[disabled]{ background:var(--face-lt); }
@@ -611,31 +611,31 @@ body.is-phone .demolink button{ min-height:44px; }
 .custwrap{ display:flex; gap:18px; }
 .custcol{ flex:0 0 340px; min-width:0; }
 .custprev{ flex:1; min-width:0; position:sticky; top:0; align-self:flex-start; }
-.czsect{ margin:0 0 7px; font:bold 11px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dim); }
+.czsect{ margin:0 0 7px; font:bold 12px var(--sys); color:var(--dim); }
 .czstarts{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px; margin-bottom:16px; }
 .czstart{ justify-content:flex-start; gap:7px; padding:0 8px; font-size:var(--fs-s); white-space:nowrap; overflow:hidden; }
 .czstart .sw{ flex:0 0 18px; height:18px; display:grid; place-items:center; font-size:11px; line-height:1; box-shadow:inset 0 0 0 1px rgba(0,0,0,.35); }
 .czcolor{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
 .czcolor > label{ flex:0 0 84px; font-size:var(--fs-s); font-weight:bold; }
 .czcolor input[type=color]{ flex:0 0 46px; width:46px; height:var(--ctl); padding:3px; border:0; background:#fff; box-shadow:var(--in); cursor:pointer; }
-.czcolor .czhex{ flex:1; min-width:0; font-family:var(--mono); }
+.czcolor .czhex{ flex:1; min-width:0; font-family:var(--sys); }
 .cznote{ margin:0 0 12px; font-size:var(--fs-s); color:var(--ink2); }
 .cznote[hidden]{ display:none; }
 .cznote .sw{ display:inline-block; width:12px; height:12px; margin:0 3px -1px 0; box-shadow:inset 0 0 0 1px rgba(0,0,0,.35); }
 .czimg{ display:flex; gap:12px; align-items:flex-start; margin-bottom:16px; }
 .czdrop{ flex:0 0 auto; position:relative; display:block; padding:0; border:0; background:none; cursor:pointer; outline-offset:3px; }
 .czdrop.over{ outline:2px dashed var(--sel); }
-.czdrop .czhint{ position:absolute; left:0; right:0; bottom:0; padding:3px 0; background:rgba(0,0,0,.55); color:#fff; font:bold 10px var(--mono); letter-spacing:.08em; text-align:center; text-transform:uppercase; }
+.czdrop .czhint{ position:absolute; left:0; right:0; bottom:0; padding:3px 0; background:rgba(0,0,0,.55); color:#fff; font:bold 12px var(--sys); text-align:center; }
 .czimgside{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:6px; }
 .czimgside .fhelp{ margin:0; line-height:1.4; }
 .czimgside .ferr:empty{ display:none; }
 .czfile{ position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; pointer-events:none; }
 .previewbox{ padding:12px; max-height:470px; overflow:auto; background:#fff; box-shadow:var(--in); }
-.plabel{ margin:10px 0 6px; font:bold 11px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dim); }
+.plabel{ margin:10px 0 6px; font:bold 12px var(--sys); color:var(--dim); }
 .plabel:first-child{ margin-top:0; }
 .minicanvas{ overflow:hidden; position:relative; container:detail / inline-size; }
 .minicanvas .banner .bin{ padding:14px 16px; gap:14px; }
-.minicanvas .hl{ font-size:26px !important; }
+.minicanvas .hl{ font-size:20px !important; }
 .minicanvas .actbar{ position:relative; padding:6px 16px; }
 .minicanvas .lin{ padding:10px 16px 14px; }
 .minicanvas .canvas{ min-height:0; }
@@ -648,27 +648,23 @@ body.is-phone .demolink button{ min-height:44px; }
 .ab-tap{ cursor:pointer; align-self:stretch; display:flex; flex-direction:column; justify-content:center; }
 .linkrow.static{ cursor:default; }
 .linkrow.static:hover{ background:#fff; }
-.chrow .lstate{ font:12px var(--mono); color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
+.chrow .lstate{ font:12px var(--sys); color:var(--dim); }
 .cmsg{ margin:0; max-width:46ch; font-size:var(--fs-m); line-height:1.5; }
 
 /* ---------- 10b. phone feed: shelves, tiles, playlists --------------- */
 .shelves{ padding:0 0 28px; }
-.greet{ padding:20px 16px 4px; }
-.greet h2{ margin:0; font-size:24px; line-height:1.15; }
-.greet p{ margin:4px 0 0; color:var(--dim); font-size:14px; }
-.shelf{ margin-top:22px; }
+.shelf{ margin-top:24px; }
 .sortrow{ display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:6px 12px; border-bottom:1px solid var(--line); font-size:var(--fs-s); color:var(--dim); }
 .sortrow select{ height:var(--ctl); }
-.deskgreet{ padding:22px 16px 14px; border-bottom:1px solid var(--line); }
-.shh{ display:flex; align-items:center; gap:10px; padding:0 8px 0 16px; }
-.shh h3{ flex:1; min-width:0; margin:0; font-size:19px; line-height:1.2; }
-.shh h3 .cnt{ font:normal 12px var(--mono); letter-spacing:.04em; color:var(--dim); }
+.shh{ display:flex; align-items:center; gap:8px; padding:0 8px 0 16px; }
+.shh h3{ flex:1; min-width:0; margin:0; font-size:14px; line-height:20px; }
+.shh h3 .cnt{ font:normal 12px var(--sys); color:var(--dim); }
 .shstep{ display:none; gap:4px; margin-left:4px; }
 .shelf.more .shstep{ display:inline-flex; }
 .shstep .ib{ width:30px; height:26px; }
 .card2{ cursor:pointer; }
 .card2.sel .cart{ box-shadow:0 0 0 2px #fff, 0 0 0 4px var(--ink); }
-.showall{ min-height:44px; padding:0 8px; border:0; background:transparent; font:bold 11px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--dim); }
+.showall{ min-height:44px; padding:0 8px; border:0; background:transparent; font:bold 12px var(--sys); color:var(--dim); }
 .srow{ display:flex; gap:12px; padding:10px 16px 4px; overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x mandatory; scroll-padding:0 16px;
   -webkit-overflow-scrolling:touch; scrollbar-width:none; }
 .srow::-webkit-scrollbar{ display:none; }
@@ -677,14 +673,14 @@ body.is-phone .demolink button{ min-height:44px; }
 .card2 .cart{ position:relative; width:150px; height:150px; box-shadow:0 0 0 1px rgba(0,0,0,.18), 2px 2px 0 rgba(0,0,0,.14); }
 .card2:active .cart{ transform:translate(1px,1px); box-shadow:0 0 0 1px rgba(0,0,0,.18); }
 .ct2{ margin-top:8px; font-size:14px; font-weight:bold; line-height:1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-.cs2{ margin-top:3px; font:11px var(--mono); letter-spacing:.02em; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.ctag{ position:absolute; z-index:5; left:6px; bottom:6px; padding:2px 6px; background:#fff; color:#000; border:1px solid #000; font:bold 10px var(--mono); letter-spacing:.08em; text-transform:uppercase; }
+.cs2{ margin-top:3px; font:12px var(--sys); color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ctag{ position:absolute; z-index:5; left:6px; bottom:6px; padding:2px 6px; background:#fff; color:#000; border:1px solid #000; font:bold 12px var(--sys); }
 .ctag.inline{ position:static; flex:0 0 auto; }
 .coart + .ctag{ left:auto; right:6px; bottom:auto; top:6px; }
 .coart{ width:150px; height:150px; display:flex; flex-direction:column; justify-content:flex-end; gap:4px; padding:12px; background:var(--face); box-shadow:var(--out); color:var(--ink); }
 .coart .ic{ margin-bottom:auto; }
-.coart span{ font:bold 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dim); }
-.coart b{ font-size:17px; line-height:1.15; }
+.coart span{ font:bold 12px var(--sys); color:var(--dim); }
+.coart b{ font-size:14px; line-height:1.15; }
 .mosaic{ display:grid; grid-template-columns:1fr 1fr; background:#000; overflow:hidden; }
 .mosaic .sq{ border-radius:0 !important; clip-path:none !important; }
 .mosaic.one{ display:block; }
@@ -697,184 +693,175 @@ body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 1
 /* Add events: one row of filters under the search; the list keeps its height as you switch, so the dialog doesn't jump */
 #pk-list{ height:min(58vh, 460px); }
 .pkchips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
-.pkchip{ display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 10px; border:0; background:var(--face); box-shadow:var(--out); color:var(--ink); font-size:13px; white-space:nowrap; }
+.pkchip{ display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 10px; border:0; background:var(--face); box-shadow:var(--out); color:var(--ink); font-size:12px; white-space:nowrap; }
 .pkchip:active{ box-shadow:var(--in); }
-.pkchip .n{ font:11px var(--mono); letter-spacing:.02em; color:var(--dim); }
+.pkchip .n{ font:12px var(--sys); color:var(--dim); }
 .pkchip.on{ background:var(--sel); color:#fff; font-weight:bold; box-shadow:inset 1px 1px 0 #000; }
 .pkchip.on .n{ color:var(--seldim); }
 .pick .pm small.pkwhy{ color:var(--ink2); }
 .pkempty{ line-height:1.5; }
 .pkempty .btn{ margin-top:12px; }
-.pkband{ padding:12px 10px 6px; font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dim); border-bottom:1px solid var(--line); background:#fff; }
+.pkband{ padding:12px 10px 6px; font:bold 12px var(--sys); color:var(--dim); border-bottom:1px solid var(--line); background:#fff; }
 .hzchk{ width:28px; height:28px; display:grid; place-items:center; box-shadow:var(--in); background:#fff; color:#000; }
-.tracks{ list-style:none; margin:8px 0 0; padding:0; border-top:1px solid var(--line); }
-.track{ display:flex; align-items:center; gap:12px; min-height:68px; padding:10px 16px; border-bottom:1px solid var(--line); }
+.tracks{ list-style:none; margin:0; padding:0; }
+.track{ display:flex; align-items:center; gap:8px; min-height:64px; padding:8px 16px; border-bottom:1px solid var(--line); }
+.track:last-child{ border-bottom:0; }
+.track:hover{ background:var(--hover); }
 .track:active{ background:var(--hover); }
 .track .tm{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; }
-.track .tt{ font-size:15px; font-weight:bold; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
-.track .ctag.inline{ margin-top:5px; }
+.track .tt{ font-size:14px; font-weight:bold; line-height:16px; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.track .ctag.inline{ margin-top:4px; }
 .track.sel{ background:var(--sel); color:#fff; }
 .track.sel .ts{ color:var(--seldim); }
 .trpast{ display:flex; align-items:center; gap:8px; min-height:48px; padding:0 16px; border-bottom:1px solid var(--line); cursor:pointer;
-  font:bold 11px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dim); }
-.track .ts{ margin-top:2px; font-size:13px; color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  font:bold 12px var(--sys); color:var(--dim); }
+.track .ts{ font-size:12px; line-height:16px; color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .track.past .tt{ color:#6f6f6f; }
 
 /* ---------- 10c. Home: the network's activity ------------------------ */
-.fgreet{ border-bottom:0; padding-bottom:10px; }
-.fgreet p{ margin:4px 0 0; color:var(--dim); font-size:14px; }
-.fitem{ display:flex; gap:12px; padding:14px 16px 16px; border-bottom:1px solid var(--line); }
-.fav{ flex:0 0 32px; display:flex; flex-direction:column; align-items:flex-start; }
-.av.a32{ width:32px; height:32px; flex-basis:32px; font-size:12px; }
-.fav.two .av + .av{ width:20px; height:20px; flex-basis:20px; font-size:8px; margin:-12px 0 0 16px; box-shadow:0 0 0 2px #fff; }
-.fbody{ flex:1; min-width:0; display:flex; flex-direction:column; gap:10px; }
-.fline{ display:flex; align-items:baseline; gap:10px; }
-.fsent{ flex:1; min-width:0; font-size:15px; line-height:1.35; color:var(--ink2); }
-.fwho{ color:var(--ink); cursor:pointer; }
-.fwho:hover{ text-decoration:underline; }
-.ftime{ flex:0 0 auto; font:12px var(--mono); letter-spacing:.04em; color:var(--dim); white-space:nowrap; }
-.fexpl{ margin:-2px 0 0; font-size:13px; line-height:1.4; color:var(--dim); }
-.fcard{ display:grid; grid-template-columns:auto minmax(0, 1fr); align-items:center; column-gap:12px; row-gap:10px; padding:10px; background:#fff; cursor:pointer;
-  box-shadow:0 0 0 1px rgba(0,0,0,.16), 2px 2px 0 rgba(0,0,0,.1); }
-.fcard:hover{ background:var(--hover); }
-.fcard .fverbs{ grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:6px; }
-.fcard.fp{ display:flex; align-items:center; gap:12px; }
-.fcard.fp .fcm{ flex:1; }
-.fcm{ min-width:0; }
-.fct{ font-size:16px; font-weight:bold; line-height:1.25; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-.fcard.small .fct, .fcard.fp .fct{ font-size:15px; }
-.fck{ margin-bottom:2px; font:bold 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dim); }
-.fcs{ margin-top:3px; font-size:13px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.fcard.fp .fcs{ white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
-.fcard.sel{ background:var(--face-lt); box-shadow:0 0 0 2px var(--ink), 2px 2px 0 rgba(0,0,0,.1); }
-.fvb{ font-size:13px; padding:0 12px; }
-.fmore{ align-self:flex-start; min-height:32px; padding:0; border:0; background:transparent; font-size:13px; color:var(--ink2); text-decoration:underline; }
-.fmore.static{ text-decoration:none; }
-.fend{ display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:22px 16px 32px; color:var(--dim); font-size:var(--fs-s); }
-/* call outs: the one inverted thing on Home — ink ground, paper type, the ask at headline size */
-.fitem.fitco{ display:block; padding:16px 16px 18px; }
-.fco{ position:relative; padding:16px 18px 18px; background:var(--ink); color:#fff; cursor:pointer;
-  outline:1px solid #fff; outline-offset:-6px; box-shadow:4px 4px 0 var(--face-dk); }
-.fcok{ display:flex; align-items:center; gap:10px; }
-.fcotag{ display:inline-flex; align-items:center; gap:6px; padding:3px 8px; background:#fff; color:#000; font:bold 11px var(--mono); letter-spacing:.16em; text-transform:uppercase; }
-.fco .ftime{ margin-left:auto; color:#c4c4c4; }
-.fcol{ margin-top:16px; font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:#c4c4c4; }
-.fcoa{ margin-top:2px; font-size:32px; font-weight:bold; line-height:1.05; letter-spacing:-.01em; overflow-wrap:anywhere; }
-.fcob{ margin:10px 0 0; max-width:56ch; font-size:15px; line-height:1.45; color:#e6e6e6; }
-.fcoe{ display:flex; align-items:center; gap:10px; margin-top:14px; padding:8px; background:#242424; box-shadow:inset 0 0 0 1px #4a4a4a; }
-.fcoe > span{ min-width:0; font-size:14px; font-weight:bold; line-height:1.3; }
-.fcoe small{ display:block; font:normal 11px var(--mono); letter-spacing:.06em; color:#c4c4c4; }
-.fcof{ display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-top:16px; }
-.fcoby{ flex:1 1 160px; min-width:0; display:flex; align-items:center; gap:10px; font-size:14px; font-weight:bold; }
-.fcoby small{ display:block; font:normal 11px var(--mono); letter-spacing:.04em; color:#c4c4c4; }
-.fco .av{ box-shadow:0 0 0 1px #fff; }
-.fco .btn, .cotile .btn{ color:#000; }
-.fco.sel, .cotile.sel{ outline-width:3px; outline-offset:-7px; }
-.costrip.srow{ padding:12px 16px 14px; border-bottom:1px solid var(--line); scroll-snap-type:x proximity; }
-.cotile{ flex:0 0 228px; width:228px; min-height:168px; display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:14px; background:var(--ink); color:#fff;
-  outline:1px solid #fff; outline-offset:-5px; scroll-snap-align:start; cursor:pointer; }
-.cotile .cta{ font-size:20px; line-height:1.12; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-.cotile .ctw{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:12px; line-height:1.35; color:#d0d0d0; }
-.cotile .btn{ margin-top:auto; }
-/* a feed card is a container: its title is the button that opens it, and covers the card for the pointer */
-.fcard, .fco, .cotile, .fuprow{ position:relative; }
-.flink{ display:block; width:100%; min-width:0; padding:0; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; }
-.flink::after{ content:""; position:absolute; inset:0; }
-.flink:focus-visible{ outline:2px solid currentColor; outline-offset:2px; }
-.fcard .btn, .fcard .pill, .fco .btn, .fcoe, .cotile .btn, .fuprow .soc{ position:relative; z-index:1; }
-.fcoa{ display:block; }
-button.fcoe{ width:100%; border:0; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+/* AN ENTRY: a header line (the person at 32, what they did over how long ago), 8, the thing in its frame; 16 around */
+.fitem{ display:flex; flex-direction:column; gap:8px; padding:16px; border-bottom:1px solid var(--line); min-width:0; }
+.fhead{ display:flex; align-items:center; gap:8px; min-height:32px; min-width:0; }
+.fav{ flex:0 0 32px; display:flex; }
+.fhd{ flex:1; min-width:0; }
+.fsent{ margin:0; font-size:14px; line-height:16px; font-weight:normal; color:var(--ink2); overflow-wrap:anywhere; }
+.fsent b{ color:var(--ink); }
+.fmeta{ font-size:12px; line-height:16px; color:var(--dim); }
+.fexpl{ color:var(--dim); }
 .fwho{ display:inline; padding:0; border:0; background:none; font:inherit; font-weight:bold; color:var(--ink); cursor:pointer; text-align:left; }
 .fwho:hover{ text-decoration:underline; }
 /* how long ago is legible; under a day old it is in ink */
-.ftime{ font-size:13px; letter-spacing:0; color:var(--ink2); }
+.ftime{ font:12px/16px var(--sys); color:var(--dim); white-space:nowrap; }
 .ftime.fresh{ color:var(--ink); font-weight:bold; }
-.fco .ftime{ color:#e0e0e0; }
-.fco .ftime.fresh{ color:#fff; }
-.fline{ flex-wrap:wrap; }
-.fsent{ flex:1 1 180px; }
-.fmsg{ flex:0 0 auto; align-self:center; display:inline-flex; align-items:center; gap:5px; height:28px; padding:0 9px; border:0; background:var(--face); box-shadow:var(--out); font-size:12px; color:var(--ink); }
-.fmsg:active{ box-shadow:var(--in); }
+.btn.s{ height:28px; min-width:28px; padding:0 8px; gap:4px; font-size:12px; }
+.fmsg{ flex:0 0 auto; }
+@media (pointer:coarse){ .btn.s{ height:36px; } }
+/* A THING: its square (48) and three lines of 16 in a hairline frame, its verbs at the right */
+.fcard{ position:relative; display:flex; align-items:center; gap:8px; padding:8px; background:#fff; border:1px solid var(--rule); min-width:0; }
+.fcard:hover{ background:var(--hover); }
+.fcard.sel{ background:var(--face-lt); border-color:var(--ink); box-shadow:0 0 0 1px var(--ink); }
+.fcm{ flex:1; min-width:0; }
+.fct{ display:block; font-size:14px; font-weight:bold; line-height:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fck, .fcs, .fcs3, .fcard .soc{ font-size:12px; line-height:16px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fck{ font-weight:bold; }
+.fcs3, .fcard .soc{ color:var(--ink2); }
+.fcq{ font-size:12px; line-height:16px; color:var(--ink2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fverbs{ position:relative; z-index:1; flex:0 0 auto; display:flex; gap:4px; }
+.fvb{ font-size:14px; padding:0 12px; }
+/* several things under one entry: one frame, hairlines between */
+.fstack{ display:flex; flex-direction:column; border:1px solid var(--rule); }
+.fstack > .fcard{ border:0; border-bottom:1px solid var(--line); }
+.fstack > .fcard:last-child{ border-bottom:0; }
+.fstack > .fcard.sel{ box-shadow:inset 0 0 0 2px var(--ink); }
+/* a narrow list: the verbs go under the thing, the width shared */
+@container list (max-width:560px){
+  .fcard{ flex-wrap:wrap; }
+  .fcard > .fverbs{ flex:1 1 100%; }
+  .fcard > .fverbs .btn{ flex:1; }
+  .fhead .fmsg{ align-self:flex-start; }
+}
+.fmore{ align-self:flex-start; }
+.fmore.static{ min-height:0; font-size:12px; color:var(--dim); }
+.fend{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; padding:24px 16px 32px; color:var(--dim); font-size:12px; }
+/* call outs: the one inverted thing — ink ground, paper type, a hairline frame inside; loud by inversion, not size */
+.fco{ position:relative; display:flex; flex-direction:column; gap:8px; padding:16px; background:var(--ink); color:#fff; outline:1px solid #fff; outline-offset:-4px; }
+.fcok{ display:flex; align-items:center; gap:8px; font-size:12px; line-height:16px; color:#c4c4c4; }
+.fcotag{ display:inline-flex; align-items:center; gap:4px; height:20px; padding:0 8px; background:#fff; color:#000; font:bold 12px/16px var(--sys); }
+.fcountil{ margin-left:auto; white-space:nowrap; }
+.fcoa{ display:block; font-size:20px; font-weight:bold; line-height:24px; overflow-wrap:anywhere; }
+.fcob{ margin:0; max-width:60ch; font-size:14px; line-height:20px; color:#e6e6e6; }
+button.fcoe{ position:relative; z-index:1; display:flex; align-items:center; gap:8px; width:100%; padding:8px; border:1px solid #4a4a4a; background:#242424; color:#fff; font:inherit; text-align:left; cursor:pointer; }
+button.fcoe:hover{ background:#2e2e2e; }
+.fcoet{ min-width:0; display:flex; flex-direction:column; }
+.fcoet b{ font-size:14px; line-height:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fcoet small{ font-size:12px; line-height:16px; color:#c4c4c4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fcof{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; }
+.fcoby{ margin-left:auto; display:flex; align-items:center; gap:8px; font-size:12px; line-height:16px; color:#c4c4c4; }
+.fco .av{ box-shadow:0 0 0 1px #fff; }
+.fco .btn{ color:#000; position:relative; z-index:1; }
+.fco.sel{ outline-width:3px; outline-offset:-5px; }
+.fco .flink{ position:static; }
+.fco .flink::after{ z-index:0; }
+/* a feed card is a container: its title is the button that opens it, and covers the card for the pointer */
+.fcard, .fco, .fuprow{ position:relative; }
+.flink{ display:block; width:100%; min-width:0; padding:0; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.flink::after{ content:""; position:absolute; inset:0; }
+.flink:focus-visible{ outline:2px solid currentColor; outline-offset:2px; }
+.fcard .btn, .fcard .pill, .fuprow .soc{ position:relative; z-index:1; }
+/* call outs for you: one at a time, stepped in the band */
+.costrip .fitem{ border-bottom:0; }
+.band .bx{ margin-left:auto; display:flex; gap:4px; }
+.band .bx .ib{ width:24px; height:24px; }
+.band .bx .ib[disabled]{ color:#8a8a8a; cursor:default; }
 /* you, in one line */
-.fitem.fyou{ padding:10px 16px 12px; background:var(--face-lt); }
-.fyou .fsent{ font-size:14px; }
+.fitem.fyou{ background:var(--face-lt); }
 /* following only a few: the rest of the network, below your people */
 .fnet{ background:#fbfaf8; }
 .fnet .fav{ opacity:.6; filter:grayscale(1); }
-.fnetnote{ margin:0; padding:8px 16px 10px; border-bottom:1px solid var(--line); font-size:13px; line-height:1.4; color:var(--ink2); }
-/* coming up with your people */
-.band .bsub{ margin-left:auto; font-weight:normal; letter-spacing:.06em; color:var(--dim); }
-.fuprow{ display:flex; align-items:center; gap:12px; padding:8px 16px; border-bottom:1px solid var(--line); }
+.fnetnote{ margin:0; padding:8px 16px; border-bottom:1px solid var(--line); font-size:12px; line-height:16px; color:var(--ink2); }
+/* coming up with your people: things in a list, the date at the right */
+.fuprow{ display:flex; align-items:center; gap:8px; min-height:64px; padding:8px 16px; border-bottom:1px solid var(--line); }
 .fuprow:hover{ background:var(--hover); }
-.fuprow.sel{ background:var(--face-lt); box-shadow:inset 5px 0 0 var(--ink); }
-.fupd{ flex:0 0 40px; display:flex; flex-direction:column; align-items:center; text-align:center; font:10px var(--mono); letter-spacing:.04em; text-transform:uppercase; color:var(--ink2); }
-.fupd b{ font:bold 20px var(--sys); line-height:1.05; color:var(--ink); }
+.fuprow.sel{ background:var(--face-lt); box-shadow:inset 4px 0 0 var(--ink); }
 .fuprow .fcm{ flex:1; min-width:0; }
-.fuprow .fct{ font-size:15px; }
-.fup .fupmore{ margin:6px 16px 6px; }
-/* who you follow is on it: tiny faces and a few words */
-.soc{ display:flex; align-items:center; gap:6px; margin-top:5px; min-width:0; font-size:12px; line-height:1.3; color:var(--ink2); }
-.socav{ display:flex; flex:0 0 auto; }
-.socav .av{ width:18px; height:18px; flex-basis:18px; font-size:7px; box-shadow:0 0 0 1.5px #fff; }
-.socav .av + .av{ margin-left:-5px; }
+.fuprow .fcs, .fuprow .soc{ font-size:12px; line-height:16px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fuprow .soc{ color:var(--ink2); }
+.fupd{ flex:0 0 auto; align-self:flex-start; display:flex; flex-direction:column; align-items:flex-end; font:12px/16px var(--sys); color:var(--ink2); white-space:nowrap; }
+.fupd b{ font:bold 14px/16px var(--sys); color:var(--ink); }
+.fupfoot{ padding:8px 16px; border-bottom:1px solid var(--line); }
+/* who you follow is on it, in a few words */
+.soc{ display:flex; align-items:center; min-width:0; font-size:12px; line-height:16px; color:var(--ink2); }
 .soct{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .row.sel .soc{ color:var(--seldim); }
-.card2 .soc{ margin-top:4px; }
-/* the call-out strip: whole tiles only, and a way to the next ones */
-.costrip .cotile{ flex:0 0 var(--tw, 228px); width:var(--tw, 228px); min-width:0; }
-.costrip.srow{ gap:16px; scroll-snap-type:x mandatory; scroll-padding:0 16px; }
-.costrip.srow::after{ display:none; }
-.cotile .ctwhy{ display:inline-block; max-width:100%; padding:2px 6px; box-shadow:inset 0 0 0 1px #fff; font:bold 10px var(--mono); letter-spacing:.06em; text-transform:uppercase; color:#fff; }
-.costep{ display:none; margin-left:auto; gap:4px; }
-.coband.more .costep{ display:inline-flex; }
-.costep .ib{ width:30px; height:26px; }
-/* who's going: people you follow first, with when they decided */
-.chip.who{ padding-right:12px; }
-.chip.who .whon, .whorow .whon{ display:flex; flex-direction:column; min-width:0; line-height:1.25; text-align:left; }
-.chip.who small, .whorow small{ font-size:11px; font-weight:normal; color:var(--dim); }
+.card2 .soc{ margin-top:0; }
+/* who's going: two columns of people (32), the ones you follow first, with when they decided */
+.whochips{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px 16px; }
+.chip.who{ min-height:32px; padding:0; gap:8px; border:0; background:none; box-shadow:none; color:var(--ink); min-width:0; }
+.chip.who:hover .whon{ text-decoration:underline; }
+.chip.who .whon, .whorow .whon{ display:flex; flex-direction:column; min-width:0; line-height:16px; text-align:left; font-size:14px; }
+.chip.who .whon{ overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.chip.who small, .whorow small{ font-size:12px; font-weight:normal; color:var(--dim); overflow:hidden; text-overflow:ellipsis; }
 .chip.who.fol .whon{ font-weight:bold; }
-button.chip.chipmore{ align-self:stretch; padding:4px 13px; color:var(--ink); font-size:13px; }
+.whochips button.chip.chipmore{ grid-column:1 / -1; justify-self:start; min-height:var(--ctl); padding:0 12px; color:var(--ink); font-size:14px; }
+@container detail (max-width:560px){ .whochips{ grid-template-columns:1fr; } }
 .wholist{ display:flex; flex-direction:column; }
-.whorow{ display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); }
-.whomain{ flex:1; min-width:0; display:flex; align-items:center; gap:10px; padding:0; border:0; background:none; text-align:left; color:var(--ink); cursor:pointer; }
-.whonote{ margin:10px 0 0; font-size:13px; line-height:1.4; color:var(--dim); }
-/* a call out's replies: a thread under it, as under a post */
-.replies{ display:flex; flex-direction:column; gap:14px; margin-top:4px; }
-.reply{ display:flex; gap:10px; align-items:flex-start; }
+.whorow{ display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line); }
+.whomain{ flex:1; min-width:0; display:flex; align-items:center; gap:8px; padding:0; border:0; background:none; text-align:left; color:var(--ink); cursor:pointer; }
+.whonote{ margin:8px 0 0; font-size:12px; line-height:16px; color:var(--dim); }
+/* a call out's answers: a thread under it, drawn like a tree view — the people (32) hang from one dotted line */
+.replies{ position:relative; display:flex; flex-direction:column; gap:16px; margin-top:16px; }
+.replies::before{ content:""; position:absolute; left:15px; top:-16px; bottom:16px; border-left:1px dotted var(--shadow); }
+.reply{ position:relative; display:flex; gap:8px; align-items:flex-start; }
 .rpav{ flex:0 0 auto; padding:0; border:0; background:none; }
+.rpav .av{ box-shadow:0 0 0 2px #fff; }
 .rpb{ flex:1; min-width:0; }
-.rpbub{ display:inline-block; max-width:100%; padding:7px 12px 9px; background:var(--face-lt); border:1px solid #d8d4cb; }
-.rpn{ padding:0; border:0; background:none; font-weight:bold; color:var(--ink); text-align:left; }
+.rph{ display:flex; flex-wrap:wrap; align-items:baseline; gap:0 8px; font-size:12px; line-height:16px; color:var(--dim); }
+.rpn{ padding:0; border:0; background:none; font:bold 14px/16px var(--sys); color:var(--ink); text-align:left; }
 .rpn:hover{ text-decoration:underline; }
-.rptag{ margin-left:8px; padding:1px 5px; font:bold 10px var(--mono); letter-spacing:.06em; text-transform:uppercase; box-shadow:inset 0 0 0 1px var(--ink2); color:var(--ink2); vertical-align:1px; }
-.rpt{ margin-top:2px; line-height:1.45; white-space:pre-wrap; overflow-wrap:anywhere; }
-.rpm{ display:flex; align-items:center; gap:14px; margin:3px 0 0 2px; font:11px var(--mono); color:var(--dim); }
-.rpdel{ min-height:28px; padding:0; border:0; background:none; font:inherit; color:var(--ink2); text-decoration:underline; text-underline-offset:2px; }
-body.is-phone .rpdel{ min-height:40px; }
-.replybox{ display:flex; align-items:flex-end; gap:8px; margin-top:16px; }
-.replybox > .av{ margin-bottom:3px; }
-.replybox textarea{ flex:1; min-width:0; height:var(--ctl); min-height:var(--ctl); max-height:168px; padding:7px 10px; resize:none; overflow-y:auto; line-height:1.4; }
-/* the first replies under a call out, on its ink ground (Home, its event) */
-.corep{ display:flex; flex-direction:column; gap:6px; width:100%; margin-top:14px; padding-top:10px; border-top:1px solid #4a4a4a; font-size:13px; line-height:1.35; color:#e6e6e6; }
-.cotile .corep{ margin-top:0; font-size:12px; }
-.corn{ font:bold 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:#c4c4c4; }
-.corall{ align-self:flex-start; padding:0; border:0; background:none; font:bold 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:#fff; text-decoration:underline; text-underline-offset:3px; }
+.rptag{ padding:0 4px; font:bold 12px/14px var(--sys); box-shadow:inset 0 0 0 1px var(--ink2); color:var(--ink2); }
+.rpt{ font-size:14px; line-height:20px; white-space:pre-wrap; overflow-wrap:anywhere; }
+.rpm{ display:inline-flex; align-items:baseline; gap:8px; }
+.rpdel{ min-height:0; padding:0; border:0; background:none; font:inherit; color:var(--ink2); text-decoration:underline; text-underline-offset:2px; }
+@media (pointer:coarse){ .rpdel{ min-height:32px; } }
+.replybox{ position:relative; display:flex; align-items:flex-start; gap:8px; margin-top:16px; }
+.replybox textarea{ flex:1; min-width:0; height:var(--ctl); min-height:var(--ctl); max-height:168px; padding:8px; resize:none; overflow-y:auto; line-height:20px; }
+.replynote{ margin:8px 0 0 40px; font-size:12px; line-height:16px; color:var(--dim); }
+/* the latest answers under a call out, on its ink ground (Home) */
+.corep{ display:flex; flex-direction:column; gap:4px; width:100%; padding-top:8px; border-top:1px solid #4a4a4a; font-size:12px; line-height:16px; color:#e6e6e6; }
+.corn{ font:bold 12px/16px var(--sys); color:#c4c4c4; }
+.corall{ align-self:center; padding:0; border:0; background:none; font:12px/16px var(--sys); color:#fff; text-decoration:underline; text-underline-offset:2px; }
 .corow{ display:flex; gap:8px; align-items:flex-start; min-width:0; }
-.corow .av{ margin-top:1px; box-shadow:0 0 0 1px #fff; }
 .cort{ min-width:0; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
-.corwho{ padding:0; border:0; background:none; font-weight:bold; color:#fff; }
+.corwho{ padding:0; border:0; background:none; font:bold 12px/16px var(--sys); color:#fff; }
 .corwho:hover, .corall:hover{ text-decoration:underline; }
 .corall, .corwho{ position:relative; z-index:1; }
-.fcq{ margin-top:4px; font-size:14px; line-height:1.4; color:var(--ink2); display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
-.evcos{ display:flex; flex-direction:column; gap:16px; padding:4px 4px 0 0; }
+/* an event's call outs: each card, and its thread under it */
+.evcos{ display:flex; flex-direction:column; gap:24px; }
 /* a chat's name and its people's names open their profile, in a window over the chat */
 .ptbtn{ display:block; padding:0; border:0; background:none; text-align:left; color:var(--ink); }
 .ptbtn:hover{ text-decoration:underline; }
 .mwho{ padding:0; border:0; background:none; color:inherit; }
 .mwho:hover{ text-decoration:underline; }
-.dlg.pfwin .dbody{ padding:0; }
-.dlg .dback{ display:none; }
-body.is-phone .dlg.pfwin .dback{ display:grid; margin-left:-10px; }
 .composer{ align-items:flex-end; }
 .composer textarea{ flex:1; min-width:0; height:var(--ctl); min-height:var(--ctl); max-height:168px; padding:7px 10px; resize:none; overflow-y:auto; line-height:1.4; }
 .mbody{ white-space:pre-wrap; }
@@ -885,40 +872,29 @@ body.is-phone .dlg.pfwin .dback{ display:grid; margin-left:-10px; }
 #app.desk #listcol{ position:relative; }
 #app.desk #listcol::after{ content:""; position:absolute; inset:0; z-index:8; box-shadow:var(--in); pointer-events:none; }
 #app.desk #listbody{ box-shadow:none; }
-/* nothing in the reading pane: the list takes the room, the empty pane stays */
-#app.split.pane-closed #listcol{ flex:0 0 clamp(340px, 60%, 720px); }
-/* split: the reading pane starts level with the heading — the heading belongs to the list column only */
-#app.split #center{ display:grid; grid-template-columns:clamp(340px, 41%, 470px) minmax(0, 1fr); grid-template-rows:auto minmax(0, 1fr); column-gap:6px; }
-#app.split.pane-closed #center{ grid-template-columns:clamp(340px, 60%, 720px) minmax(0, 1fr); }
-#app.split.v-cal #center{ grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); }
-#app.split #cbody{ display:contents; }
-#app.split #chead{ grid-column:1; grid-row:1; }
-#app.split #listcol, #app.split #calcol{ grid-column:1; grid-row:2; }
-#app.split #detailcol{ grid-column:2; grid-row:1 / span 2; }
 /* people your friends follow */
-.ffof{ flex-direction:column; gap:8px; background:var(--face-lt); }
-.ffh{ margin:0; font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--ink2); }
-.ffn{ margin:0 0 4px; font-size:14px; line-height:1.4; color:var(--ink2); }
+.ffh.fsent{ font-weight:bold; color:var(--ink); }
+.av.sys{ background:var(--face); color:var(--ink2); box-shadow:var(--out); }
 /* Explore: a line that says what a kind is; on a phone its kinds are tabs */
-.kdesc{ margin:0; padding:12px 16px; border-bottom:1px solid var(--line); background:var(--face-lt); font-size:14px; line-height:1.45; color:var(--ink2); }
-.nrow.nsubrow{ min-height:34px; padding-left:42px; font-size:var(--fs-s); }
+.kdesc{ margin:0; padding:8px 16px; border-bottom:1px solid var(--line); background:#fff; font-size:12px; line-height:16px; color:var(--ink2); }
+.nrow.nsubrow{ min-height:32px; padding-left:36px; font-size:12px; }
 .navnote{ margin:16px 20px; color:var(--dim); font-size:var(--fs-s); line-height:1.45; }
 .kinds{ display:flex; gap:6px; min-width:0; overflow-x:auto; scrollbar-width:none; }
 .kinds::-webkit-scrollbar{ display:none; }
 .kinds{ gap:4px; }
-.kind{ flex:1 0 auto; height:38px; padding:0 10px; border:0; background:var(--face); box-shadow:var(--out); color:var(--ink); font-size:13px; white-space:nowrap; }
+.kind{ flex:1 0 auto; height:38px; padding:0 10px; border:0; background:var(--face); box-shadow:var(--out); color:var(--ink); font-size:12px; white-space:nowrap; }
 .kind.on{ background:var(--sel); color:#fff; font-weight:bold; box-shadow:inset 1px 1px 0 #000; }
 #app.phone #chead.kindhead .ctools{ flex-direction:column; align-items:stretch; gap:8px; min-width:0; }
 .ctrow{ display:flex; gap:8px; }
 .ctrow .seg{ flex:1 1 auto; }
 
 /* ---------- 11. phone: its own shell, not a squeezed desktop --------- */
-#app.phone{ --act:48px; font-size:15px; }
+#app.phone{ --act:44px; font-size:14px; }
 #app.phone #titlebar, #app.phone #toolbar{ display:none; }
 #app.phone #appbar{ display:flex; flex:0 0 auto; align-items:center; gap:2px; min-height:calc(54px + env(safe-area-inset-top)); padding:env(safe-area-inset-top) 4px 0; color:#fff; background:var(--bar); }
-.ab-title{ flex:1; min-width:0; padding:0 10px; font-size:17px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ab-title{ flex:1; min-width:0; padding:0 10px; font-size:14px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .ab-title .abn{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; white-space:normal; overflow:hidden; line-height:1.15; }
-.ab-title .abn:not(:only-child){ font-size:16px; }
+.ab-title .abn:not(:only-child){ font-size:14px; }
 .ab-title small{ display:block; font-size:12px; font-weight:normal; opacity:.8; }
 .ab-btn{ min-width:46px; height:46px; display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:0 10px; border:0; background:transparent; color:#fff; font-weight:bold; }
 .ab-btn:active{ background:rgba(255,255,255,.14); }
@@ -926,7 +902,7 @@ body.is-phone .dlg.pfwin .dback{ display:grid; margin-left:-10px; }
 .ab-search{ flex:1; display:flex; align-items:center; gap:8px; height:44px; margin:0 4px 0 8px; padding:0 10px; background:#fff; box-shadow:var(--in); color:var(--dim); }
 input[type=search]::-webkit-search-cancel-button{ -webkit-appearance:none; display:none; }
 .abclear{ flex:0 0 44px; height:44px; margin-right:-10px; display:grid; place-items:center; border:0; background:transparent; color:var(--ink2); }
-.ab-search input{ flex:1; min-width:0; height:100%; padding:0; border:0; box-shadow:none; background:transparent; color:var(--ink); font-size:16px; }
+.ab-search input{ flex:1; min-width:0; height:100%; padding:0; border:0; box-shadow:none; background:transparent; color:var(--ink); font-size:14px; }
 #app.phone #main{ padding:0; gap:0; }
 #app.phone #nav, #app.phone #chats, #app.phone #center{ flex:1 1 auto; width:100%; }
 #app.phone #nav, #app.phone #chats{ display:none; }
@@ -942,36 +918,44 @@ input[type=search]::-webkit-search-cancel-button{ -webkit-appearance:none; displ
 #app.phone .seg{ flex:1 1 auto; }
 #app.phone .seg button{ flex:1; padding:0 8px; }
 #app.phone .sortsel .sl{ display:none; }
-#app.phone.has-detail #chead{ display:none; }
 #app.phone #cbody{ gap:0; }
-#app.phone #dbar{ display:none !important; }
+/* on a phone the window is a sheet over the whole screen, ending above the preview bar when there is one */
+#app.phone #win{ position:fixed; left:0; right:0; top:0; bottom:var(--pvh, 0px); z-index:50; padding:0; box-shadow:none; }
+#app.phone #win > .dbar{ flex:0 0 auto; min-height:calc(56px + env(safe-area-inset-top)); padding:env(safe-area-inset-top) 4px 0 8px; gap:8px; font-size:14px; cursor:default; }
+#app.phone #win > .dbar .x{ width:44px; height:44px; }
+#app.phone #win > .dbar .dtitle{ white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-height:16px; }
+#app.phone #win > .dbar .dtitle small{ display:block; font-size:12px; font-weight:normal; opacity:.8; }
+#app.phone .wicon, #app.phone .wicon .sq, #app.phone .wicon .av, #app.phone .wicon .wglyph{ width:24px; height:24px; flex-basis:24px; }
+#app.phone #win > #dscroll{ margin:0; box-shadow:none; }
 #app.phone .calbar{ padding:8px 10px; }
 #app.phone .phead{ display:none; }
 #app.phone .conv{ gap:0; }
 #app.phone .msgs{ box-shadow:none; }
 #app.phone .composer{ padding:8px; background:var(--face); box-shadow:inset 0 1px 0 #fff, 0 -1px 0 var(--shadow); }
-#app.phone .row{ min-height:74px; padding:11px 14px; }
-#app.phone .nrow{ min-height:52px; margin:0; padding:0 18px; font-size:16px; border-bottom:1px solid var(--line); }
-#app.phone .nrow .sq, #app.phone .nrow .av{ width:26px; height:26px; flex-basis:26px; }
-#app.phone .navh{ padding:22px 18px 8px; }
+#app.phone .row{ min-height:64px; padding:8px 16px; }
+#app.phone .nrow{ min-height:48px; margin:0; padding:0 16px; font-size:14px; border-bottom:1px solid var(--line); }
+#app.phone .nrow .sq, #app.phone .nrow .av{ width:32px; height:32px; flex-basis:32px; }
+#app.phone .nrow .av{ font-size:12px; }
+#app.phone .nrow .sq{ font-size:18px; }
+#app.phone .navh{ padding:24px 16px 8px; }
 #app.phone .dup-tab{ display:none; }
 #app.phone .acctcard{ display:flex; flex-direction:column; align-items:stretch; gap:12px; padding:18px; border-bottom:1px solid var(--line); }
 #app.phone .acctcard .acrow{ display:flex; align-items:center; gap:14px; min-height:44px; }
-#app.phone .acctcard .acbio{ margin:0; font-size:15px; }
+#app.phone .acctcard .acbio{ margin:0; font-size:14px; }
 #app.phone .acctcard .tags{ margin:0; }
 #app.phone .acctcard .acbtns{ display:flex; gap:6px; }
 #app.phone .acctcard .acbtns .btn{ flex:1; }
-#app.phone .acctcard .an{ flex:1; min-width:0; font-size:17px; font-weight:bold; }
-#app.phone .acctcard .an small{ display:block; font-size:13px; font-weight:normal; color:var(--dim); }
+#app.phone .acctcard .an{ flex:1; min-width:0; font-size:14px; font-weight:bold; }
+#app.phone .acctcard .an small{ display:block; font-size:12px; font-weight:normal; color:var(--dim); }
 #app.phone #tabbar{ display:flex; flex:0 0 auto; gap:4px; padding:5px 5px calc(5px + env(safe-area-inset-bottom)); background:var(--face); box-shadow:inset 0 1px 0 var(--white), 0 -1px 0 var(--shadow); }
 .tab{ position:relative; flex:1 1 0; min-width:0; min-height:54px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
-  border:0; background:transparent; color:var(--ink2); font-size:11px; }
+  border:0; background:transparent; color:var(--ink2); font-size:12px; }
 .tab.on{ background:#fff; color:#000; font-weight:bold; box-shadow:var(--in); }
 .tab .tnew{ width:48px; height:34px; display:grid; place-items:center; background:var(--face); color:#000; box-shadow:0 0 0 1px #000, var(--out); }
 .tab .badge-n{ position:absolute; top:3px; left:calc(50% + 7px); height:18px; min-width:18px; font-size:10px; }
 body.is-phone #toasts{ width:calc(100% - 24px); bottom:calc(84px + env(safe-area-inset-bottom)); }
 body.is-phone .dlg{ inset:0 !important; width:auto !important; max-height:none; padding:0; }
-body.is-phone .dbar{ flex-basis:calc(54px + env(safe-area-inset-top)); padding:env(safe-area-inset-top) 6px 0 16px; font-size:16px; }
+body.is-phone .dbar{ flex-basis:calc(54px + env(safe-area-inset-top)); padding:env(safe-area-inset-top) 6px 0 16px; font-size:14px; }
 body.is-phone .dbar .x{ width:44px; height:44px; }
 body.is-phone .dbody{ padding:18px 16px; }
 body.is-phone .dfoot{ padding:10px 12px calc(12px + env(safe-area-inset-bottom)); box-shadow:inset 0 1px 0 #fff, 0 -1px 0 var(--shadow); }
@@ -987,15 +971,15 @@ body.is-phone .custprev{ order:-1; align-self:stretch; position:sticky; top:-18p
 .previewbox.compact{ padding:0; }
 .previewbox.compact .minicanvas{ max-height:190px; }
 .previewbox.compact .actbar, .previewbox.compact .layer{ display:none; }
-body.is-phone input, body.is-phone select, body.is-phone textarea{ font-size:16px; }
+body.is-phone input, body.is-phone select, body.is-phone textarea{ font-size:14px; }
 body.is-phone .picklist{ max-height:none; }
 body.is-phone #pk-list{ height:auto; }
 /* on a phone the filters are one sideways row under the search, never three lines of chrome */
 body.is-phone .pkchips{ flex-wrap:nowrap; overflow-x:auto; margin:10px -16px 0; padding:0 16px 2px; scrollbar-width:none; }
 body.is-phone .pkchips::-webkit-scrollbar{ display:none; }
 body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
-.sheetrow{ display:flex; align-items:center; gap:14px; min-height:60px; padding:0 18px; border-bottom:1px solid var(--line); background:#fff; font-size:16px; cursor:pointer; }
-.sheetrow small{ display:block; color:var(--dim); font-size:13px; }
+.sheetrow{ display:flex; align-items:center; gap:14px; min-height:60px; padding:0 18px; border-bottom:1px solid var(--line); background:#fff; font-size:14px; cursor:pointer; }
+.sheetrow small{ display:block; color:var(--dim); font-size:12px; }
 </style>
 </head>
 <body>
@@ -1022,10 +1006,15 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
       <div id="cbody">
         <div id="listcol"><div class="panel" id="listbody"></div></div>
         <div id="calcol"></div>
-        <div id="detailcol"><div id="dbar"></div><div class="panel" id="dscroll"></div><div id="evbar" role="toolbar" aria-label="Event actions"></div></div>
       </div>
     </section>
     <aside id="chats" class="pane" aria-label="Chats"></aside>
+    <!-- the one window: whatever you open (an event, a horizon, a person, a call out) opens here, over the list -->
+    <section id="win" role="dialog" aria-labelledby="wtitle" hidden>
+      <div id="dbar" class="dbar"></div>
+      <div class="panel" id="dscroll"></div>
+      <div id="evbar" role="toolbar" aria-label="Event actions"></div>
+    </section>
   </div>
 
   <div id="previewbar" role="region" aria-label="Preview"></div>
@@ -1884,7 +1873,7 @@ function rowHTML(it){
     var e = EVENTS[it.id];
     if (!READ[it.id]) cls += ' unread';
     if (isPast(lastDay(e))) cls += ' past';
-    lead = sqHTML(it.id, 40);
+    lead = sqHTML(it.id, 48);
     title = esc(e.title);
     var rk = recOf(it.id).kind;
     var kl = rk && rk !== 'meetup' ? KINDLAB[rk] : (e.kind === 'world' ? 'World' : ''), hl = hostLabel(e);
@@ -1898,7 +1887,7 @@ function rowHTML(it){
     if (!isPast(lastDay(e))) soc = socialHTML(it.id, 'rsoc');
   } else if (it.type === 'horizon'){
     var hz = HORIZONS[it.id];
-    lead = '<span class="r-ic">'+hzArt(it.id, 32)+'</span>';
+    lead = hzOwnSquare(it.id) || hzCover(it.id) ? hzArt(it.id, 48) : '<span class="r-ic">'+ic('horizon')+'</span>';
     title = esc(hz.name);
     var onTab = S.folder.kind === 'explore' && S.folder.id === 'horizons';
     meta = esc((onTab ? '' : 'Event Horizon · ') + hz.ownerName + ' · ' + plural(hz.eventIds.length, 'event'));
@@ -1907,7 +1896,7 @@ function rowHTML(it){
     side = onTab ? '' : hzOwnedByMe(it.id) ? '<span class="pill host"><span>Yours</span></span>' : (S.loggedIn && HZFOLLOW[it.id]) ? '<span class="pill going">'+ic('check',11)+'<span>Following</span></span>' : '';
   } else if (it.type === 'person'){
     var p = person(it.id);
-    lead = avHTML(it.id, 'a40');
+    lead = avHTML(it.id, 'a48');
     title = esc(p.displayName) + (it.id === 'self' ? ' <span class="r-meta" style="display:inline">(you)</span>' : '');
     meta = esc(['@'+p.handle, cityShort(p.city), p.bio].filter(Boolean).join(' · '));
     side = (it.id !== 'self' && S.loggedIn && PFOLLOW[it.id]) ? '<span class="pill going">'+ic('check',11)+'<span>Following</span></span>' : '';
@@ -1921,8 +1910,6 @@ function rowHTML(it){
     if (myReplies(it.id).length) side = '<span class="pill going">'+ic('check',11)+'<span>Replied</span></span>';
   }
   var drag = it.type === 'event' && !L.phone ? ' draggable="true"' : '';
-  if (it.type === 'event' && S.folder.kind === 'horizon' && hzOwnedByMe(S.folder.id))
-    side += '<button class="ib rrm" data-act="unfile" data-id="'+it.id+'" data-hz="'+S.folder.id+'" aria-label="Remove from '+esc(HORIZONS[S.folder.id].name)+'">'+ic('close',14)+'</button>';
   return '<div class="'+cls+'" '+act+drag+' role="button" tabindex="-1">' + lead +
     '<div class="r-main"><div class="r-title">'+title+'</div>'+((meta || date)?'<div class="r-meta">'+(date?'<span class="r-dm">'+date+(meta?' · ':'')+'</span>':'')+meta+'</div>':'')+soc+'</div>' +
     ((date || side) ? '<div class="r-side">'+(date?'<div class="r-date">'+date+'</div>':'')+(side?'<div class="r-states">'+side+'</div>':'')+'</div>' : '') +
@@ -1945,10 +1932,6 @@ function browseHTML(){
 }
 function renderList(){
   if (L.phone && S.phoneSearch && S.folder.kind !== 'search'){ $('listbody').innerHTML = browseHTML(); S.rows = []; return; }
-  if (S.folder.kind === 'horizon' && HORIZONS[S.folder.id]){
-    var lb0 = $('listbody'), top0 = lb0.scrollTop;
-    lb0.innerHTML = horizonHTML(S.folder.id, true); lb0.scrollTop = top0; return;
-  }
   if (S.folder.kind === 'home'){ renderHome(); return; }
   if (isOverview()){ renderShelves(); return; }
   var items = sortItems(folderItems());
@@ -2103,6 +2086,10 @@ function factsHTML(evId){
   var hostTo = hp0 && hp0.id !== 'self' ? { type:'person', id:hp0.id } : camp ? { type:'horizon', id:camp } : null;
   f.push(['Host', (org && org.name) || hostLabel(e), [org && org.legalForm, org && org.name && e.hostName !== org.name ? 'as ' + e.hostName : ''].filter(Boolean).join(' · '), hostTo]);
   if (r.age && (r.age.min || r.age.kidsFreeUpTo != null)) f.push(['Age', r.age.min ? r.age.min + '+' : 'All ages', r.age.kidsFreeUpTo != null ? 'Kids free up to ' + r.age.kidsFreeUpTo : '']);
+  /* the Event Horizons it is on: one line each, the first labelled */
+  horizonsOf(evId).forEach(function(k, i){
+    f.push([i ? '' : 'On horizons', HORIZONS[k].name, 'by ' + HORIZONS[k].ownerName + ' · ' + plural(hzEventIds(k).length, 'event'), { type:'horizon', id:k }]);
+  });
   return factGrid(f);
 }
 function isShifts(r){ return !!(r.blocks && r.blocks.length && r.blocks.every(function(x){ return /^shift/i.test(x.label || ''); })); }
@@ -2125,16 +2112,6 @@ var takeShift = gated(function(evId, i){
   SHIFT[evId] = i; RSVP[evId] = 'going'; markRead(evId); if (ONLINE) HNAPI.rsvp(evId); render();
   toast('Going · ' + b.label, EVENTS[evId].title + ' · ' + [fmtDay(b.date), timeRange(b)].filter(Boolean).join(' '));
 });
-function timelineHTML(items, phases){
-  return '<ol class="tl">' + items.map(function(p){
-    var lab = phases ? (PHASELAB[p.kind] || titleCase(p.kind || '')) : (PHASELAB[p.label] || titleCase(p.label || ''));
-    var when = (p.date ? fmtDay(p.date) + (p.endDate && p.endDate !== p.date ? ' – ' + fmtDay(p.endDate) : '') : '');
-    var time = p.time || timeRange(p);
-    var cls = p.date && isoDate(p.date) === TODAY_ISO ? ' now' : '';
-    return '<li class="'+cls+'"><div class="tld">'+esc(when)+(time ? '<span>'+esc(time)+'</span>' : '')+'</div>' +
-      '<div class="tlb"><div class="tlt">'+esc(lab)+'</div>'+(p.note ? '<div class="tln">'+esc(p.note)+'</div>' : '')+'</div></li>';
-  }).join('') + '</ol>';
-}
 function saleState(s){
   var o = isoDate(s.opens), c = isoDate(s.closes);
   if (c && c < TODAY_ISO) return 'Closed';
@@ -2197,7 +2174,11 @@ function calloutsHTML(ids, evId){
   var cs = (ids || []).map(calloutOf).filter(Boolean);
   CALLOUTS.forEach(function(c){ if (evId && calloutEventId(c) === evId && cs.indexOf(c) < 0) cs.push(c); });
   cs = cs.filter(calloutOpen);
-  return cs.length ? '<div class="evcos">' + cs.map(function(c){ return fCalloutCard(c.id, 0, { act:'open', noEvent:true }); }).join('') + '</div>' : '';
+  /* one call out: its whole thread under it, with the box to answer in; more than one: each with its latest answers */
+  return cs.length ? '<div class="evcos">' + cs.map(function(c){
+    return cs.length === 1 ? '<div class="evco">' + fCalloutCard(c.id, 0, { act:'open', noEvent:true, byline:true, thread:true }) + repliesHTML(c.id, true) + '</div>'
+                           : fCalloutCard(c.id, 0, { act:'open', noEvent:true, byline:true });
+  }).join('') + '</div>' : '';
 }
 function providedHTML(p){
   if (!p) return '';
@@ -2376,7 +2357,7 @@ function pageHTML(o){
 }
 /* a facts grid: [label, value, small print, {type,id} to open] */
 function factGrid(f){
-  return f.length ? '<div class="facts">' + f.map(function(x){
+  return f.length ? '<div class="facts" role="group" aria-label="Details"><h3 class="fh">Details</h3>' + f.map(function(x){
     var v = x[3] ? '<button class="fvlink" data-act="open" data-type="'+x[3].type+'" data-id="'+x[3].id+'">'+esc(x[1])+'</button>' : esc(x[1]);
     return '<div class="fact"><div class="fk">'+esc(x[0])+'</div><div class="fv">'+v+'</div>'+(x[2]?'<div class="fs">'+esc(x[2])+'</div>':'')+'</div>';
   }).join('') + '</div>' : '';
@@ -2385,38 +2366,55 @@ function factGrid(f){
 function toolbarHTML(primary, secondary){ return '<div class="verbs">' + primary + (secondary ? '<span class="vsec">' + secondary + '</span>' : '') + '</div>'; }
 
 /* ---- event ---- */
+/* the plan: the timeline (or a burn's phases) and what to bring, labels in one column, values in the other */
+function planRows(evId){
+  var r = recOf(evId), b = r.burn || {}, items = b.phases && b.phases.length ? b.phases : (r.blocks && r.blocks.length && !isShifts(r) ? r.blocks : []), phases = !!(b.phases && b.phases.length);
+  var rows = items.map(function(p){
+    var lab = phases ? (PHASELAB[p.kind] || titleCase(p.kind || '')) : (PHASELAB[p.label] || titleCase(p.label || ''));
+    var when = p.date ? fmtDay(p.date) + (p.endDate && p.endDate !== p.date ? ' – ' + fmtDay(p.endDate) : '') : '';
+    var small = [p.time || timeRange(p), p.note].filter(Boolean).join(' · ');
+    return '<dt>'+esc(when || lab)+'</dt><dd>'+(when ? esc(lab) : '')+(small ? '<small>'+esc(small)+'</small>' : '')+'</dd>';
+  });
+  return { timeline:rows.join(''), n:rows.length };
+}
+function planHTML(evId){
+  var r = recOf(evId), tl = planRows(evId), bring = rv(r.whatToBring), h = tl.timeline;
+  if (bring) h += '<dt>Bring</dt><dd>' + bring.replace(/^<p>|<\/p>$/g, '') + '</dd>';
+  if (r.dressCode) h += '<dt>Dress</dt><dd>' + esc(r.dressCode) + '</dd>';
+  if (!h) return '';
+  var title = tl.n && (bring || r.dressCode) ? 'Timeline and what to bring' : tl.n ? 'Timeline' : 'What to bring';
+  return sect(title, '<dl class="kv plan">' + h + '</dl>');
+}
 function canvasHTML(evId){
   var e = EVENTS[evId], t = TH(evId), r = recOf(evId), b = r.burn || {};
   var big = r.scale === 'burn' || !!r.burn;
-  var onHz = horizonsOf(evId), past = isPast(lastDay(e));
+  var past = isPast(lastDay(e));
   var bar = !past ? verbsHTML(evId) : S.loggedIn ? toolbarHTML(vb('v-went', evId, 'Went', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] }), vb('share', evId, 'Share', 'share')) : '';
+  /* Details (the facts grid) → About → Call outs → Who's going → the plan → the rest, only what there is */
   var s = sect('About', descOf(e) ? '<p class="evdesc">'+esc(descOf(e))+'</p>' : '');
   if (r.theme) s += sect('Theme', '<div class="themeline">'+esc(typeof r.theme === 'object' ? (r.theme.name || '') : r.theme)+'</div>' +
                                    (r.theme.blurb ? '<p>'+esc(r.theme.blurb)+'</p>' : ''));
-  if (b.phases && b.phases.length) s += sect('Timeline', timelineHTML(b.phases, true));
-  else if (r.blocks && r.blocks.length) s += isShifts(r) ? sect('Shifts', shiftsHTML(evId)) : sect('Timeline', timelineHTML(r.blocks, false));
+  s += sect('Call outs', calloutsHTML(r.calloutIds, evId));
+  s += whoGoingHTML(evId, past);
+  if (isShifts(r)) s += sect('Shifts', shiftsHTML(evId));
+  s += planHTML(evId);
   var am = r.access && r.access.model;
   /* an Entry section that would only repeat "Free" is left out: the fact already says it */
   var ax = r.access || {}, entryDetail = ax.tiers || ax.sales || ax.lowIncome || ax.transfer || ax.idMustMatch || ax.vehiclePass || ax.note || !/^(free|donation|pay_what_you_can)$/.test(am || '');
   if (!past && entryDetail) s += sect(/member/.test(am || '') ? 'Membership' : am === 'ticket' || am === 'lottery' ? 'Tickets' : 'Entry', accessHTML(r.access)).replace('<section class="sect">', '<section class="sect" data-sect="entry">');
   s += sect('Take part', takePartHTML(r));
-  s += sect('Call outs', calloutsHTML(r.calloutIds, evId));
   if (big) s += sect('On site', providedHTML(b.provided));
-  s += sect('Bring', rv(r.whatToBring) + (r.dressCode ? '<p style="margin-top:10px"><b>Dress:</b> '+esc(r.dressCode)+'</p>' : ''));
   if (big) s += sect('Rules & safety', rulesHTML(r));
   s += sect('Good to know', kvHTML({ age: r.age && r.age.note, accessibility: r.accessibility, lastEntry: r.gateCloses }, { lastEntry:'Last entry' }));
   s += sect('Principles', principlesHTML(r.principles));
   if (b.vocabulary && b.vocabulary.length) s += sect('Words used here', '<dl class="kv vocab">' + b.vocabulary.map(function(v){
     return '<dt>'+esc(v.term)+'</dt><dd>'+esc(v.meaning)+'</dd>'; }).join('') + '</dl>');
   if (b.nextEdition && !NEXTED[evId]) s += sect('Next edition', nextHTML(b.nextEdition));
-  s += whoGoingHTML(evId, past);
-  s += sect('On Event Horizons', onHz.length ? '<div class="chips">' + onHz.map(function(k){
-         return '<button class="chip" data-act="open" data-type="horizon" data-id="'+k+'">'+ic('horizon',16)+esc(HORIZONS[k].name)+' <span class="sub">'+esc(HORIZONS[k].ownerName)+'</span></button>';
-       }).join('') + '</div>' : '');
   var pv = provenance(evId), links = sourcesHTML(r);
   s += sect('Links', links ? links + (pv ? '<div class="srcline">' + esc(pv) + '</div>' : '') : '');
   if (pv && !links) s += '<div class="srcline">' + esc(pv) + '</div>';
-  return pageHTML({ kind:'event', t:t, cover:sqHTML(evId, 160), eyebrow:eyebrowOf(e), title:e.title,
+  return pageHTML({ kind:'event', t:t, cover:sqHTML(evId, 96), eyebrow:eyebrowOf(e), title:e.title,
+    sub:esc([fmtRange(e.date, endOf(e)), whereOf(e)].filter(Boolean).join(' · ')),
     toolbar:bar, pre:entryHTML(evId) + editionsHTML(evId), facts:factsHTML(evId), body:s });
 }
 
@@ -2429,7 +2427,7 @@ function compactVerbs(evId){
     '<button class="ib'+(S.loggedIn && PROMOTED[evId]?' on':'')+'" data-act="v-promote" data-id="'+evId+'" aria-label="Promote">'+ic('promote')+'</button></div>';
 }
 function eventCRow(e, withVerbs){
-  return '<div class="crow">' + sqHTML(e.id, 40) +
+  return '<div class="crow">' + sqHTML(e.id, 48) +
     '<div class="cm" data-act="open" data-type="event" data-id="'+e.id+'"><div class="r-title"'+(READ[e.id]?'':' style="font-weight:bold"')+'>'+esc(e.title)+'</div>' +
     '<div class="r-meta">'+esc([fmtShort(e.date), whereOf(e), hostLabel(e)].filter(Boolean).join(' · '))+'</div></div>' +
     (withVerbs ? compactVerbs(e.id) : '') + '</div>';
@@ -2456,10 +2454,9 @@ function playlistHTML(hzId, withTracks){
   if (withTracks !== false){
     /* what is still to come leads; what already happened folds away under "Past" */
     var up = evs.filter(function(e){ return !isPast(lastDay(e)); }), past = evs.filter(function(e){ return isPast(lastDay(e)); }).reverse();
-    var inList = !L.phone && S.folder.kind === 'horizon' && S.folder.id === hzId;
     var track = function(e){
       var tag = cardTag({ type:'event', id:e.id });
-      return '<li class="track'+(isPast(lastDay(e))?' past':'')+(inList && isSel({ type:'event', id:e.id }) ? ' sel' : '')+'" data-act="'+(inList ? 'row' : 'open')+'" data-type="event" data-id="'+e.id+'" data-hz="'+hzId+'" role="button">' +
+      return '<li class="track'+(isPast(lastDay(e))?' past':'')+'" data-act="open" data-type="event" data-id="'+e.id+'" data-hz="'+hzId+'" role="button">' +
         sqPx(e.id, 48) +
         '<span class="tm"><span class="tt">'+esc(e.title)+'</span><span class="ts">'+esc([fmtShort(e.date), whereOf(e), hostLabel(e)].filter(Boolean).join(' · '))+'</span>' +
         (tag ? tag.replace('ctag', 'ctag inline') : '') + '</span>' +
@@ -2470,9 +2467,8 @@ function playlistHTML(hzId, withTracks){
         (past.length ? (up.length ? '<li class="trpast" data-act="hzpast" data-id="'+hzId+'" role="button" aria-expanded="'+open+'">'+ic(open ? 'down' : 'back', 16).replace('class="ic"', 'class="ic"'+(open ? '' : ' style="transform:scaleX(-1)"'))+'Past · '+past.length+'</li>' : '') +
           (open ? past.map(track).join('') : '') : '')
       : (mine ? '' : '<li class="empty">No events in this horizon yet.</li>')) + '</ol>') || sect('Events', '<ol class="tracks"></ol>');
-    if (inList) S.rows = up.concat(open ? past : []).map(function(e){ return { type:'event', id:e.id }; });
   }
-  return pageHTML({ kind:'horizon', t:t, cover:hzMosaic(hzId, 160), eyebrow:'Event Horizon' + (hz.isPublished ? '' : ' · Private'), title:hz.name,
+  return pageHTML({ kind:'horizon', t:t, cover:hzMosaic(hzId, 96), eyebrow:'Event Horizon' + (hz.isPublished ? '' : ' · Private'), title:hz.name,
     sub:hz.description ? esc(hz.description) : '', note:KINDDESC.horizons, toolbar:bar, facts:facts, body:body });
 }
 
@@ -2522,7 +2518,7 @@ function personHTML(pid){
       return '<div class="crow"><span class="r-ic">'+ic('callout')+'</span><div class="cm" data-act="open" data-type="callout" data-id="'+c.id+'"><div class="r-title">'+esc(c.title)+'</div>' +
         '<div class="r-meta">open until '+esc(fmtDate(c.expiresAt))+'</div></div></div>';
     }).join(''));
-  return pageHTML({ kind:'person', t:personTheme(pid), cover:personCover(pid, 160),
+  return pageHTML({ kind:'person', t:personTheme(pid), cover:personCover(pid, 96),
     eyebrow:'@'+esc(p.handle) + (me ? '' : ' · <span class="pres '+st+'"></span>'+esc(st)), title:p.displayName || 'You',
     toolbar:bar, facts:facts, body:s });
 }
@@ -2530,53 +2526,46 @@ function isOwnCallout(c){ return !!c && S.loggedIn && !!c.hostAcct && c.hostAcct
 /* a call out: what is wanted, by whom, for which event — and under it the public replies, as under a post.
    Anyone answers in the thread; its author edits or closes it and can take any reply off it. */
 function calloutHTML(id){
-  var c = calloutOf(id), mine = isOwnCallout(c);
-  var ev = EVENTS[calloutEventId(c)], open = calloutOpen(c), sk = calloutSkill(c);
-  var h = '<div class="page"><div class="phead2"><span class="r-ic" style="width:64px;height:64px;flex-basis:64px">'+ic('callout',30)+'</span>' +
-    '<div style="flex:1;min-width:0"><div class="psub" style="margin:0 0 4px">Call out · Looking for'+(c.closed ? ' · Closed' : !open ? ' · Ended' : '')+'</div><div class="pname">'+esc(c.title)+'</div>' +
-    '<div class="psub">'+esc(mine ? 'You' : c.hostName)+' · '+(c.closed ? 'closed' : !open ? 'ended '+fmtDate(c.expiresAt) : 'open until '+fmtDate(c.expiresAt))+(sk ? ' · '+esc(skillLabel(sk)) : '')+'</div></div></div>';
-  if (c.body) h += '<p class="pdesc">'+esc(c.body)+'</p>';
-  if (ev) h += '<div class="subh">For</div><div class="crow">'+sqHTML(ev.id, 40)+'<div class="cm" data-act="open" data-type="event" data-id="'+ev.id+'"><div class="r-title">'+esc(ev.title)+'</div>' +
-    '<div class="r-meta">'+esc([fmtShort(ev.date), whereOf(ev)].filter(Boolean).join(' · '))+'</div></div></div>';
-  h += '<div class="acts">';
-  if (mine) h += '<button class="btn primary" data-act="editcallout" data-id="'+id+'">'+ic('edit')+'Edit</button>' +
-    '<button class="btn" data-act="closecallout" data-id="'+id+'">'+(c.closed ? 'Reopen' : 'Close call out')+'</button>';
-  else if (canReply(c)) h += '<button class="btn primary" data-act="answercallout" data-id="'+id+'">'+ic('chat')+'Answer</button>';
-  if (!mine && c.hostId && PEOPLE[c.hostId]) h += '<button class="btn" data-act="open" data-type="person" data-id="'+c.hostId+'">'+avHTML(c.hostId)+esc(c.hostName)+'</button>';
-  if (open) h += '<button class="btn" data-act="share" data-type="callout" data-id="'+id+'">'+ic('share')+'Share</button>';
-  h += '</div>';
-  return h + repliesHTML(id) + '</div>';
+  var c = calloutOf(id), mine = isOwnCallout(c), open = calloutOpen(c), n = repliesOf(id).length;
+  var share = open ? vb('share', id, 'Share', 'share', { attrs:' data-type="callout"' }) : '';
+  var bar = mine ? toolbarHTML(vb('editcallout', id, 'Edit', 'edit', { primary:true }) + vb('closecallout', id, c.closed ? 'Reopen' : 'Close call out', ''), share)
+    : toolbarHTML(c.hostId && PEOPLE[c.hostId] ? vb('open', c.hostId, c.hostName, 'user', { attrs:' data-type="person"' }) : '', share);
+  /* the call out itself (the inverted card) and, under it, its thread with the box to answer in */
+  return '<article class="canvas pg pg-callout plain" data-page="callout">' + (bar ? '<div class="actbar">' + bar + '</div>' : '') +
+    '<div class="layer"><div class="lin">' + fCalloutCard(id, 0, { act:'open', thread:true, byline:true }) +
+    '<section class="sect" data-sect="replies"><h3>Replies'+(n ? ' <span class="cnt">· '+n+'</span>' : '')+'</h3>' + repliesHTML(id, true) + '</section>' +
+    '</div></div></article>';
 }
 function nReplies(n){ return n + (n === 1 ? ' reply' : ' replies'); }
-/* the thread under a call out, oldest first, and the box to add to it */
-function repliesHTML(coId){
+/* the thread under a call out, oldest first, and the box to add to it. Answer posts here, in public: no chat is made */
+function repliesHTML(coId, bare){
   var c = calloutOf(coId), rs = repliesOf(coId), mine = isOwnCallout(c), can = canReply(c);
-  var h = '<div class="subh">Replies'+(rs.length ? ' · ' + rs.length : '')+'</div>';
+  var h = bare ? '' : '<div class="subh">Replies'+(rs.length ? ' · ' + rs.length : '')+'</div>';
   h += rs.length ? '<div class="replies">' + rs.map(replyHTML).join('') + '</div>'
     : '<p class="whonote">'+(!can ? 'No replies.' : mine ? 'No replies yet. When someone answers, their reply shows here, under your call out.'
                                                      : 'No replies yet. Answer here: your reply shows under the call out, for everyone to see.')+'</p>';
-  if (can) h += '<div class="replybox">' + (S.loggedIn ? avHTML('self', 'a32') : '') +
-    '<textarea id="coreply" data-id="'+coId+'" rows="1" placeholder="'+(mine ? 'Reply to the people answering' : 'Write a reply')+'" aria-label="Reply to '+esc(c.title)+'" aria-describedby="coreplyhint">'+esc(REPLYDRAFT[coId] || '')+'</textarea>' +
-    '<button class="btn primary" data-act="postreply" data-id="'+coId+'">Reply</button><span id="coreplyhint" class="sr">Enter posts, Shift+Enter adds a new line</span></div>';
+  if (can) h += '<div class="replybox">' + (S.loggedIn ? avHTML('self', 'a32') : '<span class="av a32 sys">'+ic('user',16)+'</span>') +
+    '<textarea id="coreply" data-id="'+coId+'" rows="1" placeholder="'+(mine ? 'Reply to the people answering' : 'Write your answer')+'" aria-label="Answer '+esc(c.title)+'" aria-describedby="coreplyhint">'+esc(REPLYDRAFT[coId] || '')+'</textarea>' +
+    '<button class="btn primary" data-act="postreply" data-id="'+coId+'">'+(mine ? 'Reply' : 'Answer')+'</button><span id="coreplyhint" class="sr">Enter posts, Shift+Enter adds a new line</span></div>' +
+    '<p class="replynote">'+(mine ? 'Replies show here, under your call out, for everyone to see.' : 'Answers are public: they show here, under the call out, with your name.')+'</p>';
   else if (!calloutOpen(c)) h += '<p class="whonote">This call out is closed: no new replies.</p>';
   return h;
 }
 function replyHTML(r){
   var who = r.author === myActor() ? 'self' : r.author, p = person(who), c = calloutOf(r.calloutId);
-  var author = c && (c.hostAcct ? acctPid(c.hostAcct) : c.hostId) === r.author;
+  var author = c && (c.hostAcct ? acctPid(c.hostAcct) : c.hostId) === r.author, ms = isoMs(r.ts);
   return '<div class="reply" data-reply="'+r.id+'"><button type="button" class="rpav" data-act="open" data-type="person" data-id="'+who+'" tabindex="-1" aria-hidden="true">'+avHTML(who, 'a32')+'</button>' +
-    '<div class="rpb"><div class="rpbub"><button type="button" class="rpn" data-act="open" data-type="person" data-id="'+who+'">'+esc(p.displayName)+'</button>' +
-    (author ? '<span class="rptag">Author</span>' : '') + '<div class="rpt">'+esc(r.text)+'</div></div>' +
-    '<div class="rpm"><time>'+esc(agoLabel(isoMs(r.ts)))+'</time>' + (canDeleteReply(r) ? '<button type="button" class="rpdel" data-act="delreply" data-id="'+r.id+'">Delete</button>' : '') + '</div></div></div>';
+    '<div class="rpb"><div class="rph"><button type="button" class="rpn" data-act="open" data-type="person" data-id="'+who+'">'+esc(p.displayName)+'</button>' +
+    (author ? '<span class="rptag">Author</span>' : '') + '<span class="rpm"><time class="ftime'+(isFresh(ms) ? ' fresh' : '')+'">'+esc(agoLabel(ms))+'</time>' +
+    (canDeleteReply(r) ? '<button type="button" class="rpdel" data-act="delreply" data-id="'+r.id+'">Delete</button>' : '') + '</span></div>' +
+    '<div class="rpt">'+esc(r.text)+'</div></div></div>';
 }
-/* under a call out on Home and on its event: how many replied, the latest one or two, and the way to the whole thread */
+/* under a call out on Home: the latest one or two answers, in a line each, and the way to the whole thread */
 function repliesPeekHTML(coId, act){
   var rs = repliesOf(coId), n = rs.length, last = rs.slice(-2), a = act || 'row'; if (!n) return '';
-  return '<div class="corep">' + (n > last.length
-      ? '<button type="button" class="corall" data-act="'+a+'" data-type="callout" data-id="'+coId+'">View all '+n+' replies</button>'
-      : '<div class="corn">'+nReplies(n)+'</div>') +
+  return '<div class="corep">' + (n > last.length ? '<button type="button" class="corall" data-act="'+a+'" data-type="callout" data-id="'+coId+'">View all '+n+' replies</button>' : '') +
     last.map(function(r){ var who = r.author === myActor() ? 'self' : r.author;
-      return '<div class="corow">'+avHTML(who)+'<span class="cort"><button type="button" class="corwho" data-act="'+a+'" data-type="person" data-id="'+who+'">'+esc(whoName(r.author))+'</button> '+esc(r.text)+'</span></div>';
+      return '<div class="corow"><span class="cort"><button type="button" class="corwho" data-act="'+a+'" data-type="person" data-id="'+who+'">'+esc(whoName(r.author))+'</button> '+esc(r.text)+'</span></div>';
     }).join('') + '</div>';
 }
 /* a link to something you can't see: say which kind of thing, and give a way on */
@@ -2591,46 +2580,111 @@ function missingHTML(path){
   return h + '</div></div>';
 }
 var KINDNAME = { event:'Event', horizon:'Event Horizon', person:'Person', callout:'Call out', missing:'' };
-/* close the reading pane: it stays where it is, empty; picking something fills it again */
-function closePane(){
-  if (L.phone || !L.split) return;
-  S.stack = [];
-  render();
-}
 function detailHTML(it){
   if (it && it.type === 'missing') return missingHTML(it.id);
-  /* an empty reading pane: a blank panel with the faint Hypernet mark, nothing to read */
-  if (!it) return '<div class="panempty" aria-hidden="true"><svg viewBox="0 0 32 32" width="72" height="72"><path d="M16 4 28 16 16 28 4 16z" fill="currentColor"/></svg></div>';
+  if (!it) return '';
   if (it.type === 'event' && EVENTS[it.id])      return canvasHTML(it.id);
   if (it.type === 'horizon')                     return horizonHTML(it.id, true);
   if (it.type === 'person')                      return personHTML(it.id);
   if (it.type === 'callout' && calloutOf(it.id)) return calloutHTML(it.id);
   return '<div class="empty">Nothing to show.</div>';
 }
+/* ---- THE WINDOW ----
+   One window, over the list: whatever you open shows in it, and opening something else from the list replaces it.
+   Inside it, going on to another thing stacks (‹ in its title bar steps back). On a desktop or tablet it is a
+   Windows 2000 window you can drag by its title bar (kept inside the app's main area), maximise (□, or a double-click
+   on the title bar) and close (×, Esc). The URL names what is open, so reload, back and forward work; back closes it.
+   On a phone it is a sheet over the whole screen with × in its title bar; behind it the list keeps its place. */
+var WIN = { x:null, y:null, max:false };   /* where you put it: kept while it is open, forgotten when it closes */
+function winIcon(it){
+  if (it.type === 'event' && EVENTS[it.id]) return sqPx(it.id, 16);
+  if (it.type === 'horizon' && HORIZONS[it.id]) return hzArt(it.id, 16);
+  if (it.type === 'person' && PEOPLE[it.id]) return avHTML(it.id, 'a16');
+  return '<span class="wglyph">' + ic(it.type === 'callout' ? 'callout' : 'star', 12) + '</span>';
+}
+function closeWin(){
+  if (!S.stack.length) return;
+  S.stack = [];
+  render();
+}
 var LASTDETAIL = '';
 function renderDetail(){
-  var it = S.stack[S.stack.length-1] || null;
+  var it = S.stack[S.stack.length-1] || null, w = $('win');
   var key = it ? it.type + ':' + it.id + ':' + S.stack.length : 'none';
   var sc = $('dscroll'), keep = key === LASTDETAIL ? sc.scrollTop : 0;
+  w.hidden = !it;
+  if (!it){
+    if (LASTDETAIL !== 'none'){ sc.innerHTML = ''; $('dbar').innerHTML = ''; $('evbar').innerHTML = ''; }
+    LASTDETAIL = 'none'; WIN.x = WIN.y = null; WIN.max = false;
+    $('app').classList.remove('has-evbar');
+    return;
+  }
+  /* something newly opened comes to the front, over the chat dock it may have been opened from */
+  if (key !== LASTDETAIL) $('app').classList.remove('dock-front');
   sc.innerHTML = detailHTML(it);
   sc.scrollTop = keep;
   LASTDETAIL = key;
-  var bar = $('evbar'), onEv = L.phone && it && it.type === 'event' && EVENTS[it.id];
+  var bar = $('evbar'), onEv = L.phone && it.type === 'event' && EVENTS[it.id];
   $('app').classList.toggle('has-evbar', !!onEv);
-  if (onEv){ bar.className = ''; bar.setAttribute('style', themeVars(TH(it.id))); bar.innerHTML = evbarHTML(it.id); }
+  if (onEv){ bar.className = ''; bar.innerHTML = evbarHTML(it.id); }
   else bar.innerHTML = '';
-  /* the back bar: only when there is somewhere to go back to */
-  /* in a split view the reading pane has a title bar with a window close; Back joins it when there is somewhere to go */
-  var show = !L.phone && ((L.split && S.stack.length > 0) || (!L.split && S.stack.length > 0));
-  $('app').classList.toggle('show-dbar', show);
-  if (show){
-    var back = !L.split || S.stack.length > 1;
-    var prev = S.stack.length > 1 ? itemName(S.stack[S.stack.length-2]) : (isCal() ? folderName() + ' · Calendar' : folderName());
-    $('dbar').innerHTML = (back ? '<button class="btn" data-act="back">'+ic('back')+'Back</button><span class="dcrumb">'+esc(prev)+'</span>'
-                                : '<span class="dcrumb dkind">'+esc(KINDNAME[it.type] || '')+'</span>') +
-      (L.split ? '<button class="x dclose" data-act="closepane" aria-label="Close" title="Close (Esc)">'+ic('close',16)+'</button>' : '');
-  }
+  /* the title bar: ‹ when there is something to step back to inside the window, what it is, and the window's buttons */
+  var prev = S.stack.length > 1 ? S.stack[S.stack.length-2] : null, name = itemName(it);
+  $('dbar').innerHTML = (prev ? '<button class="x wback" data-act="back" aria-label="Back to '+esc(itemName(prev))+'" title="Back to '+esc(itemName(prev))+'">'+ic('back', L.phone ? 20 : 14)+'</button>' : '') +
+    '<span class="wicon" aria-hidden="true">'+winIcon(it)+'</span>' +
+    '<span class="dtitle" id="wtitle">'+esc(name)+(L.phone ? '<small>'+esc(KINDNAME[it.type] || '')+'</small>' : '')+'</span>' +
+    (L.phone ? '' : '<button class="x wmax" data-act="maxwin" aria-label="'+(WIN.max ? 'Restore' : 'Maximise')+'" title="'+(WIN.max ? 'Restore' : 'Maximise')+'">' +
+      (WIN.max ? '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5.5h7v7M.5 2.5h7v7h-7z" fill="none" stroke="currentColor"/></svg>'
+               : '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M.5.5h9v9h-9zM.5 1.5h9" fill="none" stroke="currentColor"/></svg>') + '</button>') +
+    '<button class="x wclose" data-act="closewin" aria-label="Close" title="Close (Esc)">'+ic('close', L.phone ? 20 : 14)+'</button>';
+  w.setAttribute('aria-label', (KINDNAME[it.type] || 'Window') + ': ' + name);
+  placeWin();
 }
+/* where the window sits: by default over the right of the list (its left edge, the avatars and who did what, stay in
+   view), inside the room between the sidebar and the chat dock; once you drag it, where you put it — always inside
+   the main area */
+function placeWin(){
+  var w = $('win'); if (!w || w.hidden) return;
+  if (L.phone){ ['left','top','width','height'].forEach(function(k){ w.style[k] = ''; }); w.classList.remove('max'); return; }
+  var m = $('main'), mw = m.clientWidth, mh = m.clientHeight, pad = 8;
+  w.classList.toggle('max', !!WIN.max);
+  if (WIN.max){ w.style.left = pad + 'px'; w.style.top = pad + 'px'; w.style.width = (mw - 2 * pad) + 'px'; w.style.height = (mh - 2 * pad) + 'px'; return; }
+  var dock = L.right && $('chats').offsetWidth ? $('chats').offsetWidth + pad : 0;
+  var lo = pad + (L.navW || 0) + pad, hi = mw - pad - dock;
+  var ww = Math.min(720, Math.max(480, hi - lo), mw - 2 * pad), wh = Math.max(240, mh - 32);
+  var cb = $('cbody').getBoundingClientRect(), mr = m.getBoundingClientRect();
+  var x = WIN.x != null ? WIN.x : Math.max(lo, Math.min(hi - ww, cb.left - mr.left + 176));
+  var y = WIN.y != null ? WIN.y : 16;
+  x = Math.max(0, Math.min(mw - ww, x)); y = Math.max(0, Math.min(mh - wh, y));
+  if (WIN.x != null){ WIN.x = x; WIN.y = y; }
+  w.style.left = x + 'px'; w.style.top = y + 'px'; w.style.width = ww + 'px'; w.style.height = wh + 'px';
+}
+function toggleMaxWin(){ if (L.phone || !S.stack.length) return; WIN.max = !WIN.max; renderDetail(); }
+/* drag by the title bar (not by its buttons) */
+(function(){
+  var d = null;
+  document.addEventListener('pointerdown', function(ev){
+    var bar = ev.target.closest && ev.target.closest('#win > #dbar');
+    /* the window that was touched last is in front of the chat dock, and the other way round */
+    if (ev.target.closest){ var inWin = !!ev.target.closest('#win'), inDock = !!ev.target.closest('#chats'); if (inWin || inDock) $('app').classList.toggle('dock-front', inDock); }
+    if (!bar || L.phone || ev.button !== 0 || ev.target.closest('button') || WIN.max) return;
+    var w = $('win');
+    d = { dx:ev.clientX - w.offsetLeft, dy:ev.clientY - w.offsetTop };
+    try { bar.setPointerCapture(ev.pointerId); } catch(e){}
+    w.classList.add('dragging');
+    ev.preventDefault();
+  });
+  document.addEventListener('pointermove', function(ev){
+    if (!d) return;
+    WIN.x = ev.clientX - d.dx; WIN.y = ev.clientY - d.dy;
+    placeWin();
+  });
+  var end = function(){ if (!d) return; d = null; $('win').classList.remove('dragging'); };
+  document.addEventListener('pointerup', end); document.addEventListener('pointercancel', end);
+  document.addEventListener('dblclick', function(ev){
+    if (ev.target.closest && ev.target.closest('#win > #dbar') && !ev.target.closest('button')) toggleMaxWin();
+  });
+})();
 </script>
 <script>
 /* =========================================================================
@@ -2736,11 +2790,6 @@ function homeSections(){
     });
     return { id:id, title:shelfTitle(id), items:items };
   }).filter(function(sec){ return sec.items.length; });
-}
-function greeting(){
-  var hr = new Date().getHours();
-  var g = hr < 5 ? 'Good night' : hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening';
-  return S.loggedIn ? g + ', ' + PEOPLE['self'].displayName.split(' ')[0] : g;
 }
 function shelvesHTML(){
   var h = '<div class="shelves">';
@@ -2856,7 +2905,7 @@ function renderCalendar(){
     '<button class="btn" data-act="caltoday">Today</button>' +
     '<button class="ib" data-act="calnav" data-id="1" aria-label="Next" style="transform:scaleX(-1)">'+ic('back')+'</button>' +
     '<span class="spring"></span>' +
-    (modes.length ? '<span class="seg">' + modes.map(function(m){ return '<button class="'+(mode===m?'on':'')+'" data-act="calmode" data-id="'+m+'">'+m.toUpperCase()+'</button>'; }).join('') + '</span>' : '') +
+    (modes.length ? '<span class="seg">' + modes.map(function(m){ return '<button class="'+(mode===m?'on':'')+'" data-act="calmode" data-id="'+m+'">'+titleCase(m)+'</button>'; }).join('') + '</span>' : '') +
     (S.loggedIn ? '<label><input type="checkbox" data-act="calmine"'+(S.calMine?' checked':'')+'> Only mine</label>' : '') + '</div>';
   var body = mode === 'month' ? monthGrid(S.calAnchor) : mode === 'week' ? weekGrid(S.calAnchor) : dayGrid(S.calAnchor);
   $('calcol').innerHTML = bar + '<div class="panel" style="display:flex;flex-direction:column">' + body + '</div>';
@@ -2932,7 +2981,8 @@ function convHTML(cid){
 }
 function growBox(b){ if (!b) return; b.style.height = 'auto'; b.style.height = Math.min(b.scrollHeight + 2, 168) + 'px'; }
 /* the open conversation (S.chatOpen) sits in the dock on a desktop or tablet, and is the Chats tab on a phone */
-function phoneConv(){ return L.phone && S.tab === 'chats' && !S.stack.length && S.chatOpen && CHATS[S.chatOpen] ? S.chatOpen : null; }
+/* on a phone the open conversation is the Chats tab's screen (a window opened from it is a sheet over it) */
+function phoneConv(){ return L.phone && S.tab === 'chats' && S.chatOpen && CHATS[S.chatOpen] ? S.chatOpen : null; }
 function activeChat(){ return L.phone ? phoneConv() : (S.chatOpen && CHATS[S.chatOpen] ? S.chatOpen : null); }
 function chatSub(c){ return PRESENCE[c.memberIds[0]] || 'offline'; }
 function renderChats(){
@@ -3245,8 +3295,7 @@ function socialText(l){
 }
 function socialHTML(evId, cls){
   var l = followSocial(evId); if (!l) return '';
-  return '<div class="soc'+(cls ? ' ' + cls : '')+'"><span class="socav">' + l.slice(0, 3).map(function(x){ return avHTML(x.pid); }).join('') + '</span>' +
-    '<span class="soct">'+esc(socialText(l))+'</span></div>';
+  return '<div class="soc'+(cls ? ' ' + cls : '')+'"><span class="soct">'+esc(socialText(l))+'</span></div>';
 }
 
 /* ---- an event page's "Who's going": the people you follow first, each with when they decided ---- */
@@ -3272,7 +3321,7 @@ function whoSub(x, past){
 function whoName2(pid){ return pid === 'self' ? 'You' : person(pid).displayName; }
 function whoChip(x, past){
   var f = S.loggedIn && x.pid !== 'self' && PFOLLOW[x.pid];
-  return '<button class="chip who'+(f ? ' fol' : '')+'" data-act="open" data-type="person" data-id="'+x.pid+'">'+avHTML(x.pid,'a28') +
+  return '<button class="chip who'+(f ? ' fol' : '')+'" data-act="open" data-type="person" data-id="'+x.pid+'">'+avHTML(x.pid,'a32') +
     '<span class="whon">'+esc(whoName2(x.pid))+'<small>'+esc(whoSub(x, past))+'</small></span></button>';
 }
 function whoTotal(evId, l){ return Math.max(attendeeCount(evId), l.length); }
@@ -3399,17 +3448,16 @@ function upWhen(e){ var d = dayDiff(e.date); return d < 0 ? 'On now' : d === 0 ?
 function upHTML(){
   var all = upWithPeople(); if (!all.length) return '';
   var list = all.slice(0, UPALL ? all.length : UPMAX);
-  return '<section class="fup" aria-label="Coming up with your people"><div class="band fupband">Coming up with your people <span class="cnt">'+all.length+'</span>' +
-    '<span class="bsub">next 3 weeks</span></div>' + list.map(function(x){
+  /* each row is a thing: its square, three lines (title, how soon and where, who you follow), its date at the right */
+  return '<section class="fup" aria-label="Coming up with your people"><div class="band fupband">Coming up with your people <span class="cnt">next 3 weeks · '+all.length+'</span></div>' + list.map(function(x){
       var e = x.e, d = dOf(e.date);
-      return '<div class="fuprow'+selCls('event', e.id)+'" data-type="event" data-id="'+e.id+'">' +
-        '<span class="fupd" aria-hidden="true"><b>'+d.getDate()+'</b>'+esc(DAY[d.getDay()] + ' ' + MON[d.getMonth()])+'</span>' + sqPx(e.id, 40) +
+      return '<div class="fuprow'+selCls('event', e.id)+'" data-type="event" data-id="'+e.id+'">' + sqPx(e.id, 48) +
         '<div class="fcm"><button type="button" class="flink" data-act="row" data-type="event" data-id="'+e.id+'"><span class="fct">'+esc(e.title)+'</span></button>' +
-        '<div class="fcs">'+esc([upWhen(e), whereOf(e)].filter(Boolean).join(' · '))+'</div>' + socialHTML(e.id) + '</div></div>';
+        '<div class="fcs">'+esc([upWhen(e), whereOf(e)].filter(Boolean).join(' · '))+'</div>' + socialHTML(e.id) + '</div>' +
+        '<span class="fupd"><b>'+d.getDate()+' '+esc(MON[d.getMonth()])+'</b>'+esc(DAY[d.getDay()])+'</span></div>';
     }).join('') +
-    (all.length > UPMAX ? '<button class="fmore fupmore" data-act="upall" aria-expanded="'+UPALL+'">'+(UPALL ? 'Show fewer' : 'Show '+(all.length - UPMAX)+' more')+'</button>' : '') + '</section>';
+    (all.length > UPMAX ? '<div class="fupfoot"><button class="btn fupmore" data-act="upall" aria-expanded="'+UPALL+'">'+(UPALL ? 'Show fewer' : 'Show '+(all.length - UPMAX)+' more')+'</button></div>' : '') + '</section>';
 }
-
 /* the people the people you follow follow, and you don't yet: how you meet friends of friends */
 function fofPeople(){
   var me = myActor(), fol = followedPeople(), via = {};
@@ -3500,8 +3548,8 @@ function youLineHTML(rows){
   };
   var parts = order.filter(function(v){ return frag[v]; }).map(function(v){ return frag[v](by[v]); });
   var shown = parts.slice(0, 4), more = parts.length - shown.length;
-  return '<article class="fitem fyou" data-ts="'+tsIso(rows[0].ms)+'" data-verb="you"><div class="fav">'+avHTML('self', 'a32')+'</div>' +
-    '<div class="fbody"><div class="fline"><span class="fsent"><b>You</b>: '+shown.join(', ')+(more ? ' and ' + more + ' more' : '')+'</span>'+timeHTML(rows[0].ms)+'</div></div></article>';
+  return '<article class="fitem fyou" data-ts="'+tsIso(rows[0].ms)+'" data-verb="you">' +
+    headHTML(avHTML('self', 'a32'), '<b>You</b>: '+shown.join(', ')+(more ? ' and ' + more + ' more' : ''), timeHTML(rows[0].ms)) + '</article>';
 }
 function selCls(type, id){ return isSel({ type:type, id:id }) ? ' sel fsel' : ''; }
 function fbtn(act, id, on, label, onLabel, icon, onIcon, primary){
@@ -3510,106 +3558,132 @@ function fbtn(act, id, on, label, onLabel, icon, onIcon, primary){
 /* a feed card is a plain container: its title is the button that opens it (and covers the card for the mouse),
    its verbs are buttons beside it — never a button inside a button */
 function flink(type, id, inner){ return '<button type="button" class="flink" data-act="row" data-type="'+type+'" data-id="'+id+'">'+inner+'</button>'; }
-/* an event as Home carries it: square, title, when, where — and Interested / Going right there */
-function fEventCard(evId, small){
+/* A THING on Home, one shape for all: its square (48), three lines of 16 — the title, when and where (or what it is),
+   who — and its verbs at the right (under it when the list is narrow) */
+function thingHTML(o){
+  return '<div class="fcard '+o.cls+selCls(o.type, o.id)+'" data-type="'+o.type+'" data-id="'+o.id+'">' + o.art +
+    '<div class="fcm">' + (o.kicker ? '<div class="fck">'+esc(o.kicker)+'</div>' : '') + flink(o.type, o.id, '<span class="fct">'+esc(o.title)+'</span>') +
+    (o.l2 ? '<div class="fcs">'+o.l2+'</div>' : '') + (o.l3 || '') + '</div>' + (o.verbs ? '<div class="fverbs">'+o.verbs+'</div>' : '') + '</div>';
+}
+/* an event as Home carries it: square, title, when, where, who you follow — and Interested / Going right there */
+function fEventCard(evId){
   var e = EVENTS[evId], past = isPast(lastDay(e)), st = S.loggedIn ? RSVP[evId] : '';
-  var verbs = past ? '' : isMine(evId) ? '<div class="fverbs"><span class="pill host">'+ic('star',11)+'<span>Hosting</span></span></div>'
-    : '<div class="fverbs">' + fbtn('v-interested', evId, st === 'interested', 'Interested', 'Interested', 'heart', 'heart') +
-      fbtn('v-going', evId, st === 'going', 'Going', 'Going', 'check', 'check') + '</div>';
-  return '<div class="fcard fev'+(small ? ' small' : '')+selCls('event', evId)+'" data-type="event" data-id="'+evId+'">' + sqPx(evId, small ? 48 : 64) +
-    '<div class="fcm">'+flink('event', evId, '<span class="fct">'+esc(e.title)+'</span>')+'<div class="fcs">'+esc([relDay(e), whereOf(e)].filter(Boolean).join(' · '))+'</div></div>' + verbs + '</div>';
+  var verbs = past ? '' : isMine(evId) ? '<span class="pill host">'+ic('star',11)+'<span>Hosting</span></span>'
+    : fbtn('v-interested', evId, st === 'interested', 'Interested', 'Interested', 'heart', 'heart') + fbtn('v-going', evId, st === 'going', 'Going', 'Going', 'check', 'check');
+  return thingHTML({ type:'event', id:evId, cls:'fev', art:sqPx(evId, 48), title:e.title, l2:esc([relDay(e), whereOf(e)].filter(Boolean).join(' · ')),
+    l3:socialHTML(evId) || '<div class="fcs3">'+esc(hostLabel(e) ? 'Hosted by ' + hostLabel(e) : '')+'</div>', verbs:verbs });
 }
 function fHorizonCard(hzId){
   var hz = HORIZONS[hzId], mine = hzOwnedByMe(hzId), fol = S.loggedIn && HZFOLLOW[hzId];
-  var meta = ['by ' + (mine ? 'you' : hz.ownerName), plural(hz.eventIds.filter(function(id){ return EVENTS[id]; }).length, 'event'), hzWhen(hzId)].filter(Boolean).join(' · ');
-  return '<div class="fcard fhz'+selCls('horizon', hzId)+'" data-type="horizon" data-id="'+hzId+'">' + hzMosaic(hzId, 64) +
-    '<div class="fcm"><div class="fck">Event Horizon'+(hz.isPublished ? '' : ' · Private')+'</div>'+flink('horizon', hzId, '<span class="fct">'+esc(hz.name)+'</span>')+'<div class="fcs">'+esc(meta)+'</div></div>' +
-    (mine ? '' : '<div class="fverbs">' + fbtn('followhz', hzId, fol, 'Follow', 'Following', 'plus', 'check', true) + '</div>') + '</div>';
+  var n = hz.eventIds.filter(function(id){ return EVENTS[id]; }).length;
+  return thingHTML({ type:'horizon', id:hzId, cls:'fhz', art:hzMosaic(hzId, 48), title:hz.name,
+    l2:esc(['Event Horizon' + (hz.isPublished ? '' : ' · Private'), 'by ' + (mine ? 'you' : hz.ownerName), plural(n, 'event')].join(' · ')),
+    l3:'<div class="fcs3">'+esc(hzWhen(hzId) || '')+'</div>',
+    verbs: mine ? '' : fbtn('followhz', hzId, fol, 'Follow', 'Following', 'plus', 'check', true) });
 }
 function fPersonCard(pid, sub){
   var p = person(pid), fol = S.loggedIn && PFOLLOW[pid], me = pid === myActor() || pid === 'self';
-  return '<div class="fcard fp'+selCls('person', pid)+'" data-type="person" data-id="'+pid+'">' + avHTML(pid, 'a40') +
-    '<div class="fcm">'+flink('person', pid, '<span class="fct">'+esc(p.displayName)+'</span>')+'<div class="fcs">'+esc(sub || ['@' + p.handle, p.bio].filter(Boolean).join(' · '))+'</div></div>' +
-    (me ? '' : fbtn('followp', pid, fol, 'Follow', 'Following', 'plus', 'check', true)) + '</div>';
+  return thingHTML({ type:'person', id:pid, cls:'fp', art:avHTML(pid, 'a48'), title:p.displayName,
+    l2:esc(['@' + p.handle, citiesOf(p)[0], p.bio].filter(Boolean).join(' · ')), l3: sub ? '<div class="fcs3">'+esc(sub)+'</div>' : '',
+    verbs: me ? '' : fbtn('followp', pid, fol, 'Follow', 'Following', 'plus', 'check', true) });
 }
-/* what a call out offers you: Answer while it is open (a reply under it, never a chat) */
+/* what a call out offers you: Answer while it is open — a public reply under it */
 function calloutAct(coId, small){
   var c = calloutOf(coId);
   if (isOwnCallout(c) || !calloutOpen(c) || !calloutAuthor(c)) return '';
   return '<button class="btn'+(small ? '' : ' primary')+'" data-act="answercallout" data-id="'+coId+'">'+ic('chat',16)+'Answer</button>';
 }
-/* a call out is someone standing up in the room: the one inverted thing on Home, the ask in big type, and the
-   first of what people answered under it. On its event's page it opens on top of the event (act 'open'). */
+/* a call out is someone standing up in the room: the one inverted thing — ink ground, paper type, a hairline frame
+   inside. Loud by inversion, not by size: the ask at 20. Under it the event it is for (a thing, on the dark), Answer,
+   and what people answered. o.act 'open' stacks it in the window (on its event); o.noEvent leaves the event out;
+   o.byline says who asked (where no header line above says it); o.thread puts the whole thread under it instead of the
+   latest replies */
 function fCalloutCard(coId, ms, o){
   o = o || {};
-  var c = calloutOf(coId), evId = o.noEvent ? null : calloutEventId(c), mine = isOwnCallout(c), a = o.act || 'row';
+  var c = calloutOf(coId), evId = o.noEvent ? null : calloutEventId(c), mine = isOwnCallout(c), a = o.act || 'row', open = calloutOpen(c);
+  var n = repliesOf(coId).length;
+  var until = c.closed ? 'closed' : !open ? 'ended ' + fmtShort(c.expiresAt) : 'open until ' + fmtShort(c.expiresAt);
   return '<div class="fco'+selCls('callout', coId)+'" data-type="callout" data-id="'+coId+'">' +
-    '<div class="fcok"><span class="fcotag">'+ic('callout',14)+'Call out</span>'+(ms ? timeHTML(ms) : '')+'</div>' +
-    '<div class="fcol">Looking for</div>' + flink('callout', coId, '<span class="fcoa">'+esc(c.title)+'</span>').replace('data-act="row"', 'data-act="'+a+'"') + (c.body ? '<p class="fcob">'+esc(c.body)+'</p>' : '') +
-    (evId ? '<button type="button" class="fcoe" data-act="row" data-type="event" data-id="'+evId+'">'+sqPx(evId, 36)+'<span><small>For</small>'+esc(EVENTS[evId].title)+'<small>'+esc(relDay(EVENTS[evId]) + ' · ' + whereOf(EVENTS[evId]))+'</small></span></button>' : '') +
-    '<div class="fcof"><span class="fcoby">' + (c.hostId && PEOPLE[c.hostId] ? avHTML(c.hostId) : '') + '<span>'+esc(mine ? 'You' : c.hostName)+'<small>open until '+esc(fmtShort(c.expiresAt))+'</small></span></span>' + calloutAct(coId) + '</div>' +
-    repliesPeekHTML(coId, a) + '</div>';
-}
-function coTileHTML(x){
-  var coId = x.id || x, c = calloutOf(coId), evId = calloutEventId(c), why = x.why && x.why.t;
-  return '<div class="cotile'+selCls('callout', coId)+'" data-type="callout" data-id="'+coId+'">' +
-    '<span class="fcotag">'+ic('callout',14)+'Call out</span>' + flink('callout', coId, '<b class="cta">'+esc(c.title)+'</b>') +
-    '<span class="ctw">'+esc(c.hostName + (evId ? ' · for ' + EVENTS[evId].title : ''))+'</span>' +
-    (why ? '<span class="ctwhy">'+esc(why)+'</span>' : '') + repliesPeekHTML(coId) + calloutAct(coId, true) + '</div>';
+    '<div class="fcok"><span class="fcotag">'+ic('callout',14)+'Call out</span><span class="fcountil">'+esc([o.byline && calloutSkill(c) ? skillLabel(calloutSkill(c)) : '', until].filter(Boolean).join(' · '))+'</span></div>' +
+    flink('callout', coId, '<span class="fcoa">'+esc(c.title)+'</span>').replace('data-act="row"', 'data-act="'+a+'"') + (c.body ? '<p class="fcob">'+esc(c.body)+'</p>' : '') +
+    (evId ? '<button type="button" class="fcoe" data-act="'+(a === 'open' ? 'open' : 'row')+'" data-type="event" data-id="'+evId+'">'+sqPx(evId, 48)+'<span class="fcoet"><b>'+esc(EVENTS[evId].title)+'</b>' +
+      '<small>'+esc([relDay(EVENTS[evId]), whereOf(EVENTS[evId])].filter(Boolean).join(' · '))+'</small><small>For this event</small></span></button>' : '') +
+    '<div class="fcof">' + (o.thread ? (mine ? '' : calloutAct(coId)) : calloutAct(coId)) +
+      (n && !o.thread ? '<button type="button" class="corall" data-act="'+a+'" data-type="callout" data-id="'+coId+'">'+esc(nReplies(n))+'</button>' : '') +
+      (o.byline ? '<span class="fcoby">'+(c.hostId && PEOPLE[c.hostId] ? avHTML(c.hostId) : '')+'<span>'+esc(mine ? 'You' : c.hostName)+'</span></span>' : '') + '</div>' +
+    (o.thread ? '' : repliesPeekHTML(coId, a)) + '</div>';
 }
 /* someone answered a call out: what they said, and the call out it is under */
 function fReplyCard(e){
   var c = calloutOf(e.objId), rs = repliesOf(e.objId).filter(function(r){ return e.actors.indexOf(r.author) >= 0; }), r = rs[rs.length - 1];
-  return '<div class="fcard fcorep'+selCls('callout', e.objId)+'" data-type="callout" data-id="'+e.objId+'"><span class="r-ic">'+ic('callout')+'</span>' +
-    '<div class="fcm"><div class="fck">Call out · '+esc(isOwnCallout(c) ? 'yours' : c.hostName)+' · '+nReplies(repliesOf(e.objId).length)+'</div>'+flink('callout', e.objId, '<span class="fct">'+esc(c.title)+'</span>') +
-    (r ? '<div class="fcq">“'+esc(r.text)+'”</div>' : '') + '</div></div>';
+  return thingHTML({ type:'callout', id:e.objId, cls:'fcorep', art:'<span class="r-ic">'+ic('callout')+'</span>', title:c.title,
+    l2:esc('Call out · ' + (isOwnCallout(c) ? 'yours' : c.hostName) + ' · ' + nReplies(repliesOf(e.objId).length)),
+    l3: r ? '<div class="fcq">“'+esc(r.text)+'”</div>' : '' });
 }
 function viaText(x){
   var n = x.via.map(function(v){ return whoName(v); });
   var names = n.length <= 2 ? n.join(' and ') : n[0] + ', ' + n[1] + ' and ' + (n.length - 2) + ' more';
-  if (x.popular) return n.length ? 'Followed by ' + names : person(x.id).bio || '';
+  if (x.popular) return n.length ? 'Followed by ' + names : '';
   return names + (n.length === 1 ? ' follows ' : ' follow ') + whoName(x.id);
 }
+/* AN ENTRY on Home, one shape for all: a header line — the person (32), what they did over how long ago — then 8,
+   then the thing in its frame */
+function headHTML(av, sentence, meta, side){
+  return '<div class="fhead"><div class="fav">'+av+'</div><div class="fhd"><div class="fsent">'+sentence+'</div>'+(meta ? '<div class="fmeta">'+meta+'</div>' : '')+'</div>'+(side || '')+'</div>';
+}
 function peopleCardHTML(list, title, note){
-  return '<section class="fitem ffof"><h3 class="ffh">'+esc(title)+'</h3>' + (note ? '<p class="ffn">'+esc(note)+'</p>' : '') +
-    list.map(function(x){ return fPersonCard(x.id, viaText(x)); }).join('') + '</section>';
+  var via = list.filter(function(x){ return !x.popular; }).reduce(function(a, x){ x.via.forEach(function(v){ if (a.indexOf(v) < 0) a.push(v); }); return a; }, []);
+  var meta = note || (via.length ? 'Suggested from who ' + via.slice(0, 3).map(function(v){ return whoName(v); }).join(', ').replace(/, ([^,]*)$/, ' and $1') + ' follow' : 'The most followed on Hypernet');
+  return '<section class="fitem ffof"><div class="fhead"><div class="fav"><span class="av a32 sys" aria-hidden="true">'+ic('people',16)+'</span></div>' +
+    '<div class="fhd"><h3 class="ffh fsent">'+esc(title)+'</h3><div class="fmeta">'+esc(meta)+'</div></div></div>' +
+    '<div class="fstack">' + list.map(function(x){ return fPersonCard(x.id, viaText(x)); }).join('') + '</div></section>';
 }
 var HZEXPLAINED = false;
 function feedEntryHTML(e, cls){
-  var at = ' data-ts="'+tsIso(e.ms)+'" data-verb="'+e.verb+'"';
-  if (e.verb === 'posted_callout') return '<article class="fitem fitco'+(cls ? ' ' + cls : '')+'"'+at+'>' + fCalloutCard(e.objId, e.ms) + '</article>';
-  var lead = e.actors.slice(0, 2), body = '';
+  var at = ' data-ts="'+tsIso(e.ms)+'" data-verb="'+e.verb+'"', lead = e.actors[0];
+  var av = avHTML(lead === myActor() ? 'self' : lead, 'a32'), meta = timeHTML(e.ms), body = '';
+  if (e.verb === 'posted_callout') return '<article class="fitem fitco'+(cls ? ' ' + cls : '')+'"'+at+'>' + headHTML(av, actSentence(e), meta) + fCalloutCard(e.objId, e.ms) + '</article>';
   if (e.objType === 'event') body = fEventCard(e.objId);
   else if (e.objType === 'callout') body = fReplyCard(e);
   else if (e.objType === 'horizon'){
     var onlyAdded = !e.parts.published_horizon && !e.parts.created_horizon && e.parts.added_to_horizon && e.eventIds.length;
     if (onlyAdded){
-      body = e.eventIds.slice(0, 2).map(function(id){ return fEventCard(id, true); }).join('');
-      if (e.eventIds.length > 2) body += '<button class="fmore" data-act="row" data-type="horizon" data-id="'+e.objId+'">and '+(e.eventIds.length - 2)+' more on '+esc(HORIZONS[e.objId].name)+'</button>';
+      body = '<div class="fstack">' + e.eventIds.slice(0, 2).map(function(id){ return fEventCard(id); }).join('') + '</div>';
+      if (e.eventIds.length > 2) body += '<button class="btn fmore" data-act="row" data-type="horizon" data-id="'+e.objId+'">and '+(e.eventIds.length - 2)+' more on '+esc(HORIZONS[e.objId].name)+'</button>';
     } else {
       body = fHorizonCard(e.objId);
-      if (!HZEXPLAINED && !hzOwnedByMe(e.objId)){ HZEXPLAINED = true; body = '<p class="fexpl">'+esc(KINDDESC.horizons)+'</p>' + body; }
+      if (!HZEXPLAINED && !hzOwnedByMe(e.objId)){ HZEXPLAINED = true; meta += ' · <span class="fexpl">'+esc(KINDDESC.horizons)+'</span>'; }
     }
-  } else if (e.objType === 'person') body = e.objs.slice(0, 3).map(function(pid){ return fPersonCard(pid); }).join('') +
+  } else if (e.objType === 'person') body = '<div class="fstack">' + e.objs.slice(0, 3).map(function(pid){ return fPersonCard(pid); }).join('') + '</div>' +
     (e.objs.length > 3 ? '<div class="fmore static">and '+(e.objs.length - 3)+' more</div>' : '');
   /* fresh news of someone deciding to go is the moment to reach out */
   var who = e.actors.filter(function(p){ return p !== myActor(); })[0];
-  var msg = (e.verb === 'going' || e.verb === 'interested') && isFresh(e.ms) && who && PEOPLE[who]
-    ? '<button type="button" class="fmsg" data-act="dm" data-id="'+who+'" aria-label="Message '+esc(person(who).displayName)+'">'+ic('chat',14)+'Message</button>' : '';
-  return '<article class="fitem'+(cls ? ' ' + cls : '')+'"'+at+'><div class="fav'+(lead.length > 1 ? ' two' : '')+'">' + lead.map(function(p){ return avHTML(p === myActor() ? 'self' : p, 'a32'); }).join('') + '</div>' +
-    '<div class="fbody"><div class="fline"><span class="fsent">'+actSentence(e)+'</span>'+msg+timeHTML(e.ms)+'</div>' + body + '</div></article>';
+  var msg = (e.verb === 'going' || e.verb === 'interested') && e.actors.length === 1 && isFresh(e.ms) && who && PEOPLE[who]
+    ? '<button type="button" class="btn s fmsg" data-act="dm" data-id="'+who+'" aria-label="Message '+esc(person(who).displayName)+'">'+ic('chat',14)+'Message</button>' : '';
+  return '<article class="fitem'+(cls ? ' ' + cls : '')+'"'+at+'>' + headHTML(av, actSentence(e), meta, msg) + body + '</article>';
 }
+/* Call outs for you: one at a time, stepped in its band (‹ ›) — the call out you are looking at in full */
+var COIDX = 0;
+function coForYouHTML(cos, sc){
+  if (!cos.length) return '';
+  COIDX = Math.max(0, Math.min(COIDX, cos.length - 1));
+  var x = cos[COIDX], c = calloutOf(x.id), host = c.hostId && PEOPLE[c.hostId] ? c.hostId : null;
+  var title = 'Call outs' + (S.loggedIn && !sc.all && !sc.few ? ' for you' : '');
+  var step = cos.length > 1 ? '<span class="bx"><button type="button" class="ib" data-act="costep" data-id="-1" aria-label="Previous call out"'+(COIDX ? '' : ' disabled')+'>'+ic('back',14)+'</button>' +
+    '<button type="button" class="ib" data-act="costep" data-id="1" aria-label="Next call out"'+(COIDX < cos.length - 1 ? '' : ' disabled')+'>'+ic('back',14).replace('class="ic"', 'class="ic" style="transform:scaleX(-1)"')+'</button></span>' : '';
+  var meta = [x.ms ? agoLabel(x.ms) : '', x.why && x.why.t ? x.why.t : x.why && x.why.k === 'follow' ? 'you follow ' + firstName(host) : ''].filter(Boolean).map(esc).join(' · ');
+  return '<section class="costrip" aria-label="'+esc(title)+'"><div class="band coband">'+esc(title)+' <span class="cnt">'+(COIDX + 1)+' of '+cos.length+'</span>'+step+'</div>' +
+    '<article class="fitem fitco cotile" data-id="'+x.id+'">' + headHTML(host ? avHTML(host, 'a32') : '<span class="av a32 sys">'+ic('callout',16)+'</span>',
+      (host ? whoLink(host, true) : '<b>'+esc(c.hostName)+'</b>') + ' posted a call out', meta) + fCalloutCard(x.id, x.ms) + '</article></section>';
+}
+function stepCallout(dir){ COIDX += dir; render(); }
 function homeHTML(){
   var sc = homeScope(), parts = homeParts(), entries = parts.stream, cos = homeCallouts(), h = '';
   HZEXPLAINED = false;
-  h += '<div class="greet deskgreet fgreet"><h2>'+esc(greeting())+'</h2>'+(L.phone ? '<p>'+esc(folderSub({ kind:'home' }))+'</p>' : '')+'</div>';
   /* following nobody: Home is the whole network until you follow someone */
   if (S.loggedIn && sc.all) h += peopleCardHTML(popularPeople().slice(0, 3), 'Make Home yours',
     'Home shows what the people you follow do. You don’t follow anyone yet, so here is everyone on Hypernet.');
-  if (cos.length) h += '<div class="band coband">Open call outs' + (S.loggedIn && !sc.all && !sc.few ? ' for you' : '') + ' <span class="cnt">'+cos.length+'</span>' +
-    '<span class="costep"><button type="button" class="ib" data-act="costep" data-id="-1" aria-label="Previous call outs">'+ic('back',14)+'</button>' +
-    '<button type="button" class="ib" data-act="costep" data-id="1" aria-label="Next call outs">'+ic('back',14).replace('class="ic"', 'class="ic" style="transform:scaleX(-1)"')+'</button></span></div>' +
-    '<div class="srow costrip" data-shelf="callouts">' + cos.map(coTileHTML).join('') + '</div>';
+  h += coForYouHTML(cos, sc);
   h += upHTML();
   h += youLineHTML(parts.mine);
   /* every so often, the people your friends follow (logged out: the people most followed) */
@@ -3632,22 +3706,9 @@ function homeHTML(){
   if (entries.length || parts.net.length) h += '<div class="fend">That’s the last three weeks. <button class="btn" data-act="explorekind" data-id="events">'+ic('cal')+'All events</button></div>';
   return h;
 }
-/* the call-out strip shows whole tiles only: as many columns as fit, the rest a step away */
-function fitStrip(){
-  var s = document.querySelector('#listbody .costrip'); if (!s) return;
-  var w = s.clientWidth - 32, cols = Math.max(1, Math.min(3, Math.floor((w + 16) / 216)));
-  s.style.setProperty('--tw', Math.max(160, Math.floor((w - (cols - 1) * 16) / cols)) + 'px');
-  var band = s.previousElementSibling; if (band) band.classList.toggle('more', s.querySelectorAll('.cotile').length > cols);
-}
-function stepStrip(dir){
-  var s = document.querySelector('#listbody .costrip'); if (!s) return;
-  s.scrollBy({ left: dir * Math.max(160, s.clientWidth - 32 + 16), behavior:'smooth' });
-}
 function renderHome(){
-  var lb = $('listbody'), top = lb.scrollTop, cs0 = lb.querySelector('.costrip'), left = cs0 ? cs0.scrollLeft : 0;
+  var lb = $('listbody'), top = lb.scrollTop;
   lb.innerHTML = homeHTML();
-  fitStrip();
-  var cs = lb.querySelector('.costrip'); if (cs && left) cs.scrollLeft = left;
   lb.scrollTop = top;
   S.rows = homeItems();
 }
@@ -3660,10 +3721,12 @@ function navRow(f, icon, label, opts){
   opts = opts || {};
   var top = S.stack[S.stack.length-1];
   /* a horizon is a page, not a folder: its row is lit while its page is open */
-  var sel = opts.sel != null ? opts.sel : opts.hz ? !!top && top.type === 'horizon' && top.id === f.id
+  var sel = opts.sel != null ? opts.sel : opts.hz ? false
           : !opts.person && sameFolder(S.folder, f) && !(L.phone && S.folder.kind === 'you');
+  /* what is open in the window is marked (not lit): the lit row is always the list you are in */
+  var isOpen = (opts.hz || opts.person) && !!top && top.type === (opts.hz ? 'horizon' : 'person') && top.id === (opts.hz ? f.id : opts.person);
   var cnt = opts.count != null ? opts.count : '';
-  return '<div class="nrow'+(sel?' sel':'')+(opts.unread?' unread':'')+(opts.cls?' '+opts.cls:'')+'" role="button" ' +
+  return '<div class="nrow'+(sel?' sel':'')+(isOpen?' open':'')+(opts.unread?' unread':'')+(opts.cls?' '+opts.cls:'')+'" role="button" ' +
     (opts.person ? 'data-act="open-reset" data-type="person" data-id="'+opts.person+'"'
      : opts.hz ? 'data-act="open-reset" data-type="horizon" data-id="'+f.id+'"'
                  : 'data-act="folder" data-kind="'+f.kind+'" data-id="'+(f.id||'')+'"') + (opts.drop ? ' data-drop="'+f.id+'"' : '') + '>' +
@@ -3704,11 +3767,11 @@ function renderNav(){
   var npro = Object.keys(PROMOTED).filter(function(k){ return PROMOTED[k] && EVENTS[k]; }).length;
   if (npro) h += navRow({kind:'promoted'}, ic('promote'), 'Promoted', { count: npro });
   if (MYHORIZONS.length) h += '<div class="navh">Your horizons</div>';
-  MYHORIZONS.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { count: hzEventIds(k).length || '', drop:true, hz: L.phone }); });
+  MYHORIZONS.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { count: hzEventIds(k).length || '', drop:true, hz:true }); });
   var followed = Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k] && HORIZONS[k]; });
   if (followed.length){
     h += '<div class="navh">Following</div>';
-    followed.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { sub: HORIZONS[k].ownerName !== HORIZONS[k].name ? HORIZONS[k].ownerName : '', hz: L.phone }); });
+    followed.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { sub: HORIZONS[k].ownerName !== HORIZONS[k].name ? HORIZONS[k].ownerName : '', hz:true }); });
   }
   var ppl = networkPeople().filter(function(p){ return PFOLLOW[p]; });
   if (ppl.length){
@@ -3733,8 +3796,6 @@ function renderToolbar(){
 }
 function renderCHead(){
   var el = $('chead'), views = viewsOf(), v = viewOf();
-  /* a horizon's own page is its header */
-  if (S.folder.kind === 'horizon'){ el.className = 'none hzhead'; el.innerHTML = ''; return; }
   var tools = '';
   if (!L.phone && v === 'list' && !isCal() && viewsOf().length && !(S.folder.kind === 'explore' && S.folder.id === 'horizons')){
     tools += '<label class="sortsel"><span class="sl">Sort</span><select data-act="sort" aria-label="Sort">' +
@@ -3742,7 +3803,7 @@ function renderCHead(){
       '</select></label>';
   }
   if (views.length > 1) tools += '<span class="seg" role="tablist">' + views.map(function(x){
-    return '<button role="tab" class="'+(x===v?'on':'')+'" aria-selected="'+(x===v)+'" data-act="setview" data-id="'+x+'">'+x.toUpperCase()+'</button>'; }).join('') + '</span>';
+    return '<button role="tab" class="'+(x===v?'on':'')+'" aria-selected="'+(x===v)+'" data-act="setview" data-id="'+x+'">'+titleCase(x)+'</button>'; }).join('') + '</span>';
   /* on a phone Explore's kinds are tabs across its top (a desktop has them in the sidebar) */
   var kinds = L.phone && S.folder.kind === 'explore' && !S.phoneSearch;
   if (kinds) tools = exploreKindsHTML() + (tools ? '<div class="ctrow">' + tools + '</div>' : '');
@@ -3759,7 +3820,7 @@ function exploreKindsHTML(){
 }
 /* ---- the phone shell: an app bar on top, five tabs at the bottom ---- */
 function phoneCanBack(){
-  return S.stack.length > 0 || S.phoneSearch || S.folder.kind !== tabRootFolder(S.tab).kind;
+  return S.phoneSearch || S.folder.kind !== tabRootFolder(S.tab).kind;
 }
 function renderAppbar(){
   var h = '', conv = phoneConv(), back = conv || phoneCanBack();
@@ -3769,11 +3830,6 @@ function renderAppbar(){
     var cc = CHATS[conv], cp = cc.memberIds[0];
     h += '<div class="ab-title ab-tap" data-act="chatprofile" data-id="'+cp+'" role="button">'+esc(cc.name)+'<small>'+esc(chatSub(cc))+'</small></div>' +
       '<button class="ab-btn" data-act="chatprofile" data-id="'+cp+'" aria-label="Profile">'+ic('user',22)+'</button>';
-  } else if (S.stack.length){
-    var it = S.stack[S.stack.length-1];
-    /* a long name takes both lines; the kind of thing it is gives way */
-    h += '<div class="ab-title"><span class="abn">'+esc(itemName(it))+'</span>' +
-      (itemName(it).length > 26 ? '' : '<small>'+esc({event:'Event',horizon:'Event Horizon',person:'Person',callout:'Call out'}[it.type]||'')+'</small>') + '</div>';
   } else if (S.tab === 'chats'){
     h += '<div class="ab-title">Chats</div>';
     if (S.loggedIn) h += '<button class="ab-btn boxed" data-act="newchat">'+ic('edit')+'New chat</button>';
@@ -3801,16 +3857,16 @@ function renderTabbar(){
 /* ---------- the layout engine ---------- */
 function computeLayout(){
   var W = window.innerWidth;
-  if (W < 760) return { phone:true, left:false, right:false, split:false, cw:W };
+  if (W < 760) return { phone:true, left:false, right:false, cw:W };
   /* the sidebar is always there; it gets narrower (labels stay) as the screen does */
   var right = S.rightOpen, navW = W < 1120 ? 200 : W < 1400 ? 216 : 252;
   /* below 1120 there is no room for a third column: the chat dock floats over the centre's right edge */
   var over = right && W < 1120;
-  /* with the dock open it narrows, and the list and the reading pane stay side by side */
+  /* with the dock open it narrows below 1680 */
   var narrow = right && !over && W < 1680;
-  var cw = W - 12 - (navW + 6) - (right && !over ? (narrow ? 306 : 356) : 0);
-  return { phone:false, left:true, right:right, navW:navW, dockOver:over, cw:cw, narrowDock:narrow,
-           split: cw >= (right && !over ? 720 : 860) && !isCal() };
+  /* the list is one centred column (680, a calendar 960) in what is left between the sidebar and the dock */
+  var cw = Math.min(isCal() ? 960 : 680, W - 16 - (navW + 8) - (right && !over ? (narrow ? 308 : 352) : 0));
+  return { phone:false, left:true, right:right, navW:navW, dockOver:over, cw:cw, narrowDock:narrow };
 }
 </script>
 <script>
@@ -5069,7 +5125,6 @@ function markRead(id){ READ[id] = true; }
 /* open an item in the detail pane: from a list row it replaces what is open, from inside a page it stacks */
 function openItem(type, id, mode){
   if (S.folder.kind === 'search') rememberQuery(S.query);
-  if (type === 'horizon' && !L.phone){ goFolder({ kind:'horizon', id:id }); render(); $('listbody').scrollTop = 0; return; }
   if (type === 'event') markRead(id);
   var it = { type:type, id:id };
   if (mode === 'push' && S.stack.length){
@@ -5269,20 +5324,9 @@ function openDM(pid){
   return dm;
 }
 var messagePerson = gated(function(pid){ openChat(openDM(pid)); });
-/* a profile opened from a chat is a window over everything: × (or Esc, or the phone's back) closes it and leaves
-   you exactly where you were, the conversation still open. Going anywhere from inside it closes it first. */
-function chatProfile(pid){
-  if (!PEOPLE[pid]) return;
-  var d = dialog(person(pid).displayName, '<div id="pfwin" data-id="'+pid+'">'+personHTML(pid)+'</div>', '', 680, 'pfwin');
-  d.querySelector('.dbar').insertAdjacentHTML('afterbegin', '<button class="x dback" data-act="closedlg" aria-label="Back to the chat">'+ic('back',16)+'</button>');
-  d.style.top = Math.max(16, (window.innerHeight - d.offsetHeight) / 2.4) + 'px';
-  placeDlg(d);
-}
-function paintChatProfile(){
-  var w = $('pfwin'); if (!w) return;
-  var b = w.parentNode, top = b.scrollTop;
-  w.innerHTML = personHTML(w.getAttribute('data-id')); b.scrollTop = top;
-}
+/* a profile opened from a chat is the window like anything else: the conversation stays open behind it (in the dock,
+   or the phone's Chats tab), and closing the window leaves you exactly where you were */
+function chatProfile(pid){ if (PEOPLE[pid]) openItem('person', pid); }
 function sendChat(){
   var box = $('chatbox'), cid = activeChat(); if (!box || !cid || !box.value.trim()) return;
   var st = stamp();
@@ -5301,8 +5345,8 @@ var answerCallout = gated(function(coId){
   var c = calloutOf(coId); if (!c || isOwnCallout(c)) return;
   if (!calloutOpen(c)){ toast('This call out is closed', c.title); return; }
   if (!calloutAuthor(c)){ toast('Can’t answer this call out', 'We don’t know who posted it'); return; }
-  var top = S.stack[S.stack.length-1];
-  if (!(top && top.type === 'callout' && top.id === coId && $('coreply'))) openItem('callout', coId, 'push');
+  var here = document.querySelector('#dscroll #coreply[data-id="'+coId+'"]');
+  if (!here) openItem('callout', coId, 'push');
   setTimeout(function(){ var b = $('coreply'); if (b){ b.scrollIntoView({ block:'center' }); b.focus(); b.setSelectionRange(b.value.length, b.value.length); } }, 40);
 });
 var postReply = gated(function(coId){
@@ -5404,8 +5448,6 @@ document.addEventListener('click', function(ev){
   var act = n.getAttribute('data-act'), id = n.getAttribute('data-id');
   if (act !== 'newmenu' && act !== 'acctmenu') closePopup();
   if (n.tagName === 'A') ev.preventDefault();
-  /* going anywhere from a profile opened over a chat closes that window first */
-  if (n.closest('.dlg.pfwin') && act !== 'closedlg' && act !== 'followp') closeDialogs();
   switch (act){
     case 'newmenu':  if (POP){ closePopup(); break; } popup(n, NEWITEMS); break;
     case 'acctmenu': if (POP){ closePopup(); break; } popup(n, [{ label:'Your profile', cmd:'profile', icon:'user' }, { label:'Edit profile', cmd:'editprofile', icon:'edit' }, '-', { label:'Log out', cmd:'logout', icon:'back' }]); break;
@@ -5425,7 +5467,8 @@ document.addEventListener('click', function(ev){
     case 'open':     openItem(n.getAttribute('data-type'), id, 'push'); break;
     case 'open-reset': openItem(n.getAttribute('data-type'), id); break;
     case 'back':     navBack(); break;
-    case 'closepane': closePane(); break;
+    case 'closewin': closeWin(); break;
+    case 'maxwin':   toggleMaxWin(); break;
     case 'pback':    navBack(); break;
     case 'psearch':  S.phoneSearch = true; if (S.folder.kind !== 'search') rememberPlace(); render(); break;
     case 'clearsearch': leaveSearch(); render(); break;
@@ -5445,13 +5488,13 @@ document.addEventListener('click', function(ev){
     case 'renamehz':     gated(renameHzDialog)(id); break;
     case 'dorename':     renameHz(id); break;
     case 'publishhz':    publishHz(id); break;
-    case 'followp':      followP(id); paintChatProfile(); break;
+    case 'followp':      followP(id); break;
     case 'dm':           messagePerson(id); break;
     case 'answercallout': answerCallout(id); break;
     case 'postreply':    postReply(id); break;
     case 'delreply':     deleteReply(id); break;
     case 'chatprofile':  chatProfile(id); break;
-    case 'costep':       stepStrip(+id); break;
+    case 'costep':       stepCallout(+id); break;
     case 'shelfstep':    stepShelf(n.getAttribute('data-shelf'), +id); break;
     case 'upall':        UPALL = !UPALL; render(); break;
     case 'whoall':       whoAllDialog(id); break;
@@ -5634,9 +5677,9 @@ document.addEventListener('keydown', function(ev){
     if (POP){ closePopup(); return; }
     if (ae && ae.id === 'q' && S.folder.kind === 'search'){ leaveSearch(); render(); ae.blur(); return; }
     if (inField){ ae.blur(); return; }
+    /* the window closes (a phone's sheet steps back, as its back gesture does) */
+    if (S.stack.length){ if (L.phone) navBack(); else closeWin(); return; }
     if (L.phone){ if (phoneConv()) chatUp(); else if (phoneCanBack()) navBack(); return; }
-    if (S.stack.length > (L.split ? 1 : 0)){ navBack(); return; }
-    if (L.split && S.stack.length === 1){ closePane(); return; }
     return;
   }
   if (ev.key === 'Enter' && ae){
@@ -5655,7 +5698,7 @@ document.addEventListener('keydown', function(ev){
   }
   if (inField || DLGS.length) return;
   if (ev.key === '/' && !L.phone){ ev.preventDefault(); $('q').focus(); return; }
-  if (!L.phone && L.split && !isCal()){
+  if (!L.phone && !isCal()){
     if (ev.key === 'ArrowDown' || ev.key === 'j'){ ev.preventDefault(); stepItem(1); return; }
     if (ev.key === 'ArrowUp' || ev.key === 'k'){ ev.preventDefault(); stepItem(-1); return; }
   }
@@ -5714,7 +5757,7 @@ function linkOf(type, id){ return location.origin + location.pathname + '#/' + i
 function snapNow(){
   var f = S.folder, v = viewsOf(f);
   return { hn:1, tab:S.tab, folder:{ kind:f.kind, id:f.id || null }, view: v.length ? viewOf(f) : null,
-           stack: phoneConv() ? [{ type:'chat', id:S.chatOpen }] : S.stack.map(function(it){ return { type:it.type, id:it.id }; }),
+           stack: S.stack.length ? S.stack.map(function(it){ return { type:it.type, id:it.id }; }) : phoneConv() ? [{ type:'chat', id:S.chatOpen }] : [],
            q:S.query, ps:!!S.phoneSearch, cal:{ mode:S.calMode, at:S.calAnchor, day:S.calDay },
            dock: L.phone ? null : { open:!!S.rightOpen, chat:S.chatOpen || null } };
 }
@@ -5935,29 +5978,27 @@ function render(){
     var ct = S.stack.filter(function(it){ return it.type === 'chat'; }).pop();
     if (ct){ S.stack = S.stack.filter(function(it){ return it.type !== 'chat'; }); S.chatOpen = ct.id; S.rightOpen = true; S.lastOpened = 'right'; L = computeLayout(); }
     if (S.folder.kind === 'you' || S.folder.kind === 'chats') goFolder({ kind:'home' });
-    /* a horizon opened as a page (a phone habit, or a link) becomes the destination on a wide screen */
-    var hi = -1; S.stack.forEach(function(it, i){ if (it.type === 'horizon' && HORIZONS[it.id]) hi = i; });
-    if (hi >= 0){ var hid0 = S.stack[hi].id; S.stack = S.stack.slice(hi + 1); S.folder = { kind:'horizon', id:hid0 }; }
   } else if (S.stack.some(function(it){ return it.type === 'chat'; })){
     /* and a conversation in the stack (a link, a desktop's dock) becomes the phone's Chats tab */
     S.chatOpen = S.stack.filter(function(it){ return it.type === 'chat'; }).pop().id;
     S.stack = []; S.tab = 'chats'; S.folder = { kind:'chats', id:null };
-  } else if (S.folder.kind === 'horizon'){
-    /* and on a phone it is a page on the Horizons tab */
-    var hid1 = S.folder.id; S.folder = { kind:'explore', id:'horizons' }; S.tab = S.tab === 'home' || !S.tab ? 'explore' : S.tab;
-    if (S.tab !== 'explore') S.folder = tabRootFolder(S.tab);
+  }
+  /* a horizon is never a list of its own: an old link or history entry that made it one opens it in the window,
+     over Explore's Event Horizons */
+  if (S.folder.kind === 'horizon'){
+    var hid1 = S.folder.id; S.folder = { kind:'explore', id:'horizons' };
+    if (L.phone){ S.tab = S.tab === 'home' || !S.tab ? 'explore' : S.tab; if (S.tab !== 'explore') S.folder = tabRootFolder(S.tab); }
     S.stack = [{ type:'horizon', id:hid1 }].concat(S.stack);
   }
-  /* nothing is picked for you: until you open something, the reading pane is empty (the faint mark) and the list
-     takes the room. Home, Explore, search, a horizon and a person all open this way. */
-  L.paneClosed = !L.phone && L.split && !S.stack.length && !isCal();
   var conv = phoneConv();
-  var scr = L.phone ? ((conv || (S.tab === 'chats' && !S.stack.length)) ? 'chats' : (S.tab === 'you' && S.folder.kind === 'you' && !S.stack.length) ? 'you' : 'center') : '';
+  /* on a phone the window is a sheet over the screen you were on, which stays as it was behind it */
+  var scr = L.phone ? ((conv || S.tab === 'chats') ? 'chats' : (S.tab === 'you' && S.folder.kind === 'you') ? 'you' : 'center') : '';
   L.scr = scr;
-  if (!L.phone) app.style.setProperty('--nav-w', L.navW + 'px');
-  app.className = [L.phone ? 'phone' : 'desk', L.left ? 'l-open' : '', L.right ? 'r-open' : '', L.narrowDock ? 'dock-narrow' : '', L.dockOver ? 'dock-over' : '', L.split ? 'split' : 'push',
-    isCal() ? 'v-cal' : '', S.stack.length ? 'has-detail' : '', scr ? 'scr-' + scr : '',
-    conv && S.loggedIn ? 'conv-open' : '', !L.phone && S.loggedIn ? 'readmarks' : '', S.loggedIn ? '' : 'preview', L.paneClosed ? 'pane-closed' : ''].filter(Boolean).join(' ');
+  if (!L.phone){ app.style.setProperty('--nav-w', L.navW + 'px'); app.style.setProperty('--col-w', L.cw + 'px'); }
+  var front = app.classList.contains('dock-front');
+  app.className = [L.phone ? 'phone' : 'desk', L.left ? 'l-open' : '', L.right ? 'r-open' : '', L.narrowDock ? 'dock-narrow' : '', L.dockOver ? 'dock-over' : '',
+    isCal() ? 'v-cal' : '', S.stack.length ? 'win-open' : '', scr ? 'scr-' + scr : '', front && L.right ? 'dock-front' : '',
+    conv && S.loggedIn ? 'conv-open' : '', !L.phone && S.loggedIn ? 'readmarks' : '', S.loggedIn ? '' : 'preview'].filter(Boolean).join(' ');
   document.body.className = L.phone ? 'is-phone' : 'is-desk';
 
   if (L.phone){ renderAppbar(); renderTabbar(); } else renderToolbar();
@@ -5965,10 +6006,14 @@ function render(){
   if (!L.phone || scr === 'center'){
     renderCHead();
     if (isCal()) renderCalendar(); else renderList();
-    renderDetail();
   }
+  renderDetail();
   renderChats();
   renderPreview();
+  /* the phone's sheet ends above the preview bar, which is always there when logged out (the tabs under it stay) */
+  var pvb = $('previewbar');
+  app.style.setProperty('--pvh', (L.phone && !S.loggedIn && pvb.offsetHeight ? Math.max(0, window.innerHeight - pvb.getBoundingClientRect().top) : 0) + 'px');
+  placeWin();
   placeToasts();
   document.title = (S.stack.length ? itemName(S.stack[S.stack.length-1]) : folderName()) + ' · Hypernet';
   schedulePersist();

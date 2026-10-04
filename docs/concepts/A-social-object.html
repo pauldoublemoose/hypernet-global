@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Concept A · Social object</title>
+<style>
+/* =======================================================================
+   CONCEPT A — "SOCIAL OBJECT"  (Lena)
+   One card, used everywhere. Event page and Home are the same column of
+   white cards on the app's grey, built from four type sizes, two avatar
+   sizes and an 8px vertical grid. The event's look (bg / ink / accent +
+   square) lives on its cover card and its squares — nowhere else.
+   App tokens below are copied verbatim from index.html :root.
+   ======================================================================= */
+:root{
+  --face:#d4d0c8; --face-lt:#e8e5df; --face-dk:#c2beb5;
+  --white:#fff; --shadow:#808080; --dark:#404040;
+  --ink:#141414; --ink2:#3a3a3a; --dim:#666; --line:#e2dfd8; --hover:#f0eee9;
+  --sel:#262626; --seldim:#c8c8c8;
+  --bar:linear-gradient(90deg,#262626 0%,#555 58%,#9b9b9b 100%);
+  --sys:Tahoma,"Segoe UI",Verdana,Geneva,sans-serif;
+  --mono:"Lucida Console",Monaco,Consolas,"Courier New",monospace;
+  --ctl:36px;
+  --out: inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white), inset -2px -2px 0 var(--shadow), inset 2px 2px 0 var(--face-lt);
+  --in:  inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white), inset 2px 2px 0 var(--dark), inset -2px -2px 0 var(--face);
+  /* concept additions — two only */
+  --ground:var(--face-lt);   /* what the cards sit on */
+  --edge:#cfcbc3;            /* a card's one hairline */
+}
+*{ box-sizing:border-box; }
+body{ margin:0; background:#bdb9b0; color:var(--ink); font:14px/20px var(--sys); -webkit-font-smoothing:antialiased; }
+button,input{ font:inherit; color:inherit; }
+svg.i{ width:16px; height:16px; flex:0 0 auto; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:square; stroke-linejoin:miter; display:block; }
+svg.i20{ width:20px; height:20px; }
+
+/* ---------- the doc around the concept (not product UI) ---------- */
+.doc{ max-width:1520px; margin:0 auto; padding:40px 24px 80px; }
+.doc > header{ margin-bottom:40px; }
+.doc > header .lede{ max-width:880px; }
+.doc h1{ margin:0 0 8px; font-size:26px; line-height:32px; }
+.doc .lede{ margin:0 0 16px; font-size:16px; line-height:24px; color:var(--ink2); }
+.rules{ display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); max-width:1440px; gap:16px; margin-top:24px; }
+.rule{ background:#fff; border:1px solid var(--edge); padding:16px; }
+.rule h3{ margin:0 0 8px; font-size:14px; line-height:20px; }
+.rule p, .rule li{ margin:0; font-size:13px; line-height:20px; color:var(--ink2); }
+.rule ul{ margin:0; padding-left:16px; }
+.scale{ display:flex; flex-direction:column; gap:8px; }
+.scale div{ display:flex; align-items:baseline; gap:12px; }
+.scale code{ flex:0 0 64px; font:12px/20px var(--mono); color:var(--dim); }
+.spec{ display:flex; gap:8px; align-items:flex-end; }
+.spec span{ display:block; background:var(--ink); }
+.spec small{ display:block; font:11px/16px var(--mono); color:var(--dim); text-align:center; margin-top:4px; }
+.sec{ margin:56px 0 0; }
+.sec > h2{ margin:0 0 4px; font-size:20px; line-height:24px; }
+.sec > p.sub{ margin:0 0 16px; color:var(--ink2); font-size:14px; }
+.scroller{ overflow-x:auto; padding-bottom:8px; }
+.notes{ max-width:420px; }
+.notes h3{ margin:0 0 8px; font-size:16px; line-height:24px; }
+.notes ul{ margin:0 0 24px; padding-left:18px; }
+.notes li{ margin:0 0 8px; color:var(--ink2); }
+.notes b{ color:var(--ink); }
+.pair{ display:flex; gap:40px; align-items:flex-start; flex-wrap:wrap; }
+.variants{ display:flex; gap:24px; flex-wrap:wrap; margin-top:24px; }
+.variant{ width:680px; max-width:100%; }
+.variant > .vl{ margin:0 0 8px; font-size:13px; line-height:20px; color:var(--ink2); }
+.variant > .vl b{ color:var(--ink); }
+
+/* ---------- app chrome, copied from index.html ---------- */
+.btn{ height:var(--ctl); min-width:var(--ctl); padding:0 12px; display:inline-flex; align-items:center; justify-content:center; gap:8px; border:0;
+  background:var(--face); color:var(--ink); white-space:nowrap; font-size:14px; box-shadow:var(--out); cursor:pointer; }
+.btn.on{ box-shadow:var(--in); background:var(--face-lt); font-weight:bold; }
+.btn.primary{ font-weight:bold; box-shadow:0 0 0 1px #000, var(--out); }
+.btn.ic{ padding:0; width:var(--ctl); }
+.btn .n{ color:var(--dim); }
+.badge{ min-width:20px; height:20px; padding:0 6px; display:inline-grid; place-items:center; background:#000; color:#fff; font:bold 11px var(--mono); border-radius:10px; }
+
+.frame{ width:1440px; background:var(--face); display:flex; flex-direction:column; box-shadow:0 0 0 1px #000, 0 12px 40px rgba(0,0,0,.25); }
+.titlebar{ height:30px; display:flex; align-items:center; gap:9px; padding:0 10px; color:#fff; background:var(--bar); font-size:13px; }
+.titlebar .tg{ width:18px; height:18px; display:grid; place-items:center; background:var(--face); color:#000; font-size:11px; box-shadow:inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white); }
+.titlebar span{ opacity:.8; }
+.toolbar{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-bottom:1px solid var(--shadow); box-shadow:0 1px 0 var(--white); }
+.toolbar .spring{ flex:1; }
+.searchbox{ flex:0 1 460px; height:var(--ctl); display:flex; align-items:center; gap:8px; padding:0 10px; background:#fff; box-shadow:var(--in); color:var(--dim); }
+.tsep{ width:2px; align-self:stretch; margin:3px 0; box-shadow:inset 1px 0 0 var(--shadow), inset -1px 0 0 var(--white); }
+.main{ display:flex; gap:6px; padding:6px; align-items:stretch; }
+.panel{ background:#fff; box-shadow:var(--in); }
+.nav{ flex:0 0 252px; padding:6px 0 18px; }
+.navh{ padding:18px 20px 6px; font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dim); }
+.nrow{ display:flex; align-items:center; gap:11px; min-height:40px; margin:0 6px; padding:0 12px 0 14px; white-space:nowrap; }
+.nrow .nl{ flex:1; }
+.nrow .nc{ font:12px var(--mono); color:var(--dim); }
+.nrow.sel{ background:var(--sel); color:#fff; }
+.nrow.sub{ min-height:34px; padding-left:42px; font-size:13px; }
+.nrow .ns{ color:var(--dim); font-size:13px; }
+.nrow .mini{ width:20px; height:20px; flex:0 0 20px; display:grid; place-items:center; font-size:11px; color:#fff; }
+.center{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.chead{ min-height:54px; padding:4px 2px 10px 4px; }
+.chead h2{ margin:0; font-size:20px; line-height:24px; }
+.chead p{ margin:2px 0 0; color:var(--dim); font-size:13px; line-height:20px; }
+.dbar{ display:flex; align-items:center; gap:10px; height:26px; margin:0 0 6px; }
+.dbar .dk{ font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--ink2); }
+.dbar .dx{ margin-left:auto; width:30px; height:26px; display:grid; place-items:center; background:var(--face); box-shadow:var(--out); }
+.split{ display:flex; gap:6px; flex:1; align-items:stretch; }
+.listcol{ flex:0 0 470px; display:flex; flex-direction:column; }
+.panecol{ flex:1; min-width:0; display:flex; flex-direction:column; padding-top:0; }
+.ground{ flex:1; background:var(--ground); box-shadow:var(--in); padding:2px; }
+
+/* phone shell */
+.phone{ width:375px; flex:0 0 375px; height:812px; background:var(--ground); display:flex; flex-direction:column; box-shadow:0 0 0 1px #000, 0 12px 40px rgba(0,0,0,.25); }
+.phead{ height:54px; display:flex; align-items:center; gap:12px; padding:0 16px; color:#fff; background:linear-gradient(90deg,#1c1c1c 0%,#3a3a3a 60%,#8a8a8a 100%); }
+.phead b{ flex:1; font-size:16px; line-height:24px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pbody{ flex:1; min-height:0; overflow-y:auto; }
+/* screenshot mode: the whole page, bars at the end */
+html.shot .phone{ height:auto; }
+html.shot .pbody{ overflow:visible; }
+.evbar{ flex:0 0 auto; display:flex; gap:4px; padding:6px 8px; background:var(--face); box-shadow:inset 0 1px 0 var(--white), 0 -1px 0 var(--shadow); }
+.evbar .btn{ --ctl:44px; flex:1 1 auto; padding:0 6px; font-size:13px; gap:6px; }
+.evbar .btn.ic{ flex:0 0 44px; }
+.tabbar{ flex:0 0 60px; height:60px; display:flex; background:var(--face); box-shadow:inset 0 1px 0 var(--white), 0 -1px 0 var(--shadow); }
+.tab{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:11px; line-height:12px; color:var(--ink2); position:relative; }
+.tab.on{ margin:4px; background:#fff; box-shadow:var(--in); font-weight:bold; color:var(--ink); }
+.tab .badge{ position:absolute; top:6px; left:calc(50% + 4px); min-width:16px; height:16px; font-size:10px; padding:0 4px; }
+.tab .plusbox{ width:36px; height:28px; display:grid; place-items:center; background:var(--face); box-shadow:var(--out); }
+
+/* =======================================================================
+   THE CONCEPT — one card, one column
+   Vertical: 8 · 16 · 24 · 32 only. Line-heights on a 4px baseline (20/24/32).
+   Horizontal: a square and its words are one object, 12px apart.
+   ======================================================================= */
+.col{ max-width:680px; margin:0 auto; padding:16px; display:flex; flex-direction:column; gap:16px; }
+.phone .col{ padding:8px 0; gap:8px; }
+.listcol .col{ padding:16px; }
+
+/* the four sizes */
+.t13{ font-size:13px; line-height:20px; }
+.dim{ color:var(--dim); }
+h3.ct{ margin:0; font-size:16px; line-height:24px; font-weight:bold; }
+.page-title{ margin:0; font-size:26px; line-height:32px; font-weight:bold; letter-spacing:-.01em; overflow-wrap:anywhere; }
+
+.card{ background:#fff; border:1px solid var(--edge); padding:16px; display:flex; flex-direction:column; gap:16px; min-width:0; }
+.card:has(> .acts:last-child){ padding-bottom:8px; }
+.phone .card{ border-left:0; border-right:0; }
+.card.sel{ box-shadow:0 0 0 2px var(--ink); border-color:var(--ink); }
+.chd{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+
+/* the action row: always last, always a hairline above, always the app's buttons */
+.acts{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 -16px; padding:8px 16px 0; border-top:1px solid var(--line); }
+.acts .sp{ flex:1; }
+.acts .meta{ font-size:13px; line-height:20px; color:var(--dim); }
+
+/* squares: avatars (people) and looks (events). Two avatar sizes: 40 and 32. */
+.av{ display:inline-grid; place-items:center; flex:0 0 auto; color:#fff; font-weight:bold; }
+.av40{ width:40px; height:40px; font-size:14px; }
+.av32{ width:32px; height:32px; font-size:12px; }
+.sq{ display:grid; place-items:center; flex:0 0 auto; background:var(--b); color:var(--a); line-height:1; overflow:hidden; }
+.sq.plain{ box-shadow:inset 0 0 0 1px rgba(0,0,0,.2); }
+.sq40{ width:40px; height:40px; font-size:20px; }
+.sq64{ width:64px; height:64px; font-size:32px; }
+.sq160{ width:160px; height:160px; font-size:80px; }
+.mos{ display:grid; grid-template-columns:1fr 1fr; flex:0 0 auto; }
+.mos .sq{ width:100%; height:100%; }
+.mos.m40{ width:40px; height:40px; } .mos.m40 .sq{ font-size:10px; }
+.mos.m64{ width:64px; height:64px; } .mos.m64 .sq{ font-size:16px; }
+.iconsq{ width:40px; height:40px; display:grid; place-items:center; background:var(--face-lt); color:var(--ink2); flex:0 0 auto; }
+
+/* a row: square + two lines that are exactly as tall as the square (40 = 20 + 20) */
+.r40{ display:grid; grid-template-columns:40px minmax(0,1fr) auto; column-gap:12px; align-items:center; }
+.r40 .l1{ font-size:14px; line-height:20px; color:var(--ink2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.r40 .l1 b{ color:var(--ink); }
+.r40 .l2{ font-size:13px; line-height:20px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.r40 .l2 b{ color:var(--ink); }
+.r40 .ib{ width:36px; height:36px; display:grid; place-items:center; border:0; background:transparent; color:var(--dim); }
+.list{ display:flex; flex-direction:column; gap:8px; }
+.icrow{ display:grid; grid-template-columns:40px minmax(0,1fr); column-gap:12px; align-items:center; }
+.icrow .ico{ display:grid; place-items:center; color:var(--ink2); }
+.icrow .l1{ font-weight:bold; }
+.icrow .l2{ font-size:13px; line-height:20px; color:var(--dim); }
+.icrow .l1 u{ text-decoration-thickness:1px; text-underline-offset:3px; }
+
+/* an attachment: the object a story is about. 64 square + three lines = 24 + 20 + 20 = 64 */
+.att{ display:grid; grid-template-columns:64px minmax(0,1fr); column-gap:12px; border:1px solid var(--edge); background:#fff; cursor:pointer; }
+.att > div{ padding-right:12px; min-width:0; }
+.att .a1{ font-size:16px; line-height:24px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.att .a2, .att .a3{ font-size:13px; line-height:20px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.att .a3 b{ color:var(--ink2); }
+/* a call out is the one inverted object, same geometry */
+.att.co{ background:var(--ink); border-color:var(--ink); color:#fff; }
+.att.co .sq{ box-shadow:inset 0 0 0 1px #fff, inset 0 0 0 4px #000, inset 0 0 0 5px #fff; }
+.att.co .a2, .att.co .a3{ color:#c8c8c8; }
+.att.co .a3 b{ color:#fff; }
+.att.co .sq{ background:#000; color:#fff; }
+.post{ margin:0; max-width:62ch; }
+
+/* public replies under a call out, Facebook-comment style */
+.thread{ display:flex; flex-direction:column; gap:8px; }
+.rp{ display:grid; grid-template-columns:32px minmax(0,1fr); column-gap:12px; align-items:start; }
+.bub{ display:inline-block; max-width:100%; padding:8px 12px; background:var(--hover); }
+.bub .rn{ font-weight:bold; }
+.bub .rn small{ font-weight:normal; font-size:13px; color:var(--dim); }
+.rmeta{ font-size:13px; line-height:20px; color:var(--dim); padding-left:12px; }
+.rmeta b{ color:var(--ink2); }
+.compose{ display:grid; grid-template-columns:32px minmax(0,1fr); column-gap:12px; align-items:center; }
+.field{ height:36px; display:flex; align-items:center; padding:0 12px; background:#fff; box-shadow:var(--in); color:#8a8a8a; }
+.hint{ font-size:13px; line-height:20px; color:var(--dim); padding-left:44px; margin-top:-8px; }
+.morelink{ font-size:13px; line-height:20px; font-weight:bold; color:var(--ink2); padding-left:44px; }
+
+/* the cover: the only card that wears the event's look */
+.cover{ padding:0; gap:0; overflow:hidden; }
+.cover .look{ display:flex; align-items:flex-end; gap:24px; padding:16px; background:var(--ebg); color:var(--eink); }
+.cover .look .sq.plain{ box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--eink) 22%, transparent); }
+.cover .when{ font-weight:bold; color:var(--eac); }
+.cover .where{ margin-top:8px; }
+.cover .kind{ font-size:13px; line-height:20px; opacity:.75; }
+.cover .page-title{ margin-top:8px; }
+.cover .acts{ margin:0; padding:8px 16px; }
+.phone .cover .look{ flex-direction:column; align-items:flex-start; gap:16px; }
+.phone .cover .sq160{ width:96px; height:96px; font-size:48px; }
+.phone .cover .acts{ display:none; }
+
+/* details: a key-value list with no grid lines */
+.kv{ display:grid; grid-template-columns:112px minmax(0,1fr); row-gap:8px; column-gap:12px; margin:0; }
+.kv dt{ font-weight:bold; }
+.kv dd{ margin:0; color:var(--ink2); }
+.kv ul{ margin:0; padding:0; list-style:none; }
+.phone .kv{ grid-template-columns:96px minmax(0,1fr); }
+.who{ display:grid; grid-template-columns:1fr 1fr; gap:8px 16px; }
+.phone .who{ grid-template-columns:1fr; }
+.pile{ display:flex; }
+.pile{ gap:4px; }
+.subh{ font-size:13px; line-height:20px; color:var(--dim); margin-bottom:-8px; }
+.fend{ display:flex; align-items:center; gap:12px; padding:8px 0 16px; color:var(--dim); font-size:13px; }
+.phone .fend{ padding:8px 16px 24px; }
+</style>
+</head>
+<body>
+
+<!-- icon sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="heart" viewBox="0 0 16 16"><path d="M8 13.5S2.5 10.2 2.5 6.2A2.8 2.8 0 0 1 8 5a2.8 2.8 0 0 1 5.5 1.2c0 4-5.5 7.3-5.5 7.3z"/></symbol>
+  <symbol id="check" viewBox="0 0 16 16"><path d="M3 8.5l3.2 3.2L13 4.8"/></symbol>
+  <symbol id="promote" viewBox="0 0 16 16"><path d="M4 12l8-8M6 4h6v6"/></symbol>
+  <symbol id="addhz" viewBox="0 0 16 16"><path d="M1.5 12.5h13M4 12.5a4 4 0 0 1 8 0M12.5 2v5M10 4.5h5"/></symbol>
+  <symbol id="share" viewBox="0 0 16 16"><path d="M8 10V2.5M5 5.5l3-3 3 3M3 9v4.5h10V9"/></symbol>
+  <symbol id="dots" viewBox="0 0 16 16"><path d="M3 8h.5M8 8h.5M13 8h.5" stroke-width="2.4"/></symbol>
+  <symbol id="clock" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 2"/></symbol>
+  <symbol id="pin" viewBox="0 0 16 16"><path d="M8 14.5s4.5-4.3 4.5-8a4.5 4.5 0 0 0-9 0c0 3.7 4.5 8 4.5 8z"/><circle cx="8" cy="6.5" r="1.5"/></symbol>
+  <symbol id="ticket" viewBox="0 0 16 16"><path d="M1.5 4h13v2.6a1.5 1.5 0 0 0 0 2.8V12h-13V9.4a1.5 1.5 0 0 0 0-2.8z"/><path d="M10 4v8" stroke-dasharray="1.5 1.5"/></symbol>
+  <symbol id="user" viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.7"/><path d="M2.8 14.5c0-3 2.3-5 5.2-5s5.2 2 5.2 5"/></symbol>
+  <symbol id="people" viewBox="0 0 16 16"><circle cx="6" cy="5.5" r="2.3"/><path d="M1.5 13.5c0-2.6 2-4.3 4.5-4.3s4.5 1.7 4.5 4.3M10.5 3.4a2.3 2.3 0 0 1 0 4.3M12 9.6c1.5.6 2.5 2 2.5 3.9"/></symbol>
+  <symbol id="chat" viewBox="0 0 16 16"><path d="M2 2.5h12v8.5H6.5L3.5 14v-3H2z"/></symbol>
+  <symbol id="callout" viewBox="0 0 16 16"><path d="M2 6v4h2.5L10 13V3L4.5 6zM12.5 6a2.5 2.5 0 0 1 0 4"/></symbol>
+  <symbol id="plus" viewBox="0 0 16 16"><path d="M8 2.5v11M2.5 8h11"/></symbol>
+  <symbol id="edit" viewBox="0 0 16 16"><path d="M2.5 13.5l.8-3.2L10.6 3l2.4 2.4-7.3 7.3zM9 4.6l2.4 2.4"/></symbol>
+  <symbol id="paint" viewBox="0 0 16 16"><path d="M9.5 2l4.5 4.5-5 5L4.5 7zM4.5 7L2 14l7-2.5"/></symbol>
+  <symbol id="cal" viewBox="0 0 16 16"><path d="M2 3.5h12V14H2zM2 6.5h12M5 1.5v3M11 1.5v3"/></symbol>
+  <symbol id="back" viewBox="0 0 16 16"><path d="M10.5 2.5L5 8l5.5 5.5"/></symbol>
+  <symbol id="search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14.5 14.5"/></symbol>
+  <symbol id="home" viewBox="0 0 16 16"><path d="M1.5 8L8 2l6.5 6M3.5 6.5v7.5h9V6.5"/></symbol>
+  <symbol id="compass" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5"/><path d="M10.8 5.2L9.4 9.4l-4.2 1.4 1.4-4.2z"/></symbol>
+  <symbol id="close" viewBox="0 0 16 16"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/></symbol>
+  <symbol id="caret" viewBox="0 0 16 16"><path d="M4.5 6.5L8 10l3.5-3.5"/></symbol>
+  <symbol id="star" viewBox="0 0 16 16"><path d="M8 1.8l1.9 4 4.3.5-3.2 3 .9 4.3L8 11.4l-3.9 2.2.9-4.3-3.2-3 4.3-.5z"/></symbol>
+  <symbol id="hz" viewBox="0 0 16 16"><path d="M1.5 11.5h13M4 11.5a4 4 0 0 1 8 0M8 2.5v2M3.2 4.7l1.4 1.4M12.8 4.7l-1.4 1.4"/></symbol>
+  <symbol id="tag" viewBox="0 0 16 16"><path d="M2 2h6l6.5 6.5-6 6L2 8z"/><circle cx="5" cy="5" r="1"/></symbol>
+</svg>
+
+<!-- =====================================================================
+     TEMPLATE: the event page (one markup; the frame decides the width)
+     ===================================================================== -->
+<template id="tpl-event">
+<div class="col">
+
+  <!-- 1. cover — the only card in the event's colours -->
+  <section class="card cover" style="--ebg:#f8f7f3; --eink:#161616; --eac:#262626">
+    <div class="look">
+      <span class="sq sq160 plain" style="--b:#f8f7f3; --a:#262626">▲</span>
+      <div>
+        <div class="when">Sat 17 – Sun 18 Oct 2026 · 10:00–18:00</div>
+        <h1 class="page-title">Baltic Circuit build weekend</h1>
+        <div class="where">Shared workshop, Årsta · Stockholm</div>
+        <div class="kind">Build · Public · Hosted by Anna Vale</div>
+      </div>
+    </div>
+    <div class="acts">
+      <button class="btn"><svg class="i"><use href="#heart"/></svg>Interested</button>
+      <button class="btn"><svg class="i"><use href="#check"/></svg>Going</button>
+      <button class="btn"><svg class="i"><use href="#promote"/></svg>Promote <span class="n">14</span></button>
+      <span class="sp"></span>
+      <button class="btn"><svg class="i"><use href="#addhz"/></svg>Add to horizon</button>
+      <button class="btn"><svg class="i"><use href="#share"/></svg>Share</button>
+    </div>
+  </section>
+
+  <!-- 2. details: the facts as icon rows, then the description -->
+  <section class="card">
+    <h3 class="ct">Details</h3>
+    <div class="list">
+      <div class="icrow"><span class="ico"><svg class="i i20"><use href="#clock"/></svg></span>
+        <div><div class="l1">Sat 17 – Sun 18 Oct 2026</div><div class="l2">10:00–18:00 both days · in 13 days</div></div></div>
+      <div class="icrow"><span class="ico"><svg class="i i20"><use href="#pin"/></svg></span>
+        <div><div class="l1">Shared workshop, Årsta</div><div class="l2">Stockholm · exact address once you’re going</div></div></div>
+      <div class="icrow"><span class="ico"><svg class="i i20"><use href="#ticket"/></svg></span>
+        <div><div class="l1">Free</div><div class="l2">No ticket, just say you’re going</div></div></div>
+      <div class="icrow"><span class="ico"><svg class="i i20"><use href="#user"/></svg></span>
+        <div><div class="l1">Hosted by <u>Anna Vale</u></div><div class="l2">Sound + camp ops · Baltic Circuit</div></div></div>
+    </div>
+    <p class="post">Two days of welding and wiring the camp’s shade structure and LED ridge for next summer. No skills needed; we teach on site.</p>
+  </section>
+
+  <!-- 3. who's going: people you follow first, with faces -->
+  <section class="card">
+    <div class="chd"><h3 class="ct">Who’s going</h3><span class="t13 dim">18 going · 4 interested</span></div>
+    <div class="subh">People you follow</div>
+    <div class="who">
+      <div class="r40"><span class="av av40" style="background:#4b4b4b">AV</span><div><div class="l1"><b>Anna Vale</b></div><div class="l2">Hosting</div></div></div>
+      <div class="r40"><span class="av av40" style="background:#363636">KO</span><div><div class="l1"><b>Kai Okonkwo</b></div><div class="l2">Going · since Tuesday</div></div></div>
+      <div class="r40"><span class="av av40" style="background:#2b2b2b">SR</span><div><div class="l1"><b>Sasha Reed</b></div><div class="l2">Going · since yesterday</div></div></div>
+      <div class="r40"><span class="av av40" style="background:#6b6b6b">RM</span><div><div class="l1"><b>Rio Moss</b></div><div class="l2"><b>Interested · 34m ago</b></div></div></div>
+    </div>
+    <div class="acts">
+      <span class="pile">
+        <span class="av av32" style="background:#565656">JH</span><span class="av av32" style="background:#7c7c7c">MC</span><span class="av av32" style="background:#5a5a5a">LB</span><span class="av av32" style="background:#474747">TK</span><span class="av av32" style="background:#6a6a6a">EÅ</span>
+      </span>
+      <span class="meta">Jon, Mira and 13 others</span>
+      <span class="sp"></span>
+      <button class="btn">See all 22</button>
+    </div>
+  </section>
+
+  <!-- 4. call outs: each one a post, with public replies under it -->
+  <section class="card">
+    <div class="chd"><h3 class="ct">Call outs</h3><span class="t13 dim">1 open</span></div>
+    <div class="r40">
+      <span class="av av40" style="background:#4b4b4b">AV</span>
+      <div><div class="l1"><b>Anna Vale</b> posted a call out</div><div class="l2">2 days ago · open until Thu 15 Oct</div></div>
+      <button class="ib" aria-label="More"><svg class="i"><use href="#dots"/></svg></button>
+    </div>
+    <p class="post">Hey we are creating an event and we are looking for a sound engineer.</p>
+    <div class="att co">
+      <span class="sq sq64"><svg class="i" style="width:28px;height:28px"><use href="#callout"/></svg></span>
+      <div><div class="a1">Sound engineer</div><div class="a2">For this event · Sat 17 Oct</div><div class="a3">Skill: <b>Sound engineering / PA</b></div></div>
+    </div>
+    <div class="acts">
+      <button class="btn primary"><svg class="i"><use href="#chat"/></svg>Answer</button>
+      <button class="btn"><svg class="i"><use href="#share"/></svg>Share</button>
+      <span class="sp"></span><span class="meta">3 replies</span>
+    </div>
+    <div class="thread">
+      <div class="rp"><span class="av av32" style="background:#6b6b6b">RM</span>
+        <div><div class="bub"><div class="rn">Rio Moss</div>I can run FOH on Saturday. Bringing my own interface — is there a 16A outlet in the workshop?</div>
+        <div class="rmeta">3h · <b>Reply</b></div></div></div>
+      <div class="rp"><span class="av av32" style="background:#4b4b4b">AV</span>
+        <div><div class="bub"><div class="rn">Anna Vale <small>· Host</small></div>Two of them, on the back wall. Sunday is still open if anyone wants it.</div>
+        <div class="rmeta">2h · <b>Reply</b></div></div></div>
+      <div class="rp"><span class="av av32" style="background:#565656">JH</span>
+        <div><div class="bub"><div class="rn">Jon Hale</div>I have two tops and a small mixer in Södermalm. Happy to lend them for the weekend.</div>
+        <div class="rmeta">40m · <b>Reply</b></div></div></div>
+      <div class="compose"><span class="av av32" style="background:#1c1c1c">M</span><div class="field">Write a public reply…</div></div>
+      <div class="hint">Replies are public. Answer opens a private chat with Anna.</div>
+    </div>
+  </section>
+
+  <!-- 5. the plan: schedule, bring, take part — a calm key/value list -->
+  <section class="card">
+    <h3 class="ct">Schedule and what to bring</h3>
+    <dl class="kv">
+      <dt>Sat 17 Oct</dt><dd>10:00–18:00 · Build</dd>
+      <dt>Sun 18 Oct</dt><dd>10:00–18:00 · Build</dd>
+      <dt>Bring</dt><dd><ul><li>Work gloves and closed shoes (PPE)</li><li>A potluck dish</li><li>Your own cup</li></ul></dd>
+      <dt>Take part</dt><dd>Volunteering encouraged</dd>
+    </dl>
+  </section>
+
+  <!-- 6. where else it lives -->
+  <section class="card">
+    <h3 class="ct">On Event Horizons</h3>
+    <div class="r40">
+      <span class="mos m40"><span class="sq plain" style="--b:#f8f7f3;--a:#262626">▲</span><span class="sq" style="--b:#06080e;--a:#6fd6c8">☾</span><span class="sq" style="--b:#f6f0e4;--a:#d98d3f">◗</span><span class="sq" style="--b:#16181a;--a:#ffd400">▤</span></span>
+      <div><div class="l1"><b>Baltic Circuit</b></div><div class="l2">Shared calendar for the regional burn camp · 3 events</div></div>
+      <button class="btn">Following</button>
+    </div>
+  </section>
+</div>
+</template>
+
+<!-- =====================================================================
+     TEMPLATE: Home
+     ===================================================================== -->
+<template id="tpl-home">
+<div class="col">
+
+  <!-- shelf: coming up with your people -->
+  <section class="card">
+    <div class="r40">
+      <span class="iconsq"><svg class="i i20"><use href="#cal"/></svg></span>
+      <div><div class="l1"><b>Coming up with your people</b></div><div class="l2">11 events in the next 3 weeks</div></div>
+    </div>
+    <div class="list">
+      <div class="r40"><span class="sq sq40" style="--b:#f6f0e4;--a:#d98d3f">◗</span>
+        <div><div class="l1"><b>Ridge dawn stretch</b></div><div class="l2">Wed 7 Oct · Oslo · Rio is interested</div></div></div>
+      <div class="r40"><span class="sq sq40" style="--b:#1a0703;--a:#ff5a1f">⚡</span>
+        <div><div class="l1"><b>Night kitchen line</b></div><div class="l2">Fri 9 Oct · Gothenburg · Anna is going</div></div></div>
+      <div class="r40"><span class="sq sq40 plain" style="--b:#f8f7f3;--a:#262626">☾</span>
+        <div><div class="l1"><b>Zurich Decompression 2026</b></div><div class="l2">Fri 9 Oct · Zürich · Anna is going</div></div></div>
+    </div>
+    <div class="acts"><button class="btn">Show 8 more</button></div>
+  </section>
+
+  <!-- a call out, in the stream -->
+  <section class="card">
+    <div class="r40">
+      <span class="av av40" style="background:#363636">KO</span>
+      <div><div class="l1"><b>Kai Okonkwo</b> posted a call out</div><div class="l2">2h ago · open until Sun 1 Nov</div></div>
+      <button class="ib" aria-label="More"><svg class="i"><use href="#dots"/></svg></button>
+    </div>
+    <p class="post">Camp kitchen needs a lead who can feed 80 on a two-burner stove.</p>
+    <div class="att co">
+      <span class="sq sq64"><svg class="i" style="width:28px;height:28px"><use href="#callout"/></svg></span>
+      <div><div class="a1">Kitchen lead</div><div class="a2">For Sunrise tea service · Fri 30 Oct · Oslo</div><div class="a3">Matches your skill: <b>Kitchen &amp; cooking</b></div></div>
+    </div>
+    <div class="acts">
+      <button class="btn primary"><svg class="i"><use href="#chat"/></svg>Answer</button>
+      <button class="btn"><svg class="i"><use href="#share"/></svg>Share</button>
+      <span class="sp"></span><span class="meta">2 replies</span>
+    </div>
+    <div class="thread">
+      <div class="rp"><span class="av av32" style="background:#4b4b4b">AV</span>
+        <div><div class="bub"><div class="rn">Anna Vale</div>I can take breakfasts if someone else owns dinner.</div>
+        <div class="rmeta">1h · <b>Reply</b></div></div></div>
+      <div class="morelink">View 1 more reply</div>
+    </div>
+  </section>
+
+  <!-- fresh: Rio is interested, with Message in the action row -->
+  <section class="card sel">
+    <div class="r40">
+      <span class="av av40" style="background:#6b6b6b">RM</span>
+      <div><div class="l1"><b>Rio Moss</b> is interested</div><div class="l2"><b>34m ago</b></div></div>
+      <button class="ib" aria-label="More"><svg class="i"><use href="#dots"/></svg></button>
+    </div>
+    <div class="att">
+      <span class="sq sq64 plain" style="--b:#f8f7f3;--a:#262626">▲</span>
+      <div><div class="a1">Baltic Circuit build weekend</div><div class="a2">Sat 17 – Sun 18 Oct · Stockholm</div><div class="a3">Build · <b>18 going</b> · Anna is hosting</div></div>
+    </div>
+    <div class="acts">
+      <button class="btn"><svg class="i"><use href="#heart"/></svg>Interested</button>
+      <button class="btn"><svg class="i"><use href="#check"/></svg>Going</button>
+      <button class="btn"><svg class="i"><use href="#chat"/></svg>Message Rio</button>
+    </div>
+  </section>
+
+  <!-- several people, one event -->
+  <section class="card">
+    <div class="r40">
+      <span class="av av40" style="background:#4b4b4b">AV</span>
+      <div><div class="l1"><b>Anna</b>, <b>Rio</b> and 2 others are going</div><div class="l2">2h ago</div></div>
+      <button class="ib" aria-label="More"><svg class="i"><use href="#dots"/></svg></button>
+    </div>
+    <div class="att">
+      <span class="sq sq64" style="--b:#0d1b2e;--a:#5ea8ff">◆</span>
+      <div><div class="a1">The Borderland 2027</div><div class="a2">Mon 26 Jul 2027 · Eksjö, Sweden</div><div class="a3">Burn · <b>4 people you follow</b> · 212 going</div></div>
+    </div>
+    <div class="acts">
+      <button class="btn"><svg class="i"><use href="#heart"/></svg>Interested</button>
+      <button class="btn"><svg class="i"><use href="#check"/></svg>Going</button>
+      <button class="btn"><svg class="i"><use href="#share"/></svg>Share</button>
+    </div>
+  </section>
+
+  <!-- friends of friends -->
+  <section class="card">
+    <div class="r40">
+      <span class="iconsq"><svg class="i i20"><use href="#people"/></svg></span>
+      <div><div class="l1"><b>People your friends follow</b></div><div class="l2">From who Anna, Kai and Rio follow</div></div>
+    </div>
+    <div class="list">
+      <div class="r40"><span class="av av40" style="background:#565656">JH</span>
+        <div><div class="l1"><b>Jon Hale</b></div><div class="l2">Anna, Kai and 1 more follow Jon</div></div>
+        <button class="btn"><svg class="i"><use href="#plus"/></svg>Follow</button></div>
+      <div class="r40"><span class="av av40" style="background:#7c7c7c">MC</span>
+        <div><div class="l1"><b>Mira Chen</b></div><div class="l2">Anna, Rio and 1 more follow Mira</div></div>
+        <button class="btn"><svg class="i"><use href="#plus"/></svg>Follow</button></div>
+    </div>
+  </section>
+
+  <!-- a horizon published -->
+  <section class="card">
+    <div class="r40">
+      <span class="av av40" style="background:#6b6b6b">RM</span>
+      <div><div class="l1"><b>Rio Moss</b> published an Event Horizon</div><div class="l2">Yesterday</div></div>
+      <button class="ib" aria-label="More"><svg class="i"><use href="#dots"/></svg></button>
+    </div>
+    <p class="post">Everything with a generator and a light rig. Curated by Rio.</p>
+    <div class="att">
+      <span class="mos m64"><span class="sq" style="--b:#3a2a12;--a:#e6b23c">✦</span><span class="sq" style="--b:#000;--a:#39ff88">✳</span><span class="sq" style="--b:#2b1405;--a:#ff9b2f">◉</span><span class="sq" style="--b:#16181a;--a:#ffd400">▤</span></span>
+      <div><div class="a1">Dust &amp; Neon</div><div class="a2">Event Horizon · 4 events · next Fri 16 Oct</div><div class="a3">A list of events Rio curates, like a playlist</div></div>
+    </div>
+    <div class="acts">
+      <button class="btn primary"><svg class="i"><use href="#plus"/></svg>Follow</button>
+      <button class="btn"><svg class="i"><use href="#share"/></svg>Share</button>
+    </div>
+  </section>
+
+  <div class="fend">That’s the last three weeks. <button class="btn"><svg class="i"><use href="#cal"/></svg>All events</button></div>
+</div>
+</template>
+
+<!-- app nav, shared by both desktop frames -->
+<template id="tpl-nav">
+  <div class="nrow" data-home><svg class="i"><use href="#home"/></svg><span class="nl">Home</span></div>
+  <div class="nrow" data-explore><svg class="i"><use href="#compass"/></svg><span class="nl">Explore</span></div>
+  <div class="nrow sub" data-events><svg class="i"><use href="#cal"/></svg><span class="nl">Events</span></div>
+  <div class="nrow sub"><svg class="i"><use href="#hz"/></svg><span class="nl">Event Horizons</span></div>
+  <div class="nrow sub"><svg class="i"><use href="#callout"/></svg><span class="nl">Call outs</span></div>
+  <div class="nrow sub"><svg class="i"><use href="#people"/></svg><span class="nl">People</span></div>
+  <div class="navh">Your events</div>
+  <div class="nrow"><svg class="i"><use href="#check"/></svg><span class="nl">Going</span><span class="nc">2</span></div>
+  <div class="nrow"><svg class="i"><use href="#heart"/></svg><span class="nl">Interested</span><span class="nc">1</span></div>
+  <div class="nrow"><svg class="i"><use href="#star"/></svg><span class="nl">Hosting</span><span class="nc">2</span></div>
+  <div class="navh">Your horizons</div>
+  <div class="nrow"><span class="mini" style="background:#06080e;color:#6fd6c8">☾</span><span class="nl">My Horizon</span><span class="nc">2</span></div>
+  <div class="navh">Following</div>
+  <div class="nrow"><span class="mini" style="background:#06080e;color:#6fd6c8">☾</span><span class="nl">Baltic Circuit</span></div>
+  <div class="nrow"><span class="mini" style="background:#3a2a12;color:#e6b23c">✦</span><span class="nl">Dust &amp; Neon <span class="ns">Rio Moss</span></span></div>
+  <div class="nrow"><span class="mini" style="background:#06080e;color:#6fd6c8">☾</span><span class="nl">Quiet Rooms <span class="ns">Anna Vale</span></span></div>
+  <div class="navh">People you follow</div>
+  <div class="nrow"><span class="mini" style="background:#4b4b4b">AV</span><span class="nl">Anna Vale <span class="ns">· online</span></span></div>
+  <div class="nrow"><span class="mini" style="background:#6b6b6b">RM</span><span class="nl">Rio Moss <span class="ns">· online</span></span></div>
+  <div class="nrow"><span class="mini" style="background:#363636">KO</span><span class="nl">Kai Okonkwo</span></div>
+  <div class="nrow"><span class="mini" style="background:#2b2b2b">SR</span><span class="nl">Sasha Reed</span></div>
+</template>
+
+<template id="tpl-top">
+  <div class="titlebar"><span class="tg">◆</span><b>Hypernet</b><span>— Home</span></div>
+  <div class="toolbar">
+    <button class="btn primary"><svg class="i"><use href="#plus"/></svg>New<svg class="i"><use href="#caret"/></svg></button>
+    <div class="searchbox"><svg class="i"><use href="#search"/></svg>Search events, horizons, people</div>
+    <span class="spring"></span>
+    <button class="btn"><svg class="i"><use href="#chat"/></svg>Chats <span class="badge">1</span></button>
+    <span class="tsep"></span>
+    <button class="btn"><span class="av" style="width:24px;height:24px;font-size:10px;background:#1c1c1c">M</span>Michal<svg class="i"><use href="#caret"/></svg></button>
+  </div>
+</template>
+
+<div class="doc">
+  <header>
+    <h1>Concept A · Social object</h1>
+    <p class="lede">An event page and a Home story are the same thing: a column of white cards on the app’s grey. Every card starts with a square and two lines, every action sits in one row at the bottom, and the event’s colours stay on its cover and its squares. Built the way Facebook keeps a lot of content calm: very few sizes, repeated exactly.</p>
+    <div class="rules">
+      <div class="rule"><h3>Type: four sizes, one family</h3>
+        <div class="scale">
+          <div><code>13 / 20</code><span style="font-size:13px;line-height:20px;color:var(--dim)">Meta: time, place, counts</span></div>
+          <div><code>14 / 20</code><span>Body, names, buttons</span></div>
+          <div><code>16 / 24</code><b style="font-size:16px;line-height:24px">Card titles</b></div>
+          <div><code>26 / 32</code><b style="font-size:26px;line-height:32px">Event title</b></div>
+        </div>
+        <p style="margin-top:8px">Tahoma only (the app’s <code>--sys</code>). No Helvetica, no mono, no uppercase kickers in content.</p>
+      </div>
+      <div class="rule"><h3>Space: 8 · 16 · 24 · 32</h3>
+        <div class="spec">
+          <div><span style="width:8px;height:8px"></span><small>8</small></div>
+          <div><span style="width:16px;height:16px"></span><small>16</small></div>
+          <div><span style="width:24px;height:24px"></span><small>24</small></div>
+          <div><span style="width:32px;height:32px"></span><small>32</small></div>
+        </div>
+        <ul style="margin-top:8px">
+          <li>Card padding 16. 16 between cards (8 on a phone).</li>
+          <li>16 between blocks in a card, 8 between rows of a list.</li>
+          <li>A square and its words are always 12 apart.</li>
+        </ul>
+      </div>
+      <div class="rule"><h3>Squares: text matches them</h3>
+        <ul>
+          <li><b>40</b> = 20 + 20. Every story, person and list row: square plus two lines.</li>
+          <li><b>64</b> = 24 + 20 + 20. Every attachment (event, horizon, call out).</li>
+          <li><b>32</b>: replies and the face pile only. <b>160</b>: the cover (96 on a phone).</li>
+          <li>The left edge is always the square’s edge. Nothing is nested to the right.</li>
+        </ul>
+      </div>
+      <div class="rule"><h3>Actions: one row, always last</h3>
+        <ul>
+          <li>Hairline, then the app’s bevel buttons, 36 high, left-aligned.</li>
+          <li>Message, Answer, Follow and Share live there, never in a header.</li>
+          <li>Colour never reaches a control. Only the cover and the squares carry the look.</li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  <section class="sec" id="event-desktop">
+    <h2>1 · Event page · desktop, full centre (1440)</h2>
+    <p class="sub">Viewer: Michal (demo). Plain look, so the cover is paper and ink. The Call outs card only exists because there is one open call out.</p>
+    <div class="scroller">
+      <div class="frame" id="f-ev-desk">
+        <div data-top></div>
+        <div class="main">
+          <nav class="panel nav" data-nav="events"></nav>
+          <div class="center">
+            <div class="dbar"><span class="dk">Event</span><span class="dx"><svg class="i"><use href="#close"/></svg></span></div>
+            <div class="ground" data-tpl="event"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="variants">
+      <div class="variant">
+        <p class="vl"><b>When you host it</b>: the same row, with your verbs first. New call out is here, so an event with no call outs shows no empty Call outs card.</p>
+        <section class="card cover" style="--ebg:#f8f7f3; --eink:#161616; --eac:#262626">
+          <div class="acts">
+            <button class="btn primary"><svg class="i"><use href="#plus"/></svg>New call out</button>
+            <button class="btn"><svg class="i"><use href="#edit"/></svg>Edit</button>
+            <button class="btn"><svg class="i"><use href="#paint"/></svg>Customize</button>
+            <span class="sp"></span>
+            <button class="btn"><svg class="i"><use href="#promote"/></svg>Promote <span class="n">14</span></button>
+            <button class="btn"><svg class="i"><use href="#share"/></svg>Share</button>
+            <button class="btn ic" aria-label="More"><svg class="i"><use href="#dots"/></svg></button>
+          </div>
+        </section>
+      </div>
+      <div class="variant">
+        <p class="vl"><b>With a customised look</b> (The Borderland 2027): bg, ink and accent fill the cover only. The rows below stay the app’s.</p>
+        <section class="card cover" style="--ebg:#0d1b2e; --eink:#eaf2ff; --eac:#5ea8ff">
+          <div class="look">
+            <span class="sq sq160" style="--b:#0d1b2e; --a:#5ea8ff; box-shadow:0 0 0 1px rgba(234,242,255,.25)">◆</span>
+            <div>
+              <div class="when">Mon 26 Jul – Sun 1 Aug 2027</div>
+              <h1 class="page-title">The Borderland 2027</h1>
+              <div class="where">Eksjö, Sweden</div>
+              <div class="kind">Burn · Membership · Hosted by The Borderland</div>
+            </div>
+          </div>
+          <div class="acts">
+            <button class="btn"><svg class="i"><use href="#heart"/></svg>Interested</button>
+            <button class="btn on"><svg class="i"><use href="#check"/></svg>Going</button>
+            <button class="btn"><svg class="i"><use href="#promote"/></svg>Promote <span class="n">96</span></button>
+            <span class="sp"></span>
+            <button class="btn"><svg class="i"><use href="#addhz"/></svg>Add to horizon</button>
+            <button class="btn"><svg class="i"><use href="#share"/></svg>Share</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="event-phone">
+    <h2>2 · Event page · phone (375)</h2>
+    <p class="sub">Same cards, edge to edge, 8 apart. The verbs move to the bar at the bottom, as today. The frame scrolls; the screenshot shows the whole page with the bars at its end.</p>
+    <div class="pair">
+      <div class="phone" id="f-ev-phone">
+        <div class="phead"><svg class="i i20"><use href="#back"/></svg><b>Baltic Circuit build weekend</b></div>
+        <div class="pbody" data-tpl="event"></div>
+        <div class="evbar">
+          <button class="btn"><svg class="i"><use href="#heart"/></svg>Interested</button>
+          <button class="btn"><svg class="i"><use href="#check"/></svg>Going</button>
+          <button class="btn"><svg class="i"><use href="#promote"/></svg>Promote</button>
+          <button class="btn ic" aria-label="More"><svg class="i"><use href="#dots"/></svg></button>
+        </div>
+        <div class="tabbar">
+          <div class="tab on"><svg class="i i20"><use href="#home"/></svg>Home</div>
+          <div class="tab"><svg class="i i20"><use href="#compass"/></svg>Explore</div>
+          <div class="tab"><span class="plusbox"><svg class="i i20"><use href="#plus"/></svg></span>New</div>
+          <div class="tab"><svg class="i i20"><use href="#chat"/></svg><span class="badge">1</span>Chats</div>
+          <div class="tab"><svg class="i i20"><use href="#user"/></svg>You</div>
+        </div>
+      </div>
+      <div class="notes">
+        <h3>What changed on the event page</h3>
+        <ul>
+          <li><b>The lined facts grid is gone.</b> When, where, entry and host are four icon rows in a Details card, followed by the description.</li>
+          <li><b>One font.</b> The page used Helvetica Neue, Lucida mono kickers and Tahoma controls. Now it is Tahoma only, with sentence-case card titles.</li>
+          <li><b>The look is a cover, not a world.</b> Colour is limited to the top card. Below it the page is the app’s white and grey, like Home.</li>
+          <li><b>Call outs are posts.</b> Author, ask, Answer (private) and Share, with public replies under them and a reply box. With no call outs there is no card.</li>
+          <li><b>Who’s going shows faces.</b> People you follow come first with their status, and everyone else is a pile with a count.</li>
+          <li><b>Timeline, Bring and Take part are one key/value card</b>, with no dashed rules and no bullets in the accent colour.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="home-desktop">
+    <h2>3 · Home · desktop (1440), story open in the reading pane</h2>
+    <p class="sub">The selected story (Rio is interested) opens the event on the right. Both columns are made from the same card.</p>
+    <div class="scroller">
+      <div class="frame" id="f-home-desk">
+        <div data-top></div>
+        <div class="main">
+          <nav class="panel nav" data-nav="home"></nav>
+          <div class="center">
+            <div class="split">
+              <div class="listcol">
+                <div class="chead"><h2>Home</h2><p>What the people you follow are doing</p></div>
+                <div class="ground" data-tpl="home"></div>
+              </div>
+              <div class="panecol">
+                <div class="chead" style="min-height:0;padding:0"><div class="dbar"><span class="dk">Event</span><span class="dx"><svg class="i"><use href="#close"/></svg></span></div></div>
+                <div class="ground" data-tpl="event"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="home-phone">
+    <h2>4 · Home · phone (375)</h2>
+    <p class="sub">Six stories, one rhythm: the square at the left edge, two lines beside it, the object full width under it, the actions last.</p>
+    <div class="pair">
+      <div class="phone" id="f-home-phone">
+        <div class="phead"><b>Home</b><svg class="i i20"><use href="#search"/></svg></div>
+        <div class="pbody" data-tpl="home"></div>
+        <div class="tabbar">
+          <div class="tab on"><svg class="i i20"><use href="#home"/></svg>Home</div>
+          <div class="tab"><svg class="i i20"><use href="#compass"/></svg>Explore</div>
+          <div class="tab"><span class="plusbox"><svg class="i i20"><use href="#plus"/></svg></span>New</div>
+          <div class="tab"><svg class="i i20"><use href="#chat"/></svg><span class="badge">1</span>Chats</div>
+          <div class="tab"><svg class="i i20"><use href="#user"/></svg>You</div>
+        </div>
+      </div>
+      <div class="notes">
+        <h3>What changed on Home</h3>
+        <ul>
+          <li><b>Nothing is nested to the right.</b> Today the event card hangs off a 32px avatar column. Now the story’s object runs the full width, aligned to the avatar’s left edge.</li>
+          <li><b>One avatar size per role.</b> 40 for whoever the story is about, 32 for replies. The 20px overlapping second avatar and the 18px faces are gone.</li>
+          <li><b>Every story is a card with the same anatomy:</b> header (40 + two lines), optional text, a 64px attachment, then the action row.</li>
+          <li><b>Actions in one place.</b> Message moved out of the header into the action row as “Message Rio”. Answer, Follow and Show more sit there too.</li>
+          <li><b>The call-out strip became a story</b>, still inverted, at the same type sizes as everything else. It is no longer a 32px headline. Its public replies preview under it.</li>
+          <li><b>Day bands, the greeting and the mono labels are cut.</b> Relative time on each story does that job.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+/* the same markup is shown at every width: clone the templates into the frames */
+document.querySelectorAll('[data-tpl]').forEach(function(slot){
+  slot.appendChild(document.getElementById('tpl-' + slot.dataset.tpl).content.cloneNode(true));
+});
+document.querySelectorAll('[data-top]').forEach(function(slot){
+  var t = document.getElementById('tpl-top').content.cloneNode(true);
+  if (slot.closest('#f-ev-desk')) t.querySelector('.titlebar span:last-child').textContent = '— Baltic Circuit build weekend';
+  slot.replaceWith(t);
+});
+document.querySelectorAll('[data-nav]').forEach(function(nav){
+  nav.appendChild(document.getElementById('tpl-nav').content.cloneNode(true));
+  var sel = nav.dataset.nav === 'home' ? '[data-home]' : '[data-events]';
+  nav.querySelector(sel).classList.add('sel');
+});
+/* in the reading pane the event is not the selected story's twin — only the Home column has a selected card */
+document.querySelectorAll('#f-ev-desk .card.sel, #f-ev-phone .card.sel, .panecol .card.sel').forEach(function(c){ c.classList.remove('sel'); });
+</script>
+</body>
+</html>

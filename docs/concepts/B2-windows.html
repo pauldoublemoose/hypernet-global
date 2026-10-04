@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Concept B2 · Windows</title>
+<style>
+/* =====================================================================
+   CONCEPT B2 — "Windows" (Oskar), iteration on B "Document window"
+   Home is one centred column. An event opens in its own window over it:
+   a Windows-2000 frame you can drag by the title bar, maximise or close (×, Esc).
+   One window at a time — opening something else replaces what it shows.
+   On a phone the window is a full-screen sheet; × puts you back in the feed where you were.
+   Rhythm (unchanged from B): spacing 8 / 16 / 24 · type 12 / 14 / 20 in Tahoma ·
+   32 = a person, 48 = a thing · controls 36 desktop, 44 touch, 28 inline only.
+   ===================================================================== */
+:root{
+  --face:#d4d0c8; --face-lt:#e8e5df; --face-dk:#c2beb5;
+  --white:#fff; --shadow:#808080; --dark:#404040;
+  --ink:#141414; --ink2:#3a3a3a; --dim:#666; --line:#e2dfd8; --rule:#c9c5bc; --hover:#f0eee9; --sel:#262626;
+  --bar:linear-gradient(90deg,#262626 0%,#555 58%,#9b9b9b 100%);
+  --sys:Tahoma,"Segoe UI",Verdana,Geneva,sans-serif;
+  --ctl:36px; --ctl-s:28px;
+  --out: inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white), inset -2px -2px 0 var(--shadow), inset 2px 2px 0 var(--face-lt);
+  --in:  inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white), inset 2px 2px 0 var(--dark), inset -2px -2px 0 var(--face);
+}
+*{ box-sizing:border-box; }
+body{ margin:0; background:#a9a59c; color:var(--ink); font:14px/16px var(--sys); -webkit-font-smoothing:antialiased; }
+button,input,textarea{ font:inherit; color:inherit; }
+p{ margin:0; }
+[hidden]{ display:none !important; }
+.ic{ display:block; flex:0 0 auto; }
+
+/* ---------- the sheet this concept sits on ---------- */
+.sheet{ padding:40px 40px 80px; }
+.intro{ max-width:1440px; margin:0 0 32px; padding:24px; background:var(--face); box-shadow:var(--out); }
+.intro h1{ margin:0 0 8px; font-size:20px; line-height:24px; }
+.intro p{ max-width:100ch; line-height:20px; color:var(--ink2); }
+.intro ul{ margin:8px 0 0; padding-left:20px; line-height:20px; color:var(--ink2); }
+.label{ margin:40px 0 8px; font-size:14px; line-height:16px; font-weight:bold; color:#fff; text-shadow:0 1px 0 rgba(0,0,0,.35); }
+.label small{ font-weight:normal; opacity:.9; }
+
+/* ---------- controls (the app's own) ---------- */
+.btn{ height:var(--ctl); min-width:var(--ctl); padding:0 12px; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  border:0; background:var(--face); color:var(--ink); white-space:nowrap; font-size:14px; box-shadow:var(--out); cursor:pointer; }
+.btn:active{ box-shadow:var(--in); }
+.btn.on{ box-shadow:var(--in); background:var(--face-lt); font-weight:bold; }
+.btn.primary{ font-weight:bold; box-shadow:0 0 0 1px #000, var(--out); }
+.btn.primary:active{ box-shadow:0 0 0 1px #000, var(--in); }
+.btn.s{ height:var(--ctl-s); padding:0 8px; gap:4px; font-size:12px; }
+.btn .n{ font-size:12px; color:var(--dim); }
+.btn.icon{ padding:0; width:var(--ctl); }
+.btn:focus-visible, .wbtn:focus-visible, .olink:focus-visible{ outline:1px dotted #000; outline-offset:-5px; }
+.grp{ display:flex; gap:4px; }
+.tsep{ width:2px; align-self:stretch; margin:4px; box-shadow:inset 1px 0 0 var(--shadow), inset -1px 0 0 var(--white); }
+.field{ height:var(--ctl); display:flex; align-items:center; gap:8px; padding:0 8px; background:#fff; box-shadow:var(--in); color:var(--dim); }
+.link{ padding:0; border:0; background:none; color:var(--ink); text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
+
+.av{ display:inline-grid; place-items:center; flex:0 0 auto; color:#fff; font-weight:bold; }
+.av.a20{ width:20px; height:20px; font-size:9px; }
+.av.a24{ width:24px; height:24px; font-size:10px; }
+.av.a32{ width:32px; height:32px; font-size:12px; }
+.av.a48{ width:48px; height:48px; font-size:14px; }
+.av.sys{ background:var(--face); color:var(--ink2); box-shadow:var(--out); }
+.sq{ display:grid; place-items:center; flex:0 0 auto; background:var(--ebg,#f8f7f3); color:var(--eac,#262626); line-height:1; }
+.sq.plain{ box-shadow:inset 0 0 0 1px rgba(0,0,0,.3); }
+.sq.s16{ width:16px; height:16px; font-size:10px; }
+.sq.s20{ width:20px; height:20px; font-size:12px; }
+.sq.s24{ width:24px; height:24px; font-size:14px; }
+.sq.s48{ width:48px; height:48px; font-size:26px; }
+.sq.s64{ width:64px; height:64px; font-size:34px; }
+.sq.s96{ width:96px; height:96px; font-size:52px; }
+
+/* ---------- the app window ---------- */
+.win{ position:relative; overflow:hidden; background:var(--face); box-shadow:0 0 0 1px #000, 0 12px 40px rgba(0,0,0,.35); display:flex; flex-direction:column; }
+.win.desk{ width:1440px; height:900px; }
+.titlebar{ flex:0 0 32px; display:flex; align-items:center; gap:8px; padding:0 8px; color:#fff; background:var(--bar); font-size:12px; }
+.titlebar .tg{ width:16px; height:16px; display:grid; place-items:center; background:var(--face); color:#000; font-size:10px; box-shadow:inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white); }
+.titlebar .wt{ opacity:.8; }
+.toolbar{ flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:8px; border-bottom:1px solid var(--shadow); box-shadow:0 1px 0 var(--white); }
+.toolbar .field{ flex:0 1 460px; }
+.spring{ flex:1; }
+.badge{ min-width:20px; height:20px; padding:0 6px; display:inline-grid; place-items:center; background:#000; color:#fff; font-size:12px; font-weight:bold; border-radius:10px; }
+/* no reading pane: the nav, then a stage with the feed centred in it */
+.main{ position:relative; flex:1; min-height:0; display:grid; grid-template-columns:252px minmax(0,1fr); gap:8px; padding:8px; }
+.col{ display:flex; flex-direction:column; min-width:0; min-height:0; }
+.stage{ display:flex; justify-content:center; min-width:0; min-height:0; }
+.stage > .col{ width:100%; max-width:680px; }
+.panel{ flex:1; min-height:0; background:#fff; box-shadow:var(--in); overflow:auto; padding:2px; }
+.panel::-webkit-scrollbar, .wbody::-webkit-scrollbar, .pfeed::-webkit-scrollbar{ width:16px; }
+.panel::-webkit-scrollbar-track, .wbody::-webkit-scrollbar-track, .pfeed::-webkit-scrollbar-track{ background:repeating-conic-gradient(#fff 0 25%, #d4d0c8 0 50%) 0 0/2px 2px; }
+.panel::-webkit-scrollbar-thumb, .wbody::-webkit-scrollbar-thumb, .pfeed::-webkit-scrollbar-thumb{ background:var(--face); box-shadow:var(--out); }
+.pfeed::-webkit-scrollbar{ width:0; }
+
+.nav{ padding:8px 0 16px; }
+.nh{ padding:16px 16px 8px; font-size:12px; font-weight:bold; color:var(--dim); }
+.nr{ display:flex; align-items:center; gap:8px; height:32px; margin:0 4px; padding:0 8px 0 12px; white-space:nowrap; }
+.nr .nl{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.nr .ns{ color:var(--dim); font-size:12px; }
+.nr .nc{ font-size:12px; color:var(--dim); }
+.nr.sel{ background:var(--sel); color:#fff; }
+.nr.sub{ padding-left:36px; font-size:12px; }
+.nr .ic{ color:var(--ink2); }
+.nr.sel .ic{ color:#ccc; }
+.chead{ flex:0 0 48px; padding:0 4px; display:flex; flex-direction:column; justify-content:center; }
+.chead h2{ margin:0; font-size:20px; line-height:24px; }
+.chead .cs{ font-size:12px; color:var(--dim); }
+
+/* ---------- Home: one entry anatomy, repeated (as in B) ---------- */
+.list{ container:feed / inline-size; }
+.band{ height:32px; display:flex; align-items:center; gap:8px; padding:0 16px; background:var(--face-lt); border-top:1px solid #fff; border-bottom:1px solid var(--rule);
+  font-size:12px; font-weight:bold; color:var(--ink); }
+.band .bc{ font-weight:normal; color:var(--dim); }
+.band .bx{ margin-left:auto; display:flex; gap:4px; }
+.band .bx .btn{ height:24px; width:24px; min-width:24px; padding:0; }
+.fe{ display:flex; flex-direction:column; gap:8px; padding:16px; border-bottom:1px solid var(--line); }
+.feh{ display:flex; align-items:center; gap:8px; min-height:32px; }
+.fet{ flex:1; min-width:0; }
+.fes{ font-size:14px; line-height:16px; color:var(--ink2); }
+.fes b{ color:var(--ink); }
+.fem{ font-size:12px; line-height:16px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fem .fresh{ color:var(--ink); font-weight:bold; }
+.obj{ position:relative; display:flex; align-items:center; gap:8px; padding:8px; background:#fff; border:1px solid var(--rule); }
+.obj.flat{ border:0; padding:0; background:transparent; }
+.obj.sel{ background:var(--face-lt); box-shadow:0 0 0 1px var(--ink); border-color:var(--ink); }
+.obj[data-ev]:hover{ background:var(--hover); }
+.obj.sel:hover{ background:var(--face-lt); }
+.ot{ flex:1; min-width:0; }
+.o1{ font-size:14px; line-height:16px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.o2, .o3{ font-size:12px; line-height:16px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.o3{ color:var(--ink2); }
+/* the title is the button that opens the window; it covers the row for the pointer */
+.olink{ display:block; width:100%; padding:0; border:0; background:none; font:inherit; font-weight:bold; text-align:left; color:inherit; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.olink::after{ content:""; position:absolute; inset:0; }
+.ov, .odate{ position:relative; z-index:1; }
+.ov{ display:flex; gap:4px; flex:0 0 auto; }
+.odate{ flex:0 0 auto; align-self:flex-start; font-size:12px; line-height:16px; color:var(--ink2); text-align:right; }
+.odate b{ display:block; color:var(--ink); font-size:14px; }
+.stack{ display:flex; flex-direction:column; border:1px solid var(--rule); }
+.stack .obj{ border:0; border-bottom:1px solid var(--line); }
+.stack .obj:last-child{ border-bottom:0; }
+.fmore{ align-self:flex-start; }
+@container feed (max-width:560px){
+  .obj{ flex-wrap:wrap; }
+  .obj > .ov{ flex:1 1 100%; }
+  .obj > .ov .btn{ flex:1; }
+}
+.co{ display:flex; flex-direction:column; gap:8px; padding:16px; background:var(--ink); color:#fff; outline:1px solid #fff; outline-offset:-4px; }
+.cot{ display:flex; align-items:center; gap:8px; font-size:12px; color:#c4c4c4; }
+.tag{ display:inline-flex; align-items:center; gap:4px; height:20px; padding:0 8px; background:#fff; color:#000; font-size:12px; font-weight:bold; }
+.cot .right{ margin-left:auto; }
+.coa{ font-size:20px; line-height:24px; font-weight:bold; }
+.cob{ font-size:14px; line-height:20px; color:#e6e6e6; max-width:60ch; }
+.co .obj{ background:#242424; border-color:#4a4a4a; color:#fff; }
+.co .obj[data-ev]:hover{ background:#2e2e2e; }
+.co .obj.sel{ background:#2e2e2e; box-shadow:0 0 0 1px #fff; border-color:#fff; }
+.co .o2{ color:#c4c4c4; } .co .o3{ color:#e0e0e0; }
+.cof{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.cof .cn{ font-size:12px; color:#c4c4c4; }
+.co .btn{ color:#000; }
+.co .link{ color:#fff; }
+
+/* ---------- the event, as a document (as in B) ---------- */
+.doc{ container:doc / inline-size; background:#fff; }
+.tband{ display:flex; gap:16px; align-items:center; padding:24px; background:var(--ebg,#f8f7f3); color:var(--eink,#161616); border-bottom:1px solid var(--rule); }
+.tband .tt{ flex:1; min-width:0; }
+.tkind{ font-size:12px; line-height:16px; font-weight:bold; color:var(--eac,#3a3a3a); }
+.tband h1{ margin:0; font-size:20px; line-height:24px; font-weight:bold; }
+.tsub{ font-size:14px; line-height:20px; }
+.tsub2{ font-size:12px; line-height:16px; opacity:.8; }
+.atb{ display:flex; align-items:center; gap:4px; flex-wrap:wrap; padding:8px 16px; background:var(--face); box-shadow:inset 0 1px 0 var(--white), inset 0 -1px 0 var(--shadow); }
+.atb .r{ margin-left:auto; display:flex; gap:4px; }
+.dbody{ display:flex; flex-direction:column; gap:24px; padding:24px; }
+.gb{ margin:0; padding:8px 16px 16px; border:1px solid #bdb9b0; box-shadow:inset 1px 1px 0 #fff; min-width:0; }
+.gb > legend{ padding:0 8px; margin-left:-8px; font-size:12px; line-height:16px; font-weight:bold; color:var(--ink); }
+.gb > legend .bc{ font-weight:normal; color:var(--dim); }
+.kv{ display:grid; grid-template-columns:112px minmax(0,1fr); gap:8px 16px; margin:8px 0 0; }
+.kv dt{ color:var(--dim); line-height:16px; }
+.kv dd{ margin:0; line-height:16px; }
+.kv dd small{ display:block; font-size:12px; color:var(--dim); }
+.kv ul{ margin:0; padding:0; list-style:none; }
+.kv li{ position:relative; padding-left:12px; }
+.kv li + li{ margin-top:8px; }
+.kv li::before{ content:""; position:absolute; left:0; top:6px; width:4px; height:4px; background:var(--ink); }
+.prose{ margin-top:8px; line-height:20px; max-width:66ch; }
+/* a call out's answers are public, under it, drawn like a tree view */
+.thread{ position:relative; display:flex; flex-direction:column; gap:16px; margin-top:16px; }
+.thread::before{ content:""; position:absolute; left:15px; top:-16px; bottom:16px; border-left:1px dotted var(--shadow); }
+.rp{ position:relative; display:grid; grid-template-columns:32px minmax(0,1fr); gap:0 8px; }
+.rp > .av{ grid-row:1 / span 2; }
+.rp .rh{ grid-column:2; font-size:12px; line-height:16px; color:var(--dim); }
+.rp .rh b{ font-size:14px; color:var(--ink); margin-right:4px; }
+.rp .rh .host{ display:inline-block; margin-right:4px; padding:0 4px; border:1px solid var(--ink2); color:var(--ink2); font-size:12px; line-height:14px; }
+.rp .rh .now{ color:var(--ink); font-weight:bold; }
+.rp .rt{ grid-column:2; line-height:20px; white-space:pre-wrap; overflow-wrap:anywhere; }
+.rp.new{ animation:none; background:var(--hover); box-shadow:0 0 0 8px var(--hover); }
+.compose{ position:relative; display:grid; grid-template-columns:32px minmax(0,1fr) auto; gap:8px; align-items:start; }
+.compose textarea{ height:var(--ctl); min-height:var(--ctl); padding:8px; border:0; border-radius:0; resize:none; background:#fff; box-shadow:var(--in); line-height:20px; overflow:hidden; }
+.compose textarea:focus{ outline:1px dotted #000; outline-offset:-5px; }
+.cnote{ grid-column:2 / -1; font-size:12px; color:var(--dim); }
+.who{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px 16px; margin-top:8px; }
+.wp{ display:flex; align-items:center; gap:8px; min-width:0; }
+.wp .wn{ min-width:0; }
+.wp .wn b{ display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.wp .wn small{ display:block; font-size:12px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.wmore{ display:flex; align-items:center; gap:16px; margin-top:16px; color:var(--ink2); }
+.prov{ font-size:12px; color:var(--dim); }
+@container doc (max-width:560px){
+  .tband{ padding:16px; align-items:flex-start; }
+  .tband .sq.s96{ width:64px; height:64px; font-size:34px; }
+  .dbody{ padding:16px; gap:16px; }
+  .gb{ padding:8px 8px 16px 16px; }
+  .kv{ grid-template-columns:88px minmax(0,1fr); gap:8px; }
+  .who{ grid-template-columns:1fr; }
+  .compose{ grid-template-columns:32px minmax(0,1fr); }
+  .compose .btn{ grid-column:2; justify-self:start; }
+  .cnote{ grid-column:2; }
+}
+
+/* ---------- the event window: a Windows 2000 frame over the feed ---------- */
+.ewin{ position:absolute; z-index:20; left:692px; top:16px; width:720px; height:calc(100% - 32px); display:flex; flex-direction:column; padding:4px;
+  background:var(--face); box-shadow:var(--out), 0 0 0 1px #000, 8px 8px 0 rgba(0,0,0,.18); }
+.ewin.max{ left:8px !important; top:8px !important; width:calc(100% - 16px); height:calc(100% - 16px); }
+.wtb{ flex:0 0 24px; display:flex; align-items:center; gap:4px; padding:0 2px 0 4px; background:var(--bar); color:#fff; cursor:move; user-select:none; touch-action:none; }
+.wtb .wtt{ flex:1; min-width:0; font-size:12px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.wbtn{ width:20px; height:18px; display:grid; place-items:center; flex:0 0 auto; border:0; padding:0; background:var(--face); color:#000; box-shadow:var(--out); cursor:pointer; }
+.wbtn:active{ box-shadow:var(--in); }
+.wbtn + .wbtn.x{ margin-left:2px; }
+.wbody{ flex:1; min-height:0; margin-top:4px; overflow:auto; background:#fff; box-shadow:var(--in); padding:2px; }
+.wstatus{ flex:0 0 24px; display:flex; align-items:center; gap:8px; margin-top:4px; padding:0 8px; font-size:12px; color:var(--ink2); box-shadow:var(--thin, inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white)); }
+.ewin.dragging{ opacity:.96; }
+.ewin.dragging .wbody{ pointer-events:none; }
+
+/* ---------- phone: the window is a full-screen sheet ---------- */
+.win.phone{ width:375px; height:812px; --ctl:44px; --ctl-s:36px; }
+.appbar{ flex:0 0 auto; display:flex; align-items:center; gap:4px; min-height:56px; padding:0 4px; color:#fff; background:var(--bar); }
+.appbar .ab{ width:44px; height:44px; display:grid; place-items:center; }
+.appbar .abt{ flex:1; min-width:0; padding:0 8px; }
+.appbar .abt b{ display:block; font-size:20px; line-height:24px; }
+.pfeed{ flex:1; min-height:0; overflow:auto; background:#fff; }
+.tabbar{ flex:0 0 auto; display:flex; background:var(--face); box-shadow:inset 0 1px 0 #fff; border-top:1px solid var(--shadow); padding:4px 4px 8px; }
+.tab{ flex:1; height:56px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:12px; color:var(--ink2); }
+.tab.on{ font-weight:bold; color:var(--ink); background:#fff; box-shadow:var(--in); }
+.tab .tn{ width:32px; height:28px; display:grid; place-items:center; background:var(--face); box-shadow:var(--out); }
+.psheet{ position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; background:var(--face); }
+.psheet .wtb{ flex:0 0 56px; gap:8px; padding:0 6px 0 16px; cursor:default; }
+.psheet .wtb .wtt{ font-size:14px; line-height:16px; white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.psheet .wtb .wtt small{ display:block; font-weight:normal; font-size:12px; opacity:.8; }
+.psheet .wbtn{ width:44px; height:44px; }
+.psheet .wbody{ margin:0; box-shadow:none; padding:0; }
+.evbar{ flex:0 0 auto; display:flex; gap:4px; padding:8px; background:var(--face); box-shadow:inset 0 1px 0 var(--white), 0 -1px 0 var(--shadow); }
+.evbar .btn{ flex:1; padding:0 8px; }
+.evbar .btn.icon{ flex:0 0 44px; }
+.row2{ display:flex; gap:40px; align-items:flex-start; flex-wrap:wrap; }
+.note{ max-width:360px; padding:16px; background:var(--face); box-shadow:var(--out); line-height:20px; color:var(--ink2); }
+.note b{ color:var(--ink); }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<div class="intro">
+  <h1>Concept B2 — Windows</h1>
+  <p>Home is one centred column. Opening an event opens it in its own window over the feed — drag it by the title bar, double-click the title bar or press □ to maximise, × or Esc to close. One thing at a time: opening another event replaces what the window shows. On a phone the window is a full-screen sheet with × in its title bar, and closing it puts you back in the feed where you were. Call outs keep Answer, and an answer is public, under the call out.</p>
+  <ul>
+    <li><b>Try it:</b> drag the event window; open another event from the feed (click its title); press Answer on the call out, type, post; Esc closes.</li>
+    <li><b>Rhythm as in B:</b> spacing 8 / 16 / 24 · type 12 / 14 / 20 in Tahoma · 32 = a person, 48 = a thing · controls 36 (44 touch).</li>
+  </ul>
+</div>
+
+<!-- ============================================================ DESKTOP -->
+<div class="label">1 · Desktop 1440 × 900 — Home centred, an event open in its window <small>· drag the title bar · Esc closes</small></div>
+<div class="win desk" id="ab-desk">
+  <div class="titlebar"><span class="tg">◆</span><b>Hypernet</b><span class="wt">— Home</span></div>
+  <div class="toolbar">
+    <button class="btn"><i data-i="plus"></i>New<i data-i="down" data-s="14"></i></button>
+    <div class="field"><i data-i="search" data-s="16"></i>Search events, horizons, people</div>
+    <span class="spring"></span>
+    <button class="btn"><i data-i="chat"></i>Chats <span class="badge">1</span></button>
+    <span class="tsep"></span>
+    <button class="btn"><span class="av a24" style="background:#1c1c1c">M</span>Michal<i data-i="down" data-s="14"></i></button>
+  </div>
+  <div class="main">
+    <div class="col"><div class="panel" data-slot="nav"></div></div>
+    <div class="stage">
+      <div class="col">
+        <div class="chead"><h2>Home</h2><div class="cs">What the people you follow are doing</div></div>
+        <div class="panel list" data-slot="feed"></div>
+      </div>
+    </div>
+    <section class="ewin" role="dialog" aria-label="Event" data-win>
+      <div class="wtb" data-drag>
+        <span data-wicon></span><span class="wtt" data-wtitle></span>
+        <button class="wbtn" data-act="max" aria-label="Maximise"><svg width="10" height="9" viewBox="0 0 10 9"><path d="M.5.5h9v8h-9zM.5 1.5h9" fill="none" stroke="#000"/></svg></button>
+        <button class="wbtn x" data-act="close" aria-label="Close"><svg width="10" height="9" viewBox="0 0 10 9"><path d="m1 .5 8 8M9 .5l-8 8" stroke="#000" stroke-width="1.6"/></svg></button>
+      </div>
+      <div class="wbody" data-wbody></div>
+      <div class="wstatus" data-wstatus></div>
+    </section>
+  </div>
+</div>
+
+<!-- ============================================================ PHONE -->
+<div class="row2">
+  <div>
+    <div class="label">2 · Phone 375 × 812 — the window is a full-screen sheet <small>· × goes back to the feed, scrolled where you were</small></div>
+    <div class="win phone" id="ab-phone">
+      <div class="appbar"><div class="abt"><b>Home</b></div><span class="ab"><i data-i="search" data-s="22"></i></span></div>
+      <div class="pfeed list" data-slot="feed"></div>
+      <div data-slot="tabs"></div>
+      <section class="psheet" role="dialog" aria-label="Event" data-win>
+        <div class="wtb">
+          <span data-wicon></span><span class="wtt" data-wtitle></span>
+          <button class="wbtn x" data-act="close" aria-label="Close"><svg width="16" height="16" viewBox="0 0 16 16"><path d="m2 2 12 12M14 2 2 14" stroke="#000" stroke-width="2"/></svg></button>
+        </div>
+        <div class="wbody" data-wbody></div>
+        <div class="evbar">
+          <button class="btn"><i data-i="heart" data-s="16"></i>Interested</button>
+          <button class="btn"><i data-i="check" data-s="16"></i>Going</button>
+          <button class="btn"><i data-i="promote" data-s="16"></i>Promote</button>
+          <button class="btn icon" aria-label="More"><i data-i="dots" data-s="16"></i></button>
+        </div>
+      </section>
+    </div>
+  </div>
+  <div>
+    <div class="label">Notes</div>
+    <div class="note">
+      <p><b>One window, not many.</b> A second window would mean comparing two events side by side — rare here, and it brings back the clutter the owner wants gone. Opening another event replaces the window's content; the feed row that is open stays marked.</p>
+      <p style="margin-top:16px"><b>Where it opens.</b> Over the right of the feed, so the feed's left edge — avatars, who did what, the call out's Answer — stays visible beside it. It remembers where you dragged it until you close it.</p>
+      <p style="margin-top:16px"><b>Answer is public.</b> Answer on a call out (Home or event) takes you to the box under the call out; what you post shows there for everyone, with your name and time. No direct messages from a call out.</p>
+    </div>
+  </div>
+</div>
+
+</div><!-- /sheet -->
+
+<!-- ============================================================ shared parts -->
+<template id="t-nav">
+  <div class="nav">
+    <div class="nr sel"><i data-i="home"></i><span class="nl">Home</span></div>
+    <div class="nr"><i data-i="explore"></i><span class="nl">Explore</span></div>
+    <div class="nr sub"><span class="nl">Events</span></div>
+    <div class="nr sub"><span class="nl">Event Horizons</span></div>
+    <div class="nr sub"><span class="nl">Call outs</span></div>
+    <div class="nr sub"><span class="nl">People</span></div>
+    <div class="nh">Your events</div>
+    <div class="nr"><i data-i="check"></i><span class="nl">Going</span><span class="nc">2</span></div>
+    <div class="nr"><i data-i="heart"></i><span class="nl">Interested</span><span class="nc">1</span></div>
+    <div class="nr"><i data-i="star"></i><span class="nl">Hosting</span><span class="nc">2</span></div>
+    <div class="nh">Your horizons</div>
+    <div class="nr"><span class="sq s20" style="--ebg:#06080e;--eac:#6fd6c8">☾</span><span class="nl">My Horizon</span><span class="nc">2</span></div>
+    <div class="nh">Following</div>
+    <div class="nr"><span class="sq s20" style="--ebg:#0d1b2e;--eac:#5ea8ff">☾</span><span class="nl">Baltic Circuit</span></div>
+    <div class="nr"><span class="sq s20" style="--ebg:#3a2a12;--eac:#e6b23c">✦</span><span class="nl">Dust &amp; Neon <span class="ns">Rio Moss</span></span></div>
+    <div class="nr"><span class="sq s20" style="--ebg:#06080e;--eac:#6fd6c8">☾</span><span class="nl">Quiet Rooms <span class="ns">Anna Vale</span></span></div>
+    <div class="nh">People you follow</div>
+    <div class="nr"><span class="av a20" style="background:#4b4b4b">AV</span><span class="nl">Anna Vale <span class="ns">· online</span></span></div>
+    <div class="nr"><span class="av a20" style="background:#6b6b6b">RM</span><span class="nl">Rio Moss <span class="ns">· online</span></span></div>
+    <div class="nr"><span class="av a20" style="background:#363636">KO</span><span class="nl">Kai Okonkwo</span></div>
+    <div class="nr"><span class="av a20" style="background:#2b2b2b">SR</span><span class="nl">Sasha Reed</span></div>
+  </div>
+</template>
+
+<template id="t-feed">
+  <div class="band">Call outs for you <span class="bc">1 of 2</span><span class="bx"><button class="btn" aria-label="Previous"><i data-i="back" data-s="12"></i></button><button class="btn" aria-label="Next"><i data-i="back" data-s="12" data-flip="1"></i></button></span></div>
+  <article class="fe">
+    <header class="feh"><span class="av a32" style="background:#4b4b4b">AV</span>
+      <div class="fet"><div class="fes"><b>Anna Vale</b> posted a call out</div><div class="fem">2 days ago · you follow Anna</div></div></header>
+    <div class="co">
+      <div class="cot"><span class="tag"><i data-i="callout" data-s="12"></i>Call out</span><span class="right">open until Thu 29 Oct</span></div>
+      <div class="coa">Sound engineer</div>
+      <p class="cob">Hey we are creating an event and we are looking for a sound engineer.</p>
+      <div class="obj" data-ev="baltic"><span class="sq s48 plain">▲</span><div class="ot"><div class="o1"><button class="olink" data-open="baltic">Baltic Circuit build weekend</button></div><div class="o2">Sat 17 Oct · Stockholm · Free</div><div class="o3">Rio is interested</div></div></div>
+      <div class="cof"><button class="btn primary" data-answer="baltic"><i data-i="chat" data-s="16"></i>Answer</button><button class="link" data-answers="baltic"><span data-count>3</span> answers</button><span class="cn">latest: Rio Moss, 5h ago</span></div>
+    </div>
+  </article>
+
+  <div class="band">Coming up with your people <span class="bc">next 3 weeks · 11</span></div>
+  <article class="fe">
+    <div class="obj flat" data-ev="ridge"><span class="sq s48" style="--ebg:#f6f0e4;--eac:#d98d3f">◗</span><div class="ot"><div class="o1"><button class="olink" data-open="ridge">Ridge dawn stretch</button></div><div class="o2">in 3 days · Oslo</div><div class="o3">Rio interested</div></div><div class="odate"><b>7 Oct</b>Wed</div></div>
+  </article>
+  <article class="fe">
+    <div class="obj flat" data-ev="nightk"><span class="sq s48" style="--ebg:#1a0703;--eac:#ff5a1f">⚡</span><div class="ot"><div class="o1"><button class="olink" data-open="nightk">Night kitchen line</button></div><div class="o2">in 5 days · Gothenburg</div><div class="o3">Anna going · Rio interested</div></div><div class="odate"><b>9 Oct</b>Fri</div></div>
+  </article>
+  <article class="fe">
+    <div class="obj flat" data-ev="zurich"><span class="sq s48 plain">☾</span><div class="ot"><div class="o1"><button class="olink" data-open="zurich">Zurich Decompression 2026</button></div><div class="o2">in 5 days · Zürich</div><div class="o3">Anna going · Kai interested</div></div><div class="odate"><b>9 Oct</b>Fri</div></div>
+    <button class="btn fmore">Show 8 more</button>
+  </article>
+
+  <div class="band">Today</div>
+  <article class="fe">
+    <header class="feh"><span class="av a32" style="background:#4b4b4b">AV</span>
+      <div class="fet"><div class="fes"><b>Anna Vale</b>, <b>Rio Moss</b> and 2 others are going</div><div class="fem"><span class="fresh">34m ago</span></div></div></header>
+    <div class="obj" data-ev="borderland"><span class="sq s48" style="--ebg:#0d1b2e;--eac:#5ea8ff">◆</span><div class="ot"><div class="o1"><button class="olink" data-open="borderland">The Borderland 2027</button></div><div class="o2">Mon 26 Jul 2027 · Eksjö · Membership</div><div class="o3">4 you follow · 33 on Hypernet</div></div>
+      <div class="ov"><button class="btn"><i data-i="heart" data-s="16"></i>Interested</button><button class="btn"><i data-i="check" data-s="16"></i>Going</button></div></div>
+  </article>
+  <article class="fe">
+    <header class="feh"><span class="av a32" style="background:#6b6b6b">RM</span>
+      <div class="fet"><div class="fes"><b>Rio Moss</b> is interested</div><div class="fem"><span class="fresh">3h ago</span></div></div>
+      <button class="btn s"><i data-i="chat" data-s="14"></i>Message</button></header>
+    <div class="obj" data-ev="baltic"><span class="sq s48 plain">▲</span><div class="ot"><div class="o1"><button class="olink" data-open="baltic">Baltic Circuit build weekend</button></div><div class="o2">Sat 17 Oct · Stockholm · Free</div><div class="o3">Anna hosting · 1 call out open</div></div>
+      <div class="ov"><button class="btn"><i data-i="heart" data-s="16"></i>Interested</button><button class="btn"><i data-i="check" data-s="16"></i>Going</button></div></div>
+  </article>
+  <article class="fe">
+    <header class="feh"><span class="av a32 sys"><i data-i="people" data-s="16"></i></span>
+      <div class="fet"><div class="fes"><b>People your friends follow</b></div><div class="fem">Suggested from who Anna, Kai and Rio follow</div></div></header>
+    <div class="stack">
+      <div class="obj"><span class="av a48" style="background:#565656">JH</span><div class="ot"><div class="o1">Jon Hale</div><div class="o2">@jon · Transport · Oslo</div><div class="o3">Anna, Kai and 1 more follow Jon</div></div>
+        <div class="ov"><button class="btn primary"><i data-i="plus" data-s="16"></i>Follow</button></div></div>
+      <div class="obj"><span class="av a48" style="background:#7c7c7c">MC</span><div class="ot"><div class="o1">Mira Chen</div><div class="o2">@mira · Art installs · Berlin</div><div class="o3">Anna, Rio and 1 more follow Mira</div></div>
+        <div class="ov"><button class="btn primary"><i data-i="plus" data-s="16"></i>Follow</button></div></div>
+    </div>
+  </article>
+  <article class="fe">
+    <header class="feh"><span class="av a32" style="background:#4b4b4b">AV</span>
+      <div class="fet"><div class="fes"><b>Anna Vale</b> published an Event Horizon</div><div class="fem"><span class="fresh">5h ago</span> · a horizon is a list of events someone curates, like a playlist</div></div></header>
+    <div class="obj"><span class="sq s48" style="--ebg:#06080e;--eac:#6fd6c8">☾</span><div class="ot"><div class="o1">Quiet Rooms</div><div class="o2">Event Horizon · 3 events · next Wed 7 Oct</div><div class="o3">Deep Listening Lab, Zurich Decompression and 1 more</div></div>
+      <div class="ov"><button class="btn on"><i data-i="check" data-s="16"></i>Following</button></div></div>
+  </article>
+  <article class="fe">
+    <header class="feh"><span class="av a32" style="background:#363636">KO</span>
+      <div class="fet"><div class="fes"><b>Kai Okonkwo</b> promoted an event</div><div class="fem"><span class="fresh">9h ago</span></div></div></header>
+    <div class="obj" data-ev="deep"><span class="sq s48" style="--ebg:#06080e;--eac:#6fd6c8">☾</span><div class="ot"><div class="o1"><button class="olink" data-open="deep">Deep Listening Lab</button></div><div class="o2">Sun 18 Oct · Stockholm</div><div class="o3">Kai promoted · 9 on Hypernet</div></div>
+      <div class="ov"><button class="btn"><i data-i="heart" data-s="16"></i>Interested</button><button class="btn"><i data-i="check" data-s="16"></i>Going</button></div></div>
+  </article>
+  <div class="band">Yesterday</div>
+  <article class="fe">
+    <header class="feh"><span class="av a32" style="background:#2b2b2b">SR</span>
+      <div class="fet"><div class="fes"><b>Sasha Reed</b> followed an Event Horizon</div><div class="fem">yesterday</div></div></header>
+    <div class="obj"><span class="sq s48" style="--ebg:#3a2a12;--eac:#e6b23c">✦</span><div class="ot"><div class="o1">Dust &amp; Neon</div><div class="o2">Event Horizon by Rio Moss · 4 events · next Fri 16 Oct</div><div class="o3">Followed by Sasha and 2 more you follow</div></div>
+      <div class="ov"><button class="btn on"><i data-i="check" data-s="16"></i>Following</button></div></div>
+  </article>
+</template>
+
+<!-- the full event (Baltic Circuit build weekend, from the mock data) -->
+<template id="t-baltic">
+  <article class="doc">
+    <header class="tband">
+      <span class="sq s96 plain">▲</span>
+      <div class="tt">
+        <div class="tkind">Build · Public</div>
+        <h1>Baltic Circuit build weekend</h1>
+        <div class="tsub">Sat 17 – Sun 18 Oct 2026 · Shared workshop, Årsta, Stockholm</div>
+        <div class="tsub2">Hosted by Anna Vale · Free</div>
+      </div>
+    </header>
+    <div class="atb" data-desk-only>
+      <div class="grp"><button class="btn"><i data-i="heart" data-s="16"></i>Interested</button><button class="btn"><i data-i="check" data-s="16"></i>Going</button><button class="btn"><i data-i="promote" data-s="16"></i>Promote <span class="n">14</span></button></div>
+      <div class="r"><button class="btn"><i data-i="addhorizon" data-s="16"></i>Add to horizon</button><button class="btn"><i data-i="share" data-s="16"></i>Share</button></div>
+    </div>
+    <div class="dbody">
+      <fieldset class="gb"><legend>Details</legend>
+        <dl class="kv">
+          <dt>When</dt><dd>Sat 17 – Sun 18 Oct 2026<small>10:00–18:00 both days · in 13 days</small></dd>
+          <dt>Where</dt><dd>Shared workshop, Årsta<small>Stockholm, Sweden · address on RSVP</small></dd>
+          <dt>Entry</dt><dd>Free<small>Volunteering encouraged · no skills needed</small></dd>
+          <dt>Host</dt><dd><button class="link">Anna Vale</button><small>@anna · Sound + camp ops</small></dd>
+          <dt>On horizons</dt><dd><button class="link">Baltic Circuit</button><small>by Baltic Circuit · 7 events</small></dd>
+        </dl>
+      </fieldset>
+      <fieldset class="gb"><legend>About</legend>
+        <p class="prose">Two days of welding and wiring the camp's shade structure and LED ridge for next summer. No skills needed; we teach on site.</p>
+      </fieldset>
+      <fieldset class="gb" data-callouts><legend>Call outs <span class="bc">· 1 open</span></legend>
+        <div class="co" style="margin-top:8px">
+          <div class="cot"><span class="tag"><i data-i="callout" data-s="12"></i>Call out</span><span class="right">open until Thu 29 Oct</span></div>
+          <div class="coa">Sound engineer</div>
+          <p class="cob">Hey we are creating an event and we are looking for a sound engineer.</p>
+          <div class="cof"><button class="btn primary" data-goanswer><i data-i="chat" data-s="16"></i>Answer</button><span class="cn">Anna Vale · posted 2 days ago · <span data-count>3</span> answers</span></div>
+        </div>
+        <div class="thread" data-thread>
+          <div class="rp"><span class="av a32" style="background:#565656">JH</span>
+            <div class="rh"><b>Jon Hale</b>2 days ago</div>
+            <p class="rt">I can bring a 2 kW PA from Oslo if someone covers the ferry. Not an engineer, but I've run it before.</p></div>
+          <div class="rp"><span class="av a32" style="background:#4b4b4b">AV</span>
+            <div class="rh"><b>Anna Vale</b><span class="host">Host</span>2 days ago</div>
+            <p class="rt">Jon, that already solves half of it. The camp pays the ferry. Still looking for someone to mix.</p></div>
+          <div class="rp"><span class="av a32" style="background:#6b6b6b">RM</span>
+            <div class="rh"><b>Rio Moss</b><span class="now">5h ago</span></div>
+            <p class="rt">Lighting and AV here. I can sit next to whoever mixes on Saturday and cover the LED ridge.</p></div>
+          <div class="compose" data-compose><span class="av a32" style="background:#1c1c1c">M</span>
+            <textarea rows="1" placeholder="Answer Sound engineer…" aria-label="Your answer"></textarea>
+            <button class="btn" data-post>Answer</button>
+            <p class="cnote">Answers are public: they show here, under the call out, with your name.</p></div>
+        </div>
+      </fieldset>
+      <fieldset class="gb"><legend>Who's going <span class="bc">· 18 on Hypernet</span></legend>
+        <div class="who">
+          <div class="wp"><span class="av a32" style="background:#4b4b4b">AV</span><div class="wn"><b>Anna Vale</b><small>host · you follow</small></div></div>
+          <div class="wp"><span class="av a32" style="background:#2b2b2b">SR</span><div class="wn"><b>Sasha Reed</b><small>you follow · going · yesterday</small></div></div>
+          <div class="wp"><span class="av a32" style="background:#6b6b6b">RM</span><div class="wn"><b>Rio Moss</b><small>you follow · interested · 3h ago</small></div></div>
+          <div class="wp"><span class="av a32" style="background:#565656">JH</span><div class="wn"><b>Jon Hale</b><small>going · 2 days ago</small></div></div>
+        </div>
+        <div class="wmore"><button class="btn">Show everyone</button><span>and 15 more going · 4 interested</span></div>
+      </fieldset>
+      <fieldset class="gb"><legend>Timeline and what to bring</legend>
+        <dl class="kv">
+          <dt>Sat 17 Oct</dt><dd>Build<small>10:00–18:00</small></dd>
+          <dt>Sun 18 Oct</dt><dd>Build<small>10:00–18:00</small></dd>
+          <dt>Bring</dt><dd><ul><li>work gloves and closed shoes (PPE)</li><li>a potluck dish</li><li>your own cup</li></ul></dd>
+        </dl>
+      </fieldset>
+      <p class="prov">Illustrative example</p>
+    </div>
+  </article>
+</template>
+
+<template id="t-tabs">
+  <div class="tabbar">
+    <div class="tab on"><i data-i="home" data-s="22"></i>Home</div>
+    <div class="tab"><i data-i="explore" data-s="22"></i>Explore</div>
+    <div class="tab"><span class="tn"><i data-i="plus" data-s="20"></i></span>New</div>
+    <div class="tab"><i data-i="chat" data-s="22"></i>Chats</div>
+    <div class="tab"><i data-i="user" data-s="22"></i>You</div>
+  </div>
+</template>
+
+<script>
+var IC = {
+  home:'<path d="M3 10 10 3.5 17 10M5 8.5V17h4v-4.5h2V17h4V8.5"/>',
+  explore:'<circle cx="10" cy="10" r="7.2"/><path d="m13 7-1.8 4.2L7 13l1.8-4.2z"/>',
+  people:'<circle cx="7.5" cy="7" r="3"/><path d="M1.8 17c.6-3.3 2.6-5 5.7-5s5.1 1.7 5.7 5"/><circle cx="14.2" cy="6.4" r="2.3"/><path d="M14 10.6c2.5.1 4 1.5 4.4 4.4"/>',
+  check:'<path d="M3.5 10.5 8 15l8.5-9.5"/>',
+  heart:'<path d="M10 16.6S3 12.3 3 7.7C3 5.4 4.7 3.9 6.6 3.9c1.5 0 2.7.9 3.4 2 .7-1.1 1.9-2 3.4-2 1.9 0 3.6 1.5 3.6 3.8 0 4.6-7 8.9-7 8.9z"/>',
+  star:'<path d="m10 2.8 2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 8.1l5-.7z"/>',
+  promote:'<path d="M5 15 15 5M7.5 5H15v7.5"/>',
+  plus:'<path d="M10 3.5v13M3.5 10h13"/>',
+  chat:'<path d="M3 4h14v9.5H9.5L5.5 17v-3.5H3z"/>',
+  search:'<circle cx="8.5" cy="8.5" r="5"/><path d="m12.3 12.3 4.7 4.7"/>',
+  back:'<path d="M12.5 4 6.5 10l6 6"/>',
+  down:'<path d="m5.5 8 4.5 4.5L14.5 8"/>',
+  user:'<circle cx="10" cy="7" r="3.4"/><path d="M3.5 17.5c.7-3.8 3-5.6 6.5-5.6s5.8 1.8 6.5 5.6"/>',
+  share:'<path d="M10 12.5V3.5M6.3 7.2 10 3.5l3.7 3.7M4 10.5V17h12v-6.5"/>',
+  addhorizon:'<path d="M1.5 13.5h11M4 13.5a4.5 4.5 0 0 1 8.3-2.4M8.3 4.2v1.8M16 9v8M12 13h8"/>',
+  callout:'<path d="M3 8v4h3l7.5 4V4L6 8zM16.5 7.5v5"/>',
+  dots:'<path d="M4 10h.01M10 10h.01M16 10h.01" stroke-width="3"/>'
+};
+function icons(root){
+  root.querySelectorAll('i[data-i]').forEach(function(i){
+    var s = i.getAttribute('data-s') || 18;
+    i.outerHTML = '<svg class="ic" viewBox="0 0 20 20" width="'+s+'" height="'+s+'" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square" stroke-linejoin="miter"'+
+      (i.getAttribute('data-flip') ? ' style="transform:scaleX(-1)"' : '')+'>'+IC[i.getAttribute('data-i')]+'</svg>';
+  });
+}
+function fill(slot, tpl){ document.querySelectorAll('[data-slot="'+slot+'"]').forEach(function(el){ el.appendChild(document.getElementById(tpl).content.cloneNode(true)); }); }
+fill('nav', 't-nav'); fill('feed', 't-feed'); fill('tabs', 't-tabs');
+icons(document);
+
+/* the events the feed can open. Baltic is the full page; the others show only what the feed already knows about them. */
+var EV = {
+  baltic:{ title:'Baltic Circuit build weekend', look:['#f8f7f3','#161616','#262626','▲',1], full:true },
+  borderland:{ title:'The Borderland 2027', look:['#0d1b2e','#eaf2ff','#5ea8ff','◆'], kind:'Burn · 2027 · Public',
+    sub:'Mon 26 Jul – Sun 1 Aug 2027 · Alversjö, Eksjö', sub2:'Hosted by Gränslandet Ideell Förening · Membership',
+    kv:[['When','Mon 26 Jul – Sun 1 Aug 2027','7 days'],['Where','Alversjö','Eksjö, Småland, Sweden'],['Entry','Membership','2,222–3,000 SEK · fall membership sale open now'],
+        ['Host','Gränslandet Ideell Förening','Swedish non-profit association'],['Size','≈ 5,000 people',''],['Going','33 on Hypernet','4 you follow']] },
+  ridge:{ title:'Ridge dawn stretch', look:['#f6f0e4','#241f18','#d98d3f','◗'], sub:'Wed 7 Oct 2026 · Oslo',
+    kv:[['When','Wed 7 Oct 2026','in 3 days'],['Where','Oslo',''],['People','Rio interested','']] },
+  nightk:{ title:'Night kitchen line', look:['#1a0703','#ffe9d6','#ff5a1f','⚡'], sub:'Fri 9 Oct 2026 · Gothenburg',
+    kv:[['When','Fri 9 Oct 2026','in 5 days'],['Where','Gothenburg',''],['People','Anna going · Rio interested','']] },
+  zurich:{ title:'Zurich Decompression 2026', look:['#f8f7f3','#161616','#262626','☾',1], sub:'Fri 9 Oct 2026 · Zürich',
+    kv:[['When','Fri 9 Oct 2026','in 5 days'],['Where','Zürich',''],['People','Anna going · Kai interested','']] },
+  deep:{ title:'Deep Listening Lab', look:['#06080e','#e9e7e0','#6fd6c8','☾'], sub:'Sun 18 Oct 2026 · Stockholm',
+    kv:[['When','Sun 18 Oct 2026','in 14 days'],['Where','Stockholm',''],['People','Kai promoted · 9 on Hypernet','']] }
+};
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+function sqHTML(l, cls){ return '<span class="sq '+cls+(l[4] ? ' plain' : '')+'" style="--ebg:'+l[0]+';--eac:'+l[2]+'">'+l[3]+'</span>'; }
+function docFor(id){
+  var e = EV[id], wrap = document.createElement('div');
+  if (e.full){ wrap.appendChild(document.getElementById('t-baltic').content.cloneNode(true)); icons(wrap); return wrap; }
+  var l = e.look;
+  wrap.innerHTML = '<article class="doc"><header class="tband" style="--ebg:'+l[0]+';--eink:'+l[1]+';--eac:'+l[2]+'">' + sqHTML(l, 's96') +
+    '<div class="tt">'+(e.kind ? '<div class="tkind">'+esc(e.kind)+'</div>' : '')+'<h1>'+esc(e.title)+'</h1><div class="tsub">'+esc(e.sub)+'</div>'+(e.sub2 ? '<div class="tsub2">'+esc(e.sub2)+'</div>' : '')+'</div></header>' +
+    '<div class="atb" data-desk-only><div class="grp"><button class="btn"><i data-i="heart" data-s="16"></i>Interested</button><button class="btn"><i data-i="check" data-s="16"></i>Going</button><button class="btn"><i data-i="promote" data-s="16"></i>Promote</button></div>' +
+    '<div class="r"><button class="btn"><i data-i="addhorizon" data-s="16"></i>Add to horizon</button><button class="btn"><i data-i="share" data-s="16"></i>Share</button></div></div>' +
+    '<div class="dbody"><fieldset class="gb"><legend>Details</legend><dl class="kv">' + e.kv.map(function(r){ return '<dt>'+esc(r[0])+'</dt><dd>'+esc(r[1])+(r[2] ? '<small>'+esc(r[2])+'</small>' : '')+'</dd>'; }).join('') +
+    '</dl></fieldset><p class="prov">Concept: only what the feed knows about this event is filled in here.</p></div></article>';
+  icons(wrap); return wrap;
+}
+
+/* one window per screen: opening another event replaces what it shows */
+var STATE = new WeakMap();
+function openIn(board, id, opts){
+  var w = board.querySelector('[data-win]'), e = EV[id]; if (!e) return;
+  var body = w.querySelector('[data-wbody]');
+  body.innerHTML = ''; body.appendChild(docFor(id)); body.scrollTop = 0;
+  if (board.id === 'ab-phone') body.querySelectorAll('[data-desk-only]').forEach(function(x){ x.remove(); });
+  w.querySelector('[data-wicon]').innerHTML = sqHTML(e.look, board.id === 'ab-phone' ? 's24' : 's16');
+  w.querySelector('[data-wtitle]').innerHTML = esc(e.title) + (board.id === 'ab-phone' ? '<small>Event</small>' : '');
+  var st = w.querySelector('[data-wstatus]'); if (st) st.textContent = e.full ? 'Build · Public · 18 going on Hypernet' : 'Event';
+  w.hidden = false;
+  board.querySelectorAll('.obj[data-ev]').forEach(function(o){ o.classList.toggle('sel', o.getAttribute('data-ev') === id); });
+  STATE.set(board, id);
+  wireDoc(board, w);
+  if (opts && opts.answer) goAnswer(w);
+  else if (opts && opts.answers){ var c = w.querySelector('[data-callouts]'); if (c) body.scrollTop += c.getBoundingClientRect().top - body.getBoundingClientRect().top - 16; }
+}
+function closeIn(board){
+  var w = board.querySelector('[data-win]'); if (!w || w.hidden) return;
+  w.hidden = true; w.classList.remove('max');
+  board.querySelectorAll('.obj.sel').forEach(function(o){ o.classList.remove('sel'); });
+}
+function goAnswer(w){
+  var c = w.querySelector('[data-compose]'), body = w.querySelector('[data-wbody]'); if (!c) return;
+  body.scrollTop += c.getBoundingClientRect().bottom - body.getBoundingClientRect().bottom + 16;
+  c.querySelector('textarea').focus({ preventScroll:true });
+}
+/* Answer posts a public answer under the call out: your name, "now", your words */
+function wireDoc(board, w){
+  var go = w.querySelector('[data-goanswer]'); if (go) go.onclick = function(){ goAnswer(w); };
+  var post = w.querySelector('[data-post]'), ta = w.querySelector('[data-compose] textarea');
+  if (!post) return;
+  ta.oninput = function(){ ta.style.height = 'auto'; ta.style.height = Math.max(ta.scrollHeight, 36) + 'px'; };
+  ta.onkeydown = function(ev){ if (ev.key === 'Enter' && !ev.shiftKey){ ev.preventDefault(); post.click(); } };
+  post.onclick = function(){
+    var t = ta.value.trim(); if (!t) { ta.focus(); return; }
+    var r = document.createElement('div'); r.className = 'rp new';
+    r.innerHTML = '<span class="av a32" style="background:#1c1c1c">M</span><div class="rh"><b>Michal</b><span class="now">now</span></div><p class="rt">'+esc(t)+'</p>';
+    w.querySelector('[data-compose]').before(r);
+    ta.value = ''; ta.style.height = '';
+    document.querySelectorAll('[data-count]').forEach(function(n){ n.textContent = +n.textContent + 1; });
+    goAnswer(w);
+  };
+}
+document.querySelectorAll('.win').forEach(function(board){
+  board.addEventListener('click', function(ev){
+    var o = ev.target.closest('[data-open]'), a = ev.target.closest('[data-answer]'), s = ev.target.closest('[data-answers]');
+    if (o) openIn(board, o.getAttribute('data-open'));
+    else if (a) openIn(board, a.getAttribute('data-answer'), { answer:true });
+    else if (s) openIn(board, s.getAttribute('data-answers'), { answers:true });
+    var b = ev.target.closest('[data-act]');
+    if (b && b.getAttribute('data-act') === 'close') closeIn(board);
+    if (b && b.getAttribute('data-act') === 'max') board.querySelector('[data-win]').classList.toggle('max');
+  });
+});
+/* Esc closes the desktop window (the phone sheet closes with ×, like any phone screen) */
+document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') closeIn(document.getElementById('ab-desk')); });
+
+/* drag the window by its title bar, kept inside the app's main area */
+(function(){
+  var w = document.querySelector('#ab-desk [data-win]'), bar = w.querySelector('[data-drag]'), area = w.parentElement, d = null;
+  bar.addEventListener('dblclick', function(ev){ if (!ev.target.closest('.wbtn')) w.classList.toggle('max'); });
+  bar.addEventListener('pointerdown', function(ev){
+    if (ev.button !== 0 || ev.target.closest('.wbtn') || w.classList.contains('max')) return;
+    d = { x:ev.clientX - w.offsetLeft, y:ev.clientY - w.offsetTop }; bar.setPointerCapture(ev.pointerId); w.classList.add('dragging');
+  });
+  bar.addEventListener('pointermove', function(ev){
+    if (!d) return;
+    var maxX = area.clientWidth - 120, maxY = area.clientHeight - 28;
+    w.style.left = Math.min(maxX, Math.max(120 - w.offsetWidth, ev.clientX - d.x)) + 'px';
+    w.style.top = Math.min(maxY, Math.max(0, ev.clientY - d.y)) + 'px';
+  });
+  function end(){ d = null; w.classList.remove('dragging'); }
+  bar.addEventListener('pointerup', end); bar.addEventListener('pointercancel', end);
+})();
+
+/* open on load: the call out's event on desktop and phone */
+openIn(document.getElementById('ab-desk'), 'baltic');
+openIn(document.getElementById('ab-phone'), 'baltic');
+</script>
+</body>
+</html>

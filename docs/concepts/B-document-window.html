@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Concept B · Document window</title>
+<style>
+/* =====================================================================
+   CONCEPT B — "Document window" (Oskar)
+   The event page and Home are documents in the same window as everything
+   else: the app's grey face, bevels and hairlines, ONE font (Tahoma).
+   Rhythm:  spacing 8 / 16 / 24 (4 only between buttons in a group)
+            type    12 / 14 / 20, line-height 16 (UI) · 20 (prose) · 24 (title)
+            sizes   32 = an actor or a person in a list · 48 = a thing (event, horizon, person card)
+            control 36 desktop · 44 touch · 28 inline (in a header line only)
+   ===================================================================== */
+:root{
+  --face:#d4d0c8; --face-lt:#e8e5df; --face-dk:#c2beb5;
+  --white:#fff; --shadow:#808080; --dark:#404040;
+  --ink:#141414; --ink2:#3a3a3a; --dim:#666; --line:#e2dfd8; --rule:#c9c5bc; --hover:#f0eee9; --sel:#262626;
+  --bar:linear-gradient(90deg,#262626 0%,#555 58%,#9b9b9b 100%);
+  --sys:Tahoma,"Segoe UI",Verdana,Geneva,sans-serif;
+  --ctl:36px; --ctl-s:28px;
+  --out: inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white), inset -2px -2px 0 var(--shadow), inset 2px 2px 0 var(--face-lt);
+  --in:  inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white), inset 2px 2px 0 var(--dark), inset -2px -2px 0 var(--face);
+}
+*{ box-sizing:border-box; }
+body{ margin:0; background:#a9a59c; color:var(--ink); font:14px/16px var(--sys); -webkit-font-smoothing:antialiased; }
+button,input,textarea{ font:inherit; color:inherit; }
+p{ margin:0; }
+.ic{ display:block; flex:0 0 auto; }
+
+/* ---------- the sheet this concept sits on ---------- */
+.sheet{ padding:40px 40px 80px; }
+.intro{ max-width:1440px; margin:0 0 32px; padding:24px; background:var(--face); box-shadow:var(--out); }
+.intro h1{ margin:0 0 8px; font-size:20px; line-height:24px; }
+.intro p{ max-width:96ch; line-height:20px; color:var(--ink2); }
+.intro ul{ margin:8px 0 0; padding-left:20px; line-height:20px; color:var(--ink2); }
+.label{ margin:40px 0 8px; font-size:14px; line-height:16px; font-weight:bold; color:#fff; text-shadow:0 1px 0 rgba(0,0,0,.35); }
+.label small{ font-weight:normal; opacity:.9; }
+.pair{ display:flex; gap:40px; align-items:flex-start; flex-wrap:wrap; }
+
+/* ---------- controls (the app's own) ---------- */
+.btn{ height:var(--ctl); min-width:var(--ctl); padding:0 12px; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  border:0; background:var(--face); color:var(--ink); white-space:nowrap; font-size:14px; box-shadow:var(--out); cursor:pointer; }
+.btn.on{ box-shadow:var(--in); background:var(--face-lt); font-weight:bold; }
+.btn.primary{ font-weight:bold; box-shadow:0 0 0 1px #000, var(--out); }
+.btn.s{ height:var(--ctl-s); padding:0 8px; gap:4px; font-size:12px; }
+.btn .n{ font-size:12px; color:var(--dim); }
+.btn.icon{ padding:0; width:var(--ctl); }
+.grp{ display:flex; gap:4px; }
+.tsep{ width:2px; align-self:stretch; margin:4px 4px; box-shadow:inset 1px 0 0 var(--shadow), inset -1px 0 0 var(--white); }
+.field{ height:var(--ctl); display:flex; align-items:center; gap:8px; padding:0 8px; background:#fff; box-shadow:var(--in); color:var(--dim); }
+.link{ padding:0; border:0; background:none; color:var(--ink); text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
+
+/* avatars and squares: two sizes in the content, 32 and 48 */
+.av{ display:inline-grid; place-items:center; flex:0 0 auto; color:#fff; font-weight:bold; }
+.av.a20{ width:20px; height:20px; font-size:9px; }
+.av.a24{ width:24px; height:24px; font-size:10px; }
+.av.a32{ width:32px; height:32px; font-size:12px; }
+.av.a48{ width:48px; height:48px; font-size:14px; }
+.av.sys{ background:var(--face); color:var(--ink2); box-shadow:var(--out); }
+.sq{ display:grid; place-items:center; flex:0 0 auto; background:var(--ebg,#f8f7f3); color:var(--eac,#262626); line-height:1; }
+.sq.plain{ box-shadow:inset 0 0 0 1px rgba(0,0,0,.3); }
+.sq.s20{ width:20px; height:20px; font-size:12px; }
+.sq.s48{ width:48px; height:48px; font-size:26px; }
+.sq.s64{ width:64px; height:64px; font-size:34px; }
+.sq.s96{ width:96px; height:96px; font-size:52px; }
+
+/* ---------- the window ---------- */
+.win{ position:relative; background:var(--face); box-shadow:0 0 0 1px #000, 0 12px 40px rgba(0,0,0,.35); display:flex; flex-direction:column; }
+.win.desk{ width:1440px; }
+.titlebar{ flex:0 0 32px; display:flex; align-items:center; gap:8px; padding:0 8px; color:#fff; background:var(--bar); font-size:12px; }
+.titlebar b{ font-size:12px; }
+.titlebar .tg{ width:16px; height:16px; display:grid; place-items:center; background:var(--face); color:#000; font-size:10px; box-shadow:inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white); }
+.titlebar .wt{ opacity:.8; }
+.toolbar{ display:flex; align-items:center; gap:8px; padding:8px; border-bottom:1px solid var(--shadow); box-shadow:0 1px 0 var(--white); }
+.toolbar .field{ flex:0 1 460px; }
+.spring{ flex:1; }
+.badge{ min-width:20px; height:20px; padding:0 6px; display:inline-grid; place-items:center; background:#000; color:#fff; font-size:12px; font-weight:bold; border-radius:10px; }
+.main{ display:grid; gap:8px; padding:8px; align-items:stretch; }
+.main.split{ grid-template-columns:252px 470px minmax(0,1fr); }
+.main.wide{ grid-template-columns:252px 702px minmax(0,1fr); }
+.col{ display:flex; flex-direction:column; min-width:0; min-height:0; }
+.panel{ flex:1; background:#fff; box-shadow:var(--in); overflow:hidden; padding:2px; }
+
+/* sidebar: one row height (32), one heading style (12 bold, no mono, no capitals) */
+.nav{ padding:8px 0 16px; }
+.nh{ padding:16px 16px 8px; font-size:12px; font-weight:bold; color:var(--dim); }
+.nr{ display:flex; align-items:center; gap:8px; height:32px; margin:0 4px; padding:0 8px 0 12px; white-space:nowrap; }
+.nr .nl{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.nr .ns{ color:var(--dim); font-size:12px; }
+.nr .nc{ font-size:12px; color:var(--dim); }
+.nr.sel{ background:var(--sel); color:#fff; }
+.nr.sub{ padding-left:36px; font-size:12px; }
+.nr .ic{ color:var(--ink2); }
+.nr.sel .ic{ color:#ccc; }
+
+/* list heading (the app's chead) */
+.chead{ height:48px; padding:0 4px; display:flex; flex-direction:column; justify-content:center; }
+.chead h2{ margin:0; font-size:20px; line-height:24px; }
+.chead .cs{ font-size:12px; color:var(--dim); }
+
+/* reading-pane caption */
+.dbar{ height:48px; display:flex; align-items:center; gap:8px; padding:0 0 0 4px; }
+.dbar b{ font-size:12px; }
+.dbar .btn{ margin-left:auto; }
+
+/* =====================================================================
+   HOME — one entry anatomy, repeated:
+   [16] header: avatar 32 · sentence (14) over time (12) · optional inline button (28)
+   [ 8] the thing: one row, square 48, three 16px lines (title 14 bold / when·where 12 / who 12), buttons at its right
+   [16] hairline
+   ===================================================================== */
+.list{ container:feed / inline-size; }
+.band{ height:32px; display:flex; align-items:center; gap:8px; padding:0 16px; background:var(--face-lt); border-top:1px solid #fff; border-bottom:1px solid var(--rule);
+  font-size:12px; font-weight:bold; color:var(--ink); }
+.band .bc{ font-weight:normal; color:var(--dim); }
+.band .bx{ margin-left:auto; display:flex; gap:4px; }
+.band .bx .btn{ height:24px; width:24px; min-width:24px; padding:0; }
+.fe{ display:flex; flex-direction:column; gap:8px; padding:16px; border-bottom:1px solid var(--line); }
+.feh{ display:flex; align-items:center; gap:8px; min-height:32px; }
+.fet{ flex:1; min-width:0; }
+.fes{ font-size:14px; line-height:16px; color:var(--ink2); }
+.fes b{ color:var(--ink); }
+.fem{ font-size:12px; line-height:16px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fem .fresh{ color:var(--ink); font-weight:bold; }
+
+/* the thing: one component for event, horizon and person, in Home and on pages */
+.obj{ display:flex; align-items:center; gap:8px; padding:8px; background:#fff; border:1px solid var(--rule); }
+.obj.flat{ border:0; padding:0; background:transparent; }
+.obj.sel{ background:var(--face-lt); box-shadow:0 0 0 1px var(--ink); border-color:var(--ink); }
+.ot{ flex:1; min-width:0; }
+.o1{ font-size:14px; line-height:16px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.o2, .o3{ font-size:12px; line-height:16px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.o3{ color:var(--ink2); }
+.ov{ display:flex; gap:4px; flex:0 0 auto; }
+.odate{ flex:0 0 auto; align-self:flex-start; font-size:12px; line-height:16px; color:var(--ink2); text-align:right; }
+.odate b{ display:block; color:var(--ink); font-size:14px; }
+.stack{ display:flex; flex-direction:column; border:1px solid var(--rule); }
+.stack .obj{ border:0; border-bottom:1px solid var(--line); }
+.stack .obj:last-child{ border-bottom:0; }
+.fmore{ align-self:flex-start; }
+@container feed (max-width:560px){
+  .obj{ flex-wrap:wrap; }
+  .obj > .ov{ flex:1 1 100%; }
+  .obj > .ov .btn{ flex:1; }
+  .stack .obj > .ov{ flex:1 1 100%; }
+}
+
+/* the call out: the one inverted thing — ink ground, paper type, a hairline inset frame. Loud by inversion, not size. */
+.co{ display:flex; flex-direction:column; gap:8px; padding:16px; background:var(--ink); color:#fff; outline:1px solid #fff; outline-offset:-4px; }
+.cot{ display:flex; align-items:center; gap:8px; font-size:12px; color:#c4c4c4; }
+.tag{ display:inline-flex; align-items:center; gap:4px; height:20px; padding:0 8px; background:#fff; color:#000; font-size:12px; font-weight:bold; }
+.cot .right{ margin-left:auto; }
+.coa{ font-size:20px; line-height:24px; font-weight:bold; }
+.cob{ font-size:14px; line-height:20px; color:#e6e6e6; max-width:60ch; }
+.co .obj{ background:#242424; border-color:#4a4a4a; color:#fff; }
+.co .o2{ color:#c4c4c4; } .co .o3{ color:#e0e0e0; }
+.cof{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.cof .cn{ font-size:12px; color:#c4c4c4; }
+.co .btn{ color:#000; }
+.co .link{ color:#fff; }
+
+/* =====================================================================
+   EVENT — a document: look band → grey toolbar → white sheet of group boxes.
+   Labels in one column, values in the other. Same font, same sizes as the list beside it.
+   ===================================================================== */
+.doc{ container:doc / inline-size; background:#fff; }
+.tband{ display:flex; gap:16px; align-items:center; padding:24px; background:var(--ebg,#f8f7f3); color:var(--eink,#161616); border-bottom:1px solid var(--rule); }
+.tband .tt{ flex:1; min-width:0; }
+.tkind{ font-size:12px; line-height:16px; font-weight:bold; color:var(--eac,#3a3a3a); }
+.tband h1{ margin:0; font-size:20px; line-height:24px; font-weight:bold; }
+.tsub{ font-size:14px; line-height:20px; }
+.tsub2{ font-size:12px; line-height:16px; opacity:.8; }
+.atb{ display:flex; align-items:center; gap:4px; flex-wrap:wrap; padding:8px 16px; background:var(--face); box-shadow:inset 0 1px 0 var(--white), inset 0 -1px 0 var(--shadow); }
+.atb .r{ margin-left:auto; display:flex; gap:4px; }
+.dbody{ display:flex; flex-direction:column; gap:24px; padding:24px; }
+/* group box: a hairline frame with its caption in the line, like a dialog's frame */
+.gb{ margin:0; padding:8px 16px 16px; border:1px solid #bdb9b0; box-shadow:inset 1px 1px 0 #fff; min-width:0; }
+.gb > legend{ padding:0 8px; margin-left:-8px; font-size:12px; line-height:16px; font-weight:bold; color:var(--ink); }
+.gb > legend .bc{ font-weight:normal; color:var(--dim); }
+.kv{ display:grid; grid-template-columns:112px minmax(0,1fr); gap:8px 16px; margin:8px 0 0; }
+.kv dt{ color:var(--dim); line-height:16px; }
+.kv dd{ margin:0; line-height:16px; }
+.kv dd small{ display:block; font-size:12px; color:var(--dim); }
+.kv ul{ margin:0; padding:0; list-style:none; }
+.kv li{ position:relative; padding-left:12px; }
+.kv li + li{ margin-top:8px; }
+.kv li::before{ content:""; position:absolute; left:0; top:6px; width:4px; height:4px; background:var(--ink); }
+.prose{ margin-top:8px; line-height:20px; max-width:66ch; }
+
+/* call out + its public replies, drawn like a tree view: avatars hang from one dotted line */
+.thread{ position:relative; display:flex; flex-direction:column; gap:16px; margin-top:16px; }
+.thread::before{ content:""; position:absolute; left:15px; top:-16px; bottom:16px; border-left:1px dotted var(--shadow); }
+.rp{ position:relative; display:grid; grid-template-columns:32px minmax(0,1fr); gap:0 8px; }
+.rp > .av{ grid-row:1 / span 3; }
+.rp .rh{ grid-column:2; font-size:12px; line-height:16px; color:var(--dim); }
+.rp .rh b{ font-size:14px; color:var(--ink); margin-right:4px; }
+.rp .rh .host{ display:inline-block; margin-right:4px; padding:0 4px; border:1px solid var(--ink2); color:var(--ink2); font-size:12px; line-height:14px; }
+.rp .rt{ grid-column:2; line-height:20px; }
+.rp .ra{ grid-column:2; margin-top:4px; font-size:12px; }
+.rp .ra .link{ font-size:12px; color:var(--ink2); }
+.compose{ position:relative; display:grid; grid-template-columns:32px minmax(0,1fr) auto; gap:8px; align-items:center; }
+.compose .field{ color:#8a8a8a; }
+.cnote{ grid-column:2 / -1; font-size:12px; color:var(--dim); }
+.who{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px 16px; margin-top:8px; }
+.wp{ display:flex; align-items:center; gap:8px; min-width:0; }
+.wp .wn{ min-width:0; }
+.wp .wn b{ display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.wp .wn small{ display:block; font-size:12px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.wmore{ display:flex; align-items:center; gap:16px; margin-top:16px; color:var(--ink2); }
+.prov{ font-size:12px; color:var(--dim); }
+@container doc (max-width:560px){
+  .tband{ padding:16px; align-items:flex-start; }
+  .tband .sq.s96{ width:64px; height:64px; font-size:34px; }
+  .dbody{ padding:16px; gap:16px; }
+  .gb{ padding:8px 8px 16px 16px; }
+  .kv{ grid-template-columns:88px minmax(0,1fr); gap:8px; }
+  .who{ grid-template-columns:1fr; }
+  .compose{ grid-template-columns:32px minmax(0,1fr); }
+  .compose .btn{ grid-column:2; justify-self:start; }
+  .cnote{ grid-column:2; }
+}
+
+/* empty reading pane */
+.panempty{ display:grid; place-items:center; height:100%; color:var(--face); }
+
+/* ---------- phone shell ---------- */
+.win.phone{ width:375px; --ctl:44px; --ctl-s:36px; }
+.appbar{ display:flex; align-items:center; gap:4px; min-height:56px; padding:0 4px; color:#fff; background:var(--bar); }
+.appbar .ab{ width:44px; height:44px; display:grid; place-items:center; }
+.appbar .abt{ flex:1; min-width:0; padding:0 8px; }
+.appbar .abt b{ display:block; font-size:14px; line-height:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.appbar .abt small{ display:block; font-size:12px; line-height:16px; opacity:.8; }
+.appbar .abt.big b{ font-size:20px; line-height:24px; }
+.pbody{ background:#fff; }
+.evbar{ display:flex; gap:4px; padding:8px; background:var(--face); box-shadow:inset 0 1px 0 var(--white), 0 -1px 0 var(--shadow); }
+.evbar .btn{ flex:1; padding:0 8px; }
+.evbar .btn.icon{ flex:0 0 44px; }
+.tabbar{ display:flex; background:var(--face); box-shadow:inset 0 1px 0 #fff; border-top:1px solid var(--shadow); padding:4px 4px 8px; }
+.tab{ flex:1; height:56px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:12px; color:var(--ink2); }
+.tab.on{ font-weight:bold; color:var(--ink); background:#fff; box-shadow:var(--in); }
+.tab .tn{ width:32px; height:28px; display:grid; place-items:center; background:var(--face); box-shadow:var(--out); }
+.phone .list .fe, .phone .doc{ }
+
+/* look demo strip */
+.lookdemo{ width:694px; background:#fff; box-shadow:0 0 0 1px #000; }
+.hostbar{ width:694px; box-shadow:0 0 0 1px #000; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<div class="intro">
+  <h1>Concept B — Document window</h1>
+  <p>The event page and Home stop being posters pasted into the app and become documents in the same window: the app's grey face for chrome, white sheets for content, hairline group boxes for sections, and one font (Tahoma) at three sizes. An event's own colour lives only in its square and its title band. Home is one entry anatomy repeated — every actor at 32, every thing at 48, everything on an 8px grid.</p>
+  <ul>
+    <li><b>Spacing</b> 8 / 16 / 24 (4 only between buttons in a group). <b>Type</b> 12 / 14 / 20 in Tahoma, line-heights 16 (UI), 20 (prose), 24 (titles). No mono, no capitals.</li>
+    <li><b>Sizes</b> 32 = a person doing something or listed · 48 = a thing (event, horizon, suggested person) · 96 = the page's own square (64 on phone).</li>
+    <li><b>Controls</b> the app's bevel button at 36 (44 on touch); 28 only for an inline button inside a header line (Message).</li>
+  </ul>
+</div>
+
+<!-- ============================================================ 1. EVENT · DESKTOP -->
+<div class="label">1 · Event page — desktop 1440 (reading pane beside Home) <small>· #/event/baltic-circuit-build-weekend, logged in as the demo account</small></div>
+<div class="win desk" id="ab-event-desktop">
+  <div class="titlebar"><span class="tg">◆</span><b>Hypernet</b><span class="wt">— Baltic Circuit build weekend</span></div>
+  <div class="toolbar">
+    <button class="btn"><i data-i="plus"></i>New<i data-i="down" data-s="14"></i></button>
+    <div class="field"><i data-i="search" data-s="16"></i>Search events, horizons, people</div>
+    <span class="spring"></span>
+    <button class="btn"><i data-i="chat"></i>Chats <span class="badge">1</span></button>
+    <span class="tsep"></span>
+    <button class="btn"><span class="av a24" style="background:#1c1c1c">M</span>Michal<i data-i="down" data-s="14"></i></button>
+  </div>
+  <div class="main split">
+    <div class="col"><div class="panel" data-slot="nav"></div></div>
+    <div class="col">
+      <div class="chead"><h2>Home</h2><div class="cs">What the people you follow are doing</div></div>
+      <div class="panel list" data-slot="feed" data-sel="baltic"></div>
+    </div>
+    <div class="col">
+      <div class="dbar"><b>Event</b><button class="btn s icon" aria-label="Close" style="width:28px;min-width:28px"><i data-i="close" data-s="14"></i></button></div>
+      <div class="panel"><div data-slot="event"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="label">1b · Where a customised look's colour goes <small>· same page, an event that wears a look (Night kitchen line): the square and the title band, nothing else. The toolbar and the sheet stay the app's.</small></div>
+<div class="lookdemo">
+  <header class="tband" style="--ebg:#1a0703; --eink:#ffe9d6; --eac:#ff5a1f">
+    <span class="sq s96" style="box-shadow:0 0 0 1px rgba(255,233,214,.25)">⚡</span>
+    <div class="tt">
+      <div class="tkind">Kitchen · Public</div>
+      <h1>Night kitchen line</h1>
+      <div class="tsub">Fri 9 Oct 2026 · 20:00–02:00 · Gothenburg</div>
+      <div class="tsub2">Hosted by Kai Okonkwo · Free</div>
+    </div>
+  </header>
+  <div class="atb">
+    <div class="grp"><button class="btn"><i data-i="heart" data-s="16"></i>Interested</button><button class="btn on"><i data-i="check" data-s="16"></i>Going</button><button class="btn"><i data-i="promote" data-s="16"></i>Promote <span class="n">6</span></button></div>
+    <div class="r"><button class="btn"><i data-i="addhorizon" data-s="16"></i>Add to horizon</button><button class="btn"><i data-i="share" data-s="16"></i>Share</button></div>
+  </div>
+</div>
+
+<div class="label">1c · The same toolbar as the host sees it <small>· Anna Vale on her own event: Edit, Customize, New call out lead; no Interested / Going</small></div>
+<div class="hostbar">
+  <div class="atb">
+    <div class="grp"><button class="btn primary"><i data-i="callout" data-s="16"></i>New call out</button><button class="btn"><i data-i="edit" data-s="16"></i>Edit</button><button class="btn"><i data-i="paint" data-s="16"></i>Customize</button></div>
+    <div class="r"><button class="btn"><i data-i="addhorizon" data-s="16"></i>Add to horizon</button><button class="btn"><i data-i="share" data-s="16"></i>Share</button><button class="btn icon" aria-label="More"><i data-i="dots" data-s="16"></i></button></div>
+  </div>
+</div>
+
+<!-- ============================================================ 2. EVENT · PHONE + 4. HOME · PHONE -->
+<div class="pair">
+  <div>
+    <div class="label">2 · Event page — phone 375 <small>· verbs in the bar above the tabs</small></div>
+    <div class="win phone" id="ab-event-phone">
+      <div class="appbar"><span class="ab"><i data-i="back" data-s="22"></i></span><div class="abt"><b>Baltic Circuit build weekend</b><small>Event</small></div></div>
+      <div class="pbody"><div data-slot="event" data-phone="1"></div></div>
+      <div class="evbar">
+        <button class="btn"><i data-i="heart" data-s="16"></i>Interested</button>
+        <button class="btn"><i data-i="check" data-s="16"></i>Going</button>
+        <button class="btn"><i data-i="promote" data-s="16"></i>Promote</button>
+        <button class="btn icon" aria-label="More"><i data-i="dots" data-s="16"></i></button>
+      </div>
+      <div data-slot="tabs" data-on="home"></div>
+    </div>
+  </div>
+  <div>
+    <div class="label">4 · Home — phone 375</div>
+    <div class="win phone" id="ab-home-phone">
+      <div class="appbar"><div class="abt big"><b>Home</b></div><span class="ab"><i data-i="search" data-s="22"></i></span></div>
+      <div class="pbody list" data-slot="feed"></div>
+      <div data-slot="tabs" data-on="home"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ 3. HOME · DESKTOP -->
+<div class="label">3 · Home — desktop 1440 (reading pane closed, the list takes the room)</div>
+<div class="win desk" id="ab-home-desktop">
+  <div class="titlebar"><span class="tg">◆</span><b>Hypernet</b><span class="wt">— Home</span></div>
+  <div class="toolbar">
+    <button class="btn"><i data-i="plus"></i>New<i data-i="down" data-s="14"></i></button>
+    <div class="field"><i data-i="search" data-s="16"></i>Search events, horizons, people</div>
+    <span class="spring"></span>
+    <button class="btn"><i data-i="chat"></i>Chats <span class="badge">1</span></button>
+    <span class="tsep"></span>
+    <button class="btn"><span class="av a24" style="background:#1c1c1c">M</span>Michal<i data-i="down" data-s="14"></i></button>
+  </div>
+  <div class="main wide">
+    <div class="col"><div class="panel" data-slot="nav"></div></div>
+    <div class="col">
+      <div class="chead"><h2>Home</h2><div class="cs">What the people you follow are doing</div></div>
+      <div class="panel list" data-slot="feed"></div>
+    </div>
+    <div class="col">
+      <div class="dbar"></div>
+      <div class="panel"><div class="panempty"><svg viewBox="0 0 32 32" width="72" height="72"><path d="M16 4 28 16 16 28 4 16z" fill="currentColor"/></svg></div></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /sheet -->
+
+<!-- ============================================================ shared parts (cloned into the artboards) -->
+<template id="t-nav">
+  <div class="nav">
+    <div class="nr sel"><i data-i="home"></i><span class="nl">Home</span></div>
+    <div class="nr"><i data-i="explore"></i><span class="nl">Explore</span></div>
+    <div class="nr sub"><span class="nl">Events</span></div>
+    <div class="nr sub"><span class="nl">Event Horizons</span></div>
+    <div class="nr sub"><span class="nl">Call outs</span></div>
+    <div class="nr sub"><span class="nl">People</span></div>
+    <div class="nh">Your events</div>
+    <div class="nr"><i data-i="check"></i><span class="nl">Going</span><span class="nc">2</span></div>
+    <div class="nr"><i data-i="heart"></i><span class="nl">Interested</span><span class="nc">1</span></div>
+    <div class="nr"><i data-i="star"></i><span class="nl">Hosting</span><span class="nc">2</span></div>
+    <div class="nh">Your horizons</div>
+    <div class="nr"><span class="sq s20" style="--ebg:#06080e;--eac:#6fd6c8">☾</span><span class="nl">My Horizon</span><span class="nc">2</span></div>
+    <div class="nh">Following</div>
+    <div class="nr"><span class="sq s20" style="--ebg:#0d1b2e;--eac:#5ea8ff">☾</span><span class="nl">Baltic Circuit</span></div>
+    <div class="nr"><span class="sq s20" style="--ebg:#3a2a12;--eac:#e6b23c">✦</span><span class="nl">Dust &amp; Neon <span class="ns">Rio Moss</span></span></div>
+    <div class="nr"><span class="sq s20" style="--ebg:#06080e;--eac:#6fd6c8">☾</span><span class="nl">Quiet Rooms <span class="ns">Anna Vale</span></span></div>
+    <div class="nh">People you follow</div>
+    <div class="nr"><span class="av a20" style="background:#4b4b4b">AV</span><span class="nl">Anna Vale <span class="ns">· online</span></span></div>
+    <div class="nr"><span class="av a20" style="background:#6b6b6b">RM</span><span class="nl">Rio Moss <span class="ns">· online</span></span></div>
+    <div class="nr"><span class="av a20" style="background:#363636">KO</span><span class="nl">Kai Okonkwo</span></div>
+    <div class="nr"><span class="av a20" style="background:#2b2b2b">SR</span><span class="nl">Sasha Reed</span></div>
+  </div>
+</template>
+
+<template id="t-feed">
+  <!-- call outs for you: pinned on top, one at a time, stepped in the band -->
+  <div class="band">Call outs for you <span class="bc">1 of 2</span><span class="bx"><button class="btn" aria-label="Previous"><i data-i="back" data-s="12"></i></button><button class="btn" aria-label="Next"><i data-i="back" data-s="12" data-flip="1"></i></button></span></div>
+  <article class="fe">
+    <header class="feh"><span class="av a32" style="background:#4b4b4b">AV</span>
+      <div class="fet"><div class="fes"><b>Anna Vale</b> posted a call out</div><div class="fem">2 days ago · you follow Anna</div></div></header>
+    <div class="co">
+      <div class="cot"><span class="tag"><i data-i="callout" data-s="12"></i>Call out</span><span class="right">open until Thu 29 Oct</span></div>
+      <div class="coa">Sound engineer</div>
+      <p class="cob">Hey we are creating an event and we are looking for a sound engineer.</p>
+      <div class="obj"><span class="sq s48 plain">▲</span><div class="ot"><div class="o1">Baltic Circuit build weekend</div><div class="o2">Sat 17 Oct · Stockholm · Free</div><div class="o3">Rio is interested</div></div></div>
+      <div class="cof"><button class="btn primary"><i data-i="chat" data-s="16"></i>Answer</button><button class="link">3 public replies</button><span class="cn">latest: Rio Moss, 5h ago</span></div>
+    </div>
+  </article>
+
+  <!-- coming up with your people: the shelf, same rows -->
+  <div class="band">Coming up with your people <span class="bc">next 3 weeks · 11</span></div>
+  <article class="fe">
+    <div class="obj flat"><span class="sq s48" style="--ebg:#f6f0e4;--eac:#d98d3f">◗</span><div class="ot"><div class="o1">Ridge dawn stretch</div><div class="o2">in 3 days · Oslo</div><div class="o3">Rio interested</div></div><div class="odate"><b>7 Oct</b>Wed</div></div>
+  </article>
+  <article class="fe">
+    <div class="obj flat"><span class="sq s48" style="--ebg:#1a0703;--eac:#ff5a1f">⚡</span><div class="ot"><div class="o1">Night kitchen line</div><div class="o2">in 5 days · Gothenburg</div><div class="o3">Anna going · Rio interested</div></div><div class="odate"><b>9 Oct</b>Fri</div></div>
+  </article>
+  <article class="fe">
+    <div class="obj flat"><span class="sq s48 plain">☾</span><div class="ot"><div class="o1">Zurich Decompression 2026</div><div class="o2">in 5 days · Zürich</div><div class="o3">Anna going · Kai interested</div></div><div class="odate"><b>9 Oct</b>Fri</div></div>
+    <button class="btn fmore">Show 8 more</button>
+  </article>
+
+  <!-- the stream -->
+  <div class="band">Today</div>
+  <article class="fe">
+    <header class="feh"><span class="av a32" style="background:#4b4b4b">AV</span>
+      <div class="fet"><div class="fes"><b>Anna Vale</b>, <b>Rio Moss</b> and 2 others are going</div><div class="fem"><span class="fresh">34m ago</span></div></div></header>
+    <div class="obj"><span class="sq s48" style="--ebg:#0d1b2e;--eac:#5ea8ff">◆</span><div class="ot"><div class="o1">The Borderland 2027</div><div class="o2">Mon 26 Jul 2027 · Eksjö · Membership</div><div class="o3">4 you follow · 33 on Hypernet</div></div>
+      <div class="ov"><button class="btn"><i data-i="heart" data-s="16"></i>Interested</button><button class="btn"><i data-i="check" data-s="16"></i>Going</button></div></div>
+  </article>
+  <article class="fe">
+    <header class="feh"><span class="av a32" style="background:#6b6b6b">RM</span>
+      <div class="fet"><div class="fes"><b>Rio Moss</b> is interested</div><div class="fem"><span class="fresh">3h ago</span></div></div>
+      <button class="btn s"><i data-i="chat" data-s="14"></i>Message</button></header>
+    <div class="obj" data-mark="baltic"><span class="sq s48 plain">▲</span><div class="ot"><div class="o1">Baltic Circuit build weekend</div><div class="o2">Sat 17 Oct · Stockholm · Free</div><div class="o3">Anna hosting · 1 call out open</div></div>
+      <div class="ov"><button class="btn"><i data-i="heart" data-s="16"></i>Interested</button><button class="btn"><i data-i="check" data-s="16"></i>Going</button></div></div>
+  </article>
+  <article class="fe">
+    <header class="feh"><span class="av a32 sys"><i data-i="people" data-s="16"></i></span>
+      <div class="fet"><div class="fes"><b>People your friends follow</b></div><div class="fem">Suggested from who Anna, Kai and Rio follow</div></div></header>
+    <div class="stack">
+      <div class="obj"><span class="av a48" style="background:#565656">JH</span><div class="ot"><div class="o1">Jon Hale</div><div class="o2">@jon · Transport · Oslo</div><div class="o3">Anna, Kai and 1 more follow Jon</div></div>
+        <div class="ov"><button class="btn primary"><i data-i="plus" data-s="16"></i>Follow</button></div></div>
+      <div class="obj"><span class="av a48" style="background:#7c7c7c">MC</span><div class="ot"><div class="o1">Mira Chen</div><div class="o2">@mira · Art installs · Berlin</div><div class="o3">Anna, Rio and 1 more follow Mira</div></div>
+        <div class="ov"><button class="btn primary"><i data-i="plus" data-s="16"></i>Follow</button></div></div>
+    </div>
+  </article>
+  <article class="fe">
+    <header class="feh"><span class="av a32" style="background:#4b4b4b">AV</span>
+      <div class="fet"><div class="fes"><b>Anna Vale</b> published an Event Horizon</div><div class="fem"><span class="fresh">5h ago</span> · a horizon is a list of events someone curates, like a playlist</div></div></header>
+    <div class="obj"><span class="sq s48" style="--ebg:#06080e;--eac:#6fd6c8">☾</span><div class="ot"><div class="o1">Quiet Rooms</div><div class="o2">Event Horizon · 3 events · next Wed 7 Oct</div><div class="o3">Deep Listening Lab, Zurich Decompression and 1 more</div></div>
+      <div class="ov"><button class="btn on"><i data-i="check" data-s="16"></i>Following</button></div></div>
+  </article>
+  <article class="fe">
+    <header class="feh"><span class="av a32" style="background:#363636">KO</span>
+      <div class="fet"><div class="fes"><b>Kai Okonkwo</b> promoted an event</div><div class="fem"><span class="fresh">9h ago</span></div></div></header>
+    <div class="obj"><span class="sq s48" style="--ebg:#06080e;--eac:#6fd6c8">☾</span><div class="ot"><div class="o1">Deep Listening Lab</div><div class="o2">Sun 18 Oct · Stockholm</div><div class="o3">Kai promoted · 9 on Hypernet</div></div>
+      <div class="ov"><button class="btn"><i data-i="heart" data-s="16"></i>Interested</button><button class="btn"><i data-i="check" data-s="16"></i>Going</button></div></div>
+  </article>
+  <div class="band">Yesterday</div>
+  <article class="fe">
+    <header class="feh"><span class="av a32" style="background:#2b2b2b">SR</span>
+      <div class="fet"><div class="fes"><b>Sasha Reed</b> followed an Event Horizon</div><div class="fem">yesterday</div></div></header>
+    <div class="obj"><span class="sq s48" style="--ebg:#3a2a12;--eac:#e6b23c">✦</span><div class="ot"><div class="o1">Dust &amp; Neon</div><div class="o2">Event Horizon by Rio Moss · 4 events · next Fri 16 Oct</div><div class="o3">Followed by Sasha and 2 more you follow</div></div>
+      <div class="ov"><button class="btn on"><i data-i="check" data-s="16"></i>Following</button></div></div>
+  </article>
+</template>
+
+<template id="t-event">
+  <article class="doc">
+    <header class="tband">
+      <span class="sq s96 plain">▲</span>
+      <div class="tt">
+        <div class="tkind">Build · Public</div>
+        <h1>Baltic Circuit build weekend</h1>
+        <div class="tsub">Sat 17 – Sun 18 Oct 2026 · Shared workshop, Årsta, Stockholm</div>
+        <div class="tsub2">Hosted by Anna Vale · Free</div>
+      </div>
+    </header>
+    <div class="atb" data-desk-only="1">
+      <div class="grp"><button class="btn"><i data-i="heart" data-s="16"></i>Interested</button><button class="btn"><i data-i="check" data-s="16"></i>Going</button><button class="btn"><i data-i="promote" data-s="16"></i>Promote <span class="n">14</span></button></div>
+      <div class="r"><button class="btn"><i data-i="addhorizon" data-s="16"></i>Add to horizon</button><button class="btn"><i data-i="share" data-s="16"></i>Share</button></div>
+    </div>
+    <div class="dbody">
+      <fieldset class="gb"><legend>Details</legend>
+        <dl class="kv">
+          <dt>When</dt><dd>Sat 17 – Sun 18 Oct 2026<small>10:00–18:00 both days · in 13 days</small></dd>
+          <dt>Where</dt><dd>Shared workshop, Årsta<small>Stockholm, Sweden · address on RSVP</small></dd>
+          <dt>Entry</dt><dd>Free<small>Volunteering encouraged · no skills needed</small></dd>
+          <dt>Host</dt><dd><button class="link">Anna Vale</button><small>@anna · Sound + camp ops</small></dd>
+          <dt>On horizons</dt><dd><button class="link">Baltic Circuit</button><small>by Baltic Circuit · 7 events</small></dd>
+        </dl>
+      </fieldset>
+
+      <fieldset class="gb"><legend>About</legend>
+        <p class="prose">Two days of welding and wiring the camp's shade structure and LED ridge for next summer. No skills needed; we teach on site.</p>
+      </fieldset>
+
+      <fieldset class="gb"><legend>Call outs <span class="bc">· 1 open</span></legend>
+        <div class="co" style="margin-top:8px">
+          <div class="cot"><span class="tag"><i data-i="callout" data-s="12"></i>Call out</span><span class="right">open until Thu 29 Oct</span></div>
+          <div class="coa">Sound engineer</div>
+          <p class="cob">Hey we are creating an event and we are looking for a sound engineer.</p>
+          <div class="cof"><button class="btn primary"><i data-i="chat" data-s="16"></i>Answer privately</button><span class="cn">Anna Vale · posted 2 days ago</span></div>
+        </div>
+        <div class="thread">
+          <div class="rp"><span class="av a32" style="background:#565656">JH</span>
+            <div class="rh"><b>Jon Hale</b>2 days ago</div>
+            <p class="rt">I can bring a 2 kW PA from Oslo if someone covers the ferry. Not an engineer, but I've run it before.</p>
+            <div class="ra"><button class="link">Reply</button></div></div>
+          <div class="rp"><span class="av a32" style="background:#4b4b4b">AV</span>
+            <div class="rh"><b>Anna Vale</b><span class="host">Host</span>2 days ago</div>
+            <p class="rt">Jon, that already solves half of it. The camp pays the ferry. Still looking for someone to mix.</p>
+            <div class="ra"><button class="link">Reply</button></div></div>
+          <div class="rp"><span class="av a32" style="background:#6b6b6b">RM</span>
+            <div class="rh"><b>Rio Moss</b><span style="color:var(--ink);font-weight:bold">5h ago</span></div>
+            <p class="rt">Lighting and AV here. I can sit next to whoever mixes on Saturday and cover the LED ridge.</p>
+            <div class="ra"><button class="link">Reply</button></div></div>
+          <div class="compose"><span class="av a32" style="background:#1c1c1c">M</span>
+            <div class="field">Reply publicly…</div>
+            <button class="btn">Reply</button>
+            <p class="cnote">Replies are public. To talk to Anna on your own, use Answer privately.</p></div>
+        </div>
+      </fieldset>
+
+      <fieldset class="gb"><legend>Who's going <span class="bc">· 18 on Hypernet</span></legend>
+        <div class="who">
+          <div class="wp"><span class="av a32" style="background:#4b4b4b">AV</span><div class="wn"><b>Anna Vale</b><small>host · you follow</small></div></div>
+          <div class="wp"><span class="av a32" style="background:#2b2b2b">SR</span><div class="wn"><b>Sasha Reed</b><small>you follow · going · yesterday</small></div></div>
+          <div class="wp"><span class="av a32" style="background:#6b6b6b">RM</span><div class="wn"><b>Rio Moss</b><small>you follow · interested · 3h ago</small></div></div>
+          <div class="wp"><span class="av a32" style="background:#565656">JH</span><div class="wn"><b>Jon Hale</b><small>going · 2 days ago</small></div></div>
+        </div>
+        <div class="wmore"><button class="btn">Show everyone</button><span>and 15 more going · 4 interested</span></div>
+      </fieldset>
+
+      <fieldset class="gb"><legend>Timeline and what to bring</legend>
+        <dl class="kv">
+          <dt>Sat 17 Oct</dt><dd>Build<small>10:00–18:00</small></dd>
+          <dt>Sun 18 Oct</dt><dd>Build<small>10:00–18:00</small></dd>
+          <dt>Bring</dt><dd><ul><li>work gloves and closed shoes (PPE)</li><li>a potluck dish</li><li>your own cup</li></ul></dd>
+        </dl>
+      </fieldset>
+      <p class="prov">Illustrative example</p>
+    </div>
+  </article>
+</template>
+
+<template id="t-tabs">
+  <div class="tabbar">
+    <div class="tab" data-t="home"><i data-i="home" data-s="22"></i>Home</div>
+    <div class="tab" data-t="explore"><i data-i="explore" data-s="22"></i>Explore</div>
+    <div class="tab"><span class="tn"><i data-i="plus" data-s="20"></i></span>New</div>
+    <div class="tab" data-t="chats"><i data-i="chat" data-s="22"></i>Chats</div>
+    <div class="tab" data-t="you"><i data-i="user" data-s="22"></i>You</div>
+  </div>
+</template>
+
+<script>
+/* only to keep this concept one file: clone the shared parts into the artboards and draw the app's icons */
+var IC = {
+  home:'<path d="M3 10 10 3.5 17 10M5 8.5V17h4v-4.5h2V17h4V8.5"/>',
+  explore:'<circle cx="10" cy="10" r="7.2"/><path d="m13 7-1.8 4.2L7 13l1.8-4.2z"/>',
+  people:'<circle cx="7.5" cy="7" r="3"/><path d="M1.8 17c.6-3.3 2.6-5 5.7-5s5.1 1.7 5.7 5"/><circle cx="14.2" cy="6.4" r="2.3"/><path d="M14 10.6c2.5.1 4 1.5 4.4 4.4"/>',
+  check:'<path d="M3.5 10.5 8 15l8.5-9.5"/>',
+  heart:'<path d="M10 16.6S3 12.3 3 7.7C3 5.4 4.7 3.9 6.6 3.9c1.5 0 2.7.9 3.4 2 .7-1.1 1.9-2 3.4-2 1.9 0 3.6 1.5 3.6 3.8 0 4.6-7 8.9-7 8.9z"/>',
+  star:'<path d="m10 2.8 2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 8.1l5-.7z"/>',
+  promote:'<path d="M5 15 15 5M7.5 5H15v7.5"/>',
+  plus:'<path d="M10 3.5v13M3.5 10h13"/>',
+  chat:'<path d="M3 4h14v9.5H9.5L5.5 17v-3.5H3z"/>',
+  search:'<circle cx="8.5" cy="8.5" r="5"/><path d="m12.3 12.3 4.7 4.7"/>',
+  back:'<path d="M12.5 4 6.5 10l6 6"/>',
+  close:'<path d="m5 5 10 10M15 5 5 15"/>',
+  down:'<path d="m5.5 8 4.5 4.5L14.5 8"/>',
+  edit:'<path d="M4 16l.8-3.6L13 4.2l2.8 2.8-8.2 8.2zM11.2 6l2.8 2.8"/>',
+  user:'<circle cx="10" cy="7" r="3.4"/><path d="M3.5 17.5c.7-3.8 3-5.6 6.5-5.6s5.8 1.8 6.5 5.6"/>',
+  share:'<path d="M10 12.5V3.5M6.3 7.2 10 3.5l3.7 3.7M4 10.5V17h12v-6.5"/>',
+  addhorizon:'<path d="M1.5 13.5h11M4 13.5a4.5 4.5 0 0 1 8.3-2.4M8.3 4.2v1.8M16 9v8M12 13h8"/>',
+  callout:'<path d="M3 8v4h3l7.5 4V4L6 8zM16.5 7.5v5"/>',
+  paint:'<path d="M4 16c0-2 1-3 2.5-3s2.5 1 2.5 2.5S7.5 18 4 16zM8.5 13 16 5.5l-1.5-1.5L7 11.5"/>',
+  dots:'<path d="M4 10h.01M10 10h.01M16 10h.01" stroke-width="3"/>'
+};
+function fill(slot, tpl){ document.querySelectorAll('[data-slot="'+slot+'"]').forEach(function(el){ el.appendChild(document.getElementById(tpl).content.cloneNode(true)); }); }
+fill('nav', 't-nav'); fill('feed', 't-feed'); fill('event', 't-event'); fill('tabs', 't-tabs');
+/* the list beside the open event shows that event's row selected */
+document.querySelectorAll('[data-sel="baltic"] [data-mark="baltic"]').forEach(function(o){ o.classList.add('sel'); });
+/* on a phone the event's verbs live in the bar at the bottom, not in the page */
+document.querySelectorAll('[data-phone] [data-desk-only]').forEach(function(el){ el.remove(); });
+document.querySelectorAll('.win.phone [data-slot="tabs"]').forEach(function(t){
+  var on = t.getAttribute('data-on'); var el = t.querySelector('[data-t="'+on+'"]'); if (el) el.classList.add('on'); });
+document.querySelectorAll('i[data-i]').forEach(function(i){
+  var s = i.getAttribute('data-s') || 18, n = i.getAttribute('data-i');
+  var svg = '<svg class="ic" viewBox="0 0 20 20" width="'+s+'" height="'+s+'" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square" stroke-linejoin="miter"'+
+    (i.getAttribute('data-flip') ? ' style="transform:scaleX(-1)"' : '')+'>'+IC[n]+'</svg>';
+  i.outerHTML = svg;
+});
+</script>
+</body>
+</html>

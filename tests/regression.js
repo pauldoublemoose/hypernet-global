@@ -31,7 +31,11 @@
    pinned, a textarea (Enter sends, Shift+Enter new line) and the poster sees who answered; New call out defaults to
    the event you are on; no role=button around buttons on Home; whole call-out tiles with the dock and pane open; and 2026-10-01 (trust): the app runs on today's
    date, "Only me" / Friends events are seen only by who may, joined accounts are people to everyone, expired call outs
-   are closed, non-hex colours and non-picture images fall back to plain, storage writes on change and warns once. */
+   are closed, non-hex colours and non-picture images fall back to plain, storage writes on change and warns once; and
+   2026-10-04 (navigation): every desktop list opens with an empty reading pane and ↓ starts from nothing (old ?pane=closed
+   links still land there), the list frame's left edge is never covered on Home and Coming-up dates are centred, Explore's
+   overview is squares at every width with its kinds and old section links intact, Add events has six filters with counts
+   and empty states, and the New event wizard won't go on until a step has what it needs (inline, never a toast). */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch(e){
   try { ({ chromium } = require('playwright-core')); } catch(e2){

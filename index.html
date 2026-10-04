@@ -87,14 +87,14 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .searchbox:focus-within{ outline:1px dotted #000; outline-offset:-5px; }
 .acct .av{ width:24px; height:24px; flex-basis:24px; font-size:10px; }
 
-#main{ flex:1; min-height:0; display:flex; gap:6px; padding:6px; }
+#main{ flex:1; min-height:0; display:flex; gap:8px; padding:8px; }
 .pane{ display:flex; flex-direction:column; min-height:0; min-width:0; }
 #nav{ flex:0 0 var(--nav-w); display:none; }
 #chats{ flex:0 0 var(--chat-w); display:none; }
 #app.l-open #nav, #app.r-open #chats{ display:flex; }
 #app.dock-narrow #chats{ flex-basis:300px; }
 #main{ position:relative; }
-#app.dock-over #chats{ position:absolute; top:6px; right:6px; bottom:6px; z-index:20; width:min(344px, calc(100% - var(--nav-w) - 40px));
+#app.dock-over #chats{ position:absolute; top:8px; right:8px; bottom:8px; z-index:20; width:min(344px, calc(100% - var(--nav-w) - 40px));
   background:var(--face); padding:0 0 0 6px; box-shadow:-3px 0 0 var(--face), -4px 0 0 var(--shadow), -8px 0 16px rgba(0,0,0,.18); }
 #center{ flex:1 1 auto; }
 .panel{ flex:1; min-height:0; overflow:auto; background:#fff; box-shadow:var(--in); overscroll-behavior:contain; }
@@ -138,36 +138,43 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .nrow .sq, .nrow .av{ width:20px; height:20px; flex-basis:20px; font-size:11px; }
 .acctcard{ display:none; }
 
-/* ---------- 5. centre: header, list, detail -------------------------- */
-#chead{ flex:0 0 auto; display:flex; align-items:center; gap:12px; padding:4px 2px 10px 4px; min-height:54px; flex-wrap:wrap; }
+/* ---------- 5. centre: one column, and the window over it ------------- */
+#chead{ flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:0 4px 8px; min-height:56px; flex-wrap:wrap; }
 #chead .ct{ flex:1 1 220px; min-width:0; }
-#chead h2{ margin:0; font-size:var(--fs-l); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-#chead .csub{ color:var(--dim); font-size:var(--fs-s); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-#chead .ctools{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.sortsel{ display:flex; align-items:center; gap:8px; font-size:var(--fs-s); color:var(--dim); }
+#chead h2{ margin:0; font-size:20px; line-height:24px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#chead .csub{ color:var(--dim); font-size:12px; line-height:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#chead .ctools{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.sortsel{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--dim); }
 .sortsel select{ height:var(--ctl); }
-#cbody{ flex:1; min-height:0; display:flex; gap:6px; }
-#listcol, #calcol, #detailcol{ min-width:0; min-height:0; flex-direction:column; }
+#cbody{ flex:1; min-height:0; display:flex; }
+#listcol, #calcol{ flex:1; min-width:0; min-height:0; flex-direction:column; }
 #listcol{ display:flex; container:list / inline-size; }
-#calcol{ display:none; flex:1; container:cal / inline-size; }
-#detailcol{ display:flex; container:detail / inline-size; }
-#app.split #listcol{ flex:0 0 clamp(340px, 41%, 470px); }
-#app.split #detailcol{ flex:1; }
-#app.push #listcol{ flex:1; }
-#app.push #detailcol{ display:none; flex:1; }
+#calcol{ display:none; container:cal / inline-size; }
 #app.v-cal #listcol{ display:none; }
 #app.v-cal #calcol{ display:flex; }
-#app.push.has-detail #listcol, #app.push.has-detail #calcol{ display:none; }
-#app.push.has-detail #detailcol{ display:flex; }
-#dbar{ display:none; flex:0 0 auto; align-items:center; gap:10px; padding:0 0 6px; }
-#app.show-dbar #dbar{ display:flex; }
-#dbar .dcrumb{ color:var(--dim); font-size:var(--fs-s); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.panempty{ min-height:100%; display:grid; place-items:center; color:var(--face); background:#fff; }
-.panempty svg{ opacity:.9; }
-#dbar .dkind{ font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; }
-#dbar .dclose{ margin-left:auto; flex:0 0 auto; width:30px; height:26px; display:grid; place-items:center; border:0; padding:0; background:var(--face); color:#000; box-shadow:var(--out); }
-#dbar .dclose:active{ box-shadow:var(--in); }
+/* desktop and tablet: the list is one column in the middle of what the sidebar and the chat dock leave */
+#app.desk #center{ align-items:center; }
+#app.desk #chead, #app.desk #cbody{ width:100%; max-width:var(--col-w, 680px); }
+/* the window: a Windows 2000 frame over the list, dragged by its title bar */
+#win{ position:absolute; z-index:30; display:flex; flex-direction:column; min-width:0; padding:4px; background:var(--face);
+  box-shadow:var(--out), 0 0 0 1px #000, 6px 6px 0 rgba(0,0,0,.2); }
+#win[hidden]{ display:none; }
+#app.dock-front #chats{ z-index:35; }
+#win > .dbar{ flex:0 0 24px; gap:4px; padding:0 2px 0 4px; font-size:12px; cursor:move; touch-action:none; }
+#win.max > .dbar{ cursor:default; }
+#win > .dbar .dtitle{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#win > .dbar .x{ width:20px; height:18px; flex:0 0 auto; }
+#win > .dbar .x:active{ box-shadow:var(--in); }
+#win > .dbar .wmax + .wclose{ margin-left:2px; }
+#win > .dbar .wback{ margin-right:2px; }
+.wicon{ flex:0 0 16px; height:16px; display:grid; place-items:center; overflow:hidden; }
+.wicon .sq, .wicon .av{ width:16px; height:16px; flex-basis:16px; font-size:10px; }
+.wicon .wglyph{ width:16px; height:16px; display:grid; place-items:center; background:var(--face); color:#000; }
+#win > #dscroll{ flex:1; min-height:0; margin-top:4px; container:detail / inline-size; }
+#win.dragging{ user-select:none; }
+#win.dragging #dscroll{ pointer-events:none; }
 #dscroll{ position:relative; }
+.panempty{ display:none; }
 
 /* rows */
 .band{ position:sticky; top:0; z-index:6; display:flex; align-items:baseline; gap:8px; padding:14px 16px 7px; background:#fff;
@@ -872,9 +879,6 @@ body.is-phone .rpdel{ min-height:40px; }
 .ptbtn:hover{ text-decoration:underline; }
 .mwho{ padding:0; border:0; background:none; color:inherit; }
 .mwho:hover{ text-decoration:underline; }
-.dlg.pfwin .dbody{ padding:0; }
-.dlg .dback{ display:none; }
-body.is-phone .dlg.pfwin .dback{ display:grid; margin-left:-10px; }
 .composer{ align-items:flex-end; }
 .composer textarea{ flex:1; min-width:0; height:var(--ctl); min-height:var(--ctl); max-height:168px; padding:7px 10px; resize:none; overflow-y:auto; line-height:1.4; }
 .mbody{ white-space:pre-wrap; }
@@ -885,16 +889,6 @@ body.is-phone .dlg.pfwin .dback{ display:grid; margin-left:-10px; }
 #app.desk #listcol{ position:relative; }
 #app.desk #listcol::after{ content:""; position:absolute; inset:0; z-index:8; box-shadow:var(--in); pointer-events:none; }
 #app.desk #listbody{ box-shadow:none; }
-/* nothing in the reading pane: the list takes the room, the empty pane stays */
-#app.split.pane-closed #listcol{ flex:0 0 clamp(340px, 60%, 720px); }
-/* split: the reading pane starts level with the heading — the heading belongs to the list column only */
-#app.split #center{ display:grid; grid-template-columns:clamp(340px, 41%, 470px) minmax(0, 1fr); grid-template-rows:auto minmax(0, 1fr); column-gap:6px; }
-#app.split.pane-closed #center{ grid-template-columns:clamp(340px, 60%, 720px) minmax(0, 1fr); }
-#app.split.v-cal #center{ grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); }
-#app.split #cbody{ display:contents; }
-#app.split #chead{ grid-column:1; grid-row:1; }
-#app.split #listcol, #app.split #calcol{ grid-column:1; grid-row:2; }
-#app.split #detailcol{ grid-column:2; grid-row:1 / span 2; }
 /* people your friends follow */
 .ffof{ flex-direction:column; gap:8px; background:var(--face-lt); }
 .ffh{ margin:0; font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--ink2); }
@@ -942,9 +936,15 @@ input[type=search]::-webkit-search-cancel-button{ -webkit-appearance:none; displ
 #app.phone .seg{ flex:1 1 auto; }
 #app.phone .seg button{ flex:1; padding:0 8px; }
 #app.phone .sortsel .sl{ display:none; }
-#app.phone.has-detail #chead{ display:none; }
 #app.phone #cbody{ gap:0; }
-#app.phone #dbar{ display:none !important; }
+/* on a phone the window is a sheet over the whole screen, ending above the preview bar when there is one */
+#app.phone #win{ position:fixed; left:0; right:0; top:0; bottom:var(--pvh, 0px); z-index:50; padding:0; box-shadow:none; }
+#app.phone #win > .dbar{ flex:0 0 auto; min-height:calc(56px + env(safe-area-inset-top)); padding:env(safe-area-inset-top) 4px 0 8px; gap:8px; font-size:14px; cursor:default; }
+#app.phone #win > .dbar .x{ width:44px; height:44px; }
+#app.phone #win > .dbar .dtitle{ white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-height:16px; }
+#app.phone #win > .dbar .dtitle small{ display:block; font-size:12px; font-weight:normal; opacity:.8; }
+#app.phone .wicon, #app.phone .wicon .sq, #app.phone .wicon .av, #app.phone .wicon .wglyph{ width:24px; height:24px; flex-basis:24px; }
+#app.phone #win > #dscroll{ margin:0; box-shadow:none; }
 #app.phone .calbar{ padding:8px 10px; }
 #app.phone .phead{ display:none; }
 #app.phone .conv{ gap:0; }
@@ -1022,10 +1022,15 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
       <div id="cbody">
         <div id="listcol"><div class="panel" id="listbody"></div></div>
         <div id="calcol"></div>
-        <div id="detailcol"><div id="dbar"></div><div class="panel" id="dscroll"></div><div id="evbar" role="toolbar" aria-label="Event actions"></div></div>
       </div>
     </section>
     <aside id="chats" class="pane" aria-label="Chats"></aside>
+    <!-- the one window: whatever you open (an event, a horizon, a person, a call out) opens here, over the list -->
+    <section id="win" role="dialog" aria-labelledby="wtitle" hidden>
+      <div id="dbar" class="dbar"></div>
+      <div class="panel" id="dscroll"></div>
+      <div id="evbar" role="toolbar" aria-label="Event actions"></div>
+    </section>
   </div>
 
   <div id="previewbar" role="region" aria-label="Preview"></div>
@@ -1913,8 +1918,6 @@ function rowHTML(it){
     if (myReplies(it.id).length) side = '<span class="pill going">'+ic('check',11)+'<span>Replied</span></span>';
   }
   var drag = it.type === 'event' && !L.phone ? ' draggable="true"' : '';
-  if (it.type === 'event' && S.folder.kind === 'horizon' && hzOwnedByMe(S.folder.id))
-    side += '<button class="ib rrm" data-act="unfile" data-id="'+it.id+'" data-hz="'+S.folder.id+'" aria-label="Remove from '+esc(HORIZONS[S.folder.id].name)+'">'+ic('close',14)+'</button>';
   return '<div class="'+cls+'" '+act+drag+' role="button" tabindex="-1">' + lead +
     '<div class="r-main"><div class="r-title">'+title+'</div>'+((meta || date)?'<div class="r-meta">'+(date?'<span class="r-dm">'+date+(meta?' · ':'')+'</span>':'')+meta+'</div>':'')+soc+'</div>' +
     ((date || side) ? '<div class="r-side">'+(date?'<div class="r-date">'+date+'</div>':'')+(side?'<div class="r-states">'+side+'</div>':'')+'</div>' : '') +
@@ -1937,10 +1940,6 @@ function browseHTML(){
 }
 function renderList(){
   if (L.phone && S.phoneSearch && S.folder.kind !== 'search'){ $('listbody').innerHTML = browseHTML(); S.rows = []; return; }
-  if (S.folder.kind === 'horizon' && HORIZONS[S.folder.id]){
-    var lb0 = $('listbody'), top0 = lb0.scrollTop;
-    lb0.innerHTML = horizonHTML(S.folder.id, true); lb0.scrollTop = top0; return;
-  }
   if (S.folder.kind === 'home'){ renderHome(); return; }
   if (isOverview()){ renderShelves(); return; }
   var items = sortItems(folderItems());
@@ -2448,10 +2447,9 @@ function playlistHTML(hzId, withTracks){
   if (withTracks !== false){
     /* what is still to come leads; what already happened folds away under "Past" */
     var up = evs.filter(function(e){ return !isPast(lastDay(e)); }), past = evs.filter(function(e){ return isPast(lastDay(e)); }).reverse();
-    var inList = !L.phone && S.folder.kind === 'horizon' && S.folder.id === hzId;
     var track = function(e){
       var tag = cardTag({ type:'event', id:e.id });
-      return '<li class="track'+(isPast(lastDay(e))?' past':'')+(inList && isSel({ type:'event', id:e.id }) ? ' sel' : '')+'" data-act="'+(inList ? 'row' : 'open')+'" data-type="event" data-id="'+e.id+'" data-hz="'+hzId+'" role="button">' +
+      return '<li class="track'+(isPast(lastDay(e))?' past':'')+'" data-act="open" data-type="event" data-id="'+e.id+'" data-hz="'+hzId+'" role="button">' +
         sqPx(e.id, 48) +
         '<span class="tm"><span class="tt">'+esc(e.title)+'</span><span class="ts">'+esc([fmtShort(e.date), whereOf(e), hostLabel(e)].filter(Boolean).join(' · '))+'</span>' +
         (tag ? tag.replace('ctag', 'ctag inline') : '') + '</span>' +
@@ -2462,7 +2460,6 @@ function playlistHTML(hzId, withTracks){
         (past.length ? (up.length ? '<li class="trpast" data-act="hzpast" data-id="'+hzId+'" role="button" aria-expanded="'+open+'">'+ic(open ? 'down' : 'back', 16).replace('class="ic"', 'class="ic"'+(open ? '' : ' style="transform:scaleX(-1)"'))+'Past · '+past.length+'</li>' : '') +
           (open ? past.map(track).join('') : '') : '')
       : (mine ? '' : '<li class="empty">No events in this horizon yet.</li>')) + '</ol>') || sect('Events', '<ol class="tracks"></ol>');
-    if (inList) S.rows = up.concat(open ? past : []).map(function(e){ return { type:'event', id:e.id }; });
   }
   return pageHTML({ kind:'horizon', t:t, cover:hzMosaic(hzId, 160), eyebrow:'Event Horizon' + (hz.isPublished ? '' : ' · Private'), title:hz.name,
     sub:hz.description ? esc(hz.description) : '', note:KINDDESC.horizons, toolbar:bar, facts:facts, body:body });
@@ -2583,46 +2580,109 @@ function missingHTML(path){
   return h + '</div></div>';
 }
 var KINDNAME = { event:'Event', horizon:'Event Horizon', person:'Person', callout:'Call out', missing:'' };
-/* close the reading pane: it stays where it is, empty; picking something fills it again */
-function closePane(){
-  if (L.phone || !L.split) return;
-  S.stack = [];
-  render();
-}
 function detailHTML(it){
   if (it && it.type === 'missing') return missingHTML(it.id);
-  /* an empty reading pane: a blank panel with the faint Hypernet mark, nothing to read */
-  if (!it) return '<div class="panempty" aria-hidden="true"><svg viewBox="0 0 32 32" width="72" height="72"><path d="M16 4 28 16 16 28 4 16z" fill="currentColor"/></svg></div>';
+  if (!it) return '';
   if (it.type === 'event' && EVENTS[it.id])      return canvasHTML(it.id);
   if (it.type === 'horizon')                     return horizonHTML(it.id, true);
   if (it.type === 'person')                      return personHTML(it.id);
   if (it.type === 'callout' && calloutOf(it.id)) return calloutHTML(it.id);
   return '<div class="empty">Nothing to show.</div>';
 }
+/* ---- THE WINDOW ----
+   One window, over the list: whatever you open shows in it, and opening something else from the list replaces it.
+   Inside it, going on to another thing stacks (‹ in its title bar steps back). On a desktop or tablet it is a
+   Windows 2000 window you can drag by its title bar (kept inside the app's main area), maximise (□, or a double-click
+   on the title bar) and close (×, Esc). The URL names what is open, so reload, back and forward work; back closes it.
+   On a phone it is a sheet over the whole screen with × in its title bar; behind it the list keeps its place. */
+var WIN = { x:null, y:null, max:false };   /* where you put it: kept while it is open, forgotten when it closes */
+function winIcon(it){
+  if (it.type === 'event' && EVENTS[it.id]) return sqPx(it.id, 16);
+  if (it.type === 'horizon' && HORIZONS[it.id]) return hzArt(it.id, 16);
+  if (it.type === 'person' && PEOPLE[it.id]) return avHTML(it.id, 'a16');
+  return '<span class="wglyph">' + ic(it.type === 'callout' ? 'callout' : 'star', 12) + '</span>';
+}
+function closeWin(){
+  if (!S.stack.length) return;
+  S.stack = [];
+  render();
+}
 var LASTDETAIL = '';
 function renderDetail(){
-  var it = S.stack[S.stack.length-1] || null;
+  var it = S.stack[S.stack.length-1] || null, w = $('win');
   var key = it ? it.type + ':' + it.id + ':' + S.stack.length : 'none';
   var sc = $('dscroll'), keep = key === LASTDETAIL ? sc.scrollTop : 0;
+  w.hidden = !it;
+  if (!it){
+    if (LASTDETAIL !== 'none'){ sc.innerHTML = ''; $('dbar').innerHTML = ''; $('evbar').innerHTML = ''; }
+    LASTDETAIL = 'none'; WIN.x = WIN.y = null; WIN.max = false;
+    $('app').classList.remove('has-evbar');
+    return;
+  }
   sc.innerHTML = detailHTML(it);
   sc.scrollTop = keep;
   LASTDETAIL = key;
-  var bar = $('evbar'), onEv = L.phone && it && it.type === 'event' && EVENTS[it.id];
+  var bar = $('evbar'), onEv = L.phone && it.type === 'event' && EVENTS[it.id];
   $('app').classList.toggle('has-evbar', !!onEv);
-  if (onEv){ bar.className = ''; bar.setAttribute('style', themeVars(TH(it.id))); bar.innerHTML = evbarHTML(it.id); }
+  if (onEv){ bar.className = ''; bar.innerHTML = evbarHTML(it.id); }
   else bar.innerHTML = '';
-  /* the back bar: only when there is somewhere to go back to */
-  /* in a split view the reading pane has a title bar with a window close; Back joins it when there is somewhere to go */
-  var show = !L.phone && ((L.split && S.stack.length > 0) || (!L.split && S.stack.length > 0));
-  $('app').classList.toggle('show-dbar', show);
-  if (show){
-    var back = !L.split || S.stack.length > 1;
-    var prev = S.stack.length > 1 ? itemName(S.stack[S.stack.length-2]) : (isCal() ? folderName() + ' · Calendar' : folderName());
-    $('dbar').innerHTML = (back ? '<button class="btn" data-act="back">'+ic('back')+'Back</button><span class="dcrumb">'+esc(prev)+'</span>'
-                                : '<span class="dcrumb dkind">'+esc(KINDNAME[it.type] || '')+'</span>') +
-      (L.split ? '<button class="x dclose" data-act="closepane" aria-label="Close" title="Close (Esc)">'+ic('close',16)+'</button>' : '');
-  }
+  /* the title bar: ‹ when there is something to step back to inside the window, what it is, and the window's buttons */
+  var prev = S.stack.length > 1 ? S.stack[S.stack.length-2] : null, name = itemName(it);
+  $('dbar').innerHTML = (prev ? '<button class="x wback" data-act="back" aria-label="Back to '+esc(itemName(prev))+'" title="Back to '+esc(itemName(prev))+'">'+ic('back', L.phone ? 20 : 14)+'</button>' : '') +
+    '<span class="wicon" aria-hidden="true">'+winIcon(it)+'</span>' +
+    '<span class="dtitle" id="wtitle">'+esc(name)+(L.phone ? '<small>'+esc(KINDNAME[it.type] || '')+'</small>' : '')+'</span>' +
+    (L.phone ? '' : '<button class="x wmax" data-act="maxwin" aria-label="'+(WIN.max ? 'Restore' : 'Maximise')+'" title="'+(WIN.max ? 'Restore' : 'Maximise')+'">' +
+      (WIN.max ? '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5.5h7v7M.5 2.5h7v7h-7z" fill="none" stroke="currentColor"/></svg>'
+               : '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M.5.5h9v9h-9zM.5 1.5h9" fill="none" stroke="currentColor"/></svg>') + '</button>') +
+    '<button class="x wclose" data-act="closewin" aria-label="Close" title="Close (Esc)">'+ic('close', L.phone ? 20 : 14)+'</button>';
+  w.setAttribute('aria-label', (KINDNAME[it.type] || 'Window') + ': ' + name);
+  placeWin();
 }
+/* where the window sits: by default over the right of the list (its left edge, the avatars and who did what, stay in
+   view), inside the room between the sidebar and the chat dock; once you drag it, where you put it — always inside
+   the main area */
+function placeWin(){
+  var w = $('win'); if (!w || w.hidden) return;
+  if (L.phone){ ['left','top','width','height'].forEach(function(k){ w.style[k] = ''; }); w.classList.remove('max'); return; }
+  var m = $('main'), mw = m.clientWidth, mh = m.clientHeight, pad = 8;
+  w.classList.toggle('max', !!WIN.max);
+  if (WIN.max){ w.style.left = pad + 'px'; w.style.top = pad + 'px'; w.style.width = (mw - 2 * pad) + 'px'; w.style.height = (mh - 2 * pad) + 'px'; return; }
+  var dock = L.right && $('chats').offsetWidth ? $('chats').offsetWidth + pad : 0;
+  var lo = pad + (L.navW || 0) + pad, hi = mw - pad - dock;
+  var ww = Math.min(720, Math.max(480, hi - lo), mw - 2 * pad), wh = Math.max(240, mh - 32);
+  var cb = $('cbody').getBoundingClientRect(), mr = m.getBoundingClientRect();
+  var x = WIN.x != null ? WIN.x : Math.max(lo, Math.min(hi - ww, cb.left - mr.left + 176));
+  var y = WIN.y != null ? WIN.y : 16;
+  x = Math.max(0, Math.min(mw - ww, x)); y = Math.max(0, Math.min(mh - wh, y));
+  if (WIN.x != null){ WIN.x = x; WIN.y = y; }
+  w.style.left = x + 'px'; w.style.top = y + 'px'; w.style.width = ww + 'px'; w.style.height = wh + 'px';
+}
+function toggleMaxWin(){ if (L.phone || !S.stack.length) return; WIN.max = !WIN.max; renderDetail(); }
+/* drag by the title bar (not by its buttons) */
+(function(){
+  var d = null;
+  document.addEventListener('pointerdown', function(ev){
+    var bar = ev.target.closest && ev.target.closest('#win > #dbar');
+    /* the window that was touched last is in front of the chat dock, and the other way round */
+    if (ev.target.closest){ var inWin = !!ev.target.closest('#win'), inDock = !!ev.target.closest('#chats'); if (inWin || inDock) $('app').classList.toggle('dock-front', inDock); }
+    if (!bar || L.phone || ev.button !== 0 || ev.target.closest('button') || WIN.max) return;
+    var w = $('win');
+    d = { dx:ev.clientX - w.offsetLeft, dy:ev.clientY - w.offsetTop };
+    try { bar.setPointerCapture(ev.pointerId); } catch(e){}
+    w.classList.add('dragging');
+    ev.preventDefault();
+  });
+  document.addEventListener('pointermove', function(ev){
+    if (!d) return;
+    WIN.x = ev.clientX - d.dx; WIN.y = ev.clientY - d.dy;
+    placeWin();
+  });
+  var end = function(){ if (!d) return; d = null; $('win').classList.remove('dragging'); };
+  document.addEventListener('pointerup', end); document.addEventListener('pointercancel', end);
+  document.addEventListener('dblclick', function(ev){
+    if (ev.target.closest && ev.target.closest('#win > #dbar') && !ev.target.closest('button')) toggleMaxWin();
+  });
+})();
 </script>
 <script>
 /* =========================================================================
@@ -2924,7 +2984,8 @@ function convHTML(cid){
 }
 function growBox(b){ if (!b) return; b.style.height = 'auto'; b.style.height = Math.min(b.scrollHeight + 2, 168) + 'px'; }
 /* the open conversation (S.chatOpen) sits in the dock on a desktop or tablet, and is the Chats tab on a phone */
-function phoneConv(){ return L.phone && S.tab === 'chats' && !S.stack.length && S.chatOpen && CHATS[S.chatOpen] ? S.chatOpen : null; }
+/* on a phone the open conversation is the Chats tab's screen (a window opened from it is a sheet over it) */
+function phoneConv(){ return L.phone && S.tab === 'chats' && S.chatOpen && CHATS[S.chatOpen] ? S.chatOpen : null; }
 function activeChat(){ return L.phone ? phoneConv() : (S.chatOpen && CHATS[S.chatOpen] ? S.chatOpen : null); }
 function chatSub(c){ return PRESENCE[c.memberIds[0]] || 'offline'; }
 function renderChats(){
@@ -3694,11 +3755,11 @@ function renderNav(){
   var npro = Object.keys(PROMOTED).filter(function(k){ return PROMOTED[k] && EVENTS[k]; }).length;
   if (npro) h += navRow({kind:'promoted'}, ic('promote'), 'Promoted', { count: npro });
   if (MYHORIZONS.length) h += '<div class="navh">Your horizons</div>';
-  MYHORIZONS.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { count: hzEventIds(k).length || '', drop:true, hz: L.phone }); });
+  MYHORIZONS.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { count: hzEventIds(k).length || '', drop:true, hz:true }); });
   var followed = Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k] && HORIZONS[k]; });
   if (followed.length){
     h += '<div class="navh">Following</div>';
-    followed.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { sub: HORIZONS[k].ownerName !== HORIZONS[k].name ? HORIZONS[k].ownerName : '', hz: L.phone }); });
+    followed.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { sub: HORIZONS[k].ownerName !== HORIZONS[k].name ? HORIZONS[k].ownerName : '', hz:true }); });
   }
   var ppl = networkPeople().filter(function(p){ return PFOLLOW[p]; });
   if (ppl.length){
@@ -3723,8 +3784,6 @@ function renderToolbar(){
 }
 function renderCHead(){
   var el = $('chead'), views = viewsOf(), v = viewOf();
-  /* a horizon's own page is its header */
-  if (S.folder.kind === 'horizon'){ el.className = 'none hzhead'; el.innerHTML = ''; return; }
   var tools = '';
   if (!L.phone && v === 'list' && !isCal() && viewsOf().length && !(S.folder.kind === 'explore' && S.folder.id === 'horizons')){
     tools += '<label class="sortsel"><span class="sl">Sort</span><select data-act="sort" aria-label="Sort">' +
@@ -3749,7 +3808,7 @@ function exploreKindsHTML(){
 }
 /* ---- the phone shell: an app bar on top, five tabs at the bottom ---- */
 function phoneCanBack(){
-  return S.stack.length > 0 || S.phoneSearch || S.folder.kind !== tabRootFolder(S.tab).kind;
+  return S.phoneSearch || S.folder.kind !== tabRootFolder(S.tab).kind;
 }
 function renderAppbar(){
   var h = '', conv = phoneConv(), back = conv || phoneCanBack();
@@ -3759,11 +3818,6 @@ function renderAppbar(){
     var cc = CHATS[conv], cp = cc.memberIds[0];
     h += '<div class="ab-title ab-tap" data-act="chatprofile" data-id="'+cp+'" role="button">'+esc(cc.name)+'<small>'+esc(chatSub(cc))+'</small></div>' +
       '<button class="ab-btn" data-act="chatprofile" data-id="'+cp+'" aria-label="Profile">'+ic('user',22)+'</button>';
-  } else if (S.stack.length){
-    var it = S.stack[S.stack.length-1];
-    /* a long name takes both lines; the kind of thing it is gives way */
-    h += '<div class="ab-title"><span class="abn">'+esc(itemName(it))+'</span>' +
-      (itemName(it).length > 26 ? '' : '<small>'+esc({event:'Event',horizon:'Event Horizon',person:'Person',callout:'Call out'}[it.type]||'')+'</small>') + '</div>';
   } else if (S.tab === 'chats'){
     h += '<div class="ab-title">Chats</div>';
     if (S.loggedIn) h += '<button class="ab-btn boxed" data-act="newchat">'+ic('edit')+'New chat</button>';
@@ -3791,16 +3845,16 @@ function renderTabbar(){
 /* ---------- the layout engine ---------- */
 function computeLayout(){
   var W = window.innerWidth;
-  if (W < 760) return { phone:true, left:false, right:false, split:false, cw:W };
+  if (W < 760) return { phone:true, left:false, right:false, cw:W };
   /* the sidebar is always there; it gets narrower (labels stay) as the screen does */
   var right = S.rightOpen, navW = W < 1120 ? 200 : W < 1400 ? 216 : 252;
   /* below 1120 there is no room for a third column: the chat dock floats over the centre's right edge */
   var over = right && W < 1120;
-  /* with the dock open it narrows, and the list and the reading pane stay side by side */
+  /* with the dock open it narrows below 1680 */
   var narrow = right && !over && W < 1680;
-  var cw = W - 12 - (navW + 6) - (right && !over ? (narrow ? 306 : 356) : 0);
-  return { phone:false, left:true, right:right, navW:navW, dockOver:over, cw:cw, narrowDock:narrow,
-           split: cw >= (right && !over ? 720 : 860) && !isCal() };
+  /* the list is one centred column (680, a calendar 960) in what is left between the sidebar and the dock */
+  var cw = Math.min(isCal() ? 960 : 680, W - 16 - (navW + 8) - (right && !over ? (narrow ? 308 : 352) : 0));
+  return { phone:false, left:true, right:right, navW:navW, dockOver:over, cw:cw, narrowDock:narrow };
 }
 </script>
 <script>
@@ -5048,7 +5102,6 @@ function markRead(id){ READ[id] = true; }
 /* open an item in the detail pane: from a list row it replaces what is open, from inside a page it stacks */
 function openItem(type, id, mode){
   if (S.folder.kind === 'search') rememberQuery(S.query);
-  if (type === 'horizon' && !L.phone){ goFolder({ kind:'horizon', id:id }); render(); $('listbody').scrollTop = 0; return; }
   if (type === 'event') markRead(id);
   var it = { type:type, id:id };
   if (mode === 'push' && S.stack.length){
@@ -5236,20 +5289,9 @@ function openDM(pid){
   return dm;
 }
 var messagePerson = gated(function(pid){ openChat(openDM(pid)); });
-/* a profile opened from a chat is a window over everything: × (or Esc, or the phone's back) closes it and leaves
-   you exactly where you were, the conversation still open. Going anywhere from inside it closes it first. */
-function chatProfile(pid){
-  if (!PEOPLE[pid]) return;
-  var d = dialog(person(pid).displayName, '<div id="pfwin" data-id="'+pid+'">'+personHTML(pid)+'</div>', '', 680, 'pfwin');
-  d.querySelector('.dbar').insertAdjacentHTML('afterbegin', '<button class="x dback" data-act="closedlg" aria-label="Back to the chat">'+ic('back',16)+'</button>');
-  d.style.top = Math.max(16, (window.innerHeight - d.offsetHeight) / 2.4) + 'px';
-  placeDlg(d);
-}
-function paintChatProfile(){
-  var w = $('pfwin'); if (!w) return;
-  var b = w.parentNode, top = b.scrollTop;
-  w.innerHTML = personHTML(w.getAttribute('data-id')); b.scrollTop = top;
-}
+/* a profile opened from a chat is the window like anything else: the conversation stays open behind it (in the dock,
+   or the phone's Chats tab), and closing the window leaves you exactly where you were */
+function chatProfile(pid){ if (PEOPLE[pid]) openItem('person', pid); }
 function sendChat(){
   var box = $('chatbox'), cid = activeChat(); if (!box || !cid || !box.value.trim()) return;
   var st = stamp();
@@ -5367,8 +5409,6 @@ document.addEventListener('click', function(ev){
   var act = n.getAttribute('data-act'), id = n.getAttribute('data-id');
   if (act !== 'newmenu' && act !== 'acctmenu') closePopup();
   if (n.tagName === 'A') ev.preventDefault();
-  /* going anywhere from a profile opened over a chat closes that window first */
-  if (n.closest('.dlg.pfwin') && act !== 'closedlg' && act !== 'followp') closeDialogs();
   switch (act){
     case 'newmenu':  if (POP){ closePopup(); break; } popup(n, NEWITEMS); break;
     case 'acctmenu': if (POP){ closePopup(); break; } popup(n, [{ label:'Your profile', cmd:'profile', icon:'user' }, { label:'Edit profile', cmd:'editprofile', icon:'edit' }, '-', { label:'Log out', cmd:'logout', icon:'back' }]); break;
@@ -5388,7 +5428,8 @@ document.addEventListener('click', function(ev){
     case 'open':     openItem(n.getAttribute('data-type'), id, 'push'); break;
     case 'open-reset': openItem(n.getAttribute('data-type'), id); break;
     case 'back':     navBack(); break;
-    case 'closepane': closePane(); break;
+    case 'closewin': closeWin(); break;
+    case 'maxwin':   toggleMaxWin(); break;
     case 'pback':    navBack(); break;
     case 'psearch':  S.phoneSearch = true; if (S.folder.kind !== 'search') rememberPlace(); render(); break;
     case 'clearsearch': leaveSearch(); render(); break;
@@ -5408,13 +5449,13 @@ document.addEventListener('click', function(ev){
     case 'renamehz':     gated(renameHzDialog)(id); break;
     case 'dorename':     renameHz(id); break;
     case 'publishhz':    publishHz(id); break;
-    case 'followp':      followP(id); paintChatProfile(); break;
+    case 'followp':      followP(id); break;
     case 'dm':           messagePerson(id); break;
     case 'answercallout': answerCallout(id); break;
     case 'postreply':    postReply(id); break;
     case 'delreply':     deleteReply(id); break;
     case 'chatprofile':  chatProfile(id); break;
-    case 'costep':       stepStrip(+id); break;
+    case 'costep':       stepCallout(+id); break;
     case 'shelfstep':    stepShelf(n.getAttribute('data-shelf'), +id); break;
     case 'upall':        UPALL = !UPALL; render(); break;
     case 'whoall':       whoAllDialog(id); break;
@@ -5594,9 +5635,9 @@ document.addEventListener('keydown', function(ev){
     if (POP){ closePopup(); return; }
     if (ae && ae.id === 'q' && S.folder.kind === 'search'){ leaveSearch(); render(); ae.blur(); return; }
     if (inField){ ae.blur(); return; }
+    /* the window closes (a phone's sheet steps back, as its back gesture does) */
+    if (S.stack.length){ if (L.phone) navBack(); else closeWin(); return; }
     if (L.phone){ if (phoneConv()) chatUp(); else if (phoneCanBack()) navBack(); return; }
-    if (S.stack.length > (L.split ? 1 : 0)){ navBack(); return; }
-    if (L.split && S.stack.length === 1){ closePane(); return; }
     return;
   }
   if (ev.key === 'Enter' && ae){
@@ -5615,7 +5656,7 @@ document.addEventListener('keydown', function(ev){
   }
   if (inField || DLGS.length) return;
   if (ev.key === '/' && !L.phone){ ev.preventDefault(); $('q').focus(); return; }
-  if (!L.phone && L.split && !isCal()){
+  if (!L.phone && !isCal()){
     if (ev.key === 'ArrowDown' || ev.key === 'j'){ ev.preventDefault(); stepItem(1); return; }
     if (ev.key === 'ArrowUp' || ev.key === 'k'){ ev.preventDefault(); stepItem(-1); return; }
   }
@@ -5674,7 +5715,7 @@ function linkOf(type, id){ return location.origin + location.pathname + '#/' + i
 function snapNow(){
   var f = S.folder, v = viewsOf(f);
   return { hn:1, tab:S.tab, folder:{ kind:f.kind, id:f.id || null }, view: v.length ? viewOf(f) : null,
-           stack: phoneConv() ? [{ type:'chat', id:S.chatOpen }] : S.stack.map(function(it){ return { type:it.type, id:it.id }; }),
+           stack: S.stack.length ? S.stack.map(function(it){ return { type:it.type, id:it.id }; }) : phoneConv() ? [{ type:'chat', id:S.chatOpen }] : [],
            q:S.query, ps:!!S.phoneSearch, cal:{ mode:S.calMode, at:S.calAnchor, day:S.calDay },
            dock: L.phone ? null : { open:!!S.rightOpen, chat:S.chatOpen || null } };
 }
@@ -5895,29 +5936,27 @@ function render(){
     var ct = S.stack.filter(function(it){ return it.type === 'chat'; }).pop();
     if (ct){ S.stack = S.stack.filter(function(it){ return it.type !== 'chat'; }); S.chatOpen = ct.id; S.rightOpen = true; S.lastOpened = 'right'; L = computeLayout(); }
     if (S.folder.kind === 'you' || S.folder.kind === 'chats') goFolder({ kind:'home' });
-    /* a horizon opened as a page (a phone habit, or a link) becomes the destination on a wide screen */
-    var hi = -1; S.stack.forEach(function(it, i){ if (it.type === 'horizon' && HORIZONS[it.id]) hi = i; });
-    if (hi >= 0){ var hid0 = S.stack[hi].id; S.stack = S.stack.slice(hi + 1); S.folder = { kind:'horizon', id:hid0 }; }
   } else if (S.stack.some(function(it){ return it.type === 'chat'; })){
     /* and a conversation in the stack (a link, a desktop's dock) becomes the phone's Chats tab */
     S.chatOpen = S.stack.filter(function(it){ return it.type === 'chat'; }).pop().id;
     S.stack = []; S.tab = 'chats'; S.folder = { kind:'chats', id:null };
-  } else if (S.folder.kind === 'horizon'){
-    /* and on a phone it is a page on the Horizons tab */
-    var hid1 = S.folder.id; S.folder = { kind:'explore', id:'horizons' }; S.tab = S.tab === 'home' || !S.tab ? 'explore' : S.tab;
-    if (S.tab !== 'explore') S.folder = tabRootFolder(S.tab);
+  }
+  /* a horizon is never a list of its own: an old link or history entry that made it one opens it in the window,
+     over Explore's Event Horizons */
+  if (S.folder.kind === 'horizon'){
+    var hid1 = S.folder.id; S.folder = { kind:'explore', id:'horizons' };
+    if (L.phone){ S.tab = S.tab === 'home' || !S.tab ? 'explore' : S.tab; if (S.tab !== 'explore') S.folder = tabRootFolder(S.tab); }
     S.stack = [{ type:'horizon', id:hid1 }].concat(S.stack);
   }
-  /* nothing is picked for you: until you open something, the reading pane is empty (the faint mark) and the list
-     takes the room. Home, Explore, search, a horizon and a person all open this way. */
-  L.paneClosed = !L.phone && L.split && !S.stack.length && !isCal();
   var conv = phoneConv();
-  var scr = L.phone ? ((conv || (S.tab === 'chats' && !S.stack.length)) ? 'chats' : (S.tab === 'you' && S.folder.kind === 'you' && !S.stack.length) ? 'you' : 'center') : '';
+  /* on a phone the window is a sheet over the screen you were on, which stays as it was behind it */
+  var scr = L.phone ? ((conv || S.tab === 'chats') ? 'chats' : (S.tab === 'you' && S.folder.kind === 'you') ? 'you' : 'center') : '';
   L.scr = scr;
-  if (!L.phone) app.style.setProperty('--nav-w', L.navW + 'px');
-  app.className = [L.phone ? 'phone' : 'desk', L.left ? 'l-open' : '', L.right ? 'r-open' : '', L.narrowDock ? 'dock-narrow' : '', L.dockOver ? 'dock-over' : '', L.split ? 'split' : 'push',
-    isCal() ? 'v-cal' : '', S.stack.length ? 'has-detail' : '', scr ? 'scr-' + scr : '',
-    conv && S.loggedIn ? 'conv-open' : '', !L.phone && S.loggedIn ? 'readmarks' : '', S.loggedIn ? '' : 'preview', L.paneClosed ? 'pane-closed' : ''].filter(Boolean).join(' ');
+  if (!L.phone){ app.style.setProperty('--nav-w', L.navW + 'px'); app.style.setProperty('--col-w', L.cw + 'px'); }
+  var front = app.classList.contains('dock-front');
+  app.className = [L.phone ? 'phone' : 'desk', L.left ? 'l-open' : '', L.right ? 'r-open' : '', L.narrowDock ? 'dock-narrow' : '', L.dockOver ? 'dock-over' : '',
+    isCal() ? 'v-cal' : '', S.stack.length ? 'win-open' : '', scr ? 'scr-' + scr : '', front && L.right ? 'dock-front' : '',
+    conv && S.loggedIn ? 'conv-open' : '', !L.phone && S.loggedIn ? 'readmarks' : '', S.loggedIn ? '' : 'preview'].filter(Boolean).join(' ');
   document.body.className = L.phone ? 'is-phone' : 'is-desk';
 
   if (L.phone){ renderAppbar(); renderTabbar(); } else renderToolbar();
@@ -5925,10 +5964,13 @@ function render(){
   if (!L.phone || scr === 'center'){
     renderCHead();
     if (isCal()) renderCalendar(); else renderList();
-    renderDetail();
   }
+  renderDetail();
   renderChats();
   renderPreview();
+  /* the phone's sheet ends above the preview bar, which is always there when logged out */
+  app.style.setProperty('--pvh', (L.phone && !S.loggedIn ? $('previewbar').offsetHeight : 0) + 'px');
+  placeWin();
   placeToasts();
   document.title = (S.stack.length ? itemName(S.stack[S.stack.length-1]) : folderName()) + ' · Hypernet';
   schedulePersist();

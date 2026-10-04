@@ -31,7 +31,11 @@
    pinned, a textarea (Enter sends, Shift+Enter new line) and the poster sees who answered; New call out defaults to
    the event you are on; no role=button around buttons on Home; whole call-out tiles with the dock and pane open; and 2026-10-01 (trust): the app runs on today's
    date, "Only me" / Friends events are seen only by who may, joined accounts are people to everyone, expired call outs
-   are closed, non-hex colours and non-picture images fall back to plain, storage writes on change and warns once. */
+   are closed, non-hex colours and non-picture images fall back to plain, storage writes on change and warns once; and
+   2026-10-04 (navigation): every desktop list opens with an empty reading pane and ↓ starts from nothing (old ?pane=closed
+   links still land there), the list frame's left edge is never covered on Home and Coming-up dates are centred, Explore's
+   overview is squares at every width with its kinds and old section links intact, Add events has six filters with counts
+   and empty states, and the New event wizard won't go on until a step has what it needs (inline, never a toast). */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch(e){
   try { ({ chromium } = require('playwright-core')); } catch(e2){
@@ -114,6 +118,16 @@ const ev = (p, f, a) => p.evaluate(f, a);
 async function join(p, name, handle){
   await p.evaluate(() => loginDialog()); await p.waitForTimeout(150);
   await p.fill('#pf-name', name); await p.fill('#pf-handle', handle); await p.click('#pfsave'); await p.waitForTimeout(300);
+}
+/* the New event wizard filled the way a host has to (2026-10-04): Basics, Next, Words; then Publish unless told not to */
+async function newEvent(c, o){
+  await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
+  await c.fill('#w-t', o.title); await c.fill('#w-d', o.date);
+  if (o.online) await c.check('#w-on'); else await c.fill('#w-c', o.city || 'Brno');
+  if (o.privacy) await c.selectOption('#w-p', o.privacy);
+  await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(200);
+  await c.fill('#w-desc', o.desc || 'A slow evening with friends.');
+  if (o.publish !== false){ await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(500); }
 }
 async function overflowEverywhere(p, label){
   const worst = [];
@@ -300,7 +314,9 @@ async function overflowEverywhere(p, label){
       await f.click('#tg-right'); await f.waitForTimeout(200);
       await f.click('.chrow[data-id="c-kai"]'); await f.waitForTimeout(200);
       ok(await ev(f, () => document.getElementById('nav').getBoundingClientRect().width >= 190 && !!document.querySelector('#chats .conv')), w + ': sidebar stays with the chat dock open');
-      if (w >= 1280) ok(await ev(f, () => document.getElementById('app').classList.contains('split') && document.getElementById('dscroll').getBoundingClientRect().width >= 380), w + ': list + reading pane + dock fit');
+      /* nothing opens by itself (2026-10-04): open an event, then list + reading pane + dock sit side by side */
+      if (w >= 1280){ await f.click('#listbody .fev .fct >> nth=0'); await f.waitForTimeout(250); }
+      if (w >= 1280) ok(await ev(f, () => document.getElementById('app').classList.contains('split') && S.stack.length === 1 && document.getElementById('dscroll').getBoundingClientRect().width >= 380), w + ': list + reading pane + dock fit');
     }
     ok((await overflow(f)) <= 0, w + ': no overflow');
     console.log(w + ' feedback errors', f.errors); ok(!f.errors.length, w + ': no console errors');
@@ -392,7 +408,7 @@ async function overflowEverywhere(p, label){
     ok(!c.errors.length, kind + ': no console errors (looks)');
   }
 
-  /* ---------------- 2026-09-28: the reading pane closes, in every context, and the URL keeps it closed ---------------- */
+  /* ---------------- 2026-09-28 / 2026-10-04: the reading pane starts empty and closes to empty, in every context ---------------- */
   {
     const c = await ctx('desk');
     await open(c, '', true);
@@ -405,6 +421,9 @@ async function overflowEverywhere(p, label){
         ['explore section', '#/explore/soon', '#listbody .row[data-type="event"]'], ['show all', '#/explore/announced', '#listbody .row[data-type="event"]'],
         ['search', '#/search?q=burn', '#listbody .row[data-type="event"]'], ['people → person', '#/explore/people', '#listbody .row']]){
       await c.goto(URL + h); await c.waitForTimeout(450);
+      /* 2026-10-04: nothing is picked for you — the pane opens empty, the URL is the list's */
+      const z = await st();
+      ok(z.split && z.closed && z.empty && !z.stack && z.kept && z.hash === h, 'pane: ' + name + ' opens with nothing in the reading pane ' + JSON.stringify(z));
       await c.click(sel + ' >> nth=1'); await c.waitForTimeout(350);
       const a = await st();
       await c.click('#dbar [data-act="closepane"]'); await c.waitForTimeout(300);
@@ -417,9 +436,24 @@ async function overflowEverywhere(p, label){
       const e = await st();
       await c.click(sel + ' >> nth=0'); await c.waitForTimeout(350);
       const p = await st();
-      ok(a.split && a.stack && b.split && b.closed && b.kept && b.empty && !b.stack && /pane=closed/.test(b.hash) && r.closed && r.empty && !r.stack && k.split && k.stack &&
-         e.closed && e.empty && p.split && p.stack && !p.empty && !/pane=closed/.test(p.hash), 'pane: ' + name + ' closes (× and Esc) to an empty pane that keeps its place, survives reload, back reopens, a pick fills it');
+      ok(a.split && a.stack && !a.closed && b.split && b.closed && b.kept && b.empty && !b.stack && b.hash === h && r.closed && r.empty && !r.stack && k.split && k.stack &&
+         e.closed && e.empty && p.split && p.stack && !p.empty, 'pane: ' + name + ' closes (× and Esc) to an empty pane that keeps its place, survives reload, back reopens, a pick fills it');
     }
+    /* the keyboard starts from nothing: ↓ opens the first row, ↓ again the next */
+    for (const [name, h] of [['home', '#/home'], ['events', '#/explore/events'], ['horizon', '#/horizon/season'], ['search', '#/search?q=burn']]){
+      await c.goto(URL + h); await c.waitForTimeout(450);
+      await c.evaluate(() => document.activeElement && document.activeElement.blur());
+      const rows = await ev(c, () => S.rows.map(it => it.type + ':' + it.id));
+      await c.keyboard.press('ArrowDown'); await c.waitForTimeout(250);
+      const k1 = await ev(c, () => S.stack.map(it => it.type + ':' + it.id).join('>'));
+      await c.keyboard.press('ArrowDown'); await c.waitForTimeout(250);
+      const k2 = await ev(c, () => S.stack.map(it => it.type + ':' + it.id).join('>'));
+      ok(rows.length > 1 && k1 === rows[0] && k2 === rows[1], 'pane: ' + name + ': ↓ from nothing selected opens the first item, ↓ again the second ' + JSON.stringify([k1, k2, rows.slice(0, 2)]));
+    }
+    /* an old ?pane=closed link still lands on the empty pane, and the flag is gone from the URL */
+    await c.goto(URL + '#/explore/events?pane=closed'); await c.waitForTimeout(450);
+    const o = await st();
+    ok(o.closed && o.empty && !o.stack && o.hash === '#/explore/events', 'pane: an old ?pane=closed link opens the list with an empty pane ' + o.hash);
     ok(!c.errors.length, 'pane: no console errors ' + c.errors.join(' '));
   }
 
@@ -448,10 +482,8 @@ async function overflowEverywhere(p, label){
     const c = await ctx(kind);
     await open(c, '', true);
     await join(c, 'Plain Pat', 'plainpat' + kind);
-    /* an event published from the first step, and a new horizon, are plain */
-    await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
-    await c.fill('#w-t', 'Plain supper'); await c.fill('#w-d', '2026-11-02'); await c.fill('#w-c', 'Brno');
-    await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(600);
+    /* an event published without visiting the Look step, and a new horizon, are plain */
+    await newEvent(c, { title:'Plain supper', date:'2026-11-02', city:'Brno' }); await c.waitForTimeout(100);
     const pe = await ev(c, () => { const id = MYEVENTS[MYEVENTS.length - 1]; return { stored:!!window.HYPERNET_THEMES.themes[id], page:!!document.querySelector('.pg-event.plain') }; });
     ok(!pe.stored && pe.page, kind + ': an event published without a look wears the plain default');
     await c.evaluate(() => runCmd('new-horizon')); await c.waitForTimeout(250);
@@ -595,7 +627,7 @@ async function overflowEverywhere(p, label){
       await c.evaluate(() => { closeDialogs(); FORMDRAFTS.callout = null; }); await c.evaluate(() => openItem('callout', 'co-kitchen')); await c.waitForTimeout(300);
       await c.evaluate(() => runCmd('new-callout')); await c.waitForTimeout(250);
       ok(await ev(c, () => document.getElementById('co-e').value === calloutEventId(calloutOf('co-kitchen'))), kind + ': … or the event of the call out you are on');
-      await c.evaluate(() => { closeDialogs(); FORMDRAFTS.callout = null; S.stack = []; S.paneClosed = true; render(); }); await c.waitForTimeout(200);
+      await c.evaluate(() => { closeDialogs(); FORMDRAFTS.callout = null; S.stack = []; render(); }); await c.waitForTimeout(200);
       await c.evaluate(() => runCmd('new-callout')); await c.waitForTimeout(250);
       ok(await ev(c, h => document.getElementById('co-e').value === h && !!document.querySelector('#co-s option[value="CAMP OPERATIONS/KITCHEN & COOKING"]'), host), kind + ': … otherwise your next hosted event; the form has a skill');
       await c.evaluate(() => closeDialogs());
@@ -697,7 +729,7 @@ async function overflowEverywhere(p, label){
       await c.evaluate(() => loginDialog()); await c.waitForTimeout(150);
       await c.click('.dlg [data-act="useacct"][data-id="demo"]'); await c.waitForTimeout(300);
       const own = await ev(c, () => MYEVENTS[0]);
-      const showPage = () => ev(c, id => { goFolder({ kind:'hosting' }); if (L.phone) S.tab = 'you'; S.stack = [{ type:'event', id }]; S.autoSel = false; render(); }, own);
+      const showPage = () => ev(c, id => { goFolder({ kind:'hosting' }); if (L.phone) S.tab = 'you'; S.stack = [{ type:'event', id }]; render(); }, own);
       const showList = () => ev(c, () => { goFolder({ kind:'hosting' }); if (L.phone) S.tab = 'you'; S.stack = []; render(); });
       await showPage(); await c.waitForTimeout(300);
       if (kind === 'desk') await c.click('#dscroll .actbar [data-act="customize"]'); else await c.evaluate(id => customizeDialog(id), own);
@@ -740,8 +772,7 @@ async function overflowEverywhere(p, label){
       await c.click('.dlg [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(400);
       ok(await ev(c, id => !window.HYPERNET_THEMES.themes[id], own), kind + ': Reset to plain removes the look');
       /* the new-event wizard's look step is the same three colours and a square */
-      await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
-      await c.fill('#w-t', 'Lantern swap'); await c.fill('#w-d', '2026-11-05');
+      await newEvent(c, { title:'Lantern swap', date:'2026-11-05', publish:false });
       await c.click('.dlg [data-act="wizstep"][data-id="3"]'); await c.waitForTimeout(200);
       ok(await ev(c, () => document.querySelectorAll('.dlg input[type=color]').length === 3 && document.querySelectorAll('.dlg input[type=file]').length === 1), kind + ': the New event look step is the same Customize');
       await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
@@ -786,10 +817,8 @@ async function overflowEverywhere(p, label){
     await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
     /* an "Only me" event: its host sees it; logged out and another account see it nowhere */
     await join(c, 'Pia Host', 'piahost');
-    await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
     const when = await ev(c, () => shiftIso(TODAY_ISO, 10));
-    await c.fill('#w-t', 'Quiet supper zq'); await c.fill('#w-d', when); await c.selectOption('#w-p', 'only_me');
-    await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(500);
+    await newEvent(c, { title:'Quiet supper zq', date:when, privacy:'only_me' });
     const sid = await ev(c, () => MYEVENTS[MYEVENTS.length - 1]);
     await c.evaluate(() => runCmd('new-horizon')); await c.waitForTimeout(200);
     ok(await ev(c, () => /list of events someone curates/.test(document.querySelector('.dlg').textContent)), 'trust: New Event Horizon says what a horizon is');
@@ -892,6 +921,194 @@ async function overflowEverywhere(p, label){
     await c.evaluate(() => loginDialog()); await c.waitForTimeout(200);
     ok((await overflow(c)) <= 0, kind + ': Join dialog, no horizontal overflow');
     ok(!c.errors.length, kind + ': no console errors (horizon link) ' + c.errors.join(' '));
+  }
+
+  /* ---------------- 2026-10-04: Coming up with your people keeps its left edge; its dates are centred ---------------- */
+  for (const kind of ['desk', 'tab', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    await c.goto(URL + '#/home'); await c.waitForTimeout(450);
+    if (kind !== 'phone'){
+      /* a lit row, a hovered row and the band: the list's frame stays drawn down its left edge */
+      if (kind === 'desk'){ await c.click('#listbody .fuprow .flink >> nth=0'); await c.waitForTimeout(300); }
+      await c.evaluate(() => { const f = document.querySelector('#listbody .fup'); const lb = $('listbody'); lb.scrollTop += f.getBoundingClientRect().top - lb.getBoundingClientRect().top - 40; });
+      await c.hover('#listbody .fuprow >> nth=2'); await c.waitForTimeout(200);
+      const box = await ev(c, () => { const l = $('listcol').getBoundingClientRect(), f = document.querySelector('#listbody .fup').getBoundingClientRect();
+        return { x:Math.round(l.left), y:Math.round(Math.max(f.top, l.top + 2)), width:2, height:Math.round(Math.min(f.bottom, l.bottom - 2) - Math.max(f.top, l.top + 2)) }; });
+      const png = await c.screenshot({ clip:box });
+      const edge = await ev(c, async b64 => {
+        const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode();
+        const cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height; const g = cv.getContext('2d'); g.drawImage(img, 0, 0);
+        const d = g.getImageData(0, 0, cv.width, cv.height).data, light = [];
+        for (let y = 0; y < cv.height; y++){ const i = (y * cv.width + 1) * 4; if ((d[i] + d[i + 1] + d[i + 2]) / 3 > 110) light.push(y); }
+        return { h:cv.height, light:light.length };
+      }, png.toString('base64'));
+      ok(edge.h > 150 && edge.light === 0, kind + ': Coming up with your people — the list frame\'s left edge is drawn the whole way down (band, lit and hovered rows) ' + JSON.stringify(edge));
+    }
+    const dates = await ev(c, () => [...document.querySelectorAll('#listbody .fupd')].map(d => {
+      const r = d.getBoundingClientRect(), mid = r.left + r.width / 2, rg = document.createRange(), out = [];
+      [...d.childNodes].forEach(n => { rg.selectNodeContents(n); [...rg.getClientRects()].forEach(q => { if (q.width) out.push(Math.abs(q.left + q.width / 2 - mid)); }); });
+      return Math.max.apply(null, out.concat([0]));
+    }));
+    ok(dates.length >= 3 && dates.every(x => x <= 1.5), kind + ': Coming up with your people — day, weekday and month are centred in the date column ' + JSON.stringify(dates));
+    ok((await overflow(c)) <= 0 && !c.errors.length, kind + ': Home, no horizontal overflow, no console errors ' + c.errors.join(' '));
+  }
+
+  /* ---------------- 2026-10-04: Explore's overview is squares at every width, its kinds and old links stay ---------------- */
+  for (const kind of ['desk', 'tab', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    await c.goto(URL + '#/explore'); await c.waitForTimeout(450);
+    const ov = await ev(c, () => { const carts = [...document.querySelectorAll('#listbody .shelf .srow[data-shelf] .card2 .cart')];
+      return { shelves:document.querySelectorAll('#listbody .shelf').length, cards:carts.length, square:carts.every(x => { const r = x.getBoundingClientRect(); return r.width >= 140 && Math.abs(r.width - r.height) < 1; }),
+               rows:document.querySelectorAll('#listbody .row').length, titles:[...document.querySelectorAll('#listbody .shelf .shh h3')].map(h => h.firstChild.textContent.trim()) }; });
+    ok(ov.shelves >= 4 && ov.cards >= 10 && ov.square && !ov.rows && ov.titles.indexOf('This week') === 0, kind + ': Explore\'s overview is shelves of squares, not rows ' + JSON.stringify(ov));
+    if (kind === 'phone') ok(await ev(c, () => [...document.querySelectorAll('#chead .kinds .kind')].map(x => x.textContent).join('|') === 'All|Events|Horizons|Call outs|People'), 'phone: Explore keeps its kinds as tabs over the squares');
+    else ok(await ev(c, () => [...document.querySelectorAll('#navbody .nsubrow .nlab')].map(x => x.textContent).join('|') === 'Events|Event Horizons|Call outs|People' && !!document.querySelector('#navbody .nrow.sel .nlab') && document.querySelector('#navbody .nrow.sel').textContent.indexOf('Explore') >= 0),
+       kind + ': Explore keeps its four kinds under it in the sidebar, Explore lit');
+    if (kind !== 'phone'){
+      /* a shelf that holds more than fits has ‹ ›, and › moves it along by whole squares */
+      const sh = await ev(c, () => { const s = [...document.querySelectorAll('#listbody .shelf.more')][0]; return s ? s.querySelector('.srow').getAttribute('data-shelf') : null; });
+      ok(!!sh, kind + ': a shelf with more squares than fit offers ‹ ›');
+      if (sh){
+        await c.click('#listbody .shelf .shstep [data-act="shelfstep"][data-shelf="' + sh + '"][data-id="1"]'); await c.waitForTimeout(700);
+        ok(await ev(c, id => document.querySelector('#listbody .srow[data-shelf="' + id + '"]').scrollLeft > 100, sh), kind + ': › steps along the shelf');
+      }
+    }
+    if (kind === 'desk'){
+      /* the keyboard walks the squares, shelf by shelf, and the open one is lit */
+      await c.evaluate(() => document.activeElement && document.activeElement.blur());
+      const first = await ev(c, () => { const x = document.querySelector('#listbody .srow .card2'); return x.getAttribute('data-type') + ':' + x.getAttribute('data-id'); });
+      await c.keyboard.press('ArrowDown'); await c.waitForTimeout(300);
+      ok(await ev(c, f => S.stack.length === 1 && S.stack[0].type + ':' + S.stack[0].id === f && !!document.querySelector('#listbody .card2.sel[data-id="' + f.split(':')[1] + '"]') && !document.querySelector('#dscroll .panempty'), first),
+         'desk: ↓ on Explore opens the first square and lights it');
+      await c.click('#listbody .srow[data-shelf="soon"] .card2 >> nth=1'); await c.waitForTimeout(300);
+      ok(await ev(c, () => S.stack.length === 1 && S.stack[0].type === 'event' && document.querySelector('#listbody .srow[data-shelf="soon"] .card2.sel') === document.querySelectorAll('#listbody .srow[data-shelf="soon"] .card2')[1]), 'desk: a square opens in the reading pane and is lit');
+    }
+    /* Show all and the old section links are still lists */
+    for (const h of ['#/explore/soon', '#/explore/announced', '#/home/week']){
+      await c.goto(URL + h); await c.waitForTimeout(400);
+      ok(await ev(c, () => S.folder.kind === 'shelf' && document.querySelectorAll('#listbody .row[data-type="event"]').length >= 1 && !document.querySelector('#listbody .shelf')), kind + ': ' + h + ' is still its Show all list');
+    }
+    await c.goto(URL + '#/explore'); await c.waitForTimeout(400);
+    await c.click('#listbody .shelf .showall >> nth=0'); await c.waitForTimeout(350);
+    ok(await ev(c, () => S.folder.kind === 'shelf' && /^#\/explore\//.test(location.hash) && document.querySelectorAll('#listbody .row').length >= 1), kind + ': a shelf\'s Show all opens its list');
+    await c.goto(URL + '#/explore'); await c.waitForTimeout(400);
+    ok((await overflow(c)) <= 0 && !c.errors.length, kind + ': Explore squares, no horizontal overflow, no console errors ' + c.errors.join(' '));
+    if (kind !== 'tab') await shot(c, 'explore-squares-' + kind);
+  }
+
+  /* ---------------- 2026-10-04: Add events to a horizon has filters ---------------- */
+  for (const kind of ['desk', 'tab', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    const hz = await ev(c, () => MYHORIZONS[0]);
+    await c.evaluate(h => { goFolder(L.phone ? { kind:'explore', id:'horizons' } : { kind:'horizon', id:h }); if (L.phone) S.stack = [{ type:'horizon', id:h }]; render(); }, hz); await c.waitForTimeout(350);
+    await c.click((kind === 'phone' ? '#dscroll' : '#listbody') + ' [data-act="addevents"]'); await c.waitForTimeout(300);
+    const chips = () => ev(c, () => [...document.querySelectorAll('.dlg #pk-chips .pkchip')].map(b => ({ id:b.getAttribute('data-id'), label:b.firstChild.textContent.trim(), n:+b.querySelector('.n').textContent, on:b.getAttribute('aria-pressed') === 'true' })));
+    const c0 = await chips();
+    ok(c0.map(x => x.label).join('|') === 'All upcoming|Going|Interested|Hosting|From people you follow|Past' && c0[0].on && !!(await c.$('.dlg #pk-q')), kind + ': Add events has a search and six filters, All upcoming first and on ' + JSON.stringify(c0.map(x => x.label + ' ' + x.n)));
+    /* each filter holds what it says, its count is what it shows, and an empty one says so */
+    const seen = {};
+    for (const f of c0){
+      await c.click('.dlg #pk-chips .pkchip[data-id="' + f.id + '"]'); await c.waitForTimeout(150);
+      seen[f.id] = await ev(c, id => {
+        const ids = [...document.querySelectorAll('#pk-list input[data-act="pkpick"]')].map(i => i.getAttribute('data-id')), es = ids.map(x => EVENTS[x]);
+        const fol = e => { const hp = hostPersonOf(e); return !!hp && hp.id !== 'self' && !!PFOLLOW[hp.id]; };
+        const okIn = { upcoming:e => !isPast(lastDay(e)), going:e => !isPast(lastDay(e)) && RSVP[e.id] === 'going', interested:e => !isPast(lastDay(e)) && RSVP[e.id] === 'interested',
+                       hosting:e => !isPast(lastDay(e)) && MYEVENTS.indexOf(e.id) >= 0, people:e => !isPast(lastDay(e)) && fol(e), past:e => isPast(lastDay(e)) }[id];
+        const dates = es.map(e => e.date), sorted = dates.slice().sort(); if (id === 'past') sorted.reverse();
+        return { n:ids.length, all:es.every(okIn), order:dates.join() === sorted.join(), on:document.querySelector('.pkchip[data-id="' + id + '"]').getAttribute('aria-pressed') === 'true',
+                 empty:!!document.querySelector('#pk-list .pkempty'), why:id !== 'people' || [...document.querySelectorAll('#pk-list .pkwhy')].length === ids.length };
+      }, f.id);
+      const r = seen[f.id];
+      ok(r.on && r.all && r.order && r.why && r.n === f.n && (r.n > 0 || r.empty), kind + ': filter ' + f.label + ' shows its ' + f.n + ' events and only those, in order ' + JSON.stringify(r));
+    }
+    ok(seen.going.n >= 1 && seen.hosting.n >= 1 && seen.people.n >= 1 && seen.past.n >= 1 && seen.upcoming.n > seen.people.n, kind + ': the demo has something under Going, Hosting, From people you follow and Past');
+    /* the search narrows every count; an empty filter says so and offers where the matches are */
+    await c.click('.dlg #pk-chips .pkchip[data-id="going"]'); await c.waitForTimeout(100);
+    await c.fill('#pk-q', 'zurich'); await c.waitForTimeout(200);
+    const q = await chips();
+    const em = await ev(c, () => ({ msg:(document.querySelector('#pk-list .pkempty') || {}).textContent || '', alt:(document.querySelector('#pk-list .pkempty [data-act="pkfilter"]') || { getAttribute:() => '' }).getAttribute('data-id') }));
+    ok(q.find(x => x.id === 'upcoming').n >= 1 && q.find(x => x.id === 'upcoming').n < c0[0].n && q.find(x => x.id === 'going').n === 0 && /Nothing in Going matches “zurich”/.test(em.msg) && em.alt === 'upcoming',
+       kind + ': search narrows the counts; an empty filter says so and offers All upcoming ' + JSON.stringify(em));
+    await c.click('#pk-list .pkempty [data-act="pkfilter"]'); await c.waitForTimeout(150);
+    const pick = await ev(c, () => ({ on:document.querySelector('.pkchip.on').getAttribute('data-id'), id:(document.querySelector('#pk-list input[data-act="pkpick"]:not(:checked)') || { getAttribute:() => null }).getAttribute('data-id') }));
+    ok(pick.on === 'upcoming' && !!pick.id, kind + ': … and that button switches to it');
+    /* ticking under a filter and Done adds it */
+    await c.fill('#pk-q', ''); await c.waitForTimeout(100);
+    await c.click('.dlg #pk-chips .pkchip[data-id="people"]'); await c.waitForTimeout(150);
+    const add = await ev(c, () => { const i = document.querySelector('#pk-list input[data-act="pkpick"]:not(:checked)'); i.click(); return i.getAttribute('data-id'); });
+    ok((await overflow(c)) <= 0, kind + ': Add events with filters, no horizontal overflow');
+    if (kind === 'phone') ok(await ev(c, () => { const r = document.getElementById('pk-chips'); return getComputedStyle(r).flexWrap === 'nowrap' && r.scrollWidth > r.clientWidth && r.getBoundingClientRect().height < 60; }), 'phone: the filters are one sideways row');
+    await shot(c, 'horizon-picker-' + kind);
+    await c.click('.dlg [data-act="pkdone"]'); await c.waitForTimeout(300);
+    ok(await ev(c, ([h, id]) => HORIZONS[h].eventIds.indexOf(id) >= 0, [hz, add]), kind + ': an event ticked under From people you follow is added');
+    ok(!c.errors.length, kind + ': no console errors (Add events filters) ' + c.errors.join(' '));
+  }
+
+  /* ---------------- 2026-10-04: New event goes on only when a step has what it needs ---------------- */
+  for (const kind of ['desk', 'tab', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '', true);
+    await join(c, 'Wiz Host', 'wizhost' + kind);
+    await c.evaluate(() => newEventDialog()); await c.waitForTimeout(250);
+    const foot = () => ev(c, () => ({ step:DRAFT.step, btns:[...document.querySelectorAll('.dlg .dfoot .btn')].map(b => b.textContent.trim() + (b.getAttribute('aria-disabled') === 'true' ? ':off' : '')),
+      need:document.getElementById('wiz-need').textContent, errs:[...document.querySelectorAll('.dlg .ferr[data-err]:not([hidden])')].map(x => x.getAttribute('data-err')),
+      invalid:[...document.querySelectorAll('.dlg [aria-invalid="true"]')].map(x => x.id), tabs:[...document.querySelectorAll('.dlg .wizsteps .ws')].map(t => t.getAttribute('aria-disabled') === 'true' ? 'off' : 'on'),
+      focus:document.activeElement && document.activeElement.id, toast:(document.getElementById('toasts') || {}).textContent || '' }));
+    const f0 = await foot();
+    ok(f0.step === 1 && f0.btns.join('|') === 'Cancel|Next:off' && /title.*start date.*where/.test(f0.need) && !f0.errs.length && f0.tabs.join() === 'on,off,off',
+       kind + ': an empty Basics step — Next is off, no Publish yet, it says what is still needed, no errors before you try ' + JSON.stringify(f0));
+    /* trying anyway shows what is missing inline, at the fields, and stays */
+    await c.fill('#w-t', 'Moth night'); await c.waitForTimeout(100);
+    /* (aria-disabled: still clickable, which is how it shows what is missing — Playwright needs force to click it) */
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]', { force:true }); await c.waitForTimeout(250);
+    const f1 = await foot();
+    ok(f1.step === 1 && f1.errs.join() === 'date,city' && f1.invalid.join() === 'w-d,w-c' && f1.focus === 'w-d' && !/Add/.test(f1.toast), kind + ': Next with things missing stays on Basics and marks the start date and Where inline (no toast) ' + JSON.stringify(f1));
+    /* the step tabs don't jump past it either */
+    await c.click('.dlg .wizsteps .ws[data-id="3"]', { force:true }); await c.waitForTimeout(200);
+    ok((await foot()).step === 1, kind + ': the Look tab can\'t be reached past an incomplete step');
+    /* a start in the past, and an end before the start, are not accepted */
+    await c.fill('#w-d', '2026-09-01'); await c.waitForTimeout(100);
+    ok(await ev(c, () => /today or a later day/.test(document.getElementById('err-date').textContent)), kind + ': a new event can\'t start in the past');
+    await c.fill('#w-d', '2026-11-12'); await c.fill('#w-e', '2026-11-10'); await c.waitForTimeout(100);
+    const f2 = await foot();
+    ok(f2.errs.join() === 'end,city' && f2.btns.indexOf('Next:off') >= 0, kind + ': an end before the start is flagged, the message for the start date went as it was fixed ' + JSON.stringify(f2.errs));
+    await c.fill('#w-e', ''); await c.check('#w-on'); await c.waitForTimeout(150);
+    const f3 = await foot();
+    ok(!f3.errs.length && f3.btns.indexOf('Next') >= 0 && !f3.need && await ev(c, () => document.getElementById('w-c').disabled), kind + ': Online counts as where it is — Next is on, nothing missing ' + JSON.stringify(f3));
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(250);
+    /* Words needs a description; Publish waits for it; Bring stays optional */
+    const f4 = await foot();
+    ok(f4.step === 2 && f4.btns.join('|') === 'Cancel|Back|Next:off|Publish event:off' && /description/.test(f4.need) && !f4.errs.length && f4.tabs.join() === 'on,on,off', kind + ': Words — Next and Publish wait for a description ' + JSON.stringify(f4));
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]', { force:true }); await c.waitForTimeout(250);
+    const f5 = await foot();
+    ok(f5.step === 2 && f5.errs.join() === 'desc' && f5.focus === 'w-desc' && await ev(c, () => !MYEVENTS.some(id => EVENTS[id] && EVENTS[id].title === 'Moth night')), kind + ': Publish with no description says so inline and publishes nothing');
+    await c.fill('#w-desc', 'Sheets, a lamp and whatever flies in.'); await c.waitForTimeout(100);
+    const f6 = await foot();
+    ok(!f6.errs.length && f6.btns.join('|') === 'Cancel|Back|Next|Publish event' && f6.tabs.join() === 'on,on,on', kind + ': with a description both are on, the Look tab opens; Bring is optional ' + JSON.stringify(f6));
+    /* back to Basics keeps it all; Look is optional and Publish works from it too */
+    await c.click('.dlg .wizsteps .ws[data-id="3"]'); await c.waitForTimeout(200);
+    const f7 = await foot();
+    ok(f7.step === 3 && f7.btns.join('|') === 'Cancel|Back|Publish event', kind + ': Look is reachable and optional ' + JSON.stringify(f7.btns));
+    ok((await overflow(c)) <= 0, kind + ': New event, no horizontal overflow');
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(500);
+    const pub = await ev(c, () => { const id = MYEVENTS[MYEVENTS.length - 1], e = EVENTS[id]; return { title:e && e.title, where:e && whereOf(e), desc:e && descOf(e), page:!!document.querySelector('.pg-event') }; });
+    ok(pub.title === 'Moth night' && pub.where === 'Online' && /lamp/.test(pub.desc) && pub.page, kind + ': it publishes once everything is there, online ' + JSON.stringify(pub));
+    /* Edit keeps the same rules: clearing the title turns Save off and says so */
+    await c.evaluate(() => editEventDialog(MYEVENTS[MYEVENTS.length - 1])); await c.waitForTimeout(250);
+    ok((await foot()).btns.join('|') === 'Cancel|Save changes', kind + ': Edit of a complete event can be saved');
+    await c.fill('#w-t', ''); await c.waitForTimeout(100);
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]', { force:true }); await c.waitForTimeout(250);
+    const f8 = await foot();
+    ok(f8.btns.join('|') === 'Cancel|Save changes:off' && f8.errs.join() === 'title' && await ev(c, () => EVENTS[MYEVENTS[MYEVENTS.length - 1]].title === 'Moth night'), kind + ': Edit with the title cleared won\'t save, says why ' + JSON.stringify(f8));
+    if (kind === 'phone') await shot(c, 'new-event-missing-phone');
+    await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+    ok(!c.errors.length, kind + ': no console errors (New event) ' + c.errors.join(' '));
   }
 
   /* ---------------- tablet ---------------- */

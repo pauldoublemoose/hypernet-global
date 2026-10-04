@@ -52,7 +52,7 @@ a{ color:inherit; }
 .btn.primary{ font-weight:bold; box-shadow:0 0 0 1px #000, var(--out); }
 .btn.primary:active{ box-shadow:0 0 0 1px #000, var(--in); }
 .btn:focus-visible, .ib:focus-visible, .seg button:focus-visible{ outline:1px dotted #000; outline-offset:-6px; }
-.btn[disabled]{ color:#8a8a8a; text-shadow:1px 1px 0 #fff; cursor:default; }
+.btn[disabled], .btn[aria-disabled="true"]{ color:#8a8a8a; text-shadow:1px 1px 0 #fff; cursor:default; }
 .btn .ic{ margin-left:-2px; }
 .btn .caret{ margin-right:-4px; }
 .ib{ width:var(--ctl); height:var(--ctl); display:inline-grid; place-items:center; border:0; padding:0; background:var(--face); box-shadow:var(--out); color:var(--ink); }
@@ -600,6 +600,16 @@ body.is-phone .demolink button{ min-height:44px; }
 .wizsteps .ws{ flex:1; min-height:var(--ctl); padding:8px 4px; border:0; text-align:center; font:bold 12px var(--mono); letter-spacing:.06em; background:var(--face-dk); box-shadow:var(--out); color:var(--ink2); }
 .wizsteps .ws:hover{ color:#000; }
 .wizsteps .ws.on{ background:#fff; color:#000; box-shadow:var(--in); }
+.wizsteps .ws[aria-disabled="true"]{ color:#8a8a8a; text-shadow:1px 1px 0 #fff; cursor:default; }
+.wizsteps .wsopt{ font-weight:normal; letter-spacing:.02em; color:var(--dim); text-transform:lowercase; }
+.wherein{ display:flex; align-items:center; gap:14px; }
+.wherein input[type="text"]{ flex:1; min-width:0; }
+.wherein input[disabled]{ background:var(--face-lt); }
+.wzon{ display:inline-flex; align-items:center; gap:6px; font-size:var(--fs-s); white-space:nowrap; cursor:pointer; }
+.ferr[hidden]{ display:none; }
+/* what the wizard's Next / Publish are waiting for, beside them */
+.wizneed{ margin-right:auto; align-self:center; font-size:var(--fs-s); line-height:1.35; color:var(--ink2); }
+.wizneed:empty{ display:none; }
 /* Customize: three colours and a square image, with a live preview of the square and the title block */
 .custwrap{ display:flex; gap:18px; }
 .custcol{ flex:0 0 340px; min-width:0; }
@@ -658,12 +668,14 @@ body.is-phone #sh-list{ max-height:none; }
 .sortrow{ display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:6px 12px; border-bottom:1px solid var(--line); font-size:var(--fs-s); color:var(--dim); }
 .sortrow select{ height:var(--ctl); }
 .deskgreet{ padding:22px 16px 14px; border-bottom:1px solid var(--line); }
-.srow.deskrow{ padding:14px 16px 16px; border-bottom:1px solid var(--line); scroll-snap-type:x proximity; }
-@media (pointer:fine){ .srow.deskrow{ scrollbar-width:thin; } .srow.deskrow::-webkit-scrollbar{ display:block; height:8px; } .srow.deskrow::-webkit-scrollbar-thumb{ background:var(--face-dk); } }
-.row.more{ min-height:52px; color:var(--ink2); }
-.row.more .r-title{ font-size:var(--fs); font-weight:bold; }
 .shh{ display:flex; align-items:center; gap:10px; padding:0 8px 0 16px; }
 .shh h3{ flex:1; min-width:0; margin:0; font-size:19px; line-height:1.2; }
+.shh h3 .cnt{ font:normal 12px var(--mono); letter-spacing:.04em; color:var(--dim); }
+.shstep{ display:none; gap:4px; margin-left:4px; }
+.shelf.more .shstep{ display:inline-flex; }
+.shstep .ib{ width:30px; height:26px; }
+.card2{ cursor:pointer; }
+.card2.sel .cart{ box-shadow:0 0 0 2px #fff, 0 0 0 4px var(--ink); }
 .showall{ min-height:44px; padding:0 8px; border:0; background:transparent; font:bold 11px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--dim); }
 .srow{ display:flex; gap:12px; padding:10px 16px 4px; overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x mandatory; scroll-padding:0 16px;
   -webkit-overflow-scrolling:touch; scrollbar-width:none; }
@@ -690,6 +702,17 @@ body.is-phone #sh-list{ max-height:none; }
 .pksearch{ position:sticky; top:-20px; z-index:3; margin:-20px -20px 12px; padding:20px 20px 12px; background:var(--face); }
 body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 12px; }
 .picklist.tall{ max-height:min(58vh, 460px); }
+/* Add events: one row of filters under the search; the list keeps its height as you switch, so the dialog doesn't jump */
+#pk-list{ height:min(58vh, 460px); }
+.pkchips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.pkchip{ display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 10px; border:0; background:var(--face); box-shadow:var(--out); color:var(--ink); font-size:13px; white-space:nowrap; }
+.pkchip:active{ box-shadow:var(--in); }
+.pkchip .n{ font:11px var(--mono); letter-spacing:.02em; color:var(--dim); }
+.pkchip.on{ background:var(--sel); color:#fff; font-weight:bold; box-shadow:inset 1px 1px 0 #000; }
+.pkchip.on .n{ color:var(--seldim); }
+.pick .pm small.pkwhy{ color:var(--ink2); }
+.pkempty{ line-height:1.5; }
+.pkempty .btn{ margin-top:12px; }
 .pkband{ padding:12px 10px 6px; font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dim); border-bottom:1px solid var(--line); background:#fff; }
 .hzchk{ width:28px; height:28px; display:grid; place-items:center; box-shadow:var(--in); background:#fff; color:#000; }
 .tracks{ list-style:none; margin:8px 0 0; padding:0; border-top:1px solid var(--line); }
@@ -791,8 +814,8 @@ button.fcoe{ width:100%; border:0; color:inherit; font:inherit; text-align:left;
 .band .bsub{ margin-left:auto; font-weight:normal; letter-spacing:.06em; color:var(--dim); }
 .fuprow{ display:flex; align-items:center; gap:12px; padding:8px 16px; border-bottom:1px solid var(--line); }
 .fuprow:hover{ background:var(--hover); }
-.fuprow.sel{ background:var(--face-lt); box-shadow:inset 3px 0 0 var(--ink); }
-.fupd{ flex:0 0 40px; display:flex; flex-direction:column; align-items:center; font:10px var(--mono); letter-spacing:.04em; text-transform:uppercase; color:var(--ink2); }
+.fuprow.sel{ background:var(--face-lt); box-shadow:inset 5px 0 0 var(--ink); }
+.fupd{ flex:0 0 40px; display:flex; flex-direction:column; align-items:center; text-align:center; font:10px var(--mono); letter-spacing:.04em; text-transform:uppercase; color:var(--ink2); }
 .fupd b{ font:bold 20px var(--sys); line-height:1.05; color:var(--ink); }
 .fuprow .fcm{ flex:1; min-width:0; }
 .fuprow .fct{ font-size:15px; }
@@ -831,6 +854,11 @@ button.chip.chipmore{ align-self:stretch; padding:4px 13px; color:var(--ink); fo
 .mbody{ white-space:pre-wrap; }
 .field .opt{ font-weight:normal; font-size:12px; color:var(--dim); }
 .fhint{ font-size:12px; line-height:1.4; color:var(--dim); }
+/* the list's sunken frame is drawn on top of its rows: a band, a hovered or a selected row (Coming up with your people,
+   a lit list row) never paints over the frame's left edge */
+#app.desk #listcol{ position:relative; }
+#app.desk #listcol::after{ content:""; position:absolute; inset:0; z-index:8; box-shadow:var(--in); pointer-events:none; }
+#app.desk #listbody{ box-shadow:none; }
 /* nothing in the reading pane: the list takes the room, the empty pane stays */
 #app.split.pane-closed #listcol{ flex:0 0 clamp(340px, 60%, 720px); }
 /* split: the reading pane starts level with the heading — the heading belongs to the list column only */
@@ -923,6 +951,8 @@ body.is-phone .dbar .x{ width:44px; height:44px; }
 body.is-phone .dbody{ padding:18px 16px; }
 body.is-phone .dfoot{ padding:10px 12px calc(12px + env(safe-area-inset-bottom)); box-shadow:inset 0 1px 0 #fff, 0 -1px 0 var(--shadow); }
 body.is-phone .dfoot .btn{ flex:1; }
+body.is-phone .dfoot{ flex-wrap:wrap; }
+body.is-phone .wizneed{ flex:1 0 100%; margin:0 0 2px; }
 body.is-phone .dlg.sheet{ top:auto !important; bottom:0 !important; }
 body.is-phone .dlg.sheet .dbody{ padding:6px 0; }
 body.is-phone .dlg.shsheet .dbody{ padding:18px 16px; }
@@ -935,6 +965,11 @@ body.is-phone .custprev{ order:-1; align-self:stretch; position:sticky; top:-18p
 .previewbox.compact .actbar, .previewbox.compact .layer{ display:none; }
 body.is-phone input, body.is-phone select, body.is-phone textarea{ font-size:16px; }
 body.is-phone .picklist{ max-height:none; }
+body.is-phone #pk-list{ height:auto; }
+/* on a phone the filters are one sideways row under the search, never three lines of chrome */
+body.is-phone .pkchips{ flex-wrap:nowrap; overflow-x:auto; margin:10px -16px 0; padding:0 16px 2px; scrollbar-width:none; }
+body.is-phone .pkchips::-webkit-scrollbar{ display:none; }
+body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .sheetrow{ display:flex; align-items:center; gap:14px; min-height:60px; padding:0 18px; border-bottom:1px solid var(--line); background:#fff; font-size:16px; cursor:pointer; }
 .sheetrow small{ display:block; color:var(--dim); font-size:13px; }
 </style>
@@ -1337,8 +1372,6 @@ var S = {
   phoneSearch:false,
   rows:[],
   pending:null,
-  autoSel:false,
-  paneClosed:false,           /* the reading pane was closed with its ×: the list takes the whole centre until you pick something */
   acct:null,                   /* which account is logged in: 'me' or 'demo' */
   lastTab:null
 };
@@ -1606,7 +1639,7 @@ function shortName(pid){
   return others.some(function(k){ return fold(firstOf(k)) === fold(f); }) ? f + ' @' + person(pid).handle : f;
 }
 function browsablePeople(){ var ids = networkPeople(); if (S.loggedIn) ids.unshift('self'); return ids; }
-/* Explore's kinds: each is a list of one family; the overview (no kind) is the categorical sections */
+/* Explore's kinds: each is a list of one family; the overview (no kind) is the categorical sections, as shelves of squares */
 var EXPLOREKINDS = [['events','Events','cal'], ['horizons','Event Horizons','horizon'], ['callouts','Call outs','callout'], ['people','People','people']];
 function isExploreKind(id){ return EXPLOREKINDS.some(function(k){ return k[0] === id; }); }
 function isOverview(f){ f = f || S.folder; return f.kind === 'explore' && !f.id; }
@@ -1616,14 +1649,12 @@ var KINDDESC = {
   callouts:'A call out is someone asking for a hand with their event. Answer it to start a chat with them.',
   people:'Follow people to see on Home what they are going to, promoting and curating.'
 };
-/* the overview on a desktop is the phone's shelves as bands: the same sections, in the same order */
-var HOMEBAND = 8;
-function exploreItems(){
+/* the overview is the same shelves of squares at every width (owner, 2026-10-04: "squares … just like in the mobile
+   version"); each shelf shows its first few, Show all lists the rest. Its items, shelf by shelf, are the keyboard's order. */
+var SHELFMAX = 8;
+function overviewItems(){
   var out = [];
-  homeSections().forEach(function(sec){
-    sec.items.slice(0, HOMEBAND).forEach(function(it){ out.push({ type:it.type, id:it.id, band:sec.title, total:sec.items.length, sec:sec.id }); });
-    if (sec.items.length > HOMEBAND) out.push({ type:'more', id:sec.id, band:sec.title, n:sec.items.length });
-  });
+  homeSections().forEach(function(sec){ sec.items.slice(0, SHELFMAX).forEach(function(it){ out.push({ type:it.type, id:it.id }); }); });
   return out;
 }
 /* Home is the activity and only that; lists of events keep a calendar */
@@ -1651,7 +1682,7 @@ function folderItems(f){
   var k = f.kind;
   if (k === 'home')  return homeItems();
   if (k === 'explore'){
-    if (!f.id) return exploreItems();
+    if (!f.id) return overviewItems();
     if (f.id === 'events')   return feedEvents().map(function(e){ return { type:'event', id:e.id }; });
     if (f.id === 'horizons') return browsableHorizons().sort(function(a, b){ return hzFollowers(b) - hzFollowers(a); }).map(function(h){ return { type:'horizon', id:h }; });
     if (f.id === 'callouts') return openCallouts().map(function(c){ return { type:'callout', id:c.id }; });
@@ -1756,7 +1787,6 @@ function searchItems(q){
    ========================================================================= */
 function sortItems(items){
   var k = S.sort;
-  if (S.folder.kind === 'home' || isOverview()) return items;
   if (items.some(function(it){ return it.type !== 'event'; }) && S.folder.kind !== 'horizon') return items;
   var head = items.filter(function(it){ return it.type !== 'event'; }), evs = items.filter(function(it){ return it.type === 'event'; });
   evs.sort(function(a,b){
@@ -1775,7 +1805,6 @@ function bandOf(it){
   var k = S.folder.kind;
   if (k === 'shelf') return null;
   if (k === 'search') return SEARCHBAND[it.type];
-  if (k === 'home' || isOverview()) return it.band;
   var x = k === 'explore' ? S.folder.id : '';
   if (x === 'horizons') return hzOwnedByMe(it.id) ? 'Yours' : (S.loggedIn && HZFOLLOW[it.id]) ? 'Following' : 'Popular';
   /* one list in a steady order: following someone marks them in place instead of moving the rows under your thumb */
@@ -1801,14 +1830,9 @@ function groupItems(items){
   items.forEach(function(it){ var b = bandOf(it) || ''; if (!groups[b]){ groups[b] = []; order.push(b); } groups[b].push(it); });
   /* date-sorted events already come in time order, months included */
   var timed = S.sort === 'date' && items.length && items.every(function(it){ return it.type === 'event'; }) && S.folder.kind !== 'search';
-  if (!(S.folder.kind === 'home' || isOverview()) && !timed)
+  if (!timed)
     order.sort(function(a,b){ var ia = BANDORDER.indexOf(a), ib = BANDORDER.indexOf(b); return (ia<0?99:ia) - (ib<0?99:ib); });
   return { groups:groups, order:order };
-}
-function orderedItems(){
-  var g = groupItems(sortItems(folderItems())), out = [];
-  g.order.forEach(function(b){ g.groups[b].forEach(function(it){ out.push(it); }); });
-  return out;
 }
 function isSel(it){ var s = S.stack[0]; return s && s.type === it.type && s.id === it.id; }
 function statePills(evId){
@@ -1821,8 +1845,6 @@ function statePills(evId){
   return h;
 }
 function rowHTML(it){
-  if (it.type === 'more') return '<div class="row more" data-act="shelfall" data-id="'+it.id+'" role="button" tabindex="-1"><div class="r-main"><div class="r-title">Show all '+it.n+'</div></div>' +
-    ic('back',16).replace('class="ic"','class="ic" style="transform:scaleX(-1)"')+'</div>';
   var cls = 'row' + (isSel(it) ? ' sel' : ''), lead, title, meta, date = '', side = '', soc = '', act = 'data-act="row" data-type="'+it.type+'" data-id="'+it.id+'"';
   if (it.type === 'event'){
     var e = EVENTS[it.id];
@@ -1893,7 +1915,7 @@ function renderList(){
     lb0.innerHTML = horizonHTML(S.folder.id, true); lb0.scrollTop = top0; return;
   }
   if (S.folder.kind === 'home'){ renderHome(); return; }
-  if (isShelfFeed()){ renderShelves(); return; }
+  if (isOverview()){ renderShelves(); return; }
   var items = sortItems(folderItems());
   var g = groupItems(items), h = '', rows = [];
   if (S.folder.kind === 'search' && !S.query.trim()){
@@ -1914,18 +1936,10 @@ function renderList(){
       : k === 'hosting' ? 'You are not hosting anything yet.<br><button class="btn primary" data-act="new-event">'+ic('plus')+'New event</button>'
       : 'Nothing here yet.') + '</div>';
   } else {
-    var feed = isOverview();
     g.order.forEach(function(b){
-      var its = g.groups[b], first = its[0] || {};
-      /* a section's count is the whole section, as on its Show all page */
-      if (b) h += '<div class="band">' + esc(b) + ' <span class="cnt">' + (first.total || its.filter(function(x){ return x.type !== 'more'; }).length) + '</span></div>';
-      /* horizons are cards on Home at every width, not rows that pass for events */
-      if (feed && first.type === 'horizon'){
-        h += '<div class="srow deskrow" data-shelf="'+first.sec+'">' + its.filter(function(x){ return x.type === 'horizon'; }).map(cardHTML).join('') + '</div>';
-        if (first.total > HOMEBAND) h += rowHTML(its[its.length-1]);
-        return;
-      }
-      its.forEach(function(it){ h += rowHTML(it); if (it.type !== 'more') rows.push(it); });
+      var its = g.groups[b];
+      if (b) h += '<div class="band">' + esc(b) + ' <span class="cnt">' + its.length + '</span></div>';
+      its.forEach(function(it){ h += rowHTML(it); rows.push(it); });
     });
   }
   /* an Explore kind says in a line what it is */
@@ -2525,7 +2539,7 @@ var KINDNAME = { event:'Event', horizon:'Event Horizon', person:'Person', callou
 /* close the reading pane: it stays where it is, empty; picking something fills it again */
 function closePane(){
   if (L.phone || !L.split) return;
-  S.stack = []; S.autoSel = false; S.paneClosed = true;
+  S.stack = [];
   render();
 }
 function detailHTML(it){
@@ -2566,8 +2580,7 @@ function renderDetail(){
 <script>
 /* =========================================================================
    7b. EXPLORE'S OVERVIEW — Spotify's structure in a 2000-era skin
-   On a phone, sideways shelves of big squares (a desktop shows the same
-   sections as bands of rows). Event squares are the album art;
+   Sideways shelves of big squares, at every width. Event squares are the album art;
    horizons are playlists with a cover built from their events.
    ========================================================================= */
 /* an event square at any pixel size */
@@ -2615,7 +2628,7 @@ function cardHTML(it){
     art = '<div class="coart">'+ic('callout', 40)+'<span>Looking for</span><b>'+esc(c.title)+'</b></div>';
     t = c.hostName; sub = 'until ' + fmtShort(c.expiresAt);
   }
-  return '<div class="card2" data-act="row" data-type="'+it.type+'" data-id="'+it.id+'" role="button">' +
+  return '<div class="card2'+(isSel(it) ? ' sel' : '')+'" data-act="row" data-type="'+it.type+'" data-id="'+it.id+'" role="button">' +
     '<div class="cart">'+art+cardTag(it)+'</div><div class="ct2">'+esc(t)+'</div><div class="cs2">'+esc(sub)+'</div>'+(sub2 ? '<div class="cs2">'+esc(sub2)+'</div>' : '')+soc+'</div>';
 }
 function upcoming(e){ return !isPast(lastDay(e)); }
@@ -2678,11 +2691,26 @@ function shelvesHTML(){
   var h = '<div class="shelves">';
   homeSections().forEach(function(sec){
     var more = sec.items.length > 2;
-    h += '<section class="shelf"><div class="shh"><h3>'+esc(sec.title)+'</h3>' +
-         (more ? '<button class="showall" data-act="shelfall" data-id="'+sec.id+'">Show all</button>' : '') + '</div>';
-    h += '<div class="srow" data-shelf="'+sec.id+'">' + sec.items.slice(0, HOMEBAND).map(cardHTML).join('') + '</div></section>';
+    /* with a mouse a sideways shelf needs a way along it: ‹ › in its heading, shown when it holds more than fits */
+    var step = L.phone ? '' : '<span class="shstep"><button type="button" class="ib" data-act="shelfstep" data-shelf="'+sec.id+'" data-id="-1" aria-label="Previous in '+esc(sec.title)+'">'+ic('back',14)+'</button>' +
+      '<button type="button" class="ib" data-act="shelfstep" data-shelf="'+sec.id+'" data-id="1" aria-label="Next in '+esc(sec.title)+'">'+ic('back',14).replace('class="ic"', 'class="ic" style="transform:scaleX(-1)"')+'</button></span>';
+    h += '<section class="shelf"><div class="shh"><h3>'+esc(sec.title)+' <span class="cnt">'+sec.items.length+'</span></h3>' +
+         (more ? '<button class="showall" data-act="shelfall" data-id="'+sec.id+'">Show all</button>' : '') + step + '</div>';
+    h += '<div class="srow" data-shelf="'+sec.id+'">' + sec.items.slice(0, SHELFMAX).map(cardHTML).join('') + '</div></section>';
   });
   return h + '</div>';
+}
+/* a shelf whose squares don't all fit offers its ‹ › */
+function fitShelves(){
+  document.querySelectorAll('#listbody .shelf').forEach(function(sh){
+    var r = sh.querySelector('.srow'); sh.classList.toggle('more', !!r && r.scrollWidth > r.clientWidth + 1);
+  });
+}
+/* one step along a shelf is as many whole squares as fit */
+function stepShelf(id, dir){
+  var r = document.querySelector('#listbody .srow[data-shelf="'+id+'"]'), c = r && r.querySelector('.card2'); if (!c) return;
+  var w = c.offsetWidth + 12, n = Math.max(1, Math.floor((r.clientWidth - 32 + 12) / w));
+  r.scrollBy({ left: dir * n * w, behavior:'smooth' });
 }
 function renderShelves(){
   var lb = $('listbody'), top = lb.scrollTop, left = {};
@@ -2690,9 +2718,9 @@ function renderShelves(){
   lb.innerHTML = shelvesHTML();
   lb.querySelectorAll('.srow').forEach(function(r){ var v = left[r.getAttribute('data-shelf')]; if (v) r.scrollLeft = v; });
   lb.scrollTop = top;
-  S.rows = [];
+  fitShelves();
+  S.rows = overviewItems();
 }
-function isShelfFeed(){ return L.phone && isOverview(); }
 
 /* =========================================================================
    8. CALENDAR — a view of the destination you are in
@@ -3553,7 +3581,7 @@ function navRow(f, icon, label, opts){
   opts = opts || {};
   var top = S.stack[S.stack.length-1];
   /* a horizon is a page, not a folder: its row is lit while its page is open */
-  var sel = opts.sel != null ? opts.sel : opts.hz ? !!top && !S.autoSel && top.type === 'horizon' && top.id === f.id
+  var sel = opts.sel != null ? opts.sel : opts.hz ? !!top && top.type === 'horizon' && top.id === f.id
           : !opts.person && sameFolder(S.folder, f) && !(L.phone && S.folder.kind === 'you');
   var cnt = opts.count != null ? opts.count : '';
   return '<div class="nrow'+(sel?' sel':'')+(opts.unread?' unread':'')+(opts.cls?' '+opts.cls:'')+'" role="button" ' +
@@ -4118,7 +4146,7 @@ var COEDIT = null;
 /* the event a new call out is for, unless you say otherwise: the event you are looking at (or the event of the
    call out you are on), else the next event you host */
 function calloutContextEvent(){
-  var top = !S.autoSel && S.stack[S.stack.length - 1];
+  var top = S.stack[S.stack.length - 1];
   if (top && top.type === 'event' && EVENTS[top.id] && !isPast(lastDay(EVENTS[top.id]))) return top.id;
   if (top && top.type === 'callout'){ var ce = calloutEventId(calloutOf(top.id)); if (ce && !isPast(lastDay(EVENTS[ce]))) return ce; }
   return (S.loggedIn ? MYEVENTS : []).filter(function(id){ return EVENTS[id] && !isPast(lastDay(EVENTS[id])); })
@@ -4165,28 +4193,60 @@ function newHorizonDialog(withEvent){
     FORMFOOT.horizon(), 520);
   focusIn('nh-n');
 }
-/* ---- add events: search the network's events, tick the ones you want, Done ---- */
+/* ---- add events: search the network's events, narrow them with one row of filters, tick the ones you want, Done ----
+   Owner, 2026-10-04: "make sure there's some simple filtering, for example, events I am following". */
 var PK = null;
-function pickerEvents(){
+var PKFILTERS = [['upcoming','All upcoming'], ['going','Going'], ['interested','Interested'], ['hosting','Hosting'], ['people','From people you follow'], ['past','Past']];
+/* every event you could add (and can see), with the search applied */
+function pickerPool(){
   var q = PK.q.toLowerCase().trim();
   return allEvents().filter(function(e){ return canSeeEvent(e) && (!NEXTED[e.id] || PK.sel.indexOf(e.id) >= 0); })
-    .sort(function(a,b){ var pa = isPast(lastDay(a)) ? 1 : 0, pb = isPast(lastDay(b)) ? 1 : 0; return pa !== pb ? pa - pb : (pa ? -byDate(a,b) : byDate(a,b)); })
     .filter(function(e){ return !q || matchAll([e.title, whereOf(e), placeWords(e), hostLabel(e), descOf(e)], q); });
 }
-function pickRow(e){
-  var on = PK.sel.indexOf(e.id) >= 0, st = stateOf(e.id);
-  return '<label class="pick"><input type="checkbox" data-act="pkpick" data-id="'+e.id+'"'+(on?' checked':'')+'>' + sqPx(e.id, 40) +
-    '<span class="pm">'+esc(e.title)+'<small>'+esc([fmtShort(e.date), whereOf(e), isPast(lastDay(e)) ? 'past' : '', { hosting:'Hosting', going:'Going', interested:'Interested' }[st] || ''].filter(Boolean).join(' · '))+'</small></span></label>';
+/* "from people you follow" means what it means on Explore's shelf of that name: someone you follow hosts it */
+function pickerWhy(e){
+  if (!S.loggedIn) return '';
+  var hp = hostPersonOf(e);
+  return hp && hp.id !== 'self' && PFOLLOW[hp.id] ? 'Hosted by ' + whoName(hp.id) : '';
 }
-/* your own events first — what you host, go to or saved — then everything else */
+function pickerIn(f, e){
+  var past = isPast(lastDay(e)), st = stateOf(e.id);
+  if (f === 'past') return past;
+  if (past) return false;
+  return f === 'upcoming' || (f === 'people' ? !!pickerWhy(e) : st === f);
+}
+function pickerEvents(f){
+  f = f || PK.f;
+  return pickerPool().filter(function(e){ return pickerIn(f, e); })
+    .sort(function(a, b){ return f === 'past' ? -byDate(a, b) : byDate(a, b); });
+}
+function pickRow(e){
+  var on = PK.sel.indexOf(e.id) >= 0, st = stateOf(e.id), why = PK.f === 'people' ? pickerWhy(e) : '';
+  return '<label class="pick"><input type="checkbox" data-act="pkpick" data-id="'+e.id+'"'+(on?' checked':'')+'>' + sqPx(e.id, 40) +
+    '<span class="pm">'+esc(e.title)+'<small>'+esc([fmtShort(e.date), whereOf(e), isPast(lastDay(e)) ? 'past' : '', { hosting:'Hosting', going:'Going', interested:'Interested' }[st] || ''].filter(Boolean).join(' · '))+'</small>' +
+    (why ? '<small class="pkwhy">'+esc(why)+'</small>' : '')+'</span></label>';
+}
+/* one row of filters, each with how many it holds (the search applies to the counts too) */
+function pickerChips(){
+  var pool = pickerPool();
+  return PKFILTERS.map(function(f){
+    var n = pool.filter(function(e){ return pickerIn(f[0], e); }).length, on = PK.f === f[0];
+    return '<button type="button" class="pkchip'+(on ? ' on' : '')+'" aria-pressed="'+on+'" data-act="pkfilter" data-id="'+f[0]+'">'+esc(f[1])+' <span class="n">'+n+'</span></button>';
+  }).join('');
+}
+var PKEMPTY = { upcoming:'No upcoming events yet.', going:'You’re not going to anything coming up.', interested:'Nothing coming up that you marked Interested.',
+                hosting:'You’re not hosting anything coming up.', people:'Nobody you follow has anything coming up.', past:'No past events.' };
 function pickerList(){
   var evs = pickerEvents();
-  if (!evs.length) return '<div class="empty">Nothing matches.</div>';
-  var mine = PK.q.trim() ? [] : evs.filter(function(e){ return !!stateOf(e.id); });
-  if (!mine.length) return evs.map(pickRow).join('');
-  var rest = evs.filter(function(e){ return mine.indexOf(e) < 0; });
-  return '<div class="pkband">Your events</div>' + mine.map(pickRow).join('') + '<div class="pkband">All events</div>' + rest.map(pickRow).join('');
+  if (evs.length) return evs.map(pickRow).join('');
+  var q = PK.q.trim(), name = PKFILTERS.filter(function(f){ return f[0] === PK.f; })[0][1];
+  var msg = q ? 'Nothing in ' + name + ' matches “' + q + '”.' : PK.f === 'people' && !followedPeople().length ? 'You don’t follow anyone yet. Follow people to see what they host and go to.' : PKEMPTY[PK.f];
+  /* say where the matches are instead */
+  var alt = PKFILTERS.filter(function(f){ return f[0] !== PK.f && pickerEvents(f[0]).length; })[0];
+  return '<div class="empty pkempty">'+esc(msg) + (alt ? '<br><button type="button" class="btn" data-act="pkfilter" data-id="'+alt[0]+'">Show '+esc(alt[1])+' · '+pickerEvents(alt[0]).length+'</button>' : '') + '</div>';
 }
+function pickerPaint(){ $('pk-chips').innerHTML = pickerChips(); $('pk-list').innerHTML = pickerList(); }
+function pickerFilter(f){ PK.f = f; pickerPaint(); $('pk-list').scrollTop = 0; }
 function pickerFoot(){
   var added = PK.sel.filter(function(id){ return PK.start.indexOf(id) < 0; }).length;
   var removed = PK.start.filter(function(id){ return PK.sel.indexOf(id) < 0; }).length;
@@ -4195,9 +4255,10 @@ function pickerFoot(){
 }
 var addEventsDialog = gated(function(hzId){
   var hz = HORIZONS[hzId];
-  PK = { hz:hzId, q:'', sel:hz.eventIds.slice(), start:hz.eventIds.slice() };
+  PK = { hz:hzId, q:'', f:'upcoming', sel:hz.eventIds.slice(), start:hz.eventIds.slice() };
   dialog('Add events to ' + hz.name,
-    '<div class="field pksearch"><input type="search" id="pk-q" placeholder="Search events" autocomplete="off" aria-label="Search events"></div>' +
+    '<div class="field pksearch"><input type="search" id="pk-q" placeholder="Search events" autocomplete="off" aria-label="Search events">' +
+    '<div class="pkchips" id="pk-chips" role="group" aria-label="Show">' + pickerChips() + '</div></div>' +
     '<div class="picklist tall" id="pk-list">' + pickerList() + '</div>',
     '<span id="pkfoot" style="display:contents"></span>', 520);
   pickerFoot();
@@ -4386,22 +4447,28 @@ document.addEventListener('drop', function(ev){
 });
 function wizBodyHTML(){
   var d = DRAFT, h = '';
-  /* the steps are tabs you can use: any step, in any order; Publish checks what is still missing */
+  /* the steps are tabs: back is always open, forward only past steps that have everything they need (2026-10-04) */
   /* Edit changes the facts; the look is Customize's job */
   if (!d.editing || d.mode === 'edit') h += '<div class="wizsteps" role="tablist">' + (d.mode === 'edit' ? ['1 · Basics','2 · Words'] : ['1 · Basics','2 · Words','3 · Look']).map(function(l,i){
-    return '<button type="button" role="tab" class="ws'+(d.step===i+1?' on':'')+'" aria-selected="'+(d.step===i+1)+'" data-act="wizstep" data-id="'+(i+1)+'">'+l+'</button>'; }).join('') + '</div>';
+    var on = d.step === i + 1, open = on || wizReach(d, i + 1);
+    return '<button type="button" role="tab" class="ws'+(on?' on':'')+'" aria-selected="'+on+'"'+(open ? '' : ' aria-disabled="true"')+' data-act="wizstep" data-id="'+(i+1)+'">'+l +
+      (i === 2 ? ' <span class="wsopt">optional</span>' : '') + '</button>'; }).join('') + '</div>';
+  var miss = d.showErr ? wizMissing(d, d.step) : {};
+  var bad = function(k){ return miss[k] ? ' aria-invalid="true"' : ''; };
+  var err = function(k){ return '<span class="ferr" id="err-'+k+'" data-err="'+k+'" role="alert"'+(miss[k] ? '' : ' hidden')+'>'+esc(miss[k] || '')+'</span>'; };
+  var opt = ' <span class="opt">optional</span>';
   if (d.step === 1){
-    var miss = d.showErr ? eventDraftMissing(d) : {};
-    h += '<div class="field"><label for="w-t">Title</label><input type="text" id="w-t" data-cz="title" value="'+esc(d.title)+'" placeholder="Ridge sauna, midnight" autocomplete="off"'+(miss.title?' aria-invalid="true"':'')+'>' +
-           (miss.title ? '<span class="ferr">Add a title</span>' : '') + '</div>' +
-         '<div style="display:flex;gap:12px;flex-wrap:wrap"><div class="field" style="flex:1 1 160px"><label for="w-d">Starts</label><input type="date" id="w-d" data-cz="date" value="'+esc(d.date)+'"'+(miss.date?' aria-invalid="true"':'')+'>' +
-           (miss.date ? '<span class="ferr">Add a start date</span>' : '') + '</div>' +
-         '<div class="field" style="flex:1 1 160px"><label for="w-e">Ends</label><input type="date" id="w-e" data-cz="end" value="'+esc(d.end)+'"'+(d.date?' min="'+esc(d.date)+'"':'')+'></div></div>' +
-         '<div style="display:flex;gap:12px;flex-wrap:wrap"><div class="field" style="flex:1 1 160px"><label for="w-st">From</label><input type="time" id="w-st" data-cz="startTime" value="'+esc(d.startTime||'')+'"></div>' +
-         '<div class="field" style="flex:1 1 160px"><label for="w-et">Until</label><input type="time" id="w-et" data-cz="endTime" value="'+esc(d.endTime||'')+'"></div></div>' +
+    var newEv = d.mode !== 'edit';
+    h += '<div class="field"><label for="w-t">Title</label><input type="text" id="w-t" data-cz="title" value="'+esc(d.title)+'" placeholder="Ridge sauna, midnight" autocomplete="off" aria-required="true" aria-describedby="err-title"'+bad('title')+'>' + err('title') + '</div>' +
+         '<div style="display:flex;gap:12px;flex-wrap:wrap"><div class="field" style="flex:1 1 160px"><label for="w-d">Starts</label><input type="date" id="w-d" data-cz="date" value="'+esc(d.date)+'"'+(newEv ? ' min="'+TODAY_ISO+'"' : '')+' aria-required="true" aria-describedby="err-date"'+bad('date')+'>' + err('date') + '</div>' +
+         '<div class="field" style="flex:1 1 160px"><label for="w-e">Ends'+opt+'</label><input type="date" id="w-e" data-cz="end" value="'+esc(d.end)+'"'+(d.date?' min="'+esc(d.date)+'"':'')+' aria-describedby="err-end"'+bad('end')+'>' + err('end') + '</div></div>' +
+         '<div style="display:flex;gap:12px;flex-wrap:wrap"><div class="field" style="flex:1 1 160px"><label for="w-st">From'+opt+'</label><input type="time" id="w-st" data-cz="startTime" value="'+esc(d.startTime||'')+'"></div>' +
+         '<div class="field" style="flex:1 1 160px"><label for="w-et">Until'+opt+'</label><input type="time" id="w-et" data-cz="endTime" value="'+esc(d.endTime||'')+'"></div></div>' +
          '<div class="field"><label for="w-ty">Type</label><select id="w-ty" data-cz="kind">' +
            EVENTKINDS.map(function(k){ return '<option value="'+k+'"'+(k===(d.kind||'meetup')?' selected':'')+'>'+esc(KINDLAB[k])+'</option>'; }).join('') + '</select></div>' +
-         '<div class="field"><label for="w-c">Where</label><input type="text" id="w-c" data-cz="city" value="'+esc(d.city)+'" placeholder="Stockholm"></div>' +
+         /* a place, or Online */
+         '<div class="field"><label for="w-c">Where</label><div class="wherein"><input type="text" id="w-c" data-cz="city" value="'+esc(d.online ? '' : d.city)+'" placeholder="'+(d.online ? 'Online' : 'Stockholm')+'"'+(d.online ? ' disabled' : '')+' aria-required="true" aria-describedby="err-city"'+bad('city')+'>' +
+           '<label class="wzon"><input type="checkbox" id="w-on" data-cz="online"'+(d.online ? ' checked' : '')+'>Online</label></div>' + err('city') + '</div>' +
          '<div class="field"><label for="w-p">Who can see it</label><select id="w-p" data-cz="privacy">' +
            Object.keys(PRIVACY).map(function(p){ return '<option value="'+p+'"'+(p===d.privacy?' selected':'')+'>'+PRIVACY[p]+'</option>'; }).join('') +
          '</select><p class="fhelp">Friends are the people you follow. Only me keeps it to you.</p></div>' +
@@ -4409,20 +4476,69 @@ function wizBodyHTML(){
            ['free','donation','pay_what_you_can','ticket','membership','invite'].concat(ACCESSLAB[d.entry] && ['free','donation','pay_what_you_can','ticket','membership','invite'].indexOf(d.entry) < 0 ? [d.entry] : []).map(function(p){ return '<option value="'+p+'"'+(p===d.entry?' selected':'')+'>'+ACCESSLAB[p]+'</option>'; }).join('') +
          '</select></div>';
   } else if (d.step === 2){
-    h += '<div class="field"><label for="w-desc">Description</label><textarea id="w-desc" data-cz="desc" rows="5" placeholder="Hot box on the ridge, a bucket of lake water, and nobody checking the time.">'+esc(d.desc)+'</textarea></div>' +
-         '<div class="field"><label for="w-b">Bring</label><textarea id="w-b" data-cz="bring" rows="3" placeholder="A towel&#10;Something warm for after">'+esc(d.bring)+'</textarea></div>';
+    h += '<div class="field"><label for="w-desc">Description</label><textarea id="w-desc" data-cz="desc" rows="5" placeholder="Hot box on the ridge, a bucket of lake water, and nobody checking the time." aria-required="true" aria-describedby="err-desc"'+bad('desc')+'>'+esc(d.desc)+'</textarea>' + err('desc') + '</div>' +
+         '<div class="field"><label for="w-b">Bring'+opt+'</label><textarea id="w-b" data-cz="bring" rows="3" placeholder="A towel&#10;Something warm for after">'+esc(d.bring)+'</textarea></div>';
   } else h += customizeHTML();
   return h;
 }
+/* ---- what each step needs before you can go on (owner, 2026-10-04: "not possible to go to the next step until you have
+   everything filled out"). Basics: a title, a start date (a new event: today or later), an end on or after the start if
+   there is one, and where it is — a place, or Online. Words: a description. Look: nothing, it is optional. ---- */
+function wizEvent(d){ return !!d && (!d.editing || d.mode === 'edit'); }
+function wizMissing(d, step){
+  var m = {};
+  if (!wizEvent(d)) return m;
+  if (step === 1){
+    var st = isoDate(d.date), en = String(d.end || '').trim() ? isoDate(d.end) : '';
+    if (!String(d.title || '').trim()) m.title = 'Add a title';
+    if (!st) m.date = 'Add the day it starts';
+    else if (d.mode !== 'edit' && st < TODAY_ISO) m.date = 'Pick today or a later day';
+    if (en === null || (en && st && en < st)) m.end = 'It ends before it starts';
+    if (!d.online && !String(d.city || '').trim()) m.city = 'Add where it is, or tick Online';
+  }
+  if (step === 2 && !String(d.desc || '').trim()) m.desc = 'Add a line or two about it';
+  return m;
+}
+function wizValid(d, step){ return !Object.keys(wizMissing(d, step)).length; }
+/* the first step (of those before `upTo`) that still needs something; 0 = none */
+function wizFirstBad(d, upTo){ for (var i = 1; i < Math.min(upTo || 3, 3); i++) if (!wizValid(d, i)) return i; return 0; }
+function wizReach(d, step){ return !wizFirstBad(d, step); }
+var WIZFIELD = { title:'w-t', date:'w-d', end:'w-e', city:'w-c', desc:'w-desc' };
+var WIZNEED = { title:'a title', date:'the start date', end:'an end after the start', city:'where it is', desc:'a description' };
+/* "Still needed: a title and where it is" — what the button beside it is waiting for */
+function wizNeedText(d){
+  var upTo = d.mode === 'edit' || d.step === 3 ? 3 : d.step + 1, need = [];
+  for (var i = 1; i < upTo; i++) Object.keys(wizMissing(d, i)).forEach(function(k){ need.push(WIZNEED[k]); });
+  if (!need.length) return '';
+  return 'Still needed: ' + (need.length === 1 ? need[0] : need.slice(0, -1).join(', ') + ' and ' + need[need.length - 1]);
+}
+/* show a step with what it still needs, inline, and put the cursor on the first of them */
+function wizShowMissing(step){
+  DRAFT.step = step; DRAFT.showErr = true; paintWiz();
+  var k = Object.keys(wizMissing(DRAFT, step))[0]; if (k) focusIn(WIZFIELD[k]);
+}
+/* once you have tried to go on, the messages follow what you type (without repainting the field you are in) */
+function wizSyncErrs(){
+  var dl = DLGS[DLGS.length-1]; if (!dl || !DRAFT) return;
+  var m = DRAFT.showErr ? wizMissing(DRAFT, DRAFT.step) : {};
+  dl.querySelectorAll('[data-err]').forEach(function(sp){
+    var k = sp.getAttribute('data-err'), msg = m[k] || '', inp = $(WIZFIELD[k]);
+    if (sp.textContent !== msg) sp.textContent = msg;
+    sp.hidden = !msg;
+    if (inp){ if (msg) inp.setAttribute('aria-invalid', 'true'); else inp.removeAttribute('aria-invalid'); }
+  });
+}
 function wizFootHTML(){
-  var d = DRAFT;
-  if (d.mode === 'edit') return '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="wiz" data-id="finish">Save changes</button>';
-  if (!d.editing) setTimeout(function(){ syncDiscard('event'); }, 0);
-  return '<button class="btn" data-act="closedlg">Cancel</button>' +
-    (d.step > 1 && !d.editing ? '<button class="btn" data-act="wiz" data-id="back">'+ic('back')+'Back</button>' : '') +
-    /* the look is optional: a new event can be published from any step, and wears the plain look until customised */
-    (!d.editing ? (d.step < 3 ? '<button class="btn" data-act="wiz" data-id="next">Next</button>' : '') + '<button class="btn primary" data-act="wiz" data-id="finish">Publish event</button>'
-                : '<button class="btn primary" data-act="wiz" data-id="finish">Apply</button>');
+  var d = DRAFT, dis = function(ok){ return ok ? '' : ' aria-disabled="true"'; };
+  if (!wizEvent(d)) return '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="wiz" data-id="finish">Apply</button>';
+  var need = '<span class="wizneed" id="wiz-need" role="status">'+esc(wizNeedText(d))+'</span>', all = !wizFirstBad(d);
+  if (d.mode === 'edit') return need + '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="wiz" data-id="finish"'+dis(all)+'>Save changes</button>';
+  setTimeout(function(){ syncDiscard('event'); }, 0);
+  /* Next waits for this step; Publish (from Words on — the look is optional) waits for Basics and Words */
+  return need + '<button class="btn" data-act="closedlg">Cancel</button>' +
+    (d.step > 1 ? '<button class="btn" data-act="wiz" data-id="back">'+ic('back')+'Back</button>' : '') +
+    (d.step < 3 ? '<button class="btn'+(d.step === 1 ? ' primary' : '')+'" data-act="wiz" data-id="next"'+dis(wizReach(d, d.step + 1))+'>Next</button>' : '') +
+    (d.step > 1 ? '<button class="btn primary" data-act="wiz" data-id="finish"'+dis(all)+'>Publish event</button>' : '');
 }
 function paintWiz(){
   var d = DLGS[DLGS.length-1];
@@ -4435,26 +4551,30 @@ function paintWiz(){
 var FORMDRAFTS = {};
 var EVENTKINDS = ['meetup','build','workshop','volunteer_day','fundraiser','camp_meeting','burn_night','town_hall','decompression','burn','sale','other'];
 function blankEventDraft(){
-  return Object.assign({ step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', city:'', privacy:'everyone', entry:'free', desc:'', bring:'',
+  return Object.assign({ step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', city:'', online:false, privacy:'everyone', entry:'free', desc:'', bring:'',
            lookTouched:false }, lookDraft(plainTheme('◉')));
 }
 function eventDraftDirty(d){
   var b = blankEventDraft();
   return Object.keys(b).some(function(k){ return k !== 'step' && k !== 'editing' && k !== 'glyph' && String(d[k] == null ? '' : d[k]) !== String(b[k] == null ? '' : b[k]); });
 }
-function eventDraftMissing(d){ return { title: !String(d.title || '').trim(), date: !isoDate(d.date) }; }
 /* repaint the footer only when it changes: replacing a button under the pointer would swallow its click */
 function refreshWizFoot(){
   var d = DLGS[DLGS.length-1], f = d && DRAFT && d.querySelector('.wizsteps, .custwrap') && d.querySelector('.dfoot');
   if (!f) return;
   var h = wizFootHTML(), probe = document.createElement('div'); probe.innerHTML = h;
   if (probe.innerHTML !== f.innerHTML) f.innerHTML = h;
+  /* the step tabs open up as a step gets what it needs */
+  var tabs = d.querySelectorAll('.wizsteps .ws');
+  tabs.forEach(function(t, i){ var open = DRAFT.step === i + 1 || wizReach(DRAFT, i + 1); if (open) t.removeAttribute('aria-disabled'); else t.setAttribute('aria-disabled', 'true'); });
+  wizSyncErrs();
 }
 var newEventDialog = gated(function(){
   DRAFT = FORMDRAFTS.event || blankEventDraft();
   /* a draft kept from before looks were three colours gets the plain look's */
   if (!DRAFT.bg){ ['mood','pal','surface','type','headline','motion','shape','density','pattern','backdrop','atmosphere','parallax','orn'].forEach(function(k){ delete DRAFT[k]; });
                   Object.assign(DRAFT, lookDraft(plainTheme('◉'))); }
+  if (DRAFT.online == null) DRAFT.online = false;
   DRAFT.showErr = false;
   FORMDRAFTS.event = DRAFT;
   dialog('New event', wizBodyHTML(), wizFootHTML(), 900);
@@ -4476,7 +4596,7 @@ var customizePersonDialog = gated(function(){ openCustomize('person', 'self'); }
 var editEventDialog = gated(function(evId){
   var e = EVENTS[evId], r = recOf(evId);
   if (!e || !isMine(evId)) return;
-  DRAFT = Object.assign({ mode:'edit', step:1, editing:evId, title:e.title, date:e.date, end:r.endDate || '', city:r.city || cityShort(e.city),
+  DRAFT = Object.assign({ mode:'edit', step:1, editing:evId, title:e.title, date:e.date, end:r.endDate || '', city:r.city || cityShort(e.city), online:r.venueKind === 'virtual',
             privacy:e.privacy || 'everyone', entry:(r.access && r.access.model) || 'free', desc:descOf(e),
             kind:r.kind || 'meetup', startTime:r.startTime || '', endTime:r.endTime || '',
             bring: Array.isArray(r.whatToBring) ? r.whatToBring.join('\n') : (r.whatToBring || '') }, lookDraft(TH(evId)));
@@ -4494,7 +4614,9 @@ function saveEventEdit(t){
   var start = isoDate(DRAFT.date), end = isoDate(DRAFT.end), city = String(DRAFT.city || '').trim();
   if (!e.slug) e.slug = evSlug(id);          /* the link people already have keeps working */
   e.title = DRAFT.title.trim(); e.date = start; e.privacy = DRAFT.privacy; e.description = DRAFT.desc;
-  if (city){ e.city = city; if (r.venue && (!r.venue.name || r.venue.name === r.city)) r.venue.name = city; r.city = city; }
+  if (DRAFT.online) r.venueKind = 'virtual';
+  else { if (r.venueKind === 'virtual') r.venueKind = 'physical';
+         if (city){ e.city = city; if (r.venue && (!r.venue.name || r.venue.name === r.city)) r.venue.name = city; r.city = city; } }
   r.endDate = end && end > start ? end : undefined;
   r.description = DRAFT.desc; r.kind = DRAFT.kind || r.kind || 'meetup';
   r.startTime = DRAFT.startTime || undefined; r.endTime = DRAFT.endTime || undefined;
@@ -4508,13 +4630,15 @@ function saveEventEdit(t){
   toast('Saved', e.title);
 }
 function wizAct(which){
-  if (which === 'back'){ DRAFT.step = Math.max(1, DRAFT.step-1); paintWiz(); return; }
-  var miss = eventDraftMissing(DRAFT), bad = (!DRAFT.editing || DRAFT.mode === 'edit') && (miss.title || miss.date);
+  if (which === 'back'){ DRAFT.step = Math.max(1, DRAFT.step-1); DRAFT.showErr = false; paintWiz(); return; }
+  /* a step that still needs something stays: what is missing shows inline, the cursor goes to the first of it */
   if (which === 'next'){
-    if (DRAFT.step === 1 && bad){ DRAFT.showErr = true; paintWiz(); focusIn(miss.title ? 'w-t' : 'w-d'); return; }
-    DRAFT.step = Math.min(3, DRAFT.step+1); paintWiz(); return;
+    var nb = wizFirstBad(DRAFT, DRAFT.step + 1); if (nb){ wizShowMissing(nb); return; }
+    DRAFT.step = Math.min(3, DRAFT.step+1); DRAFT.showErr = false; paintWiz();
+    if (DRAFT.step === 2 && !L.phone) focusIn('w-desc');
+    return;
   }
-  if (bad){ DRAFT.step = 1; DRAFT.showErr = true; paintWiz(); focusIn(miss.title ? 'w-t' : 'w-d'); return; }
+  var bad = wizFirstBad(DRAFT); if (bad){ wizShowMissing(bad); return; }
   /* a look is stored only when someone changed it; changed back to plain (no image), it is removed */
   var t = DRAFT.lookTouched ? draftLook(DRAFT) : undefined;
   if (DRAFT.mode === 'edit'){ saveEventEdit(t); return; }
@@ -4541,17 +4665,18 @@ function wizAct(which){
   var id = 'evt-new-' + Date.now().toString(36);
   var start = isoDate(DRAFT.date) || TODAY_ISO, end = isoDate(DRAFT.end);
   FORMDRAFTS.event = null;
+  var city = DRAFT.online ? '' : String(DRAFT.city || '').trim();
   EVENTS[id] = { id:id, title:DRAFT.title.trim(), date:start, description:DRAFT.desc,
-                 hostName:S.me.name, hostAcct:S.acct, privacy:DRAFT.privacy, ownerIds:['self'], kind:'own', city:DRAFT.city };
+                 hostName:S.me.name, hostAcct:S.acct, privacy:DRAFT.privacy, ownerIds:['self'], kind:'own', city:city };
   REC[id] = { kind:DRAFT.kind || 'meetup', startTime:DRAFT.startTime || undefined, endTime:DRAFT.endTime || undefined, scale: end && end > start ? 'gathering' : 'meetup', endDate: end && end > start ? end : undefined,
-              venueKind:'physical', city:DRAFT.city, venue:{ name:DRAFT.city, addressVisibility:'public' }, description:DRAFT.desc,
+              venueKind:DRAFT.online ? 'virtual' : 'physical', city:city, venue:DRAFT.online ? undefined : { name:city, addressVisibility:'public' }, description:DRAFT.desc,
               access:{ model:DRAFT.entry }, whatToBring: String(DRAFT.bring||'').split('\n').map(function(s){ return s.trim(); }).filter(Boolean) };
   if (t){ t.glyph = PLAINGLYPH[REC[id].kind] || '◆'; window.HYPERNET_THEMES.themes[id] = t; }
   MYEVENTS.push(id); PROMOCOUNT[id] = 0; READ[id] = true;
   closeDialogs();
   goFolder({ kind:'hosting' });
   if (L.phone) S.tab = 'you';
-  S.stack = [{ type:'event', id:id }]; S.autoSel = false;
+  S.stack = [{ type:'event', id:id }];
   render();
   toast('Published', EVENTS[id].title);
 }
@@ -4901,7 +5026,6 @@ function openItem(type, id, mode){
   if (type === 'horizon' && !L.phone){ goFolder({ kind:'horizon', id:id }); render(); $('listbody').scrollTop = 0; return; }
   if (type === 'event') markRead(id);
   var it = { type:type, id:id };
-  S.autoSel = false;
   if (mode === 'push' && S.stack.length){
     var top = S.stack[S.stack.length-1];
     if (top.type === type && top.id === id) return;
@@ -4930,7 +5054,7 @@ function setTab(t){
   S.tab = t;
   if (m){
     S.folder = m.folder; S.stack = m.stack.filter(validItem); S.query = m.query; S.phoneSearch = m.ps; SEARCHRET = m.searchret;
-    S.autoSel = false; ROUTE.restore = m.scroll;
+    ROUTE.restore = m.scroll;
   } else {
     S.phoneSearch = false; goFolder(tabRootFolder(t));
     ROUTE.restore = { list:0, detail:0, nav:0, chats:0, shelves:{} };
@@ -5119,11 +5243,11 @@ function recordAnswer(c, text){
 }
 /* search is a place of its own: where you were (and what you had open) is kept, and clearing takes you back */
 var SEARCHRET = null;
-function rememberPlace(){ SEARCHRET = { folder:S.folder, stack:S.stack.slice(), autoSel:S.autoSel }; }
+function rememberPlace(){ SEARCHRET = { folder:S.folder, stack:S.stack.slice() }; }
 function leaveSearch(){
   var r = SEARCHRET || { folder:{ kind:'home' }, stack:[] };
   S.query = ''; SEARCHRET = null;
-  goFolder(r.folder); S.stack = r.stack; S.autoSel = !!r.autoSel;
+  goFolder(r.folder); S.stack = r.stack;
   var q = $('q'); if (q) q.value = '';
 }
 function doSearch(q){
@@ -5144,7 +5268,7 @@ function stepItem(delta){
   var n = i < 0 ? 0 : Math.max(0, Math.min(list.length-1, i + delta));
   ROUTE.replace = true;   /* stepping through a list is not a trail you want to walk back */
   openItem(list[n].type, list[n].id);
-  var el = document.querySelector('#listbody .row.sel, #listbody .fsel'); if (el && el.scrollIntoView) el.scrollIntoView({ block:'nearest' });
+  var el = document.querySelector('#listbody .row.sel, #listbody .fsel, #listbody .card2.sel'); if (el && el.scrollIntoView) el.scrollIntoView({ block:'nearest', inline:'nearest' });
 }
 function runCmd(cmd, arg){
   closePopup();
@@ -5220,6 +5344,7 @@ document.addEventListener('click', function(ev){
     case 'dm':           messagePerson(id); break;
     case 'answercallout': answerCallout(id); break;
     case 'costep':       stepStrip(+id); break;
+    case 'shelfstep':    stepShelf(n.getAttribute('data-shelf'), +id); break;
     case 'upall':        UPALL = !UPALL; render(); break;
     case 'whoall':       whoAllDialog(id); break;
     case 'whoopen':      closeDialogs(); openItem('person', id, 'push'); break;
@@ -5259,8 +5384,8 @@ document.addEventListener('click', function(ev){
       if (withEv) logAct('added_to_horizon', 'horizon', hid, { eventIds:[withEv] });
       closeDialogs();
       if (withEv){ render(); toast('Added to ' + nm, EVENTS[withEv].title); break; }   /* from an event: stay on it */
-      if (L.phone){ S.tab = 'you'; goFolder({ kind:'you' }); S.stack = [{ type:'horizon', id:hid }]; S.autoSel = false; }
-      else { S.stack = [{ type:'horizon', id:hid }]; S.autoSel = false; }
+      if (L.phone){ S.tab = 'you'; goFolder({ kind:'you' }); S.stack = [{ type:'horizon', id:hid }]; }
+      else S.stack = [{ type:'horizon', id:hid }];
       render();
       toast('Event Horizon created', nm);
       break;
@@ -5274,6 +5399,7 @@ document.addEventListener('click', function(ev){
       pickerFoot(); break;
     }
     case 'pkdone':       pickerDone(); break;
+    case 'pkfilter':     pickerFilter(id); break;
     case 'unfile':       removeFromHorizon(id, n.getAttribute('data-hz')); break;
     case 'donewcallout': {
       var cot = (($('co-t')||{}).value || '').trim();
@@ -5290,7 +5416,7 @@ document.addEventListener('click', function(ev){
       FORMDRAFTS.callout = null;
       logAct('posted_callout', 'callout', cid3);
       closeDialogs();
-      openItem('callout', cid3, S.stack.length && !S.autoSel ? 'push' : undefined);
+      openItem('callout', cid3, S.stack.length ? 'push' : undefined);
       toast('Call out posted', cot);
       break;
     }
@@ -5299,7 +5425,11 @@ document.addEventListener('click', function(ev){
     case 'closecallout': closeCallout(id); break;
     case 'newcalloutfor': gated(newCalloutDialog)({ eventId:id }); break;
     case 'editevent':    editEventDialog(id); break;
-    case 'wizstep':      DRAFT.step = +id; paintWiz(); break;
+    case 'wizstep': {
+      var ws = +id, wb = ws > DRAFT.step ? wizFirstBad(DRAFT, ws) : 0;
+      if (wb) wizShowMissing(wb); else { DRAFT.step = ws; DRAFT.showErr = false; paintWiz(); }
+      break;
+    }
     case 'evmore':       openMoreMenu(n, 'event', id, (n.getAttribute('data-more') || 'delete').split(',')); break;
     case 'toentry':      { var es = document.querySelector('#dscroll [data-sect="entry"]'); if (es) es.scrollIntoView({ block:'start', behavior:'smooth' }); break; }
     case 'hzmore':       openMoreMenu(n, 'horizon', id, (n.getAttribute('data-more') || 'share,delete').split(',')); break;
@@ -5332,7 +5462,8 @@ document.addEventListener('change', function(ev){
   if (n.closest('[data-cz]') && DRAFT){
     var k = n.getAttribute('data-cz');
     if (/^(bg|ink|accent)$/.test(k)){ czSetColor(k, n.value, n); return; }
-    DRAFT[k] = n.value;
+    DRAFT[k] = n.type === 'checkbox' ? n.checked : n.value;
+    if (k === 'online'){ var wc = $('w-c'); if (wc){ wc.disabled = n.checked; wc.placeholder = n.checked ? 'Online' : 'Stockholm'; wc.value = n.checked ? '' : DRAFT.city || ''; } }
     if (LOOKKEYS.test(k)) DRAFT.lookTouched = true;
     /* text fields already updated the preview as you typed; repainting here would swallow the click that blurred them */
     if (DRAFT.step === 3 && n.tagName === 'SELECT') paintWiz(); else refreshWizFoot();
@@ -5356,15 +5487,11 @@ document.addEventListener('input', function(ev){
   if (/^co-[tbx]$/.test(n.id)){ saveForm('callout'); return; }
   if (/^nh-[nd]$/.test(n.id)){ saveForm('horizon'); return; }
   if (n.id === 'sh-q' && SH){ SH.q = n.value; var sl = $('sh-list'); if (sl) sl.innerHTML = shareListHTML(); return; }
-  if (n.id === 'pk-q'){ PK.q = n.value; $('pk-list').innerHTML = pickerList(); return; }
+  if (n.id === 'pk-q'){ PK.q = n.value; pickerPaint(); return; }
   if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT' || n.type === 'checkbox') return;
   if (/^(bg|ink|accent)$/.test(n.getAttribute('data-cz'))){ czSetColor(n.getAttribute('data-cz'), n.value, n); return; }
   DRAFT[n.getAttribute('data-cz')] = n.value;
   if (LOOKKEYS.test(n.getAttribute('data-cz'))) DRAFT.lookTouched = true;
-  if (n.getAttribute('aria-invalid') && String(n.value).trim()){
-    n.removeAttribute('aria-invalid');
-    var er = n.parentNode.querySelector('.ferr'); if (er) er.remove();
-  }
   refreshWizFoot(); schedulePersist();
   if (DRAFT.step === 3) czRefresh(n);
 });
@@ -5477,14 +5604,13 @@ function linkOf(type, id){ return location.origin + location.pathname + '#/' + i
 function snapNow(){
   var f = S.folder, v = viewsOf(f);
   return { hn:1, tab:S.tab, folder:{ kind:f.kind, id:f.id || null }, view: v.length ? viewOf(f) : null,
-           stack: S.autoSel ? [] : S.stack.map(function(it){ return { type:it.type, id:it.id }; }),
-           closed: !L.phone && !!S.paneClosed && !S.stack.length,
+           stack: S.stack.map(function(it){ return { type:it.type, id:it.id }; }),
            q:S.query, ps:!!S.phoneSearch, cal:{ mode:S.calMode, at:S.calAnchor, day:S.calDay },
            dock: L.phone ? null : { open:!!S.rightOpen, chat:S.chatOpen || null } };
 }
 function navKeyOf(s){
   return JSON.stringify([L.phone ? s.tab : '', s.folder.kind, s.folder.id || null, s.view || null,
-    (s.stack || []).map(function(it){ return it.type + ':' + it.id; }).join('>'), !!s.ps, (s.view === 'calendar' && s.cal && s.cal.day) || null, !!s.closed]);
+    (s.stack || []).map(function(it){ return it.type + ':' + it.id; }).join('>'), !!s.ps, (s.view === 'calendar' && s.cal && s.cal.day) || null]);
 }
 function hashOf(s){
   var top = s.stack[s.stack.length-1], p = [], path;
@@ -5494,7 +5620,6 @@ function hashOf(s){
     if (s.folder.kind !== home) p.push(['in', folderPath(s.folder)]);
   } else path = folderPath(s.folder);
   if (s.folder.kind === 'search' && s.q) p.push(['q', s.q]);
-  if (s.closed && !top) p.push(['pane', 'closed']);
   var views = viewsOf(s.folder);
   if (s.view && views.length && s.view !== views[0]) p.push(['view', s.view]);
   if (s.view === 'calendar' && s.cal){
@@ -5524,7 +5649,8 @@ function parseHash(h){
   });
   var seg = path.split('/').filter(Boolean).map(function(x){ try { return decodeURIComponent(x); } catch(e){ return x; } });
   var a = seg[0] || 'home', b = seg[1], it = null;
-  var s = { hn:1, folder:{ kind:'home', id:null }, stack:[], q:p.q || '', ps:false, view:p.view || null, closed:p.pane === 'closed',
+  /* an old ?pane=closed is simply ignored: nothing is ever picked for you, so an empty pane needs no flag */
+  var s = { hn:1, folder:{ kind:'home', id:null }, stack:[], q:p.q || '', ps:false, view:p.view || null,
             cal:{ mode:p.cal || 'month', at:isoDate(p.at) || null, day:isoDate(p.day) || null } };
   if (a === 'event') it = { type:'event', id:evBySlug(b) };
   else if (a === 'horizon') it = { type:'horizon', id:hzBySlug(b) };
@@ -5557,9 +5683,6 @@ function applySnap(s){
   S.tab = s.tab || tabOfFolder(S.folder);
   /* something you can't open (deleted, private, mistyped) is shown as such, never silently dropped */
   S.stack = (s.stack || []).map(function(it){ return validItem(it) ? { type:it.type, id:it.id } : { type:'missing', id:itemPath(it) }; });
-  S.autoSel = false;
-  /* a horizon in the stack becomes the destination on a wide screen, so it doesn't count as something open */
-  S.paneClosed = !!s.closed && !S.stack.some(function(it){ return it.type !== 'horizon'; });
   S.query = S.folder.kind === 'search' ? (s.q || '') : '';
   S.phoneSearch = !!s.ps;
   /* a link without ?view= means the destination's first view, whatever you last used */
@@ -5659,10 +5782,7 @@ window.addEventListener('popstate', function(ev){
 });
 /* a link (not a history step): its row, if the list has one, is lit and in view */
 function revealSel(){
-  var el = document.querySelector('#listbody .row.sel, #listbody .track.sel, #listbody .fsel');
-  /* Home and a horizon open at their top (a shared horizon link lands on its title and what a horizon is):
-     what the app picked for the reading pane is not worth scrolling to */
-  if (S.autoSel && (S.folder.kind === 'home' || S.folder.kind === 'horizon')) return;
+  var el = document.querySelector('#listbody .row.sel, #listbody .track.sel, #listbody .fsel, #listbody .card2.sel');
   if (el && !L.phone){ el.scrollIntoView({ block:'center' }); CURSCROLL.list = $('listbody').scrollTop; }
 }
 function rootSnap(tab){
@@ -5705,22 +5825,16 @@ function render(){
     if (S.folder.kind === 'you' || S.folder.kind === 'chats') goFolder({ kind:'home' });
     /* a horizon opened as a page (a phone habit, or a link) becomes the destination on a wide screen */
     var hi = -1; S.stack.forEach(function(it, i){ if (it.type === 'horizon' && HORIZONS[it.id]) hi = i; });
-    if (hi >= 0){ var hid0 = S.stack[hi].id; S.stack = S.stack.slice(hi + 1); S.folder = { kind:'horizon', id:hid0 }; if (!S.stack.length) S.autoSel = false; }
+    if (hi >= 0){ var hid0 = S.stack[hi].id; S.stack = S.stack.slice(hi + 1); S.folder = { kind:'horizon', id:hid0 }; }
   } else if (S.folder.kind === 'horizon'){
     /* and on a phone it is a page on the Horizons tab */
     var hid1 = S.folder.id; S.folder = { kind:'explore', id:'horizons' }; S.tab = S.tab === 'home' || !S.tab ? 'explore' : S.tab;
     if (S.tab !== 'explore') S.folder = tabRootFolder(S.tab);
     S.stack = [{ type:'horizon', id:hid1 }].concat(S.stack);
   }
-  /* a closed reading pane stays in the layout, empty, until you pick something: nothing is picked for you */
-  if (S.stack.length) S.paneClosed = false;
-  L.paneClosed = !L.phone && L.split && S.paneClosed && !isCal();
-  /* in a split view something is open in the reading pane, unless you closed it */
-  var items = null;
-  /* an item the app picked for the reading pane is not something you opened: without a reading pane, show the list */
-  if (!L.split && S.autoSel){ S.stack = []; S.autoSel = false; }
-  if (L.split && !S.stack.length && !L.paneClosed){ items = orderedItems(); var first = items.filter(function(it){ return it.type !== 'more'; })[0];
-    if (first){ S.stack = [first]; S.autoSel = true; } }
+  /* nothing is picked for you: until you open something, the reading pane is empty (the faint mark) and the list
+     takes the room. Home, Explore, search, a horizon and a person all open this way. */
+  L.paneClosed = !L.phone && L.split && !S.stack.length && !isCal();
   var conv = phoneConv();
   var scr = L.phone ? ((conv || (S.tab === 'chats' && !S.stack.length)) ? 'chats' : (S.tab === 'you' && S.folder.kind === 'you' && !S.stack.length) ? 'you' : 'center') : '';
   L.scr = scr;
@@ -5740,7 +5854,7 @@ function render(){
   renderChats();
   renderPreview();
   placeToasts();
-  document.title = (S.stack.length && !S.autoSel ? itemName(S.stack[S.stack.length-1]) : folderName()) + ' · Hypernet';
+  document.title = (S.stack.length ? itemName(S.stack[S.stack.length-1]) : folderName()) + ' · Hypernet';
   schedulePersist();
   syncRoute();
 }

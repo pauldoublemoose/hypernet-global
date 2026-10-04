@@ -38,11 +38,13 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   ornaments, a kind glyph on its square. The ten authored fixture themes stay; fixture events without one now go plain
   instead of wearing a look derived from their id (`DERIVED_LOOKS` switches the old behaviour back). A new event can
   be published from any wizard step, and a look is stored only when someone actually changed it. *Still true, minus the
-  ruled backdrop and `DERIVED_LOOKS` (both removed 2026-10-01).*
+  ruled backdrop and `DERIVED_LOOKS` (both removed 2026-10-01), and minus "published from any wizard step" — superseded
+  2026-10-04: a step must have what it needs before Next, and Publish waits for Basics and Words.*
 - **2026-09-28 · The reading pane can be closed — to an empty pane.** A window close (×) in the pane's title bar, or Esc,
   empties it; the pane keeps its place and width (owner: "leave the space on the right empty, don't hide it") and shows
   only a blank panel with the faint Hypernet mark. Nothing is auto-picked until you choose something, which fills it
   again. `?pane=closed` keeps it empty across reload and history; back brings back what was open. Phone unchanged.
+  *Superseded in part 2026-10-04: nothing is ever auto-picked, so the empty pane is the default and `?pane=closed` is gone.*
 - **2026-09-27 · The canvas is layered art; reading stays calm.** Back to front: seeded backdrop, header hero,
   particle atmosphere, then content panels and the window's toolbar. Art never takes a click or covers a control;
   ornaments state only facts (edition year, entry model, city, a horizon's years), never invented ones. Text colours
@@ -79,6 +81,7 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   Explore / New / Chats / You (Explore replaces Horizons). The words Hypernet made up say what they are in a line
   where they are listed ("A horizon is a list of events someone curates — like a playlist…"). Old `#/horizons`,
   `#/people` and `#/home/<section>` links land on the matching Explore kind or section.
+  *Since 2026-10-04 the overview is the phone's shelves of squares at every width, not bands of rows.*
 - **2026-10-01 · Chat is between two people.** New chat picks one person and opens the conversation; there is no group
   name, no multi-select, no rename / leave / add people. The fixture group chats became direct messages with whoever
   spoke last in them, and group chats kept from before are put away on load. Group (camp) pages stay out of v1; a
@@ -131,7 +134,7 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   next three weeks that people you follow are going to or interested in, sorted by event date, each with the date,
   how far off, where, and tiny faces with "Anna + 2 you follow are going · Rio interested". Three rows, "Show N more"
   opens the rest. This answers outcome #1 ("what do I do the next weekends with my people") on the first screen; its
-  events also lead Home's keyboard order, so the reading pane opens on the next one.
+  events also lead Home's keyboard order (the reading pane no longer opens on the next one by itself — 2026-10-04).
 - **2026-10-01 · You are one line.** What you did in the last day is a single line at the top of the stream — "You:
   going to X, followed Kai, posted a call out: Rigger · now" (newest first, four parts, then "and N more"); older own
   rows are not on Home. Your rows still say what is true now (un-going takes it off the line).
@@ -194,3 +197,44 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   horizon link opens at its title.
 - **2026-10-01 · Saved on change.** The browser store is written when something changed (and when the page goes
   away), not on every render; both stores (the app's and the activity) say once, quietly, when the browser is full.
+- **2026-10-04 · Nothing opens until you pick it.** Owner: "make the default view with no event opened … when I open a
+  Horizon, some event is already open, so just make it empty by default." On desktop split layouts every list — Home,
+  Explore and its kinds, Show all, search, a horizon's track list, the people list — opens with the empty reading pane
+  (the faint mark) and the list taking the room, until you choose something. The auto-pick (`S.autoSel`) and the
+  "closed" flag (`S.paneClosed`, `?pane=closed`) are removed, not flagged off: an empty stack *is* the empty pane, and an
+  old `?pane=closed` link just lands on it. ↓ / j from nothing opens the first item; × and Esc still empty the pane.
+  Phone and tablet (no reading pane beside the list) are unchanged.
+- **2026-10-04 · The list's frame is drawn over its rows.** Owner: "Coming up with your people is currently hiding a few
+  pixels to the left." Cause: the list's sunken 2px frame was an inset shadow on the scrolling list itself, so anything
+  with a background — the sticky bands, a hovered row, the lit Coming-up row with its 3px bar — painted over the frame's
+  left edge, and the row looked cut. On desktop and tablet the frame is now an overlay on the list column, above its
+  rows (`#listcol::after`), so the edge runs unbroken; the lit Coming-up row's bar sits inside it. The weekday and month
+  under each Coming-up date are centred under the day, as the day is (they were flush left). Phone has no frame.
+- **2026-10-04 · Explore's overview is squares, at every width.** Owner: "I actually want the explore to stay, but don't
+  show it as rows. Show it as squares instead, just like in the mobile version." Desktop and tablet now draw Explore
+  (no kind) exactly as the phone does: the same sections (This week, From people you follow, Coming up, Announced burns,
+  your Event Horizons, horizons worth following, Call outs) as sideways shelves of 150px squares, each heading with its
+  count and Show all. With a mouse a shelf that holds more than fits gets ‹ › in its heading (one step = as many whole
+  squares as fit). A square opens in the reading pane and is lit while open; ↓ / j walk the squares shelf by shelf. The
+  kinds stay as they were (sidebar sub-rows on desktop, tabs on the phone), and Show all and the old section links
+  (`#/explore/soon`, `#/home/week` …) are still their lists. The desktop-only bands, their "Show all N" rows and the
+  horizon card strip inside them are removed.
+- **2026-10-04 · Add events to a horizon has filters.** Owner: "make sure there's some simple filtering, for example,
+  events I am following". Under the search, one row of filters, each with its count: **All upcoming** (the default) ·
+  **Going** · **Interested** · **Hosting** · **From people you follow** (someone you follow hosts it — the same meaning
+  as Explore's shelf of that name; each row says "Hosted by Anna") · **Past** (newest first). All but Past are upcoming
+  only, sorted by date. The search narrows the list and every count; a filter with nothing in it says so ("Nothing in
+  Going matches “zurich”", "You’re not hosting anything coming up") and offers the filter that has matches. The list
+  keeps its height as you switch, so the dialog doesn't jump. On a phone the filters are one sideways row under the
+  search. Replaces the "Your events / All events" bands.
+- **2026-10-04 · New event goes on only when a step has what it needs.** Owner: "make it not possible to go to the next
+  step until you have everything filled out." Required: **Basics** — a title, the day it starts (a new event: today or
+  later), an end on or after the start if one is given, and where it is: a place, or the new **Online** tick (stored as
+  `venueKind: 'virtual'`, shown as "Online"). **Words** — a description. **Look** stays optional. Optional fields say
+  "optional" (Ends, From, Until, Bring); Type, Who can see it and Entry always have a value. Next waits for its step;
+  Publish appears from Words on and waits for Basics and Words; the step tabs open forward only past complete steps. The
+  waiting buttons are `aria-disabled`, not dead: beside them "Still needed: a title and where it is" says why, and
+  pressing one anyway stays on the step, marks each missing field inline (message under it, `aria-invalid`) and puts the
+  cursor on the first — never a toast. The messages follow your typing once shown. Edit uses the same rules (minus "not
+  in the past"): Save changes waits until nothing is missing. Supersedes "A new event can be published from any wizard
+  step" (2026-09-28).

@@ -989,6 +989,56 @@ async function overflowEverywhere(p, label){
     if (kind !== 'tab') await shot(c, 'explore-squares-' + kind);
   }
 
+  /* ---------------- 2026-10-04: Add events to a horizon has filters ---------------- */
+  for (const kind of ['desk', 'tab', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    const hz = await ev(c, () => MYHORIZONS[0]);
+    await c.evaluate(h => { goFolder(L.phone ? { kind:'explore', id:'horizons' } : { kind:'horizon', id:h }); if (L.phone) S.stack = [{ type:'horizon', id:h }]; render(); }, hz); await c.waitForTimeout(350);
+    await c.click((kind === 'phone' ? '#dscroll' : '#listbody') + ' [data-act="addevents"]'); await c.waitForTimeout(300);
+    const chips = () => ev(c, () => [...document.querySelectorAll('.dlg #pk-chips .pkchip')].map(b => ({ id:b.getAttribute('data-id'), label:b.firstChild.textContent.trim(), n:+b.querySelector('.n').textContent, on:b.getAttribute('aria-pressed') === 'true' })));
+    const c0 = await chips();
+    ok(c0.map(x => x.label).join('|') === 'All upcoming|Going|Interested|Hosting|From people you follow|Past' && c0[0].on && !!(await c.$('.dlg #pk-q')), kind + ': Add events has a search and six filters, All upcoming first and on ' + JSON.stringify(c0.map(x => x.label + ' ' + x.n)));
+    /* each filter holds what it says, its count is what it shows, and an empty one says so */
+    const seen = {};
+    for (const f of c0){
+      await c.click('.dlg #pk-chips .pkchip[data-id="' + f.id + '"]'); await c.waitForTimeout(150);
+      seen[f.id] = await ev(c, id => {
+        const ids = [...document.querySelectorAll('#pk-list input[data-act="pkpick"]')].map(i => i.getAttribute('data-id')), es = ids.map(x => EVENTS[x]);
+        const fol = e => { const hp = hostPersonOf(e); return !!hp && hp.id !== 'self' && !!PFOLLOW[hp.id]; };
+        const okIn = { upcoming:e => !isPast(lastDay(e)), going:e => !isPast(lastDay(e)) && RSVP[e.id] === 'going', interested:e => !isPast(lastDay(e)) && RSVP[e.id] === 'interested',
+                       hosting:e => !isPast(lastDay(e)) && MYEVENTS.indexOf(e.id) >= 0, people:e => !isPast(lastDay(e)) && fol(e), past:e => isPast(lastDay(e)) }[id];
+        const dates = es.map(e => e.date), sorted = dates.slice().sort(); if (id === 'past') sorted.reverse();
+        return { n:ids.length, all:es.every(okIn), order:dates.join() === sorted.join(), on:document.querySelector('.pkchip[data-id="' + id + '"]').getAttribute('aria-pressed') === 'true',
+                 empty:!!document.querySelector('#pk-list .pkempty'), why:id !== 'people' || [...document.querySelectorAll('#pk-list .pkwhy')].length === ids.length };
+      }, f.id);
+      const r = seen[f.id];
+      ok(r.on && r.all && r.order && r.why && r.n === f.n && (r.n > 0 || r.empty), kind + ': filter ' + f.label + ' shows its ' + f.n + ' events and only those, in order ' + JSON.stringify(r));
+    }
+    ok(seen.going.n >= 1 && seen.hosting.n >= 1 && seen.people.n >= 1 && seen.past.n >= 1 && seen.upcoming.n > seen.people.n, kind + ': the demo has something under Going, Hosting, From people you follow and Past');
+    /* the search narrows every count; an empty filter says so and offers where the matches are */
+    await c.click('.dlg #pk-chips .pkchip[data-id="going"]'); await c.waitForTimeout(100);
+    await c.fill('#pk-q', 'zurich'); await c.waitForTimeout(200);
+    const q = await chips();
+    const em = await ev(c, () => ({ msg:(document.querySelector('#pk-list .pkempty') || {}).textContent || '', alt:(document.querySelector('#pk-list .pkempty [data-act="pkfilter"]') || { getAttribute:() => '' }).getAttribute('data-id') }));
+    ok(q.find(x => x.id === 'upcoming').n >= 1 && q.find(x => x.id === 'upcoming').n < c0[0].n && q.find(x => x.id === 'going').n === 0 && /Nothing in Going matches “zurich”/.test(em.msg) && em.alt === 'upcoming',
+       kind + ': search narrows the counts; an empty filter says so and offers All upcoming ' + JSON.stringify(em));
+    await c.click('#pk-list .pkempty [data-act="pkfilter"]'); await c.waitForTimeout(150);
+    const pick = await ev(c, () => ({ on:document.querySelector('.pkchip.on').getAttribute('data-id'), id:(document.querySelector('#pk-list input[data-act="pkpick"]:not(:checked)') || { getAttribute:() => null }).getAttribute('data-id') }));
+    ok(pick.on === 'upcoming' && !!pick.id, kind + ': … and that button switches to it');
+    /* ticking under a filter and Done adds it */
+    await c.fill('#pk-q', ''); await c.waitForTimeout(100);
+    await c.click('.dlg #pk-chips .pkchip[data-id="people"]'); await c.waitForTimeout(150);
+    const add = await ev(c, () => { const i = document.querySelector('#pk-list input[data-act="pkpick"]:not(:checked)'); i.click(); return i.getAttribute('data-id'); });
+    ok((await overflow(c)) <= 0, kind + ': Add events with filters, no horizontal overflow');
+    if (kind === 'phone') ok(await ev(c, () => { const r = document.getElementById('pk-chips'); return getComputedStyle(r).flexWrap === 'nowrap' && r.scrollWidth > r.clientWidth && r.getBoundingClientRect().height < 60; }), 'phone: the filters are one sideways row');
+    await shot(c, 'horizon-picker-' + kind);
+    await c.click('.dlg [data-act="pkdone"]'); await c.waitForTimeout(300);
+    ok(await ev(c, ([h, id]) => HORIZONS[h].eventIds.indexOf(id) >= 0, [hz, add]), kind + ': an event ticked under From people you follow is added');
+    ok(!c.errors.length, kind + ': no console errors (Add events filters) ' + c.errors.join(' '));
+  }
+
   /* ---------------- tablet ---------------- */
   const t = await ctx('tab');
   await open(t, '', true);

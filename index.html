@@ -692,6 +692,17 @@ body.is-phone #sh-list{ max-height:none; }
 .pksearch{ position:sticky; top:-20px; z-index:3; margin:-20px -20px 12px; padding:20px 20px 12px; background:var(--face); }
 body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 12px; }
 .picklist.tall{ max-height:min(58vh, 460px); }
+/* Add events: one row of filters under the search; the list keeps its height as you switch, so the dialog doesn't jump */
+#pk-list{ height:min(58vh, 460px); }
+.pkchips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.pkchip{ display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 10px; border:0; background:var(--face); box-shadow:var(--out); color:var(--ink); font-size:13px; white-space:nowrap; }
+.pkchip:active{ box-shadow:var(--in); }
+.pkchip .n{ font:11px var(--mono); letter-spacing:.02em; color:var(--dim); }
+.pkchip.on{ background:var(--sel); color:#fff; font-weight:bold; box-shadow:inset 1px 1px 0 #000; }
+.pkchip.on .n{ color:var(--seldim); }
+.pick .pm small.pkwhy{ color:var(--ink2); }
+.pkempty{ line-height:1.5; }
+.pkempty .btn{ margin-top:12px; }
 .pkband{ padding:12px 10px 6px; font:bold 11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dim); border-bottom:1px solid var(--line); background:#fff; }
 .hzchk{ width:28px; height:28px; display:grid; place-items:center; box-shadow:var(--in); background:#fff; color:#000; }
 .tracks{ list-style:none; margin:8px 0 0; padding:0; border-top:1px solid var(--line); }
@@ -942,6 +953,11 @@ body.is-phone .custprev{ order:-1; align-self:stretch; position:sticky; top:-18p
 .previewbox.compact .actbar, .previewbox.compact .layer{ display:none; }
 body.is-phone input, body.is-phone select, body.is-phone textarea{ font-size:16px; }
 body.is-phone .picklist{ max-height:none; }
+body.is-phone #pk-list{ height:auto; }
+/* on a phone the filters are one sideways row under the search, never three lines of chrome */
+body.is-phone .pkchips{ flex-wrap:nowrap; overflow-x:auto; margin:10px -16px 0; padding:0 16px 2px; scrollbar-width:none; }
+body.is-phone .pkchips::-webkit-scrollbar{ display:none; }
+body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .sheetrow{ display:flex; align-items:center; gap:14px; min-height:60px; padding:0 18px; border-bottom:1px solid var(--line); background:#fff; font-size:16px; cursor:pointer; }
 .sheetrow small{ display:block; color:var(--dim); font-size:13px; }
 </style>
@@ -4165,28 +4181,60 @@ function newHorizonDialog(withEvent){
     FORMFOOT.horizon(), 520);
   focusIn('nh-n');
 }
-/* ---- add events: search the network's events, tick the ones you want, Done ---- */
+/* ---- add events: search the network's events, narrow them with one row of filters, tick the ones you want, Done ----
+   Owner, 2026-10-04: "make sure there's some simple filtering, for example, events I am following". */
 var PK = null;
-function pickerEvents(){
+var PKFILTERS = [['upcoming','All upcoming'], ['going','Going'], ['interested','Interested'], ['hosting','Hosting'], ['people','From people you follow'], ['past','Past']];
+/* every event you could add (and can see), with the search applied */
+function pickerPool(){
   var q = PK.q.toLowerCase().trim();
   return allEvents().filter(function(e){ return canSeeEvent(e) && (!NEXTED[e.id] || PK.sel.indexOf(e.id) >= 0); })
-    .sort(function(a,b){ var pa = isPast(lastDay(a)) ? 1 : 0, pb = isPast(lastDay(b)) ? 1 : 0; return pa !== pb ? pa - pb : (pa ? -byDate(a,b) : byDate(a,b)); })
     .filter(function(e){ return !q || matchAll([e.title, whereOf(e), placeWords(e), hostLabel(e), descOf(e)], q); });
 }
-function pickRow(e){
-  var on = PK.sel.indexOf(e.id) >= 0, st = stateOf(e.id);
-  return '<label class="pick"><input type="checkbox" data-act="pkpick" data-id="'+e.id+'"'+(on?' checked':'')+'>' + sqPx(e.id, 40) +
-    '<span class="pm">'+esc(e.title)+'<small>'+esc([fmtShort(e.date), whereOf(e), isPast(lastDay(e)) ? 'past' : '', { hosting:'Hosting', going:'Going', interested:'Interested' }[st] || ''].filter(Boolean).join(' · '))+'</small></span></label>';
+/* "from people you follow" means what it means on Explore's shelf of that name: someone you follow hosts it */
+function pickerWhy(e){
+  if (!S.loggedIn) return '';
+  var hp = hostPersonOf(e);
+  return hp && hp.id !== 'self' && PFOLLOW[hp.id] ? 'Hosted by ' + whoName(hp.id) : '';
 }
-/* your own events first — what you host, go to or saved — then everything else */
+function pickerIn(f, e){
+  var past = isPast(lastDay(e)), st = stateOf(e.id);
+  if (f === 'past') return past;
+  if (past) return false;
+  return f === 'upcoming' || (f === 'people' ? !!pickerWhy(e) : st === f);
+}
+function pickerEvents(f){
+  f = f || PK.f;
+  return pickerPool().filter(function(e){ return pickerIn(f, e); })
+    .sort(function(a, b){ return f === 'past' ? -byDate(a, b) : byDate(a, b); });
+}
+function pickRow(e){
+  var on = PK.sel.indexOf(e.id) >= 0, st = stateOf(e.id), why = PK.f === 'people' ? pickerWhy(e) : '';
+  return '<label class="pick"><input type="checkbox" data-act="pkpick" data-id="'+e.id+'"'+(on?' checked':'')+'>' + sqPx(e.id, 40) +
+    '<span class="pm">'+esc(e.title)+'<small>'+esc([fmtShort(e.date), whereOf(e), isPast(lastDay(e)) ? 'past' : '', { hosting:'Hosting', going:'Going', interested:'Interested' }[st] || ''].filter(Boolean).join(' · '))+'</small>' +
+    (why ? '<small class="pkwhy">'+esc(why)+'</small>' : '')+'</span></label>';
+}
+/* one row of filters, each with how many it holds (the search applies to the counts too) */
+function pickerChips(){
+  var pool = pickerPool();
+  return PKFILTERS.map(function(f){
+    var n = pool.filter(function(e){ return pickerIn(f[0], e); }).length, on = PK.f === f[0];
+    return '<button type="button" class="pkchip'+(on ? ' on' : '')+'" aria-pressed="'+on+'" data-act="pkfilter" data-id="'+f[0]+'">'+esc(f[1])+' <span class="n">'+n+'</span></button>';
+  }).join('');
+}
+var PKEMPTY = { upcoming:'No upcoming events yet.', going:'You’re not going to anything coming up.', interested:'Nothing coming up that you marked Interested.',
+                hosting:'You’re not hosting anything coming up.', people:'Nobody you follow has anything coming up.', past:'No past events.' };
 function pickerList(){
   var evs = pickerEvents();
-  if (!evs.length) return '<div class="empty">Nothing matches.</div>';
-  var mine = PK.q.trim() ? [] : evs.filter(function(e){ return !!stateOf(e.id); });
-  if (!mine.length) return evs.map(pickRow).join('');
-  var rest = evs.filter(function(e){ return mine.indexOf(e) < 0; });
-  return '<div class="pkband">Your events</div>' + mine.map(pickRow).join('') + '<div class="pkband">All events</div>' + rest.map(pickRow).join('');
+  if (evs.length) return evs.map(pickRow).join('');
+  var q = PK.q.trim(), name = PKFILTERS.filter(function(f){ return f[0] === PK.f; })[0][1];
+  var msg = q ? 'Nothing in ' + name + ' matches “' + q + '”.' : PK.f === 'people' && !followedPeople().length ? 'You don’t follow anyone yet. Follow people to see what they host and go to.' : PKEMPTY[PK.f];
+  /* say where the matches are instead */
+  var alt = PKFILTERS.filter(function(f){ return f[0] !== PK.f && pickerEvents(f[0]).length; })[0];
+  return '<div class="empty pkempty">'+esc(msg) + (alt ? '<br><button type="button" class="btn" data-act="pkfilter" data-id="'+alt[0]+'">Show '+esc(alt[1])+' · '+pickerEvents(alt[0]).length+'</button>' : '') + '</div>';
 }
+function pickerPaint(){ $('pk-chips').innerHTML = pickerChips(); $('pk-list').innerHTML = pickerList(); }
+function pickerFilter(f){ PK.f = f; pickerPaint(); $('pk-list').scrollTop = 0; }
 function pickerFoot(){
   var added = PK.sel.filter(function(id){ return PK.start.indexOf(id) < 0; }).length;
   var removed = PK.start.filter(function(id){ return PK.sel.indexOf(id) < 0; }).length;
@@ -4195,9 +4243,10 @@ function pickerFoot(){
 }
 var addEventsDialog = gated(function(hzId){
   var hz = HORIZONS[hzId];
-  PK = { hz:hzId, q:'', sel:hz.eventIds.slice(), start:hz.eventIds.slice() };
+  PK = { hz:hzId, q:'', f:'upcoming', sel:hz.eventIds.slice(), start:hz.eventIds.slice() };
   dialog('Add events to ' + hz.name,
-    '<div class="field pksearch"><input type="search" id="pk-q" placeholder="Search events" autocomplete="off" aria-label="Search events"></div>' +
+    '<div class="field pksearch"><input type="search" id="pk-q" placeholder="Search events" autocomplete="off" aria-label="Search events">' +
+    '<div class="pkchips" id="pk-chips" role="group" aria-label="Show">' + pickerChips() + '</div></div>' +
     '<div class="picklist tall" id="pk-list">' + pickerList() + '</div>',
     '<span id="pkfoot" style="display:contents"></span>', 520);
   pickerFoot();
@@ -5274,6 +5323,7 @@ document.addEventListener('click', function(ev){
       pickerFoot(); break;
     }
     case 'pkdone':       pickerDone(); break;
+    case 'pkfilter':     pickerFilter(id); break;
     case 'unfile':       removeFromHorizon(id, n.getAttribute('data-hz')); break;
     case 'donewcallout': {
       var cot = (($('co-t')||{}).value || '').trim();
@@ -5356,7 +5406,7 @@ document.addEventListener('input', function(ev){
   if (/^co-[tbx]$/.test(n.id)){ saveForm('callout'); return; }
   if (/^nh-[nd]$/.test(n.id)){ saveForm('horizon'); return; }
   if (n.id === 'sh-q' && SH){ SH.q = n.value; var sl = $('sh-list'); if (sl) sl.innerHTML = shareListHTML(); return; }
-  if (n.id === 'pk-q'){ PK.q = n.value; $('pk-list').innerHTML = pickerList(); return; }
+  if (n.id === 'pk-q'){ PK.q = n.value; pickerPaint(); return; }
   if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT' || n.type === 'checkbox') return;
   if (/^(bg|ink|accent)$/.test(n.getAttribute('data-cz'))){ czSetColor(n.getAttribute('data-cz'), n.value, n); return; }
   DRAFT[n.getAttribute('data-cz')] = n.value;

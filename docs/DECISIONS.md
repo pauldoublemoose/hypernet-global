@@ -218,3 +218,11 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   kinds stay as they were (sidebar sub-rows on desktop, tabs on the phone), and Show all and the old section links
   (`#/explore/soon`, `#/home/week` …) are still their lists. The desktop-only bands, their "Show all N" rows and the
   horizon card strip inside them are removed.
+- **2026-10-04 · Add events to a horizon has filters.** Owner: "make sure there's some simple filtering, for example,
+  events I am following". Under the search, one row of filters, each with its count: **All upcoming** (the default) ·
+  **Going** · **Interested** · **Hosting** · **From people you follow** (someone you follow hosts it — the same meaning
+  as Explore's shelf of that name; each row says "Hosted by Anna") · **Past** (newest first). All but Past are upcoming
+  only, sorted by date. The search narrows the list and every count; a filter with nothing in it says so ("Nothing in
+  Going matches “zurich”", "You’re not hosting anything coming up") and offers the filter that has matches. The list
+  keeps its height as you switch, so the dialog doesn't jump. On a phone the filters are one sideways row under the
+  search. Replaces the "Your events / All events" bands.

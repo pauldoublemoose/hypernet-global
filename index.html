@@ -1038,11 +1038,14 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 <script src="_shared/hypernet-data.js"></script>
 <script src="_shared/hypernet-themes.js"></script>
 <script src="_shared/hypernet-event-details.js"></script>
+<script src="_shared/hypernet-api.js"></script>
 <script>
 /* =========================================================================
    0. DATA ADAPTERS — same fixtures as every other concept
    ========================================================================= */
 var H = window.HYPERNET;
+/* ONLINE: served by the backend — the globals below are refilled from the database at boot (_shared/hypernet-api.js) */
+var ONLINE = !!(window.HNAPI && HNAPI.online);
 /* ONE CLOCK. The app runs on the real date: TODAY_ISO is today here, nowMs() is now (the instant every
    timestamp is taken from). The mock fixtures were written for H.meta.today (2026-09-20), so their dates —
    the mock events and their sample records, the call outs' expiries — move by the whole days between that
@@ -1442,6 +1445,7 @@ function hostLabel(e){ return ownEvent(e) ? 'You' : e.hostName; }
 function hostPersonOf(e){
   if (ownEvent(e)) return PEOPLE['self'];
   if (e.hostAcct && PEOPLE[acctPid(e.hostAcct)]) return PEOPLE[acctPid(e.hostAcct)];
+  if (e.hostId && PEOPLE[e.hostId]) return PEOPLE[e.hostId];
   var k = Object.keys(PEOPLE).filter(function(k){ return k !== 'self' && !/^u-/.test(k) && PEOPLE[k].displayName === e.hostName; })[0];
   return k ? PEOPLE[k] : null;
 }
@@ -1493,6 +1497,7 @@ function hzOwnedByMe(hzId){ return S.loggedIn && MYHORIZONS.indexOf(hzId) >= 0; 
 var PRIVACY = { everyone:'Everyone', friends:'Friends', only_me:'Only me' };
 /* the person who hosts an event: an account's own, a fixture person by name, else its fixture owner ("self" there is the demo) */
 function eventHostPid(e){
+  if (e.hostId) return e.hostId;
   if (e.hostAcct && typeof acctPid === 'function') return acctPid(e.hostAcct);
   var k = Object.keys(PEOPLE).filter(function(k){ return k !== 'self' && !/^u-/.test(k) && PEOPLE[k].displayName === e.hostName; })[0];
   if (k) return k;
@@ -1526,6 +1531,7 @@ function canSee(evId){ return canSeeEvent(EVENTS[evId]); }
 function hzEventIds(hzId){ var hz = HORIZONS[hzId]; return hz ? hz.eventIds.filter(canSee) : []; }
 /* who on the network is going, whoever is looking (Home's activity says the same as the event page) */
 function baseAttendees(evId){
+  if (ONLINE) return HNAPI.going(evId);
   if (/^evt-new-/.test(evId)) return [];
   var w = H.worlds.filter(function(x){ return x.eventId === evId; })[0];
   var ids = w && w.participantIds ? w.participantIds.filter(function(p){ return PEOPLE[p] && p !== 'self'; }) : [];
@@ -1537,7 +1543,7 @@ function attendees(evId){
   if (S.loggedIn && RSVP[evId] === 'going') ids = ['self'].concat(ids);
   return ids.slice(0,6);
 }
-function attendeeCount(evId){ return attendees(evId).length + (/^evt-new-/.test(evId) ? 0 : (hashId(evId) % 34) + 4); }
+function attendeeCount(evId){ if (ONLINE) return HNAPI.goingCount(evId); return attendees(evId).length + (/^evt-new-/.test(evId) ? 0 : (hashId(evId) % 34) + 4); }
 function stateOf(evId){
   if (!S.loggedIn) return '';
   if (MYEVENTS.indexOf(evId) >= 0) return 'hosting';
@@ -1600,6 +1606,7 @@ function renderPreview(){
 }
 /* Log in without an account here yet: the only account to log in to is the demo */
 function loginPicker(){
+  if (ONLINE){ HNAPI.loginDialog(); return; }
   if (ACCTS.me){ loginDialog(); return; }
   dialog('Log in to Hypernet', '<p class="fhelp" style="margin:0 0 12px">There is no account in this browser yet. Join free with your name — it takes a few seconds.</p>' + demoRowHTML(),
     '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="join">Join free</button>', 420);
@@ -1654,6 +1661,7 @@ function browsableHorizons(){
    (Michal, the demo, and whoever joined), newest last. You are never in your own network list.
    With Neon this is  select … from people  (minus you). */
 function networkPeople(){
+  if (ONLINE) return HNAPI.network();
   var me = myPid();
   var accts = Object.keys(PEOPLE).filter(function(k){ return CREW.indexOf(k) < 0 && (k === 'p-michal' || /^u-/.test(k)); });
   return CREW.concat(accts).filter(function(k){ return PEOPLE[k] && k !== me && k !== 'self'; });
@@ -2113,8 +2121,8 @@ function shiftsHTML(evId){
 }
 var takeShift = gated(function(evId, i){
   var r = recOf(evId), b = r.blocks[i];
-  if (SHIFT[evId] === i && !RESUMING){ delete SHIFT[evId]; render(); toast('Shift given up', EVENTS[evId].title + ' · ' + b.label); return; }
-  SHIFT[evId] = i; RSVP[evId] = 'going'; markRead(evId); render();
+  if (SHIFT[evId] === i && !RESUMING){ delete SHIFT[evId]; if (ONLINE) HNAPI.rsvp(evId); render(); toast('Shift given up', EVENTS[evId].title + ' · ' + b.label); return; }
+  SHIFT[evId] = i; RSVP[evId] = 'going'; markRead(evId); if (ONLINE) HNAPI.rsvp(evId); render();
   toast('Going · ' + b.label, EVENTS[evId].title + ' · ' + [fmtDay(b.date), timeRange(b)].filter(Boolean).join(' '));
 });
 function timelineHTML(items, phases){
@@ -3016,6 +3024,7 @@ function hostPid(e){
 }
 var ACTSEED = null;
 function seedActivity(){
+  if (ONLINE) return HNAPI.activity();
   var key = Object.keys(EVENTS).length + ':' + Object.keys(HORIZONS).length + ':' + CALLOUTS.length;
   if (ACTSEED && ACTSEED.key === key) return ACTSEED.rows;
   var rows = [], lo = FIXNOW - ACTWINDOW * 86400000, byKey = {};
@@ -3097,7 +3106,7 @@ function canDeleteReply(r){ return S.loggedIn && (r.author === myActor() || isOw
 var LIVEACT = [];
 var ACTSTORE = 'hypernet-feed:activity';
 function loadLiveAct(){ try { var v = JSON.parse(localStorage.getItem(ACTSTORE) || '[]'); LIVEACT = Array.isArray(v) ? v : []; } catch(e){ LIVEACT = []; } }
-function saveLiveAct(){ storeSet(ACTSTORE, JSON.stringify(LIVEACT.slice(0, 400))); }
+function saveLiveAct(){ if (ONLINE) return; storeSet(ACTSTORE, JSON.stringify(LIVEACT.slice(0, 400))); }
 loadLiveAct();
 function myActor(){ return S.loggedIn && S.acct ? acctPid(S.acct) : null; }
 function actIsMe(a){ return !!a && a.actor === myActor(); }
@@ -3210,6 +3219,7 @@ function netIndex(){
 }
 /* everyone (but you) going to or interested in an event: { pid, verb, ms } — ms is when they decided, 0 when unknown */
 function eventPeople(evId){
+  if (ONLINE) return HNAPI.eventPeople(evId);
   var o = {}, act = netIndex()[evId] || {}, me = myActor();
   baseAttendees(evId).forEach(function(p){ if (p !== me) o[p] = { pid:p, verb:'going', ms:0 }; });
   Object.keys(act).forEach(function(p){
@@ -3907,6 +3917,7 @@ function profileForm(){
 /* the demo account: a small text link at the bottom of Join and Log in, never the main action, so someone
    invited for real doesn't become Michal by accident */
 function demoRowHTML(){
+  if (ONLINE) return '';   /* no demo account on the real network */
   return '<p class="demolink">Just looking? <button type="button" data-act="useacct" data-id="demo">Explore as the demo account</button></p>';
 }
 /* your photo is your profile look's image: the same picture as the square in Customize */
@@ -3936,6 +3947,7 @@ document.addEventListener('click', function(ev){
   else { PF.photo = null; pfRepaint(); }
 });
 function profileDialog(mode){
+  if (ONLINE && mode === 'signup' && !HNAPI.login){ HNAPI.loginDialog(); return; }   /* the email code comes first */
   var p = PEOPLE['self'], up = mode === 'signup';
   PF = { mode:mode, name: up ? '' : p.displayName, handle: up ? '' : p.handle, photo: up ? null : (PTHEME.self && PTHEME.self.image) || null,
          about: up ? '' : (p.bio || ''), skills: up ? [] : (p.skills || []).slice(), cities: up ? [] : citiesOf(p).slice() };
@@ -3984,6 +3996,7 @@ function pfSave(){
   var prof = { displayName:PF.name.trim(), handle:normHandle(PF.handle), bio:PF.about.trim(),
                skills:PF.skills.slice(), cities:PF.cities.slice(), city: PF.cities.length ? PF.cities[0].toUpperCase() : '' };
   if (PF.mode === 'signup'){
+    if (ONLINE){ HNAPI.join(prof); return; }
     /* a new account is a new person: nothing followed, nothing kept, nothing hosted */
     ACCTS.me = blankAcct(prof);
     WELCOME = 'Welcome, ' + prof.displayName.split(' ')[0];
@@ -3994,10 +4007,13 @@ function pfSave(){
   if (PF.photo !== ((PTHEME.self && PTHEME.self.image) || null)){
     var lk = asLook(Object.assign({}, PTHEME.self || plainTheme('◉'), { image:PF.photo || null }));
     if (isPlain(lk) && !lk.image) delete PTHEME.self; else PTHEME.self = lk;
+    if (ONLINE) HNAPI.saveMyLook();
   }
+  if (ONLINE) HNAPI.saveProfile(prof);
   S.me = { name:prof.displayName, handle:prof.handle }; closeDialogs(); render(); toast('Profile saved', '');
 }
 function loginDialog(){
+  if (ONLINE){ HNAPI.loginDialog(); return; }
   if (!ACCTS.me){ profileDialog('signup'); return; }
   var p = ACCTS.me.profile;
   dialog('Log in to Hypernet',
@@ -4009,7 +4025,7 @@ function loginDialog(){
 /* ---- ACCOUNTS: 'me' (the one you joined with) and 'demo' (Michal, seeded) ----
    What an account keeps is swapped in when it logs in and put away when it logs out. */
 var ACCTS = {};
-function acctPid(k){ return k === 'demo' ? 'p-michal' : 'u-' + k; }
+function acctPid(k){ if (ONLINE && k === 'me' && HNAPI.me) return HNAPI.me.id; return k === 'demo' ? 'p-michal' : 'u-' + k; }
 function blankAcct(profile){ return { profile:profile, rsvp:{}, went:{}, promoted:{}, hzfollow:{}, pfollow:{}, myevents:[], myhorizons:[], chats:{ byId:{}, order:[] }, unread:{}, drafts:{ forms:{}, chat:{} }, shift:{} }; }
 function demoAcct(){
   var m = PEOPLE['p-michal'];
@@ -4079,6 +4095,7 @@ function logIn(){
   if (p) p();
 }
 function doLogout(){
+  if (ONLINE){ HNAPI.logout(); return; }
   if (S.acct) ACCTS[S.acct] = captureAcct();
   S.loggedIn = false; S.acct = null; loadAcct(null); syncAcctPeople();
   S.chatOpen = null; S.rightOpen = false;
@@ -4202,8 +4219,8 @@ function newCalloutDialog(opts){
 }
 var closeCallout = gated(function(coId){
   var c = calloutOf(coId); if (!isOwnCallout(c)) return;
-  c.closed = !c.closed; render();
-  toast(c.closed ? 'Call out closed' : 'Call out open again', c.title, c.closed ? function(){ c.closed = false; render(); toast('Call out open again', c.title); } : null);
+  c.closed = !c.closed; if (ONLINE) HNAPI.saveCallout(coId); render();
+  toast(c.closed ? 'Call out closed' : 'Call out open again', c.title, c.closed ? function(){ c.closed = false; if (ONLINE) HNAPI.saveCallout(coId); render(); toast('Call out open again', c.title); } : null);
 });
 var HZWITH = null;
 FORMFOOT.horizon = function(){
@@ -4295,6 +4312,7 @@ function pickerDone(){
   var kept = hz.eventIds.filter(function(id){ return PK.sel.indexOf(id) >= 0; });
   var added = PK.sel.filter(function(id){ return kept.indexOf(id) < 0; });
   hz.eventIds = kept.concat(added);
+  if (ONLINE) HNAPI.horizonEvents(PK.hz);
   if (added.length) logAct('added_to_horizon', 'horizon', PK.hz, { eventIds:added.slice() });
   closeDialogs(); render();
   if (added.length) toast('Added ' + added.length + ' event' + (added.length === 1 ? '' : 's'), hz.name);
@@ -4436,7 +4454,7 @@ function squareImage(file, bg){
         if (!/^data:image\/webp/.test(url)) url = c.toDataURL('image/jpeg', q);   /* browsers that cannot write WebP */
         if (url.length * .75 <= IMGBUDGET) break;
       }
-      resolve(url);
+      if (ONLINE) HNAPI.upload(url).then(resolve, reject); else resolve(url);
     };
     img.onerror = function(){ URL.revokeObjectURL(src); reject(new Error('unreadable image')); };
     img.src = src;
@@ -4652,6 +4670,7 @@ function saveEventEdit(t){
   setEventLook(id, t);
   delete PLAINCACHE[id];
   EDITED[id] = true; SLUGS = null;
+  if (ONLINE) HNAPI.saveEvent(id);
   closeDialogs(); render();
   toast('Saved', e.title);
 }
@@ -4669,7 +4688,7 @@ function wizAct(which){
   var t = DRAFT.lookTouched ? draftLook(DRAFT) : undefined;
   if (DRAFT.mode === 'edit'){ saveEventEdit(t); return; }
   if (DRAFT.kind === 'person'){
-    if (t !== undefined){ if (t) PTHEME['self'] = t; else delete PTHEME['self']; }
+    if (t !== undefined){ if (t) PTHEME['self'] = t; else delete PTHEME['self']; if (ONLINE) HNAPI.saveMyLook(); }
     closeDialogs(); render(); schedulePersist();
     toast('Look updated', 'Your profile');
     return;
@@ -4678,17 +4697,18 @@ function wizAct(which){
     var hid = DRAFT.editing;
     if (t !== undefined){ if (t) HZTHEME[hid] = t; else delete HZTHEME[hid]; }
     if (hzOwnsSquare(hid, HZTHEME[hid])) HZCOVER[hid] = 'own'; else if (HZCOVER[hid] === 'own') delete HZCOVER[hid];
+    if (ONLINE && t !== undefined) HNAPI.saveHorizon(hid);
     closeDialogs(); render();
     toast('Look updated', HORIZONS[hid].name);
     return;
   }
   if (DRAFT.editing){
-    if (t !== undefined){ setEventLook(DRAFT.editing, t); EDITED[DRAFT.editing] = true; }
+    if (t !== undefined){ setEventLook(DRAFT.editing, t); EDITED[DRAFT.editing] = true; if (ONLINE) HNAPI.saveEventLook(DRAFT.editing); }
     closeDialogs(); render();
     toast('Look updated', EVENTS[DRAFT.editing].title);
     return;
   }
-  var id = 'evt-new-' + Date.now().toString(36);
+  var id = ONLINE ? HNAPI.uuid() : 'evt-new-' + Date.now().toString(36);
   var start = isoDate(DRAFT.date) || TODAY_ISO, end = isoDate(DRAFT.end);
   FORMDRAFTS.event = null;
   var city = DRAFT.online ? '' : String(DRAFT.city || '').trim();
@@ -4699,6 +4719,7 @@ function wizAct(which){
               access:{ model:DRAFT.entry }, whatToBring: String(DRAFT.bring||'').split('\n').map(function(s){ return s.trim(); }).filter(Boolean) };
   if (t){ t.glyph = PLAINGLYPH[REC[id].kind] || '◆'; window.HYPERNET_THEMES.themes[id] = t; }
   MYEVENTS.push(id); PROMOCOUNT[id] = 0; READ[id] = true;
+  if (ONLINE) HNAPI.createEvent(id);
   closeDialogs();
   goFolder({ kind:'hosting' });
   if (L.phone) S.tab = 'you';
@@ -5096,12 +5117,14 @@ var setRSVP = gated(function(evId, mode){
   var dh = HORIZONS['horizon-default'];
   if (RSVP[evId] === 'interested' && MYHORIZONS.indexOf('horizon-default') >= 0 && dh.eventIds.indexOf(evId) < 0) dh.eventIds.push(evId);
   if (RSVP[evId]) logAct(RSVP[evId], 'event', evId);
+  if (ONLINE) HNAPI.rsvp(evId);
   markRead(evId);
   render();
   toast(RSVP[evId] ? (mode === 'going' ? 'Going' : 'Interested') : (mode === 'going' ? 'Not going' : 'Not interested'), EVENTS[evId].title);
 });
 var setWent = gated(function(evId){
   if (!(RESUMING && WENT[evId])) WENT[evId] = !WENT[evId];
+  if (ONLINE) HNAPI.rsvp(evId);
   markRead(evId); render();
   toast(WENT[evId] ? 'Marked as went' : 'Removed', EVENTS[evId].title);
 });
@@ -5109,14 +5132,15 @@ var doPromote = gated(function(evId){
   if (RESUMING && PROMOTED[evId]){ render(); toast('Promoted', EVENTS[evId].title); return; }
   PROMOTED[evId] = !PROMOTED[evId];
   if (PROMOTED[evId]) logAct('promoted', 'event', evId);
+  if (ONLINE) HNAPI.promote(evId);
   render();
   /* nothing here knows who follows you, so the toast doesn't claim an audience */
   toast(PROMOTED[evId] ? 'Promoted' : 'Not promoted', EVENTS[evId].title,
-    PROMOTED[evId] ? function(){ PROMOTED[evId] = false; render(); toast('Not promoted', EVENTS[evId].title); } : null);
+    PROMOTED[evId] ? function(){ PROMOTED[evId] = false; if (ONLINE) HNAPI.promote(evId); render(); toast('Not promoted', EVENTS[evId].title); } : null);
 });
 var toggleInHorizon = gated(function(evId, hzId){
   var hz = HORIZONS[hzId], i = hz.eventIds.indexOf(evId);
-  if (i < 0){ hz.eventIds.push(evId); logAct('added_to_horizon', 'horizon', hzId, { eventIds:[evId] }); render(); toast('Added to ' + hz.name, EVENTS[evId].title); }
+  if (i < 0){ hz.eventIds.push(evId); logAct('added_to_horizon', 'horizon', hzId, { eventIds:[evId] }); if (ONLINE) HNAPI.horizonEvents(hzId); render(); toast('Added to ' + hz.name, EVENTS[evId].title); }
   else { unfile(evId, hzId); return; }
   if (DLGS.length && document.querySelector('[data-act="dofile"]')){ closeDialogs(); addToDialog(evId); }
 });
@@ -5126,10 +5150,12 @@ function unfile(evId, hzId){
   if (i < 0) return;
   hz.eventIds.splice(i, 1);
   unlogAct('added_to_horizon', hzId, evId);
+  if (ONLINE) HNAPI.horizonEvents(hzId);
   render();
   if (DLGS.length && document.querySelector('[data-act="dofile"]')){ closeDialogs(); addToDialog(evId); }
   toast('Removed from ' + hz.name, EVENTS[evId].title, function(){
     if (hz.eventIds.indexOf(evId) < 0) hz.eventIds.splice(Math.min(i, hz.eventIds.length), 0, evId);
+    if (ONLINE) HNAPI.horizonEvents(hzId);
     render(); toast('Back in ' + hz.name, EVENTS[evId].title);
   });
 }
@@ -5151,6 +5177,7 @@ function deleteEventDialog(evId){
 }
 function deleteEvent(evId){
   var title = EVENTS[evId].title;
+  if (ONLINE) HNAPI.deleteEvent(evId);
   delete EVENTS[evId]; delete REC[evId]; delete EDITED[evId];
   if (!/^evt-new-/.test(evId) && DELETED.events.indexOf(evId) < 0) DELETED.events.push(evId);
   MYEVENTS = MYEVENTS.filter(function(x){ return x !== evId; });
@@ -5166,6 +5193,7 @@ function deleteHorizonDialog(hzId){
 }
 function deleteHorizon(hzId){
   var name = HORIZONS[hzId].name;
+  if (ONLINE) HNAPI.deleteHorizon(hzId);
   delete HORIZONS[hzId]; delete HZCOVER[hzId]; delete HZTHEME[hzId];
   if (!HORIZONS[hzId] && !/^horizon-mine-/.test(hzId) && DELETED.horizons.indexOf(hzId) < 0) DELETED.horizons.push(hzId);
   MYHORIZONS = MYHORIZONS.filter(function(k){ return k !== hzId; });
@@ -5176,31 +5204,35 @@ function deleteHorizon(hzId){
 }
 var addToHorizonDrop = gated(function(evId, hzId){
   var hz = HORIZONS[hzId];
-  if (hz.eventIds.indexOf(evId) < 0){ hz.eventIds.push(evId); logAct('added_to_horizon', 'horizon', hzId, { eventIds:[evId] }); toast('Added to ' + hz.name, EVENTS[evId].title); }
+  if (hz.eventIds.indexOf(evId) < 0){ hz.eventIds.push(evId); logAct('added_to_horizon', 'horizon', hzId, { eventIds:[evId] }); if (ONLINE) HNAPI.horizonEvents(hzId); toast('Added to ' + hz.name, EVENTS[evId].title); }
   render();
 });
 var followHz = gated(function(hzId){
   if (RESUMING && (HZFOLLOW[hzId] || hzOwnedByMe(hzId))){ render(); toast('Following', HORIZONS[hzId].name); return; }
   HZFOLLOW[hzId] = !HZFOLLOW[hzId];
   if (HZFOLLOW[hzId]) logAct('followed_horizon', 'horizon', hzId);
+  if (ONLINE) HNAPI.followHorizon(hzId);
   render();
   toast(HZFOLLOW[hzId] ? 'Following' : 'Unfollowed', HORIZONS[hzId].name);
 });
 var renameHz = gated(function(hzId){
   var nm = (($('rh-n')||{}).value || '').trim() || HORIZONS[hzId].name;
   HORIZONS[hzId].name = nm; HORIZONS[hzId].description = (($('rh-d')||{}).value || '').trim();
+  if (ONLINE) HNAPI.saveHorizon(hzId);
   closeDialogs(); render();
   toast('Saved', nm);
 });
 var publishHz = gated(function(hzId){
   HORIZONS[hzId].isPublished = !HORIZONS[hzId].isPublished;
   if (HORIZONS[hzId].isPublished){ unlogAct('created_horizon', hzId); logAct('published_horizon', 'horizon', hzId); } else unlogAct('published_horizon', hzId);
+  if (ONLINE) HNAPI.saveHorizon(hzId);
   render();
   toast(HORIZONS[hzId].isPublished ? 'Published' : 'Private again', HORIZONS[hzId].name);
 });
 var followP = gated(function(pid){
   if (!(RESUMING && PFOLLOW[pid])) PFOLLOW[pid] = !PFOLLOW[pid];
   if (PFOLLOW[pid]) logAct('followed_person', 'person', pid);
+  if (ONLINE) HNAPI.followPerson(pid);
   render();
   toast(PFOLLOW[pid] ? 'Following' : 'Unfollowed', person(pid).displayName);
 });
@@ -5209,6 +5241,7 @@ var followP = gated(function(pid){
    back to all chats. */
 var CONVUP = false;            /* phone: the open conversation was opened from the chat list, so ‹ steps back to it */
 function openChat(cid){
+  if (ONLINE && UNREADCHAT[cid]) HNAPI.readChat(cid);
   UNREADCHAT[cid] = false;
   var i = CHATORDER.indexOf(cid); if (i > 0){ CHATORDER.splice(i, 1); CHATORDER.unshift(cid); }
   if (L.phone){
@@ -5253,7 +5286,9 @@ function paintChatProfile(){
 function sendChat(){
   var box = $('chatbox'), cid = activeChat(); if (!box || !cid || !box.value.trim()) return;
   var st = stamp();
-  CHATS[cid].messages.push({ from:'self', t:st.t, ts:st.ts, text:box.value.trim() });
+  var msg = { from:'self', t:st.t, ts:st.ts, text:box.value.trim() };
+  CHATS[cid].messages.push(msg);
+  if (ONLINE) HNAPI.sendMessage(cid, msg);
   delete CHATDRAFT[cid]; delete CHATSCROLL[cid];
   box.value = '';
   render();
@@ -5275,8 +5310,9 @@ var postReply = gated(function(coId){
   var text = String(box && box.getAttribute('data-id') === coId ? box.value : REPLYDRAFT[coId] || '').trim();
   if (!c || !text) return;
   if (!canReply(c)){ toast('This call out is closed', c.title); return; }
-  var r = { id:'r-' + Date.now().toString(36), calloutId:coId, author:myActor(), text:text, ts:tsIso(appNow()) };
+  var r = { id: ONLINE ? HNAPI.uuid() : 'r-' + Date.now().toString(36), calloutId:coId, author:myActor(), text:text, ts:tsIso(appNow()) };
   REPLIES.push(r); delete REPLYDRAFT[coId];
+  if (ONLINE) HNAPI.postReply(r);
   logAct('replied_callout', 'callout', coId, { replyId:r.id });
   render();
   var b = $('coreply'); if (b && !L.phone) b.focus();
@@ -5286,8 +5322,9 @@ function deleteReply(id){
   var r = allReplies().filter(function(x){ return x.id === id; })[0];
   if (!r || REPLYGONE[id] || !canDeleteReply(r)) return;
   REPLYGONE[id] = true;
+  if (ONLINE) HNAPI.deleteReply(id);
   render();
-  toast('Reply deleted', '', function(){ delete REPLYGONE[id]; render(); });
+  toast('Reply deleted', '', function(){ delete REPLYGONE[id]; if (ONLINE) HNAPI.replyBack(id); render(); });
 }
 
 /* ---- Share copies the item's link; nothing else ---- */
@@ -5445,7 +5482,7 @@ document.addEventListener('click', function(ev){
     case 'donewhorizon': {
       var nm = (($('nh-n')||{}).value || '').trim();
       if (!nm) break;
-      var hid = 'horizon-mine-' + Date.now().toString(36);
+      var hid = ONLINE ? HNAPI.uuid() : 'horizon-mine-' + Date.now().toString(36);
       FORMDRAFTS.horizon = null;
       var withEv = id && EVENTS[id] ? id : null;
       HORIZONS[hid] = { id:hid, name:nm, description:(($('nh-d')||{}).value||'').trim(), isPersonalDefault:false,
@@ -5453,6 +5490,7 @@ document.addEventListener('click', function(ev){
       MYHORIZONS.push(hid); HZCOUNT[hid] = 0;
       if (HORIZONS[hid].isPublished) logAct('published_horizon', 'horizon', hid); else logAct('created_horizon', 'horizon', hid);
       if (withEv) logAct('added_to_horizon', 'horizon', hid, { eventIds:[withEv] });
+      if (ONLINE) HNAPI.createHorizon(hid);
       closeDialogs();
       if (withEv){ render(); toast('Added to ' + nm, EVENTS[withEv].title); break; }   /* from an event: stay on it */
       if (L.phone){ S.tab = 'you'; goFolder({ kind:'you' }); S.stack = [{ type:'horizon', id:hid }]; }
@@ -5479,13 +5517,15 @@ document.addEventListener('click', function(ev){
       if (COEDIT){
         var ce = calloutOf(COEDIT);
         ce.title = cot; ce.body = coBody; ce.eventId = coEv; ce.skill = coSk; if (coX) ce.expiresAt = coX;
+        if (ONLINE) HNAPI.saveCallout(COEDIT);
         COEDIT = null; closeDialogs(); render(); toast('Saved', cot); break;
       }
-      var cid3 = 'co-new-' + Date.now().toString(36), month = dOf(TODAY_ISO); month.setDate(month.getDate() + 30);
+      var cid3 = ONLINE ? HNAPI.uuid() : 'co-new-' + Date.now().toString(36), month = dOf(TODAY_ISO); month.setDate(month.getDate() + 30);
       CALLOUTS.unshift({ id:cid3, title:cot, body:coBody, eventId:coEv, skill:coSk,
                          expiresAt:coX || isoOf(month), hostName:S.me.name, hostId:acctPid(S.acct), hostAcct:S.acct });
       FORMDRAFTS.callout = null;
       logAct('posted_callout', 'callout', cid3);
+      if (ONLINE) HNAPI.createCallout(cid3);
       closeDialogs();
       openItem('callout', cid3, S.stack.length ? 'push' : undefined);
       toast('Call out posted', cot);
@@ -5954,6 +5994,7 @@ function storeSet(key, val){
 var PERSISTED = null;
 function persist(){
   clearTimeout(PERSISTT); PERSISTT = null;
+  if (ONLINE){ HNAPI.persistUi(); return; }   /* the network lives in the database; only conveniences stay here */
   try {
     if (S.loggedIn && S.acct) ACCTS[S.acct] = captureAcct();
     var evs = {}, recs = {}, themes = {}, hzs = {}, covers = {}, hzthemes = {};
@@ -5973,6 +6014,7 @@ function persist(){
   } catch(e){}
 }
 function restore(){
+  if (ONLINE){ HNAPI.restoreUi(); return; }
   var d = null;
   try { d = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch(e){}
   if (!d) return;
@@ -6014,6 +6056,7 @@ document.addEventListener('visibilitychange', function(){ if (document.visibilit
 var RZ = null;
 window.addEventListener('resize', function(){ clearTimeout(RZ); RZ = setTimeout(render, 60); });
 (function boot(){
+  if (ONLINE){ HNAPI.boot(startRoutes); return; }   /* the network comes from GET /api/bootstrap */
   restore();
   /* the real events carry the links people share, so the route waits for them (briefly) */
   var started = false, start = function(){ if (!started){ started = true; startRoutes(); } };

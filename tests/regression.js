@@ -47,7 +47,13 @@
    full-screen sheet whose × and back gesture return to the feed where it was; Home steps its call outs one at a time in
    their band, Coming up rows are 48 squares with the date at the right, the social line is words, and an event's call
    out carries its whole thread with the box to answer in (Answer goes there, no chat). Older checks that spoke of the
-   reading pane, the empty pane, ?pane=closed and the call-out strip now say the same things of the window. */
+   reading pane, the empty pane, ?pane=closed and the call-out strip now say the same things of the window;
+   2026-10-04 (layout): logged out there is no Home (Explore is the landing, no Home row or tab, #/home lands on Explore
+   without ever drawing Home; logging in from the landing goes Home), the white spans the centre and each view sits in
+   its container (Home 640, lists 720, Explore's overview and the calendar 1120, the heading on its edge), Explore's
+   overview is one row of whole squares per section, and the window steps the list aside (beside it at 1280, 1440 with
+   and without the dock and 1920, the list whole and clickable; over the centre only where both can't fit), with no
+   overflow at 1920 either. Checks that spoke of Home logged out now use an account that follows nobody. */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch(e){
   try { ({ chromium } = require('playwright-core')); } catch(e2){
@@ -128,12 +134,29 @@ const winState = p => p.evaluate(() => { const w = document.getElementById('win'
   return { open:!w.hidden, stack:S.stack.length, top:S.stack.length ? S.stack[S.stack.length - 1].type + ':' + S.stack[S.stack.length - 1].id : '', hash:location.hash,
            x:Math.round(r.left), y:Math.round(r.top), w:Math.round(r.width), h:Math.round(r.height), inside:w.hidden || (r.left >= m.left - 1 && r.top >= m.top - 1 && r.right <= m.right + 1 && r.bottom <= m.bottom + 1),
            title:(document.getElementById('wtitle') || {}).textContent || '' }; });
+/* 2026-10-04 (layout): where the white and the view's container sit. panelL / panelR: the white's distance from the sidebar
+   and from the dock (or the main area's edge); cw: the container's width; cl / cr: its insets in the white (cr counts the
+   list's scrollbar, sb); head: the heading's offset from the container's edge (16, the rows' own gutter) */
+const geoOf = p => p.evaluate(() => {
+  const app = document.getElementById('app'), cal = app.classList.contains('v-cal'), lb = document.getElementById('listbody'), cp = document.querySelector('#calcol .calpanel');
+  const panel = (cal ? cp : document.getElementById('listcol')).getBoundingClientRect(), nav = document.getElementById('nav').getBoundingClientRect();
+  const dock = document.getElementById('chats'), m = document.getElementById('main').getBoundingClientRect();
+  const edge = dock.offsetParent && !app.classList.contains('dock-over') ? dock.getBoundingClientRect().left : m.right;
+  let left, right, sb = 0;
+  if (cal){ const r = cp.getBoundingClientRect(), cs = getComputedStyle(cp); left = r.left + parseFloat(cs.paddingLeft) - 16; right = r.right - parseFloat(cs.paddingRight) + 16; }
+  else { const r = lb.getBoundingClientRect(), cs = getComputedStyle(lb); sb = lb.offsetWidth - lb.clientWidth; left = r.left + parseFloat(cs.paddingLeft); right = r.left + lb.clientWidth - parseFloat(cs.paddingRight); }
+  const h2 = document.querySelector('#chead h2').getBoundingClientRect();
+  return { panelL:Math.round(panel.left - nav.right), panelR:Math.round(edge - panel.right), panelW:Math.round(panel.width), sb, cw:Math.round(right - left),
+           cl:Math.round(left - panel.left), cr:Math.round(panel.right - right), head:Math.round(h2.left - left), win:L.win || '' };
+});
 async function shot(p, name){ await p.screenshot({ path: path.join(SHOTS, name + '.png') }); }
 let fails = 0;
 function ok(cond, msg){ console.log((cond ? 'PASS ' : 'FAIL ') + msg); if (!cond) fails++; }
 async function done(){ if (browser) await browser.close(); console.log(fails ? fails + ' FAILED' : 'ALL PASS'); process.exitCode = fails ? 1 : 0; }
 
 const ev = (p, f, a) => p.evaluate(f, a);
+/* an account of its own that follows nobody, beside the one 'me' account join() makes (2026-10-04: Home is for accounts only) */
+const guest = (p, name, handle) => p.evaluate(([n, h]) => { ACCTS[h] = blankAcct({ displayName:n, handle:h, bio:'', skills:[], cities:[], city:'' }); useAcct(h); }, [name, handle]).then(() => p.waitForTimeout(350));
 async function join(p, name, handle){
   await p.evaluate(() => loginDialog()); await p.waitForTimeout(150);
   await p.fill('#pf-name', name); await p.fill('#pf-handle', handle); await p.click('#pfsave'); await p.waitForTimeout(300);
@@ -160,8 +183,8 @@ async function overflowEverywhere(p, label){
   /* ---------------- phone ---------------- */
   const p = await ctx('phone');
   await open(p, '', true);
-  // open event → Going (logged out → join → Going on), from an event in Home's activity
-  await p.tap('#listbody .fev .fct >> nth=0'); await p.waitForTimeout(250);
+  // open event → Going (logged out → join → Going on), from a square on Explore, where a visitor lands
+  await p.tap('#listbody .srow .card2 >> nth=0'); await p.waitForTimeout(250);
   const e1 = await ev(p, () => S.stack[0].id);
   await p.tap('#evbar [data-act="v-going"]'); await p.waitForTimeout(200);
   await p.fill('#pf-name', 'Leo Park'); await p.fill('#pf-handle', 'leo'); await p.tap('#pfsave'); await p.waitForTimeout(300);
@@ -223,7 +246,7 @@ async function overflowEverywhere(p, label){
   /* ---------------- desktop ---------------- */
   const d = await ctx('desk');
   await open(d, '', true);
-  await pick(d, '#listbody .fev .fct >> nth=1'); await d.waitForTimeout(200);
+  await pick(d, '#listbody .srow .card2 >> nth=1'); await d.waitForTimeout(200);
   const e2 = await ev(d, () => S.stack[0].id);
   await join(d, 'Jonas Berg', 'jonas');
   await d.click('#dscroll .actbar [data-act="v-going"]'); await d.waitForTimeout(200);
@@ -321,9 +344,9 @@ async function overflowEverywhere(p, label){
     await open(f, '', true);
     const pb = await rb(f, '#previewbar');
     ok(!!pb && Math.abs(pb.w - w) < 2 && await ev(f, () => !!document.querySelector('#previewbar [data-act="join"]')), w + ': logged out, the preview bar spans the bottom with Join free');
-    ok(await ev(f, () => !document.querySelector('#chead .seg')), w + ': Home has no view switch');
+    /* 2026-10-04: logged out there is no Home — an old Home link lands on Explore */
     await f.goto(URL + '#/home?view=calendar'); await f.waitForTimeout(400);
-    ok(await ev(f, () => location.hash === '#/home' && !document.getElementById('app').classList.contains('v-cal')), w + ': an old #/home?view=calendar link lands on Home');
+    ok(await ev(f, () => location.hash === '#/explore' && S.folder.kind === 'explore' && !document.getElementById('app').classList.contains('v-cal')), w + ': logged out, an old #/home?view=calendar link lands on Explore');
     await f.evaluate(() => { const l = document.getElementById('listbody'); l.scrollTop = l.scrollHeight; }); await f.waitForTimeout(150);
     const last = await ev(f, () => { const els = document.querySelectorAll('#listbody .row, #listbody .card2, #listbody .fitem, #listbody .fend'); return els.length ? els[els.length - 1].getBoundingClientRect().bottom : 0; });
     ok(last <= (await rb(f, '#previewbar')).top + 1, w + ': the last row/card is above the preview bar');
@@ -333,20 +356,25 @@ async function overflowEverywhere(p, label){
       ok((await rb(f, '#evbar')).bottom <= (await rb(f, '#previewbar')).top + 1, 'phone: the event verb bar is not covered by the preview bar');
       await f.evaluate(() => toast('Test', 'toast')); await f.waitForTimeout(100);
       ok((await rb(f, '#toasts .toast')).bottom <= (await rb(f, '#evbar')).top + 1, 'phone: toasts stack above both bars');
+      await f.evaluate(() => useAcct('demo')); await f.waitForTimeout(300);
+      await f.goto(URL + '#/home?view=calendar'); await f.waitForTimeout(400);
+      ok(await ev(f, () => location.hash === '#/home' && !document.getElementById('app').classList.contains('v-cal') && !document.querySelector('#chead .seg')), 'phone: logged in, an old #/home?view=calendar link lands on Home, which has no view switch');
     } else {
       ok(await ev(f, () => !document.getElementById('tg-left') && document.getElementById('nav').getBoundingClientRect().width >= 190), w + ': sidebar always visible, no toggle');
       await join(f, 'Mia Lind', 'mialind');
       ok(!(await rb(f, '#previewbar')), w + ': the preview bar goes once logged in');
+      await f.goto(URL + '#/home?view=calendar'); await f.waitForTimeout(400);
+      ok(await ev(f, () => location.hash === '#/home' && !document.getElementById('app').classList.contains('v-cal') && !document.querySelector('#chead .seg')), w + ': logged in, an old #/home?view=calendar link lands on Home, which has no view switch');
       await f.evaluate(() => doLogout()); await f.waitForTimeout(200);
       await f.evaluate(() => loginDialog()); await f.waitForTimeout(150);
       await f.click('.dlg [data-act="useacct"][data-id="demo"]'); await f.waitForTimeout(300);
       await f.click('#tg-right'); await f.waitForTimeout(200);
       await f.click('.chrow[data-id="c-kai"]'); await f.waitForTimeout(200);
       ok(await ev(f, () => document.getElementById('nav').getBoundingClientRect().width >= 190 && !!document.querySelector('#chats .conv')), w + ': sidebar stays with the chat dock open');
-      /* open an event: its window sits between the sidebar and the dock, over the list, covering neither */
+      /* open an event: its window sits between the sidebar and the dock, covering neither */
       if (w >= 1280){ await pick(f, '#listbody .fev .fct >> nth=0'); await f.waitForTimeout(250); }
       if (w >= 1280) ok(await ev(f, () => { const wr = document.getElementById('win').getBoundingClientRect(), dk = document.getElementById('chats').getBoundingClientRect(), nv = document.getElementById('nav').getBoundingClientRect();
-        return !document.getElementById('win').hidden && S.stack.length === 1 && wr.width >= 480 && wr.left >= nv.right && wr.right <= dk.left; }), w + ': the window opens between the sidebar and the chat dock');
+        return !document.getElementById('win').hidden && S.stack.length === 1 && wr.width >= 440 && wr.left >= nv.right && wr.right <= dk.left; }), w + ': the window opens between the sidebar and the chat dock');
     }
     ok((await overflow(f)) <= 0, w + ': no overflow');
     console.log(w + ' feedback errors', f.errors); ok(!f.errors.length, w + ': no console errors');
@@ -443,11 +471,10 @@ async function overflowEverywhere(p, label){
     const c = await ctx('desk');
     await open(c, '', true);
     await join(c, 'Win Tester', 'wintest');
-    /* the list is one column, centred between the sidebar and the right edge (no dock) */
+    /* 2026-10-04 (layout): the white spans the centre; Home's container is 640, centred in it (no dock) */
     await c.goto(URL + '#/home'); await c.waitForTimeout(450);
-    const col = await ev(c, () => { const l = document.getElementById('cbody').getBoundingClientRect(), n = document.getElementById('nav').getBoundingClientRect(), m = document.getElementById('main').getBoundingClientRect();
-      return { w:Math.round(l.width), left:Math.round(l.left - n.right), right:Math.round(m.right - l.right) }; });
-    ok(col.w === 680 && Math.abs(col.left - col.right) <= 10, 'window: at 1440 the list is one 680 column, centred between the sidebar and the edge ' + JSON.stringify(col));
+    const col = await geoOf(c);
+    ok(col.panelL === 8 && col.panelR === 8 && col.cw === 640 && Math.abs(col.cl - col.cr) <= 1, 'window: at 1440 the white spans the centre and Home sits in a centred 640 container ' + JSON.stringify(col));
     for (const [name, h, sel] of [['home', '#/home', '#listbody .fev .fct'], ['explore section', '#/explore/soon', '#listbody .row[data-type="event"]'],
         ['search', '#/search?q=burn', '#listbody .row[data-type="event"]'], ['people → person', '#/explore/people', '#listbody .row'], ['horizons', '#/explore/horizons', '#listbody .row[data-type="horizon"]']]){
       await c.goto(URL + h); await c.waitForTimeout(450);
@@ -529,7 +556,7 @@ async function overflowEverywhere(p, label){
     await pick(c, '#listbody .fev .fct >> nth=0'); await c.waitForTimeout(350);
     const g = await ev(c, () => { const w = document.getElementById('win').getBoundingClientRect(), n = document.getElementById('nav').getBoundingClientRect(), d = document.getElementById('chats').getBoundingClientRect(), m = document.getElementById('main').getBoundingClientRect();
       return { open:!document.getElementById('win').hidden, w:Math.round(w.width), clearNav:w.left >= n.right - 1, clearDock:w.right <= d.left + 1, inside:w.left >= m.left && w.right <= m.right && w.bottom <= m.bottom }; });
-    ok(g.open && g.w >= 480 && g.clearNav && g.inside && (kind === 'tab' || g.clearDock), kind + ' + dock: the window opens clear of the sidebar' + (kind === 'tab' ? '' : ' and the dock') + ', inside the main area ' + JSON.stringify(g));
+    ok(g.open && g.w >= 440 && g.clearNav && g.inside && (kind === 'tab' || g.clearDock), kind + ' + dock: the window opens clear of the sidebar' + (kind === 'tab' ? '' : ' and the dock') + ', inside the main area ' + JSON.stringify(g));
     /* the dock and the window: whichever you touched last is in front */
     const dk = await c.locator('#chats').boundingBox();
     await c.click('#chats', { position:{ x:dk.width - 12, y:dk.height - 4 } }); await c.waitForTimeout(150);
@@ -615,7 +642,10 @@ async function overflowEverywhere(p, label){
   for (const kind of ['desk', 'phone']){
     const c = await ctx(kind);
     await open(c, '#/home', true);
-    /* logged out: the public activity, newest first, with the call outs popping */
+    /* 2026-10-04: logged out there is no Home; an account that follows nobody sees the network's activity there */
+    ok(await ev(c, () => !S.loggedIn && S.folder.kind === 'explore' && location.hash === '#/explore'), kind + ': logged out, #/home lands on Explore');
+    await guest(c, 'Ola Open', 'olaopen');
+    /* following nobody: the public activity, newest first, with the call outs popping */
     const pub = await ev(c, () => {
       const its = [...document.querySelectorAll('#listbody .fitem[data-ts]')], ts = its.map(x => x.getAttribute('data-ts'));
       const co = document.querySelector('#listbody .costrip .fco'), st = co && getComputedStyle(co), lb = getComputedStyle(document.getElementById('listbody'));
@@ -627,7 +657,7 @@ async function overflowEverywhere(p, label){
                verbs:!!document.querySelector('#listbody .fev [data-act="v-going"]') && !!document.querySelector('#listbody .fev [data-act="v-interested"]'),
                times:[...document.querySelectorAll('#listbody .fitem .ftime')].slice(0, 6).map(t => t.textContent) };
     });
-    ok(pub.n >= 20 && pub.sorted, kind + ': logged out, Home is the network\'s activity, newest first (' + pub.n + ' entries)');
+    ok(pub.n >= 20 && pub.sorted, kind + ': following nobody, Home is the network\'s activity, newest first (' + pub.n + ' entries)');
     ok(pub.bands[0] && /call outs/i.test(pub.bands[0]) && pub.bands.indexOf('Today') > 0 && pub.bands.indexOf('Yesterday') > pub.bands.indexOf('Today'), kind + ': open call outs on top, then day bands ' + JSON.stringify(pub.bands));
     ok(pub.times.every(t => /^(now|\d+m ago|\d+h ago|yesterday|\d+ days ago|\d+ \w{3})$/.test(t)), kind + ': relative times read as ages ' + JSON.stringify(pub.times));
     ok(pub.co && lum(pub.coBg) < .12 && lum(pub.coFg) > .9 && lum(pub.listBg) > .9 && pub.coSize >= 1.3 * pub.bodySize, kind + ': a call out is the inverted card, the ask at 20 (the one headline size)');
@@ -679,6 +709,7 @@ async function overflowEverywhere(p, label){
   for (const kind of ['desk', 'phone']){
     const c = await ctx(kind);
     await open(c, '#/home', true);
+    await guest(c, 'Ned Open', 'nedopen');
     const a11y = () => ev(c, () => [...document.querySelectorAll('#listbody [role="button"]')].filter(x => x.querySelector('button, a, [role="button"]')).length +
                                    document.querySelectorAll('#listbody button button').length);
     const noDup = () => ev(c, () => { const strip = homeCallouts().map(x => x.id);
@@ -686,12 +717,12 @@ async function overflowEverywhere(p, label){
       return { strip, shown:[...document.querySelectorAll('#listbody .costrip .fco')].map(x => x.getAttribute('data-id')), count:(document.querySelector('#listbody .coband .cnt') || {}).textContent, dup: stream.filter(x => strip.indexOf(x) >= 0) }; });
     let nd = await noDup();
     ok(nd.strip.length >= 2 && nd.shown.length === 1 && nd.shown[0] === nd.strip[0] && nd.count === '1 of ' + nd.strip.length && !nd.dup.length,
-       kind + ': logged out, the open call outs are one at a time in their band ("1 of N"), none repeated in the stream ' + JSON.stringify(nd));
+       kind + ': following nobody, the open call outs are one at a time in their band ("1 of N"), none repeated in the stream ' + JSON.stringify(nd));
     await c.click('#listbody .coband [data-act="costep"][data-id="1"]'); await c.waitForTimeout(300);
     const nd2 = await noDup();
     ok(nd2.shown[0] === nd.strip[1] && nd2.count === '2 of ' + nd.strip.length, kind + ': › steps to the next call out ' + JSON.stringify(nd2));
     await c.click('#listbody .coband [data-act="costep"][data-id="-1"]'); await c.waitForTimeout(300);
-    ok((await a11y()) === 0, kind + ': no role=button wrapper around real buttons on Home (logged out)');
+    ok((await a11y()) === 0, kind + ': no role=button wrapper around real buttons on Home (following nobody)');
     /* the demo follows four people: what they are going to in the next three weeks, by date, who in words */
     await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
     const up = await ev(c, () => { const rows = [...document.querySelectorAll('#listbody .fup .fuprow')];
@@ -743,9 +774,9 @@ async function overflowEverywhere(p, label){
       await c.evaluate(() => runCmd('new-callout')); await c.waitForTimeout(250);
       ok(await ev(c, h => document.getElementById('co-e').value === h && !!document.querySelector('#co-s option[value="CAMP OPERATIONS/KITCHEN & COOKING"]'), host), kind + ': … otherwise your next hosted event; the form has a skill');
       await c.evaluate(() => closeDialogs());
-      /* width: the list is one 680 column; nothing else beside it */
+      /* width: the white spans the centre, Home's container is 640; nothing else beside it */
       await c.evaluate(() => { closeDialogs(); goFolder({ kind:'home' }); S.stack = []; render(); }); await c.waitForTimeout(300);
-      ok(await ev(c, () => S.folder.kind === 'home' && document.getElementById('listcol').offsetWidth === 680 && document.getElementById('win').hidden), kind + ': at 1440 the list is one 680 column, nothing open');
+      ok(await ev(c, () => S.folder.kind === 'home' && document.getElementById('listcol').offsetWidth === document.getElementById('center').offsetWidth && document.getElementById('win').hidden) && (await geoOf(c)).cw === 640, kind + ': at 1440 Home is a 640 container in the white, nothing open');
       await shot(c, 'v1-social-home-desk');
     } else {
       await c.goto(URL + '#/explore'); await c.waitForTimeout(450);
@@ -802,8 +833,9 @@ async function overflowEverywhere(p, label){
     await c.goto(URL + '#/home'); await c.waitForTimeout(400);
     ok(await ev(c, () => !homeCallouts().some(x => calloutOf(x.id).title === 'Second cook') &&
        /replied to Second cook/.test((document.querySelector('#listbody .fyou .fsent') || {}).textContent || '')), kind + ': a call out you replied to leaves the strip, and your line says you replied');
-    /* logged out, Home's tile counts the reply and shows it */
+    /* to someone else (following nobody), Home's tile counts the reply and shows it */
     await c.evaluate(() => doLogout()); await c.waitForTimeout(250);
+    await guest(c, 'Ida Look', 'idalook');
     await c.evaluate(() => { COIDX = homeCallouts().findIndex(x => calloutOf(x.id).title === 'Second cook'); render(); }); await c.waitForTimeout(200);
     const tile = await ev(c, () => { const t = document.querySelector('#listbody .costrip .cotile'); if (!t || calloutOf(t.getAttribute('data-id')).title !== 'Second cook') return null;
       return { n:(t.querySelector('.fcof .corall') || {}).textContent, who:[...t.querySelectorAll('.corep .corwho')].map(b => b.textContent), txt:(t.querySelector('.corep .cort') || {}).textContent }; });
@@ -1101,13 +1133,18 @@ async function overflowEverywhere(p, label){
     else ok(await ev(c, () => [...document.querySelectorAll('#navbody .nsubrow .nlab')].map(x => x.textContent).join('|') === 'Events|Event Horizons|Call outs|People' && !!document.querySelector('#navbody .nrow.sel .nlab') && document.querySelector('#navbody .nrow.sel').textContent.indexOf('Explore') >= 0),
        kind + ': Explore keeps its four kinds under it in the sidebar, Explore lit');
     if (kind !== 'phone'){
-      /* a shelf that holds more than fits has ‹ ›, and › moves it along by whole squares */
-      const sh = await ev(c, () => { const s = [...document.querySelectorAll('#listbody .shelf.more')][0]; return s ? s.querySelector('.srow').getAttribute('data-shelf') : null; });
-      ok(!!sh, kind + ': a shelf with more squares than fit offers ‹ ›');
-      if (sh){
-        await c.click('#listbody .shelf .shstep [data-act="shelfstep"][data-shelf="' + sh + '"][data-id="1"]'); await c.waitForTimeout(700);
-        ok(await ev(c, id => document.querySelector('#listbody .srow[data-shelf="' + id + '"]').scrollLeft > 100, sh), kind + ': › steps along the shelf');
-      }
+      /* 2026-10-04 (layout): on a desktop or tablet each section is one row of whole squares that fills the container —
+         nothing to scroll sideways, nothing cut at the edge, the same columns in every section; Show all when there is more */
+      const fit = await ev(c, () => { const lb = document.getElementById('listbody'), cs = getComputedStyle(lb), r = lb.getBoundingClientRect();
+        const left = r.left + parseFloat(cs.paddingLeft) + 16, right = r.left + lb.clientWidth - parseFloat(cs.paddingRight) - 16;
+        const secs = [...document.querySelectorAll('#listbody .shelf')].map(sh => { const row = sh.querySelector('.srow'), cards = [...row.querySelectorAll('.card2')].map(x => x.getBoundingClientRect()), id = row.getAttribute('data-shelf');
+          return { id, n:cards.length, total:homeSections().find(x => x.id === id).items.length, xs:cards.map(q => Math.round(q.left)), right:cards.length ? Math.round(cards[cards.length - 1].right) : 0,
+                   scroll:row.scrollWidth - row.clientWidth, oneRow:cards.every(q => Math.abs(q.top - cards[0].top) < 1), all:!!sh.querySelector('.showall') }; });
+        return { cols:L.fit.cols, left:Math.round(left), right:Math.round(right), secs, arrows:document.querySelectorAll('#listbody [data-act="shelfstep"]').length }; });
+      const full = fit.secs.filter(x => x.n === fit.cols);
+      ok(fit.cols >= 3 && !fit.arrows && fit.secs.every(x => x.scroll <= 0 && x.oneRow && x.n === Math.min(x.total, fit.cols) && x.all === (x.total > fit.cols) && x.xs[0] === fit.left)
+         && full.length >= 1 && full.every(x => x.right <= fit.right && fit.right - x.right < fit.cols && x.xs.join() === full[0].xs.join()),
+         kind + ': each section is one row of whole squares filling the container, the same columns in every section, Show all for the rest ' + JSON.stringify(fit));
     }
     if (kind === 'desk'){
       /* the keyboard walks the squares, shelf by shelf, and the open one is lit */
@@ -1420,6 +1457,115 @@ async function overflowEverywhere(p, label){
     await c.click('#acct button'); await c.waitForTimeout(250);
     ok(await ev(c, () => DLGS.length === 1), 'desk: the toolbar Log in opens the way in');
     ok(!c.errors.length, 'desk: no console errors (toolbar Log in) ' + c.errors.join(' '));
+  }
+
+  /* ---------------- 2026-10-04 (layout): logged out there is no Home ---------------- */
+  for (const kind of ['desk', 'phone']){
+    const c = await ctx(kind);
+    /* anything that ever showed Home while logged out — the heading, the title, a sidebar row, a tab — even for a frame */
+    await c.addInitScript(() => {
+      window.__home = [];
+      new MutationObserver(recs => { for (const r of recs){
+        const host = r.target.nodeType === 1 ? r.target : r.target.parentNode;
+        if (!host || !host.closest || !host.closest('title, #chead, #wintitle, #appbar, #tabbar, #navbody')) continue;
+        for (const n of r.addedNodes){
+          const el = n.nodeType === 1 ? n : null, txt = (n.textContent || '').trim();
+          if ((el && (el.matches('[data-kind="home"], [data-id="home"]') || el.querySelector('[data-kind="home"], [data-id="home"]'))) ||
+              (host.closest('title, #wintitle') && /^(— )?Home\b/.test(txt)) ||
+              (el && [el].concat([...el.querySelectorAll('h2, .ab-title')]).some(h => h.matches('h2, .ab-title') && h.textContent.trim() === 'Home')))
+            window.__home.push(host.id || host.tagName);
+        }
+      } }).observe(document, { subtree:true, childList:true, characterData:true });
+    });
+    await open(c, '#/home', true);
+    const st = () => ev(c, () => ({ hash:location.hash, folder:S.folder.kind, tab:S.tab, logged:S.loggedIn, nav:!!document.querySelector('#navbody [data-kind="home"]'),
+      tabs:[...document.querySelectorAll('#tabbar .tab')].map(t => t.getAttribute('data-id') || 'new'), on:(document.querySelector('#tabbar .tab.on') || { getAttribute:() => '' }).getAttribute('data-id'), flash:window.__home.slice() }));
+    const lo = await st();
+    ok(!lo.logged && lo.hash === '#/explore' && lo.folder === 'explore' && !lo.nav && lo.tabs.indexOf('home') < 0 && !lo.flash.length &&
+       (kind === 'desk' || (lo.tab === 'explore' && lo.tabs.join('|') === 'explore|new|chats|you' && lo.on === 'explore')),
+       kind + ': logged out, #/home lands on Explore — no Home in the sidebar or the tabs, never drawn even for a moment ' + JSON.stringify(lo));
+    await c.goto(URL); await c.waitForTimeout(450);
+    const l2 = await st();
+    ok(l2.hash === '#/explore' && !l2.flash.length, kind + ': logged out, the bare link lands on Explore ' + JSON.stringify(l2));
+    if (kind === 'desk') await shot(c, 'layout-logged-out-landing');
+    /* Log in from where a visitor lands: Home appears and is where you are; it stays the landing */
+    if (kind === 'desk') await c.click('#acct button'); else await c.tap('#previewbar [data-act="loginpick"]');
+    await c.waitForTimeout(250);
+    await c.click('.dlg [data-act="useacct"][data-id="demo"]'); await c.waitForTimeout(450);
+    const li = await st();
+    ok(li.logged && li.hash === '#/home' && li.folder === 'home' && (kind === 'desk' ? li.nav : li.tabs.join('|') === 'home|explore|new|chats|you' && li.on === 'home'),
+       kind + ': logging in from the landing goes Home, and Home is in the ' + (kind === 'desk' ? 'sidebar' : 'tabs') + ' ' + JSON.stringify(li));
+    await c.goto(URL); await c.waitForTimeout(500);
+    ok((await st()).hash === '#/home', kind + ': logged in, the bare link lands on Home');
+    /* joining on the way to something keeps you there */
+    await c.evaluate(() => doLogout()); await c.waitForTimeout(250);
+    const lg = await st();
+    ok(!lg.logged && lg.hash === '#/explore' && !lg.nav && lg.tabs.indexOf('home') < 0, kind + ': logging out lands on Explore, Home gone ' + JSON.stringify(lg));
+    await c.goto(URL + '#/explore/events'); await c.waitForTimeout(400);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    ok((await st()).hash === '#/explore/events', kind + ': logging in anywhere else keeps you where you are');
+    ok(!c.errors.length, kind + ': no console errors (no Home logged out) ' + c.errors.join(' '));
+  }
+
+  /* ---------------- 2026-10-04 (layout): the white spans the centre; each view sits in its container; the window steps the list aside ---------------- */
+  for (const [w, h] of [[1440, 900], [1920, 1080], [1280, 800]]){
+    const c = await ctx('desk', { viewport:{ width:w, height:h } });
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    await c.evaluate(() => { S.rightOpen = false; render(); }); await c.waitForTimeout(200);
+    const want = { '#/home':640, '#/explore/events':720, '#/explore/people':720, '#/explore/callouts':720, '#/search?q=burn':720, '#/explore/soon':720, '#/going':720,
+                   '#/explore':1120, '#/explore/events?view=calendar':1120 };
+    const got = {};
+    for (const hh of Object.keys(want)){ await c.goto(URL + hh); await c.waitForTimeout(350); got[hh] = await geoOf(c); }
+    const bad = Object.keys(want).filter(k => { const g = got[k];
+      return !(g.panelL === 8 && g.panelR === 8 && g.cw === Math.min(want[k], g.panelW - g.sb) && (Math.abs(g.cl - g.cr) <= 1 || g.cl === 0) && g.head === 16); });
+    ok(!bad.length, w + ': the white spans the centre; Home sits in 640, lists in 720, Explore\'s overview and the calendar in 1120 — centred, the heading on the container\'s edge ' + JSON.stringify(bad.map(k => [k, got[k]])));
+    if (w === 1440){ await c.goto(URL + '#/explore'); await c.waitForTimeout(350); await shot(c, 'layout-1440-explore'); }
+    if (w === 1920){ await c.goto(URL + '#/home'); await c.waitForTimeout(350); await shot(c, 'layout-1920-home'); await overflowEverywhere(c, 'desktop 1920'); }
+    /* the window steps the list aside: beside it where there is room (the pair centred when there is more), over the centre only where there isn't */
+    for (const dock of [false, true]){
+      await c.goto(URL + '#/home'); await c.waitForTimeout(350);
+      await c.evaluate(d => { S.rightOpen = d; S.stack = []; render(); document.getElementById('listbody').scrollTop = 0; }, dock); await c.waitForTimeout(250);
+      await pick(c, '#listbody .fuprow .flink >> nth=0'); await c.waitForTimeout(400);
+      const g = await geoOf(c);
+      const wg = await ev(c, () => { const wr = document.getElementById('win').getBoundingClientRect(), lb = document.getElementById('listbody'), cs = getComputedStyle(lb), r = lb.getBoundingClientRect(), ce = document.getElementById('center').getBoundingClientRect();
+        const right = r.left + lb.clientWidth - parseFloat(cs.paddingRight);
+        /* under the middle of every entry in view is the list, never the window */
+        const hits = [...document.querySelectorAll('#listbody .fitem, #listbody .fuprow, #listbody .band')].filter(x => { const q = x.getBoundingClientRect(); return q.top > r.top + 8 && q.bottom < r.bottom - 8; })
+          .map(x => { const q = x.getBoundingClientRect(), el = document.elementFromPoint((q.left + q.right) / 2, (q.top + q.bottom) / 2); return !!el && !!el.closest('#listbody'); });
+        return { open:!document.getElementById('win').hidden, ww:Math.round(wr.width), gap:Math.round(wr.left - right), rm:Math.round(ce.right - wr.right), hits:hits.length, under:hits.filter(x => !x).length,
+                 cover:Math.round(wr.left) === Math.round(ce.left) && Math.round(wr.right) === Math.round(ce.right) }; });
+      const tag = w + (dock ? ' + dock' : '');
+      if (g.win === 'side'){
+        ok(wg.open && wg.ww >= 440 && wg.ww <= 720 && wg.gap >= 16 && g.cw >= 360 && g.cw <= 640 && wg.hits >= 3 && !wg.under && (g.cw === 640 || wg.ww === 440) && Math.abs(g.cl - wg.rm) <= 1,
+           tag + ': the window opens beside the list, which steps aside and stays whole and clickable ' + JSON.stringify([g, wg]));
+      } else ok(w === 1280 && dock && wg.open && wg.cover, tag + ': with no room for both, the window takes the centre ' + JSON.stringify([g, wg]));
+      if (w === 1440 && dock) await shot(c, 'layout-1440-home-window-dock');
+      await c.click('#dbar [data-act="closewin"]'); await c.waitForTimeout(300);
+      ok((await geoOf(c)).cw === 640 && !(await geoOf(c)).win, tag + ': closing the window gives the list back its centred 640');
+    }
+    if (w === 1440){
+      /* 1440 + dock: the window leaves the list a real column (B2 left ~50px) */
+      await c.evaluate(() => { S.rightOpen = true; render(); }); await c.waitForTimeout(250);
+      await pick(c, '#listbody .fuprow .flink >> nth=1'); await c.waitForTimeout(350);
+      ok((await geoOf(c)).cw >= 360, '1440 + dock: with an event open, the list keeps a column of at least 360');
+    }
+    ok(!c.errors.length && (await overflow(c)) <= 0, w + ': no console errors, no overflow (layout) ' + c.errors.join(' '));
+  }
+  {
+    /* tablet: the container is the white; the overview three squares wide; the window is the centre */
+    const c = await ctx('tab');
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    const hm = await geoOf(c);
+    await c.goto(URL + '#/explore'); await c.waitForTimeout(400);
+    const ex = await geoOf(c), cols = await ev(c, () => L.fit && L.fit.cols);
+    await shot(c, 'layout-768-explore');
+    await c.click('#listbody .srow .card2 >> nth=0'); await c.waitForTimeout(350);
+    const wv = await ev(c, () => { const wr = document.getElementById('win').getBoundingClientRect(), ce = document.getElementById('center').getBoundingClientRect(); return Math.round(wr.left) === Math.round(ce.left) && Math.round(wr.width) === Math.round(ce.width); });
+    ok(hm.cl === 0 && hm.cw === hm.panelW - hm.sb && hm.head === 16 && ex.cw === ex.panelW - ex.sb && cols === 3 && wv,
+       '768: Home and Explore fill the white, the overview is three squares wide, an opened event takes the centre ' + JSON.stringify([hm, ex, cols, wv]));
+    ok(!c.errors.length && (await overflow(c)) <= 0, '768: no console errors, no overflow (layout)');
   }
 
   /* ---------------- tablet ---------------- */

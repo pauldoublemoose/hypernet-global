@@ -2,7 +2,7 @@
 // That is what lets `next build` run with no secrets at all: a missing key
 // only fails the request that needs it, with a message that names the key.
 //
-// Where each key comes from: .env.example and docs/research/infra-v1.md.
+// Where each key comes from: .env.example and docs/infra.md.
 
 export class ConfigError extends Error {
   constructor(public readonly key: string) {

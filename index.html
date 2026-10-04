@@ -2576,7 +2576,7 @@ function missingHTML(path){
   var h = '<div class="page missing"><span class="r-ic" style="width:64px;height:64px;flex-basis:64px">'+ic(kind === 'horizon' ? 'horizon' : kind === 'callout' ? 'callout' : kind === 'person' ? 'user' : kind === 'chats' ? 'chat' : 'star', 30)+'</span>' +
     '<div class="pname" style="margin-top:16px">'+esc(t)+'</div><div class="acts">';
   if (kind === 'chats' && !S.loggedIn) h += '<button class="btn primary" data-act="login">'+esc(joinLabel())+'</button>';
-  h += '<button class="btn'+(kind === 'chats' && !S.loggedIn ? '' : ' primary')+'" data-act="gohome">'+ic('home')+'Home</button>';
+  h += '<button class="btn'+(kind === 'chats' && !S.loggedIn ? '' : ' primary')+'" data-act="gohome">'+(S.loggedIn ? ic('home')+'Home' : ic('explore')+'Explore')+'</button>';
   return h + '</div></div>';
 }
 var KINDNAME = { event:'Event', horizon:'Event Horizon', person:'Person', callout:'Call out', missing:'' };
@@ -3750,7 +3750,7 @@ function renderNav(){
   }
   /* Home, then Explore with its four kinds under it (a Show all list lights the kind it belongs to) */
   var f = S.folder, shelfKind = f.kind === 'shelf' ? (EVENTSHELVES.test(f.id || '') ? 'events' : null) : null;
-  h += navRow({kind:'home'}, ic('home'), 'Home', { cls:'dup-tab' });
+  if (S.loggedIn) h += navRow({kind:'home'}, ic('home'), 'Home', { cls:'dup-tab' });
   h += navRow({kind:'explore'}, ic('explore'), 'Explore', { cls:'dup-tab', sel: isOverview() || (f.kind === 'shelf' && !shelfKind) });
   EXPLOREKINDS.forEach(function(k){
     h += navRow({kind:'explore', id:k[0]}, ic(k[2], 16), k[1], { cls:'dup-tab nsubrow', sel: (f.kind === 'explore' && f.id === k[0]) || shelfKind === k[0] });
@@ -3847,7 +3847,8 @@ function renderAppbar(){
 }
 function renderTabbar(){
   var un = unreadChats();
-  var tabs = [['home','home','Home'],['explore','explore','Explore'],['new','plus','New'],['chats','chat','Chats'],['you','user','You']];
+  var tabs = [['home','home','Home'],['explore','explore','Explore'],['new','plus','New'],['chats','chat','Chats'],['you','user','You']]
+    .filter(function(t){ return S.loggedIn || t[0] !== 'home'; });
   $('tabbar').innerHTML = tabs.map(function(t){
     if (t[0] === 'new') return '<button class="tab new" data-act="newsheet" aria-label="New"><span class="tnew">'+ic('plus',22)+'</span>New</button>';
     return '<button class="tab'+(S.tab===t[0]?' on':'')+'" data-act="tab" data-id="'+t[0]+'" aria-current="'+(S.tab===t[0]?'page':'false')+'">' +
@@ -4148,6 +4149,9 @@ function logIn(){
   if (window.innerWidth >= 1680){ S.rightOpen = true; }
   closeDialogs();
   var p = S.pending; S.pending = null;
+  /* Home is the landing once you have an account: logging in from where a visitor lands (Explore's overview, nothing
+     open) goes Home; logging in on the way to doing something keeps you where you are */
+  if (!p && isOverview() && !S.stack.length && !S.phoneSearch){ goFolder({ kind:'home' }); S.tab = 'home'; }
   render();
   if (p) p();
 }
@@ -4157,7 +4161,7 @@ function doLogout(){
   S.loggedIn = false; S.acct = null; loadAcct(null); syncAcctPeople();
   S.chatOpen = null; S.rightOpen = false;
   var open = { home:1, explore:1, horizon:1, search:1, you:1 };
-  if (!open[S.folder.kind] || (S.folder.kind === 'horizon' && !validItem({ type:'horizon', id:S.folder.id }))) goFolder({ kind:'home' });
+  if (!open[S.folder.kind] || (S.folder.kind === 'horizon' && !validItem({ type:'horizon', id:S.folder.id }))) goFolder(landingFolder());
   S.stack = S.stack.filter(validItem);
   closeDialogs(); closePopup(); render();
   toast('Logged out', '');
@@ -5143,10 +5147,12 @@ function phoneBack(){
   if (S.folder.kind === 'search'){ leaveSearch(); S.phoneSearch = false; render(); return; }
   if (S.folder.kind !== tabRootFolder(S.tab).kind){ goFolder(tabRootFolder(S.tab)); render(); return; }
 }
-function tabRootFolder(t){ return { kind: t === 'explore' || t === 'chats' || t === 'you' ? t : 'home', id:null }; }
+/* logged out there is no Home (2026-10-04): Explore is where a visitor lands, and the root of what was Home's tab */
+function landingFolder(){ return S.loggedIn ? { kind:'home', id:null } : { kind:'explore', id:null }; }
+function tabRootFolder(t){ return t === 'explore' || t === 'chats' || t === 'you' ? { kind:t, id:null } : landingFolder(); }
 function tabOfFolder(f){
   var k = (f || S.folder).kind;
-  return /^(explore|shelf|horizon)$/.test(k) ? 'explore' : k === 'chats' ? 'chats' : /^(you|going|interested|hosting|promoted)$/.test(k) ? 'you' : 'home';
+  return /^(explore|shelf|horizon)$/.test(k) ? 'explore' : k === 'chats' ? 'chats' : /^(you|going|interested|hosting|promoted)$/.test(k) ? 'you' : S.loggedIn ? 'home' : 'explore';
 }
 /* each tab keeps its own place: switching back returns you there; tapping the tab you are on goes to its top */
 var TABMEM = {};
@@ -5399,7 +5405,7 @@ function shareLink(type, id){
 var SEARCHRET = null;
 function rememberPlace(){ SEARCHRET = { folder:S.folder, stack:S.stack.slice() }; }
 function leaveSearch(){
-  var r = SEARCHRET || { folder:{ kind:'home' }, stack:[] };
+  var r = SEARCHRET || { folder:landingFolder(), stack:[] };
   S.query = ''; SEARCHRET = null;
   goFolder(r.folder); S.stack = r.stack;
   var q = $('q'); if (q) q.value = '';
@@ -5462,7 +5468,7 @@ document.addEventListener('click', function(ev){
     case 'takeshift':    takeShift(id, +n.getAttribute('data-i')); break;
     case 'clearq':       { doSearch(''); var pq0 = $('pq'); if (pq0){ pq0.value = ''; pq0.focus(); } break; }
     case 'hzpast':       HZPAST[id] = !HZPAST[id]; render(); break;
-    case 'gohome':       if (L.phone) setTab('home'); else { goFolder({ kind:'home' }); render(); } break;
+    case 'gohome':       if (L.phone) setTab(S.loggedIn ? 'home' : 'explore'); else { goFolder(landingFolder()); render(); } break;
     case 'setview':  S.view[destKey()] = id; S.stack = []; render(); break;
     case 'row':      openItem(n.getAttribute('data-type'), id); break;
     case 'open':     openItem(n.getAttribute('data-type'), id, 'push'); break;
@@ -5770,8 +5776,8 @@ function hashOf(s){
   var top = s.stack[s.stack.length-1], p = [], path;
   if (top){
     path = itemPath(top);
-    var home = top.type === 'chat' ? 'chats' : 'home';
-    if (s.folder.kind !== home) p.push(['in', folderPath(s.folder)]);
+    var home = top.type === 'chat' ? { kind:'chats' } : landingFolder();
+    if (!sameFolder(s.folder, home)) p.push(['in', folderPath(s.folder)]);
   } else path = folderPath(s.folder);
   if (s.folder.kind === 'search' && s.q) p.push(['q', s.q]);
   var views = viewsOf(s.folder);
@@ -5971,6 +5977,8 @@ function startRoutes(){
    15. RENDER + BOOT
    ========================================================================= */
 function render(){
+  /* logged out there is no Home: whatever asked for it (a link, a tab, an old history entry) lands on Explore */
+  if (!S.loggedIn){ if (S.folder.kind === 'home') S.folder = { kind:'explore', id:null }; if (S.tab === 'home') S.tab = 'explore'; }
   L = computeLayout();
   noticeNewEvents();
   var app = $('app');

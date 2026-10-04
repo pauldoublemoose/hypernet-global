@@ -339,7 +339,7 @@
   HN.saveMyLook = function(){ return write('me', 'PATCH', '/api/me', function(){ return { look: PTHEME.self ? lookOut(PTHEME.self) : null }; }, 'your look'); };
   HN.logout = function(){
     return req('POST', '/api/auth/sign-out', {}).catch(function(){}).then(function(){ return HN.load(); }).then(function(d){
-      apply(d); S.chatOpen = null; S.rightOpen = false; goFolder({ kind:'home' }); closeDialogs(); closePopup(); render(); toast('Logged out', '');
+      apply(d); S.chatOpen = null; S.rightOpen = false; goFolder(landingFolder()); closeDialogs(); closePopup(); render(); toast('Logged out', '');
     }, function(err){ toast('Couldn’t log out', err.message); });
   };
 

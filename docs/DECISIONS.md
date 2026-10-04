@@ -374,3 +374,45 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
 - **2026-10-04 · Log in sits where you are.** Logged out, the toolbar's account place (top right, where your name and menu
   are once logged in) holds a Log in button; the preview bar keeps Join free + Log in. Partly supersedes 2026-09-27
   "the preview bar replaces the toolbar's Join". Phone unchanged (no toolbar; the preview bar has Log in).
+- **2026-10-04 · Logged out, there is no Home.** Owner: "Dont show home view when not logged in". A visitor lands on
+  Explore; Home is not in the sidebar or the phone's tabs (logged out the phone has four: Explore, New, Chats, You).
+  `#/home`, a bare link or an old history entry land on Explore before anything is drawn, and a window opened there
+  needs no `?in=explore` (Explore is the visitor's landing as Home is an account's). Joining or logging in from where a
+  visitor lands (Explore's overview, nothing open) goes Home, which is the landing from then on; joining on the way to
+  something (Going on an event, an Explore list) keeps you where you are. Logging out lands on Explore. The preview bar
+  stays. Supersedes the "logged out" half of 2026-10-01 "Home is the network's activity": the network's activity is
+  now what an account that follows nobody sees there.
+- **2026-10-04 · The white spans the centre; what it holds has a width (C).** Owner: "Make sure the white of the middle
+  spreads and the contents inside sit in a meaningful max width container … grid? one center column? different for
+  explore or home? Figure it out." Decided:
+  - The white panel takes everything between the sidebar and the chat dock, at every width; grey is only the frame.
+  - Inside it a view sits in one container, as wide as what the view is for — three widths on the 8 grid, no more:
+    **640 to read** (Home: one stream, read top to bottom; a reading measure doesn't grow with the screen), **720 to
+    scan** (rows: Explore's kinds, Show all, search, Going / Interested / Hosting / Promoted — wider than reading so a
+    row's meta line rarely clips, narrow enough that its date stays within a glance of its title), **1120 to browse**
+    (Explore's overview and every calendar: squares and days are what you look across; 7 × 160 a month). A narrower
+    screen gives each what there is; a tablet's container is the white itself.
+  - One edge: the heading and its tools, the calendar's bar, every band, row, square and the month grid keep to the
+    container, 16 inside it (the rows' own gutter). The heading moves with its view's container, so a title always
+    stands over its first column; bands stay sticky inside the container; the list's scrollbar is allowed for, so the
+    tools' right edge is the rows' right edge.
+  - Explore's overview is a grid, not shelves: each section is one row of whole squares (as many of at least 152 as the
+    container holds, 16 apart, all sections on the same columns), Show all for the rest. No sideways strips or ‹ › on a
+    desktop or tablet, nothing cut at the edge. The phone keeps its swiped shelves.
+  - At 1920 Home stays 640 in the middle of the white: the room beside it is not filler to fill but where the window
+    opens (below), and the wide views fill 1120 there.
+  Supersedes B2's "the list is one column of 680 (a calendar 960)".
+- **2026-10-04 · The list steps aside for the window (C).** Before, the window lay over the right of the centred list;
+  at 1440 with the chat dock open about 50px of the list stayed usable. Now:
+  - Opening something moves the list's container to the left of the white and opens the window beside it, 16 apart,
+    the full height of the centre; with more room than both need (1920) the list and the window are centred as a pair.
+  - The list gives up width before the window does — down to 360, where it already has its narrow layout (verbs under
+    the thing, the date under the title; a calendar keeps 640) — while the window keeps 440 to 720. 1440: list 640 +
+    window 492; 1440 with the dock: 384 + 440; 1280: 568 + 440; 1920: 640 + 720, centred.
+  - Where both don't fit (a tablet, 1280 with the dock open) the window is the centre: one thing at a time, the sidebar
+    and the dock beside it. A tablet's floating dock is room taken: the window keeps clear of it (1024), or, too narrow
+    for that (768), leaves its edge showing so it can be touched to come to the front.
+  - Still a window, not a reading pane: one at a time, its frame and title bar, drag it anywhere in the main area (the
+    list keeps its place), □ or a double-click to maximise, ×, Esc and back to close, whichever of window and dock you
+    touched last in front. Closing it gives the list back its centred width. The phone's sheet is unchanged.
+  Supersedes B2's "by default it sits over the right of the list (the list's left edge … stays in view)".

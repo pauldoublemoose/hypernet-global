@@ -134,6 +134,7 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .nrow .ncnt{ font:12px var(--sys); color:var(--dim); }
 .nrow:hover{ background:var(--hover); }
 .nrow.sel{ background:var(--sel); color:#fff; }
+.nrow.open{ background:var(--face-lt); box-shadow:inset 3px 0 0 var(--ink); font-weight:bold; }
 .nrow.sel .ic, .nrow.sel .ncnt, .nrow.sel .nsub{ color:var(--seldim); }
 .nrow.search{ cursor:default; padding-right:4px; margin-bottom:8px; }
 .nrow .nx{ width:36px; height:32px; display:grid; place-items:center; border:0; padding:0; background:transparent; color:#fff; }
@@ -2610,6 +2611,8 @@ function renderDetail(){
     $('app').classList.remove('has-evbar');
     return;
   }
+  /* something newly opened comes to the front, over the chat dock it may have been opened from */
+  if (key !== LASTDETAIL) $('app').classList.remove('dock-front');
   sc.innerHTML = detailHTML(it);
   sc.scrollTop = keep;
   LASTDETAIL = key;
@@ -2894,7 +2897,7 @@ function renderCalendar(){
     '<button class="btn" data-act="caltoday">Today</button>' +
     '<button class="ib" data-act="calnav" data-id="1" aria-label="Next" style="transform:scaleX(-1)">'+ic('back')+'</button>' +
     '<span class="spring"></span>' +
-    (modes.length ? '<span class="seg">' + modes.map(function(m){ return '<button class="'+(mode===m?'on':'')+'" data-act="calmode" data-id="'+m+'">'+m.toUpperCase()+'</button>'; }).join('') + '</span>' : '') +
+    (modes.length ? '<span class="seg">' + modes.map(function(m){ return '<button class="'+(mode===m?'on':'')+'" data-act="calmode" data-id="'+m+'">'+titleCase(m)+'</button>'; }).join('') + '</span>' : '') +
     (S.loggedIn ? '<label><input type="checkbox" data-act="calmine"'+(S.calMine?' checked':'')+'> Only mine</label>' : '') + '</div>';
   var body = mode === 'month' ? monthGrid(S.calAnchor) : mode === 'week' ? weekGrid(S.calAnchor) : dayGrid(S.calAnchor);
   $('calcol').innerHTML = bar + '<div class="panel" style="display:flex;flex-direction:column">' + body + '</div>';
@@ -3708,10 +3711,12 @@ function navRow(f, icon, label, opts){
   opts = opts || {};
   var top = S.stack[S.stack.length-1];
   /* a horizon is a page, not a folder: its row is lit while its page is open */
-  var sel = opts.sel != null ? opts.sel : opts.hz ? !!top && top.type === 'horizon' && top.id === f.id
+  var sel = opts.sel != null ? opts.sel : opts.hz ? false
           : !opts.person && sameFolder(S.folder, f) && !(L.phone && S.folder.kind === 'you');
+  /* what is open in the window is marked (not lit): the lit row is always the list you are in */
+  var isOpen = (opts.hz || opts.person) && !!top && top.type === (opts.hz ? 'horizon' : 'person') && top.id === (opts.hz ? f.id : opts.person);
   var cnt = opts.count != null ? opts.count : '';
-  return '<div class="nrow'+(sel?' sel':'')+(opts.unread?' unread':'')+(opts.cls?' '+opts.cls:'')+'" role="button" ' +
+  return '<div class="nrow'+(sel?' sel':'')+(isOpen?' open':'')+(opts.unread?' unread':'')+(opts.cls?' '+opts.cls:'')+'" role="button" ' +
     (opts.person ? 'data-act="open-reset" data-type="person" data-id="'+opts.person+'"'
      : opts.hz ? 'data-act="open-reset" data-type="horizon" data-id="'+f.id+'"'
                  : 'data-act="folder" data-kind="'+f.kind+'" data-id="'+(f.id||'')+'"') + (opts.drop ? ' data-drop="'+f.id+'"' : '') + '>' +
@@ -5965,8 +5970,9 @@ function render(){
   renderDetail();
   renderChats();
   renderPreview();
-  /* the phone's sheet ends above the preview bar, which is always there when logged out */
-  app.style.setProperty('--pvh', (L.phone && !S.loggedIn ? $('previewbar').offsetHeight : 0) + 'px');
+  /* the phone's sheet ends above the preview bar, which is always there when logged out (the tabs under it stay) */
+  var pvb = $('previewbar');
+  app.style.setProperty('--pvh', (L.phone && !S.loggedIn && pvb.offsetHeight ? Math.max(0, window.innerHeight - pvb.getBoundingClientRect().top) : 0) + 'px');
   placeWin();
   placeToasts();
   document.title = (S.stack.length ? itemName(S.stack[S.stack.length-1]) : folderName()) + ' · Hypernet';

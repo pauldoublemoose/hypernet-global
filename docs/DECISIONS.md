@@ -38,7 +38,8 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   ornaments, a kind glyph on its square. The ten authored fixture themes stay; fixture events without one now go plain
   instead of wearing a look derived from their id (`DERIVED_LOOKS` switches the old behaviour back). A new event can
   be published from any wizard step, and a look is stored only when someone actually changed it. *Still true, minus the
-  ruled backdrop and `DERIVED_LOOKS` (both removed 2026-10-01).*
+  ruled backdrop and `DERIVED_LOOKS` (both removed 2026-10-01), and minus "published from any wizard step" — superseded
+  2026-10-04: a step must have what it needs before Next, and Publish waits for Basics and Words.*
 - **2026-09-28 · The reading pane can be closed — to an empty pane.** A window close (×) in the pane's title bar, or Esc,
   empties it; the pane keeps its place and width (owner: "leave the space on the right empty, don't hide it") and shows
   only a blank panel with the faint Hypernet mark. Nothing is auto-picked until you choose something, which fills it
@@ -226,3 +227,14 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   Going matches “zurich”", "You’re not hosting anything coming up") and offers the filter that has matches. The list
   keeps its height as you switch, so the dialog doesn't jump. On a phone the filters are one sideways row under the
   search. Replaces the "Your events / All events" bands.
+- **2026-10-04 · New event goes on only when a step has what it needs.** Owner: "make it not possible to go to the next
+  step until you have everything filled out." Required: **Basics** — a title, the day it starts (a new event: today or
+  later), an end on or after the start if one is given, and where it is: a place, or the new **Online** tick (stored as
+  `venueKind: 'virtual'`, shown as "Online"). **Words** — a description. **Look** stays optional. Optional fields say
+  "optional" (Ends, From, Until, Bring); Type, Who can see it and Entry always have a value. Next waits for its step;
+  Publish appears from Words on and waits for Basics and Words; the step tabs open forward only past complete steps. The
+  waiting buttons are `aria-disabled`, not dead: beside them "Still needed: a title and where it is" says why, and
+  pressing one anyway stays on the step, marks each missing field inline (message under it, `aria-invalid`) and puts the
+  cursor on the first — never a toast. The messages follow your typing once shown. Edit uses the same rules (minus "not
+  in the past"): Save changes waits until nothing is missing. Supersedes "A new event can be published from any wizard
+  step" (2026-09-28).

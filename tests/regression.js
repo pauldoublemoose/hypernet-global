@@ -115,6 +115,16 @@ async function join(p, name, handle){
   await p.evaluate(() => loginDialog()); await p.waitForTimeout(150);
   await p.fill('#pf-name', name); await p.fill('#pf-handle', handle); await p.click('#pfsave'); await p.waitForTimeout(300);
 }
+/* the New event wizard filled the way a host has to (2026-10-04): Basics, Next, Words; then Publish unless told not to */
+async function newEvent(c, o){
+  await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
+  await c.fill('#w-t', o.title); await c.fill('#w-d', o.date);
+  if (o.online) await c.check('#w-on'); else await c.fill('#w-c', o.city || 'Brno');
+  if (o.privacy) await c.selectOption('#w-p', o.privacy);
+  await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(200);
+  await c.fill('#w-desc', o.desc || 'A slow evening with friends.');
+  if (o.publish !== false){ await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(500); }
+}
 async function overflowEverywhere(p, label){
   const worst = [];
   for (const h of ['#/home', '#/explore', '#/explore/events?view=calendar', '#/explore/horizons', '#/explore/callouts', '#/explore/people', '#/event/borderland-2027', '#/event/burning-man-2027', '#/horizon/season', '#/person/anna', '#/callout/sound', '#/search?q=sound', '#/explore/soon', '#/chats']){
@@ -300,7 +310,9 @@ async function overflowEverywhere(p, label){
       await f.click('#tg-right'); await f.waitForTimeout(200);
       await f.click('.chrow[data-id="c-kai"]'); await f.waitForTimeout(200);
       ok(await ev(f, () => document.getElementById('nav').getBoundingClientRect().width >= 190 && !!document.querySelector('#chats .conv')), w + ': sidebar stays with the chat dock open');
-      if (w >= 1280) ok(await ev(f, () => document.getElementById('app').classList.contains('split') && document.getElementById('dscroll').getBoundingClientRect().width >= 380), w + ': list + reading pane + dock fit');
+      /* nothing opens by itself (2026-10-04): open an event, then list + reading pane + dock sit side by side */
+      if (w >= 1280){ await f.click('#listbody .fev .fct >> nth=0'); await f.waitForTimeout(250); }
+      if (w >= 1280) ok(await ev(f, () => document.getElementById('app').classList.contains('split') && S.stack.length === 1 && document.getElementById('dscroll').getBoundingClientRect().width >= 380), w + ': list + reading pane + dock fit');
     }
     ok((await overflow(f)) <= 0, w + ': no overflow');
     console.log(w + ' feedback errors', f.errors); ok(!f.errors.length, w + ': no console errors');
@@ -466,10 +478,8 @@ async function overflowEverywhere(p, label){
     const c = await ctx(kind);
     await open(c, '', true);
     await join(c, 'Plain Pat', 'plainpat' + kind);
-    /* an event published from the first step, and a new horizon, are plain */
-    await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
-    await c.fill('#w-t', 'Plain supper'); await c.fill('#w-d', '2026-11-02'); await c.fill('#w-c', 'Brno');
-    await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(600);
+    /* an event published without visiting the Look step, and a new horizon, are plain */
+    await newEvent(c, { title:'Plain supper', date:'2026-11-02', city:'Brno' }); await c.waitForTimeout(100);
     const pe = await ev(c, () => { const id = MYEVENTS[MYEVENTS.length - 1]; return { stored:!!window.HYPERNET_THEMES.themes[id], page:!!document.querySelector('.pg-event.plain') }; });
     ok(!pe.stored && pe.page, kind + ': an event published without a look wears the plain default');
     await c.evaluate(() => runCmd('new-horizon')); await c.waitForTimeout(250);
@@ -758,8 +768,7 @@ async function overflowEverywhere(p, label){
       await c.click('.dlg [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(400);
       ok(await ev(c, id => !window.HYPERNET_THEMES.themes[id], own), kind + ': Reset to plain removes the look');
       /* the new-event wizard's look step is the same three colours and a square */
-      await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
-      await c.fill('#w-t', 'Lantern swap'); await c.fill('#w-d', '2026-11-05');
+      await newEvent(c, { title:'Lantern swap', date:'2026-11-05', publish:false });
       await c.click('.dlg [data-act="wizstep"][data-id="3"]'); await c.waitForTimeout(200);
       ok(await ev(c, () => document.querySelectorAll('.dlg input[type=color]').length === 3 && document.querySelectorAll('.dlg input[type=file]').length === 1), kind + ': the New event look step is the same Customize');
       await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
@@ -804,10 +813,8 @@ async function overflowEverywhere(p, label){
     await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
     /* an "Only me" event: its host sees it; logged out and another account see it nowhere */
     await join(c, 'Pia Host', 'piahost');
-    await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
     const when = await ev(c, () => shiftIso(TODAY_ISO, 10));
-    await c.fill('#w-t', 'Quiet supper zq'); await c.fill('#w-d', when); await c.selectOption('#w-p', 'only_me');
-    await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(500);
+    await newEvent(c, { title:'Quiet supper zq', date:when, privacy:'only_me' });
     const sid = await ev(c, () => MYEVENTS[MYEVENTS.length - 1]);
     await c.evaluate(() => runCmd('new-horizon')); await c.waitForTimeout(200);
     ok(await ev(c, () => /list of events someone curates/.test(document.querySelector('.dlg').textContent)), 'trust: New Event Horizon says what a horizon is');
@@ -1037,6 +1044,67 @@ async function overflowEverywhere(p, label){
     await c.click('.dlg [data-act="pkdone"]'); await c.waitForTimeout(300);
     ok(await ev(c, ([h, id]) => HORIZONS[h].eventIds.indexOf(id) >= 0, [hz, add]), kind + ': an event ticked under From people you follow is added');
     ok(!c.errors.length, kind + ': no console errors (Add events filters) ' + c.errors.join(' '));
+  }
+
+  /* ---------------- 2026-10-04: New event goes on only when a step has what it needs ---------------- */
+  for (const kind of ['desk', 'tab', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '', true);
+    await join(c, 'Wiz Host', 'wizhost' + kind);
+    await c.evaluate(() => newEventDialog()); await c.waitForTimeout(250);
+    const foot = () => ev(c, () => ({ step:DRAFT.step, btns:[...document.querySelectorAll('.dlg .dfoot .btn')].map(b => b.textContent.trim() + (b.getAttribute('aria-disabled') === 'true' ? ':off' : '')),
+      need:document.getElementById('wiz-need').textContent, errs:[...document.querySelectorAll('.dlg .ferr[data-err]:not([hidden])')].map(x => x.getAttribute('data-err')),
+      invalid:[...document.querySelectorAll('.dlg [aria-invalid="true"]')].map(x => x.id), tabs:[...document.querySelectorAll('.dlg .wizsteps .ws')].map(t => t.getAttribute('aria-disabled') === 'true' ? 'off' : 'on'),
+      focus:document.activeElement && document.activeElement.id, toast:(document.getElementById('toasts') || {}).textContent || '' }));
+    const f0 = await foot();
+    ok(f0.step === 1 && f0.btns.join('|') === 'Cancel|Next:off' && /title.*start date.*where/.test(f0.need) && !f0.errs.length && f0.tabs.join() === 'on,off,off',
+       kind + ': an empty Basics step — Next is off, no Publish yet, it says what is still needed, no errors before you try ' + JSON.stringify(f0));
+    /* trying anyway shows what is missing inline, at the fields, and stays */
+    await c.fill('#w-t', 'Moth night'); await c.waitForTimeout(100);
+    /* (aria-disabled: still clickable, which is how it shows what is missing — Playwright needs force to click it) */
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]', { force:true }); await c.waitForTimeout(250);
+    const f1 = await foot();
+    ok(f1.step === 1 && f1.errs.join() === 'date,city' && f1.invalid.join() === 'w-d,w-c' && f1.focus === 'w-d' && !/Add/.test(f1.toast), kind + ': Next with things missing stays on Basics and marks the start date and Where inline (no toast) ' + JSON.stringify(f1));
+    /* the step tabs don't jump past it either */
+    await c.click('.dlg .wizsteps .ws[data-id="3"]', { force:true }); await c.waitForTimeout(200);
+    ok((await foot()).step === 1, kind + ': the Look tab can\'t be reached past an incomplete step');
+    /* a start in the past, and an end before the start, are not accepted */
+    await c.fill('#w-d', '2026-09-01'); await c.waitForTimeout(100);
+    ok(await ev(c, () => /today or a later day/.test(document.getElementById('err-date').textContent)), kind + ': a new event can\'t start in the past');
+    await c.fill('#w-d', '2026-11-12'); await c.fill('#w-e', '2026-11-10'); await c.waitForTimeout(100);
+    const f2 = await foot();
+    ok(f2.errs.join() === 'end,city' && f2.btns.indexOf('Next:off') >= 0, kind + ': an end before the start is flagged, the message for the start date went as it was fixed ' + JSON.stringify(f2.errs));
+    await c.fill('#w-e', ''); await c.check('#w-on'); await c.waitForTimeout(150);
+    const f3 = await foot();
+    ok(!f3.errs.length && f3.btns.indexOf('Next') >= 0 && !f3.need && await ev(c, () => document.getElementById('w-c').disabled), kind + ': Online counts as where it is — Next is on, nothing missing ' + JSON.stringify(f3));
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(250);
+    /* Words needs a description; Publish waits for it; Bring stays optional */
+    const f4 = await foot();
+    ok(f4.step === 2 && f4.btns.join('|') === 'Cancel|Back|Next:off|Publish event:off' && /description/.test(f4.need) && !f4.errs.length && f4.tabs.join() === 'on,on,off', kind + ': Words — Next and Publish wait for a description ' + JSON.stringify(f4));
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]', { force:true }); await c.waitForTimeout(250);
+    const f5 = await foot();
+    ok(f5.step === 2 && f5.errs.join() === 'desc' && f5.focus === 'w-desc' && await ev(c, () => !MYEVENTS.some(id => EVENTS[id] && EVENTS[id].title === 'Moth night')), kind + ': Publish with no description says so inline and publishes nothing');
+    await c.fill('#w-desc', 'Sheets, a lamp and whatever flies in.'); await c.waitForTimeout(100);
+    const f6 = await foot();
+    ok(!f6.errs.length && f6.btns.join('|') === 'Cancel|Back|Next|Publish event' && f6.tabs.join() === 'on,on,on', kind + ': with a description both are on, the Look tab opens; Bring is optional ' + JSON.stringify(f6));
+    /* back to Basics keeps it all; Look is optional and Publish works from it too */
+    await c.click('.dlg .wizsteps .ws[data-id="3"]'); await c.waitForTimeout(200);
+    const f7 = await foot();
+    ok(f7.step === 3 && f7.btns.join('|') === 'Cancel|Back|Publish event', kind + ': Look is reachable and optional ' + JSON.stringify(f7.btns));
+    ok((await overflow(c)) <= 0, kind + ': New event, no horizontal overflow');
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(500);
+    const pub = await ev(c, () => { const id = MYEVENTS[MYEVENTS.length - 1], e = EVENTS[id]; return { title:e && e.title, where:e && whereOf(e), desc:e && descOf(e), page:!!document.querySelector('.pg-event') }; });
+    ok(pub.title === 'Moth night' && pub.where === 'Online' && /lamp/.test(pub.desc) && pub.page, kind + ': it publishes once everything is there, online ' + JSON.stringify(pub));
+    /* Edit keeps the same rules: clearing the title turns Save off and says so */
+    await c.evaluate(() => editEventDialog(MYEVENTS[MYEVENTS.length - 1])); await c.waitForTimeout(250);
+    ok((await foot()).btns.join('|') === 'Cancel|Save changes', kind + ': Edit of a complete event can be saved');
+    await c.fill('#w-t', ''); await c.waitForTimeout(100);
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]', { force:true }); await c.waitForTimeout(250);
+    const f8 = await foot();
+    ok(f8.btns.join('|') === 'Cancel|Save changes:off' && f8.errs.join() === 'title' && await ev(c, () => EVENTS[MYEVENTS[MYEVENTS.length - 1]].title === 'Moth night'), kind + ': Edit with the title cleared won\'t save, says why ' + JSON.stringify(f8));
+    if (kind === 'phone') await shot(c, 'new-event-missing-phone');
+    await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+    ok(!c.errors.length, kind + ': no console errors (New event) ' + c.errors.join(' '));
   }
 
   /* ---------------- tablet ---------------- */

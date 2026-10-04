@@ -474,9 +474,6 @@ span.chip.strong{ border-color:transparent; background:color-mix(in srgb, var(--
 .mbody{ display:inline-block; padding:8px 12px; background:var(--face-lt); border:1px solid #d8d4cb; text-align:left; line-height:1.4; overflow-wrap:anywhere; }
 .msg.me .mbody{ background:#2a2a2a; border-color:#2a2a2a; color:#fff; }
 .msg.sys{ align-self:center; font:12px var(--mono); color:var(--dim); text-align:center; }
-.evcard{ display:flex; gap:10px; align-items:center; padding:8px; background:#fff; border:1px solid #bdb9b0; text-align:left; cursor:pointer; }
-.evcard .t{ font-weight:bold; }
-.evcard .m{ font-size:12px; color:var(--dim); }
 .composer{ flex:0 0 auto; display:flex; gap:8px; }
 .composer input{ flex:1; }
 .members{ display:flex; gap:4px; }
@@ -550,9 +547,9 @@ body.is-phone .calall{ min-height:44px; }
 .ctxsheet .sheetrow .hzchk.on .ic{ display:block; }
 .ctxsheet .csep{ height:6px; background:var(--face); box-shadow:inset 0 1px 0 var(--shadow), inset 0 -1px 0 var(--white); }
 /* items that answer a long-press: no text selection, no callout */
-body.is-phone :is(.row[data-type], .card2[data-type], .calev, .track[data-type], .crow, .nrow, .evcard, .chrow){
+body.is-phone :is(.row[data-type], .card2[data-type], .calev, .track[data-type], .crow, .nrow, .chrow){
   -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
-@media (pointer:coarse){ :is(.row[data-type], .card2[data-type], .calev, .track[data-type], .crow, .nrow, .evcard, .chrow){
+@media (pointer:coarse){ :is(.row[data-type], .card2[data-type], .calev, .track[data-type], .crow, .nrow, .chrow){
   -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; } }
 #mask{ position:fixed; inset:0; z-index:60; display:none; background:rgba(0,0,0,.3); }
 .dlg{ position:fixed; z-index:70; display:flex; flex-direction:column; max-height:calc(100vh - 32px); padding:3px; background:var(--face);
@@ -647,12 +644,7 @@ body.is-phone .demolink button{ min-height:44px; }
 .toast b{ display:block; font-size:var(--fs); }
 .toast.act{ display:flex; align-items:center; gap:12px; pointer-events:auto; }
 .toast .tt2{ flex:1; min-width:0; }
-.linkline{ display:flex; gap:8px; }
-.linkline input{ flex:1; min-width:0; color:var(--ink2); }
-#sh-msg, #sh-q{ width:100%; }
-#sh-list{ max-height:260px; }
-body.is-phone #sh-list{ max-height:none; }
-.answered{ display:inline-flex; align-items:center; gap:6px; min-height:var(--ctl); padding:0 6px 0 0; font-weight:bold; }
+#sh-url{ width:100%; color:var(--ink2); }
 .ab-tap{ cursor:pointer; align-self:stretch; display:flex; flex-direction:column; justify-content:center; }
 .linkrow.static{ cursor:default; }
 .linkrow.static:hover{ background:#fff; }
@@ -846,9 +838,43 @@ button.chip.chipmore{ align-self:stretch; padding:4px 13px; color:var(--ink); fo
 .whorow{ display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); }
 .whomain{ flex:1; min-width:0; display:flex; align-items:center; gap:10px; padding:0; border:0; background:none; text-align:left; color:var(--ink); cursor:pointer; }
 .whonote{ margin:10px 0 0; font-size:13px; line-height:1.4; color:var(--dim); }
-/* a chat that answers a call out keeps it pinned at the top */
-.cpin{ flex:0 0 auto; display:flex; align-items:center; gap:8px; width:100%; padding:8px 12px; border:0; background:var(--ink); color:#fff; text-align:left; font-size:13px; line-height:1.35; cursor:pointer; outline:1px solid #fff; outline-offset:-4px; }
-.cpin .cpt{ min-width:0; }
+/* a call out's replies: a thread under it, as under a post */
+.replies{ display:flex; flex-direction:column; gap:14px; margin-top:4px; }
+.reply{ display:flex; gap:10px; align-items:flex-start; }
+.rpav{ flex:0 0 auto; padding:0; border:0; background:none; }
+.rpb{ flex:1; min-width:0; }
+.rpbub{ display:inline-block; max-width:100%; padding:7px 12px 9px; background:var(--face-lt); border:1px solid #d8d4cb; }
+.rpn{ padding:0; border:0; background:none; font-weight:bold; color:var(--ink); text-align:left; }
+.rpn:hover{ text-decoration:underline; }
+.rptag{ margin-left:8px; padding:1px 5px; font:bold 10px var(--mono); letter-spacing:.06em; text-transform:uppercase; box-shadow:inset 0 0 0 1px var(--ink2); color:var(--ink2); vertical-align:1px; }
+.rpt{ margin-top:2px; line-height:1.45; white-space:pre-wrap; overflow-wrap:anywhere; }
+.rpm{ display:flex; align-items:center; gap:14px; margin:3px 0 0 2px; font:11px var(--mono); color:var(--dim); }
+.rpdel{ min-height:28px; padding:0; border:0; background:none; font:inherit; color:var(--ink2); text-decoration:underline; text-underline-offset:2px; }
+body.is-phone .rpdel{ min-height:40px; }
+.replybox{ display:flex; align-items:flex-end; gap:8px; margin-top:16px; }
+.replybox > .av{ margin-bottom:3px; }
+.replybox textarea{ flex:1; min-width:0; height:var(--ctl); min-height:var(--ctl); max-height:168px; padding:7px 10px; resize:none; overflow-y:auto; line-height:1.4; }
+/* the first replies under a call out, on its ink ground (Home, its event) */
+.corep{ display:flex; flex-direction:column; gap:6px; width:100%; margin-top:14px; padding-top:10px; border-top:1px solid #4a4a4a; font-size:13px; line-height:1.35; color:#e6e6e6; }
+.cotile .corep{ margin-top:0; font-size:12px; }
+.corn{ font:bold 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:#c4c4c4; }
+.corall{ align-self:flex-start; padding:0; border:0; background:none; font:bold 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:#fff; text-decoration:underline; text-underline-offset:3px; }
+.corow{ display:flex; gap:8px; align-items:flex-start; min-width:0; }
+.corow .av{ margin-top:1px; box-shadow:0 0 0 1px #fff; }
+.cort{ min-width:0; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
+.corwho{ padding:0; border:0; background:none; font-weight:bold; color:#fff; }
+.corwho:hover, .corall:hover{ text-decoration:underline; }
+.corall, .corwho{ position:relative; z-index:1; }
+.fcq{ margin-top:4px; font-size:14px; line-height:1.4; color:var(--ink2); display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
+.evcos{ display:flex; flex-direction:column; gap:16px; padding:4px 4px 0 0; }
+/* a chat's name and its people's names open their profile, in a window over the chat */
+.ptbtn{ display:block; padding:0; border:0; background:none; text-align:left; color:var(--ink); }
+.ptbtn:hover{ text-decoration:underline; }
+.mwho{ padding:0; border:0; background:none; color:inherit; }
+.mwho:hover{ text-decoration:underline; }
+.dlg.pfwin .dbody{ padding:0; }
+.dlg .dback{ display:none; }
+body.is-phone .dlg.pfwin .dback{ display:grid; margin-left:-10px; }
 .composer{ align-items:flex-end; }
 .composer textarea{ flex:1; min-width:0; height:var(--ctl); min-height:var(--ctl); max-height:168px; padding:7px 10px; resize:none; overflow-y:auto; line-height:1.4; }
 .mbody{ white-space:pre-wrap; }
@@ -923,7 +949,7 @@ input[type=search]::-webkit-search-cancel-button{ -webkit-appearance:none; displ
 #app.phone .phead{ display:none; }
 #app.phone .conv{ gap:0; }
 #app.phone .msgs{ box-shadow:none; }
-#app.phone .composer{ padding:8px 8px calc(8px + env(safe-area-inset-bottom)); background:var(--face); box-shadow:inset 0 1px 0 #fff, 0 -1px 0 var(--shadow); }
+#app.phone .composer{ padding:8px; background:var(--face); box-shadow:inset 0 1px 0 #fff, 0 -1px 0 var(--shadow); }
 #app.phone .row{ min-height:74px; padding:11px 14px; }
 #app.phone .nrow{ min-height:52px; margin:0; padding:0 18px; font-size:16px; border-bottom:1px solid var(--line); }
 #app.phone .nrow .sq, #app.phone .nrow .av{ width:26px; height:26px; flex-basis:26px; }
@@ -938,7 +964,6 @@ input[type=search]::-webkit-search-cancel-button{ -webkit-appearance:none; displ
 #app.phone .acctcard .an{ flex:1; min-width:0; font-size:17px; font-weight:bold; }
 #app.phone .acctcard .an small{ display:block; font-size:13px; font-weight:normal; color:var(--dim); }
 #app.phone #tabbar{ display:flex; flex:0 0 auto; gap:4px; padding:5px 5px calc(5px + env(safe-area-inset-bottom)); background:var(--face); box-shadow:inset 0 1px 0 var(--white), 0 -1px 0 var(--shadow); }
-#app.phone.conv-open #tabbar{ display:none; }
 .tab{ position:relative; flex:1 1 0; min-width:0; min-height:54px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
   border:0; background:transparent; color:var(--ink2); font-size:11px; }
 .tab.on{ background:#fff; color:#000; font-weight:bold; box-shadow:var(--in); }
@@ -955,7 +980,6 @@ body.is-phone .dfoot{ flex-wrap:wrap; }
 body.is-phone .wizneed{ flex:1 0 100%; margin:0 0 2px; }
 body.is-phone .dlg.sheet{ top:auto !important; bottom:0 !important; }
 body.is-phone .dlg.sheet .dbody{ padding:6px 0; }
-body.is-phone .dlg.shsheet .dbody{ padding:18px 16px; }
 body.is-phone .custwrap{ flex-direction:column; }
 body.is-phone .custcol{ flex:0 0 auto; }
 body.is-phone .previewbox{ max-height:none; }
@@ -1337,7 +1361,9 @@ var MYHORIZONS = [];
 var CHATS = {}, CHATORDER = [], UNREADCHAT = {};
 var CHATDRAFT = {};             /* chat id -> what you typed and haven't sent */
 var SHIFT = {};                 /* event -> the shift you took */
-var ANSWERED = {}, ANSWERING = {};   /* call out -> the chat you answered it in; chat -> the call out its draft answers */
+/* public replies under call outs: the ones made here (the fixture's are seeded with the activity), the ids deleted here,
+   and what you are typing under each call out. Shaped like the table callout_replies (id, callout_id, author_id, body, created_at) */
+var REPLIES = [], REPLYGONE = {}, REPLYDRAFT = {};
 /* chat is between two people (groups are v2): a fixture group chat becomes a direct message with whoever spoke last in it */
 function fixtureChats(){
   var byId = {}, order = [];
@@ -1646,7 +1672,7 @@ function isOverview(f){ f = f || S.folder; return f.kind === 'explore' && !f.id;
 /* plain words for the words Hypernet made up */
 var KINDDESC = {
   horizons:'A horizon is a list of events someone curates — like a playlist. Follow it to see what they pick.',
-  callouts:'A call out is someone asking for a hand with their event. Answer it to start a chat with them.',
+  callouts:'A call out is someone asking for a hand with their event. Answer it right under the call out, where everyone can see the replies.',
   people:'Follow people to see on Home what they are going to, promoting and curating.'
 };
 /* the overview is the same shelves of squares at every width (owner, 2026-10-04: "squares … just like in the mobile
@@ -1881,9 +1907,10 @@ function rowHTML(it){
     var c = calloutOf(it.id);
     lead = '<span class="r-ic">'+ic('callout')+'</span>';
     title = esc(c.title);
-    meta = esc([c.hostName, c.eventId && EVENTS[c.eventId] ? 'for ' + EVENTS[c.eventId].title : '', c.body].filter(Boolean).join(' · '));
+    var nrep = repliesOf(it.id).length;
+    meta = esc([c.hostName, c.eventId && EVENTS[c.eventId] ? 'for ' + EVENTS[c.eventId].title : '', nrep ? nReplies(nrep) : '', c.body].filter(Boolean).join(' · '));
     date = c.closed ? 'closed' : !calloutOpen(c) ? 'ended' : 'until ' + fmtShort(c.expiresAt);
-    if (S.loggedIn && ANSWERED[it.id]) side = '<span class="pill going">'+ic('check',11)+'<span>Answered</span></span>';
+    if (myReplies(it.id).length) side = '<span class="pill going">'+ic('check',11)+'<span>Replied</span></span>';
   }
   var drag = it.type === 'event' && !L.phone ? ' draggable="true"' : '';
   if (it.type === 'event' && S.folder.kind === 'horizon' && hzOwnedByMe(S.folder.id))
@@ -2156,14 +2183,13 @@ function takePartHTML(r){
   if (r.openCalls && r.openCalls.length) c.push(card('Open calls', 'Wanted', null, r.openCalls));
   return c.length ? '<div class="cards">' + c.join('') + '</div>' : '';
 }
-/* an event's call outs: its own, and any posted for it; its host can post one from here */
+/* an event's open call outs: its own, and any posted for it, each with the first of its replies. None, no section:
+   its host posts one from the event's toolbar (New call out) */
 function calloutsHTML(ids, evId){
   var cs = (ids || []).map(calloutOf).filter(Boolean);
   CALLOUTS.forEach(function(c){ if (evId && calloutEventId(c) === evId && cs.indexOf(c) < 0) cs.push(c); });
   cs = cs.filter(calloutOpen);
-  var add = evId && isMine(evId) && !isPast(lastDay(EVENTS[evId])) ? '<button class="chip" data-act="newcalloutfor" data-id="'+evId+'">'+ic('plus',16)+'New call out</button>' : '';
-  return cs.length || add ? '<div class="chips">' + cs.map(function(c){
-    return '<button class="chip" data-act="open" data-type="callout" data-id="'+c.id+'">'+ic('callout',16)+esc(c.title)+' <span class="sub">'+esc(c.hostName)+'</span></button>'; }).join('') + add + '</div>' : '';
+  return cs.length ? '<div class="evcos">' + cs.map(function(c){ return fCalloutCard(c.id, 0, { act:'open', noEvent:true }); }).join('') + '</div>' : '';
 }
 function providedHTML(p){
   if (!p) return '';
@@ -2272,7 +2298,7 @@ function verbsHTML(evId){
   var h = '<div class="verbs">';
   if (isMine(evId)){
     /* the host's page leads with the host's verbs; Interested / Going are for guests */
-    h += hostGroupHTML(evId) + promoBtnHTML(evId) + '<span class="vsec">' + addtoBtnHTML(evId) + vb('share', evId, 'Share', 'share') +
+    h += hostGroupHTML(evId) + vb('newcalloutfor', evId, 'New call out', 'callout') + promoBtnHTML(evId) + '<span class="vsec">' + addtoBtnHTML(evId) + vb('share', evId, 'Share', 'share') +
          vb('evmore', evId, '', 'dots', { aria:'More', attrs:' data-more="delete" aria-haspopup="menu"' });
     return h + '</span></div>';
   }
@@ -2283,8 +2309,8 @@ function verbsHTML(evId){
 function evbarHTML(evId){
   var e = EVENTS[evId], past = isPast(lastDay(e)), mine = isMine(evId), more, h = '<div class="verbs">';
   if (mine){
-    h += hostGroupHTML(evId);
-    more = past ? 'addto,share,delete' : 'promote,addto,share,callout,delete';
+    h += hostGroupHTML(evId) + (past ? '' : vb('newcalloutfor', evId, 'Call out', 'callout', { attrs:' aria-label="New call out"' }));
+    more = past ? 'addto,share,delete' : 'promote,addto,share,delete';
   } else if (past){
     if (S.loggedIn) h += vb('v-went', evId, 'Went', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] });
     else h += vb('share', evId, 'Share', 'share');
@@ -2493,10 +2519,10 @@ function personHTML(pid){
     toolbar:bar, facts:facts, body:s });
 }
 function isOwnCallout(c){ return !!c && S.loggedIn && !!c.hostAcct && c.hostAcct === S.acct; }
-/* a call out: what is wanted, by whom, for which event; you answer it once, and its author edits or closes it
-   and sees who answered */
+/* a call out: what is wanted, by whom, for which event — and under it the public replies, as under a post.
+   Anyone answers in the thread; its author edits or closes it and can take any reply off it. */
 function calloutHTML(id){
-  var c = calloutOf(id), mine = isOwnCallout(c), ans = S.loggedIn && ANSWERED[id] && CHATS[ANSWERED[id]] ? ANSWERED[id] : null;
+  var c = calloutOf(id), mine = isOwnCallout(c);
   var ev = EVENTS[calloutEventId(c)], open = calloutOpen(c), sk = calloutSkill(c);
   var h = '<div class="page"><div class="phead2"><span class="r-ic" style="width:64px;height:64px;flex-basis:64px">'+ic('callout',30)+'</span>' +
     '<div style="flex:1;min-width:0"><div class="psub" style="margin:0 0 4px">Call out · Looking for'+(c.closed ? ' · Closed' : !open ? ' · Ended' : '')+'</div><div class="pname">'+esc(c.title)+'</div>' +
@@ -2507,22 +2533,43 @@ function calloutHTML(id){
   h += '<div class="acts">';
   if (mine) h += '<button class="btn primary" data-act="editcallout" data-id="'+id+'">'+ic('edit')+'Edit</button>' +
     '<button class="btn" data-act="closecallout" data-id="'+id+'">'+(c.closed ? 'Reopen' : 'Close call out')+'</button>';
-  else if (ans) h += '<span class="answered">'+ic('check',16)+'You answered</span><button class="btn primary" data-act="chatsel" data-id="'+ans+'">'+ic('chat')+'Open chat</button>';
-  else if (open && calloutAuthor(c)) h += '<button class="btn primary" data-act="answercallout" data-id="'+id+'">'+ic('chat')+'Answer</button>';
+  else if (canReply(c)) h += '<button class="btn primary" data-act="answercallout" data-id="'+id+'">'+ic('chat')+'Answer</button>';
   if (!mine && c.hostId && PEOPLE[c.hostId]) h += '<button class="btn" data-act="open" data-type="person" data-id="'+c.hostId+'">'+avHTML(c.hostId)+esc(c.hostName)+'</button>';
   if (open) h += '<button class="btn" data-act="share" data-type="callout" data-id="'+id+'">'+ic('share')+'Share</button>';
   h += '</div>';
-  /* its author sees who answered, and goes straight to each conversation */
-  if (mine){
-    var an = (c.answers || []).filter(function(x){ return PEOPLE[x.pid]; });
-    h += '<div class="subh">Answers'+(an.length ? ' · ' + an.length : '')+'</div>';
-    h += an.length ? '<div class="wholist">' + an.map(function(x){
-      return '<div class="whorow"><button type="button" class="whomain" data-act="open" data-type="person" data-id="'+x.pid+'">'+avHTML(x.pid,'a40') +
-        '<span class="whon">'+esc(person(x.pid).displayName)+'<small>answered '+esc(x.at ? agoLabel(actTime({ at:x.at })) : '')+'</small></span></button>' +
-        '<button class="btn primary" data-act="dm" data-id="'+x.pid+'">'+ic('chat',16)+'Open chat</button></div>';
-    }).join('') + '</div>' : '<p class="whonote">No answers yet. When someone answers, their message lands in your chats and they are listed here.</p>';
-  }
-  return h + '</div>';
+  return h + repliesHTML(id) + '</div>';
+}
+function nReplies(n){ return n + (n === 1 ? ' reply' : ' replies'); }
+/* the thread under a call out, oldest first, and the box to add to it */
+function repliesHTML(coId){
+  var c = calloutOf(coId), rs = repliesOf(coId), mine = isOwnCallout(c), can = canReply(c);
+  var h = '<div class="subh">Replies'+(rs.length ? ' · ' + rs.length : '')+'</div>';
+  h += rs.length ? '<div class="replies">' + rs.map(replyHTML).join('') + '</div>'
+    : '<p class="whonote">'+(!can ? 'No replies.' : mine ? 'No replies yet. When someone answers, their reply shows here, under your call out.'
+                                                     : 'No replies yet. Answer here: your reply shows under the call out, for everyone to see.')+'</p>';
+  if (can) h += '<div class="replybox">' + (S.loggedIn ? avHTML('self', 'a32') : '') +
+    '<textarea id="coreply" data-id="'+coId+'" rows="1" placeholder="'+(mine ? 'Reply to the people answering' : 'Write a reply')+'" aria-label="Reply to '+esc(c.title)+'" aria-describedby="coreplyhint">'+esc(REPLYDRAFT[coId] || '')+'</textarea>' +
+    '<button class="btn primary" data-act="postreply" data-id="'+coId+'">Reply</button><span id="coreplyhint" class="sr">Enter posts, Shift+Enter adds a new line</span></div>';
+  else if (!calloutOpen(c)) h += '<p class="whonote">This call out is closed: no new replies.</p>';
+  return h;
+}
+function replyHTML(r){
+  var who = r.author === myActor() ? 'self' : r.author, p = person(who), c = calloutOf(r.calloutId);
+  var author = c && (c.hostAcct ? acctPid(c.hostAcct) : c.hostId) === r.author;
+  return '<div class="reply" data-reply="'+r.id+'"><button type="button" class="rpav" data-act="open" data-type="person" data-id="'+who+'" tabindex="-1" aria-hidden="true">'+avHTML(who, 'a32')+'</button>' +
+    '<div class="rpb"><div class="rpbub"><button type="button" class="rpn" data-act="open" data-type="person" data-id="'+who+'">'+esc(p.displayName)+'</button>' +
+    (author ? '<span class="rptag">Author</span>' : '') + '<div class="rpt">'+esc(r.text)+'</div></div>' +
+    '<div class="rpm"><time>'+esc(agoLabel(isoMs(r.ts)))+'</time>' + (canDeleteReply(r) ? '<button type="button" class="rpdel" data-act="delreply" data-id="'+r.id+'">Delete</button>' : '') + '</div></div></div>';
+}
+/* under a call out on Home and on its event: how many replied, the latest one or two, and the way to the whole thread */
+function repliesPeekHTML(coId, act){
+  var rs = repliesOf(coId), n = rs.length, last = rs.slice(-2), a = act || 'row'; if (!n) return '';
+  return '<div class="corep">' + (n > last.length
+      ? '<button type="button" class="corall" data-act="'+a+'" data-type="callout" data-id="'+coId+'">View all '+n+' replies</button>'
+      : '<div class="corn">'+nReplies(n)+'</div>') +
+    last.map(function(r){ var who = r.author === myActor() ? 'self' : r.author;
+      return '<div class="corow">'+avHTML(who)+'<span class="cort"><button type="button" class="corwho" data-act="'+a+'" data-type="person" data-id="'+who+'">'+esc(whoName(r.author))+'</button> '+esc(r.text)+'</span></div>';
+    }).join('') + '</div>';
 }
 /* a link to something you can't see: say which kind of thing, and give a way on */
 function missingHTML(path){
@@ -2609,7 +2656,7 @@ function cardTag(it){
     return st ? '<span class="ctag">'+{ going:'Going', interested:'Interested', hosting:'Hosting' }[st]+'</span>' : PROMOTED[it.id] ? '<span class="ctag">Promoted</span>' : '';
   }
   if (it.type === 'horizon') return hzOwnedByMe(it.id) ? '<span class="ctag">Yours</span>' : HZFOLLOW[it.id] ? '<span class="ctag">Following</span>' : '';
-  if (it.type === 'callout') return ANSWERED[it.id] ? '<span class="ctag">Answered</span>' : isOwnCallout(calloutOf(it.id)) ? '<span class="ctag">Yours</span>' : '';
+  if (it.type === 'callout') return isOwnCallout(calloutOf(it.id)) ? '<span class="ctag">Yours</span>' : myReplies(it.id).length ? '<span class="ctag">Replied</span>' : '';
   return '';
 }
 function cardHTML(it){
@@ -2835,9 +2882,6 @@ function msgPreview(m, c){
   if (!m) return 'No messages yet';
   var who = m.from === 'self' ? 'You: ' : '';
   if (m.from === 'sys') return m.text;
-  if (m.card) return who + 'shared ' + (EVENTS[m.card] ? EVENTS[m.card].title : 'an event');
-  if (m.hzcard) return who + 'shared ' + (HORIZONS[m.hzcard] ? HORIZONS[m.hzcard].name : 'a horizon');
-  if (m.cocard) return who + 'shared a call out' + (calloutOf(m.cocard) ? ': ' + calloutOf(m.cocard).title : '');
   return who + m.text;
 }
 function unreadChats(){ return S.loggedIn ? Object.keys(UNREADCHAT).filter(function(k){ return UNREADCHAT[k]; }).length : 0; }
@@ -2861,30 +2905,16 @@ function chatListHTML(){
     }).join('') + '</div>';
 }
 function convHTML(cid){
-  var c = CHATS[cid];
+  var c = CHATS[cid], pid = c.memberIds[0];
   var sub = chatSub(c);
+  /* their name and the profile button open their profile in a window over the chat; closing it leaves you here */
   var h = '<div class="phead"><button class="ib" data-act="chatback" aria-label="All chats">'+ic('back')+'</button>' +
-    '<div class="ptitle">'+esc(c.name)+'<small>'+esc(sub)+'</small></div>' +
-    '<button class="ib" data-act="open" data-type="person" data-id="'+c.memberIds[0]+'" aria-label="Profile">'+ic('user')+'</button></div>';
-  h += '<div class="conv">' + chatPinHTML(c) + '<div class="msgs" id="msgs">' + (c.messages.length ? c.messages.map(function(m){
+    '<button type="button" class="ptitle ptbtn" data-act="chatprofile" data-id="'+pid+'">'+esc(c.name)+'<small>'+esc(sub)+'</small></button>' +
+    '<button class="ib" data-act="chatprofile" data-id="'+pid+'" aria-label="Profile">'+ic('user')+'</button></div>';
+  h += '<div class="conv"><div class="msgs" id="msgs" data-chat="'+cid+'">' + (c.messages.length ? c.messages.map(function(m){
     if (m.from === 'sys') return '<div class="msg sys">'+esc(m.text)+'</div>';
     var me = m.from === 'self';
-    var head = '<div class="mfrom">'+(me ? '' : esc(person(m.from).displayName))+'<span class="mt">'+esc(m.t)+'</span></div>';
-    if (m.card && EVENTS[m.card]){
-      var e = EVENTS[m.card];
-      return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="evcard" data-act="open" data-type="event" data-id="'+m.card+'">'+sqHTML(m.card,40)+
-        '<div><div class="t">'+esc(e.title)+'</div><div class="m">'+fmtShort(e.date)+' · '+esc(whereOf(e))+'</div></div></div></div>';
-    }
-    if (m.cocard && calloutOf(m.cocard)){
-      var co = calloutOf(m.cocard);
-      return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="evcard" data-act="open" data-type="callout" data-id="'+m.cocard+'"><span class="r-ic">'+ic('callout')+'</span>'+
-        '<div><div class="t">'+esc(co.title)+'</div><div class="m">Call out · '+esc(co.hostName)+'</div></div></div></div>';
-    }
-    if (m.hzcard && HORIZONS[m.hzcard]){
-      var hz = HORIZONS[m.hzcard];
-      return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="evcard" data-act="open" data-type="horizon" data-id="'+m.hzcard+'">'+hzMosaic(m.hzcard,40)+
-        '<div><div class="t">'+esc(hz.name)+'</div><div class="m">Event Horizon · '+hz.eventIds.length+' events</div></div></div></div>';
-    }
+    var head = '<div class="mfrom">'+(me ? '' : '<button type="button" class="mwho" data-act="chatprofile" data-id="'+esc(m.from)+'">'+esc(person(m.from).displayName)+'</button>')+'<span class="mt">'+esc(m.t)+'</span></div>';
     return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+'</div></div>';
   }).join('') : '<div class="msg sys">No messages yet</div>') + '</div>';
   /* the box grows with what you write: Enter sends, Shift+Enter starts a new line */
@@ -2892,17 +2922,9 @@ function convHTML(cid){
        '<button class="btn primary" data-act="sendchat">Send</button><span id="chathint" class="sr">Enter sends, Shift+Enter adds a new line</span></div></div>';
   return h;
 }
-/* a conversation started by answering a call out keeps that call out pinned at its top */
-function chatPinHTML(c){
-  var coId = c.pin && c.pin.callout, co = coId && calloutOf(coId); if (!co) return '';
-  var ev = EVENTS[calloutEventId(co)];
-  var lab = isOwnCallout(co) ? 'Answer to your call out' : ANSWERED[coId] === c.id ? 'You answered' : 'Answering';
-  return '<button type="button" class="cpin" data-act="open" data-type="callout" data-id="'+coId+'">'+ic('callout',16) +
-    '<span class="cpt"><b>'+esc(lab)+':</b> '+esc(co.title)+(ev ? ' · for '+esc(ev.title) : '')+'</span></button>';
-}
 function growBox(b){ if (!b) return; b.style.height = 'auto'; b.style.height = Math.min(b.scrollHeight + 2, 168) + 'px'; }
-/* on a phone a conversation is a screen pushed onto whatever tab you are in; on a desktop it sits in the dock */
-function phoneConv(){ var t = S.stack[S.stack.length-1]; return L.phone && t && t.type === 'chat' && CHATS[t.id] ? t.id : null; }
+/* the open conversation (S.chatOpen) sits in the dock on a desktop or tablet, and is the Chats tab on a phone */
+function phoneConv(){ return L.phone && S.tab === 'chats' && !S.stack.length && S.chatOpen && CHATS[S.chatOpen] ? S.chatOpen : null; }
 function activeChat(){ return L.phone ? phoneConv() : (S.chatOpen && CHATS[S.chatOpen] ? S.chatOpen : null); }
 function chatSub(c){ return PRESENCE[c.memberIds[0]] || 'offline'; }
 function renderChats(){
@@ -2919,9 +2941,15 @@ function renderChats(){
   if (cid){
     el.innerHTML = convHTML(cid);
     var box = $('chatbox'); growBox(box); if (box && focused){ box.focus(); box.setSelectionRange(box.value.length, box.value.length); }
-    var ms = $('msgs'); if (ms) ms.scrollTop = ms.scrollHeight;
+    var ms = $('msgs'); if (ms) ms.scrollTop = CHATSCROLL[cid] == null ? ms.scrollHeight : CHATSCROLL[cid];
   } else el.innerHTML = chatListHTML();
 }
+/* where you were in each conversation, kept while you go elsewhere; at the bottom, it follows new messages */
+var CHATSCROLL = {};
+document.addEventListener('scroll', function(ev){
+  var t = ev.target, cid = t && t.id === 'msgs' && t.getAttribute('data-chat'); if (!cid || !t.clientHeight) return;
+  if (t.scrollHeight - t.scrollTop - t.clientHeight < 24) delete CHATSCROLL[cid]; else CHATSCROLL[cid] = t.scrollTop;
+}, true);
 </script>
 <script>
 /* =========================================================================
@@ -2932,7 +2960,7 @@ function renderChats(){
    verbs: going · interested · promoted (obj event) · created_event (event)
           published_horizon · followed_horizon · added_to_horizon (horizon; extra.eventIds)
           created_horizon (a private horizon: only its author ever sees the row)
-          posted_callout (callout) · followed_person (person)
+          posted_callout · replied_callout (callout; extra.replyId) · followed_person (person)
    ========================================================================= */
 /* the app's clock is the real one (nowMs, section 0). The fixture rows are seeded back from the moment the app started */
 var FIXNOW = nowMs();
@@ -3033,10 +3061,37 @@ function seedActivity(){
   if (hz0) fresh(byKey['published_horizon|' + HORIZONS[hz0].ownerId + '|' + hz0], 170);
   var next = up.filter(function(e){ return dayDiff(e.date) >= 1 && baseAttendees(e.id).length; })[0];
   if (next){ var p0 = baseAttendees(next.id)[0]; fresh(byKey['going|' + p0 + '|' + next.id] || row(p0, 'going', 'event', next.id, FIXNOW - 60000), 38); }
+  /* people answered the fixture call outs in their threads, some time after each was posted */
+  var replies = [];
+  REPLYSEED.forEach(function(x){
+    var c = calloutOf(x.calloutId); if (!c || !c.hostId || c.hostAcct || c.hostId === x.author) return;
+    var posted = byKey['posted_callout|' + c.hostId + '|' + c.id], from = posted ? isoMs(posted.ts) : lo;
+    var ms = Math.round(from + x.f * (FIXNOW - 10 * 60000 - from));
+    replies.push({ id:x.id, calloutId:c.id, author:x.author, text:x.text, ts:tsIso(ms) });
+    row(x.author, 'replied_callout', 'callout', c.id, ms, { replyId:x.id });
+  });
   rows.sort(function(a, b){ return isoMs(b.ts) - isoMs(a.ts); });
-  ACTSEED = { key:key, rows:rows };
+  ACTSEED = { key:key, rows:rows, replies:replies };
   return rows;
 }
+/* the fixture's replies (f: how far between the call out being posted and now) */
+var REPLYSEED = [
+  { id:'r-sound-rio', calloutId:'co-sound', author:'p-rio', f:.3, text:'I have a 2 kW PA and can do the Saturday. How big is the room?' },
+  { id:'r-sound-jon', calloutId:'co-sound', author:'p-jon', f:.75, text:'Mixed the Quiet Rooms nights last winter. Happy to take the desk for a set or two.' },
+  { id:'r-kitchen-mira', calloutId:'co-kitchen', author:'p-mira', f:.5, text:'Fed sixty on two burners at Borderland. Can we talk menus this week?' }
+];
+
+/* ---- call-out replies (table callout_replies): the fixture's, plus the ones made here, minus the ones taken off ---- */
+function allReplies(){ seedActivity(); return ACTSEED.replies.concat(REPLIES); }
+function repliesOf(coId){
+  var me = myActor();
+  return allReplies().filter(function(r){ return r.calloutId === coId && !REPLYGONE[r.id] && (r.author === me || !!PEOPLE[r.author]); })
+    .sort(function(a, b){ return isoMs(a.ts) - isoMs(b.ts); });
+}
+function myReplies(coId){ var me = myActor(); return me ? repliesOf(coId).filter(function(r){ return r.author === me; }) : []; }
+/* replies are taken while the call out is open and someone known is behind it (its author may reply in it too) */
+function canReply(c){ return calloutOpen(c) && (isOwnCallout(c) || !!calloutAuthor(c)); }
+function canDeleteReply(r){ return S.loggedIn && (r.author === myActor() || isOwnCallout(calloutOf(r.calloutId))); }
 
 /* ---- what you do here: rows the app adds, kept in this browser until there is a database ---- */
 var LIVEACT = [];
@@ -3086,6 +3141,8 @@ function actVisible(a){
   if (a.objType === 'event' && !canSee(id)) return false;
   if (a.objType === 'horizon' && !(hz && (hz.isPublished || (mine && hzOwnedByMe(id))))) return false;
   if (a.objType === 'callout' && !calloutOpen(calloutOf(id))) return false;
+  /* a reply row lasts while its author still has a reply under the call out */
+  if (a.verb === 'replied_callout' && !repliesOf(id).some(function(r){ return r.author === a.actor; })) return false;
   if (a.objType === 'person' && !PEOPLE[id]) return false;
   if (a.verb === 'added_to_horizon' && !(a.extra && a.extra.eventIds || []).some(canSee)) return false;
   if (!mine) return a.verb !== 'created_horizon';
@@ -3233,7 +3290,7 @@ function whoAllDialog(evId){
    many people and one event (going, interested, promoted); one person following several people; and everything
    that happened to one Event Horizon (published, filled, followed). The entry's time is its newest row's. */
 var GROUPWIN = 3 * 3600000;
-var MANYACTORS = { going:1, interested:1, promoted:1 };
+var MANYACTORS = { going:1, interested:1, promoted:1, replied_callout:1 };
 var HZVERBS = { published_horizon:4, created_horizon:3, added_to_horizon:2, followed_horizon:1 };
 function groupRows(rows){
   var out = [], idx = {};
@@ -3313,7 +3370,7 @@ function homeCallouts(){
   var sc = homeScope(), posted = {}, fof = {}, me = myActor();
   if (S.loggedIn && !sc.all) fofPeople().forEach(function(x){ fof[x.id] = x.via; });
   activityRows().forEach(function(a){ if (a.verb === 'posted_callout') posted[a.objId] = Math.max(posted[a.objId] || 0, actTime(a)); });
-  return CALLOUTS.filter(function(c){ return calloutOpen(c) && !isOwnCallout(c) && !(me && c.hostId === me) && !(S.loggedIn && ANSWERED[c.id]); })
+  return CALLOUTS.filter(function(c){ return calloutOpen(c) && !isOwnCallout(c) && !(me && c.hostId === me) && !myReplies(c.id).length; })
     .map(function(c){ return { id:c.id, why:calloutWhy(c, sc, fof), ms:posted[c.id] || 0 }; })
     .filter(function(x){ return x.why; })
     .sort(function(a, b){ return (b.why.k === 'skill') - (a.why.k === 'skill') || b.ms - a.ms; });
@@ -3405,6 +3462,7 @@ function actSentence(e){
     case 'promoted':          return who + ' promoted an event';
     case 'created_event':     return who + ' created an event';
     case 'posted_callout':    return who + ' posted a call out';
+    case 'replied_callout':   return who + ' replied to ' + (isOwnCallout(calloutOf(e.objId)) ? 'your call out ' : '') + objLink('callout', e.objId, calloutOf(e.objId).title);
     case 'followed_person':   return who + ' followed ' + namesHTML(e.objs, true);
   }
   return who;
@@ -3427,6 +3485,7 @@ function youLineHTML(rows){
     added_to_horizon:function(l){ var n = 0; l.forEach(function(a){ n += ((a.extra && a.extra.eventIds) || []).filter(function(x){ return EVENTS[x]; }).length; });
       return 'added ' + plural(n, 'event') + ' to ' + list(l, hzLink); },
     posted_callout:function(l){ return l.length === 1 ? 'posted a call out: ' + objLink('callout', l[0].objId, calloutOf(l[0].objId).title) : 'posted ' + l.length + ' call outs'; },
+    replied_callout:function(l){ return 'replied to ' + list(l, function(id){ return objLink('callout', id, calloutOf(id).title); }); },
     followed_person:function(l){ return 'followed ' + list(l, function(pid){ return objLink('person', pid, whoName(pid)); }); }
   };
   var parts = order.filter(function(v){ return frag[v]; }).map(function(v){ return frag[v](by[v]); });
@@ -3463,28 +3522,37 @@ function fPersonCard(pid, sub){
     '<div class="fcm">'+flink('person', pid, '<span class="fct">'+esc(p.displayName)+'</span>')+'<div class="fcs">'+esc(sub || ['@' + p.handle, p.bio].filter(Boolean).join(' · '))+'</div></div>' +
     (me ? '' : fbtn('followp', pid, fol, 'Follow', 'Following', 'plus', 'check', true)) + '</div>';
 }
-/* what a call out offers you: Answer while it is open; your answer's chat once you have */
+/* what a call out offers you: Answer while it is open (a reply under it, never a chat) */
 function calloutAct(coId, small){
-  var c = calloutOf(coId), ans = S.loggedIn && ANSWERED[coId] && CHATS[ANSWERED[coId]] ? ANSWERED[coId] : null;
-  if (isOwnCallout(c)) return '';
-  if (ans) return small ? '<span class="ctw">'+ic('check',12)+' Answered</span>' : '<button class="btn" data-act="chatsel" data-id="'+ans+'">'+ic('check',16)+'Answered · Open chat</button>';
-  return calloutOpen(c) && calloutAuthor(c) ? '<button class="btn'+(small ? '' : ' primary')+'" data-act="answercallout" data-id="'+coId+'">'+ic('chat',16)+'Answer</button>' : '';
+  var c = calloutOf(coId);
+  if (isOwnCallout(c) || !calloutOpen(c) || !calloutAuthor(c)) return '';
+  return '<button class="btn'+(small ? '' : ' primary')+'" data-act="answercallout" data-id="'+coId+'">'+ic('chat',16)+'Answer</button>';
 }
-/* a call out is someone standing up in the room: the one inverted thing on Home, the ask in big type */
-function fCalloutCard(coId, ms){
-  var c = calloutOf(coId), evId = calloutEventId(c), mine = isOwnCallout(c);
+/* a call out is someone standing up in the room: the one inverted thing on Home, the ask in big type, and the
+   first of what people answered under it. On its event's page it opens on top of the event (act 'open'). */
+function fCalloutCard(coId, ms, o){
+  o = o || {};
+  var c = calloutOf(coId), evId = o.noEvent ? null : calloutEventId(c), mine = isOwnCallout(c), a = o.act || 'row';
   return '<div class="fco'+selCls('callout', coId)+'" data-type="callout" data-id="'+coId+'">' +
     '<div class="fcok"><span class="fcotag">'+ic('callout',14)+'Call out</span>'+(ms ? timeHTML(ms) : '')+'</div>' +
-    '<div class="fcol">Looking for</div>' + flink('callout', coId, '<span class="fcoa">'+esc(c.title)+'</span>') + (c.body ? '<p class="fcob">'+esc(c.body)+'</p>' : '') +
+    '<div class="fcol">Looking for</div>' + flink('callout', coId, '<span class="fcoa">'+esc(c.title)+'</span>').replace('data-act="row"', 'data-act="'+a+'"') + (c.body ? '<p class="fcob">'+esc(c.body)+'</p>' : '') +
     (evId ? '<button type="button" class="fcoe" data-act="row" data-type="event" data-id="'+evId+'">'+sqPx(evId, 36)+'<span><small>For</small>'+esc(EVENTS[evId].title)+'<small>'+esc(relDay(EVENTS[evId]) + ' · ' + whereOf(EVENTS[evId]))+'</small></span></button>' : '') +
-    '<div class="fcof"><span class="fcoby">' + (c.hostId && PEOPLE[c.hostId] ? avHTML(c.hostId) : '') + '<span>'+esc(mine ? 'You' : c.hostName)+'<small>open until '+esc(fmtShort(c.expiresAt))+'</small></span></span>' + calloutAct(coId) + '</div></div>';
+    '<div class="fcof"><span class="fcoby">' + (c.hostId && PEOPLE[c.hostId] ? avHTML(c.hostId) : '') + '<span>'+esc(mine ? 'You' : c.hostName)+'<small>open until '+esc(fmtShort(c.expiresAt))+'</small></span></span>' + calloutAct(coId) + '</div>' +
+    repliesPeekHTML(coId, a) + '</div>';
 }
 function coTileHTML(x){
   var coId = x.id || x, c = calloutOf(coId), evId = calloutEventId(c), why = x.why && x.why.t;
   return '<div class="cotile'+selCls('callout', coId)+'" data-type="callout" data-id="'+coId+'">' +
     '<span class="fcotag">'+ic('callout',14)+'Call out</span>' + flink('callout', coId, '<b class="cta">'+esc(c.title)+'</b>') +
     '<span class="ctw">'+esc(c.hostName + (evId ? ' · for ' + EVENTS[evId].title : ''))+'</span>' +
-    (why ? '<span class="ctwhy">'+esc(why)+'</span>' : '') + calloutAct(coId, true) + '</div>';
+    (why ? '<span class="ctwhy">'+esc(why)+'</span>' : '') + repliesPeekHTML(coId) + calloutAct(coId, true) + '</div>';
+}
+/* someone answered a call out: what they said, and the call out it is under */
+function fReplyCard(e){
+  var c = calloutOf(e.objId), rs = repliesOf(e.objId).filter(function(r){ return e.actors.indexOf(r.author) >= 0; }), r = rs[rs.length - 1];
+  return '<div class="fcard fcorep'+selCls('callout', e.objId)+'" data-type="callout" data-id="'+e.objId+'"><span class="r-ic">'+ic('callout')+'</span>' +
+    '<div class="fcm"><div class="fck">Call out · '+esc(isOwnCallout(c) ? 'yours' : c.hostName)+' · '+nReplies(repliesOf(e.objId).length)+'</div>'+flink('callout', e.objId, '<span class="fct">'+esc(c.title)+'</span>') +
+    (r ? '<div class="fcq">“'+esc(r.text)+'”</div>' : '') + '</div></div>';
 }
 function viaText(x){
   var n = x.via.map(function(v){ return whoName(v); });
@@ -3502,6 +3570,7 @@ function feedEntryHTML(e, cls){
   if (e.verb === 'posted_callout') return '<article class="fitem fitco'+(cls ? ' ' + cls : '')+'"'+at+'>' + fCalloutCard(e.objId, e.ms) + '</article>';
   var lead = e.actors.slice(0, 2), body = '';
   if (e.objType === 'event') body = fEventCard(e.objId);
+  else if (e.objType === 'callout') body = fReplyCard(e);
   else if (e.objType === 'horizon'){
     var onlyAdded = !e.parts.published_horizon && !e.parts.created_horizon && e.parts.added_to_horizon && e.eventIds.length;
     if (onlyAdded){
@@ -3683,14 +3752,17 @@ function phoneCanBack(){
   return S.stack.length > 0 || S.phoneSearch || S.folder.kind !== tabRootFolder(S.tab).kind;
 }
 function renderAppbar(){
-  var h = '', back = phoneCanBack();
-  if (back) h += '<button class="ab-btn" data-act="pback" aria-label="Back">'+ic('back',22)+'</button>';
-  if (S.stack.length){
+  var h = '', conv = phoneConv(), back = conv || phoneCanBack();
+  /* in a conversation, back is all chats; its name and the profile button open their profile over it */
+  if (back) h += conv ? '<button class="ab-btn" data-act="chatback" aria-label="All chats">'+ic('back',22)+'</button>' : '<button class="ab-btn" data-act="pback" aria-label="Back">'+ic('back',22)+'</button>';
+  if (conv){
+    var cc = CHATS[conv], cp = cc.memberIds[0];
+    h += '<div class="ab-title ab-tap" data-act="chatprofile" data-id="'+cp+'" role="button">'+esc(cc.name)+'<small>'+esc(chatSub(cc))+'</small></div>' +
+      '<button class="ab-btn" data-act="chatprofile" data-id="'+cp+'" aria-label="Profile">'+ic('user',22)+'</button>';
+  } else if (S.stack.length){
     var it = S.stack[S.stack.length-1];
-    if (it.type === 'chat' && CHATS[it.id]) h += '<div class="ab-title ab-tap" data-act="open" data-type="person" data-id="'+CHATS[it.id].memberIds[0]+'" role="button">'+esc(CHATS[it.id].name)+'<small>'+esc(chatSub(CHATS[it.id]))+'</small></div>' +
-      '<button class="ab-btn" data-act="open" data-type="person" data-id="'+CHATS[it.id].memberIds[0]+'" aria-label="Profile">'+ic('user',22)+'</button>';
     /* a long name takes both lines; the kind of thing it is gives way */
-    else h += '<div class="ab-title"><span class="abn">'+esc(itemName(it))+'</span>' +
+    h += '<div class="ab-title"><span class="abn">'+esc(itemName(it))+'</span>' +
       (itemName(it).length > 26 ? '' : '<small>'+esc({event:'Event',horizon:'Event Horizon',person:'Person',callout:'Call out'}[it.type]||'')+'</small>') + '</div>';
   } else if (S.tab === 'chats'){
     h += '<div class="ab-title">Chats</div>';
@@ -3938,7 +4010,7 @@ function loginDialog(){
    What an account keeps is swapped in when it logs in and put away when it logs out. */
 var ACCTS = {};
 function acctPid(k){ return k === 'demo' ? 'p-michal' : 'u-' + k; }
-function blankAcct(profile){ return { profile:profile, rsvp:{}, went:{}, promoted:{}, hzfollow:{}, pfollow:{}, myevents:[], myhorizons:[], chats:{ byId:{}, order:[] }, unread:{}, drafts:{ forms:{}, chat:{} }, answered:{}, answering:{}, shift:{} }; }
+function blankAcct(profile){ return { profile:profile, rsvp:{}, went:{}, promoted:{}, hzfollow:{}, pfollow:{}, myevents:[], myhorizons:[], chats:{ byId:{}, order:[] }, unread:{}, drafts:{ forms:{}, chat:{} }, shift:{} }; }
 function demoAcct(){
   var m = PEOPLE['p-michal'];
   var a = blankAcct({ displayName:m.displayName, handle:m.handle, bio:m.bio, skills:m.skills.slice(), cities:m.cities.slice(), city:m.city });
@@ -3953,7 +4025,7 @@ function captureAcct(){
   var p = PEOPLE['self'];
   return { profile:{ displayName:p.displayName, handle:p.handle, bio:p.bio, skills:p.skills, cities:p.cities, city:p.city },
            rsvp:RSVP, went:WENT, promoted:PROMOTED, hzfollow:HZFOLLOW, pfollow:PFOLLOW, myevents:MYEVENTS, myhorizons:MYHORIZONS,
-           chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT, drafts:{ forms:FORMDRAFTS, chat:CHATDRAFT }, answered:ANSWERED, answering:ANSWERING, shift:SHIFT, read:READ,
+           chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT, drafts:{ forms:FORMDRAFTS, chat:CHATDRAFT }, shift:SHIFT, read:READ,
            look:PTHEME['self'] || null };
 }
 function loadAcct(a){
@@ -3967,10 +4039,12 @@ function loadAcct(a){
   CHATS = (a.chats && a.chats.byId) || {};
   /* group chats kept from before chat was person to person are put away */
   Object.keys(CHATS).forEach(function(k){ if (CHATS[k].kind !== 'dm') delete CHATS[k]; });
+  /* chat is words only: cards sent into chats before (a shared event, horizon or call out) are put away */
+  Object.keys(CHATS).forEach(function(k){ CHATS[k].messages = (CHATS[k].messages || []).filter(function(m){ return m.from === 'sys' || m.text; }); delete CHATS[k].pin; });
   CHATORDER = ((a.chats && a.chats.order) || Object.keys(CHATS)).filter(function(k){ return CHATS[k]; });
   UNREADCHAT = a.unread || {};
   FORMDRAFTS = (a.drafts && a.drafts.forms) || {}; CHATDRAFT = (a.drafts && a.drafts.chat) || {};
-  ANSWERED = a.answered || {}; ANSWERING = a.answering || {}; SHIFT = a.shift || {};
+  SHIFT = a.shift || {};
   if (a.read) Object.keys(a.read).forEach(function(k){ READ[k] = true; });
   if (a.look) PTHEME['self'] = a.look = asLook(a.look); else delete PTHEME['self'];
   S.me = { name:p.displayName || 'You', handle:p.handle || 'you' };
@@ -4030,54 +4104,6 @@ function addToDialog(evId){
       '<span class="lstate hzchk'+(has?' on':'')+'" role="checkbox" aria-checked="'+has+'">'+(has ? ic('check') : '')+'</span></div>';
   }).join('') + '</div>';
   dialog('Add “' + EVENTS[evId].title + '” to', h, '<button class="btn primary" data-act="closedlg">Done</button>', 440);
-}
-/* Share: anyone can copy the link (or hand it to the phone's own share sheet);
-   logged in, you can also send it into a chat with a line of your own. You stay where you are. */
-var SH = null;
-function shareDialog(id, type){
-  type = type === 'horizon' || type === 'callout' ? type : 'event';
-  SH = { id:id, type:type, q:'' };
-  var url = linkOf(type, id), name = itemName({ type:type, id:id });
-  var h = '<div class="field"><label for="sh-url">Link</label><div class="linkline">' +
-      '<input type="text" id="sh-url" readonly value="'+esc(url)+'" aria-label="Link">' +
-      '<button class="btn primary" data-act="copylink">'+ic('share')+'Copy link</button></div></div>';
-  if (navigator.share) h += '<div class="field"><button class="btn" data-act="nativeshare">'+ic('share')+'Share to an app</button></div>';
-  if (S.loggedIn){
-    h += '<div class="field"><span class="flabel">Send in a chat</span>' +
-         '<input type="text" id="sh-msg" placeholder="Add a message" autocomplete="off" aria-label="Message">' +
-         '<input type="search" id="sh-q" placeholder="Search people and chats" autocomplete="off" aria-label="Search people and chats">' +
-         '<div class="picklist" id="sh-list">'+shareListHTML()+'</div></div>';
-  }
-  dialog('Share “' + name + '”', h, '<button class="btn" data-act="closedlg">Done</button>', 460, S.loggedIn ? '' : 'sheet shsheet');
-}
-/* your chats first, then the people you have no chat with yet */
-function shareListHTML(){
-  var q = SH.q.toLowerCase().trim(), rows = [];
-  chatList().forEach(function(k){
-    var c = CHATS[k];
-    if (!c || (q && !matches(c.name, q))) return;
-    rows.push('<div class="linkrow" data-act="doshare" data-chat="'+k+'" role="button">'+chatAv(c)+'<div class="lr">'+esc(c.name)+
-      '<div class="fhelp">Direct message</div></div>'+ic('chat')+'</div>');
-  });
-  ncPeopleAll().filter(function(pid){
-    return !Object.keys(CHATS).some(function(k){ return CHATS[k].memberIds[0] === pid && CHATS[k].messages.length; }) &&
-           (!q || matches(person(pid).displayName, q) || matches(person(pid).handle, q));
-  }).forEach(function(pid){
-    var p = person(pid);
-    rows.push('<div class="linkrow" data-act="doshare" data-person="'+pid+'" role="button">'+avHTML(pid,'a40')+'<div class="lr">'+esc(p.displayName)+
-      '<div class="fhelp">@'+esc(p.handle)+'</div></div>'+ic('chat')+'</div>');
-  });
-  return rows.join('') || '<div class="empty">Nobody matches.</div>';
-}
-function copyLink(){
-  var inp = $('sh-url'), url = inp ? inp.value : '';
-  var ok = function(){ if (!S.loggedIn) closeDialogs(); toast('Link copied', url.replace(/^https?:\/\//, '')); };
-  var legacy = function(){ try { inp.focus(); inp.select(); document.execCommand('copy'); ok(); } catch(e){ inp.select(); } };
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(ok, legacy); else legacy();
-}
-function nativeShare(){
-  if (!SH || !navigator.share) return;
-  navigator.share({ title:itemName({ type:SH.type, id:SH.id }), url:linkOf(SH.type, SH.id) }).catch(function(){});
 }
 /* ---- new chat: a chat is with one person. Pick them and you are in the conversation. ---- */
 var NC = null;
@@ -4690,7 +4716,7 @@ function wizAct(which){
    menu is a shortcut, never a second implementation.
    ========================================================================= */
 var CTXSEL = '.row[data-type], .card2[data-type], .calev[data-type], .calcell .dots i[data-type], ' +
-             '.track[data-type], .crow, .nrow[data-kind="horizon"], .nrow[data-type="horizon"], .nrow[data-type="person"], .evcard[data-type], .chrow[data-act="chatsel"], ' +
+             '.track[data-type], .crow, .nrow[data-kind="horizon"], .nrow[data-type="horizon"], .nrow[data-type="person"], .chrow[data-act="chatsel"], ' +
              '.fcard[data-type], .fco[data-type], .cotile[data-type]';
 /* what was pressed: the item's element, the element that opens it, and what it stands for */
 function ctxTarget(node){
@@ -4750,7 +4776,7 @@ function ctxItems(t, only){
     /* logged out there are no horizons of yours to list yet: log in, then pick one */
     if (S.loggedIn) out.push({ code:'addto', label:'Add to horizon', icon:'addhorizon', sub: ctxHorizonItems(id) });
     else out.push({ code:'addto', label:'Add to horizon', icon:'addhorizon', run:function(){ gated(addToDialog)(id); } });
-    out.push({ code:'share', label:'Share…', icon:'share', run:function(){ shareDialog(id, 'event'); } });
+    out.push({ code:'share', label:'Share', icon:'share', run:function(){ shareLink('event', id); } });
     if (mine && !past) out.push({ code:'callout', label:'New call out…', icon:'callout', run:function(){ runCmd('new-callout', id); } });
     if (mine) out.push('-', { code:'delete', label:'Delete…', icon:'trash', run:function(){ deleteEventDialog(id); } });
   } else {
@@ -4762,7 +4788,7 @@ function ctxItems(t, only){
                { code:'edit', label:'Edit details…', icon:'edit', run:function(){ gated(renameHzDialog)(id); } });
       if (!hz.isPersonalDefault) out.push({ code:'publish', label:'Published', icon:'check', check: !!hz.isPublished, run:function(){ publishHz(id); } });
     }
-    if (hz.isPublished) out.push({ code:'share', label:'Share…', icon:'share', run:function(){ shareDialog(id, 'horizon'); } });
+    if (hz.isPublished) out.push({ code:'share', label:'Share', icon:'share', run:function(){ shareLink('horizon', id); } });
     if (hmine) out.push('-', { code:'delete', label:'Delete…', icon:'trash', run:function(){ deleteHorizonDialog(id); } });
   }
   if (only){
@@ -4779,17 +4805,16 @@ function ctxOtherItems(t, only){
     if (id !== 'self') out.push('-', { code:'dm', label:'Message', icon:'chat', run:function(){ messagePerson(id); } },
       { code:'follow', label: fol ? 'Unfollow' : 'Follow', icon: fol ? 'close' : 'plus', run: ctxVerb(function(){ followP(id); }, function(){ return !!PFOLLOW[id]; }, 'Following', person(id).displayName) });
   } else if (t.type === 'callout'){
-    var c = calloutOf(id), mine = isOwnCallout(c), ans = S.loggedIn && ANSWERED[id] && CHATS[ANSWERED[id]] ? ANSWERED[id] : null;
+    var c = calloutOf(id), mine = isOwnCallout(c);
     out = [{ code:'open', label:'Open', def:true, icon:'callout', run:function(){ ctxOpen(t); } }, '-'];
     if (mine) out.push({ code:'edit', label:'Edit…', icon:'edit', run:function(){ newCalloutDialog({ edit:id }); } },
                        { code:'close', label: c.closed ? 'Reopen' : 'Close call out', icon:'close', run:function(){ closeCallout(id); } });
-    else if (ans) out.push({ code:'chat', label:'Open chat', icon:'chat', run:function(){ openChat(ans); } });
-    else if (calloutOpen(c) && calloutAuthor(c)) out.push({ code:'answer', label:'Answer…', icon:'chat', run:function(){ answerCallout(id); } });
-    if (calloutOpen(c)) out.push({ code:'share', label:'Share…', icon:'share', run:function(){ shareDialog(id, 'callout'); } });
+    else if (calloutOpen(c) && calloutAuthor(c)) out.push({ code:'answer', label:'Answer', icon:'chat', run:function(){ answerCallout(id); } });
+    if (calloutOpen(c)) out.push({ code:'share', label:'Share', icon:'share', run:function(){ shareLink('callout', id); } });
   } else {
     var ch = CHATS[id];
     out = [{ code:'open', label:'Open', def:true, lead:chatAv(ch), run:function(){ openChat(id); } }, '-',
-           { code:'profile', label:'Profile', icon:'user', run:function(){ openItem('person', ch.memberIds[0], 'push'); } }];
+           { code:'profile', label:'Profile', icon:'user', run:function(){ chatProfile(ch.memberIds[0]); } }];
   }
   if (only) out = out.filter(function(it){ return it !== '-' && only.indexOf(it.code) >= 0; });
   return out;
@@ -5048,9 +5073,12 @@ function tabOfFolder(f){
 }
 /* each tab keeps its own place: switching back returns you there; tapping the tab you are on goes to its top */
 var TABMEM = {};
+function rememberTab(){ TABMEM[S.tab] = { folder:S.folder, stack:S.stack.slice(), query:S.query, ps:S.phoneSearch, searchret:SEARCHRET, scroll:copyScroll(CURSCROLL) }; }
 function setTab(t){
   var m = S.tab === t ? null : TABMEM[t];
-  if (S.tab !== t) TABMEM[S.tab] = { folder:S.folder, stack:S.stack.slice(), query:S.query, ps:S.phoneSearch, searchret:SEARCHRET, scroll:copyScroll(CURSCROLL) };
+  if (S.tab !== t) rememberTab();
+  /* the open conversation is the Chats tab's place; tapping Chats while in it goes back to all chats */
+  else if (t === 'chats' && phoneConv()){ CONVUP = false; S.chatOpen = null; }
   S.tab = t;
   if (m){
     S.folder = m.folder; S.stack = m.stack.filter(validItem); S.query = m.query; S.phoneSearch = m.ps; SEARCHRET = m.searchret;
@@ -5176,14 +5204,31 @@ var followP = gated(function(pid){
   render();
   toast(PFOLLOW[pid] ? 'Following' : 'Unfollowed', person(pid).displayName);
 });
-/* chats open in the right pane on a desktop, and in the Chats tab on a phone */
+/* a conversation is never a page of its own: it opens in the chat dock on a desktop or tablet, and in the Chats tab on a
+   phone. Whichever it is stays the open one (S.chatOpen) while you go elsewhere, and across a reload, until you go
+   back to all chats. */
+var CONVUP = false;            /* phone: the open conversation was opened from the chat list, so ‹ steps back to it */
 function openChat(cid){
   UNREADCHAT[cid] = false;
   var i = CHATORDER.indexOf(cid); if (i > 0){ CHATORDER.splice(i, 1); CHATORDER.unshift(cid); }
-  if (L.phone){ openItem('chat', cid, 'push'); return; }
+  if (L.phone){
+    CONVUP = S.tab === 'chats' && !S.stack.length && !phoneConv();
+    S.chatOpen = cid;
+    if (S.tab !== 'chats'){ rememberTab(); S.tab = 'chats'; }
+    goFolder({ kind:'chats' });
+    render();
+    return;
+  }
   S.chatOpen = cid; S.rightOpen = true; S.lastOpened = 'right';
   render();
   setTimeout(function(){ var b = $('chatbox'); if (b) b.focus(); }, 30);
+}
+/* back to all chats: the conversation is closed, its draft kept */
+function chatUp(){
+  if (L.phone && CONVUP && history.state && history.state.idx > 0){ CONVUP = false; history.back(); return; }
+  CONVUP = false; S.chatOpen = null;
+  if (L.phone) ROUTE.replace = true;
+  render();
 }
 function openDM(pid){
   var dm = Object.keys(CHATS).filter(function(k){ return CHATS[k].memberIds[0] === pid; })[0];
@@ -5191,55 +5236,82 @@ function openDM(pid){
   return dm;
 }
 var messagePerson = gated(function(pid){ openChat(openDM(pid)); });
-/* sending keeps you on the page: the toast can take you to the chat */
-var shareToChat = gated(function(id, cid, type, text){
-  var hz = type === 'horizon', st = stamp(), m = { from:'self', t:st.t, ts:tsIso(isoMs(st.ts) + 1), text:'' };
-  if (text) CHATS[cid].messages.push({ from:'self', t:st.t, ts:st.ts, text:text });
-  m[hz ? 'hzcard' : type === 'callout' ? 'cocard' : 'card'] = id;
-  CHATS[cid].messages.push(m);
-  var i = CHATORDER.indexOf(cid); if (i > 0){ CHATORDER.splice(i, 1); CHATORDER.unshift(cid); }
-  closeDialogs(); render();
-  toast('Sent to ' + CHATS[cid].name, itemName({ type: hz ? 'horizon' : 'event', id:id }), { label:'Open', run:function(){ openChat(cid); } });
-});
-/* answering opens the conversation with its author, the call out pinned at the top, a first line ready to send */
-var answerCallout = gated(function(coId){
-  var c = calloutOf(coId); if (!c || isOwnCallout(c)) return;
-  if (ANSWERED[coId] && CHATS[ANSWERED[coId]]){ openChat(ANSWERED[coId]); return; }
-  if (!calloutOpen(c)){ toast('This call out is closed', c.title); return; }
-  if (!calloutAuthor(c)){ toast('Can’t answer this call out', 'We don’t know who posted it'); return; }
-  var cid = openDM(calloutAuthor(c));
-  CHATS[cid].pin = { callout:coId };
-  if (!CHATDRAFT[cid]) CHATDRAFT[cid] = 'Hi ' + firstName(calloutAuthor(c)) + ', I can help with this. When do you need me?';
-  ANSWERING[cid] = coId;
-  openChat(cid);
-  setTimeout(function(){ var b = $('chatbox'); if (b){ b.focus(); b.setSelectionRange(b.value.length, b.value.length); } }, 60);
-});
+/* a profile opened from a chat is a window over everything: × (or Esc, or the phone's back) closes it and leaves
+   you exactly where you were, the conversation still open. Going anywhere from inside it closes it first. */
+function chatProfile(pid){
+  if (!PEOPLE[pid]) return;
+  var d = dialog(person(pid).displayName, '<div id="pfwin" data-id="'+pid+'">'+personHTML(pid)+'</div>', '', 680, 'pfwin');
+  d.querySelector('.dbar').insertAdjacentHTML('afterbegin', '<button class="x dback" data-act="closedlg" aria-label="Back to the chat">'+ic('back',16)+'</button>');
+  d.style.top = Math.max(16, (window.innerHeight - d.offsetHeight) / 2.4) + 'px';
+  placeDlg(d);
+}
+function paintChatProfile(){
+  var w = $('pfwin'); if (!w) return;
+  var b = w.parentNode, top = b.scrollTop;
+  w.innerHTML = personHTML(w.getAttribute('data-id')); b.scrollTop = top;
+}
 function sendChat(){
   var box = $('chatbox'), cid = activeChat(); if (!box || !cid || !box.value.trim()) return;
-  var st = stamp(), text = box.value.trim(), coId = ANSWERING[cid], co = coId && calloutOf(coId);
-  /* an answer carries the call out it answers, so its author knows which ask it is */
-  if (co && !CHATS[cid].messages.some(function(m){ return m.cocard === coId; })) CHATS[cid].messages.push({ from:'self', t:st.t, ts:st.ts, cocard:coId, text:'' });
-  CHATS[cid].messages.push({ from:'self', t:st.t, ts:st.ts + 1, text:text });
-  delete CHATDRAFT[cid];
-  if (coId){ ANSWERED[coId] = cid; delete ANSWERING[cid]; recordAnswer(co, text); }
+  var st = stamp();
+  CHATS[cid].messages.push({ from:'self', t:st.t, ts:st.ts, text:box.value.trim() });
+  delete CHATDRAFT[cid]; delete CHATSCROLL[cid];
   box.value = '';
   render();
   var b = $('chatbox'); if (b) b.focus();
 }
-/* an answer is listed on the call out for its author, and reaches the author's chats — in this browser the author is
-   another account here. With Neon this is a row in callout_answers and a message in the pair's thread. */
-function recordAnswer(c, text){
-  var me = myActor(); if (!c || !me) return;
-  c.answers = (c.answers || []).filter(function(x){ return x.pid !== me; }).concat([{ pid:me, at:Date.now() }]);
-  var a = c.hostAcct && c.hostAcct !== S.acct && ACCTS[c.hostAcct]; if (!a) return;
-  a.chats = a.chats || { byId:{}, order:[] }; var by = a.chats.byId = a.chats.byId || {};
-  var k = Object.keys(by).filter(function(x){ return by[x].memberIds && by[x].memberIds[0] === me; })[0];
-  if (!k){ k = 'c-dm-' + me; by[k] = { id:k, name:S.me.name, kind:'dm', memberIds:[me], messages:[] }; }
-  by[k].pin = { callout:c.id };
-  var st = stamp();
-  by[k].messages.push({ from:me, t:st.t, ts:st.ts, cocard:c.id, text:'' }, { from:me, t:st.t, ts:st.ts + 1, text:text });
-  a.chats.order = [k].concat((a.chats.order || []).filter(function(x){ return x !== k; }));
-  a.unread = a.unread || {}; a.unread[k] = true;
+
+/* ---- call-out replies: answering a call out is a public reply under it, as under a post ----
+   Answer opens the call out (if it is not what you are on) and puts you in the reply box. No chat is made. */
+var answerCallout = gated(function(coId){
+  var c = calloutOf(coId); if (!c || isOwnCallout(c)) return;
+  if (!calloutOpen(c)){ toast('This call out is closed', c.title); return; }
+  if (!calloutAuthor(c)){ toast('Can’t answer this call out', 'We don’t know who posted it'); return; }
+  var top = S.stack[S.stack.length-1];
+  if (!(top && top.type === 'callout' && top.id === coId && $('coreply'))) openItem('callout', coId, 'push');
+  setTimeout(function(){ var b = $('coreply'); if (b){ b.scrollIntoView({ block:'center' }); b.focus(); b.setSelectionRange(b.value.length, b.value.length); } }, 40);
+});
+var postReply = gated(function(coId){
+  var c = calloutOf(coId), box = $('coreply');
+  var text = String(box && box.getAttribute('data-id') === coId ? box.value : REPLYDRAFT[coId] || '').trim();
+  if (!c || !text) return;
+  if (!canReply(c)){ toast('This call out is closed', c.title); return; }
+  var r = { id:'r-' + Date.now().toString(36), calloutId:coId, author:myActor(), text:text, ts:tsIso(appNow()) };
+  REPLIES.push(r); delete REPLYDRAFT[coId];
+  logAct('replied_callout', 'callout', coId, { replyId:r.id });
+  render();
+  var b = $('coreply'); if (b && !L.phone) b.focus();
+});
+/* the call out's author can take any reply off it; anyone can take their own off. Undo puts it back */
+function deleteReply(id){
+  var r = allReplies().filter(function(x){ return x.id === id; })[0];
+  if (!r || REPLYGONE[id] || !canDeleteReply(r)) return;
+  REPLYGONE[id] = true;
+  render();
+  toast('Reply deleted', '', function(){ delete REPLYGONE[id]; render(); });
+}
+
+/* ---- Share copies the item's link; nothing else ---- */
+function copyText(text, done){
+  var legacy = function(){
+    var prev = document.activeElement, ta = document.createElement('textarea'), ok = false;
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { ta.setSelectionRange(0, text.length); ok = document.execCommand('copy'); } catch(e){ ok = false; }
+    ta.remove(); if (prev && prev.focus) try { prev.focus(); } catch(e){}
+    done(ok);
+  };
+  try { if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(function(){ done(true); }, legacy); return; } } catch(e){}
+  legacy();
+}
+function shareLink(type, id){
+  var url = linkOf(type === 'horizon' || type === 'callout' || type === 'person' ? type : 'event', id);
+  copyText(url, function(ok){
+    if (ok){ toast('Link copied', url.replace(/^https?:\/\//, '')); return; }
+    /* no clipboard at all: the link in a field, selected, to copy by hand */
+    dialog('Copy link', '<div class="field"><label for="sh-url">Link</label><input type="text" id="sh-url" readonly value="'+esc(url)+'"></div>',
+      '<button class="btn primary" data-act="closedlg">Done</button>', 460);
+    var f = $('sh-url'); if (f){ f.focus(); f.select(); }
+  });
 }
 /* search is a place of its own: where you were (and what you had open) is kept, and clearing takes you back */
 var SEARCHRET = null;
@@ -5295,6 +5367,8 @@ document.addEventListener('click', function(ev){
   var act = n.getAttribute('data-act'), id = n.getAttribute('data-id');
   if (act !== 'newmenu' && act !== 'acctmenu') closePopup();
   if (n.tagName === 'A') ev.preventDefault();
+  /* going anywhere from a profile opened over a chat closes that window first */
+  if (n.closest('.dlg.pfwin') && act !== 'closedlg' && act !== 'followp') closeDialogs();
   switch (act){
     case 'newmenu':  if (POP){ closePopup(); break; } popup(n, NEWITEMS); break;
     case 'acctmenu': if (POP){ closePopup(); break; } popup(n, [{ label:'Your profile', cmd:'profile', icon:'user' }, { label:'Edit profile', cmd:'editprofile', icon:'edit' }, '-', { label:'Log out', cmd:'logout', icon:'back' }]); break;
@@ -5326,13 +5400,7 @@ document.addEventListener('click', function(ev){
     case 'v-went':       setWent(id); break;
     case 'addto':        gated(addToDialog)(id); break;
     case 'dofile':       toggleInHorizon(id, n.getAttribute('data-hz')); break;
-    case 'share':        shareDialog(id, n.getAttribute('data-type') || 'event'); break;
-    case 'doshare': {
-      if (!SH) break;
-      var sc = n.getAttribute('data-chat') || openDM(n.getAttribute('data-person'));
-      shareToChat(SH.id, sc, SH.type, (($('sh-msg')||{}).value || '').trim());
-      break;
-    }
+    case 'share':        shareLink(n.getAttribute('data-type') || 'event', id); break;
     case 'ctxrun':       ctxSheetRun(+id); break;
     case 'ctxback':      ctxSheetBack(); break;
     case 'customize':    customizeDialog(id); break;
@@ -5340,9 +5408,12 @@ document.addEventListener('click', function(ev){
     case 'renamehz':     gated(renameHzDialog)(id); break;
     case 'dorename':     renameHz(id); break;
     case 'publishhz':    publishHz(id); break;
-    case 'followp':      followP(id); break;
+    case 'followp':      followP(id); paintChatProfile(); break;
     case 'dm':           messagePerson(id); break;
     case 'answercallout': answerCallout(id); break;
+    case 'postreply':    postReply(id); break;
+    case 'delreply':     deleteReply(id); break;
+    case 'chatprofile':  chatProfile(id); break;
     case 'costep':       stepStrip(+id); break;
     case 'shelfstep':    stepShelf(n.getAttribute('data-shelf'), +id); break;
     case 'upall':        UPALL = !UPALL; render(); break;
@@ -5350,7 +5421,7 @@ document.addEventListener('click', function(ev){
     case 'whoopen':      closeDialogs(); openItem('person', id, 'push'); break;
     case 'whodm':        closeDialogs(); messagePerson(id); break;
     case 'chatsel':      openChat(id); break;
-    case 'chatback':     if (L.phone) navBack(); else { S.chatOpen = null; render(); } break;
+    case 'chatback':     chatUp(); break;
     case 'sendchat':     sendChat(); break;
     case 'newchat':      runCmd('newchat'); break;
     case 'ncdm':         closeDialogs(); NC = null; messagePerson(id); break;
@@ -5435,8 +5506,6 @@ document.addEventListener('click', function(ev){
     case 'hzmore':       openMoreMenu(n, 'horizon', id, (n.getAttribute('data-more') || 'share,delete').split(',')); break;
     case 'confirmok':    { var cf = CONFIRMFN; CONFIRMFN = null; if (cf) cf(); break; }
     case 'toastundo':    { var ua = TOASTACT; TOASTACT = null; $('toasts').innerHTML = ''; if (ua) (ua.run || ua)(); break; }
-    case 'copylink':     copyLink(); break;
-    case 'nativeshare':  nativeShare(); break;
     case 'discarddraft': {
       var kept = FORMDRAFTS[id]; FORMDRAFTS[id] = null;
       closeDialogs(); schedulePersist();
@@ -5484,9 +5553,9 @@ document.addEventListener('input', function(ev){
   if (n.id === 'pf-name' && PF && PF.mode === 'signup' && !PF.handleTouched){ var hi0 = $('pf-handle'); if (hi0) hi0.value = suggestHandle(n.value); }
   if (/^pf-(name|handle|about)$/.test(n.id)){ pfSync(); return; }
   if (n.id === 'chatbox'){ growBox(n); var ac = activeChat(); if (ac){ if (n.value) CHATDRAFT[ac] = n.value; else delete CHATDRAFT[ac]; schedulePersist(); } return; }
+  if (n.id === 'coreply'){ growBox(n); if (n.value) REPLYDRAFT[n.getAttribute('data-id')] = n.value; else delete REPLYDRAFT[n.getAttribute('data-id')]; return; }
   if (/^co-[tbx]$/.test(n.id)){ saveForm('callout'); return; }
   if (/^nh-[nd]$/.test(n.id)){ saveForm('horizon'); return; }
-  if (n.id === 'sh-q' && SH){ SH.q = n.value; var sl = $('sh-list'); if (sl) sl.innerHTML = shareListHTML(); return; }
   if (n.id === 'pk-q'){ PK.q = n.value; pickerPaint(); return; }
   if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT' || n.type === 'checkbox') return;
   if (/^(bg|ink|accent)$/.test(n.getAttribute('data-cz'))){ czSetColor(n.getAttribute('data-cz'), n.value, n); return; }
@@ -5525,13 +5594,14 @@ document.addEventListener('keydown', function(ev){
     if (POP){ closePopup(); return; }
     if (ae && ae.id === 'q' && S.folder.kind === 'search'){ leaveSearch(); render(); ae.blur(); return; }
     if (inField){ ae.blur(); return; }
-    if (L.phone){ if (phoneCanBack()) navBack(); return; }
+    if (L.phone){ if (phoneConv()) chatUp(); else if (phoneCanBack()) navBack(); return; }
     if (S.stack.length > (L.split ? 1 : 0)){ navBack(); return; }
     if (L.split && S.stack.length === 1){ closePane(); return; }
     return;
   }
   if (ev.key === 'Enter' && ae){
     if (ae.id === 'chatbox'){ if (ev.shiftKey || ev.isComposing) return; sendChat(); ev.preventDefault(); return; }
+    if (ae.id === 'coreply'){ if (ev.shiftKey || ev.isComposing) return; postReply(ae.getAttribute('data-id')); ev.preventDefault(); return; }
     if (ae.id === 'q' || ae.id === 'pq'){ rememberQuery(ae.value); if (L.phone) ae.blur(); ev.preventDefault(); return; }
     if (ae.id === 'pf-city'){ pfAddCity(); ev.preventDefault(); return; }
     if (/^pf-(name|handle|about)$/.test(ae.id)){ pfSave(); ev.preventDefault(); return; }
@@ -5604,7 +5674,7 @@ function linkOf(type, id){ return location.origin + location.pathname + '#/' + i
 function snapNow(){
   var f = S.folder, v = viewsOf(f);
   return { hn:1, tab:S.tab, folder:{ kind:f.kind, id:f.id || null }, view: v.length ? viewOf(f) : null,
-           stack: S.stack.map(function(it){ return { type:it.type, id:it.id }; }),
+           stack: phoneConv() ? [{ type:'chat', id:S.chatOpen }] : S.stack.map(function(it){ return { type:it.type, id:it.id }; }),
            q:S.query, ps:!!S.phoneSearch, cal:{ mode:S.calMode, at:S.calAnchor, day:S.calDay },
            dock: L.phone ? null : { open:!!S.rightOpen, chat:S.chatOpen || null } };
 }
@@ -5690,6 +5760,8 @@ function applySnap(s){
   else delete S.view[destKey(S.folder)];
   if (s.cal){ if (s.cal.mode) S.calMode = s.cal.mode; S.calAnchor = s.cal.at || TODAY_ISO; S.calDay = s.cal.day || null; }
   if (s.dock && window.innerWidth >= 760){ S.rightOpen = !!s.dock.open; S.chatOpen = s.dock.chat && CHATS[s.dock.chat] ? s.dock.chat : null; }
+  /* a phone's Chats tab with nothing open on it is all chats (a conversation comes back as a chat in the stack) */
+  if (window.innerWidth < 760 && S.tab === 'chats' && S.folder.kind === 'chats' && !S.stack.length){ S.chatOpen = null; CONVUP = false; }
   if (S.folder.kind === 'search' && !SEARCHRET) SEARCHRET = { folder:{ kind:'home' }, stack:[] };
   if (S.folder.kind !== 'search') SEARCHRET = null;
   if (S.stack.some(function(it){ return it.type === 'event'; })) S.stack.forEach(function(it){ if (it.type === 'event') markRead(it.id); });
@@ -5826,6 +5898,10 @@ function render(){
     /* a horizon opened as a page (a phone habit, or a link) becomes the destination on a wide screen */
     var hi = -1; S.stack.forEach(function(it, i){ if (it.type === 'horizon' && HORIZONS[it.id]) hi = i; });
     if (hi >= 0){ var hid0 = S.stack[hi].id; S.stack = S.stack.slice(hi + 1); S.folder = { kind:'horizon', id:hid0 }; }
+  } else if (S.stack.some(function(it){ return it.type === 'chat'; })){
+    /* and a conversation in the stack (a link, a desktop's dock) becomes the phone's Chats tab */
+    S.chatOpen = S.stack.filter(function(it){ return it.type === 'chat'; }).pop().id;
+    S.stack = []; S.tab = 'chats'; S.folder = { kind:'chats', id:null };
   } else if (S.folder.kind === 'horizon'){
     /* and on a phone it is a page on the Horizons tab */
     var hid1 = S.folder.id; S.folder = { kind:'explore', id:'horizons' }; S.tab = S.tab === 'home' || !S.tab ? 'explore' : S.tab;
@@ -5891,7 +5967,7 @@ function persist(){
       ui:{ rightOpen:!!S.rightOpen, chatOpen:S.chatOpen || null, recent:RECENTQ },
       accounts:ACCTS,
       network:{ events:evs, recs:recs, themes:themes, horizons:hzs, covers:covers, hzthemes:hzthemes, edits:edits, deleted:DELETED,
-                callouts:CALLOUTS.filter(function(c){ return !!c.hostAcct; }) }
+                callouts:CALLOUTS.filter(function(c){ return !!c.hostAcct; }), replies:REPLIES, replyGone:REPLYGONE }
     });
     if (json !== PERSISTED && storeSet(STORE, json)) PERSISTED = json;
   } catch(e){}
@@ -5915,7 +5991,10 @@ function restore(){
   if (n.callouts && n.callouts.length){
     var ids = n.callouts.map(function(c){ return c.id; });
     CALLOUTS = n.callouts.concat(CALLOUTS.filter(function(c){ return ids.indexOf(c.id) < 0; }));
+    /* answers used to be chats; they are replies under the call out now */
+    CALLOUTS.forEach(function(c){ delete c.answers; });
   }
+  REPLIES = Array.isArray(n.replies) ? n.replies : []; REPLYGONE = n.replyGone || {};
   if (n.deleted){
     DELETED = { events:n.deleted.events || [], horizons:n.deleted.horizons || [] };
     DELETED.events.forEach(function(k){ delete EVENTS[k]; delete REC[k]; });

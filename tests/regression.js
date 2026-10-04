@@ -27,15 +27,20 @@
    strip or the stream, never both; a skill-matched call out from beyond your follows reaches a new account, saying why;
    following one person keeps "Around the network"; "Coming up with your people" is sorted by event date; your own day
    is one "You: …" line; lines group within three hours; @handle on name clashes; Who's going leads with people you
-   follow and "and N more" opens everyone; Explore says who you follow is going; Answer opens the DM with the call out
-   pinned, a textarea (Enter sends, Shift+Enter new line) and the poster sees who answered; New call out defaults to
+   follow and "and N more" opens everyone; Explore says who you follow is going; Answer opens the call out with its reply
+   box focused (a textarea: Enter posts, Shift+Enter new line), no chat is made, and the poster sees the reply; New call out defaults to
    the event you are on; no role=button around buttons on Home; whole call-out tiles with the dock and pane open; and 2026-10-01 (trust): the app runs on today's
    date, "Only me" / Friends events are seen only by who may, joined accounts are people to everyone, expired call outs
    are closed, non-hex colours and non-picture images fall back to plain, storage writes on change and warns once; and
    2026-10-04 (navigation): every desktop list opens with an empty reading pane and ↓ starts from nothing (old ?pane=closed
    links still land there), the list frame's left edge is never covered on Home and Coming-up dates are centred, Explore's
    overview is squares at every width with its kinds and old section links intact, Add events has six filters with counts
-   and empty states, and the New event wizard won't go on until a step has what it needs (inline, never a toast). */
+   and empty states, and the New event wizard won't go on until a step has what it needs (inline, never a toast);
+   2026-10-04 (conversations): replies under a call out (thread, Home tile count and latest replies, "X replied to" on
+   Home, delete your own, the poster deletes any), an event with no call outs has no Call outs heading and its host has
+   New call out in the toolbar (event preselected), a profile opened from a chat is a window with a close that leaves
+   the chat as it was (1440, 768, 375), a conversation keeps its place (dock on desktop / tablet, the Chats tab on a
+   phone: same chat, draft and scroll after Home and after a reload), and Share copies the item's link. */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch(e){
   try { ({ chromium } = require('playwright-core')); } catch(e2){
@@ -250,9 +255,14 @@ async function overflowEverywhere(p, label){
   await r.tap('.dlg [data-act="useacct"][data-id="demo"]'); await r.waitForTimeout(300);
   await r.tap('#evbar [data-act="v-interested"]'); await r.waitForTimeout(150);
   ok(await ev(r, () => document.querySelector('#toasts .toast').getBoundingClientRect().bottom <= document.getElementById('evbar').getBoundingClientRect().top), 'R2: toast sits above the phone verb bar');
+  /* Share in the ⋯ sheet copies the link (no clipboard API on this origin: the hidden-field fallback) */
+  await r.evaluate(() => { window.__exec = []; Object.defineProperty(navigator, 'clipboard', { value:undefined, configurable:true }); document.execCommand = function(cmd){ window.__exec.push([cmd, (document.activeElement || {}).value]); return true; }; });
   await r.tap('#evbar [data-act="evmore"]'); await r.waitForTimeout(200);
   await r.tap('.ctxsheet .sheetrow:has-text("Share")'); await r.waitForTimeout(250);
-  await r.tap('#sh-list .linkrow[data-chat="c-kai"]'); await r.waitForTimeout(250);
+  ok(await ev(r, () => window.__exec.length === 1 && window.__exec[0][0] === 'copy' && window.__exec[0][1] === linkOf('event', 'evt-fill-3') && /Link copied/.test(document.getElementById('toasts').textContent) && !DLGS.length),
+     'R2: phone ⋯ → Share copies the event\'s link, without a clipboard API (fallback)');
+  /* a toast with a button (Undo), then a late tap where its button was */
+  await r.evaluate(() => toast('Reply deleted', '', function(){}));
   const tb = await r.locator('#toasts [data-act="toastundo"]').boundingBox();
   await r.waitForTimeout(6200);
   const rs = await ev(r, () => RSVP['evt-fill-3'] || null);
@@ -664,29 +674,45 @@ async function overflowEverywhere(p, label){
     ok(await ev(c, () => { PEOPLE['u-tmpkai'] = { id:'u-tmpkai', displayName:'Kai Lindqvist', handle:'kai.l', skills:[] };
       const r = whoName('p-kai') === '@kai' && whoName('u-tmpkai') === '@kai.l' && whoName('p-jon') === 'Jon'; delete PEOPLE['u-tmpkai']; return r && whoName('p-kai') === 'Kai'; }),
        kind + ': where two first names collide, lines say @handle');
-    /* answering: the DM opens with the call out pinned, the box grows, Enter sends, Shift+Enter is a new line */
+    /* answering is a public reply under the call out: Answer opens it with the reply box focused, and makes no chat */
     if (kind === 'phone') await c.evaluate(() => { const t = document.querySelector('#listbody .cotile[data-id^="co-new-"]'); t.scrollIntoView(); });
+    const chats0 = await ev(c, () => ({ n:Object.keys(CHATS).length, open:S.chatOpen }));
     await c.evaluate(() => document.querySelector('#listbody .cotile[data-id^="co-new-"] [data-act="answercallout"]').click()); await c.waitForTimeout(400);
-    const dm = await ev(c, () => ({ pin:(document.querySelector('.cpin') || {}).textContent || '', tag:(document.getElementById('chatbox') || {}).tagName, draft:(document.getElementById('chatbox') || {}).value }));
-    ok(/^Answering: Second cook/.test(dm.pin.trim()) && dm.tag === 'TEXTAREA' && /I can help/.test(dm.draft), kind + ': Answer opens the DM with "Answering: <call out>" pinned and a textarea ' + JSON.stringify(dm));
-    await c.focus('#chatbox'); await c.keyboard.press('End'); await c.keyboard.press('Shift+Enter'); await c.keyboard.type('I run a camp kitchen.');
-    const h0 = await ev(c, () => document.getElementById('chatbox').offsetHeight);
-    ok(await ev(c, () => /\nI run a camp kitchen\.$/.test(document.getElementById('chatbox').value)), kind + ': Shift+Enter adds a new line');
+    const ans = await ev(c, () => { const t = S.stack[S.stack.length - 1];
+      return { top:t && t.type === 'callout' && calloutOf(t.id).title, focus:document.activeElement && document.activeElement.id, tag:(document.getElementById('coreply') || {}).tagName,
+               chats:Object.keys(CHATS).length, open:S.chatOpen, pin:!!document.querySelector('.cpin, #chats .cpin') }; });
+    ok(ans.top === 'Second cook' && ans.focus === 'coreply' && ans.tag === 'TEXTAREA' && ans.chats === chats0.n && ans.open === chats0.open && !ans.pin,
+       kind + ': Answer opens the call out with its reply box focused, and makes no chat ' + JSON.stringify(ans));
+    await c.keyboard.type('Happy to help.'); await c.keyboard.press('Shift+Enter'); await c.keyboard.type('I run a camp kitchen.');
+    const h0 = await ev(c, () => document.getElementById('coreply').offsetHeight);
+    ok(await ev(c, () => /\nI run a camp kitchen\.$/.test(document.getElementById('coreply').value)), kind + ': Shift+Enter adds a new line');
     await c.keyboard.press('Enter'); await c.waitForTimeout(300);
-    const sent = await ev(c, () => { const cid = activeChat(); const m = CHATS[cid].messages; return { n:m.length, card:m.some(x => x.cocard), last:m[m.length - 1].text, pin:(document.querySelector('.cpin') || {}).textContent || '', box:document.getElementById('chatbox').value }; });
-    ok(sent.card && /I run a camp kitchen/.test(sent.last) && /You answered/.test(sent.pin) && !sent.box && h0 > 30, kind + ': Enter sends the answer with the call out card ' + JSON.stringify(sent));
-    if (kind === 'desk') await shot(c, 'v1-social-answer-dm');
-    /* answered: it leaves the strip */
+    const sent = await ev(c, () => { const id = S.stack[S.stack.length - 1].id, r = repliesOf(id), el = [...document.querySelectorAll('#dscroll .reply')].pop();
+      return { n:r.length, mine:!!r.length && r[r.length - 1].author === myActor(), text:el && el.querySelector('.rpt').textContent, name:el && el.querySelector('.rpn').getAttribute('data-id'),
+               del:!!(el && el.querySelector('[data-act="delreply"]')), box:document.getElementById('coreply').value, chats:Object.keys(CHATS).length,
+               act:activityRows().some(a => a.verb === 'replied_callout' && a.objId === id && actIsMe(a)) }; });
+    ok(sent.n === 1 && sent.mine && /I run a camp kitchen/.test(sent.text) && sent.name === 'self' && sent.del && !sent.box && h0 > 30 && sent.act && sent.chats === chats0.n,
+       kind + ': Enter posts the reply under the call out, with Delete and an activity row, and no chat ' + JSON.stringify(sent));
+    if (kind === 'desk') await shot(c, 'v1-social-answer-reply');
+    /* replied: it leaves the strip, and your line says so */
     await c.goto(URL + '#/home'); await c.waitForTimeout(400);
-    ok(await ev(c, () => ![...document.querySelectorAll('#listbody .costrip .cotile')].some(x => calloutOf(x.getAttribute('data-id')).title === 'Second cook')), kind + ': an answered call out leaves the strip');
-    /* the poster sees who answered, and the answer is in their chats */
-    await c.evaluate(() => doLogout()); await c.waitForTimeout(200);
+    ok(await ev(c, () => ![...document.querySelectorAll('#listbody .costrip .cotile')].some(x => calloutOf(x.getAttribute('data-id')).title === 'Second cook') &&
+       /replied to Second cook/.test((document.querySelector('#listbody .fyou .fsent') || {}).textContent || '')), kind + ': a call out you replied to leaves the strip, and your line says you replied');
+    /* logged out, Home's tile counts the reply and shows it */
+    await c.evaluate(() => doLogout()); await c.waitForTimeout(250);
+    const tile = await ev(c, () => { const t = [...document.querySelectorAll('#listbody .costrip .cotile')].find(x => calloutOf(x.getAttribute('data-id')).title === 'Second cook');
+      return t && { n:(t.querySelector('.corep .corn') || {}).textContent, who:[...t.querySelectorAll('.corep .corwho')].map(b => b.textContent), txt:(t.querySelector('.corep .cort') || {}).textContent }; });
+    ok(tile && tile.n === '1 reply' && tile.who.join() === 'Cora' && /camp kitchen/.test(tile.txt), kind + ': Home’s call-out tile shows the reply count and the latest reply ' + JSON.stringify(tile));
+    /* the poster sees the reply in the thread, nothing in chat, and can take it off */
     await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
     const coId = await ev(c, () => CALLOUTS.filter(x => x.title === 'Second cook')[0].id);
     await c.evaluate(id => openItem('callout', id), coId); await c.waitForTimeout(350);
-    const poster = await ev(c, () => { const r = [...document.querySelectorAll('#dscroll .whorow, #app .whorow')]; return { n:r.length, name:r[0] && r[0].textContent, dm:!!(r[0] && r[0].querySelector('[data-act="dm"]')),
-      chat:Object.keys(CHATS).some(k => CHATS[k].messages.some(m => /I run a camp kitchen/.test(m.text || ''))) }; });
-    ok(poster.n === 1 && /Cora Pan/.test(poster.name) && poster.dm && poster.chat, kind + ': the poster’s call out lists who answered, with their chat ' + JSON.stringify(poster));
+    const poster = await ev(c, () => { const r = [...document.querySelectorAll('#dscroll .reply')]; return { n:r.length, name:r[0] && r[0].querySelector('.rpn').textContent, del:!!(r[0] && r[0].querySelector('[data-act="delreply"]')),
+      chat:Object.keys(CHATS).some(k => CHATS[k].messages.some(m => /camp kitchen/.test(m.text || ''))) }; });
+    ok(poster.n === 1 && /Cora Pan/.test(poster.name) && poster.del && !poster.chat, kind + ': the poster sees the reply under the call out and nothing in chat ' + JSON.stringify(poster));
+    await c.click('#dscroll .reply [data-act="delreply"]'); await c.waitForTimeout(300);
+    ok(await ev(c, id => !repliesOf(id).length && !document.querySelector('#dscroll .reply') && !activityRows().some(a => a.verb === 'replied_callout' && a.objId === id), coId),
+       kind + ': the poster deletes the reply: off the thread and off the activity');
     ok(!c.errors.length, kind + ': no console errors (v1 social) ' + c.errors.join(' '));
     ok((await overflow(c)) <= 0, kind + ': no overflow (v1 social)');
   }
@@ -1109,6 +1135,160 @@ async function overflowEverywhere(p, label){
     if (kind === 'phone') await shot(c, 'new-event-missing-phone');
     await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
     ok(!c.errors.length, kind + ': no console errors (New event) ' + c.errors.join(' '));
+  }
+
+  /* ---------------- 2026-10-04: replies under call outs; the event's New call out; chats keep their place; Share copies the link ---------------- */
+  for (const kind of ['desk', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '#/home', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(450);
+    /* the fixture's replies: on the call out's Home tile, the count and the latest two */
+    const peek = await ev(c, () => { const t = document.querySelector('#listbody .costrip .cotile[data-id="co-sound"]');
+      return t && { n:repliesOf('co-sound').length, corn:(t.querySelector('.corep .corn') || {}).textContent, rows:t.querySelectorAll('.corep .corow').length,
+                    who:[...t.querySelectorAll('.corep .corwho')].map(b => b.getAttribute('data-id')) }; });
+    ok(peek && peek.n === 2 && peek.corn === '2 replies' && peek.rows === 2 && peek.who.join() === 'p-rio,p-jon', kind + ': a call out on Home shows its reply count and latest replies ' + JSON.stringify(peek));
+    if (kind === 'phone'){ await c.evaluate(() => { document.getElementById('listbody').scrollTop = 0; closeDialogs(); document.getElementById('toasts').innerHTML = ''; }); await c.waitForTimeout(150); await shot(c, 'callout-replies-home-phone'); }
+    ok(await ev(c, () => [...document.querySelectorAll('#listbody .fitem[data-verb="replied_callout"] .fsent')].some(x => x.textContent === 'Rio Moss replied to Sound engineer')),
+       kind + ': a reply by someone you follow is a line on Home ("Rio Moss replied to Sound engineer")');
+    /* the thread: oldest first, each author's name opens their profile */
+    await c.evaluate(() => openItem('callout', 'co-sound')); await c.waitForTimeout(350);
+    const th = await ev(c, () => [...document.querySelectorAll('#dscroll .reply')].map(r => r.querySelector('.rpn').getAttribute('data-id') + ':' + !!r.querySelector('[data-act="delreply"]')));
+    ok(th.join() === 'p-rio:false,p-jon:false', kind + ': the call out page lists its replies oldest first; others’ replies can’t be deleted by you ' + JSON.stringify(th));
+    if (kind === 'desk') await shot(c, 'callout-replies-desk');
+    await c.click('#dscroll .reply .rpn[data-id="p-rio"]'); await c.waitForTimeout(300);
+    ok(await ev(c, () => { const t = S.stack[S.stack.length - 1]; return t.type === 'person' && t.id === 'p-rio'; }), kind + ': a reply’s name opens its author’s profile');
+    await c.evaluate(() => openItem('callout', 'co-sound')); await c.waitForTimeout(300);
+    /* your own reply: posted, counted on Home, then deleted (and Undo brings it back) */
+    await c.fill('#coreply', 'I can bring a second desk.'); await c.click('#dscroll [data-act="postreply"]'); await c.waitForTimeout(300);
+    ok(await ev(c, () => repliesOf('co-sound').length === 3 && /second desk/.test([...document.querySelectorAll('#dscroll .reply .rpt')].pop().textContent)), kind + ': a reply appears at the end of the thread');
+    await c.goto(URL + '#/home'); await c.waitForTimeout(400);
+    const card = await ev(c, () => { const f = document.querySelector('#listbody .fitco .fco[data-id="co-sound"]');
+      return { strip:!!document.querySelector('#listbody .costrip .cotile[data-id="co-sound"]'), all:f && (f.querySelector('.corep .corall') || {}).textContent, rows:f && f.querySelectorAll('.corep .corow').length }; });
+    ok(!card.strip && card.all === 'View all 3 replies' && card.rows === 2, kind + ': once you replied, the call out’s card on Home says "View all 3 replies" over the latest two ' + JSON.stringify(card));
+    await c.click('#listbody .fitco .fco[data-id="co-sound"] .corall'); await c.waitForTimeout(350);
+    ok(await ev(c, () => { const t = S.stack[S.stack.length - 1]; return t.type === 'callout' && t.id === 'co-sound' && document.querySelectorAll('#dscroll .reply').length === 3; }), kind + ': "View all" opens the call out with every reply');
+    const mine = await ev(c, () => { const r = [...document.querySelectorAll('#dscroll .reply')].filter(x => x.querySelector('[data-act="delreply"]')); return r.length; });
+    await c.click('#dscroll .reply [data-act="delreply"]'); await c.waitForTimeout(300);
+    ok(mine === 1 && await ev(c, () => repliesOf('co-sound').length === 2 && !myReplies('co-sound').length && !activityRows().some(a => a.verb === 'replied_callout' && actIsMe(a))),
+       kind + ': you can delete your own reply (only yours): off the thread and off Home');
+    await c.click('#toasts [data-act="toastundo"]'); await c.waitForTimeout(250);
+    ok(await ev(c, () => myReplies('co-sound').length === 1), kind + ': Undo puts the reply back');
+    await c.evaluate(() => { deleteReply(myReplies('co-sound')[0].id); }); await c.waitForTimeout(200);
+    await c.reload(); await c.waitForTimeout(700);
+    ok(await ev(c, () => repliesOf('co-sound').length === 2 && !myReplies('co-sound').length), kind + ': replies and deletions survive a reload');
+    /* an event with no call outs has no Call outs heading; its host posts one from the toolbar, for that event */
+    const own = await ev(c, () => MYEVENTS.filter(id => EVENTS[id] && !isPast(lastDay(EVENTS[id])) && !CALLOUTS.some(x => calloutOpen(x) && calloutEventId(x) === id))[0]);
+    await c.evaluate(id => openItem('event', id), own); await c.waitForTimeout(350);
+    const bar = kind === 'phone' ? '#evbar' : '#dscroll .actbar';
+    const host = await ev(c, b => ({ heads:[...document.querySelectorAll('#dscroll .sect h3')].map(h => h.textContent), btn:!!document.querySelector(b + ' [data-act="newcalloutfor"]') }), bar);
+    ok(host.heads.length > 1 && host.heads.indexOf('Call outs') < 0 && host.btn, kind + ': the host’s event without call outs has no Call outs heading, and New call out in its toolbar ' + JSON.stringify(host));
+    if (kind === 'desk') await shot(c, 'event-toolbar-new-callout');
+    await c.click(bar + ' [data-act="newcalloutfor"]'); await c.waitForTimeout(300);
+    ok(await ev(c, id => document.getElementById('co-e').value === id && /call out/i.test(document.querySelector('.dlg .dtitle').textContent), own), kind + ': New call out opens the form with this event chosen');
+    await c.evaluate(() => { closeDialogs(); FORMDRAFTS.callout = null; }); await c.waitForTimeout(150);
+    for (const [id, has] of [[await ev(c, () => calloutEventId(calloutOf('co-sound'))), true], ['evt-fill-3', false]]){
+      await c.evaluate(i => openItem('event', i), id); await c.waitForTimeout(300);
+      const g = await ev(c, () => ({ heads:[...document.querySelectorAll('#dscroll .sect h3')].map(h => h.textContent), cards:document.querySelectorAll('#dscroll .evcos .fco').length,
+        reps:document.querySelectorAll('#dscroll .evcos .corep .corow').length, add:!!document.querySelector('#dscroll [data-act="newcalloutfor"], #evbar [data-act="newcalloutfor"]') }));
+      ok(has ? g.heads.indexOf('Call outs') >= 0 && g.cards === 1 && g.reps === 2 && !g.add : g.heads.indexOf('Call outs') < 0 && !g.cards && !g.add,
+         kind + ': a guest sees ' + (has ? 'the event’s call out with its replies' : 'no Call outs heading when there are none') + ' ' + JSON.stringify(g));
+    }
+    ok(!c.errors.length, kind + ': no console errors (replies, New call out) ' + c.errors.join(' '));
+    ok((await overflow(c)) <= 0, kind + ': no overflow (replies, New call out)');
+  }
+  /* a profile opened from a chat is a window with a close; closing leaves the chat exactly as it was. A conversation keeps its place */
+  for (const kind of ['desk', 'tab', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '#/home', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(450);
+    await c.evaluate(() => document.getElementById('toasts').innerHTML = '');
+    if (kind === 'phone'){ await c.tap('#tabbar [data-id="chats"]'); await c.waitForTimeout(300); await c.tap('.chrow[data-id="c-anna"]'); }
+    else { if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right'); await c.waitForTimeout(200); await c.click('.chrow[data-id="c-anna"]'); }
+    await c.waitForTimeout(300);
+    await c.evaluate(() => { for (let i = 0; i < 24; i++) CHATS['c-anna'].messages.push({ from:i % 3 ? 'p-anna' : 'self', t:'09:' + String(10 + i), text:'Line ' + i + ' about the basement and the long tones' }); render(); });
+    await c.waitForTimeout(200);
+    await c.fill('#chatbox', 'see you there'); await c.waitForTimeout(100);
+    await c.evaluate(() => { document.getElementById('msgs').scrollTop = 120; }); await c.waitForTimeout(250);
+    const place = () => ev(c, () => ({ hash:location.hash, stack:JSON.stringify(S.stack), tab:S.tab, chat:S.chatOpen, conv:!!document.querySelector('#chats .conv') && document.getElementById('chats').offsetParent !== null,
+      box:(document.getElementById('chatbox') || {}).value, scroll:(document.getElementById('msgs') || {}).scrollTop }));
+    const p0 = await place();
+    ok(p0.chat === 'c-anna' && p0.conv && p0.scroll === 120, kind + ': the conversation with Anna is open ' + JSON.stringify(p0));
+    if (kind !== 'phone') ok(await ev(c, () => { const ch = document.getElementById('chats').getBoundingClientRect(); return ch.width <= 360 && document.getElementById('center').getBoundingClientRect().width > 300; }),
+      kind + ': the conversation sits in the chat dock, never the whole centre');
+    else ok(await ev(c, () => document.getElementById('tabbar').offsetParent !== null && document.querySelector('#tabbar .tab.on').getAttribute('data-id') === 'chats'), 'phone: in a conversation the tabs stay, Chats lit');
+    const opener = kind === 'phone' ? ['#appbar .ab-btn[data-act="chatprofile"]', '#appbar .ab-title[data-act="chatprofile"]'] : ['#chats .phead .ib[data-act="chatprofile"]', '#chats .phead .ptbtn', '#chats .msg:not(.me) .mwho'];
+    for (const [i, sel] of opener.entries()){
+      /* a name in the conversation is clicked where it is, without scrolling the conversation to it */
+      if (/mwho/.test(sel)) await c.evaluate(() => { const box = document.getElementById('msgs').getBoundingClientRect();
+        [...document.querySelectorAll('#chats .msg:not(.me) .mwho')].find(x => { const r = x.getBoundingClientRect(); return r.top >= box.top && r.bottom <= box.bottom; }).click(); });
+      else await c.click(sel);
+      await c.waitForTimeout(350);
+      const w = await ev(c, () => { const d = document.querySelector('.dlg.pfwin'); if (!d) return null; const r = d.getBoundingClientRect(), x = d.querySelector('.dbar .x:not(.dback)'), b = d.querySelector('.dbar .dback');
+        return { name:(d.querySelector('h1') || {}).textContent, x:!!x && x.offsetParent !== null && x.getBoundingClientRect().top >= 0, back:!!b && b.offsetParent !== null, full:r.width >= innerWidth - 1 && r.height >= innerHeight - 1, follow:!!d.querySelector('[data-act="followp"]') }; });
+      ok(w && w.name === 'Anna Vale' && w.x && w.follow && (kind === 'phone' ? w.full && w.back : !w.full), kind + ': ' + sel + ' opens Anna’s profile in a window with a visible close ' + JSON.stringify(w));
+      if (i === 0) await shot(c, 'profile-from-chat-' + kind);
+      await c.click(kind === 'phone' && i === 1 ? '.dlg.pfwin .dback' : '.dlg.pfwin .dbar .x:not(.dback)'); await c.waitForTimeout(400);
+      const p1 = await place();
+      ok(!(await ev(c, () => !!document.querySelector('.dlg'))) && JSON.stringify(p1) === JSON.stringify(p0), kind + ': closing it (' + (kind === 'phone' && i === 1 ? '‹' : '×') + ') leaves the chat exactly as it was ' + JSON.stringify(p1));
+    }
+    /* following from the window updates it in place; going to an event from it closes it */
+    await c.click(opener[0]); await c.waitForTimeout(300);
+    await c.click('.dlg.pfwin [data-act="followp"]'); await c.waitForTimeout(250);
+    ok(await ev(c, () => !!document.querySelector('.dlg.pfwin') && !PFOLLOW['p-anna'] && /Follow/.test(document.querySelector('.dlg.pfwin [data-act="followp"]').textContent)), kind + ': Follow in the window works in place');
+    await c.evaluate(() => { followP('p-anna'); paintChatProfile(); document.querySelector('.dlg.pfwin .crow .cm[data-type="event"]').click(); }); await c.waitForTimeout(350);
+    ok(await ev(c, () => !document.querySelector('.dlg') && S.stack[S.stack.length - 1].type === 'event' && S.chatOpen === 'c-anna'), kind + ': an event opened from the window closes it; the chat stays open');
+    await c.goBack(); await c.waitForTimeout(350);
+    /* go elsewhere and come back: the same conversation, draft and place */
+    if (kind === 'phone'){
+      await c.tap('#tabbar [data-id="home"]'); await c.waitForTimeout(300);
+      ok(await ev(c, () => S.tab === 'home' && !document.querySelector('#chats').offsetParent), 'phone: Home tab from a chat');
+      await c.tap('#tabbar [data-id="chats"]'); await c.waitForTimeout(350);
+    } else {
+      await c.click('#navbody .nrow[data-kind="explore"]'); await c.waitForTimeout(300);
+      await c.click('#navbody .nrow[data-kind="home"]'); await c.waitForTimeout(300);
+    }
+    const p2 = await place();
+    ok(p2.chat === 'c-anna' && p2.conv && p2.box === 'see you there' && p2.scroll === 120, kind + ': after Home' + (kind === 'phone' ? ' and back to Chats' : ' and Explore') + ', the same conversation, draft and scroll ' + JSON.stringify(p2));
+    await c.reload(); await c.waitForTimeout(800);
+    if (kind === 'phone'){ await c.tap('#tabbar [data-id="home"]'); await c.waitForTimeout(250); await c.reload(); await c.waitForTimeout(800); await c.tap('#tabbar [data-id="chats"]'); await c.waitForTimeout(350); }
+    const p3 = await place();
+    ok(p3.chat === 'c-anna' && p3.conv && p3.box === 'see you there', kind + ': and after a reload' + (kind === 'phone' ? ' (on Home, then Chats)' : '') + ' ' + JSON.stringify(p3));
+    if (kind === 'phone'){
+      /* in a conversation, ‹ is all chats; Message on a profile opens the chat in the Chats tab, back returns to the profile */
+      await c.tap('#appbar [data-act="chatback"]'); await c.waitForTimeout(300);
+      ok(await ev(c, () => !S.chatOpen && !!document.querySelector('#chats .chrow')), 'phone: ‹ in a conversation goes to all chats');
+      await c.goto(URL + '#/person/rio'); await c.waitForTimeout(450);
+      await c.tap('#dscroll .actbar [data-act="dm"]'); await c.waitForTimeout(350);
+      ok(await ev(c, () => S.tab === 'chats' && CHATS[S.chatOpen].memberIds[0] === 'p-rio' && /^#\/chats\//.test(location.hash)), 'phone: Message opens the conversation in the Chats tab');
+      await c.goBack(); await c.waitForTimeout(350);
+      ok(await ev(c, () => location.hash === '#/person/rio' && CHATS[S.chatOpen].memberIds[0] === 'p-rio'), 'phone: back returns to the profile; the conversation stays the open one');
+    }
+    ok(!c.errors.length, kind + ': no console errors (chat place, profile window) ' + c.errors.join(' '));
+    ok((await overflow(c)) <= 0, kind + ': no overflow (chat place, profile window)');
+  }
+  /* Share copies the item's link: event, Event Horizon, call out, from the toolbar and the menu */
+  {
+    const c = await ctx('desk');
+    await open(c, '', true);
+    const stub = () => c.evaluate(() => { window.__copied = []; Object.defineProperty(navigator, 'clipboard', { configurable:true, value:{ writeText:t => { window.__copied.push(t); return Promise.resolve(); } } }); });
+    const got = [];
+    for (const [h, sel, type, id] of [['#/event/led-forest-walk', '#dscroll .actbar [data-act="share"]', 'event', 'evt-fill-3'], ['#/horizon/baltic', '#listbody [data-act="share"][data-type="horizon"]', 'horizon', 'horizon-baltic'],
+                                      ['#/callout/sound', '#dscroll [data-act="share"][data-type="callout"]', 'callout', 'co-sound']]){
+      await c.goto(URL + h); await c.waitForTimeout(450); await stub();
+      await c.click(sel + ' >> nth=0'); await c.waitForTimeout(250);
+      got.push(await ev(c, ([t, i]) => ({ ok:window.__copied.length === 1 && window.__copied[0] === linkOf(t, i) && window.__copied[0].indexOf('#/' + t) > 0, toast:/Link copied/.test(document.getElementById('toasts').textContent), dlg:DLGS.length }), [type, id]));
+    }
+    ok(got.every(g => g.ok && g.toast && !g.dlg), 'share: the toolbar Share copies the right link (event, Event Horizon, call out) and says so ' + JSON.stringify(got));
+    await c.goto(URL + '#/explore/events'); await c.waitForTimeout(450); await stub();
+    const rid = await ev(c, () => document.querySelector('#listbody .row[data-type="event"]').getAttribute('data-id'));
+    await c.click('#listbody .row[data-type="event"] >> nth=0', { button:'right' }); await c.waitForTimeout(200);
+    await c.click('.ctxmenu .ci:has-text("Share")'); await c.waitForTimeout(250);
+    ok(await ev(c, i => window.__copied[0] === linkOf('event', i) && !DLGS.length, rid), 'share: right-click → Share copies the link');
+    await c.evaluate(() => { Object.defineProperty(navigator, 'clipboard', { configurable:true, value:undefined }); document.execCommand = () => false; });
+    await c.click('#dscroll .actbar [data-act="share"] >> nth=0'); await c.waitForTimeout(250);
+    ok(await ev(c, i => DLGS.length === 1 && document.getElementById('sh-url').value === linkOf('event', i) && document.activeElement.id === 'sh-url', rid), 'share: with no clipboard at all, the link is shown selected to copy');
+    ok(await ev(c, () => typeof shareDialog === 'undefined' && typeof shareToChat === 'undefined' && typeof recordAnswer === 'undefined' && typeof ANSWERED === 'undefined'), 'removed: the share-to-chat dialog and answering in chat');
+    ok(!c.errors.length, 'share: no console errors ' + c.errors.join(' '));
   }
 
   /* ---------------- tablet ---------------- */

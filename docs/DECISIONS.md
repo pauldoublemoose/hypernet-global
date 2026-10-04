@@ -125,7 +125,8 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   chat". The call-out form gained an optional Skill (the profile's skill choices), stored as `callout.skill`; the two
   fixture call outs carry Sound / PA and Kitchen. When there are more tiles than fit, the strip shows whole tiles only
   (as many columns as fit) with ‹ › in its band — never a tile cut at the edge. Supersedes "Open call outs from your
-  network also run as a strip" (2026-10-01).
+  network also run as a strip" (2026-10-01). *Since 2026-10-04 "answered" means you replied under it: it still leaves
+  the strip, and its card in the stream shows its replies instead of "Answered · Open chat".*
 - **2026-10-01 · Home blends until you follow a few.** Following nobody, Home is the whole network ("Make Home yours").
   Following one or two people, Home is their activity first, then "Around the network" — the twelve newest entries from
   everyone else, greyed avatars on a tinted ground, with a line saying it fades once you follow a few more. From three
@@ -155,7 +156,9 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   out's card in the thread before your words. The poster's call-out page lists "Answers · n" — who, when, Open chat — and
   in this browser the answer is delivered to the poster's account's chats (unread). With Neon: `callout_answers` plus a
   message in the pair's thread. The chat box is a growing textarea: Enter sends, Shift+Enter is a new line. Answer is
-  only offered on an open call out with a known author (no fallback author).
+  only offered on an open call out with a known author (no fallback author). *Superseded 2026-10-04 ("Answering is a
+  public reply"): nothing about call outs is in chat any more — no pinned call out, no call-out card, no first line, no
+  "Answers · n" list; `callout_answers` became `callout_replies`. The growing textarea and the known-author rule stand.*
 - **2026-10-01 · New → Call out knows where you are.** "For event" defaults to the event you are looking at, or the event
   of the call out you are on; otherwise your next hosted event; a draft you started keeps its own choice.
 - **2026-10-01 · A closed reading pane gives the list the room.** At desktop widths, with the pane closed, the list takes
@@ -176,7 +179,8 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   follow and the People to follow suggestions come from `networkPeople()`: the fixture people, Michal (the demo
   account) and every account joined in this browser — never you. Someone who joins is immediately a person others can
   find, follow and message. Where two people share a first name, `shortName()` carries the handle ("Kai @kailow");
-  Home's sentences and the friends-of-friends line are to use it.
+  Home's sentences and the friends-of-friends line are to use it. *Share no longer lists people (2026-10-04: it copies
+  the link).*
 - **2026-10-01 · One clock: the real one.** The app runs on today's date. The mock fixtures (written for 2026-09-20)
   move by the days between then and today — events, their sample records (shifts, blocks), call out expiries — and the
   activity seed counts back from the moment the app starts, so the mock world stays "alive" relative to now. The five
@@ -186,7 +190,8 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
 - **2026-10-01 · An expired call out is closed.** A call out is open while its author hasn't closed it and its "open
   until" day hasn't passed (`calloutOpen`). A closed one can't be answered from anywhere, and Explore lists only open
   ones. An answer goes to the person who posted it (`calloutAuthor`); when we don't know who that is, there is no
-  Answer — never someone else instead.
+  Answer — never someone else instead. *Since 2026-10-04 an answer is a public reply under the call out; a closed one
+  keeps its replies and takes no new ones.*
 - **2026-10-01 · Looks are validated before they are drawn.** Only `#rgb` / `#rrggbb` colours and
   `data:image/(png|jpeg|webp|gif);base64` images reach a `style` or `src`; anything else falls back to plain
   (`HN_HEX`, `HN_IMAGE` in `_shared/hypernet-themes.js`; a CHECK in Postgres).
@@ -238,3 +243,51 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   cursor on the first — never a toast. The messages follow your typing once shown. Edit uses the same rules (minus "not
   in the past"): Save changes waits until nothing is missing. Supersedes "A new event can be published from any wizard
   step" (2026-09-28).
+- **2026-10-04 · Answering is a public reply.** Owner: "make answering a callout more like answering a post on Facebook
+  … it should be posted under it", "you're just answering in public", "Remove the concepts in chat for answering
+  callouts". A call out has a thread of replies under it, oldest first: avatar and name (both open the person's
+  profile, from where you can message them as usual), the text, how long ago. Under the thread a reply box (a growing
+  textarea: Enter posts, Shift+Enter is a new line); logged out, posting asks you to join first and then posts what you
+  wrote. Answer keeps its name and opens the call out (when it is not what you are on) with the reply box focused; it
+  never makes a chat. Its author can reply in the thread too (their replies say Author), and can delete any reply on
+  their call out; anyone can delete their own; a deletion says so with Undo. A closed or ended call out keeps its
+  replies and takes no new ones; a call out with no known author takes none. In the prototype the fixture call outs
+  carry three seeded replies; replies made here are shared by the accounts in this browser. A reply is a row shaped like
+  `callout_replies(id, callout_id, author_id, body, created_at)` — `{ id, calloutId, author, text, ts }` in
+  `index.html` — and adds an activity row `replied_callout` (actor, callout, `extra.replyId`), shown while its author
+  still has a reply under the call out. Supersedes "Answering keeps its context" (2026-10-01).
+- **2026-10-04 · Replies show where the call out does.** On Home a call out (its tile in the strip and its card in the
+  stream) shows how many replied and the latest one or two (name and a two-line clip); with more than two, "View all N
+  replies" sits over them and opens the call out. A reply by someone Home follows is a line of its own ("Rio Moss
+  replied to Sound engineer", "… replied to your call out …") carrying what they said; several people within three
+  hours are one line. Your own reply joins your "You: …" line ("replied to Kitchen lead"). A call out you replied to
+  leaves the strip, as an answered one did. Explore's call-out rows count the replies and say "Replied" on yours.
+- **2026-10-04 · An event's call outs, only when it has some.** An event page shows a Call outs section only when the
+  event has open call outs, each as the call-out card (the ask, who, until when, Answer, its latest replies). The host
+  posts a call out from the event's toolbar — **New call out**, beside Edit and Customize (on the phone's bottom bar
+  "Call out", beside Edit and Customize) — and the form opens with that event chosen. The "+ New call out" chip under
+  the heading is gone. Posting a call out is asking for help with your own event, so only its host gets the button
+  (anyone can still post one from New → Call out).
+- **2026-10-04 · A profile from a chat is a window.** Owner: "I click a person and I go to their profile … I don't get an
+  option to close the profile." The person's name, their name on a message and the profile button in a conversation
+  open their profile in a window over everything (the same page as anywhere else), with × in its title bar; on a phone
+  it fills the screen and also has ‹ (back to the chat). ×, ‹, Esc and the phone's back gesture close it and leave you
+  exactly where you were: the conversation still open, the page behind it, the scroll, the draft. Follow works in the
+  window; going anywhere from it (an event, a horizon, Message) closes it first. The chat list's right-click Profile
+  does the same.
+- **2026-10-04 · A conversation keeps its place.** Owner: "chat with Anna Vale, then click on Home, then come back to
+  chats, and I have the same window with Anna Vale opened up." There is one open conversation (`S.chatOpen`), at every
+  width. On a desktop or tablet it lives in the chat dock and never takes the centre; it stays while you go anywhere
+  else, and Chats in the toolbar hides and shows the dock with it still open. On a phone it is the Chats tab's place:
+  the tabs stay visible in a conversation, Home and back to Chats is the same conversation, and anything that opens a
+  chat (Message, a fresh activity line, New chat) opens it in the Chats tab — back returns to where you were. ‹ in a
+  conversation goes to all chats; tapping Chats while in one does too. Each conversation remembers where you had
+  scrolled (at the bottom it follows new messages), its draft is kept, and which one is open survives a reload (the
+  dock's in the history entry, the phone's in its URL `#/chats/<chat>` and in the browser store). Supersedes the phone's
+  "a conversation is a screen pushed onto whatever tab you are in".
+- **2026-10-04 · Share copies the link.** Owner: "For the share button, let's just keep it simple: copy a link." Share
+  on an event, an Event Horizon or a call out — the toolbar buttons, the phone's bottom bar and ⋯ sheet, right-click —
+  copies the item's link and says "Link copied". Where the clipboard API is missing or refused, a hidden field is
+  selected and copied; where even that fails, a small window shows the link selected, to copy by hand. The share window
+  (copy field, the phone's share sheet, "Send in a chat") is gone, and with it every card a chat could carry: chat is
+  words only, and cards kept in old chats are put away on load.

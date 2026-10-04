@@ -43,6 +43,7 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   empties it; the pane keeps its place and width (owner: "leave the space on the right empty, don't hide it") and shows
   only a blank panel with the faint Hypernet mark. Nothing is auto-picked until you choose something, which fills it
   again. `?pane=closed` keeps it empty across reload and history; back brings back what was open. Phone unchanged.
+  *Superseded in part 2026-10-04: nothing is ever auto-picked, so the empty pane is the default and `?pane=closed` is gone.*
 - **2026-09-27 · The canvas is layered art; reading stays calm.** Back to front: seeded backdrop, header hero,
   particle atmosphere, then content panels and the window's toolbar. Art never takes a click or covers a control;
   ornaments state only facts (edition year, entry model, city, a horizon's years), never invented ones. Text colours
@@ -131,7 +132,7 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   next three weeks that people you follow are going to or interested in, sorted by event date, each with the date,
   how far off, where, and tiny faces with "Anna + 2 you follow are going · Rio interested". Three rows, "Show N more"
   opens the rest. This answers outcome #1 ("what do I do the next weekends with my people") on the first screen; its
-  events also lead Home's keyboard order, so the reading pane opens on the next one.
+  events also lead Home's keyboard order (the reading pane no longer opens on the next one by itself — 2026-10-04).
 - **2026-10-01 · You are one line.** What you did in the last day is a single line at the top of the stream — "You:
   going to X, followed Kai, posted a call out: Rigger · now" (newest first, four parts, then "and N more"); older own
   rows are not on Home. Your rows still say what is true now (un-going takes it off the line).
@@ -194,3 +195,10 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   horizon link opens at its title.
 - **2026-10-01 · Saved on change.** The browser store is written when something changed (and when the page goes
   away), not on every render; both stores (the app's and the activity) say once, quietly, when the browser is full.
+- **2026-10-04 · Nothing opens until you pick it.** Owner: "make the default view with no event opened … when I open a
+  Horizon, some event is already open, so just make it empty by default." On desktop split layouts every list — Home,
+  Explore and its kinds, Show all, search, a horizon's track list, the people list — opens with the empty reading pane
+  (the faint mark) and the list taking the room, until you choose something. The auto-pick (`S.autoSel`) and the
+  "closed" flag (`S.paneClosed`, `?pane=closed`) are removed, not flagged off: an empty stack *is* the empty pane, and an
+  old `?pane=closed` link just lands on it. ↓ / j from nothing opens the first item; × and Esc still empty the pane.
+  Phone and tablet (no reading pane beside the list) are unchanged.

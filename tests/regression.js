@@ -392,7 +392,7 @@ async function overflowEverywhere(p, label){
     ok(!c.errors.length, kind + ': no console errors (looks)');
   }
 
-  /* ---------------- 2026-09-28: the reading pane closes, in every context, and the URL keeps it closed ---------------- */
+  /* ---------------- 2026-09-28 / 2026-10-04: the reading pane starts empty and closes to empty, in every context ---------------- */
   {
     const c = await ctx('desk');
     await open(c, '', true);
@@ -405,6 +405,9 @@ async function overflowEverywhere(p, label){
         ['explore section', '#/explore/soon', '#listbody .row[data-type="event"]'], ['show all', '#/explore/announced', '#listbody .row[data-type="event"]'],
         ['search', '#/search?q=burn', '#listbody .row[data-type="event"]'], ['people → person', '#/explore/people', '#listbody .row']]){
       await c.goto(URL + h); await c.waitForTimeout(450);
+      /* 2026-10-04: nothing is picked for you — the pane opens empty, the URL is the list's */
+      const z = await st();
+      ok(z.split && z.closed && z.empty && !z.stack && z.kept && z.hash === h, 'pane: ' + name + ' opens with nothing in the reading pane ' + JSON.stringify(z));
       await c.click(sel + ' >> nth=1'); await c.waitForTimeout(350);
       const a = await st();
       await c.click('#dbar [data-act="closepane"]'); await c.waitForTimeout(300);
@@ -417,9 +420,24 @@ async function overflowEverywhere(p, label){
       const e = await st();
       await c.click(sel + ' >> nth=0'); await c.waitForTimeout(350);
       const p = await st();
-      ok(a.split && a.stack && b.split && b.closed && b.kept && b.empty && !b.stack && /pane=closed/.test(b.hash) && r.closed && r.empty && !r.stack && k.split && k.stack &&
-         e.closed && e.empty && p.split && p.stack && !p.empty && !/pane=closed/.test(p.hash), 'pane: ' + name + ' closes (× and Esc) to an empty pane that keeps its place, survives reload, back reopens, a pick fills it');
+      ok(a.split && a.stack && !a.closed && b.split && b.closed && b.kept && b.empty && !b.stack && b.hash === h && r.closed && r.empty && !r.stack && k.split && k.stack &&
+         e.closed && e.empty && p.split && p.stack && !p.empty, 'pane: ' + name + ' closes (× and Esc) to an empty pane that keeps its place, survives reload, back reopens, a pick fills it');
     }
+    /* the keyboard starts from nothing: ↓ opens the first row, ↓ again the next */
+    for (const [name, h] of [['home', '#/home'], ['events', '#/explore/events'], ['horizon', '#/horizon/season'], ['search', '#/search?q=burn']]){
+      await c.goto(URL + h); await c.waitForTimeout(450);
+      await c.evaluate(() => document.activeElement && document.activeElement.blur());
+      const rows = await ev(c, () => S.rows.map(it => it.type + ':' + it.id));
+      await c.keyboard.press('ArrowDown'); await c.waitForTimeout(250);
+      const k1 = await ev(c, () => S.stack.map(it => it.type + ':' + it.id).join('>'));
+      await c.keyboard.press('ArrowDown'); await c.waitForTimeout(250);
+      const k2 = await ev(c, () => S.stack.map(it => it.type + ':' + it.id).join('>'));
+      ok(rows.length > 1 && k1 === rows[0] && k2 === rows[1], 'pane: ' + name + ': ↓ from nothing selected opens the first item, ↓ again the second ' + JSON.stringify([k1, k2, rows.slice(0, 2)]));
+    }
+    /* an old ?pane=closed link still lands on the empty pane, and the flag is gone from the URL */
+    await c.goto(URL + '#/explore/events?pane=closed'); await c.waitForTimeout(450);
+    const o = await st();
+    ok(o.closed && o.empty && !o.stack && o.hash === '#/explore/events', 'pane: an old ?pane=closed link opens the list with an empty pane ' + o.hash);
     ok(!c.errors.length, 'pane: no console errors ' + c.errors.join(' '));
   }
 
@@ -595,7 +613,7 @@ async function overflowEverywhere(p, label){
       await c.evaluate(() => { closeDialogs(); FORMDRAFTS.callout = null; }); await c.evaluate(() => openItem('callout', 'co-kitchen')); await c.waitForTimeout(300);
       await c.evaluate(() => runCmd('new-callout')); await c.waitForTimeout(250);
       ok(await ev(c, () => document.getElementById('co-e').value === calloutEventId(calloutOf('co-kitchen'))), kind + ': … or the event of the call out you are on');
-      await c.evaluate(() => { closeDialogs(); FORMDRAFTS.callout = null; S.stack = []; S.paneClosed = true; render(); }); await c.waitForTimeout(200);
+      await c.evaluate(() => { closeDialogs(); FORMDRAFTS.callout = null; S.stack = []; render(); }); await c.waitForTimeout(200);
       await c.evaluate(() => runCmd('new-callout')); await c.waitForTimeout(250);
       ok(await ev(c, h => document.getElementById('co-e').value === h && !!document.querySelector('#co-s option[value="CAMP OPERATIONS/KITCHEN & COOKING"]'), host), kind + ': … otherwise your next hosted event; the form has a skill');
       await c.evaluate(() => closeDialogs());
@@ -697,7 +715,7 @@ async function overflowEverywhere(p, label){
       await c.evaluate(() => loginDialog()); await c.waitForTimeout(150);
       await c.click('.dlg [data-act="useacct"][data-id="demo"]'); await c.waitForTimeout(300);
       const own = await ev(c, () => MYEVENTS[0]);
-      const showPage = () => ev(c, id => { goFolder({ kind:'hosting' }); if (L.phone) S.tab = 'you'; S.stack = [{ type:'event', id }]; S.autoSel = false; render(); }, own);
+      const showPage = () => ev(c, id => { goFolder({ kind:'hosting' }); if (L.phone) S.tab = 'you'; S.stack = [{ type:'event', id }]; render(); }, own);
       const showList = () => ev(c, () => { goFolder({ kind:'hosting' }); if (L.phone) S.tab = 'you'; S.stack = []; render(); });
       await showPage(); await c.waitForTimeout(300);
       if (kind === 'desk') await c.click('#dscroll .actbar [data-act="customize"]'); else await c.evaluate(id => customizeDialog(id), own);

@@ -1412,6 +1412,16 @@ async function overflowEverywhere(p, label){
     ok(!c.errors.length, 'share: no console errors ' + c.errors.join(' '));
   }
 
+  /* ---------------- 2026-10-04: logged out, the account's place holds Log in ---------------- */
+  {
+    const c = await ctx('desk');
+    await open(c, '', true);
+    ok(await ev(c, () => { const b = document.querySelector('#acct button'); return !!b && /Log in/.test(b.textContent) && /^(login|loginpick)$/.test(b.dataset.act); }), 'desk: logged out, Log in sits where your account would be');
+    await c.click('#acct button'); await c.waitForTimeout(250);
+    ok(await ev(c, () => DLGS.length === 1), 'desk: the toolbar Log in opens the way in');
+    ok(!c.errors.length, 'desk: no console errors (toolbar Log in) ' + c.errors.join(' '));
+  }
+
   /* ---------------- tablet ---------------- */
   const t = await ctx('tab');
   await open(t, '', true);

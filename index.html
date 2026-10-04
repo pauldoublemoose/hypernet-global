@@ -3789,7 +3789,8 @@ function renderToolbar(){
   $('tg-right').classList.toggle('on', !!L.right); $('tg-right').setAttribute('aria-pressed', !!L.right);
   $('acct').innerHTML = S.loggedIn
     ? '<button class="btn acct" data-act="acctmenu" aria-haspopup="menu">'+avHTML('self')+esc(S.me.name)+ic('down',14)+'</button>'
-    : '';
+    /* logged out, the account's place holds the way in */
+    : '<button class="btn acct" data-act="' + (ACCTS.me ? 'login' : 'loginpick') + '">'+ic('user')+'Log in</button>';
   var q = $('q');
   if (document.activeElement !== q) q.value = S.folder.kind === 'search' ? S.query : '';
   $('wintitle').textContent = '— ' + folderName() + (isCal() ? ' · Calendar' : '');

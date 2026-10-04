@@ -371,3 +371,6 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
 - **2026-10-04 · Login emails.** Until a sender domain is verified in Resend, the code comes in Neon's email ("Your
   Sign-In Code - Hypernet"). The Hypernet email (grey frame, ink on paper, Tahoma, the square mark, the code large;
   `docs/email/login-code.png`) is built and switches on with one setting once the domain is verified.
+- **2026-10-04 · Log in sits where you are.** Logged out, the toolbar's account place (top right, where your name and menu
+  are once logged in) holds a Log in button; the preview bar keeps Join free + Log in. Partly supersedes 2026-09-27
+  "the preview bar replaces the toolbar's Join". Phone unchanged (no toolbar; the preview bar has Log in).

@@ -2170,14 +2170,13 @@ function takePartHTML(r){
   if (r.openCalls && r.openCalls.length) c.push(card('Open calls', 'Wanted', null, r.openCalls));
   return c.length ? '<div class="cards">' + c.join('') + '</div>' : '';
 }
-/* an event's call outs: its own, and any posted for it; its host can post one from here */
+/* an event's open call outs: its own, and any posted for it, each with the first of its replies. None, no section:
+   its host posts one from the event's toolbar (New call out) */
 function calloutsHTML(ids, evId){
   var cs = (ids || []).map(calloutOf).filter(Boolean);
   CALLOUTS.forEach(function(c){ if (evId && calloutEventId(c) === evId && cs.indexOf(c) < 0) cs.push(c); });
   cs = cs.filter(calloutOpen);
-  var add = evId && isMine(evId) && !isPast(lastDay(EVENTS[evId])) ? '<button class="chip" data-act="newcalloutfor" data-id="'+evId+'">'+ic('plus',16)+'New call out</button>' : '';
-  return cs.length || add ? '<div class="chips">' + cs.map(function(c){
-    return '<button class="chip" data-act="open" data-type="callout" data-id="'+c.id+'">'+ic('callout',16)+esc(c.title)+' <span class="sub">'+esc(c.hostName)+'</span></button>'; }).join('') + add + '</div>' : '';
+  return cs.length ? '<div class="evcos">' + cs.map(function(c){ return fCalloutCard(c.id, 0, { act:'open', noEvent:true }); }).join('') + '</div>' : '';
 }
 function providedHTML(p){
   if (!p) return '';
@@ -2286,7 +2285,7 @@ function verbsHTML(evId){
   var h = '<div class="verbs">';
   if (isMine(evId)){
     /* the host's page leads with the host's verbs; Interested / Going are for guests */
-    h += hostGroupHTML(evId) + promoBtnHTML(evId) + '<span class="vsec">' + addtoBtnHTML(evId) + vb('share', evId, 'Share', 'share') +
+    h += hostGroupHTML(evId) + vb('newcalloutfor', evId, 'New call out', 'callout') + promoBtnHTML(evId) + '<span class="vsec">' + addtoBtnHTML(evId) + vb('share', evId, 'Share', 'share') +
          vb('evmore', evId, '', 'dots', { aria:'More', attrs:' data-more="delete" aria-haspopup="menu"' });
     return h + '</span></div>';
   }
@@ -2297,8 +2296,8 @@ function verbsHTML(evId){
 function evbarHTML(evId){
   var e = EVENTS[evId], past = isPast(lastDay(e)), mine = isMine(evId), more, h = '<div class="verbs">';
   if (mine){
-    h += hostGroupHTML(evId);
-    more = past ? 'addto,share,delete' : 'promote,addto,share,callout,delete';
+    h += hostGroupHTML(evId) + (past ? '' : vb('newcalloutfor', evId, 'Call out', 'callout', { attrs:' aria-label="New call out"' }));
+    more = past ? 'addto,share,delete' : 'promote,addto,share,delete';
   } else if (past){
     if (S.loggedIn) h += vb('v-went', evId, 'Went', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] });
     else h += vb('share', evId, 'Share', 'share');

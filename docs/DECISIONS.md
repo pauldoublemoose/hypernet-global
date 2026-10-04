@@ -291,3 +291,22 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   selected and copied; where even that fails, a small window shows the link selected, to copy by hand. The share window
   (copy field, the phone's share sheet, "Send in a chat") is gone, and with it every card a chat could carry: chat is
   words only, and cards kept in old chats are put away on load.
+- **2026-10-04 · The prototype runs on the database.** Served by the app (Next.js on Vercel, Neon Postgres), the page
+  loads everything from `GET /api/bootstrap` and sends every action to the API; the browser keeps only conveniences
+  (what you have read, recent searches, drafts, the open chat). Anywhere else — a static server, the regression suite,
+  or `?offline=1` — it runs on the fixtures and localStorage as before. Privacy is decided in SQL (`can_see_event`) for
+  every list, count and activity row. How it runs: `docs/infra.md`.
+- **2026-10-04 · Login is an emailed code.** Join free and Log in both ask for an email, then the 6-digit code; the
+  first code makes the account and the profile form (name, handle, about, skills, cities) follows. No passwords
+  (password sign-in is switched off on production), no demo account online. Sign-up is open to anyone with the link;
+  pages stay `noindex`.
+- **2026-10-04 · Production holds real events only.** `main` has the real events (`data/real-events.json`, not the
+  illustrative ones), their announced next editions and the curated Season of burns horizon — no mock people. The
+  `dev` branch (local and previews) carries the mock cast and their world for testing.
+- **2026-10-04 · Pictures live in storage.** An uploaded square goes to the public `images` bucket (Neon Storage) and
+  the look keeps its URL; data URLs remain only in offline mode.
+- **2026-10-04 · Changes show at once.** Every action changes the page immediately and is saved in the background, in
+  order per thing; if a save fails, a quiet toast says so and the page reloads from the server.
+- **2026-10-04 · Login emails.** Until a sender domain is verified in Resend, the code comes in Neon's email ("Your
+  Sign-In Code - Hypernet"). The Hypernet email (grey frame, ink on paper, Tahoma, the square mark, the code large;
+  `docs/email/login-code.png`) is built and switches on with one setting once the domain is verified.

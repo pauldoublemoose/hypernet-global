@@ -261,7 +261,7 @@
     if (LG.step === 'email') return '<p class="fhelp" style="margin:0 0 12px">We email you a 6-digit code. No password, ever. New here? The same code makes your account.</p>' +
       '<div class="field"><label for="hn-email">Email</label><input type="email" id="hn-email" value="'+esc(LG.email)+'" placeholder="you@example.com" autocomplete="email" autocapitalize="off" spellcheck="false"></div>' +
       '<p class="ferr" id="hn-lerr" role="alert">'+esc(LG.err || '')+'</p>';
-    return '<p class="fhelp" style="margin:0 0 12px">We sent a code to <b>'+esc(LG.email)+'</b>. It works for 5 minutes.</p>' +
+    return '<p class="fhelp" style="margin:0 0 12px">We sent a code to <b>'+esc(LG.email)+'</b>. It works for a few minutes.</p>' +
       '<div class="field"><label for="hn-otp">Code</label><input type="text" id="hn-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="9" placeholder="123456" style="font-size:20px;letter-spacing:3px"></div>' +
       '<p class="ferr" id="hn-lerr" role="alert">'+esc(LG.err || '')+'</p>' +
       '<p class="fhelp" style="margin:8px 0 0"><button type="button" class="btn" data-hnact="resend">Send a new code</button> <button type="button" class="btn" data-hnact="other">Use another email</button></p>';

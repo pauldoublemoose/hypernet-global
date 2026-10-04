@@ -80,6 +80,7 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   Explore / New / Chats / You (Explore replaces Horizons). The words Hypernet made up say what they are in a line
   where they are listed ("A horizon is a list of events someone curates — like a playlist…"). Old `#/horizons`,
   `#/people` and `#/home/<section>` links land on the matching Explore kind or section.
+  *Since 2026-10-04 the overview is the phone's shelves of squares at every width, not bands of rows.*
 - **2026-10-01 · Chat is between two people.** New chat picks one person and opens the conversation; there is no group
   name, no multi-select, no rename / leave / add people. The fixture group chats became direct messages with whoever
   spoke last in them, and group chats kept from before are put away on load. Group (camp) pages stay out of v1; a
@@ -208,3 +209,12 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   left edge, and the row looked cut. On desktop and tablet the frame is now an overlay on the list column, above its
   rows (`#listcol::after`), so the edge runs unbroken; the lit Coming-up row's bar sits inside it. The weekday and month
   under each Coming-up date are centred under the day, as the day is (they were flush left). Phone has no frame.
+- **2026-10-04 · Explore's overview is squares, at every width.** Owner: "I actually want the explore to stay, but don't
+  show it as rows. Show it as squares instead, just like in the mobile version." Desktop and tablet now draw Explore
+  (no kind) exactly as the phone does: the same sections (This week, From people you follow, Coming up, Announced burns,
+  your Event Horizons, horizons worth following, Call outs) as sideways shelves of 150px squares, each heading with its
+  count and Show all. With a mouse a shelf that holds more than fits gets ‹ › in its heading (one step = as many whole
+  squares as fit). A square opens in the reading pane and is lit while open; ↓ / j walk the squares shelf by shelf. The
+  kinds stay as they were (sidebar sub-rows on desktop, tabs on the phone), and Show all and the old section links
+  (`#/explore/soon`, `#/home/week` …) are still their lists. The desktop-only bands, their "Show all N" rows and the
+  horizon card strip inside them are removed.

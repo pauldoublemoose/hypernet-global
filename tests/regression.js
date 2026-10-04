@@ -944,6 +944,51 @@ async function overflowEverywhere(p, label){
     ok((await overflow(c)) <= 0 && !c.errors.length, kind + ': Home, no horizontal overflow, no console errors ' + c.errors.join(' '));
   }
 
+  /* ---------------- 2026-10-04: Explore's overview is squares at every width, its kinds and old links stay ---------------- */
+  for (const kind of ['desk', 'tab', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    await c.goto(URL + '#/explore'); await c.waitForTimeout(450);
+    const ov = await ev(c, () => { const carts = [...document.querySelectorAll('#listbody .shelf .srow[data-shelf] .card2 .cart')];
+      return { shelves:document.querySelectorAll('#listbody .shelf').length, cards:carts.length, square:carts.every(x => { const r = x.getBoundingClientRect(); return r.width >= 140 && Math.abs(r.width - r.height) < 1; }),
+               rows:document.querySelectorAll('#listbody .row').length, titles:[...document.querySelectorAll('#listbody .shelf .shh h3')].map(h => h.firstChild.textContent.trim()) }; });
+    ok(ov.shelves >= 4 && ov.cards >= 10 && ov.square && !ov.rows && ov.titles.indexOf('This week') === 0, kind + ': Explore\'s overview is shelves of squares, not rows ' + JSON.stringify(ov));
+    if (kind === 'phone') ok(await ev(c, () => [...document.querySelectorAll('#chead .kinds .kind')].map(x => x.textContent).join('|') === 'All|Events|Horizons|Call outs|People'), 'phone: Explore keeps its kinds as tabs over the squares');
+    else ok(await ev(c, () => [...document.querySelectorAll('#navbody .nsubrow .nlab')].map(x => x.textContent).join('|') === 'Events|Event Horizons|Call outs|People' && !!document.querySelector('#navbody .nrow.sel .nlab') && document.querySelector('#navbody .nrow.sel').textContent.indexOf('Explore') >= 0),
+       kind + ': Explore keeps its four kinds under it in the sidebar, Explore lit');
+    if (kind !== 'phone'){
+      /* a shelf that holds more than fits has ‹ ›, and › moves it along by whole squares */
+      const sh = await ev(c, () => { const s = [...document.querySelectorAll('#listbody .shelf.more')][0]; return s ? s.querySelector('.srow').getAttribute('data-shelf') : null; });
+      ok(!!sh, kind + ': a shelf with more squares than fit offers ‹ ›');
+      if (sh){
+        await c.click('#listbody .shelf .shstep [data-act="shelfstep"][data-shelf="' + sh + '"][data-id="1"]'); await c.waitForTimeout(700);
+        ok(await ev(c, id => document.querySelector('#listbody .srow[data-shelf="' + id + '"]').scrollLeft > 100, sh), kind + ': › steps along the shelf');
+      }
+    }
+    if (kind === 'desk'){
+      /* the keyboard walks the squares, shelf by shelf, and the open one is lit */
+      await c.evaluate(() => document.activeElement && document.activeElement.blur());
+      const first = await ev(c, () => { const x = document.querySelector('#listbody .srow .card2'); return x.getAttribute('data-type') + ':' + x.getAttribute('data-id'); });
+      await c.keyboard.press('ArrowDown'); await c.waitForTimeout(300);
+      ok(await ev(c, f => S.stack.length === 1 && S.stack[0].type + ':' + S.stack[0].id === f && !!document.querySelector('#listbody .card2.sel[data-id="' + f.split(':')[1] + '"]') && !document.querySelector('#dscroll .panempty'), first),
+         'desk: ↓ on Explore opens the first square and lights it');
+      await c.click('#listbody .srow[data-shelf="soon"] .card2 >> nth=1'); await c.waitForTimeout(300);
+      ok(await ev(c, () => S.stack.length === 1 && S.stack[0].type === 'event' && document.querySelector('#listbody .srow[data-shelf="soon"] .card2.sel') === document.querySelectorAll('#listbody .srow[data-shelf="soon"] .card2')[1]), 'desk: a square opens in the reading pane and is lit');
+    }
+    /* Show all and the old section links are still lists */
+    for (const h of ['#/explore/soon', '#/explore/announced', '#/home/week']){
+      await c.goto(URL + h); await c.waitForTimeout(400);
+      ok(await ev(c, () => S.folder.kind === 'shelf' && document.querySelectorAll('#listbody .row[data-type="event"]').length >= 1 && !document.querySelector('#listbody .shelf')), kind + ': ' + h + ' is still its Show all list');
+    }
+    await c.goto(URL + '#/explore'); await c.waitForTimeout(400);
+    await c.click('#listbody .shelf .showall >> nth=0'); await c.waitForTimeout(350);
+    ok(await ev(c, () => S.folder.kind === 'shelf' && /^#\/explore\//.test(location.hash) && document.querySelectorAll('#listbody .row').length >= 1), kind + ': a shelf\'s Show all opens its list');
+    await c.goto(URL + '#/explore'); await c.waitForTimeout(400);
+    ok((await overflow(c)) <= 0 && !c.errors.length, kind + ': Explore squares, no horizontal overflow, no console errors ' + c.errors.join(' '));
+    if (kind !== 'tab') await shot(c, 'explore-squares-' + kind);
+  }
+
   /* ---------------- tablet ---------------- */
   const t = await ctx('tab');
   await open(t, '', true);

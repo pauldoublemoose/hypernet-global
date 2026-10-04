@@ -658,12 +658,14 @@ body.is-phone #sh-list{ max-height:none; }
 .sortrow{ display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:6px 12px; border-bottom:1px solid var(--line); font-size:var(--fs-s); color:var(--dim); }
 .sortrow select{ height:var(--ctl); }
 .deskgreet{ padding:22px 16px 14px; border-bottom:1px solid var(--line); }
-.srow.deskrow{ padding:14px 16px 16px; border-bottom:1px solid var(--line); scroll-snap-type:x proximity; }
-@media (pointer:fine){ .srow.deskrow{ scrollbar-width:thin; } .srow.deskrow::-webkit-scrollbar{ display:block; height:8px; } .srow.deskrow::-webkit-scrollbar-thumb{ background:var(--face-dk); } }
-.row.more{ min-height:52px; color:var(--ink2); }
-.row.more .r-title{ font-size:var(--fs); font-weight:bold; }
 .shh{ display:flex; align-items:center; gap:10px; padding:0 8px 0 16px; }
 .shh h3{ flex:1; min-width:0; margin:0; font-size:19px; line-height:1.2; }
+.shh h3 .cnt{ font:normal 12px var(--mono); letter-spacing:.04em; color:var(--dim); }
+.shstep{ display:none; gap:4px; margin-left:4px; }
+.shelf.more .shstep{ display:inline-flex; }
+.shstep .ib{ width:30px; height:26px; }
+.card2{ cursor:pointer; }
+.card2.sel .cart{ box-shadow:0 0 0 2px #fff, 0 0 0 4px var(--ink); }
 .showall{ min-height:44px; padding:0 8px; border:0; background:transparent; font:bold 11px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--dim); }
 .srow{ display:flex; gap:12px; padding:10px 16px 4px; overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x mandatory; scroll-padding:0 16px;
   -webkit-overflow-scrolling:touch; scrollbar-width:none; }
@@ -1609,7 +1611,7 @@ function shortName(pid){
   return others.some(function(k){ return fold(firstOf(k)) === fold(f); }) ? f + ' @' + person(pid).handle : f;
 }
 function browsablePeople(){ var ids = networkPeople(); if (S.loggedIn) ids.unshift('self'); return ids; }
-/* Explore's kinds: each is a list of one family; the overview (no kind) is the categorical sections */
+/* Explore's kinds: each is a list of one family; the overview (no kind) is the categorical sections, as shelves of squares */
 var EXPLOREKINDS = [['events','Events','cal'], ['horizons','Event Horizons','horizon'], ['callouts','Call outs','callout'], ['people','People','people']];
 function isExploreKind(id){ return EXPLOREKINDS.some(function(k){ return k[0] === id; }); }
 function isOverview(f){ f = f || S.folder; return f.kind === 'explore' && !f.id; }
@@ -1619,14 +1621,12 @@ var KINDDESC = {
   callouts:'A call out is someone asking for a hand with their event. Answer it to start a chat with them.',
   people:'Follow people to see on Home what they are going to, promoting and curating.'
 };
-/* the overview on a desktop is the phone's shelves as bands: the same sections, in the same order */
-var HOMEBAND = 8;
-function exploreItems(){
+/* the overview is the same shelves of squares at every width (owner, 2026-10-04: "squares … just like in the mobile
+   version"); each shelf shows its first few, Show all lists the rest. Its items, shelf by shelf, are the keyboard's order. */
+var SHELFMAX = 8;
+function overviewItems(){
   var out = [];
-  homeSections().forEach(function(sec){
-    sec.items.slice(0, HOMEBAND).forEach(function(it){ out.push({ type:it.type, id:it.id, band:sec.title, total:sec.items.length, sec:sec.id }); });
-    if (sec.items.length > HOMEBAND) out.push({ type:'more', id:sec.id, band:sec.title, n:sec.items.length });
-  });
+  homeSections().forEach(function(sec){ sec.items.slice(0, SHELFMAX).forEach(function(it){ out.push({ type:it.type, id:it.id }); }); });
   return out;
 }
 /* Home is the activity and only that; lists of events keep a calendar */
@@ -1654,7 +1654,7 @@ function folderItems(f){
   var k = f.kind;
   if (k === 'home')  return homeItems();
   if (k === 'explore'){
-    if (!f.id) return exploreItems();
+    if (!f.id) return overviewItems();
     if (f.id === 'events')   return feedEvents().map(function(e){ return { type:'event', id:e.id }; });
     if (f.id === 'horizons') return browsableHorizons().sort(function(a, b){ return hzFollowers(b) - hzFollowers(a); }).map(function(h){ return { type:'horizon', id:h }; });
     if (f.id === 'callouts') return openCallouts().map(function(c){ return { type:'callout', id:c.id }; });
@@ -1759,7 +1759,6 @@ function searchItems(q){
    ========================================================================= */
 function sortItems(items){
   var k = S.sort;
-  if (S.folder.kind === 'home' || isOverview()) return items;
   if (items.some(function(it){ return it.type !== 'event'; }) && S.folder.kind !== 'horizon') return items;
   var head = items.filter(function(it){ return it.type !== 'event'; }), evs = items.filter(function(it){ return it.type === 'event'; });
   evs.sort(function(a,b){
@@ -1778,7 +1777,6 @@ function bandOf(it){
   var k = S.folder.kind;
   if (k === 'shelf') return null;
   if (k === 'search') return SEARCHBAND[it.type];
-  if (k === 'home' || isOverview()) return it.band;
   var x = k === 'explore' ? S.folder.id : '';
   if (x === 'horizons') return hzOwnedByMe(it.id) ? 'Yours' : (S.loggedIn && HZFOLLOW[it.id]) ? 'Following' : 'Popular';
   /* one list in a steady order: following someone marks them in place instead of moving the rows under your thumb */
@@ -1804,7 +1802,7 @@ function groupItems(items){
   items.forEach(function(it){ var b = bandOf(it) || ''; if (!groups[b]){ groups[b] = []; order.push(b); } groups[b].push(it); });
   /* date-sorted events already come in time order, months included */
   var timed = S.sort === 'date' && items.length && items.every(function(it){ return it.type === 'event'; }) && S.folder.kind !== 'search';
-  if (!(S.folder.kind === 'home' || isOverview()) && !timed)
+  if (!timed)
     order.sort(function(a,b){ var ia = BANDORDER.indexOf(a), ib = BANDORDER.indexOf(b); return (ia<0?99:ia) - (ib<0?99:ib); });
   return { groups:groups, order:order };
 }
@@ -1819,8 +1817,6 @@ function statePills(evId){
   return h;
 }
 function rowHTML(it){
-  if (it.type === 'more') return '<div class="row more" data-act="shelfall" data-id="'+it.id+'" role="button" tabindex="-1"><div class="r-main"><div class="r-title">Show all '+it.n+'</div></div>' +
-    ic('back',16).replace('class="ic"','class="ic" style="transform:scaleX(-1)"')+'</div>';
   var cls = 'row' + (isSel(it) ? ' sel' : ''), lead, title, meta, date = '', side = '', soc = '', act = 'data-act="row" data-type="'+it.type+'" data-id="'+it.id+'"';
   if (it.type === 'event'){
     var e = EVENTS[it.id];
@@ -1891,7 +1887,7 @@ function renderList(){
     lb0.innerHTML = horizonHTML(S.folder.id, true); lb0.scrollTop = top0; return;
   }
   if (S.folder.kind === 'home'){ renderHome(); return; }
-  if (isShelfFeed()){ renderShelves(); return; }
+  if (isOverview()){ renderShelves(); return; }
   var items = sortItems(folderItems());
   var g = groupItems(items), h = '', rows = [];
   if (S.folder.kind === 'search' && !S.query.trim()){
@@ -1912,18 +1908,10 @@ function renderList(){
       : k === 'hosting' ? 'You are not hosting anything yet.<br><button class="btn primary" data-act="new-event">'+ic('plus')+'New event</button>'
       : 'Nothing here yet.') + '</div>';
   } else {
-    var feed = isOverview();
     g.order.forEach(function(b){
-      var its = g.groups[b], first = its[0] || {};
-      /* a section's count is the whole section, as on its Show all page */
-      if (b) h += '<div class="band">' + esc(b) + ' <span class="cnt">' + (first.total || its.filter(function(x){ return x.type !== 'more'; }).length) + '</span></div>';
-      /* horizons are cards on Home at every width, not rows that pass for events */
-      if (feed && first.type === 'horizon'){
-        h += '<div class="srow deskrow" data-shelf="'+first.sec+'">' + its.filter(function(x){ return x.type === 'horizon'; }).map(cardHTML).join('') + '</div>';
-        if (first.total > HOMEBAND) h += rowHTML(its[its.length-1]);
-        return;
-      }
-      its.forEach(function(it){ h += rowHTML(it); if (it.type !== 'more') rows.push(it); });
+      var its = g.groups[b];
+      if (b) h += '<div class="band">' + esc(b) + ' <span class="cnt">' + its.length + '</span></div>';
+      its.forEach(function(it){ h += rowHTML(it); rows.push(it); });
     });
   }
   /* an Explore kind says in a line what it is */
@@ -2564,8 +2552,7 @@ function renderDetail(){
 <script>
 /* =========================================================================
    7b. EXPLORE'S OVERVIEW — Spotify's structure in a 2000-era skin
-   On a phone, sideways shelves of big squares (a desktop shows the same
-   sections as bands of rows). Event squares are the album art;
+   Sideways shelves of big squares, at every width. Event squares are the album art;
    horizons are playlists with a cover built from their events.
    ========================================================================= */
 /* an event square at any pixel size */
@@ -2613,7 +2600,7 @@ function cardHTML(it){
     art = '<div class="coart">'+ic('callout', 40)+'<span>Looking for</span><b>'+esc(c.title)+'</b></div>';
     t = c.hostName; sub = 'until ' + fmtShort(c.expiresAt);
   }
-  return '<div class="card2" data-act="row" data-type="'+it.type+'" data-id="'+it.id+'" role="button">' +
+  return '<div class="card2'+(isSel(it) ? ' sel' : '')+'" data-act="row" data-type="'+it.type+'" data-id="'+it.id+'" role="button">' +
     '<div class="cart">'+art+cardTag(it)+'</div><div class="ct2">'+esc(t)+'</div><div class="cs2">'+esc(sub)+'</div>'+(sub2 ? '<div class="cs2">'+esc(sub2)+'</div>' : '')+soc+'</div>';
 }
 function upcoming(e){ return !isPast(lastDay(e)); }
@@ -2676,11 +2663,26 @@ function shelvesHTML(){
   var h = '<div class="shelves">';
   homeSections().forEach(function(sec){
     var more = sec.items.length > 2;
-    h += '<section class="shelf"><div class="shh"><h3>'+esc(sec.title)+'</h3>' +
-         (more ? '<button class="showall" data-act="shelfall" data-id="'+sec.id+'">Show all</button>' : '') + '</div>';
-    h += '<div class="srow" data-shelf="'+sec.id+'">' + sec.items.slice(0, HOMEBAND).map(cardHTML).join('') + '</div></section>';
+    /* with a mouse a sideways shelf needs a way along it: ‹ › in its heading, shown when it holds more than fits */
+    var step = L.phone ? '' : '<span class="shstep"><button type="button" class="ib" data-act="shelfstep" data-shelf="'+sec.id+'" data-id="-1" aria-label="Previous in '+esc(sec.title)+'">'+ic('back',14)+'</button>' +
+      '<button type="button" class="ib" data-act="shelfstep" data-shelf="'+sec.id+'" data-id="1" aria-label="Next in '+esc(sec.title)+'">'+ic('back',14).replace('class="ic"', 'class="ic" style="transform:scaleX(-1)"')+'</button></span>';
+    h += '<section class="shelf"><div class="shh"><h3>'+esc(sec.title)+' <span class="cnt">'+sec.items.length+'</span></h3>' +
+         (more ? '<button class="showall" data-act="shelfall" data-id="'+sec.id+'">Show all</button>' : '') + step + '</div>';
+    h += '<div class="srow" data-shelf="'+sec.id+'">' + sec.items.slice(0, SHELFMAX).map(cardHTML).join('') + '</div></section>';
   });
   return h + '</div>';
+}
+/* a shelf whose squares don't all fit offers its ‹ › */
+function fitShelves(){
+  document.querySelectorAll('#listbody .shelf').forEach(function(sh){
+    var r = sh.querySelector('.srow'); sh.classList.toggle('more', !!r && r.scrollWidth > r.clientWidth + 1);
+  });
+}
+/* one step along a shelf is as many whole squares as fit */
+function stepShelf(id, dir){
+  var r = document.querySelector('#listbody .srow[data-shelf="'+id+'"]'), c = r && r.querySelector('.card2'); if (!c) return;
+  var w = c.offsetWidth + 12, n = Math.max(1, Math.floor((r.clientWidth - 32 + 12) / w));
+  r.scrollBy({ left: dir * n * w, behavior:'smooth' });
 }
 function renderShelves(){
   var lb = $('listbody'), top = lb.scrollTop, left = {};
@@ -2688,9 +2690,9 @@ function renderShelves(){
   lb.innerHTML = shelvesHTML();
   lb.querySelectorAll('.srow').forEach(function(r){ var v = left[r.getAttribute('data-shelf')]; if (v) r.scrollLeft = v; });
   lb.scrollTop = top;
-  S.rows = [];
+  fitShelves();
+  S.rows = overviewItems();
 }
-function isShelfFeed(){ return L.phone && isOverview(); }
 
 /* =========================================================================
    8. CALENDAR — a view of the destination you are in
@@ -5141,7 +5143,7 @@ function stepItem(delta){
   var n = i < 0 ? 0 : Math.max(0, Math.min(list.length-1, i + delta));
   ROUTE.replace = true;   /* stepping through a list is not a trail you want to walk back */
   openItem(list[n].type, list[n].id);
-  var el = document.querySelector('#listbody .row.sel, #listbody .fsel'); if (el && el.scrollIntoView) el.scrollIntoView({ block:'nearest' });
+  var el = document.querySelector('#listbody .row.sel, #listbody .fsel, #listbody .card2.sel'); if (el && el.scrollIntoView) el.scrollIntoView({ block:'nearest', inline:'nearest' });
 }
 function runCmd(cmd, arg){
   closePopup();
@@ -5217,6 +5219,7 @@ document.addEventListener('click', function(ev){
     case 'dm':           messagePerson(id); break;
     case 'answercallout': answerCallout(id); break;
     case 'costep':       stepStrip(+id); break;
+    case 'shelfstep':    stepShelf(n.getAttribute('data-shelf'), +id); break;
     case 'upall':        UPALL = !UPALL; render(); break;
     case 'whoall':       whoAllDialog(id); break;
     case 'whoopen':      closeDialogs(); openItem('person', id, 'push'); break;

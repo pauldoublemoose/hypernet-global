@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 import { drizzle, type NeonHttpDatabase } from "drizzle-orm/neon-http";
 import * as schema from "@/db/schema";
 import { need } from "./env";
@@ -14,6 +14,18 @@ export function db(): NeonHttpDatabase<typeof schema> {
 }
 
 export { schema };
+
+/**
+ * Plain SQL with the same driver: `await sqlx()\`select … where id = ${id}\``. Values always travel as parameters,
+ * never pasted into the text. `sqlx().transaction([q1, q2])` runs several queries in one request and one
+ * transaction. Queries that return dates build their JSON in Postgres (json_build_object), so a `date` stays
+ * "2026-10-04" instead of becoming a JS Date at local midnight.
+ */
+let _sql: NeonQueryFunction<false, false> | undefined;
+export function sqlx(): NeonQueryFunction<false, false> {
+  if (!_sql) _sql = neon(need("DATABASE_URL"));
+  return _sql;
+}
 
 /** The Postgres error code of a failed query ('23505' = unique violation), looking through Drizzle's wrapper. */
 export function pgCode(err: unknown): string | undefined {

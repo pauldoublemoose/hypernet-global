@@ -60,6 +60,7 @@ const endsAfterStart = (e: { startsOn?: string; endsOn?: string | null }) =>
 
 export const eventCreate = z
   .object({
+    id: z.uuid().optional(), // the browser names what it creates, so it can show it before the server answers
     ...eventFields,
     description: eventFields.description.default(""),
     endsOn: eventFields.endsOn.optional(),
@@ -95,13 +96,78 @@ export const eventQuery = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(100),
 });
 
+const handle = z.string().trim().toLowerCase().regex(/^[a-z0-9._-]{1,30}$/, "1–30 of a-z 0-9 . _ -");
+const profileFields = {
+  handle,
+  displayName: z.string().trim().min(1).max(80),
+  bio: z.string().trim().max(120).nullable(),
+  skills: z.array(z.string().trim().min(1).max(80)).max(30),
+  cities: z.array(z.string().trim().min(1).max(80)).max(20),
+  look: look.nullable(),
+};
+
+/** POST /api/me — join: the profile for the logged-in email. */
 export const join = z
+  .object({ ...profileFields, bio: profileFields.bio.optional(), skills: profileFields.skills.default([]),
+            cities: profileFields.cities.default([]), look: profileFields.look.optional() })
+  .strict();
+
+/** PATCH /api/me — Edit profile and Customize your profile. */
+export const profilePatch = z
+  .object(profileFields)
+  .partial()
+  .strict()
+  .refine((p) => Object.keys(p).length > 0, { message: "nothing to change" });
+
+/** PUT /api/events/:id/rsvp — going / interested / neither, went, the shift taken. */
+export const rsvpPut = z
   .object({
-    handle: z.string().trim().toLowerCase().regex(/^[a-z0-9._-]{1,30}$/, "1–30 of a-z 0-9 . _ -"),
-    displayName: z.string().trim().min(1).max(80),
-    bio: z.string().max(120).optional(),
+    status: z.enum(["going", "interested"]).nullable(),
+    went: z.boolean().optional(),
+    shiftIndex: z.number().int().min(0).max(500).nullable().optional(),
   })
   .strict();
+
+const hzFields = {
+  name: z.string().trim().min(1).max(80),
+  description: z.string().max(2000),
+  published: z.boolean(),
+  look: look.nullable(),
+  coverEventId: z.uuid().nullable(),
+};
+export const horizonCreate = z
+  .object({ id: z.uuid().optional(), ...hzFields, description: hzFields.description.default(""), published: hzFields.published.default(false),
+            look: hzFields.look.optional(), coverEventId: hzFields.coverEventId.optional(), isPersonalDefault: z.boolean().default(false),
+            eventIds: z.array(z.uuid()).max(500).default([]) })
+  .strict();
+export const horizonPatch = z
+  .object(hzFields)
+  .partial()
+  .strict()
+  .refine((p) => Object.keys(p).length > 0, { message: "nothing to change" });
+/** PUT /api/horizons/:id/events — the whole list, in order (add, remove and reorder are one call). */
+export const horizonEvents = z.object({ eventIds: z.array(z.uuid()).max(500) }).strict();
+
+const coFields = {
+  title: z.string().trim().min(1).max(80),
+  body: z.string().max(4000),
+  eventId: z.uuid().nullable(),
+  skill: z.string().trim().max(80).nullable(),
+  expiresOn: day,
+  closed: z.boolean(),
+};
+export const calloutCreate = z
+  .object({ id: z.uuid().optional(), ...coFields, body: coFields.body.default(""), eventId: coFields.eventId.optional(),
+            skill: coFields.skill.optional(), closed: z.never().optional() })
+  .strict();
+export const calloutPatch = z
+  .object(coFields)
+  .partial()
+  .strict()
+  .refine((p) => Object.keys(p).length > 0, { message: "nothing to change" });
+
+export const replyCreate = z.object({ id: z.uuid().optional(), text: z.string().trim().min(1).max(2000) }).strict();
+export const messageCreate = z.object({ id: z.uuid().optional(), body: z.string().trim().min(1).max(4000) }).strict();
 
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 export const IMAGE_TYPES = { "image/webp": "webp", "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/avif": "avif" } as const;

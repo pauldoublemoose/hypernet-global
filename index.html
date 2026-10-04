@@ -474,9 +474,6 @@ span.chip.strong{ border-color:transparent; background:color-mix(in srgb, var(--
 .mbody{ display:inline-block; padding:8px 12px; background:var(--face-lt); border:1px solid #d8d4cb; text-align:left; line-height:1.4; overflow-wrap:anywhere; }
 .msg.me .mbody{ background:#2a2a2a; border-color:#2a2a2a; color:#fff; }
 .msg.sys{ align-self:center; font:12px var(--mono); color:var(--dim); text-align:center; }
-.evcard{ display:flex; gap:10px; align-items:center; padding:8px; background:#fff; border:1px solid #bdb9b0; text-align:left; cursor:pointer; }
-.evcard .t{ font-weight:bold; }
-.evcard .m{ font-size:12px; color:var(--dim); }
 .composer{ flex:0 0 auto; display:flex; gap:8px; }
 .composer input{ flex:1; }
 .members{ display:flex; gap:4px; }
@@ -550,9 +547,9 @@ body.is-phone .calall{ min-height:44px; }
 .ctxsheet .sheetrow .hzchk.on .ic{ display:block; }
 .ctxsheet .csep{ height:6px; background:var(--face); box-shadow:inset 0 1px 0 var(--shadow), inset 0 -1px 0 var(--white); }
 /* items that answer a long-press: no text selection, no callout */
-body.is-phone :is(.row[data-type], .card2[data-type], .calev, .track[data-type], .crow, .nrow, .evcard, .chrow){
+body.is-phone :is(.row[data-type], .card2[data-type], .calev, .track[data-type], .crow, .nrow, .chrow){
   -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
-@media (pointer:coarse){ :is(.row[data-type], .card2[data-type], .calev, .track[data-type], .crow, .nrow, .evcard, .chrow){
+@media (pointer:coarse){ :is(.row[data-type], .card2[data-type], .calev, .track[data-type], .crow, .nrow, .chrow){
   -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; } }
 #mask{ position:fixed; inset:0; z-index:60; display:none; background:rgba(0,0,0,.3); }
 .dlg{ position:fixed; z-index:70; display:flex; flex-direction:column; max-height:calc(100vh - 32px); padding:3px; background:var(--face);
@@ -637,11 +634,7 @@ body.is-phone .demolink button{ min-height:44px; }
 .toast b{ display:block; font-size:var(--fs); }
 .toast.act{ display:flex; align-items:center; gap:12px; pointer-events:auto; }
 .toast .tt2{ flex:1; min-width:0; }
-.linkline{ display:flex; gap:8px; }
-.linkline input{ flex:1; min-width:0; color:var(--ink2); }
-#sh-msg, #sh-q{ width:100%; }
-#sh-list{ max-height:260px; }
-body.is-phone #sh-list{ max-height:none; }
+#sh-url{ width:100%; color:var(--ink2); }
 .ab-tap{ cursor:pointer; align-self:stretch; display:flex; flex-direction:column; justify-content:center; }
 .linkrow.static{ cursor:default; }
 .linkrow.static:hover{ background:#fff; }
@@ -957,7 +950,6 @@ body.is-phone .dfoot{ padding:10px 12px calc(12px + env(safe-area-inset-bottom))
 body.is-phone .dfoot .btn{ flex:1; }
 body.is-phone .dlg.sheet{ top:auto !important; bottom:0 !important; }
 body.is-phone .dlg.sheet .dbody{ padding:6px 0; }
-body.is-phone .dlg.shsheet .dbody{ padding:18px 16px; }
 body.is-phone .custwrap{ flex-direction:column; }
 body.is-phone .custcol{ flex:0 0 auto; }
 body.is-phone .previewbox{ max-height:none; }
@@ -2862,8 +2854,6 @@ function msgPreview(m, c){
   if (!m) return 'No messages yet';
   var who = m.from === 'self' ? 'You: ' : '';
   if (m.from === 'sys') return m.text;
-  if (m.card) return who + 'shared ' + (EVENTS[m.card] ? EVENTS[m.card].title : 'an event');
-  if (m.hzcard) return who + 'shared ' + (HORIZONS[m.hzcard] ? HORIZONS[m.hzcard].name : 'a horizon');
   return who + m.text;
 }
 function unreadChats(){ return S.loggedIn ? Object.keys(UNREADCHAT).filter(function(k){ return UNREADCHAT[k]; }).length : 0; }
@@ -2897,16 +2887,6 @@ function convHTML(cid){
     if (m.from === 'sys') return '<div class="msg sys">'+esc(m.text)+'</div>';
     var me = m.from === 'self';
     var head = '<div class="mfrom">'+(me ? '' : '<button type="button" class="mwho" data-act="chatprofile" data-id="'+esc(m.from)+'">'+esc(person(m.from).displayName)+'</button>')+'<span class="mt">'+esc(m.t)+'</span></div>';
-    if (m.card && EVENTS[m.card]){
-      var e = EVENTS[m.card];
-      return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="evcard" data-act="open" data-type="event" data-id="'+m.card+'">'+sqHTML(m.card,40)+
-        '<div><div class="t">'+esc(e.title)+'</div><div class="m">'+fmtShort(e.date)+' · '+esc(whereOf(e))+'</div></div></div></div>';
-    }
-    if (m.hzcard && HORIZONS[m.hzcard]){
-      var hz = HORIZONS[m.hzcard];
-      return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="evcard" data-act="open" data-type="horizon" data-id="'+m.hzcard+'">'+hzMosaic(m.hzcard,40)+
-        '<div><div class="t">'+esc(hz.name)+'</div><div class="m">Event Horizon · '+hz.eventIds.length+' events</div></div></div></div>';
-    }
     return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+'</div></div>';
   }).join('') : '<div class="msg sys">No messages yet</div>') + '</div>';
   /* the box grows with what you write: Enter sends, Shift+Enter starts a new line */
@@ -4031,8 +4011,8 @@ function loadAcct(a){
   CHATS = (a.chats && a.chats.byId) || {};
   /* group chats kept from before chat was person to person are put away */
   Object.keys(CHATS).forEach(function(k){ if (CHATS[k].kind !== 'dm') delete CHATS[k]; });
-  /* answering a call out is not a chat any more: call-out cards and pins kept in old chats are put away */
-  Object.keys(CHATS).forEach(function(k){ CHATS[k].messages = (CHATS[k].messages || []).filter(function(m){ return !m.cocard; }); delete CHATS[k].pin; });
+  /* chat is words only: cards sent into chats before (a shared event, horizon or call out) are put away */
+  Object.keys(CHATS).forEach(function(k){ CHATS[k].messages = (CHATS[k].messages || []).filter(function(m){ return m.from === 'sys' || m.text; }); delete CHATS[k].pin; });
   CHATORDER = ((a.chats && a.chats.order) || Object.keys(CHATS)).filter(function(k){ return CHATS[k]; });
   UNREADCHAT = a.unread || {};
   FORMDRAFTS = (a.drafts && a.drafts.forms) || {}; CHATDRAFT = (a.drafts && a.drafts.chat) || {};
@@ -4096,54 +4076,6 @@ function addToDialog(evId){
       '<span class="lstate hzchk'+(has?' on':'')+'" role="checkbox" aria-checked="'+has+'">'+(has ? ic('check') : '')+'</span></div>';
   }).join('') + '</div>';
   dialog('Add “' + EVENTS[evId].title + '” to', h, '<button class="btn primary" data-act="closedlg">Done</button>', 440);
-}
-/* Share: anyone can copy the link (or hand it to the phone's own share sheet);
-   logged in, you can also send it into a chat with a line of your own. You stay where you are. */
-var SH = null;
-function shareDialog(id, type){
-  type = type === 'horizon' || type === 'callout' ? type : 'event';
-  SH = { id:id, type:type, q:'' };
-  var url = linkOf(type, id), name = itemName({ type:type, id:id });
-  var h = '<div class="field"><label for="sh-url">Link</label><div class="linkline">' +
-      '<input type="text" id="sh-url" readonly value="'+esc(url)+'" aria-label="Link">' +
-      '<button class="btn primary" data-act="copylink">'+ic('share')+'Copy link</button></div></div>';
-  if (navigator.share) h += '<div class="field"><button class="btn" data-act="nativeshare">'+ic('share')+'Share to an app</button></div>';
-  if (S.loggedIn){
-    h += '<div class="field"><span class="flabel">Send in a chat</span>' +
-         '<input type="text" id="sh-msg" placeholder="Add a message" autocomplete="off" aria-label="Message">' +
-         '<input type="search" id="sh-q" placeholder="Search people and chats" autocomplete="off" aria-label="Search people and chats">' +
-         '<div class="picklist" id="sh-list">'+shareListHTML()+'</div></div>';
-  }
-  dialog('Share “' + name + '”', h, '<button class="btn" data-act="closedlg">Done</button>', 460, S.loggedIn ? '' : 'sheet shsheet');
-}
-/* your chats first, then the people you have no chat with yet */
-function shareListHTML(){
-  var q = SH.q.toLowerCase().trim(), rows = [];
-  chatList().forEach(function(k){
-    var c = CHATS[k];
-    if (!c || (q && !matches(c.name, q))) return;
-    rows.push('<div class="linkrow" data-act="doshare" data-chat="'+k+'" role="button">'+chatAv(c)+'<div class="lr">'+esc(c.name)+
-      '<div class="fhelp">Direct message</div></div>'+ic('chat')+'</div>');
-  });
-  ncPeopleAll().filter(function(pid){
-    return !Object.keys(CHATS).some(function(k){ return CHATS[k].memberIds[0] === pid && CHATS[k].messages.length; }) &&
-           (!q || matches(person(pid).displayName, q) || matches(person(pid).handle, q));
-  }).forEach(function(pid){
-    var p = person(pid);
-    rows.push('<div class="linkrow" data-act="doshare" data-person="'+pid+'" role="button">'+avHTML(pid,'a40')+'<div class="lr">'+esc(p.displayName)+
-      '<div class="fhelp">@'+esc(p.handle)+'</div></div>'+ic('chat')+'</div>');
-  });
-  return rows.join('') || '<div class="empty">Nobody matches.</div>';
-}
-function copyLink(){
-  var inp = $('sh-url'), url = inp ? inp.value : '';
-  var ok = function(){ if (!S.loggedIn) closeDialogs(); toast('Link copied', url.replace(/^https?:\/\//, '')); };
-  var legacy = function(){ try { inp.focus(); inp.select(); document.execCommand('copy'); ok(); } catch(e){ inp.select(); } };
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(ok, legacy); else legacy();
-}
-function nativeShare(){
-  if (!SH || !navigator.share) return;
-  navigator.share({ title:itemName({ type:SH.type, id:SH.id }), url:linkOf(SH.type, SH.id) }).catch(function(){});
 }
 /* ---- new chat: a chat is with one person. Pick them and you are in the conversation. ---- */
 var NC = null;
@@ -4659,7 +4591,7 @@ function wizAct(which){
    menu is a shortcut, never a second implementation.
    ========================================================================= */
 var CTXSEL = '.row[data-type], .card2[data-type], .calev[data-type], .calcell .dots i[data-type], ' +
-             '.track[data-type], .crow, .nrow[data-kind="horizon"], .nrow[data-type="horizon"], .nrow[data-type="person"], .evcard[data-type], .chrow[data-act="chatsel"], ' +
+             '.track[data-type], .crow, .nrow[data-kind="horizon"], .nrow[data-type="horizon"], .nrow[data-type="person"], .chrow[data-act="chatsel"], ' +
              '.fcard[data-type], .fco[data-type], .cotile[data-type]';
 /* what was pressed: the item's element, the element that opens it, and what it stands for */
 function ctxTarget(node){
@@ -4719,7 +4651,7 @@ function ctxItems(t, only){
     /* logged out there are no horizons of yours to list yet: log in, then pick one */
     if (S.loggedIn) out.push({ code:'addto', label:'Add to horizon', icon:'addhorizon', sub: ctxHorizonItems(id) });
     else out.push({ code:'addto', label:'Add to horizon', icon:'addhorizon', run:function(){ gated(addToDialog)(id); } });
-    out.push({ code:'share', label:'Share…', icon:'share', run:function(){ shareDialog(id, 'event'); } });
+    out.push({ code:'share', label:'Share', icon:'share', run:function(){ shareLink('event', id); } });
     if (mine && !past) out.push({ code:'callout', label:'New call out…', icon:'callout', run:function(){ runCmd('new-callout', id); } });
     if (mine) out.push('-', { code:'delete', label:'Delete…', icon:'trash', run:function(){ deleteEventDialog(id); } });
   } else {
@@ -4731,7 +4663,7 @@ function ctxItems(t, only){
                { code:'edit', label:'Edit details…', icon:'edit', run:function(){ gated(renameHzDialog)(id); } });
       if (!hz.isPersonalDefault) out.push({ code:'publish', label:'Published', icon:'check', check: !!hz.isPublished, run:function(){ publishHz(id); } });
     }
-    if (hz.isPublished) out.push({ code:'share', label:'Share…', icon:'share', run:function(){ shareDialog(id, 'horizon'); } });
+    if (hz.isPublished) out.push({ code:'share', label:'Share', icon:'share', run:function(){ shareLink('horizon', id); } });
     if (hmine) out.push('-', { code:'delete', label:'Delete…', icon:'trash', run:function(){ deleteHorizonDialog(id); } });
   }
   if (only){
@@ -4753,7 +4685,7 @@ function ctxOtherItems(t, only){
     if (mine) out.push({ code:'edit', label:'Edit…', icon:'edit', run:function(){ newCalloutDialog({ edit:id }); } },
                        { code:'close', label: c.closed ? 'Reopen' : 'Close call out', icon:'close', run:function(){ closeCallout(id); } });
     else if (calloutOpen(c) && calloutAuthor(c)) out.push({ code:'answer', label:'Answer', icon:'chat', run:function(){ answerCallout(id); } });
-    if (calloutOpen(c)) out.push({ code:'share', label:'Share…', icon:'share', run:function(){ shareDialog(id, 'callout'); } });
+    if (calloutOpen(c)) out.push({ code:'share', label:'Share', icon:'share', run:function(){ shareLink('callout', id); } });
   } else {
     var ch = CHATS[id];
     out = [{ code:'open', label:'Open', def:true, lead:chatAv(ch), run:function(){ openChat(id); } }, '-',
@@ -5194,16 +5126,6 @@ function paintChatProfile(){
   var b = w.parentNode, top = b.scrollTop;
   w.innerHTML = personHTML(w.getAttribute('data-id')); b.scrollTop = top;
 }
-/* sending keeps you on the page: the toast can take you to the chat */
-var shareToChat = gated(function(id, cid, type, text){
-  var hz = type === 'horizon', st = stamp(), m = { from:'self', t:st.t, ts:tsIso(isoMs(st.ts) + 1), text:'' };
-  if (text) CHATS[cid].messages.push({ from:'self', t:st.t, ts:st.ts, text:text });
-  m[hz ? 'hzcard' : type === 'callout' ? 'cocard' : 'card'] = id;
-  CHATS[cid].messages.push(m);
-  var i = CHATORDER.indexOf(cid); if (i > 0){ CHATORDER.splice(i, 1); CHATORDER.unshift(cid); }
-  closeDialogs(); render();
-  toast('Sent to ' + CHATS[cid].name, itemName({ type: hz ? 'horizon' : 'event', id:id }), { label:'Open', run:function(){ openChat(cid); } });
-});
 function sendChat(){
   var box = $('chatbox'), cid = activeChat(); if (!box || !cid || !box.value.trim()) return;
   var st = stamp();
@@ -5242,6 +5164,30 @@ function deleteReply(id){
   REPLYGONE[id] = true;
   render();
   toast('Reply deleted', '', function(){ delete REPLYGONE[id]; render(); });
+}
+
+/* ---- Share copies the item's link; nothing else ---- */
+function copyText(text, done){
+  var legacy = function(){
+    var prev = document.activeElement, ta = document.createElement('textarea'), ok = false;
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { ta.setSelectionRange(0, text.length); ok = document.execCommand('copy'); } catch(e){ ok = false; }
+    ta.remove(); if (prev && prev.focus) try { prev.focus(); } catch(e){}
+    done(ok);
+  };
+  try { if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(function(){ done(true); }, legacy); return; } } catch(e){}
+  legacy();
+}
+function shareLink(type, id){
+  var url = linkOf(type === 'horizon' || type === 'callout' || type === 'person' ? type : 'event', id);
+  copyText(url, function(ok){
+    if (ok){ toast('Link copied', url.replace(/^https?:\/\//, '')); return; }
+    /* no clipboard at all: the link in a field, selected, to copy by hand */
+    dialog('Copy link', '<div class="field"><label for="sh-url">Link</label><input type="text" id="sh-url" readonly value="'+esc(url)+'"></div>',
+      '<button class="btn primary" data-act="closedlg">Done</button>', 460);
+    var f = $('sh-url'); if (f){ f.focus(); f.select(); }
+  });
 }
 /* search is a place of its own: where you were (and what you had open) is kept, and clearing takes you back */
 var SEARCHRET = null;
@@ -5330,13 +5276,7 @@ document.addEventListener('click', function(ev){
     case 'v-went':       setWent(id); break;
     case 'addto':        gated(addToDialog)(id); break;
     case 'dofile':       toggleInHorizon(id, n.getAttribute('data-hz')); break;
-    case 'share':        shareDialog(id, n.getAttribute('data-type') || 'event'); break;
-    case 'doshare': {
-      if (!SH) break;
-      var sc = n.getAttribute('data-chat') || openDM(n.getAttribute('data-person'));
-      shareToChat(SH.id, sc, SH.type, (($('sh-msg')||{}).value || '').trim());
-      break;
-    }
+    case 'share':        shareLink(n.getAttribute('data-type') || 'event', id); break;
     case 'ctxrun':       ctxSheetRun(+id); break;
     case 'ctxback':      ctxSheetBack(); break;
     case 'customize':    customizeDialog(id); break;
@@ -5436,8 +5376,6 @@ document.addEventListener('click', function(ev){
     case 'hzmore':       openMoreMenu(n, 'horizon', id, (n.getAttribute('data-more') || 'share,delete').split(',')); break;
     case 'confirmok':    { var cf = CONFIRMFN; CONFIRMFN = null; if (cf) cf(); break; }
     case 'toastundo':    { var ua = TOASTACT; TOASTACT = null; $('toasts').innerHTML = ''; if (ua) (ua.run || ua)(); break; }
-    case 'copylink':     copyLink(); break;
-    case 'nativeshare':  nativeShare(); break;
     case 'discarddraft': {
       var kept = FORMDRAFTS[id]; FORMDRAFTS[id] = null;
       closeDialogs(); schedulePersist();
@@ -5487,7 +5425,6 @@ document.addEventListener('input', function(ev){
   if (n.id === 'coreply'){ growBox(n); if (n.value) REPLYDRAFT[n.getAttribute('data-id')] = n.value; else delete REPLYDRAFT[n.getAttribute('data-id')]; return; }
   if (/^co-[tbx]$/.test(n.id)){ saveForm('callout'); return; }
   if (/^nh-[nd]$/.test(n.id)){ saveForm('horizon'); return; }
-  if (n.id === 'sh-q' && SH){ SH.q = n.value; var sl = $('sh-list'); if (sl) sl.innerHTML = shareListHTML(); return; }
   if (n.id === 'pk-q'){ PK.q = n.value; $('pk-list').innerHTML = pickerList(); return; }
   if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT' || n.type === 'checkbox') return;
   if (/^(bg|ink|accent)$/.test(n.getAttribute('data-cz'))){ czSetColor(n.getAttribute('data-cz'), n.value, n); return; }

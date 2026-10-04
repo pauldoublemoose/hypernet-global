@@ -1284,6 +1284,7 @@ async function overflowEverywhere(p, label){
     await c.click('#listbody .row[data-type="event"] >> nth=0', { button:'right' }); await c.waitForTimeout(200);
     await c.click('.ctxmenu .ci:has-text("Share")'); await c.waitForTimeout(250);
     ok(await ev(c, i => window.__copied[0] === linkOf('event', i) && !DLGS.length, rid), 'share: right-click → Share copies the link');
+    await c.click('#listbody .row[data-type="event"] >> nth=0'); await c.waitForTimeout(300);   /* nothing opens by itself any more */
     await c.evaluate(() => { Object.defineProperty(navigator, 'clipboard', { configurable:true, value:undefined }); document.execCommand = () => false; });
     await c.click('#dscroll .actbar [data-act="share"] >> nth=0'); await c.waitForTimeout(250);
     ok(await ev(c, i => DLGS.length === 1 && document.getElementById('sh-url').value === linkOf('event', i) && document.activeElement.id === 'sh-url', rid), 'share: with no clipboard at all, the link is shown selected to copy');

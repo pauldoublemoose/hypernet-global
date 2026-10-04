@@ -1,6 +1,6 @@
 # Neon schema v1 — what the prototype becomes in Postgres
 
-Date: **2026-10-01**. Source: the owner/engineering review of the merged v1 build (scratchpad
+Date: **2026-10-01** (call-out replies and words-only chat: 2026-10-04). Source: the owner/engineering review of the merged v1 build (scratchpad
 `review-owner-eng.md`, "Role 2"), tidied against the code as it stands after the trust fixes
 (`v1-fix-trust`). Nothing is provisioned. This is the target for wiring Neon: Postgres for data,
 Neon Auth (or another email magic-link provider) for login, Vercel Blob for images.
@@ -17,8 +17,10 @@ needs materialising until the activity view is measurably slow.
   `everyone` = anyone, logged out too; `friends` = the host and the people **the host follows**;
   `only_me` = the host. Every read of events goes through `visible_events(viewer)`.
 - **A call out is open** while it is not closed and its `expires_on` is today or later
-  (`open_callouts`, the same rule as `calloutOpen()`). An answer always goes to `author_id`
-  (NOT NULL), never to a stand-in.
+  (`open_callouts`, the same rule as `calloutOpen()`). Answering is a public reply under the
+  call out (`callout_replies`), taken only while it is open and only on a call out with an
+  `author_id` (NOT NULL, never a stand-in). A reply can be deleted by its author or by the call
+  out's author.
 - **A look is `{bg, ink, accent, image_url, glyph}`** and the database refuses anything but
   `#rrggbb` colours and an `image_url` on our own Blob host (`is_look`), the same rule as
   `HN_HEX` / `HN_IMAGE` in `_shared/hypernet-themes.js`.
@@ -169,15 +171,12 @@ create table dm_threads (                                   -- one thread per pa
   created_at timestamptz not null default now(),
   check (a < b), unique (a, b)
 );
-create table messages (
+create table messages (                                     -- words only: Share copies a link, nothing is sent as a card
   id         uuid primary key default gen_random_uuid(),
   thread_id  uuid not null references dm_threads on delete cascade,
   sender_id  uuid not null references people,
-  body       text not null default '',
-  card_type  text check (card_type in ('event', 'horizon', 'callout')),
-  card_id    uuid,
-  created_at timestamptz not null default now(),
-  check ((card_type is null) = (card_id is null))
+  body       text not null check (char_length(body) between 1 and 4000),
+  created_at timestamptz not null default now()
 );
 create index on messages (thread_id, created_at);
 create table thread_reads (
@@ -186,13 +185,17 @@ create table thread_reads (
   last_read_at timestamptz not null,
   primary key (thread_id, person_id)
 );
-create table callout_answers (
-  callout_id uuid references callouts on delete cascade,
-  person_id  uuid references people,
-  message_id uuid references messages,
-  created_at timestamptz not null default now(),
-  primary key (callout_id, person_id)
+/* answering a call out is a public reply under it (a comment thread, oldest first) — never a message */
+create table callout_replies (
+  id         uuid primary key default gen_random_uuid(),
+  callout_id uuid not null references callouts on delete cascade,
+  author_id  uuid not null references people on delete cascade,
+  body       text not null check (char_length(body) between 1 and 2000),
+  created_at timestamptz not null default now()
 );
+create index on callout_replies (callout_id, created_at);
+-- insert: only while the call out is open (open_callouts). delete: the reply's author, or the call out's
+-- author_id. Deleting is a real delete; the activity row goes with it because the view reads this table.
 ```
 
 ## Views: privacy, open call outs, activity
@@ -227,6 +230,9 @@ create view activity as
   union all select added_by, 'added_to_horizon', 'horizon', horizon_id, max(added_at), jsonb_build_object('eventIds', jsonb_agg(event_id))
               from horizon_events where added_by is not null group by added_by, horizon_id, date_trunc('hour', added_at)
   union all select author_id, 'posted_callout', 'callout', id, created_at, null from callouts
+  union all select author_id, 'replied_callout', 'callout', callout_id, max(created_at),
+                   jsonb_build_object('replyId', (array_agg(id order by created_at desc))[1])
+              from callout_replies group by author_id, callout_id
   union all select follower_id, 'followed_person', 'person', followee_id, created_at, null from person_follows;
 ```
 
@@ -279,17 +285,24 @@ Function names, not line numbers: they are what stays stable. "Read" lists the m
   Open: `calloutOpen` (→ `open_callouts`). Author: `calloutAuthor` (→ `author_id`). Event link:
   `calloutEventId` (drop the `CALLOUTFOR` fixture map). Read: `openCallouts`, `homeCallouts`,
   `calloutHTML`, `calloutsHTML`.
-- **callout_answers** — `ANSWERED` / `ANSWERING`; `answerCallout` starts it, `sendChat` records it.
+- **callout_replies** — `REPLIES` (`{ id, calloutId, author, text, ts }`), `REPLYGONE` (deletions).
+  Write: `postReply` (insert), `deleteReply` (delete; `canDeleteReply` → the delete rule). Read:
+  `repliesOf` (→ `select … where callout_id = $1 order by created_at`), `myReplies`, `canReply`
+  (→ the insert rule), `repliesHTML` / `replyHTML` (the thread), `repliesPeekHTML` (count + latest
+  two on Home and the event page), `fReplyCard`. Goes away: `REPLYSEED` and `ACTSEED.replies`
+  (fixture replies), `REPLYDRAFT` stays in the browser.
 - **dm_threads + messages + thread_reads** — `CHATS`, `CHATORDER`, `UNREADCHAT`. Thread: `openDM`
-  (→ the `(least, greatest)` pair). Messages: `sendChat`, `shareToChat` (cards → `card_type`,
-  `card_id`), `stamp()` (→ `created_at`). Read: `chatList`, `convHTML`, `msgTs` (its heuristics for
-  "09:31" / "yesterday" go). Unread: `openChat` (→ `thread_reads`).
+  (→ the `(least, greatest)` pair). Messages: `sendChat`, `stamp()` (→ `created_at`). Read:
+  `chatList`, `convHTML`, `msgTs` (its heuristics for "09:31" / "yesterday" go). Unread: `openChat`
+  (→ `thread_reads`). Which conversation is open (`S.chatOpen`) and where you were in it
+  (`CHATSCROLL`) stay in the browser.
 - **activity (view)** — Read: `activityRows` → `homeEntries` / `homeItems`. Visibility: `actVisible`
   (→ the Home query above). Goes away: the "ACTIVITY SEED" block (`seedActivity`, `seedTs`, `FIXNOW`),
-  `LIVEACT` / `logAct` / `unlogAct` / `saveLiveAct` (the source tables are the log).
+  `LIVEACT` / `logAct` / `unlogAct` / `saveLiveAct` (the source tables are the log). `replied_callout`
+  rows come from `callout_replies`; `actVisible`'s "still has a reply there" check holds by construction.
 - **images** — `squareImage`, `czTakeFile`, `pfTakePhoto` (marked STORAGE): upload to Blob, insert
   into `images`, put its `url` in `look.image_url`. `HN_IMAGE` then accepts that host.
-- **Stays in the browser** — `READ` (bold for unread rows), `RECENTQ`, `FORMDRAFTS` / `CHATDRAFT`,
+- **Stays in the browser** — `READ` (bold for unread rows), `RECENTQ`, `FORMDRAFTS` / `CHATDRAFT` / `REPLYDRAFT`,
   `S.view` and scroll state, `hypernet-feed:v2` for those only.
 
 ## Fixture clock

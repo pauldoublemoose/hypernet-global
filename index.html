@@ -791,8 +791,8 @@ button.fcoe{ width:100%; border:0; color:inherit; font:inherit; text-align:left;
 .band .bsub{ margin-left:auto; font-weight:normal; letter-spacing:.06em; color:var(--dim); }
 .fuprow{ display:flex; align-items:center; gap:12px; padding:8px 16px; border-bottom:1px solid var(--line); }
 .fuprow:hover{ background:var(--hover); }
-.fuprow.sel{ background:var(--face-lt); box-shadow:inset 3px 0 0 var(--ink); }
-.fupd{ flex:0 0 40px; display:flex; flex-direction:column; align-items:center; font:10px var(--mono); letter-spacing:.04em; text-transform:uppercase; color:var(--ink2); }
+.fuprow.sel{ background:var(--face-lt); box-shadow:inset 5px 0 0 var(--ink); }
+.fupd{ flex:0 0 40px; display:flex; flex-direction:column; align-items:center; text-align:center; font:10px var(--mono); letter-spacing:.04em; text-transform:uppercase; color:var(--ink2); }
 .fupd b{ font:bold 20px var(--sys); line-height:1.05; color:var(--ink); }
 .fuprow .fcm{ flex:1; min-width:0; }
 .fuprow .fct{ font-size:15px; }
@@ -831,6 +831,11 @@ button.chip.chipmore{ align-self:stretch; padding:4px 13px; color:var(--ink); fo
 .mbody{ white-space:pre-wrap; }
 .field .opt{ font-weight:normal; font-size:12px; color:var(--dim); }
 .fhint{ font-size:12px; line-height:1.4; color:var(--dim); }
+/* the list's sunken frame is drawn on top of its rows: a band, a hovered or a selected row (Coming up with your people,
+   a lit list row) never paints over the frame's left edge */
+#app.desk #listcol{ position:relative; }
+#app.desk #listcol::after{ content:""; position:absolute; inset:0; z-index:8; box-shadow:var(--in); pointer-events:none; }
+#app.desk #listbody{ box-shadow:none; }
 /* nothing in the reading pane: the list takes the room, the empty pane stays */
 #app.split.pane-closed #listcol{ flex:0 0 clamp(340px, 60%, 720px); }
 /* split: the reading pane starts level with the heading — the heading belongs to the list column only */

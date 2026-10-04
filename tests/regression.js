@@ -912,6 +912,38 @@ async function overflowEverywhere(p, label){
     ok(!c.errors.length, kind + ': no console errors (horizon link) ' + c.errors.join(' '));
   }
 
+  /* ---------------- 2026-10-04: Coming up with your people keeps its left edge; its dates are centred ---------------- */
+  for (const kind of ['desk', 'tab', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    await c.goto(URL + '#/home'); await c.waitForTimeout(450);
+    if (kind !== 'phone'){
+      /* a lit row, a hovered row and the band: the list's frame stays drawn down its left edge */
+      if (kind === 'desk'){ await c.click('#listbody .fuprow .flink >> nth=0'); await c.waitForTimeout(300); }
+      await c.evaluate(() => { const f = document.querySelector('#listbody .fup'); const lb = $('listbody'); lb.scrollTop += f.getBoundingClientRect().top - lb.getBoundingClientRect().top - 40; });
+      await c.hover('#listbody .fuprow >> nth=2'); await c.waitForTimeout(200);
+      const box = await ev(c, () => { const l = $('listcol').getBoundingClientRect(), f = document.querySelector('#listbody .fup').getBoundingClientRect();
+        return { x:Math.round(l.left), y:Math.round(Math.max(f.top, l.top + 2)), width:2, height:Math.round(Math.min(f.bottom, l.bottom - 2) - Math.max(f.top, l.top + 2)) }; });
+      const png = await c.screenshot({ clip:box });
+      const edge = await ev(c, async b64 => {
+        const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode();
+        const cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height; const g = cv.getContext('2d'); g.drawImage(img, 0, 0);
+        const d = g.getImageData(0, 0, cv.width, cv.height).data, light = [];
+        for (let y = 0; y < cv.height; y++){ const i = (y * cv.width + 1) * 4; if ((d[i] + d[i + 1] + d[i + 2]) / 3 > 110) light.push(y); }
+        return { h:cv.height, light:light.length };
+      }, png.toString('base64'));
+      ok(edge.h > 150 && edge.light === 0, kind + ': Coming up with your people — the list frame\'s left edge is drawn the whole way down (band, lit and hovered rows) ' + JSON.stringify(edge));
+    }
+    const dates = await ev(c, () => [...document.querySelectorAll('#listbody .fupd')].map(d => {
+      const r = d.getBoundingClientRect(), mid = r.left + r.width / 2, rg = document.createRange(), out = [];
+      [...d.childNodes].forEach(n => { rg.selectNodeContents(n); [...rg.getClientRects()].forEach(q => { if (q.width) out.push(Math.abs(q.left + q.width / 2 - mid)); }); });
+      return Math.max.apply(null, out.concat([0]));
+    }));
+    ok(dates.length >= 3 && dates.every(x => x <= 1.5), kind + ': Coming up with your people — day, weekday and month are centred in the date column ' + JSON.stringify(dates));
+    ok((await overflow(c)) <= 0 && !c.errors.length, kind + ': Home, no horizontal overflow, no console errors ' + c.errors.join(' '));
+  }
+
   /* ---------------- tablet ---------------- */
   const t = await ctx('tab');
   await open(t, '', true);

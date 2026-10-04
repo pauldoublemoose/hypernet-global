@@ -202,3 +202,9 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   "closed" flag (`S.paneClosed`, `?pane=closed`) are removed, not flagged off: an empty stack *is* the empty pane, and an
   old `?pane=closed` link just lands on it. ↓ / j from nothing opens the first item; × and Esc still empty the pane.
   Phone and tablet (no reading pane beside the list) are unchanged.
+- **2026-10-04 · The list's frame is drawn over its rows.** Owner: "Coming up with your people is currently hiding a few
+  pixels to the left." Cause: the list's sunken 2px frame was an inset shadow on the scrolling list itself, so anything
+  with a background — the sticky bands, a hovered row, the lit Coming-up row with its 3px bar — painted over the frame's
+  left edge, and the row looked cut. On desktop and tablet the frame is now an overlay on the list column, above its
+  rows (`#listcol::after`), so the edge runs unbroken; the lit Coming-up row's bar sits inside it. The weekday and month
+  under each Coming-up date are centred under the day, as the day is (they were flush left). Phone has no frame.

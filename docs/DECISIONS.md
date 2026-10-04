@@ -45,6 +45,7 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   only a blank panel with the faint Hypernet mark. Nothing is auto-picked until you choose something, which fills it
   again. `?pane=closed` keeps it empty across reload and history; back brings back what was open. Phone unchanged.
   *Superseded in part 2026-10-04: nothing is ever auto-picked, so the empty pane is the default and `?pane=closed` is gone.*
+  *Superseded 2026-10-04 (B2): there is no reading pane; what you open is one window over the list ("One window").*
 - **2026-09-27 · The canvas is layered art; reading stays calm.** Back to front: seeded backdrop, header hero,
   particle atmosphere, then content panels and the window's toolbar. Art never takes a click or covers a control;
   ornaments state only facts (edition year, entry model, city, a horizon's years), never invented ones. Text colours
@@ -69,7 +70,8 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   ink ground, paper type, a hairline inset frame, "CALL OUT" as a paper tag, the ask at headline size, the event it is
   for, who asks and until when, and Answer. Open call outs from your network also run as a strip of inverted tiles at
   the top of Home. Salience comes from inversion, size and weight — no colour. Your own call outs never ask you to
-  answer them.
+  answer them. *Since 2026-10-04 (B2) the ask is at 20, the one headline size — loud by inversion, not size — and the
+  strip is one call out at a time in its band ("Call outs for you").*
 - **2026-10-01 · Friends of friends.** Every so often the stream carries "People your friends follow" — people followed
   by the people you follow, with who ("Anna and Kai follow Jon") and Follow. Logged out it is "People to follow"
   (the most followed on the network). Following someone adds their activity to Home straight away.
@@ -101,7 +103,8 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   glyph, surface texture, scanlines or flicker (the owner read the flicker as a bug), and nothing on the page moves.
   The content panel is white on the plain look and a step away from the ground on a customised one. The canvas-art
   engine (backdrop SVG generator, particle loop, parallax, ornaments) is removed, not flagged off. Supersedes
-  2026-09-27 "The canvas is layered art" and the theme spec in `reference/EVENT-CANVAS.md`.
+  2026-09-27 "The canvas is layered art" and the theme spec in `reference/EVENT-CANVAS.md`. *Since 2026-10-04 (B2) a
+  look's colours reach only the square and the title band; below it the page is the app's white sheet and greys.*
 - **2026-10-01 · A look is `{ bg, ink, accent, image, glyph }`.** Flat and serialisable, ready to be a JSON column.
   `image` is the square picture or null; `glyph` is drawn on the square when there is no picture (the fixture looks keep
   theirs; new ones take their kind's glyph). `HN_MIGRATE_LOOK` (in `_shared/hypernet-themes.js`) turns any older saved
@@ -126,7 +129,9 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   fixture call outs carry Sound / PA and Kitchen. When there are more tiles than fit, the strip shows whole tiles only
   (as many columns as fit) with ‹ › in its band — never a tile cut at the edge. Supersedes "Open call outs from your
   network also run as a strip" (2026-10-01). *Since 2026-10-04 "answered" means you replied under it: it still leaves
-  the strip, and its card in the stream shows its replies instead of "Answered · Open chat".*
+  the strip, and its card in the stream shows its replies instead of "Answered · Open chat". Since 2026-10-04 (B2)
+  the strip is one call out at a time, stepped with ‹ › in its band ("1 of 3"), its header line saying why it reached
+  you.*
 - **2026-10-01 · Home blends until you follow a few.** Following nobody, Home is the whole network ("Make Home yours").
   Following one or two people, Home is their activity first, then "Around the network" — the twelve newest entries from
   everyone else, greyed avatars on a tinted ground, with a line saying it fades once you follow a few more. From three
@@ -136,6 +141,8 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   how far off, where, and tiny faces with "Anna + 2 you follow are going · Rio interested". Three rows, "Show N more"
   opens the rest. This answers outcome #1 ("what do I do the next weekends with my people") on the first screen; its
   events also lead Home's keyboard order (the reading pane no longer opens on the next one by itself — 2026-10-04).
+  *Since 2026-10-04 (B2) each row is a thing — its 48 square, three lines (title, how soon and where, who you follow, in
+  words), the date at the right ("7 Oct" over "Wed"); no date block on the left, no tiny faces.*
 - **2026-10-01 · You are one line.** What you did in the last day is a single line at the top of the stream — "You:
   going to X, followed Kai, posted a call out: Rigger · now" (newest first, four parts, then "and N more"); older own
   rows are not on Home. Your rows still say what is true now (un-going takes it off the line).
@@ -150,7 +157,8 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   with "you follow · going · 2h ago" when the activity knows when they decided. "and N more" is a button: a dialog of
   everyone going (and interested), each with when and Message; the rest of the count is "N more going who keep their
   name to themselves". Explore's event rows and cards carry the same social line ("Anna + 2 you follow are going") with
-  tiny faces whenever someone you follow is on it.
+  tiny faces whenever someone you follow is on it. *Since 2026-10-04 (B2) Who's going is two columns of people at 32
+  (one on a phone), and the social line is words only — people are 32, things 48, nothing smaller in between.*
 - **2026-10-01 · Answering keeps its context.** Answer opens the DM with the call out pinned at the top ("Answering:
   Kitchen lead · for Sunrise tea service"; "You answered: …" once sent) and a first line ready. Sending puts the call
   out's card in the thread before your words. The poster's call-out page lists "Answers · n" — who, when, Open chat — and
@@ -163,7 +171,8 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   of the call out you are on; otherwise your next hosted event; a draft you started keeps its own choice.
 - **2026-10-01 · A closed reading pane gives the list the room.** At desktop widths, with the pane closed, the list takes
   up to 720px (60%) and the empty pane stays beside it, narrower — the 2026-09-28 rule that a closed pane is an empty
-  panel stands. The desktop greeting no longer repeats the header's subtitle.
+  panel stands. The desktop greeting no longer repeats the header's subtitle. *Superseded 2026-10-04 (B2): the list is
+  always one centred column, and the greeting is gone.*
 - **2026-10-01 · Feed cards are containers, not buttons.** A card on Home (event, horizon, person, call out, call-out
   tile, coming-up row) is a plain element; its title is the button that opens it (stretched over the card for the
   pointer), and its verbs are buttons beside it — no `role="button"` wrapped around real buttons. Names and titles inside
@@ -208,13 +217,15 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   (the faint mark) and the list taking the room, until you choose something. The auto-pick (`S.autoSel`) and the
   "closed" flag (`S.paneClosed`, `?pane=closed`) are removed, not flagged off: an empty stack *is* the empty pane, and an
   old `?pane=closed` link just lands on it. ↓ / j from nothing opens the first item; × and Esc still empty the pane.
-  Phone and tablet (no reading pane beside the list) are unchanged.
+  Phone and tablet (no reading pane beside the list) are unchanged. *Superseded 2026-10-04 (B2): nothing opens until
+  you pick it still holds, but there is no pane to be empty — no window is open.*
 - **2026-10-04 · The list's frame is drawn over its rows.** Owner: "Coming up with your people is currently hiding a few
   pixels to the left." Cause: the list's sunken 2px frame was an inset shadow on the scrolling list itself, so anything
   with a background — the sticky bands, a hovered row, the lit Coming-up row with its 3px bar — painted over the frame's
   left edge, and the row looked cut. On desktop and tablet the frame is now an overlay on the list column, above its
   rows (`#listcol::after`), so the edge runs unbroken; the lit Coming-up row's bar sits inside it. The weekday and month
   under each Coming-up date are centred under the day, as the day is (they were flush left). Phone has no frame.
+  *The frame stands; since 2026-10-04 (B2) the Coming-up date is at the right of its row.*
 - **2026-10-04 · Explore's overview is squares, at every width.** Owner: "I actually want the explore to stay, but don't
   show it as rows. Show it as squares instead, just like in the mobile version." Desktop and tablet now draw Explore
   (no kind) exactly as the phone does: the same sections (This week, From people you follow, Coming up, Announced burns,
@@ -274,7 +285,8 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   it fills the screen and also has ‹ (back to the chat). ×, ‹, Esc and the phone's back gesture close it and leave you
   exactly where you were: the conversation still open, the page behind it, the scroll, the draft. Follow works in the
   window; going anywhere from it (an event, a horizon, Message) closes it first. The chat list's right-click Profile
-  does the same.
+  does the same. *Superseded 2026-10-04 (B2): a profile from a chat opens in the one window like anything else; the
+  conversation stays open behind it, and an event opened from the profile stacks in the same window (‹ back to it).*
 - **2026-10-04 · A conversation keeps its place.** Owner: "chat with Anna Vale, then click on Home, then come back to
   chats, and I have the same window with Anna Vale opened up." There is one open conversation (`S.chatOpen`), at every
   width. On a desktop or tablet it lives in the chat dock and never takes the centre; it stays while you go anywhere
@@ -291,3 +303,52 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
   selected and copied; where even that fails, a small window shows the link selected, to copy by hand. The share window
   (copy field, the phone's share sheet, "Send in a chat") is gone, and with it every card a chat could carry: chat is
   words only, and cards kept in old chats are put away on load.
+- **2026-10-04 · One window (B2).** Owner: "let's maybe try making the feed centred and an event opening in a new window
+  you can close, like in Windows … We would be looking at one thing at a time." Approved: "This is good. Proceed."
+  There is no reading pane. On a desktop or tablet the list (Home, Explore and its kinds, Show all, search, your lists)
+  is one column of 680 (a calendar 960), centred in what the sidebar and the chat dock leave. Whatever you open — an
+  event, an Event Horizon, a person, a call out — opens in **one** window over it: a Windows 2000 frame with the
+  thing's square and title in its title bar, □ (maximise / restore; a double-click on the title bar too) and ×. Drag it
+  by the title bar; it stays inside the app's main area and remembers where you put it until it closes. By default it
+  sits over the right of the list (the list's left edge — avatars, who did what, the call out's Answer — stays in view),
+  between the sidebar and the dock; whichever of the window and the dock you touched last is in front. Opening
+  something else from the list replaces what the window shows; going on from inside it (a horizon's event, a person on
+  an event) stacks, with ‹ in the title bar. One window, never several: a second would only help to compare two
+  events, which is rare here, and it would bring back the clutter. × and Esc close it; the URL names what is open, so
+  back closes it, forward and reload bring it back. A horizon is never a list of its own any more: it opens in the
+  window everywhere, and its sidebar row is marked (not lit) while it is open — the lit row is always the list you are
+  in. On a phone the window is a sheet over the whole screen (above the preview bar when logged out), × in its title
+  bar and the event's verbs at its foot; × and the back gesture return to the screen behind exactly where it was. A
+  profile from a chat is this window too. Supersedes "The reading pane can be closed — to an empty pane" (2026-09-28),
+  "A closed reading pane gives the list the room" (2026-10-01), the empty pane of "Nothing opens until you pick it" and
+  "A profile from a chat is a window" (2026-10-04). Removed, not hidden: the split / push layouts, `#detailcol`, the
+  empty pane, `closePane`, `paintChatProfile`, the profile dialog, the call-out strip's `fitStrip` / `stepStrip`.
+- **2026-10-04 · The document window: one font, three sizes (B).** Owner: "the event page looks very random … different
+  fonts … make it coherent with the rest of the page"; "so many different fonts, squares, and different spacings. I
+  would like it to be very evenly spaced out." One font everywhere: Tahoma (no monospace, no capitals in labels — the
+  sidebar's headings, bands, pills and dates included). Type at 12 / 14 / 20 on lines of 16 (UI), 20 (prose) and 24
+  (titles). Spacing 8 / 16 / 24 (4 only between buttons in a group). Sizes: 32 for a person doing something (a feed
+  entry's actor, a reply, Who's going), 48 for a thing (an event, a horizon, a suggested person — in lists, on Home, in
+  a horizon's track list), 96 for a page's own square (64 when the window is narrow). Controls 36, 44 on touch, 28 only
+  for an inline button in a header line (Message).
+- **2026-10-04 · A page is a document (B).** The event, Event Horizon, person and call-out pages are white sheets in the
+  app's window: the look's band at the top (square, a line saying what it is in the look's accent, the title at 20, the
+  date and place), the grey toolbar, then group boxes — a hairline frame with its caption in the line. **Details** is a
+  label / value box (labels in one column, values in the other; an event's horizons are rows of it). The event reads
+  Details → About → Call outs → Who's going → the timeline and what to bring (one label / value box: each day or
+  phase, then Bring and Dress) → the rest, only what there is. A call out is the inverted card (the ask at 20, the event
+  it is for as a thing on the dark, Answer, who asked) with its whole public thread under it, drawn like a tree view
+  (each person at 32 hanging from one dotted line: name, Author, how long ago, the words) and the box to answer in:
+  "Answer" posts there, for everyone, and nothing on or around a call out speaks of chats. An event with more than one
+  call out shows each card with its latest answers; Answer then opens the call out in the window. A call out's own
+  page is its card and its Replies box. The host's toolbar is New call out · Edit · Customize. Who's going is two
+  columns of people (one on a phone), the ones you follow first.
+- **2026-10-04 · Home has one rhythm (B).** No greeting. Bands are Outlook's "group by" bars (grey, one line, the count).
+  **Call outs for you** is one call out at a time, stepped with ‹ › in its band ("1 of 3"): a header line (who asked, at
+  32; how long ago and why it reached you) over the inverted card with its latest one or two answers and how many
+  there are. **Coming up with your people** is rows of things with the date at the right. Every entry in the stream is
+  the same: a header line — the person at 32, what they did over how long ago (and Message, inline, when it is fresh
+  and one person's) — then 8, then the thing in a hairline frame: its 48 square, three lines of 16 (title, when and
+  where, who you follow or who hosts), its verbs at its right; several things share one frame. Under 560px the verbs
+  go under the thing, sharing the width. People your friends follow is an entry like the others, its people as things
+  with Follow.

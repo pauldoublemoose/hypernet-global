@@ -110,11 +110,25 @@ applies a file through the Neon MCP as one transaction (`node scripts/sql-split.
 Errors are always `{error, message?}`: 400 `invalid` (with zod issues), 401 `login_required`, 403
 `join_required`, 404, 409, 503 `not_configured`.
 
+## Owner decisions (2026-10-04)
+
+- **Sign-up is open** to anyone with the link: the first email code creates the login (Neon Auth
+  `allow_sign_up` is on, on both branches). Pages stay `noindex`.
+- **Data:** `main` (production) gets the **real events only** (`data/real-events.json` and other real sources,
+  imported with `source = 'import'`), no mock people. `dev` may carry the mock cast for testing. Both are phase-2
+  seed scripts; nothing is seeded yet.
+- **Testing a login automatically:** Neon Auth really emails the code (sender `auth@mail.myneon.app`), so tests
+  read it from a real inbox (Gmail plus-addresses such as `you+hn-anna@gmail.com` all land in one inbox and are
+  separate Hypernet logins). No test back door in the app: Neon stores the code hashed (it cannot be read back
+  from the database), and a code lives 5 minutes.
+- **Deploys** happen after the UI merge, sequenced by the orchestrator.
+
 ## Before launch (main)
 
 1. Apply `0001_init` to `main`; create bucket `images` (public read) on `main` (Console → branch main → Object
    storage → New bucket).
-2. Neon Auth on `main`: add `https://hypernet-feed.vercel.app` as a trusted domain; set the email provider to
+2. Neon Auth on `main`: add `https://hypernet-feed.vercel.app` as a trusted domain; turn off "allow localhost";
+   remove the shared Google sign-in it was created with (we only use email codes); set the email provider to
    Resend SMTP (`smtp.resend.com`, port 465, user `resend`, password = `RESEND_API_KEY`) once the sender domain is
    verified in Resend. No app code involved; until then Neon's shared sender works for testing.
 3. Push env, deploy, open `/api/health` on production → `branch: "main"`.

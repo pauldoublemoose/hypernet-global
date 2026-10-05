@@ -255,26 +255,47 @@
     if (d.drafts){ FORMDRAFTS = d.drafts.forms || {}; CHATDRAFT = d.drafts.chat || {}; }
   };
 
-  /* ---------- log in: email → 6-digit code → (first time) your profile ---------- */
-  var LG = null;
+  /* ---------- log in: email → 6-digit code → (first time) your profile ----------
+     The code step (2026-10-05): ⚠ only with an error to say; no "Use another email" — Back returns to the email, kept, to
+     fix a typo, and × closes; "Send a new code" waits RESEND seconds after a code went out, counting down, at the
+     footer's left in line with Back and Log in */
+  var LG = null, LGT = null, RESEND = 30;
+  function resendLeft(){ return LG && LG.sentAt ? Math.max(0, RESEND - Math.floor((Date.now() - LG.sentAt) / 1000)) : 0; }
+  function resendLabel(){ var n = resendLeft(); return LG.busy === 'send' ? 'Sending…' : 'Send a new code' + (n ? ' (0:' + ('0' + n).slice(-2) + ')' : ''); }
+  /* the countdown changes only the button, so a half-typed code stays where it is */
+  function tickResend(){
+    clearInterval(LGT); LGT = null;
+    if (!LG || LG.step !== 'code' || !resendLeft()) return;
+    LGT = setInterval(function(){
+      var b = document.querySelector('.dlg [data-hnact="resend"]');
+      if (!LG || LG.step !== 'code' || !b){ clearInterval(LGT); LGT = null; return; }
+      var n = resendLeft(); b.textContent = resendLabel(); b.disabled = !!n || !!LG.busy;
+      if (!n){ clearInterval(LGT); LGT = null; }
+    }, 1000);
+  }
   function loginBody(){
     if (LG.step === 'email') return '<p class="fhelp" style="margin:0 0 12px">We email you a 6-digit code. No password, ever. New here? The same code makes your account.</p>' +
       '<div class="field"><label for="hn-email">Email</label><input type="email" id="hn-email" value="'+esc(LG.email)+'" placeholder="you@example.com" autocomplete="email" autocapitalize="off" spellcheck="false"></div>' +
       '<p class="ferr" id="hn-lerr" role="alert">'+esc(LG.err || '')+'</p>';
-    return '<p class="fhelp" style="margin:0 0 12px">We sent a code to <b>'+esc(LG.email)+'</b>. It works for a few minutes.</p>' +
+    return '<p class="fhelp" style="margin:0 0 12px">We sent '+(LG.resent ? 'a new code' : 'a code')+' to <b>'+esc(LG.email)+'</b>. It works for a few minutes.</p>' +
       '<div class="field"><label for="hn-otp">Code</label><input type="text" id="hn-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="9" placeholder="123456" style="font-size:20px;letter-spacing:3px"></div>' +
-      '<p class="ferr" id="hn-lerr" role="alert">'+esc(LG.err || '')+'</p>' +
-      '<p class="fhelp" style="margin:8px 0 0"><button type="button" class="btn" data-hnact="resend">Send a new code</button> <button type="button" class="btn" data-hnact="other">Use another email</button></p>';
+      '<p class="ferr" id="hn-lerr" role="alert">'+esc(LG.err || '')+'</p>';
   }
   function loginFoot(){
-    return '<button class="btn" data-act="closedlg">Cancel</button>' + (LG.step === 'email'
-      ? '<button class="btn primary" data-hnact="send"'+(LG.busy ? ' disabled' : '')+'>'+(LG.busy ? 'Sending…' : 'Email me a code')+'</button>'
-      : '<button class="btn primary" data-hnact="verify"'+(LG.busy ? ' disabled' : '')+'>'+(LG.busy ? 'Checking…' : 'Log in')+'</button>');
+    if (LG.step === 'email') return '<button class="btn" data-act="closedlg">Cancel</button>' +
+      '<button class="btn primary" data-hnact="send"'+(LG.busy ? ' disabled' : '')+'>'+(LG.busy ? 'Sending…' : 'Email me a code')+'</button>';
+    return '<button type="button" class="btn lgresend" data-hnact="resend"'+(resendLeft() || LG.busy ? ' disabled' : '')+'>'+resendLabel()+'</button>' +
+      '<button type="button" class="btn" data-hnact="other"'+(LG.busy ? ' disabled' : '')+'>Back</button>' +
+      '<button class="btn primary" data-hnact="verify"'+(LG.busy ? ' disabled' : '')+'>'+(LG.busy === 'verify' ? 'Checking…' : 'Log in')+'</button>';
   }
   function paintLogin(){
     var d = DLGS[DLGS.length - 1]; if (!d || !LG || !d.querySelector('#hn-login')) return;
+    /* a code that turned out wrong stays in its field, to be checked ("Check it, or ask for a new one") */
+    var otp = $('hn-otp'), typed = otp && LG.step === 'code' && LG.busy !== 'send' ? otp.value : '';
     d.querySelector('#hn-login').innerHTML = loginBody(); d.querySelector('.dfoot').innerHTML = loginFoot();
+    if (typed && $('hn-otp')) $('hn-otp').value = typed;
     placeDlg(d); focusIn(LG.step === 'email' ? 'hn-email' : 'hn-otp');
+    tickResend();
   }
   HN.loginDialog = function(){
     LG = { step:'email', email:(LG && LG.email) || '', err:'', busy:false };
@@ -284,15 +305,16 @@
   function sendCode(){
     var inp = $('hn-email'), email = String(inp ? inp.value : LG.email).trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ LG.err = 'That doesn’t look like an email address.'; paintLogin(); return; }
-    LG.email = email; LG.busy = true; LG.err = ''; paintLogin();
+    var again = LG.step === 'code';
+    LG.email = email; LG.busy = 'send'; LG.err = ''; paintLogin();
     req('POST', '/api/auth/email-otp/send-verification-otp', { email:email, type:'sign-in' }).then(function(){
-      LG.busy = false; LG.step = 'code'; paintLogin();
+      LG.busy = false; LG.step = 'code'; LG.sentAt = Date.now(); LG.resent = again; paintLogin();
     }, function(err){ LG.busy = false; LG.err = err.status === 429 ? 'Too many codes asked for. Wait a minute, then try again.' : 'Couldn’t send the code: ' + err.message; paintLogin(); });
   }
   function verifyCode(){
     var otp = String(($('hn-otp') || {}).value || '').replace(/\D/g, '');
     if (otp.length !== 6){ LG.err = 'The code has 6 digits.'; paintLogin(); return; }
-    LG.busy = true; LG.err = ''; paintLogin();
+    LG.busy = 'verify'; LG.err = ''; paintLogin();
     req('POST', '/api/auth/sign-in/email-otp', { email:LG.email, otp:otp }).then(function(){
       return HN.load().then(function(d){
         LG = null; apply(d);
@@ -308,9 +330,10 @@
   document.addEventListener('click', function(ev){
     var b = ev.target.closest && ev.target.closest('[data-hnact]'); if (!b || !LG) return;
     var a = b.getAttribute('data-hnact');
+    if (LG.busy || b.disabled) return;
     if (a === 'send' || a === 'resend') sendCode();
     else if (a === 'verify') verifyCode();
-    else if (a === 'other'){ LG.step = 'email'; LG.err = ''; paintLogin(); }
+    else if (a === 'other'){ LG.step = 'email'; LG.err = ''; paintLogin(); }   /* Back: the email, kept, to correct */
   });
   document.addEventListener('keydown', function(ev){
     if (ev.key !== 'Enter' || !LG || !ev.target || (ev.target.id !== 'hn-email' && ev.target.id !== 'hn-otp')) return;

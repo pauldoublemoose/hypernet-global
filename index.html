@@ -970,6 +970,10 @@ input[type=search]::-webkit-search-cancel-button{ -webkit-appearance:none; displ
 #app.phone .acctcard .an{ flex:1; min-width:0; font-size:14px; font-weight:bold; }
 #app.phone .acctcard .an small{ display:block; font-size:12px; font-weight:normal; color:var(--dim); }
 #app.phone #tabbar{ display:flex; flex:0 0 auto; gap:4px; padding:5px 5px calc(5px + env(safe-area-inset-bottom)); background:var(--face); box-shadow:inset 0 1px 0 var(--white), 0 -1px 0 var(--shadow); }
+/* logged out a phone has no tabs (2026-10-05, "when I'm not logged in I don't need to see the bottom bar at all"): the
+   preview bar is the only bar at the foot, so it keeps clear of the home indicator itself */
+#app.phone.preview #tabbar{ display:none; }
+#app.phone.preview #previewbar{ padding-bottom:calc(8px + env(safe-area-inset-bottom)); }
 .tab{ position:relative; flex:1 1 0; min-width:0; min-height:54px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
   border:0; background:transparent; color:var(--ink2); font-size:12px; }
 .tab.on{ background:#fff; color:#000; font-weight:bold; box-shadow:var(--in); }
@@ -3828,7 +3832,7 @@ function exploreKindsHTML(){
     return '<button role="tab" class="kind'+(on?' on':'')+'" aria-selected="'+on+'" data-act="explorekind" data-id="'+k[0]+'">'+esc(k[0] === 'horizons' ? 'Horizons' : k[1])+'</button>';
   }).join('') + '</div>';
 }
-/* ---- the phone shell: an app bar on top, five tabs at the bottom ---- */
+/* ---- the phone shell: an app bar on top, five tabs at the bottom (none logged out: the preview bar is the foot) ---- */
 function phoneCanBack(){
   return S.phoneSearch || S.folder.kind !== tabRootFolder(S.tab).kind;
 }
@@ -3855,9 +3859,9 @@ function renderAppbar(){
   if (hadFocus || S.phoneSearch){ var pq = $('pq'); if (pq){ pq.focus(); var n = pq.value.length; pq.setSelectionRange(n, n); } }
 }
 function renderTabbar(){
+  if (!S.loggedIn){ $('tabbar').innerHTML = ''; return; }
   var un = unreadChats();
-  var tabs = [['home','home','Home'],['explore','explore','Explore'],['new','plus','New'],['chats','chat','Chats'],['you','user','You']]
-    .filter(function(t){ return S.loggedIn || t[0] !== 'home'; });
+  var tabs = [['home','home','Home'],['explore','explore','Explore'],['new','plus','New'],['chats','chat','Chats'],['you','user','You']];
   $('tabbar').innerHTML = tabs.map(function(t){
     if (t[0] === 'new') return '<button class="tab new" data-act="newsheet" aria-label="New"><span class="tnew">'+ic('plus',22)+'</span>New</button>';
     return '<button class="tab'+(S.tab===t[0]?' on':'')+'" data-act="tab" data-id="'+t[0]+'" aria-current="'+(S.tab===t[0]?'page':'false')+'">' +
@@ -5204,6 +5208,8 @@ function phoneBack(){
 }
 /* logged out there is no Home (2026-10-04): Explore is where a visitor lands, and the root of what was Home's tab */
 function landingFolder(){ return S.loggedIn ? { kind:'home', id:null } : { kind:'explore', id:null }; }
+/* the places that are an account's own: a visitor is never in them (2026-10-05) */
+var ACCTPLACES = /^(you|chats|going|interested|hosting|promoted)$/;
 function tabRootFolder(t){ return t === 'explore' || t === 'chats' || t === 'you' ? { kind:t, id:null } : landingFolder(); }
 function tabOfFolder(f){
   var k = (f || S.folder).kind;
@@ -5994,7 +6000,9 @@ window.addEventListener('popstate', function(ev){
   ROUTE.applying = false;
   restoreScroll(s.scroll);
   if (!ev.state) revealSel();
-  if (!ev.state || s.modal){ var c = snapNow(); c.idx = s.idx || 0; c.scroll = CURSCROLL; history.replaceState(c, '', hashOf(c)); }
+  /* an entry a visitor can't be on (an account's place, from before logging out) now names where it landed: Explore */
+  var shown = snapNow();
+  if (!ev.state || s.modal || (!S.loggedIn && navKeyOf(shown) !== navKeyOf(s))){ shown.idx = s.idx || 0; shown.scroll = CURSCROLL; history.replaceState(shown, '', hashOf(shown)); }
 });
 /* a link (not a history step): its row, if the list has one, is lit and in view */
 function revealSel(){
@@ -6031,8 +6039,14 @@ function startRoutes(){
    15. RENDER + BOOT
    ========================================================================= */
 function render(){
-  /* logged out there is no Home: whatever asked for it (a link, a tab, an old history entry) lands on Explore */
-  if (!S.loggedIn){ if (S.folder.kind === 'home') S.folder = { kind:'explore', id:null }; if (S.tab === 'home') S.tab = 'explore'; }
+  /* logged out there is no Home: whatever asked for it (a link, a tab, an old history entry) lands on Explore. Nor is
+     there anything of an account's (2026-10-05, "doesn't make sense to be able to click on the profile and see nothing
+     there"): You, Chats and your lists land on Explore too, and a phone has no tabs — Explore is a visitor's one place */
+  if (!S.loggedIn){
+    if (S.folder.kind === 'home' || ACCTPLACES.test(S.folder.kind)) S.folder = { kind:'explore', id:null };
+    S.tab = 'explore';
+    S.stack = S.stack.filter(function(it){ return it.type !== 'chat' && !(it.type === 'missing' && /^chats\//.test(it.id)); });
+  }
   L = computeLayout();
   noticeNewEvents();
   var app = $('app');
@@ -6040,7 +6054,7 @@ function render(){
     /* a phone conversation screen becomes the chat dock on a wider screen */
     var ct = S.stack.filter(function(it){ return it.type === 'chat'; }).pop();
     if (ct){ S.stack = S.stack.filter(function(it){ return it.type !== 'chat'; }); S.chatOpen = ct.id; S.rightOpen = true; S.lastOpened = 'right'; L = computeLayout(); }
-    if (S.folder.kind === 'you' || S.folder.kind === 'chats') goFolder({ kind:'home' });
+    if (S.folder.kind === 'you' || S.folder.kind === 'chats') goFolder(landingFolder());
   } else if (S.stack.some(function(it){ return it.type === 'chat'; })){
     /* and a conversation in the stack (a link, a desktop's dock) becomes the phone's Chats tab */
     S.chatOpen = S.stack.filter(function(it){ return it.type === 'chat'; }).pop().id;

@@ -46,7 +46,7 @@
    it fits between the sidebar and the chat dock and whichever was touched last is in front, a phone's window is a
    full-screen sheet whose × and back gesture return to the feed where it was; Home steps its call outs one at a time in
    their band, Coming up rows are 48 squares with the date at the right, the social line is words, and an event's call
-   out carries its whole thread with the box to answer in (Answer goes there, no chat). Older checks that spoke of the
+   out carries its latest replies (2026-10-05: no box there; Answer opens the call out, no chat). Older checks that spoke of the
    reading pane, the empty pane, ?pane=closed and the call-out strip now say the same things of the window;
    2026-10-04 (layout): logged out there is no Home (Explore is the landing, no Home row or tab, #/home lands on Explore
    without ever drawing Home; logging in from the landing goes Home), the white spans the centre and each view sits in
@@ -1333,20 +1333,116 @@ async function overflowEverywhere(p, label){
     await c.evaluate(() => { closeDialogs(); FORMDRAFTS.callout = null; }); await c.waitForTimeout(150);
     for (const [id, has] of [[await ev(c, () => calloutEventId(calloutOf('co-sound'))), true], ['evt-fill-3', false]]){
       await c.evaluate(i => openItem('event', i), id); await c.waitForTimeout(300);
+      /* 2026-10-05 (v5-callout): an event's call out shows its latest replies, and no box to answer in */
       const g = await ev(c, () => ({ heads:[...document.querySelectorAll('#dscroll .sect h3')].map(h => h.textContent), cards:document.querySelectorAll('#dscroll .evcos .fco').length,
-        reps:document.querySelectorAll('#dscroll .evcos .reply').length, box:!!document.querySelector('#dscroll .evcos #coreply'), add:!!document.querySelector('#dscroll [data-act="newcalloutfor"], #evbar [data-act="newcalloutfor"]') }));
-      ok(has ? g.heads.indexOf('Call outs') >= 0 && g.cards === 1 && g.reps === 2 && g.box && !g.add : g.heads.indexOf('Call outs') < 0 && !g.cards && !g.add,
-         kind + ': a guest sees ' + (has ? 'the event’s call out with its whole thread and the box to answer in' : 'no Call outs heading when there are none') + ' ' + JSON.stringify(g));
+        reps:document.querySelectorAll('#dscroll .evcos .corep .corow').length, box:!!document.querySelector('#dscroll #coreply'), add:!!document.querySelector('#dscroll [data-act="newcalloutfor"], #evbar [data-act="newcalloutfor"]') }));
+      ok(has ? g.heads.indexOf('Call outs') >= 0 && g.cards === 1 && g.reps === 2 && !g.box && !g.add : g.heads.indexOf('Call outs') < 0 && !g.cards && !g.add,
+         kind + ': a guest sees ' + (has ? 'the event’s call out with its latest replies and no box to answer in' : 'no Call outs heading when there are none') + ' ' + JSON.stringify(g));
       if (has){
-        /* Answer on the event's call out goes to the box under it, in the same window — no chat, nothing new opens */
-        const n0 = await ev(c, () => ({ stack:S.stack.length, chats:Object.keys(CHATS).length }));
-        await c.evaluate(() => document.querySelector('#dscroll .evcos [data-act="answercallout"]').click()); await c.waitForTimeout(300);
-        ok(await ev(c, n => S.stack.length === n.stack && Object.keys(CHATS).length === n.chats && document.activeElement && document.activeElement.id === 'coreply', n0), kind + ': Answer on an event’s call out puts you in the box under it');
         ok(await ev(c, () => !/privately|message anna|in a chat|direct message/i.test(document.getElementById('dscroll').innerText)), kind + ': no chat wording around the call out');
+        /* Answer on the event's call out opens the call out (stacked, ‹ back to the event) with its box ready — no chat */
+        const n0 = await ev(c, () => ({ stack:S.stack.length, chats:Object.keys(CHATS).length }));
+        await c.evaluate(() => document.querySelector('#dscroll .evcos [data-act="answercallout"]').click()); await c.waitForTimeout(350);
+        ok(await ev(c, n => S.stack.length === n.stack + 1 && S.stack[S.stack.length - 1].type === 'callout' && Object.keys(CHATS).length === n.chats && document.activeElement && document.activeElement.id === 'coreply', n0),
+           kind + ': Answer on an event’s call out opens the call out with its box focused');
       }
     }
     ok(!c.errors.length, kind + ': no console errors (replies, New call out) ' + c.errors.join(' '));
     ok((await overflow(c)) <= 0, kind + ': no overflow (replies, New call out)');
+  }
+  /* 2026-10-05 (v5-callout): a call out's own page is the call out, full screen — its band is the inverted call out (the
+     ask, its line, the event it is for, who asked and until when), then the toolbar, then the replies and the box; no
+     card inside the page and one short line at most. The icon is a megaphone; Add to horizon's icon stays in its box.
+     On an event a call out shows its latest replies or "No replies yet" (no box there; Reply / Answer open the call out).
+     On a phone, tapping the reply box opens the keyboard and it stays: the keyboard's resize no longer redraws the page */
+  for (const kind of ['desk', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '#/home', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    /* your own call out on your next event, no replies yet: the owner's screenshot */
+    const evId = await ev(c, () => { const id = MYEVENTS.filter(x => EVENTS[x] && !isPast(lastDay(EVENTS[x])))[0];
+      CALLOUTS.unshift({ id:'co-new-sauna', title:'Sauna master', body:'Someone who can bring the sauna to life', eventId:id, skill:null, expiresAt:isoOf(new Date(Date.now() + 30 * 864e5)),
+        hostName:S.me.name, hostId:acctPid(S.acct), hostAcct:S.acct }); logAct('posted_callout', 'callout', 'co-new-sauna'); render(); return id; });
+    await c.evaluate(() => openItem('callout', 'co-new-sauna')); await c.waitForTimeout(350);
+    const pg = () => ev(c, () => { const sc = document.getElementById('dscroll'), band = sc.querySelector('.pg-callout > .coband'), w = sc.getBoundingClientRect();
+      const out = [...sc.querySelectorAll('.pg-callout *')].filter(e => { const r = e.getBoundingClientRect(); return r.width && (r.left < w.left - 0.5 || r.right > w.left + sc.clientWidth + 0.5); }).map(e => e.className || e.tagName);
+      const ta = sc.querySelector('#coreply'), bt = sc.querySelector('[data-act="postreply"]'), box = sc.querySelector('.sect[data-sect="replies"]'), bs = box && getComputedStyle(box);
+      return { band:!!band && getComputedStyle(band).backgroundColor === 'rgb(20, 20, 20)', title:band && band.querySelector('h1').textContent, ev:band && (band.querySelector('.fcoe[data-type="event"]') || {}).getAttribute && band.querySelector('.fcoe').getAttribute('data-id'),
+               by:band && (band.querySelector('.coby .rpn, .coby b') || {}).textContent, meta:band && (band.querySelector('.coby small') || {}).textContent, card:sc.querySelectorAll('.fco').length,
+               bandFirst:!!band && sc.querySelector('.pg-callout').firstElementChild === band, lines:sc.querySelectorAll('.pg-callout .whonote, .pg-callout .replynote').length,
+               note:[...sc.querySelectorAll('.pg-callout .whonote')].map(x => x.textContent).join('|'), bar:[...sc.querySelectorAll('.actbar [data-act]')].map(b => b.getAttribute('data-act')).join(','),
+               fits:!!ta && !!bt && ta.getBoundingClientRect().right <= bt.getBoundingClientRect().left && bt.getBoundingClientRect().right <= box.getBoundingClientRect().right - 8,
+               even:!!bs && bs.paddingLeft === bs.paddingRight, overflow:sc.scrollWidth - sc.clientWidth, out }; });
+    const own = await pg();
+    ok(own.band && own.title === 'Sauna master' && own.ev === evId && own.by === 'You' && /posted .* · open until /.test(own.meta) && own.bandFirst && !own.card,
+       kind + ': your call out’s page is the call out — its band holds the ask, the event it is for, you and until when; no card inside the page ' + JSON.stringify(own));
+    ok(own.lines === 1 && own.note === 'No replies yet.' && own.bar === 'editcallout,closecallout,share' && own.fits && own.even && own.overflow <= 0 && !own.out.length,
+       kind + ': one short line ("No replies yet."), Edit · Close call out · Share, the box and Post fit, even padding, nothing spills ' + JSON.stringify(own));
+    await shot(c, 'callout-' + kind + '-own-page');
+    /* someone else's, with replies: Answer in the toolbar puts you in the box; no line at all around the thread */
+    await c.evaluate(() => openItem('callout', 'co-sound')); await c.waitForTimeout(350);
+    const g = await pg();
+    ok(g.by === 'Anna Vale' && g.bar === 'answercallout,share' && g.lines === 0 && g.fits && g.overflow <= 0 && !g.out.length && !g.card,
+       kind + ': someone’s call out: who asked in the band, Answer · Share, the thread with no explanations around it ' + JSON.stringify(g));
+    await c.click('#dscroll .actbar [data-act="answercallout"]'); await c.waitForTimeout(250);
+    ok(await ev(c, () => document.activeElement && document.activeElement.id === 'coreply' && S.stack.length === 1), kind + ': Answer in the call out’s toolbar puts you in its box');
+    await shot(c, 'callout-' + kind + '-page-replies');
+    /* the megaphone: the call out's icon everywhere (title bar, nav, buttons), and Add to horizon's icon inside its 20 box */
+    const icn = await ev(c, async () => {
+      /* painted, not measured: each icon drawn ten times over in a box with room around it; no ink may fall outside its 20 */
+      const spill = async n => { const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-4 -4 28 28" width="280" height="280" fill="none" stroke="#000" stroke-width="1.7" stroke-linecap="square" stroke-linejoin="miter">' + IC[n] + '</svg>';
+        const img = new Image(); img.src = 'data:image/svg+xml,' + encodeURIComponent(svg); await img.decode();
+        const cv = document.createElement('canvas'); cv.width = cv.height = 280; const x = cv.getContext('2d'); x.drawImage(img, 0, 0);
+        const d = x.getImageData(0, 0, 280, 280).data; let out = 0;
+        for (let y = 0; y < 280; y++) for (let k = 0; k < 280; k++) if (d[(y * 280 + k) * 4 + 3] > 40 && (k < 39 || k > 240 || y < 39 || y > 240)) out++;
+        return out; };
+      const ref = (() => { const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.innerHTML = IC.callout; return s.innerHTML; })();
+      const nav = [...document.querySelectorAll('#navbody .nsubrow')].filter(r => /Call outs/.test(r.textContent)).map(r => r.querySelector('svg'));
+      const used = [...document.querySelectorAll('#dbar .wicon svg, #dscroll .coband .eyebrow svg')].concat(nav).map(s => s && s.innerHTML);
+      return { mega:/<ellipse/.test(IC.callout) && !/v4h3/.test(IC.callout), used:used.length === (L.phone ? 2 : 3) && used.every(h => h === ref),
+               add:await spill('addhorizon'), co:await spill('callout'), oldAdd:await (async () => { const k = IC.addhorizon; IC.addhorizon = '<path d="M1.5 13.5h11M4 13.5a4.5 4.5 0 0 1 8.3-2.4M8.3 4.2v1.8M16 9v8M12 13h8"/>'; const r = await spill('addhorizon'); IC.addhorizon = k; return r; })() }; });
+    ok(icn.mega && icn.used && !icn.add && !icn.co && icn.oldAdd > 0, kind + ': the call out icon is a megaphone wherever a call out is named, and both new icons stay inside their box ' + JSON.stringify(icn));
+    /* on its event: "No replies yet", no box; the tag never wraps; Reply on your own once someone answered */
+    await c.evaluate(id => { S.stack = []; openItem('event', id); }, evId); await c.waitForTimeout(350);
+    const e1 = await ev(c, () => { const f = document.querySelector('#dscroll .evcos .fco[data-id="co-new-sauna"]'), tag = f && f.querySelector('.fcotag'), sect = document.querySelector('#dscroll .sect[data-sect="callouts"]'), ss = sect && getComputedStyle(sect);
+      return { none:f && (f.querySelector('.corep .cornone') || {}).textContent, box:!!document.querySelector('#dscroll #coreply'), tag:tag && Math.round(tag.getBoundingClientRect().height), reply:!!(f && f.querySelector('[data-act="answercallout"]')),
+               even:!!ss && ss.paddingLeft === ss.paddingRight }; });
+    ok(e1.none === 'No replies yet' && !e1.box && e1.tag === 20 && !e1.reply && e1.even, kind + ': on its event your call out says "No replies yet" — no box, the tag on one line, even padding ' + JSON.stringify(e1));
+    if (kind === 'phone'){ await c.evaluate(() => { const s = document.querySelector('#dscroll .sect[data-sect="callouts"]'); s.scrollIntoView(); document.getElementById('dscroll').scrollTop -= 24; document.getElementById('toasts').innerHTML = ''; }); await c.waitForTimeout(150); }
+    await shot(c, 'callout-' + kind + '-event-no-replies');
+    await c.evaluate(() => { REPLIES.push({ id:'r-v5-kai', calloutId:'co-new-sauna', author:'p-kai', text:'I build saunas. Wood-fired, 12 people.', ts:tsIso(appNow()) }); render(); }); await c.waitForTimeout(200);
+    const e2 = await ev(c, () => { const f = document.querySelector('#dscroll .evcos .fco[data-id="co-new-sauna"]'); return { rows:f.querySelectorAll('.corep .corow').length, none:!!f.querySelector('.cornone'), reply:(f.querySelector('[data-act="answercallout"]') || {}).textContent }; });
+    ok(e2.rows === 1 && !e2.none && e2.reply === 'Reply', kind + ': answered, your call out on its event shows the reply and offers Reply ' + JSON.stringify(e2));
+    await c.click('#dscroll .evcos .fco[data-id="co-new-sauna"] [data-act="answercallout"]'); await c.waitForTimeout(350);
+    ok(await ev(c, () => { const t = S.stack[S.stack.length - 1]; return S.stack.length === 2 && t.type === 'callout' && t.id === 'co-new-sauna' && document.activeElement && document.activeElement.id === 'coreply'; }),
+       kind + ': Reply opens your call out (‹ back to the event) with its box focused');
+    if (kind === 'phone'){
+      /* the keyboard: a tap focuses the box, the viewport shrinks by the keyboard's height — the same box keeps focus and
+         stays in the page (before, the resize redrew the window and replaced it: the keyboard closed again) */
+      await c.evaluate(() => { document.activeElement.blur(); document.getElementById('dscroll').scrollTop = 0; }); await c.waitForTimeout(100);
+      await c.tap('#coreply'); await c.waitForTimeout(150);
+      await c.evaluate(() => { document.getElementById('coreply').__probe = 1; });
+      const kb = () => ev(c, () => { const a = document.activeElement, b = document.getElementById('coreply'); return { id:a && a.id, same:!!(a && a.__probe), inDom:!!(b && b.__probe), value:b && b.value, vv:Math.round(visualViewport.height) }; });
+      await c.setViewportSize({ width:375, height:476 }); await c.waitForTimeout(400);
+      const up = await kb();
+      ok(up.id === 'coreply' && up.same && up.inDom && up.vv === 476, 'phone: the keyboard comes up — the reply box you tapped keeps focus and stays in the page ' + JSON.stringify(up));
+      await c.keyboard.type('Wood-fired works.'); await c.waitForTimeout(100);
+      await c.evaluate(() => visualViewport.dispatchEvent(new Event('resize'))); await c.waitForTimeout(150);
+      await c.setViewportSize({ width:375, height:812 }); await c.waitForTimeout(400);
+      const down = await kb();
+      ok(down.id === 'coreply' && down.same && down.value === 'Wood-fired works.', 'phone: and as it goes, still the same box, with what you typed ' + JSON.stringify(down));
+      /* a redraw while you type (a poll, a toast's undo): nothing changed, nothing replaced; something changed, the box comes back with your words and caret */
+      await c.evaluate(() => render()); await c.waitForTimeout(100);
+      ok((await kb()).same, 'phone: a redraw that changes nothing leaves the box you are in alone');
+      await c.evaluate(() => { REPLIES.push({ id:'r-v5-rio', calloutId:'co-new-sauna', author:'p-rio', text:'Count me in for the stove.', ts:tsIso(appNow()) }); render(); }); await c.waitForTimeout(100);
+      const re = await ev(c, () => { const a = document.activeElement; return { id:a && a.id, value:a && a.value, caret:a && a.selectionStart, n:document.querySelectorAll('#dscroll .reply').length }; });
+      ok(re.id === 'coreply' && re.value === 'Wood-fired works.' && re.caret === re.value.length && re.n === 2, 'phone: a redraw that changes the thread gives the box back, focused, with your words and caret ' + JSON.stringify(re));
+      await c.keyboard.press('Enter'); await c.waitForTimeout(300);
+      ok(await ev(c, () => repliesOf('co-new-sauna').length === 3 && document.activeElement.id !== 'coreply' && !document.getElementById('coreply').value), 'phone: Enter posts it and the keyboard goes, so you see your reply');
+      await shot(c, 'callout-phone-thread-after-post');
+    }
+    ok(!c.errors.length, kind + ': no console errors (v5 call out) ' + c.errors.join(' '));
+    ok((await overflow(c)) <= 0, kind + ': no overflow (v5 call out)');
   }
   /* a profile opened from a chat is a window with a close; closing leaves the chat exactly as it was. A conversation keeps its place */
   for (const kind of ['desk', 'tab', 'phone']){

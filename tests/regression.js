@@ -76,7 +76,11 @@
    2026-10-05 (v5-callout): a call out's page is the call out (its band holds the ask, the event, who and until when; no
    card inside, one short line at most, Edit · Close / Answer · Share), the icon is a megaphone and both new icons stay in
    their box, an event's call out says "No replies yet" (no box; Answer / Reply open the call out, box focused), and on a
-   phone the reply box keeps focus as the keyboard shrinks the viewport and through a redraw. */
+   phone the reply box keeps focus as the keyboard shrinks the viewport and through a redraw;
+   2026-10-05 (v5-feed): your own actions keep their time — one "You: …" line per sitting (within 30 minutes, nothing
+   else between), in its band among everyone's (the owner's morning replayed online); "N people joined Hypernet" once
+   per band, never you, the near ones first with Follow, See who's new → Explore → People newest first; an event
+   picking up ("4 people decided to go to … this week") once per band with Who's going. */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch(e){
   try { ({ chromium } = require('playwright-core')); } catch(e2){
@@ -602,7 +606,10 @@ async function overflowEverywhere(p, label){
     const c = await ctx('phone');
     await open(c, '#/home', true);
     await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
-    await c.evaluate(() => { const l = document.getElementById('listbody'); l.scrollTop = 900; }); await c.waitForTimeout(300);
+    /* down the feed, with an event in view (2026-10-05, v5-feed: from 900 down to the first event card, wherever the stream puts it) */
+    await c.evaluate(() => { const l = document.getElementById('listbody'), top = l.getBoundingClientRect().top;
+      const e = [...l.querySelectorAll('.fev .fct')].find(x => x.getBoundingClientRect().top - top + l.scrollTop > 900 + 200);
+      l.scrollTop = e ? e.getBoundingClientRect().top - top + l.scrollTop - 200 : 900; }); await c.waitForTimeout(300);
     const s0 = await ev(c, () => document.getElementById('listbody').scrollTop);
     const t = await ev(c, () => { const lb = document.getElementById('listbody').getBoundingClientRect(); return [...document.querySelectorAll('#listbody .fev .fct')].findIndex(x => { const r = x.getBoundingClientRect(); return r.top > lb.top + 20 && r.bottom < lb.bottom - 20; }); });
     await c.tap('#listbody .fev .fct >> nth=' + t); await c.waitForTimeout(350);
@@ -721,9 +728,12 @@ async function overflowEverywhere(p, label){
       return { you:f.classList.contains('fyou'), s:f.querySelector('.fsent').textContent, t:f.querySelector('.ftime').textContent, title:EVENTS[id].title, on:RSVP[id] === 'going' }; }, target);
     ok(live.on && live.you && /^You: /.test(live.s) && live.s.indexOf('going to ' + live.title) >= 0 && live.t === 'now', kind + ': Going from a card puts "You: going to …" at the top, now ' + JSON.stringify(live));
     await c.evaluate(() => followP('p-jon')); await c.waitForTimeout(300);
-    const youl = await ev(c, () => ({ s:(document.querySelector('#listbody .fyou .fsent') || {}).textContent || '',
-      yous:[...document.querySelectorAll('#listbody .fitem .fsent')].filter(x => /^You\b/.test(x.textContent)).length }));
-    ok(/followed Jon/.test(youl.s) && youl.yous === 1, kind + ': what you did is one line at the top ("You: …, followed Jon"), never a run of "You …" items ' + JSON.stringify(youl));
+    /* 2026-10-05 (v5-feed): one line per sitting, where its time puts it — never two of your lines one after the other */
+    const youl = await ev(c, () => { const its = [...document.querySelectorAll('#listbody > .fitem')];
+      return { s:(document.querySelector('#listbody .fyou .fsent') || {}).textContent || '', first:its[0] && its[0].classList.contains('fyou'),
+               adjacent:its.some((x, i) => i && x.classList.contains('fyou') && its[i - 1].classList.contains('fyou')),
+               youWords:[...document.querySelectorAll('#listbody .fitem:not(.fyou) .fsent')].filter(x => /^You\b/.test(x.textContent)).length }; });
+    ok(/followed Jon/.test(youl.s) && youl.first && !youl.adjacent && !youl.youWords, kind + ': what you just did is one line ("You: …, followed Jon"), newest first, never a run of "You …" items ' + JSON.stringify(youl));
     await c.click('#listbody .fitem .fev [data-act="v-going"][data-id="' + target + '"] >> nth=0'); await c.waitForTimeout(400);
     ok(await ev(c, id => !RSVP[id] && ((document.querySelector('#listbody .fyou .fsent') || {}).textContent || '').indexOf(EVENTS[id].title) < 0, target), kind + ': un-going takes it off your line');
     await c.reload(); await c.waitForTimeout(700);
@@ -831,7 +841,7 @@ async function overflowEverywhere(p, label){
     /* following one person: Home still shows the network around them */
     await c.evaluate(() => followP('p-mira')); await c.waitForTimeout(300);
     const blend = await ev(c, () => ({ net:document.querySelectorAll('#listbody .fitem.fnet').length, band:[...document.querySelectorAll('#listbody .band')].some(b => /Around the network/.test(b.textContent)),
-      mine:homeParts().stream.every(e => e.actors.every(a => a === 'p-mira')), strip:homeCallouts().length }));
+      mine:homeParts().stream.every(e => e.verb === 'you' || e.actors.every(a => a === 'p-mira')), strip:homeCallouts().length }));
     ok(blend.net >= 3 && blend.band && blend.mine && blend.strip >= 2, kind + ': following one person, Home is theirs first, then "Around the network" — and the network’s call outs stay ' + JSON.stringify(blend));
     await c.evaluate(() => { followP('p-jon'); followP('p-sasha'); }); await c.waitForTimeout(300);
     const reach = await ev(c, () => homeCallouts().map(x => calloutOf(x.id).title + ' | ' + (x.why && x.why.t || '')));
@@ -1933,8 +1943,10 @@ async function overflowEverywhere(p, label){
       /* online, only your own row: "You: going to …", then the end — never "nothing happened" under it */
       c = await online(kind, { mine:true });
       s = await homeSays(c);
-      ok(s.online && JSON.stringify(s.kids) === '["fitem","fend"]' && !s.nothing && s.head === 'That’s the last three weeks' && !/here is everyone/.test(s.say) && /Follow a few people/.test(s.say),
-         kind + ': online with only your own row, Home is your line and its end, with no "nothing happened" ' + JSON.stringify(s));
+      /* 2026-10-05 (v5-feed): your line sits in its day band like everything else, and is an entry of the stream: following
+         nobody, People to follow comes after it (after the last entry when there are fewer than three) */
+      ok(s.online && JSON.stringify(s.kids) === '["band","fitem","fitem","fend"]' && await ev(c, () => !!document.querySelector('#listbody > .fyou + .ffof')) && !s.nothing && s.head === 'That’s the last three weeks' && !/here is everyone/.test(s.say) && /Follow a few people/.test(s.say),
+         kind + ': online with only your own row, Home is your line (in Today), people to follow and its end, with no "nothing happened" ' + JSON.stringify(s));
       if (kind === 'phone') await shot(c, 'homechats-only-mine-phone');
       const chOn = await chatSays(c, kind);
       ok(chOn.shown && chOn.head === 'No chats yet' && chOn.rows === 1 && !chOn.chats, kind + ': online with no chats, Chats says "No chats yet" over the one person to message ' + JSON.stringify(chOn));
@@ -1952,6 +1964,99 @@ async function overflowEverywhere(p, label){
       const chAlone = await chatSays(c, kind);
       ok(chAlone.head === 'No chats yet' && !chAlone.band && !chAlone.rows, kind + ': with nobody to message, Chats is just "No chats yet" ' + JSON.stringify(chAlone));
       ok(!c.errors.length && (await overflow(c)) <= 0, kind + ': no console errors, no overflow (Home end, Chats, online) ' + c.errors.join(' '));
+      await c.context().close();
+    }
+  }
+
+  /* 2026-10-05 (v5-feed): your own actions keep their time — a "You: …" line is one sitting (rows within 30 minutes of
+     each other, nothing else said between), in its band where its newest row's time puts it, never pinned above the
+     bands or stamped "now" unless it is. The network's own news: "N people joined Hypernet" (one per band, the ones near
+     you first with Follow, the rest as faces, "See who's new" → Explore → People newest first) and an event picking up
+     ("4 people decided to go to … this week", one per band, from three people). Online on a mocked /api/bootstrap that
+     replays the owner's morning: five things of his, Sebastian's call out between them */
+  {
+    const NOWMS = NOWPIN ? NOWPIN.getTime() : Date.now();
+    const iso = m => new Date(NOWMS - m * 60000).toISOString(), day = n => new Date(NOWMS + n * 86400000).toISOString().slice(0, 10);
+    const U = n => '00000000-0000-4000-8000-' + String(n).padStart(12, '0'), ME = U(1), SEB = U(2);
+    const P = (id, handle, name, joinedMin, cities) => ({ id, handle, displayName:name, bio:'', skills:[], cities, look:null, lastSeenAt:null, createdAt:iso(joinedMin) });
+    /* you joined yesterday (and are never in "joined"); five people today, two this week, Sebastian long ago */
+    const people = [P(ME, 'mike', 'Michal Kucera', 60 * 24, ['Brno']), P(SEB, 'seb', 'Sebastian Östlind', 60 * 24 * 40, ['Stockholm']),
+      P(U(3), 'lena', 'Lena Brandt', 50, ['Brno']), P(U(4), 'tom', 'Tom Hruby', 130, ['Prague']), P(U(5), 'ana', 'Ana Ruiz', 200, ['Berlin']),
+      P(U(6), 'ola', 'Ola Nord', 300, ['Oslo']), P(U(7), 'kim', 'Kim Berg', 360, ['Malmö']), P(U(8), 'ivo', 'Ivo Kral', 60 * 24 * 3, ['Brno']), P(U(9), 'eva', 'Eva Lind', 60 * 24 * 4, ['Oslo'])];
+    const EV = (n, title, d) => ({ id:U(100 + n), slug:'e' + n, title, startsOn:day(d), endsOn:null, startTime:null, endTime:null, timezone:'Europe/Prague', hostId:null, hostName:title,
+      description:'x', kind:'burn', privacy:'everyone', city:'Zurich', region:null, country:'CH', venue:null, access:null, whatToBring:[], details:{}, look:null, source:'import', previousEditionId:null });
+    const CO = (n, author, title, m) => ({ id:U(200 + n), authorId:author, eventId:null, title, body:'', skill:null, expiresOn:day(20), closedAt:null, createdAt:iso(m) });
+    const A = (actor, verb, objType, objId, m, extra) => ({ actor, verb, objType, objId, ts:iso(m), extra:extra || null });
+    const R = (pid, ev, status, m) => ({ personId:pid, eventId:ev, status, went:false, shiftIndex:null, updatedAt:iso(m) });
+    const rsvps = [R(ME, U(101), 'interested', 140), R(ME, U(102), 'interested', 138)];
+    const activity = [A(ME, 'posted_callout', 'callout', U(203), 3), A(ME, 'posted_callout', 'callout', U(202), 6), A(ME, 'replied_callout', 'callout', U(201), 12, { replyId:U(300) }),
+      A(ME, 'followed_person', 'person', SEB, 16), A(SEB, 'posted_callout', 'callout', U(201), 22), A(ME, 'interested', 'event', U(102), 138), A(ME, 'interested', 'event', U(101), 140)];
+    [[U(5), 2], [U(6), 3], [U(9), 4], [U(8), 5]].forEach(([pp, d]) => { activity.push(A(pp, 'going', 'event', U(102), 60 * 24 * d)); rsvps.push(R(pp, U(102), 'going', 60 * 24 * d)); });
+    const boot = { hypernet:1, me:people[0], login:null, people, follows:[[ME, SEB]], events:[EV(1, 'Zurich Decompression 2026', 30), EV(2, 'The Borderland 2027', 280)], rsvps,
+      promotions:[], horizons:[], hzFollows:[], callouts:[CO(1, SEB, 'Webdesigner to create themes for hypernet', 22), CO(2, ME, 'Sauna master', 6), CO(3, ME, 'Fire safety lead', 3)],
+      replies:[{ id:U(300), calloutId:U(201), authorId:ME, text:'I can help.', createdAt:iso(12) }], activity, chats:[] };
+    const feed = c => ev(c, () => [...document.querySelectorAll('#listbody > .band, #listbody > .fitem')].map(x => x.classList.contains('band') ? { band:x.textContent }
+      : { verb:x.dataset.verb, ts:x.dataset.ts, s:(x.querySelector('.fsent') || {}).textContent || '', t:(x.querySelector('.ftime') || {}).textContent || '' }));
+    for (const kind of ['phone', 'desk']){
+      const c = await ctx(kind);
+      await c.addInitScript(() => { window.HN_BACKEND = { branch:'test' }; });
+      await c.context().route('**/api/**', r => r.fulfill({ status:200, contentType:'application/json', body:JSON.stringify(/\/api\/bootstrap/.test(r.request().url()) ? boot : /\/api\/chats/.test(r.request().url()) ? { chats:[] } : {}) }));
+      await c.goto(URL + '#/home'); await c.waitForTimeout(800);
+      const f = await feed(c), items = f.filter(x => !x.band), yous = items.filter(x => x.verb === 'you'), seb = items.findIndex(x => x.verb === 'posted_callout');
+      const ts = items.map(x => Date.parse(x.ts)), main = f.slice(0, f.findIndex(x => x.band === 'Around the network') < 0 ? f.length : f.findIndex(x => x.band === 'Around the network'));
+      ok(f[0] && f[0].band === 'Today' && yous.length === 2 && items.indexOf(yous[0]) < seb && items.indexOf(yous[1]) > seb &&
+         /followed Sebastian/.test(yous[0].s) && /replied to Webdesigner/.test(yous[0].s) && !/interested/.test(yous[0].s) && /interested in/.test(yous[1].s) && !/followed/.test(yous[1].s) &&
+         yous[0].t === '3m ago' && yous[1].t === '2h ago',
+         kind + ': the owner\'s morning — your actions before Sebastian\'s call out are their own line under it (2h ago), the ones after it above it (3m ago); nothing pinned above Today, nothing says "now" ' + JSON.stringify(items.map(x => x.verb + ':' + x.t)));
+      const mainTs = main.filter(x => !x.band).map(x => Date.parse(x.ts));
+      ok(mainTs.every((t, i) => !i || mainTs[i - 1] >= t) && !items.some((x, i) => i && x.verb === 'you' && items[i - 1].verb === 'you'), kind + ': the stream is newest first, your lines among everyone\'s, never two of yours in a row');
+      /* people joined: one entry per band, never you, the one in your city first (with Follow), faces for the rest */
+      const jn = await ev(c, () => [...document.querySelectorAll('#listbody .fitem[data-verb="joined"]')].map(x => ({ s:x.querySelector('.fsent').textContent, t:x.querySelector('.ftime').textContent,
+        cards:[...x.querySelectorAll('.fcard[data-type="person"]')].map(k => k.getAttribute('data-id')), follow:!!x.querySelector('.fcard [data-act="followp"]'),
+        faces:x.querySelectorAll('.fface').length, more:!!x.querySelector('[data-act="explorekind"][data-id="people"]'), sq:[...x.querySelectorAll('.fface .av')].every(a => a.offsetWidth === 32) })));
+      ok(jn.length === 2 && jn[0].s === 'Lena, Tom and 3 others joined Hypernet' && jn[0].t === '50m ago' && jn[0].cards[0] === U(3) && jn[0].follow && jn[0].faces === 4 && jn[0].sq && jn[0].more &&
+         jn[1].s === 'Ivo and Eva joined Hypernet' && jn.every(x => !/Michal/.test(x.s)),
+         kind + ': "N people joined Hypernet" — one per band, never you, the one in your city first with Follow, the others as faces, See who\'s new ' + JSON.stringify(jn));
+      /* an event picking up: one entry, the count, Who's going */
+      const tr = await ev(c, () => [...document.querySelectorAll('#listbody .fitem[data-verb="trending"]')].map(x => ({ s:x.querySelector('.fsent').textContent, faces:x.querySelectorAll('.fface').length,
+        card:!!x.querySelector('.fcard[data-type="event"] [data-act="v-going"]'), who:!!x.querySelector('[data-act="whoall"]') })));
+      ok(tr.length === 1 && tr[0].s === '4 people decided to go to The Borderland 2027 this week' && tr[0].faces === 4 && tr[0].card && tr[0].who,
+         kind + ': an event picking up is one entry with its count, the event with Going, faces and Who’s going ' + JSON.stringify(tr));
+      if (kind === 'desk'){
+        await c.click('#listbody .fitem[data-verb="trending"] [data-act="whoall"]'); await c.waitForTimeout(300);
+        ok(await ev(c, () => document.querySelectorAll('.dlg .whorow').length === 4), kind + ': Who’s going opens the four');
+        await c.evaluate(() => closeDialogs()); await c.waitForTimeout(150);
+      }
+      /* See who's new: Explore → People, you first, then the newest, each new one saying when they joined */
+      await c.evaluate(() => { const b = document.querySelector('#listbody .fitem[data-verb="joined"] [data-act="explorekind"]'); b.scrollIntoView({ block:'center' }); }); await c.waitForTimeout(150);
+      await c.click('#listbody .fitem[data-verb="joined"] [data-act="explorekind"] >> nth=0'); await c.waitForTimeout(400);
+      const ppl = await ev(c, () => ({ hash:location.hash, ids:[...document.querySelectorAll('#listbody .row[data-type="person"]')].map(r => r.getAttribute('data-id')) }));
+      ok(ppl.hash === '#/explore/people' && ppl.ids[0] === 'self' && ppl.ids.slice(1, 6).join() === [U(3), U(4), U(5), U(6), U(7)].join() && ppl.ids[ppl.ids.length - 1] === SEB,
+         kind + ': See who’s new opens Explore → People, newest first ' + JSON.stringify(ppl));
+      ok(!c.errors.length && (await overflow(c)) <= 0, kind + ': no console errors, no overflow (v5-feed, online) ' + c.errors.join(' '));
+      await c.context().close();
+    }
+    /* offline: the rule itself, the fixture's newcomers, a sitting split by someone else */
+    for (const kind of ['desk', 'phone']){
+      const c = await ctx(kind);
+      await open(c, '#/home', true);
+      await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+      const g = await ev(c, () => { const me = myActor(), now = appNow(), m = n => now - n * 60000;
+        const row = (actor, verb, id, mins) => ({ a:{ id:'t' + verb + mins, actor, verb, objType:verb === 'going' ? 'event' : 'person', objId:id, ts:tsIso(m(mins)), extra:null }, ms:m(mins) });
+        const ev0 = Object.keys(EVENTS)[0];
+        return groupRows([row(me, 'followed_person', 'p-jon', 10), row(me, 'followed_person', 'p-mira', 20), row('p-anna', 'going', ev0, 25), row(me, 'followed_person', 'p-kai', 30),
+                          row(me, 'followed_person', 'p-rio', 40), row(me, 'followed_person', 'p-sasha', 80)]).map(e => e.verb + ':' + (e.rows ? e.rows.length : e.actors.length)).join(' '); });
+      ok(g === 'you:2 going:1 you:2 you:1', kind + ': a sitting is your rows within 30 minutes of each other with nothing else between: someone in between or a long pause starts a new line ' + g);
+      const off = await ev(c, () => { const j = document.querySelector('#listbody .fitem[data-verb="joined"]');
+        return { n:document.querySelectorAll('#listbody .fitem[data-verb="joined"]').length, s:j && j.querySelector('.fsent').textContent, why:j && (j.querySelector('.fcard .fcs3') || {}).textContent,
+                 bands:homeParts().stream.filter(e => e.verb === 'joined').map(e => e.band), first:homeParts().stream.filter(e => e.verb === 'joined')[0].objs[0] }; });
+      ok(off.n >= 2 && off.s === 'Lena and Tomas joined Hypernet' && off.first === 'p-lena' && off.why === 'Anna follows Lena' && new Set(off.bands).size === off.bands.length,
+         kind + ': offline the fixture\'s newcomers join — Lena first, as Anna (whom you follow) follows her; at most one per band ' + JSON.stringify(off));
+      await c.goto(URL + '#/explore/people'); await c.waitForTimeout(350);
+      ok(await ev(c, () => { const ids = [...document.querySelectorAll('#listbody .row[data-type="person"]')].map(r => r.getAttribute('data-id'));
+        return ids[0] === 'self' && ids[1] === 'p-lena' && ids[2] === 'p-tomas' && /joined 2h ago/.test(document.querySelector('#listbody .row[data-id="p-lena"]').textContent); }),
+         kind + ': Explore → People is newest first, a newcomer says when they joined');
+      ok(!c.errors.length && (await overflow(c)) <= 0, kind + ': no console errors, no overflow (v5-feed, offline) ' + c.errors.join(' '));
       await c.context().close();
     }
   }

@@ -1,5 +1,6 @@
 // Hypernet shared prototype fixtures — generated from data/hypernet-mock-data-2026-09-20.json
-// Do not hand-edit; regenerate if the export changes.
+// Do not hand-edit; regenerate if the export changes. Hand-added 2026-10-05 (v5-feed): the seven newcomers after p-sasha
+// (joinedMinutesAgo: how long before the app started they joined; the crew have no join time, i.e. long before).
 window.HYPERNET = {
   "meta": {
     "note": "Derived from hypernet-mock-data-2026-09-20.json. Horizons beyond the two seeds are invented filler. The 12 generic 'camp/crew overflow' events were all dated 2026-07-21 upstream, i.e. entirely in the past relative to the 2026-09-20 demo date; they have been spread across 2026-09-23..2026-11-14 so the prototypes have a real forward calendar. The five named World events keep their true dates and are genuinely past.",
@@ -81,6 +82,69 @@ window.HYPERNET = {
       ],
       "city": "SWEDEN|GOTHENBURG",
       "avatar": "/default-avatars/sasha.png"
+    },
+    {
+      "id": "p-lena",
+      "displayName": "Lena Brandt",
+      "handle": "lena",
+      "bio": "Stage manager, first burn this summer",
+      "skills": ["EVENT PRODUCTION/PRODUCING"],
+      "city": "SWEDEN|STOCKHOLM",
+      "joinedMinutesAgo": 140
+    },
+    {
+      "id": "p-tomas",
+      "displayName": "Tomas Berg",
+      "handle": "tomas",
+      "bio": "Builds domes, bends conduit",
+      "skills": ["BUILD & CONSTRUCTION/CARPENTRY"],
+      "city": "SWEDEN|STOCKHOLM",
+      "joinedMinutesAgo": 265
+    },
+    {
+      "id": "p-oskar",
+      "displayName": "Oskar Lind",
+      "handle": "oskar",
+      "bio": "Generators and long cables",
+      "skills": ["POWER & INFRASTRUCTURE/ELECTRICS & POWER GRID"],
+      "city": "SWEDEN|GOTHENBURG",
+      "joinedMinutesAgo": 3060
+    },
+    {
+      "id": "p-priya",
+      "displayName": "Priya Raman",
+      "handle": "priya",
+      "bio": "Camp kitchens, big pots",
+      "skills": ["CAMP OPERATIONS/KITCHEN & COOKING"],
+      "city": "GERMANY|BERLIN",
+      "joinedMinutesAgo": 4620
+    },
+    {
+      "id": "p-ines",
+      "displayName": "Ines Duarte",
+      "handle": "ines",
+      "bio": "Light and fabric",
+      "skills": ["LIGHT/LIGHTING DESIGN"],
+      "city": "DENMARK|COPENHAGEN",
+      "joinedMinutesAgo": 5880
+    },
+    {
+      "id": "p-yuki",
+      "displayName": "Yuki Sato",
+      "handle": "yuki",
+      "bio": "Sunrise sets",
+      "skills": ["SOUND/DJING"],
+      "city": "SWEDEN|MALMÖ",
+      "joinedMinutesAgo": 7440
+    },
+    {
+      "id": "p-emil",
+      "displayName": "Emil Strand",
+      "handle": "emil",
+      "bio": "Ranger in training",
+      "skills": ["CARE & COMMUNITY/RANGERS & SAFETY"],
+      "city": "NORWAY|OSLO",
+      "joinedMinutesAgo": 17340
     }
   ],
   "graphNodes": [

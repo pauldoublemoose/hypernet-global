@@ -445,6 +445,7 @@ span.chip{ border-color:transparent; background:var(--face-lt); box-shadow:var(-
   .verbs > .vb, .vsec > .vb{ flex:1 1 auto; padding:0 8px; }
   .vb.icononly{ flex:0 0 var(--act); }
   .sect, .facts{ padding:16px 8px 16px 16px; }
+  .sect[data-sect="replies"], .sect[data-sect="callouts"]{ padding:16px; }
   .fact, .kv{ grid-template-columns:88px minmax(0, 1fr); column-gap:8px; }
   .tl .tld, .sale .sd{ flex-basis:88px; }
   .tl li, .sale{ gap:8px; }
@@ -859,8 +860,9 @@ body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 1
 /* call outs: the one inverted thing — ink ground, paper type, a hairline frame inside; loud by inversion, not size */
 .fco{ position:relative; display:flex; flex-direction:column; gap:8px; padding:16px; background:var(--ink); color:#fff; outline:1px solid #fff; outline-offset:-4px; }
 .fcok{ display:flex; align-items:center; gap:8px; font-size:12px; line-height:16px; color:#c4c4c4; }
-.fcotag{ display:inline-flex; align-items:center; gap:4px; height:20px; padding:0 8px; background:#fff; color:#000; font:bold 12px/16px var(--sys); }
-.fcountil{ margin-left:auto; white-space:nowrap; }
+.fcotag{ flex:none; display:inline-flex; align-items:center; gap:4px; height:20px; padding:0 8px; background:#fff; color:#000; font:bold 12px/16px var(--sys); white-space:nowrap; }
+/* the tag keeps its one line ("Call / out" wrapped when the date beside it was long); the date gives way instead */
+.fcountil{ margin-left:auto; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .fcoa{ display:block; font-size:20px; font-weight:bold; line-height:24px; overflow-wrap:anywhere; }
 .fcob{ margin:0; max-width:60ch; font-size:14px; line-height:20px; color:#e6e6e6; }
 button.fcoe{ position:relative; z-index:1; display:flex; align-items:center; gap:8px; width:100%; padding:8px; border:1px solid #4a4a4a; background:#242424; color:#fff; font:inherit; text-align:left; cursor:pointer; }
@@ -870,6 +872,7 @@ button.fcoe:hover{ background:#2e2e2e; }
 .fcoet small{ font-size:12px; line-height:16px; color:#c4c4c4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .fcof{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; }
 .fcoby{ margin-left:auto; display:flex; align-items:center; gap:8px; font-size:12px; line-height:16px; color:#c4c4c4; }
+.fcof > .fcoby:first-child{ margin-left:0; }
 .fco .av{ box-shadow:0 0 0 1px #fff; }
 .fco .btn{ color:#000; position:relative; z-index:1; }
 .fco.sel{ outline-width:3px; outline-offset:-5px; }
@@ -921,9 +924,10 @@ button.fcoe:hover{ background:#2e2e2e; }
 .whomain{ flex:1; min-width:0; display:flex; align-items:center; gap:8px; padding:0; border:0; background:none; text-align:left; color:var(--ink); cursor:pointer; }
 .whonote{ margin:8px 0 0; font-size:12px; line-height:16px; color:var(--dim); }
 /* a call out's answers: a thread under it, drawn like a tree view — the people (32) hang from one dotted line */
-.replies{ position:relative; display:flex; flex-direction:column; gap:16px; margin-top:16px; }
-.replies::before{ content:""; position:absolute; left:15px; top:-16px; bottom:16px; border-left:1px dotted var(--shadow); }
+.replies{ position:relative; display:flex; flex-direction:column; gap:16px; }
+/* the dotted line runs from each person to the next, and on to your own box when there is one: no stub past the last */
 .reply{ position:relative; display:flex; gap:8px; align-items:flex-start; }
+.reply:not(:last-child)::after, .replies:has(+ .replybox) > .reply:last-child::after{ content:""; position:absolute; left:15px; top:32px; bottom:-16px; border-left:1px dotted var(--shadow); }
 .rpav{ flex:0 0 auto; padding:0; border:0; background:none; }
 .rpav .av{ box-shadow:0 0 0 2px #fff; }
 .rpb{ flex:1; min-width:0; }
@@ -937,7 +941,6 @@ button.fcoe:hover{ background:#2e2e2e; }
 @media (pointer:coarse){ .rpdel{ min-height:32px; } }
 .replybox{ position:relative; display:flex; align-items:flex-start; gap:8px; margin-top:16px; }
 .replybox textarea{ flex:1; min-width:0; height:var(--ctl); min-height:var(--ctl); max-height:168px; padding:8px; resize:none; overflow-y:auto; line-height:20px; }
-.replynote{ margin:8px 0 0 40px; font-size:12px; line-height:16px; color:var(--dim); }
 /* the latest answers under a call out, on its ink ground (Home) */
 .corep{ display:flex; flex-direction:column; gap:4px; width:100%; padding-top:8px; border-top:1px solid #4a4a4a; font-size:12px; line-height:16px; color:#e6e6e6; }
 .corn{ font:bold 12px/16px var(--sys); color:#c4c4c4; }
@@ -947,8 +950,27 @@ button.fcoe:hover{ background:#2e2e2e; }
 .corwho{ padding:0; border:0; background:none; font:bold 12px/16px var(--sys); color:#fff; }
 .corwho:hover, .corall:hover{ text-decoration:underline; }
 .corall, .corwho{ position:relative; z-index:1; }
-/* an event's call outs: each card, and its thread under it */
-.evcos{ display:flex; flex-direction:column; gap:24px; }
+.cornone{ color:#c4c4c4; }
+/* an event's call outs: each card with its latest replies (or "No replies yet"); answering happens on the call out */
+.evcos{ display:flex; flex-direction:column; gap:16px; }
+/* A call out's own page is the call out (2026-10-05): its band is the inverted call out across the whole window — ink
+   ground, paper type, no frame inside a frame — holding the ask, its line, the event it is for and who asked. Under it
+   the page is the app's white: the replies box. One edge for everything: the band's padding is the page's (24, 16
+   narrow) */
+.pg-callout > .coband{ --ebg:var(--ink); --eink:#fff; --eac:#fff; --edim:#c4c4c4; border-bottom:0; }
+.coband .eyebrow{ display:flex; align-items:center; gap:8px; }
+.coband .eyebrow .ic{ flex:none; }
+.coband .psub2{ color:#e6e6e6; }
+.coband .fcoe{ margin-top:16px; max-width:480px; }
+.coby{ display:flex; align-items:center; gap:8px; margin-top:16px; min-width:0; }
+.coby .av{ box-shadow:0 0 0 1px #fff; }
+.cobyt{ display:flex; flex-direction:column; min-width:0; }
+.coby .rpn, .cobyt b{ color:#fff; font:bold 14px/16px var(--sys); }
+.cobyt small{ font-size:12px; line-height:16px; color:#c4c4c4; }
+.pg-callout .whonote{ margin:0; font-size:14px; line-height:20px; }
+.pg-callout .replies + .whonote{ margin-top:16px; }
+/* a placeholder longer than the box ends in … instead of spilling out of it */
+.replybox textarea::placeholder{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 /* a chat's name and its people's names open their profile, in a window over the chat */
 .ptbtn{ display:block; padding:0; border:0; background:none; text-align:left; color:var(--ink); }
 .ptbtn:hover{ text-decoration:underline; }
@@ -1431,8 +1453,10 @@ var IC = {
   edit:'<path d="M4 16l.8-3.6L13 4.2l2.8 2.8-8.2 8.2zM11.2 6l2.8 2.8"/>',
   user:'<circle cx="10" cy="7" r="3.4"/><path d="M3.5 17.5c.7-3.8 3-5.6 6.5-5.6s5.8 1.8 6.5 5.6"/>',
   share:'<path d="M10 12.5V3.5M6.3 7.2 10 3.5l3.7 3.7M4 10.5V17h12v-6.5"/>',
-  addhorizon:'<path d="M1.5 13.5h11M4 13.5a4.5 4.5 0 0 1 8.3-2.4M8.3 4.2v1.8M16 9v8M12 13h8"/>',
-  callout:'<path d="M3 8v4h3l7.5 4V4L6 8zM16.5 7.5v5"/>',
+  /* the Event Horizons glyph, smaller, with a plus clear of it: "add to a horizon" (the old one clipped its plus at the edge) */
+  addhorizon:'<path d="M1.5 14.5h12M3.5 14.5a4 4 0 0 1 8 0M7.5 7.5v1.8M2.6 9.6l1.2 1.2M5 17.5h5M15.5 3v7M12 6.5h7"/>',
+  /* a megaphone (cone, the open bell as an ellipse, a grip): someone calling out, not a speaker you turn on and off */
+  callout:'<path d="M3 8 14 3.5M3 11.5l11 4M3 8v3.5M6.5 12.8V17h3v-3"/><ellipse cx="14.5" cy="9.5" rx="2" ry="6"/>',
   cal:'<path d="M3 5h14v12H3zM3 9h14M7 3v4M13 3v4"/>',
   sidebar:'<path d="M3 4h14v12H3zM8 4v12"/>',
   paint:'<path d="M4 16c0-2 1-3 2.5-3s2.5 1 2.5 2.5S7.5 18 4 16zM8.5 13 16 5.5l-1.5-1.5L7 11.5"/>',
@@ -2295,17 +2319,15 @@ function takePartHTML(r){
   if (r.openCalls && r.openCalls.length) c.push(card('Open calls', 'Wanted', null, r.openCalls));
   return c.length ? '<div class="cards">' + c.join('') + '</div>' : '';
 }
-/* an event's open call outs: its own, and any posted for it, each with the first of its replies. None, no section:
-   its host posts one from the event's toolbar (New call out) */
+/* an event's open call outs: its own, and any posted for it, each with its latest replies or "No replies yet". None, no
+   section: its host posts one from the event's toolbar (New call out). There is no box to answer in here (owner,
+   2026-10-05: "Instead of the reply box, show here something like 'No replies yet'"): Answer — Reply on your own, once
+   someone answered — opens the call out with its box ready */
 function calloutsHTML(ids, evId){
   var cs = (ids || []).map(calloutOf).filter(Boolean);
   CALLOUTS.forEach(function(c){ if (evId && calloutEventId(c) === evId && cs.indexOf(c) < 0) cs.push(c); });
   cs = cs.filter(calloutOpen);
-  /* one call out: its whole thread under it, with the box to answer in; more than one: each with its latest answers */
-  return cs.length ? '<div class="evcos">' + cs.map(function(c){
-    return cs.length === 1 ? '<div class="evco">' + fCalloutCard(c.id, 0, { act:'open', noEvent:true, byline:true, thread:true }) + repliesHTML(c.id, true) + '</div>'
-                           : fCalloutCard(c.id, 0, { act:'open', noEvent:true, byline:true });
-  }).join('') + '</div>' : '';
+  return cs.length ? '<div class="evcos">' + cs.map(function(c){ return fCalloutCard(c.id, 0, { act:'open', noEvent:true, byline:true, none:true, reply:true }); }).join('') + '</div>' : '';
 }
 function providedHTML(p){
   if (!p) return '';
@@ -2522,7 +2544,7 @@ function canvasHTML(evId){
   var s = sect('About', descOf(e) ? '<p class="evdesc">'+esc(descOf(e))+'</p>' : '');
   if (r.theme) s += sect('Theme', '<div class="themeline">'+esc(typeof r.theme === 'object' ? (r.theme.name || '') : r.theme)+'</div>' +
                                    (r.theme.blurb ? '<p>'+esc(r.theme.blurb)+'</p>' : ''));
-  s += sect('Call outs', calloutsHTML(r.calloutIds, evId));
+  s += sect('Call outs', calloutsHTML(r.calloutIds, evId)).replace('<section class="sect">', '<section class="sect" data-sect="callouts">');
   s += whoGoingHTML(evId, past);
   if (isShifts(r)) s += sect('Shifts', shiftsHTML(evId));
   s += planHTML(evId);
@@ -2655,32 +2677,49 @@ function personHTML(pid, asOther){
     toolbar:bar, facts:facts, body:s });
 }
 function isOwnCallout(c){ return !!c && S.loggedIn && !!c.hostAcct && c.hostAcct === S.acct; }
-/* a call out: what is wanted, by whom, for which event — and under it the public replies, as under a post.
+/* when a call out was posted: the newest posted_callout row for it (0 when there is none) */
+function calloutPostedMs(id){
+  var ms = 0; activityRows().forEach(function(a){ if (a.verb === 'posted_callout' && a.objId === id) ms = Math.max(ms, actTime(a)); });
+  return ms;
+}
+/* A call out's own page is the call out, full screen (owner, 2026-10-05: "get rid of having a call-out box inside this
+   page and make the call out just full screen"). Its band is the call out — the one inverted thing, now as wide as the
+   window: what it is, the ask, its line of detail, the event it is for (a thing you can open) and who asked, when, until
+   when. Then the toolbar, then the page under it: the public replies, as under a post, and the box to add one.
    Anyone answers in the thread; its author edits or closes it and can take any reply off it. */
 function calloutHTML(id){
-  var c = calloutOf(id), mine = isOwnCallout(c), open = calloutOpen(c), n = repliesOf(id).length;
+  var c = calloutOf(id), mine = isOwnCallout(c), open = calloutOpen(c), n = repliesOf(id).length, evId = calloutEventId(c), sk = calloutSkill(c);
   var share = open ? vb('share', id, 'Share', 'share', { attrs:' data-type="callout"' }) : '';
+  /* yours: Edit, Close; someone else's: Answer, which puts you in the box under the thread */
   var bar = mine ? toolbarHTML(vb('editcallout', id, 'Edit', 'edit', { primary:true }) + vb('closecallout', id, c.closed ? 'Reopen' : 'Close call out', ''), share)
-    : toolbarHTML(c.hostId && PEOPLE[c.hostId] ? vb('open', c.hostId, c.hostName, 'user', { attrs:' data-type="person"' }) : '', share);
-  /* the call out itself (the inverted card) and, under it, its thread with the box to answer in */
-  return '<article class="canvas pg pg-callout plain" data-page="callout">' + (bar ? '<div class="actbar">' + bar + '</div>' : '') +
-    '<div class="layer"><div class="lin">' + fCalloutCard(id, 0, { act:'open', thread:true, byline:true }) +
-    '<section class="sect" data-sect="replies"><h3>Replies'+(n ? ' <span class="cnt">· '+n+'</span>' : '')+'</h3>' + repliesHTML(id, true) + '</section>' +
-    '</div></div></article>';
+    : canReply(c) ? toolbarHTML(vb('answercallout', id, 'Answer', 'chat', { primary:true }), share) : share ? toolbarHTML('', share) : '';
+  var who = mine ? 'self' : c.hostId && PEOPLE[c.hostId] ? c.hostId : null, posted = calloutPostedMs(id);
+  var until = c.closed ? 'closed' : !open ? 'ended ' + fmtShort(c.expiresAt) : 'open until ' + fmtShort(c.expiresAt);
+  var band = '<header class="banner coband"><div class="bin"><div class="btxt">' +
+    '<div class="eyebrow">'+ic('callout', 16)+'<span>Call out'+(sk ? ' · ' + esc(skillLabel(sk)) : '')+'</span></div>' +
+    '<h1 class="hl">'+esc(c.title)+'</h1>' + (c.body ? '<p class="psub2">'+esc(c.body)+'</p>' : '') +
+    (evId ? '<button type="button" class="fcoe" data-act="open" data-type="event" data-id="'+evId+'">'+sqPx(evId, 48)+'<span class="fcoet"><b>'+esc(EVENTS[evId].title)+'</b>' +
+      '<small>'+esc([relDay(EVENTS[evId]), whereOf(EVENTS[evId])].filter(Boolean).join(' · '))+'</small><small>For this event</small></span></button>' : '') +
+    '<div class="coby">' + (who ? '<button type="button" class="rpav" data-act="open" data-type="person" data-id="'+who+'" tabindex="-1" aria-hidden="true">'+avHTML(who, 'a32')+'</button>' : '') +
+      '<div class="cobyt">' + (who ? '<button type="button" class="rpn" data-act="open" data-type="person" data-id="'+who+'">'+esc(mine ? 'You' : c.hostName)+'</button>' : '<b>'+esc(c.hostName || 'Someone')+'</b>') +
+      '<small>'+esc([posted ? 'posted ' + agoLabel(posted) : '', until].filter(Boolean).join(' · '))+'</small></div></div>' +
+    '</div></div></header>';
+  return '<article class="canvas pg pg-callout plain" data-page="callout">' + band + (bar ? '<div class="actbar">' + bar + '</div>' : '') +
+    '<div class="layer"><div class="lin"><section class="sect" data-sect="replies"><h3>Replies'+(n ? ' <span class="cnt">· '+n+'</span>' : '')+'</h3>' + repliesHTML(id) + '</section></div></div></article>';
 }
 function nReplies(n){ return n + (n === 1 ? ' reply' : ' replies'); }
-/* the thread under a call out, oldest first, and the box to add to it. Answer posts here, in public: no chat is made */
-function repliesHTML(coId, bare){
-  var c = calloutOf(coId), rs = repliesOf(coId), mine = isOwnCallout(c), can = canReply(c);
-  var h = bare ? '' : '<div class="subh">Replies'+(rs.length ? ' · ' + rs.length : '')+'</div>';
-  h += rs.length ? '<div class="replies">' + rs.map(replyHTML).join('') + '</div>'
-    : '<p class="whonote">'+(!can ? 'No replies.' : mine ? 'No replies yet. When someone answers, their reply shows here, under your call out.'
-                                                     : 'No replies yet. Answer here: your reply shows under the call out, for everyone to see.')+'</p>';
+/* the thread under a call out, oldest first, and the box to add to it. Answer posts here, in public: no chat is made.
+   One short line at most around it — the box's own words say that an answer is public. The box is drawn empty: what
+   you were writing (REPLYDRAFT) is put in once it is on the page (renderDetail), so a redraw while you type changes
+   nothing and the box you are in is never replaced */
+function repliesHTML(coId){
+  var c = calloutOf(coId), rs = repliesOf(coId), mine = isOwnCallout(c), can = canReply(c), open = calloutOpen(c);
+  var h = rs.length ? '<div class="replies">' + rs.map(replyHTML).join('') + '</div>' : '';
+  var line = !open ? (rs.length ? 'Closed: no new replies.' : 'Closed with no replies.') : rs.length ? '' : can ? 'No replies yet.' : 'No replies.';
+  if (line) h += '<p class="whonote">' + line + '</p>';
   if (can) h += '<div class="replybox">' + (S.loggedIn ? avHTML('self', 'a32') : '<span class="av a32 sys">'+ic('user',16)+'</span>') +
-    '<textarea id="coreply" data-id="'+coId+'" rows="1" placeholder="'+(mine ? 'Reply to the people answering' : 'Write your answer')+'" aria-label="Answer '+esc(c.title)+'" aria-describedby="coreplyhint">'+esc(REPLYDRAFT[coId] || '')+'</textarea>' +
-    '<button class="btn primary" data-act="postreply" data-id="'+coId+'">'+(mine ? 'Reply' : 'Answer')+'</button><span id="coreplyhint" class="sr">Enter posts, Shift+Enter adds a new line</span></div>' +
-    '<p class="replynote">'+(mine ? 'Replies show here, under your call out, for everyone to see.' : 'Answers are public: they show here, under the call out, with your name.')+'</p>';
-  else if (!calloutOpen(c)) h += '<p class="whonote">This call out is closed: no new replies.</p>';
+    '<textarea id="coreply" data-id="'+coId+'" rows="1" placeholder="'+(mine ? 'Write a reply' : 'Write a public answer')+'" aria-label="'+(mine ? 'Reply under ' : 'Answer ')+esc(c.title)+'" aria-describedby="coreplyhint"></textarea>' +
+    '<button class="btn primary" data-act="postreply" data-id="'+coId+'">Post</button><span id="coreplyhint" class="sr">Enter posts, Shift+Enter adds a new line</span></div>';
   return h;
 }
 function replyHTML(r){
@@ -2739,7 +2778,7 @@ function closeWin(){
   S.stack = [];
   render();
 }
-var LASTDETAIL = '';
+var LASTDETAIL = '', LASTHTML = '';
 function renderDetail(){
   var it = S.stack[S.stack.length-1] || null, w = $('win');
   var key = it ? it.type + ':' + it.id + ':' + S.stack.length : 'none';
@@ -2747,14 +2786,24 @@ function renderDetail(){
   w.hidden = !it;
   if (!it){
     if (LASTDETAIL !== 'none'){ sc.innerHTML = ''; $('dbar').innerHTML = ''; $('evbar').innerHTML = ''; }
-    LASTDETAIL = 'none'; WIN.x = WIN.y = null; WIN.max = false;
+    LASTDETAIL = 'none'; LASTHTML = ''; WIN.x = WIN.y = null; WIN.max = false;
     $('app').classList.remove('has-evbar');
     return;
   }
   /* something newly opened comes to the front, over the chat dock it may have been opened from */
   if (key !== LASTDETAIL) $('app').classList.remove('dock-front');
-  sc.innerHTML = detailHTML(it);
-  sc.scrollTop = keep;
+  /* the page is drawn again only when it changed: a redraw replaces every field in it, and the one you are typing in
+     would lose you (on a phone the keyboard closes). When it did change, the field you were in, and where in it, come
+     back */
+  var html = detailHTML(it);
+  if (key !== LASTDETAIL || html !== LASTHTML){
+    var f = document.activeElement, was = f && f.id && sc.contains(f) && /^(TEXTAREA|INPUT)$/.test(f.tagName) ? { id:f.id, a:f.selectionStart, b:f.selectionEnd } : null;
+    sc.innerHTML = html; LASTHTML = html;
+    sc.scrollTop = keep;
+    var rb = $('coreply'); if (rb){ rb.value = REPLYDRAFT[rb.getAttribute('data-id')] || ''; if (rb.value) growBox(rb); }
+    var nf = was && key === LASTDETAIL && $(was.id);
+    if (nf && sc.contains(nf)){ try { nf.focus({ preventScroll:true }); nf.setSelectionRange(was.a, was.b); } catch(e){} }
+  }
   LASTDETAIL = key;
   var bar = $('evbar'), onEv = L.phone && it.type === 'event' && EVENTS[it.id];
   $('app').classList.toggle('has-evbar', !!onEv);
@@ -3736,31 +3785,33 @@ function fPersonCard(pid, sub){
     l2:esc(['@' + p.handle, citiesOf(p)[0], p.bio].filter(Boolean).join(' · ')), l3: sub ? '<div class="fcs3">'+esc(sub)+'</div>' : '',
     verbs: me ? '' : fbtn('followp', pid, fol, 'Follow', 'Following', 'plus', 'check', true) });
 }
-/* what a call out offers you: Answer while it is open — a public reply under it */
-function calloutAct(coId, small){
+/* what a call out offers you: Answer while it is open — a public reply under it. `own` (an event's page): on your own
+   call out, once someone answered, Reply — both open the call out with its box ready */
+function calloutAct(coId, small, own){
   var c = calloutOf(coId);
+  if (own && isOwnCallout(c) && calloutOpen(c) && repliesOf(coId).length) return '<button class="btn" data-act="answercallout" data-id="'+coId+'">'+ic('chat',16)+'Reply</button>';
   if (isOwnCallout(c) || !calloutOpen(c) || !calloutAuthor(c)) return '';
   return '<button class="btn'+(small ? '' : ' primary')+'" data-act="answercallout" data-id="'+coId+'">'+ic('chat',16)+'Answer</button>';
 }
 /* a call out is someone standing up in the room: the one inverted thing — ink ground, paper type, a hairline frame
    inside. Loud by inversion, not by size: the ask at 20. Under it the event it is for (a thing, on the dark), Answer,
    and what people answered. o.act 'open' stacks it in the window (on its event); o.noEvent leaves the event out;
-   o.byline says who asked (where no header line above says it); o.thread puts the whole thread under it instead of the
-   latest replies */
+   o.byline says who asked (where no header line above says it); o.none says "No replies yet" where there are none;
+   o.reply offers Reply on your own once it has answers */
 function fCalloutCard(coId, ms, o){
   o = o || {};
   var c = calloutOf(coId), evId = o.noEvent ? null : calloutEventId(c), mine = isOwnCallout(c), a = o.act || 'row', open = calloutOpen(c);
   var n = repliesOf(coId).length;
   var until = c.closed ? 'closed' : !open ? 'ended ' + fmtShort(c.expiresAt) : 'open until ' + fmtShort(c.expiresAt);
   return '<div class="fco'+selCls('callout', coId)+'" data-type="callout" data-id="'+coId+'">' +
-    '<div class="fcok"><span class="fcotag">'+ic('callout',14)+'Call out</span><span class="fcountil">'+esc([o.byline && calloutSkill(c) ? skillLabel(calloutSkill(c)) : '', until].filter(Boolean).join(' · '))+'</span></div>' +
+    '<div class="fcok"><span class="fcotag">'+ic('callout',14)+'Call out</span><span class="fcountil">'+esc([until, o.byline && calloutSkill(c) ? skillLabel(calloutSkill(c)) : ''].filter(Boolean).join(' · '))+'</span></div>' +
     flink('callout', coId, '<span class="fcoa">'+esc(c.title)+'</span>').replace('data-act="row"', 'data-act="'+a+'"') + (c.body ? '<p class="fcob">'+esc(c.body)+'</p>' : '') +
     (evId ? '<button type="button" class="fcoe" data-act="'+(a === 'open' ? 'open' : 'row')+'" data-type="event" data-id="'+evId+'">'+sqPx(evId, 48)+'<span class="fcoet"><b>'+esc(EVENTS[evId].title)+'</b>' +
       '<small>'+esc([relDay(EVENTS[evId]), whereOf(EVENTS[evId])].filter(Boolean).join(' · '))+'</small><small>For this event</small></span></button>' : '') +
-    '<div class="fcof">' + (o.thread ? (mine ? '' : calloutAct(coId)) : calloutAct(coId)) +
-      (n && !o.thread ? '<button type="button" class="corall" data-act="'+a+'" data-type="callout" data-id="'+coId+'">'+esc(nReplies(n))+'</button>' : '') +
+    '<div class="fcof">' + calloutAct(coId, false, o.reply) +
+      (n ? '<button type="button" class="corall" data-act="'+a+'" data-type="callout" data-id="'+coId+'">'+esc(nReplies(n))+'</button>' : '') +
       (o.byline ? '<span class="fcoby">'+(c.hostId && PEOPLE[c.hostId] ? avHTML(c.hostId) : '')+'<span>'+esc(mine ? 'You' : c.hostName)+'</span></span>' : '') + '</div>' +
-    (o.thread ? '' : repliesPeekHTML(coId, a)) + '</div>';
+    (n ? repliesPeekHTML(coId, a) : o.none ? '<div class="corep"><span class="cornone">No replies yet</span></div>' : '') + '</div>';
 }
 /* someone answered a call out: what they said, and the call out it is under */
 function fReplyCard(e){
@@ -5721,11 +5772,12 @@ function sendChat(){
 }
 
 /* ---- call-out replies: answering a call out is a public reply under it, as under a post ----
-   Answer opens the call out (if it is not what you are on) and puts you in the reply box. No chat is made. */
+   Answer opens the call out (if it is not what you are on) and puts you in the reply box. No chat is made. Its author
+   gets here too, from Reply on an event's page, to answer the people who answered */
 var answerCallout = gated(function(coId){
-  var c = calloutOf(coId); if (!c || isOwnCallout(c)) return;
+  var c = calloutOf(coId); if (!c) return;
   if (!calloutOpen(c)){ toast('This call out is closed', c.title); return; }
-  if (!calloutAuthor(c)){ toast('Can’t answer this call out', 'We don’t know who posted it'); return; }
+  if (!isOwnCallout(c) && !calloutAuthor(c)){ toast('Can’t answer this call out', 'We don’t know who posted it'); return; }
   var here = document.querySelector('#dscroll #coreply[data-id="'+coId+'"]');
   if (!here) openItem('callout', coId, 'push');
   setTimeout(function(){ var b = $('coreply'); if (b){ b.scrollIntoView({ block:'center' }); b.focus(); b.setSelectionRange(b.value.length, b.value.length); } }, 40);
@@ -5739,6 +5791,8 @@ var postReply = gated(function(coId){
   REPLIES.push(r); delete REPLYDRAFT[coId];
   if (ONLINE) HNAPI.postReply(r);
   logAct('replied_callout', 'callout', coId, { replyId:r.id });
+  /* on a phone the keyboard goes once it is posted, so you see your reply: the redraw would otherwise keep you in the box */
+  if (L.phone && box && document.activeElement === box) box.blur();
   render();
   var b = $('coreply'); if (b && !L.phone) b.focus();
 });
@@ -6420,8 +6474,7 @@ function render(){
   renderChats();
   renderPreview();
   /* the phone's sheet ends above the preview bar, which is always there when logged out (the tabs under it stay) */
-  var pvb = $('previewbar');
-  app.style.setProperty('--pvh', (L.phone && !S.loggedIn && pvb.offsetHeight ? Math.max(0, window.innerHeight - pvb.getBoundingClientRect().top) : 0) + 'px');
+  placePvh();
   placeWin();
   /* the list just stepped aside for the window (or back): what is lit in it stays in view */
   if (!L.phone && wasWin !== L.win && !ROUTE.applying){
@@ -6512,8 +6565,23 @@ function schedulePersist(){ if (!PERSISTT) PERSISTT = setTimeout(persist, 300); 
 /* a reload, a closed tab or a phone putting the page away writes what is pending */
 window.addEventListener('pagehide', function(){ if (PERSISTT) persist(); });
 document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden' && PERSISTT) persist(); });
-var RZ = null;
-window.addEventListener('resize', function(){ clearTimeout(RZ); RZ = setTimeout(render, 60); });
+function placePvh(){
+  var pvb = $('previewbar');
+  $('app').style.setProperty('--pvh', (L.phone && !S.loggedIn && pvb.offsetHeight ? Math.max(0, window.innerHeight - pvb.getBoundingClientRect().top) : 0) + 'px');
+}
+/* A new width is a new layout: everything is drawn again. A resize that changes only the height is, on a phone, the
+   keyboard coming or going (or the browser's bars): no layout depends on the height alone, so only what is placed by it
+   moves (the window, the preview bar's room, toasts) and nothing is rebuilt. Rebuilding replaced the reply box you had
+   just tapped — the keyboard opened, the viewport shrank, the resize redrew the page, the box was a new one and the
+   keyboard closed (owner, 2026-10-05). The visual viewport has no handler of its own: nothing here listens to it. */
+var RZ = null, RZW = window.innerWidth;
+window.addEventListener('resize', function(){
+  clearTimeout(RZ);
+  RZ = setTimeout(function(){
+    if (window.innerWidth !== RZW || !ROUTE.ready){ RZW = window.innerWidth; render(); return; }
+    layoutCentre(); placeWin(); placePvh(); placeToasts();
+  }, 60);
+});
 (function boot(){
   if (ONLINE){ HNAPI.boot(startRoutes); return; }   /* the network comes from GET /api/bootstrap */
   restore();

@@ -6,7 +6,14 @@
 //                                  announced next editions, and the curated "Season of burns" horizon. No people.
 //   node scripts/seed.mjs dev    → the prototype's mock world on top: the six fixture people and Michal (the demo),
 //                                  their events, horizons, follows, RSVPs, promotions, call outs, replies and chats.
+//   node scripts/seed.mjs pictures:<dev|main>
+//                                → only the real events' pictures, for a branch that is already seeded: points each
+//                                  real event's look (and its next edition's) at its picture in that branch's storage
+//                                  (scripts/real-pictures.sh uploads the files first, then runs this).
 //   add --sql to print plain SQL instead of JSON.
+//
+// Real events wear the picture from their own site (data/real-events.json `picture`, scripts/real-pictures.mjs):
+// a plain look with that image, or the fixture's look with it on dev.
 //
 // Ids are derived from the fixture ids (same input → same uuid), and every insert is `on conflict do nothing`,
 // so running a seed twice changes nothing. Dates in the mock fixtures (written for 2026-09-20) move with today,
@@ -16,6 +23,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import vm from "node:vm";
+import { PREFIX as PICTURE_PREFIX, pictureUrl } from "./real-pictures.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DAY = 86400000;
@@ -43,6 +51,9 @@ const COUNTRY = { SE: "Sweden", US: "USA", ZA: "South Africa", ES: "Spain", AT: 
   GB: "United Kingdom", UK: "United Kingdom", DE: "Germany", DK: "Denmark", NL: "Netherlands", LT: "Lithuania", IL: "Israel",
   FR: "France", FI: "Finland", BE: "Belgium", IT: "Italy", PT: "Portugal", PL: "Poland", HU: "Hungary" };
 const CITYPOOL = ["Stockholm", "Malmö", "Copenhagen", "Berlin", "Oslo", "Gothenburg", "Amsterdam"];
+/* the glyph a plain look wears for its kind (index.html PLAINGLYPH) */
+const PLAINGLYPH = { burn: "✦", burn_night: "✳", decompression: "☾", meetup: "◉", build: "▲", workshop: "■", volunteer_day: "✜", fundraiser: "◈",
+  camp_meeting: "◗", town_hall: "▤", sale: "⬟", gathering: "✦", other: "◆" };
 const KINDS = ["meetup", "build", "workshop", "volunteer_day", "fundraiser", "camp_meeting", "burn_night", "town_hall", "decompression", "burn", "sale", "other"];
 const utcDay = (iso) => { const p = String(iso).split("-"); return Date.UTC(+p[0], +p[1] - 1, +p[2]); };
 function shiftIso(s, n) {
@@ -91,14 +102,15 @@ function loadFixtures() {
     vm.runInContext(readFileSync(join(ROOT, f), "utf8"), w, { filename: f });
   }
   const real = JSON.parse(readFileSync(join(ROOT, "data/real-events.json"), "utf8"));
-  return { H: w.HYPERNET, DETAILS: w.HYPERNET_DETAILS?.records ?? {}, THEMES: w.HYPERNET_THEMES, REAL: Array.isArray(real) ? real : real.events };
+  return { H: w.HYPERNET, DETAILS: w.HYPERNET_DETAILS?.records ?? {}, THEMES: w.HYPERNET_THEMES, PLAIN: w.HN_PLAIN, REAL: Array.isArray(real) ? real : real.events };
 }
 
-/** Builds the seed for a target. `now` (ms) fixes the clock (tests); `today` is its date. */
-export function buildSeed(target, { now = Date.now() } = {}) {
+/** Builds the seed for a target. `now` (ms) fixes the clock (tests); `today` is its date.
+ *  `only: "pictures"` returns just the statements that give an already seeded branch the real events' pictures. */
+export function buildSeed(target, { now = Date.now(), only = null } = {}) {
   if (target !== "dev" && target !== "main") throw new Error(`target must be dev or main, not ${target}`);
   const mock = target === "dev";
-  const { H, DETAILS, THEMES, REAL } = loadFixtures();
+  const { H, DETAILS, THEMES, PLAIN, REAL } = loadFixtures();
   const TODAY = new Date(now).toISOString().slice(0, 10);
   const FIXSHIFT = Math.round((utcDay(TODAY) - utcDay(H.meta.today)) / DAY);
   const isPast = (iso) => iso < TODAY;
@@ -150,6 +162,11 @@ export function buildSeed(target, { now = Date.now() } = {}) {
     e.groups = raw.ownerGroupIds || [];
     REC[id] = JSON.parse(JSON.stringify(raw));
     if (!REALIDS.includes(id) && !raw.illustrative) REALIDS.push(id);
+    // its square is the picture from its own site, in this branch's storage (index.html mergeReal does the same offline)
+    if (raw.picture && !raw.illustrative && !LOOK[id]?.image) {
+      const base = LOOK[id] || { bg: PLAIN.bg, ink: PLAIN.ink, accent: PLAIN.accent, image: null, glyph: PLAINGLYPH[raw.kind] || PLAINGLYPH[raw.scale] || "◆" };
+      LOOK[id] = { ...base, image: pictureUrl(target, raw.picture) };
+    }
   }
   // next editions of the burns that are over (makeNextEditions)
   const NEXTED = {};
@@ -176,6 +193,21 @@ export function buildSeed(target, { now = Date.now() } = {}) {
     NEXTED[id] = nid;
   }
   const realIds = REALIDS.map((id) => NEXTED[id] || id);
+
+  // ----- pictures only, for a branch seeded before they existed: each look that should carry a real event's
+  // picture gets it (a plain look if it had none). Only looks without a picture, or with an older one of ours, change,
+  // so running it twice changes nothing and a picture someone chose is never replaced.
+  if (only === "pictures") {
+    const ours = `%/images/${PICTURE_PREFIX}%`;
+    const stmts = Object.keys(LOOK).filter((id) => LOOK[id]?.image?.includes(`/images/${PICTURE_PREFIX}`)).sort().map((id) => {
+      const look = LOOK[id];
+      return `update events set look = case when look is null then ${qj(look)} else jsonb_set(look, '{image}', to_jsonb(${q(look.image)}::text)) end ` +
+        `where id = ${q(seedUuid("event:" + id))} and look->>'image' is distinct from ${q(look.image)} and (look->>'image' is null or look->>'image' like ${q(ours)})`;
+    });
+    stmts.push(`insert into _migrations (name) values (${q("pictures-real-events")}) on conflict do nothing`);
+    return stmts;
+  }
+  if (only) throw new Error(`only must be "pictures", not ${only}`);
 
   // ----- statements
   const out = [];
@@ -207,7 +239,7 @@ export function buildSeed(target, { now = Date.now() } = {}) {
     const kind = KINDS.includes(r.kind) ? r.kind : r.kind ? String(r.kind) : "meetup";
     const details = { ...r, _kind: e.kind };
     for (const k of ["id", "title", "date", "endDate", "startTime", "endTime", "timezone", "privacy", "hostName", "description", "whatToBring",
-      "kind", "city", "region", "country", "venue", "access"]) delete details[k];
+      "kind", "city", "region", "country", "venue", "access", "picture"]) delete details[k];
     out.push(insert("events", {
       id: q(eventIdOf(id)), slug: q(slug), host_id: hostFid ? q(pid(hostFid)) : "null", host_name: q(e.hostName || "Hypernet"),
       title: q(e.title), description: q(r.description || e.description || ""), starts_on: q(start), ends_on: q(endRaw && endRaw > start ? endRaw : null),
@@ -345,7 +377,7 @@ export function buildSeed(target, { now = Date.now() } = {}) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const args = process.argv.slice(2);
-  const target = args.find((a) => !a.startsWith("--"));
-  const stmts = buildSeed(target);
+  const arg = args.find((a) => !a.startsWith("--")) || "";
+  const stmts = arg.startsWith("pictures:") ? buildSeed(arg.slice(9), { only: "pictures" }) : buildSeed(arg);
   console.log(args.includes("--sql") ? stmts.map((s) => s + ";").join("\n") : JSON.stringify(stmts));
 }

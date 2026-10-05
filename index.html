@@ -940,6 +940,7 @@ button.fcoe:hover{ background:#2e2e2e; }
 .chip.who .whon{ overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 .chip.who small, .whorow small{ font-size:12px; font-weight:normal; color:var(--dim); overflow:hidden; text-overflow:ellipsis; }
 .chip.who.fol .whon{ font-weight:bold; }
+.whocount{ grid-column:1 / -1; margin:0; font-size:14px; line-height:20px; color:var(--ink); }
 .whochips button.chip.chipmore{ grid-column:1 / -1; justify-self:start; min-height:var(--ctl); padding:0 12px; color:var(--ink); font-size:14px; }
 @container detail (max-width:560px){ .whochips{ grid-template-columns:1fr; } }
 .wholist{ display:flex; flex-direction:column; }
@@ -3569,9 +3570,20 @@ function whoChip(x, past){
     '<span class="whon">'+esc(whoName2(x.pid))+'<small>'+esc(whoSub(x, past))+'</small></span></button>';
 }
 function whoTotal(evId, l){ return Math.max(attendeeCount(evId), l.length); }
+/* "18 people are going" · "1 person went": a count said in words, for when no one going is known by name */
+function whoCountText(n, past){ return n + (n === 1 ? ' person ' + (past ? 'went' : 'is going') : ' people ' + (past ? 'went' : 'are going')); }
 function whoGoingHTML(evId, past){
   var l = whoGoing(evId), total = whoTotal(evId, l), shown = l.slice(0, WHOMAX), more = total - shown.length;
   if (!total) return '';
+  /* only a count is known (the people going keep their names to themselves, or the server sent a number): say it in a
+     sentence — never a bare "and N more" with no one before it — and show the people who are interested instead (the
+     ones you follow first, each chip saying "interested"); "and N more" opens them all when they don't fit */
+  if (!shown.length){
+    var ints = past ? [] : whoInterested(evId), si = ints.slice(0, WHOMAX), im = ints.length - si.length;
+    return sect(past ? 'Who went' : 'Who’s going', '<div class="chips whochips"><p class="whocount">' + esc(whoCountText(total, past)) + '</p>' +
+      si.map(function(x){ return whoChip(x, past); }).join('') +
+      (im > 0 ? '<button class="chip chipmore" data-act="whoall" data-id="'+evId+'" aria-haspopup="dialog">and '+im+' more interested</button>' : '') + '</div>');
+  }
   return sect(past ? 'Who went' : 'Who’s going', '<div class="chips whochips">' + shown.map(function(x){ return whoChip(x, past); }).join('') +
     (more > 0 ? '<button class="chip chipmore" data-act="whoall" data-id="'+evId+'" aria-haspopup="dialog">and '+more+' more</button>' : '') + '</div>');
 }
@@ -3585,7 +3597,8 @@ function whoAllDialog(evId){
       (x.pid === 'self' ? '' : '<button class="btn" data-act="whodm" data-id="'+x.pid+'">'+ic('chat',16)+'Message</button>') + '</div>';
   };
   var h = '<div class="wholist">' + l.map(row).join('') + '</div>';
-  if (total > l.length) h += '<p class="whonote">and '+(total - l.length)+' more '+(past ? 'went' : 'going')+' who keep their name to themselves</p>';
+  if (total > l.length) h += '<p class="whonote">' + (l.length ? 'and '+(total - l.length)+' more '+(past ? 'went' : 'going')+' who keep their name to themselves'
+                                                     : esc(whoCountText(total, past)) + ', keeping their names to themselves') + '</p>';
   if (ints.length) h += '<div class="pkband">Interested</div><div class="wholist">' + ints.map(row).join('') + '</div>';
   dialog((past ? 'Who went' : 'Who’s going') + ' · ' + e.title, h, '<button class="btn" data-act="closedlg">Close</button>', 460);
 }

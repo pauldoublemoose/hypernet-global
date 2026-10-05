@@ -136,7 +136,8 @@ const winState = p => p.evaluate(() => { const w = document.getElementById('win'
            title:(document.getElementById('wtitle') || {}).textContent || '' }; });
 /* 2026-10-04 (layout): where the white and the view's container sit. panelL / panelR: the white's distance from the sidebar
    and from the dock (or the main area's edge); cw: the container's width; cl / cr: its insets in the white (cr counts the
-   list's scrollbar, sb); head: the heading's offset from the container's edge (16, the rows' own gutter) */
+   list's scrollbar, sb); head: the heading's offset from the container's edge (2026-10-05: 0 — the heading stands on the
+   white's left edge, which is the container's) */
 const geoOf = p => p.evaluate(() => {
   const app = document.getElementById('app'), cal = app.classList.contains('v-cal'), lb = document.getElementById('listbody'), cp = document.querySelector('#calcol .calpanel');
   const panel = (cal ? cp : document.getElementById('listcol')).getBoundingClientRect(), nav = document.getElementById('nav').getBoundingClientRect();
@@ -351,7 +352,8 @@ async function overflowEverywhere(p, label){
     const last = await ev(f, () => { const els = document.querySelectorAll('#listbody .row, #listbody .card2, #listbody .fitem, #listbody .fend'); return els.length ? els[els.length - 1].getBoundingClientRect().bottom : 0; });
     ok(last <= (await rb(f, '#previewbar')).top + 1, w + ': the last row/card is above the preview bar');
     if (kind === 'phone'){
-      ok(Math.abs((await rb(f, '#previewbar')).bottom - (await rb(f, '#tabbar')).top) < 1, 'phone: preview bar directly above the tab bar');
+      /* 2026-10-05 (v5-shell): logged out a phone has no tabs; the preview bar is the foot (was: directly above the tab bar) */
+      ok(!(await rb(f, '#tabbar')) && Math.abs((await rb(f, '#previewbar')).bottom - 812) < 1, 'phone: logged out there is no tab bar; the preview bar is the foot of the screen');
       await f.goto(URL + '#/event/led-forest-walk'); await f.waitForTimeout(400);
       ok((await rb(f, '#evbar')).bottom <= (await rb(f, '#previewbar')).top + 1, 'phone: the event verb bar is not covered by the preview bar');
       await f.evaluate(() => toast('Test', 'toast')); await f.waitForTimeout(100);
@@ -471,10 +473,10 @@ async function overflowEverywhere(p, label){
     const c = await ctx('desk');
     await open(c, '', true);
     await join(c, 'Win Tester', 'wintest');
-    /* 2026-10-04 (layout): the white spans the centre; Home's container is 640, centred in it (no dock) */
+    /* 2026-10-04 (layout): the white spans the centre; Home's container is 640 — 2026-10-05 (v5-shell): at the white's left, no longer centred */
     await c.goto(URL + '#/home'); await c.waitForTimeout(450);
     const col = await geoOf(c);
-    ok(col.panelL === 8 && col.panelR === 8 && col.cw === 640 && Math.abs(col.cl - col.cr) <= 1, 'window: at 1440 the white spans the centre and Home sits in a centred 640 container ' + JSON.stringify(col));
+    ok(col.panelL === 8 && col.panelR === 8 && col.cw === 640 && col.cl === 0 && col.head === 0, 'window: at 1440 the white spans the centre and Home sits in a 640 container at its left ' + JSON.stringify(col));
     for (const [name, h, sel] of [['home', '#/home', '#listbody .fev .fct'], ['explore section', '#/explore/soon', '#listbody .row[data-type="event"]'],
         ['search', '#/search?q=burn', '#listbody .row[data-type="event"]'], ['people → person', '#/explore/people', '#listbody .row'], ['horizons', '#/explore/horizons', '#listbody .row[data-type="horizon"]']]){
       await c.goto(URL + h); await c.waitForTimeout(450);
@@ -1481,9 +1483,10 @@ async function overflowEverywhere(p, label){
     const st = () => ev(c, () => ({ hash:location.hash, folder:S.folder.kind, tab:S.tab, logged:S.loggedIn, nav:!!document.querySelector('#navbody [data-kind="home"]'),
       tabs:[...document.querySelectorAll('#tabbar .tab')].map(t => t.getAttribute('data-id') || 'new'), on:(document.querySelector('#tabbar .tab.on') || { getAttribute:() => '' }).getAttribute('data-id'), flash:window.__home.slice() }));
     const lo = await st();
+    /* 2026-10-05 (v5-shell): logged out a phone has no tabs at all (was: four, Explore lit) */
     ok(!lo.logged && lo.hash === '#/explore' && lo.folder === 'explore' && !lo.nav && lo.tabs.indexOf('home') < 0 && !lo.flash.length &&
-       (kind === 'desk' || (lo.tab === 'explore' && lo.tabs.join('|') === 'explore|new|chats|you' && lo.on === 'explore')),
-       kind + ': logged out, #/home lands on Explore — no Home in the sidebar or the tabs, never drawn even for a moment ' + JSON.stringify(lo));
+       (kind === 'desk' || (lo.tab === 'explore' && !lo.tabs.length && !lo.on)),
+       kind + ': logged out, #/home lands on Explore — no Home in the sidebar, no tabs on a phone, never drawn even for a moment ' + JSON.stringify(lo));
     await c.goto(URL); await c.waitForTimeout(450);
     const l2 = await st();
     ok(l2.hash === '#/explore' && !l2.flash.length, kind + ': logged out, the bare link lands on Explore ' + JSON.stringify(l2));
@@ -1507,7 +1510,18 @@ async function overflowEverywhere(p, label){
     ok(!c.errors.length, kind + ': no console errors (no Home logged out) ' + c.errors.join(' '));
   }
 
-  /* ---------------- 2026-10-04 (layout): the white spans the centre; each view sits in its container; the window steps the list aside ---------------- */
+  /* ---------------- 2026-10-04 (layout): the white spans the centre; each view sits in its container ----------------
+     2026-10-05 (v5-shell): every container starts at the white's left, the heading on the white's own edge; the window lies
+     over the list, which never moves for it (was: the containers centred, the heading 16 in, the list stepping aside) */
+  const listGeo = p => p.evaluate(() => { const lb = document.getElementById('listbody'), cs = getComputedStyle(lb);
+    return { pad:cs.padding, fit:JSON.stringify(L.fit), st:lb.scrollTop, rects:[...lb.querySelectorAll('.card2, .cart, .row, .fitem, .fuprow, .band, .shh')].slice(0, 80).map(e => { const r = e.getBoundingClientRect(); return [r.left, r.top, r.width, r.height].map(Math.round).join(','); }).join(';') }; });
+  const winOver = p => p.evaluate(() => { const w = document.getElementById('win'), wr = w.getBoundingClientRect(), lb = document.getElementById('listbody'), r = lb.getBoundingClientRect(),
+      ce = document.getElementById('center').getBoundingClientRect(), white = document.getElementById('listcol').getBoundingClientRect(), sb = lb.offsetWidth - lb.clientWidth;
+    /* under the first 320 of every entry in view is the list, never the window */
+    const hits = [...lb.querySelectorAll('.fitem, .fuprow, .band, .card2, .row')].filter(x => { const q = x.getBoundingClientRect(); return q.top > r.top + 8 && q.bottom < r.bottom - 8 && q.left < r.left + 300; })
+      .map(x => { const q = x.getBoundingClientRect(), el = document.elementFromPoint(Math.min(q.right - 4, r.left + 310), (q.top + q.bottom) / 2); return !!el && !!el.closest('#listbody'); });
+    return { open:!w.hidden, mode:L.win, ww:Math.round(wr.width), keep:Math.round(wr.left - r.left), rgap:Math.round(ce.right - wr.right), sb, tgap:Math.round(wr.top - white.top), bgap:Math.round(ce.bottom - wr.bottom),
+             hits:hits.length, under:hits.filter(x => !x).length, cover:Math.round(wr.left) === Math.round(ce.left) && Math.round(wr.right) === Math.round(ce.right) }; });
   for (const [w, h] of [[1440, 900], [1920, 1080], [1280, 800]]){
     const c = await ctx('desk', { viewport:{ width:w, height:h } });
     await open(c, '', true);
@@ -1518,37 +1532,29 @@ async function overflowEverywhere(p, label){
     const got = {};
     for (const hh of Object.keys(want)){ await c.goto(URL + hh); await c.waitForTimeout(350); got[hh] = await geoOf(c); }
     const bad = Object.keys(want).filter(k => { const g = got[k];
-      return !(g.panelL === 8 && g.panelR === 8 && g.cw === Math.min(want[k], g.panelW - g.sb) && (Math.abs(g.cl - g.cr) <= 1 || g.cl === 0) && g.head === 16); });
-    ok(!bad.length, w + ': the white spans the centre; Home sits in 640, lists in 720, Explore\'s overview and the calendar in 1120 — centred, the heading on the container\'s edge ' + JSON.stringify(bad.map(k => [k, got[k]])));
+      return !(g.panelL === 8 && g.panelR === 8 && g.cw === Math.min(want[k], g.panelW - g.sb) && g.cl === 0 && g.head === 0); });
+    ok(!bad.length, w + ': the white spans the centre; Home sits in 640, lists in 720, Explore\'s overview and the calendar in 1120 — at the white\'s left, the heading on the white\'s left edge ' + JSON.stringify(bad.map(k => [k, got[k]])));
     if (w === 1440){ await c.goto(URL + '#/explore'); await c.waitForTimeout(350); await shot(c, 'layout-1440-explore'); }
     if (w === 1920){ await c.goto(URL + '#/home'); await c.waitForTimeout(350); await shot(c, 'layout-1920-home'); await overflowEverywhere(c, 'desktop 1920'); }
-    /* the window steps the list aside: beside it where there is room (the pair centred when there is more), over the centre only where there isn't */
-    for (const dock of [false, true]){
-      await c.goto(URL + '#/home'); await c.waitForTimeout(350);
+    /* the window lies over the right of the white; opening, replacing and closing it never moves the list */
+    for (const dock of [false, true]) for (const [hh, sel] of [['#/home', '#listbody .fuprow .flink'], ['#/explore', '#listbody .srow .card2'], ['#/explore/events', '#listbody .row[data-type="event"]']]){
+      await c.goto(URL + hh); await c.waitForTimeout(350);
       await c.evaluate(d => { S.rightOpen = d; S.stack = []; render(); document.getElementById('listbody').scrollTop = 0; }, dock); await c.waitForTimeout(250);
-      await pick(c, '#listbody .fuprow .flink >> nth=0'); await c.waitForTimeout(400);
-      const g = await geoOf(c);
-      const wg = await ev(c, () => { const wr = document.getElementById('win').getBoundingClientRect(), lb = document.getElementById('listbody'), cs = getComputedStyle(lb), r = lb.getBoundingClientRect(), ce = document.getElementById('center').getBoundingClientRect();
-        const right = r.left + lb.clientWidth - parseFloat(cs.paddingRight);
-        /* under the middle of every entry in view is the list, never the window */
-        const hits = [...document.querySelectorAll('#listbody .fitem, #listbody .fuprow, #listbody .band')].filter(x => { const q = x.getBoundingClientRect(); return q.top > r.top + 8 && q.bottom < r.bottom - 8; })
-          .map(x => { const q = x.getBoundingClientRect(), el = document.elementFromPoint((q.left + q.right) / 2, (q.top + q.bottom) / 2); return !!el && !!el.closest('#listbody'); });
-        return { open:!document.getElementById('win').hidden, ww:Math.round(wr.width), gap:Math.round(wr.left - right), rm:Math.round(ce.right - wr.right), hits:hits.length, under:hits.filter(x => !x).length,
-                 cover:Math.round(wr.left) === Math.round(ce.left) && Math.round(wr.right) === Math.round(ce.right) }; });
-      const tag = w + (dock ? ' + dock' : '');
-      if (g.win === 'side'){
-        ok(wg.open && wg.ww >= 440 && wg.ww <= 720 && wg.gap >= 16 && g.cw >= 360 && g.cw <= 640 && wg.hits >= 3 && !wg.under && (g.cw === 640 || wg.ww === 440) && Math.abs(g.cl - wg.rm) <= 1,
-           tag + ': the window opens beside the list, which steps aside and stays whole and clickable ' + JSON.stringify([g, wg]));
-      } else ok(w === 1280 && dock && wg.open && wg.cover, tag + ': with no room for both, the window takes the centre ' + JSON.stringify([g, wg]));
-      if (w === 1440 && dock) await shot(c, 'layout-1440-home-window-dock');
+      const g0 = await listGeo(c);
+      await pick(c, sel + ' >> nth=0'); await c.waitForTimeout(400);
+      const g1 = await listGeo(c), wg = await winOver(c);
+      await c.evaluate(() => openItem(S.rows[1].type, S.rows[1].id)); await c.waitForTimeout(350);
+      const g2 = await listGeo(c), wg2 = await winOver(c);
       await c.click('#dbar [data-act="closewin"]'); await c.waitForTimeout(300);
-      ok((await geoOf(c)).cw === 640 && !(await geoOf(c)).win, tag + ': closing the window gives the list back its centred 640');
-    }
-    if (w === 1440){
-      /* 1440 + dock: the window leaves the list a real column (B2 left ~50px) */
-      await c.evaluate(() => { S.rightOpen = true; render(); }); await c.waitForTimeout(250);
-      await pick(c, '#listbody .fuprow .flink >> nth=1'); await c.waitForTimeout(350);
-      ok((await geoOf(c)).cw >= 360, '1440 + dock: with an event open, the list keeps a column of at least 360');
+      const g3 = await listGeo(c);
+      const tag = w + (dock ? ' + dock' : '') + ' ' + hh;
+      const still = [g1, g2, g3].every(g => g.rects === g0.rects && g.pad === g0.pad && g.fit === g0.fit && g.st === g0.st);
+      ok(still && g0.rects.length > 20, tag + ': opening, replacing and closing the window moves nothing in the list (place, padding, squares)');
+      if (wg.mode === 'over'){
+        ok(wg.open && wg.ww >= 440 && wg.ww <= 720 && wg.keep >= 320 && wg.rgap === wg.sb + 8 && wg.tgap === 8 && wg.bgap === 8 && wg.hits >= 2 && !wg.under && wg2.keep === wg.keep && wg2.ww === wg.ww,
+           tag + ': the window lies over the right of the white (inset 8, the scrollbar clear), the list\'s first 320 in view and clickable ' + JSON.stringify(wg));
+      } else ok(w === 1280 && dock && wg.open && wg.cover, tag + ': with no room for both, the window takes the centre ' + JSON.stringify(wg));
+      if (w === 1440 && dock && hh === '#/home'){ await pick(c, sel + ' >> nth=0'); await c.waitForTimeout(350); await shot(c, 'layout-1440-home-window-dock'); await c.click('#dbar [data-act="closewin"]'); await c.waitForTimeout(250); }
     }
     ok(!c.errors.length && (await overflow(c)) <= 0, w + ': no console errors, no overflow (layout) ' + c.errors.join(' '));
   }
@@ -1563,9 +1569,101 @@ async function overflowEverywhere(p, label){
     await shot(c, 'layout-768-explore');
     await c.click('#listbody .srow .card2 >> nth=0'); await c.waitForTimeout(350);
     const wv = await ev(c, () => { const wr = document.getElementById('win').getBoundingClientRect(), ce = document.getElementById('center').getBoundingClientRect(); return Math.round(wr.left) === Math.round(ce.left) && Math.round(wr.width) === Math.round(ce.width); });
-    ok(hm.cl === 0 && hm.cw === hm.panelW - hm.sb && hm.head === 16 && ex.cw === ex.panelW - ex.sb && cols === 3 && wv,
+    ok(hm.cl === 0 && hm.cw === hm.panelW - hm.sb && hm.head === 0 && ex.cw === ex.panelW - ex.sb && cols === 3 && wv,
        '768: Home and Explore fill the white, the overview is three squares wide, an opened event takes the centre ' + JSON.stringify([hm, ex, cols, wv]));
     ok(!c.errors.length && (await overflow(c)) <= 0, '768: no console errors, no overflow (layout)');
+  }
+
+  /* ---------------- 2026-10-05 (v5-shell): no tabs logged out on a phone; the login code step; one light look ---------------- */
+  {
+    /* logged out a phone has no tab bar: the preview bar is its foot, and every way into an account's place lands on Explore */
+    const c = await ctx('phone');
+    await open(c, '', true);
+    const st = () => ev(c, () => ({ hash:location.hash, folder:S.folder.kind, tab:S.tab, stack:S.stack.length, tabbar:document.getElementById('tabbar').offsetParent !== null,
+      foot:Math.round(innerHeight - document.getElementById('previewbar').getBoundingClientRect().bottom), you:document.getElementById('app').classList.contains('scr-you'),
+      search:!!document.querySelector('#appbar [data-act="psearch"]') }));
+    const lands = {};
+    for (const h of ['', '#/you', '#/chats', '#/chats/anna', '#/going', '#/interested', '#/hosting', '#/promoted', '#/home']){
+      await c.goto(URL + h); await c.waitForTimeout(400); lands[h || '(bare)'] = await st();
+    }
+    const off = Object.keys(lands).filter(k => { const x = lands[k]; return !(x.hash === '#/explore' && x.folder === 'explore' && x.tab === 'explore' && !x.stack && !x.tabbar && x.foot === 0 && !x.you && x.search); });
+    ok(!off.length, 'v5 phone: logged out there is no tab bar; #/you, #/chats, a chat, your lists and #/home all land on Explore, search in reach ' + JSON.stringify(off.map(k => [k, lands[k]])));
+    await c.goto(URL + '#/event/borderland-2027'); await c.waitForTimeout(450);
+    const evp = await ev(c, () => { const w = document.getElementById('win').getBoundingClientRect(), pb = document.getElementById('previewbar').getBoundingClientRect(), vb = document.getElementById('evbar').getBoundingClientRect();
+      return { open:!document.getElementById('win').hidden, above:w.bottom <= pb.top + 1 && vb.bottom <= pb.top + 1, tabbar:document.getElementById('tabbar').offsetParent !== null }; });
+    ok(evp.open && evp.above && !evp.tabbar, 'v5 phone: logged out, an event is a sheet over Explore that ends above the preview bar, no tab bar ' + JSON.stringify(evp));
+    /* logged in the tabs are back; logging out from You and Chats leaves history a visitor can walk back through to Explore only */
+    await c.goto(URL + '#/explore'); await c.waitForTimeout(350);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    const tabs = await ev(c, () => [...document.querySelectorAll('#tabbar .tab')].map(t => t.getAttribute('data-id') || 'new').join('|'));
+    ok(tabs === 'home|explore|new|chats|you', 'v5 phone: logged in, the five tabs are there ' + tabs);
+    await c.tap('#tabbar [data-id="you"]'); await c.waitForTimeout(300);
+    await c.tap('#tabbar [data-id="chats"]'); await c.waitForTimeout(300);
+    await c.evaluate(() => doLogout()); await c.waitForTimeout(400);
+    const walk = [await st()];
+    for (let i = 0; i < 2; i++){ await c.goBack(); await c.waitForTimeout(400); walk.push(await st()); }
+    ok(walk.every(x => x.hash === '#/explore' && x.folder === 'explore' && !x.tabbar && !x.you), 'v5 phone: after logging out, back through You and Chats shows Explore and says so in the URL ' + JSON.stringify(walk.map(x => x.hash)));
+    ok(!c.errors.length && (await overflow(c)) <= 0, 'v5 phone: no console errors, no overflow (logged out) ' + c.errors.join(' '));
+  }
+  {
+    /* a desktop visitor's #/you, #/chats and lists land on Explore too, never on Home */
+    const c = await ctx('desk');
+    await open(c, '', true);
+    const got = [];
+    for (const h of ['#/you', '#/chats', '#/chats/anna', '#/going', '#/hosting']){
+      await c.goto(URL + h); await c.waitForTimeout(400);
+      got.push(await ev(c, () => location.hash + ' ' + S.folder.kind + ' ' + S.stack.length + ' ' + document.querySelector('#chead h2').textContent));
+    }
+    ok(got.every(x => x === '#/explore explore 0 Explore'), 'v5 desk: logged out, an account\'s places land on Explore ' + JSON.stringify(got));
+    /* the app has one look, light: the browser's automatic darkening (Android Chrome's Auto Dark) is opted out of */
+    ok(await ev(c, () => (document.querySelector('meta[name="color-scheme"]') || {}).content === 'only light' && /^(only light|light only)$/.test(getComputedStyle(document.documentElement).colorScheme)),
+       'v5: color-scheme is "only light" (meta and :root), so Chrome\'s auto dark leaves the app as designed');
+    ok(!c.errors.length, 'v5 desk: no console errors (logged out places) ' + c.errors.join(' '));
+  }
+  /* the login dialog online (the API answered here): ⚠ only with an error; no "Use another email"; Send a new code waits 30 s,
+     counting down, at the footer's left in line with Back and Log in; Back keeps the email to correct it */
+  for (const kind of ['desk', 'phone']){
+    const c = await ctx(kind);
+    await c.addInitScript(() => { window.HN_BACKEND = { branch:'test' }; });
+    await c.route('**/api/**', route => {
+      const u = new (require('url').URL)(route.request().url()), j = (code, b) => route.fulfill({ status:code, contentType:'application/json', body:JSON.stringify(b) });
+      if (u.pathname === '/api/bootstrap') return j(200, { me:null, login:null, people:[], follows:[], events:[], rsvps:[], promotions:[], horizons:[], hzFollows:[], callouts:[], replies:[], chats:[], activity:[] });
+      if (/sign-in\/email-otp$/.test(u.pathname)) return j(401, { message:'Invalid OTP', code:'INVALID_OTP' });
+      return j(200, {});
+    });
+    await open(c, '', true);
+    const lg = () => ev(c, () => { const d = document.querySelector('.dlg'); if (!d) return null;
+      const e = d.querySelector('.ferr'), f = d.querySelector('.dfoot'), btn = s => d.querySelector('.dfoot [data-hnact="' + s + '"]'), mid = b => b ? Math.round(b.getBoundingClientRect().top + b.offsetHeight / 2) : null;
+      const rs = btn('resend'), bk = btn('other'), li = btn('verify');
+      return { online:HNAPI.online, warn:!!e && getComputedStyle(e).display !== 'none', err:e ? e.textContent : '', other:/another email/i.test(d.textContent), help:(d.querySelector('.fhelp') || {}).textContent || '',
+               resend:rs && { label:rs.textContent, off:rs.disabled, first:f.firstElementChild === rs, left:Math.round(rs.getBoundingClientRect().left - f.getBoundingClientRect().left), mid:mid(rs) },
+               back:bk && bk.textContent, login:li && { mid:mid(li), last:f.lastElementChild === li }, email:(document.getElementById('hn-email') || {}).value, otp:(document.getElementById('hn-otp') || {}).value }; });
+    await c.evaluate(() => loginPicker()); await c.waitForTimeout(250);
+    const e0 = await lg();
+    await c.fill('#hn-email', 'nope'); await c.click('.dlg [data-hnact="send"]'); await c.waitForTimeout(250);
+    const e1 = await lg();
+    ok(e0 && e0.online && !e0.warn && e1.warn && /email address/.test(e1.err), kind + ': login — no ⚠ until there is an error to say, then ⚠ with it ' + JSON.stringify([e0, e1]));
+    await c.fill('#hn-email', 'someone@example.com'); await c.click('.dlg [data-hnact="send"]'); await c.waitForTimeout(450);
+    const c0 = await lg();
+    if (kind === 'desk') await shot(c, 'v5-login-code');
+    ok(c0.resend && !c0.other && !c0.warn && c0.resend.off && /^Send a new code \(0:30\)$/.test(c0.resend.label) && c0.resend.first && c0.resend.left === (kind === 'phone' ? 12 : 20) &&
+       c0.login.last && Math.abs(c0.resend.mid - c0.login.mid) <= 1 && c0.back === 'Back',
+       kind + ': login code — no "Use another email", no ⚠; Send a new code (0:30) waits, at the footer\'s left, in line with Back and Log in ' + JSON.stringify(c0));
+    await c.clock.fastForward(12000); await c.waitForTimeout(1100);
+    const c1 = await lg();
+    await c.clock.fastForward(20000); await c.waitForTimeout(1100);
+    const c2 = await lg();
+    ok(c1.resend.off && /\(0:1\d\)$/.test(c1.resend.label) && !c2.resend.off && c2.resend.label === 'Send a new code', kind + ': login code — it counts down and unlocks after 30 s ' + JSON.stringify([c1.resend.label, c2.resend.label]));
+    await c.fill('#hn-otp', '123456'); await c.click('.dlg [data-hnact="verify"]'); await c.waitForTimeout(450);
+    const c3 = await lg();
+    ok(c3.warn && /isn’t right/.test(c3.err) && c3.otp === '123456', kind + ': login code — a wrong code says so with ⚠ and stays in its field ' + JSON.stringify(c3));
+    await c.click('.dlg [data-hnact="resend"]'); await c.waitForTimeout(450);
+    const c4 = await lg();
+    ok(/new code/.test(c4.help) && c4.resend.off && /\(0:30\)$/.test(c4.resend.label) && !c4.warn, kind + ': login code — Send a new code sends one and waits again ' + JSON.stringify(c4));
+    await c.click('.dlg [data-hnact="other"]'); await c.waitForTimeout(300);
+    const c5 = await lg();
+    ok(c5 && c5.email === 'someone@example.com' && !c5.resend, kind + ': login code — Back returns to the email, kept, to correct it ' + JSON.stringify(c5));
+    ok(!c.errors.filter(x => !/401/.test(x)).length && (await overflow(c)) <= 0, kind + ': login (online): no console errors, no overflow ' + c.errors.join(' '));
   }
 
   /* ---------------- tablet ---------------- */

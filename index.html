@@ -2594,14 +2594,16 @@ function calloutHTML(id){
 }
 function nReplies(n){ return n + (n === 1 ? ' reply' : ' replies'); }
 /* the thread under a call out, oldest first, and the box to add to it. Answer posts here, in public: no chat is made.
-   One short line at most around it — the box's own words say that an answer is public */
+   One short line at most around it — the box's own words say that an answer is public. The box is drawn empty: what
+   you were writing (REPLYDRAFT) is put in once it is on the page (renderDetail), so a redraw while you type changes
+   nothing and the box you are in is never replaced */
 function repliesHTML(coId){
   var c = calloutOf(coId), rs = repliesOf(coId), mine = isOwnCallout(c), can = canReply(c), open = calloutOpen(c);
   var h = rs.length ? '<div class="replies">' + rs.map(replyHTML).join('') + '</div>' : '';
   var line = !open ? (rs.length ? 'Closed: no new replies.' : 'Closed with no replies.') : rs.length ? '' : can ? 'No replies yet.' : 'No replies.';
   if (line) h += '<p class="whonote">' + line + '</p>';
   if (can) h += '<div class="replybox">' + (S.loggedIn ? avHTML('self', 'a32') : '<span class="av a32 sys">'+ic('user',16)+'</span>') +
-    '<textarea id="coreply" data-id="'+coId+'" rows="1" placeholder="'+(mine ? 'Write a reply' : 'Write a public answer')+'" aria-label="'+(mine ? 'Reply under ' : 'Answer ')+esc(c.title)+'" aria-describedby="coreplyhint">'+esc(REPLYDRAFT[coId] || '')+'</textarea>' +
+    '<textarea id="coreply" data-id="'+coId+'" rows="1" placeholder="'+(mine ? 'Write a reply' : 'Write a public answer')+'" aria-label="'+(mine ? 'Reply under ' : 'Answer ')+esc(c.title)+'" aria-describedby="coreplyhint"></textarea>' +
     '<button class="btn primary" data-act="postreply" data-id="'+coId+'">Post</button><span id="coreplyhint" class="sr">Enter posts, Shift+Enter adds a new line</span></div>';
   return h;
 }
@@ -2661,7 +2663,7 @@ function closeWin(){
   S.stack = [];
   render();
 }
-var LASTDETAIL = '';
+var LASTDETAIL = '', LASTHTML = '';
 function renderDetail(){
   var it = S.stack[S.stack.length-1] || null, w = $('win');
   var key = it ? it.type + ':' + it.id + ':' + S.stack.length : 'none';
@@ -2669,14 +2671,24 @@ function renderDetail(){
   w.hidden = !it;
   if (!it){
     if (LASTDETAIL !== 'none'){ sc.innerHTML = ''; $('dbar').innerHTML = ''; $('evbar').innerHTML = ''; }
-    LASTDETAIL = 'none'; WIN.x = WIN.y = null; WIN.max = false;
+    LASTDETAIL = 'none'; LASTHTML = ''; WIN.x = WIN.y = null; WIN.max = false;
     $('app').classList.remove('has-evbar');
     return;
   }
   /* something newly opened comes to the front, over the chat dock it may have been opened from */
   if (key !== LASTDETAIL) $('app').classList.remove('dock-front');
-  sc.innerHTML = detailHTML(it);
-  sc.scrollTop = keep;
+  /* the page is drawn again only when it changed: a redraw replaces every field in it, and the one you are typing in
+     would lose you (on a phone the keyboard closes). When it did change, the field you were in, and where in it, come
+     back */
+  var html = detailHTML(it);
+  if (key !== LASTDETAIL || html !== LASTHTML){
+    var f = document.activeElement, was = f && f.id && sc.contains(f) && /^(TEXTAREA|INPUT)$/.test(f.tagName) ? { id:f.id, a:f.selectionStart, b:f.selectionEnd } : null;
+    sc.innerHTML = html; LASTHTML = html;
+    sc.scrollTop = keep;
+    var rb = $('coreply'); if (rb){ rb.value = REPLYDRAFT[rb.getAttribute('data-id')] || ''; if (rb.value) growBox(rb); }
+    var nf = was && key === LASTDETAIL && $(was.id);
+    if (nf && sc.contains(nf)){ try { nf.focus({ preventScroll:true }); nf.setSelectionRange(was.a, was.b); } catch(e){} }
+  }
   LASTDETAIL = key;
   var bar = $('evbar'), onEv = L.phone && it.type === 'event' && EVENTS[it.id];
   $('app').classList.toggle('has-evbar', !!onEv);
@@ -5452,6 +5464,8 @@ var postReply = gated(function(coId){
   REPLIES.push(r); delete REPLYDRAFT[coId];
   if (ONLINE) HNAPI.postReply(r);
   logAct('replied_callout', 'callout', coId, { replyId:r.id });
+  /* on a phone the keyboard goes once it is posted, so you see your reply: the redraw would otherwise keep you in the box */
+  if (L.phone && box && document.activeElement === box) box.blur();
   render();
   var b = $('coreply'); if (b && !L.phone) b.focus();
 });
@@ -6108,8 +6122,7 @@ function render(){
   renderChats();
   renderPreview();
   /* the phone's sheet ends above the preview bar, which is always there when logged out (the tabs under it stay) */
-  var pvb = $('previewbar');
-  app.style.setProperty('--pvh', (L.phone && !S.loggedIn && pvb.offsetHeight ? Math.max(0, window.innerHeight - pvb.getBoundingClientRect().top) : 0) + 'px');
+  placePvh();
   placeWin();
   /* the list just stepped aside for the window (or back): what is lit in it stays in view */
   if (!L.phone && wasWin !== L.win && !ROUTE.applying){
@@ -6200,8 +6213,23 @@ function schedulePersist(){ if (!PERSISTT) PERSISTT = setTimeout(persist, 300); 
 /* a reload, a closed tab or a phone putting the page away writes what is pending */
 window.addEventListener('pagehide', function(){ if (PERSISTT) persist(); });
 document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden' && PERSISTT) persist(); });
-var RZ = null;
-window.addEventListener('resize', function(){ clearTimeout(RZ); RZ = setTimeout(render, 60); });
+function placePvh(){
+  var pvb = $('previewbar');
+  $('app').style.setProperty('--pvh', (L.phone && !S.loggedIn && pvb.offsetHeight ? Math.max(0, window.innerHeight - pvb.getBoundingClientRect().top) : 0) + 'px');
+}
+/* A new width is a new layout: everything is drawn again. A resize that changes only the height is, on a phone, the
+   keyboard coming or going (or the browser's bars): no layout depends on the height alone, so only what is placed by it
+   moves (the window, the preview bar's room, toasts) and nothing is rebuilt. Rebuilding replaced the reply box you had
+   just tapped — the keyboard opened, the viewport shrank, the resize redrew the page, the box was a new one and the
+   keyboard closed (owner, 2026-10-05). The visual viewport has no handler of its own: nothing here listens to it. */
+var RZ = null, RZW = window.innerWidth;
+window.addEventListener('resize', function(){
+  clearTimeout(RZ);
+  RZ = setTimeout(function(){
+    if (window.innerWidth !== RZW || !ROUTE.ready){ RZW = window.innerWidth; render(); return; }
+    layoutCentre(); placeWin(); placePvh(); placeToasts();
+  }, 60);
+});
 (function boot(){
   if (ONLINE){ HNAPI.boot(startRoutes); return; }   /* the network comes from GET /api/bootstrap */
   restore();

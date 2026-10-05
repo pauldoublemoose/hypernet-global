@@ -776,11 +776,13 @@ body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 1
 }
 .fmore{ align-self:flex-start; }
 .fmore.static{ min-height:0; font-size:12px; color:var(--dim); }
-/* a closing note: a bold line, what to do, the way there — Home's end (the whole page when nothing is above it) */
+/* a closing note: a bold line, what to do, the way there — Home's end (the whole page when nothing is above it), an
+   empty chat list */
 .endnote{ display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:24px 16px 32px; }
 .endnote h3{ margin:0; font-size:14px; line-height:16px; font-weight:bold; color:var(--ink); }
 .endnote p{ margin:0; max-width:60ch; font-size:14px; line-height:20px; color:var(--ink2); }
 .endbtns{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.chempty{ padding-bottom:24px; }
 /* call outs: the one inverted thing — ink ground, paper type, a hairline frame inside; loud by inversion, not size */
 .fco{ position:relative; display:flex; flex-direction:column; gap:8px; padding:16px; background:var(--ink); color:#fff; outline:1px solid #fff; outline-offset:-4px; }
 .fcok{ display:flex; align-items:center; gap:8px; font-size:12px; line-height:16px; color:#c4c4c4; }
@@ -2947,11 +2949,12 @@ function msgPreview(m, c){
   return who + m.text;
 }
 function unreadChats(){ return S.loggedIn ? Object.keys(UNREADCHAT).filter(function(k){ return UNREADCHAT[k]; }).length : 0; }
-/* no chats yet: message someone straight away */
+/* no chats yet: say so and how one starts (owner, 2026-10-05: "When chat is empty I should see some message: no
+   chats"), then the people to message straight away. New chat is already in the header, so it is named, not repeated */
 function chatsEmptyHTML(){
   var ppl = ncPeopleAll().slice(0, 8);
-  /* New chat is already in the header; the body offers the people */
-  return '<div class="band">'+(ppl.some(function(k){ return PFOLLOW[k]; }) ? 'People you follow' : 'People on Hypernet')+'</div>' +
+  return '<div class="endnote chempty"><h3>No chats yet</h3><p>A chat starts when you press Message on someone’s profile, or New chat.</p></div>' +
+    (ppl.length ? '<div class="band">'+(ppl.some(function(k){ return PFOLLOW[k]; }) ? 'People you follow' : 'People on Hypernet')+'</div>' : '') +
     ppl.map(function(pid){ var p = person(pid);
       return '<div class="chrow" data-act="dm" data-id="'+pid+'" role="button">'+avHTML(pid,'a40')+'<div class="cmn"><div class="cnm">'+esc(p.displayName)+'</div>' +
         '<div class="cpv">@'+esc(p.handle)+(p.bio ? ' · '+esc(p.bio) : '')+'</div></div><span class="lstate">Message</span></div>'; }).join('');

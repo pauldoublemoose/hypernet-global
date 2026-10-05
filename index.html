@@ -776,7 +776,13 @@ body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 1
 }
 .fmore{ align-self:flex-start; }
 .fmore.static{ min-height:0; font-size:12px; color:var(--dim); }
-.fend{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; padding:24px 16px 32px; color:var(--dim); font-size:12px; }
+/* a closing note: a bold line, what to do, the way there — Home's end (the whole page when nothing is above it), an
+   empty chat list */
+.endnote{ display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:24px 16px 32px; }
+.endnote h3{ margin:0; font-size:14px; line-height:16px; font-weight:bold; color:var(--ink); }
+.endnote p{ margin:0; max-width:60ch; font-size:14px; line-height:20px; color:var(--ink2); }
+.endbtns{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.chempty{ padding-bottom:24px; }
 /* call outs: the one inverted thing — ink ground, paper type, a hairline frame inside; loud by inversion, not size */
 .fco{ position:relative; display:flex; flex-direction:column; gap:8px; padding:16px; background:var(--ink); color:#fff; outline:1px solid #fff; outline-offset:-4px; }
 .fcok{ display:flex; align-items:center; gap:8px; font-size:12px; line-height:16px; color:#c4c4c4; }
@@ -812,7 +818,6 @@ button.fcoe:hover{ background:#2e2e2e; }
 /* following only a few: the rest of the network, below your people */
 .fnet{ background:#fbfaf8; }
 .fnet .fav{ opacity:.6; filter:grayscale(1); }
-.fnetnote{ margin:0; padding:8px 16px; border-bottom:1px solid var(--line); font-size:12px; line-height:16px; color:var(--ink2); }
 /* coming up with your people: things in a list, the date at the right */
 .fuprow{ display:flex; align-items:center; gap:8px; min-height:64px; padding:8px 16px; border-bottom:1px solid var(--line); }
 .fuprow:hover{ background:var(--hover); }
@@ -2944,11 +2949,12 @@ function msgPreview(m, c){
   return who + m.text;
 }
 function unreadChats(){ return S.loggedIn ? Object.keys(UNREADCHAT).filter(function(k){ return UNREADCHAT[k]; }).length : 0; }
-/* no chats yet: message someone straight away */
+/* no chats yet: say so and how one starts (owner, 2026-10-05: "When chat is empty I should see some message: no
+   chats"), then the people to message straight away. New chat is already in the header, so it is named, not repeated */
 function chatsEmptyHTML(){
   var ppl = ncPeopleAll().slice(0, 8);
-  /* New chat is already in the header; the body offers the people */
-  return '<div class="band">'+(ppl.some(function(k){ return PFOLLOW[k]; }) ? 'People you follow' : 'People on Hypernet')+'</div>' +
+  return '<div class="endnote chempty"><h3>No chats yet</h3><p>A chat starts when you press Message on someone’s profile, or New chat.</p></div>' +
+    (ppl.length ? '<div class="band">'+(ppl.some(function(k){ return PFOLLOW[k]; }) ? 'People you follow' : 'People on Hypernet')+'</div>' : '') +
     ppl.map(function(pid){ var p = person(pid);
       return '<div class="chrow" data-act="dm" data-id="'+pid+'" role="button">'+avHTML(pid,'a40')+'<div class="cmn"><div class="cnm">'+esc(p.displayName)+'</div>' +
         '<div class="cpv">@'+esc(p.handle)+(p.bio ? ' · '+esc(p.bio) : '')+'</div></div><span class="lstate">Message</span></div>'; }).join('');
@@ -3635,7 +3641,9 @@ function headHTML(av, sentence, meta, side){
 }
 function peopleCardHTML(list, title, note){
   var via = list.filter(function(x){ return !x.popular; }).reduce(function(a, x){ x.via.forEach(function(v){ if (a.indexOf(v) < 0) a.push(v); }); return a; }, []);
-  var meta = note || (via.length ? 'Suggested from who ' + via.slice(0, 3).map(function(v){ return whoName(v); }).join(', ').replace(/, ([^,]*)$/, ' and $1') + ' follow' : 'The most followed on Hypernet');
+  /* "the most followed" only when someone follows them (a young network may have people nobody follows yet) */
+  var meta = note || (via.length ? 'Suggested from who ' + via.slice(0, 3).map(function(v){ return whoName(v); }).join(', ').replace(/, ([^,]*)$/, ' and $1') + ' follow'
+                      : list.some(function(x){ return x.via.length; }) ? 'The most followed on Hypernet' : 'People on Hypernet');
   return '<section class="fitem ffof"><div class="fhead"><div class="fav"><span class="av a32 sys" aria-hidden="true">'+ic('people',16)+'</span></div>' +
     '<div class="fhd"><h3 class="ffh fsent">'+esc(title)+'</h3><div class="fmeta">'+esc(meta)+'</div></div></div>' +
     '<div class="fstack">' + list.map(function(x){ return fPersonCard(x.id, viaText(x)); }).join('') + '</div></section>';
@@ -3679,34 +3687,45 @@ function coForYouHTML(cos, sc){
       (host ? whoLink(host, true) : '<b>'+esc(c.hostName)+'</b>') + ' posted a call out', meta) + fCalloutCard(x.id, x.ms) + '</article></section>';
 }
 function stepCallout(dir){ COIDX += dir; render(); }
+/* Home starts straight away with what happened; what Home is, and how to see more there, is said once at its end
+   (owner, 2026-10-05: "move this explanation below all the activities … if they scroll to the end then we can instruct
+   them"). Nothing on Home ever says "nothing happened" over something that did: only with nothing above it does the
+   end say so, and then it is the whole page. */
 function homeHTML(){
   var sc = homeScope(), parts = homeParts(), entries = parts.stream, cos = homeCallouts(), h = '';
   HZEXPLAINED = false;
-  /* following nobody: Home is the whole network until you follow someone */
-  if (S.loggedIn && sc.all) h += peopleCardHTML(popularPeople().slice(0, 3), 'Make Home yours',
-    'Home shows what the people you follow do. You don’t follow anyone yet, so here is everyone on Hypernet.');
   h += coForYouHTML(cos, sc);
   h += upHTML();
   h += youLineHTML(parts.mine);
-  /* every so often, the people your friends follow (logged out: the people most followed) */
-  var fof = !S.loggedIn ? popularPeople().slice(0, 3) : sc.all ? [] : fofPeople(), fi = 0, band = '';
+  /* every so often, people to follow: the ones your friends follow, or — following nobody — the most followed. After
+     the third entry (after the last, when there are fewer) and every ninth from there */
+  var fof = sc.all ? popularPeople() : fofPeople(), fi = 0, band = '';
   entries.forEach(function(e, i){
     if (e.band !== band){ band = e.band; h += '<div class="band">'+esc(band)+'</div>'; }
     h += feedEntryHTML(e);
-    if ((i === 2 || (i > 2 && (i - 2) % 9 === 0)) && fi < fof.length){
-      var chunk = S.loggedIn ? fof.slice(fi, fi + 2) : fof; fi += chunk.length;
-      h += peopleCardHTML(chunk, S.loggedIn ? 'People your friends follow' : 'People to follow');
+    if ((i === Math.min(2, entries.length - 1) || (i > 2 && (i - 2) % 9 === 0)) && fi < fof.length){
+      var chunk = fof.slice(fi, fi + (sc.all ? 3 : 2)); fi += chunk.length;
+      h += peopleCardHTML(chunk, sc.all ? 'People to follow' : 'People your friends follow');
     }
   });
-  if (!entries.length) h += '<div class="empty">'+(sc.few ? 'The people you follow haven’t done anything in the last three weeks.' : 'Nothing has happened in your network in the last three weeks.') +
-    (sc.few ? '' : '<br><button class="btn primary" data-act="explorekind" data-id="">'+ic('explore')+'Explore</button>') + '</div>';
-  /* following only a few people: the rest of the network keeps Home alive, below your people and marked as such */
+  /* following only a few people: the rest of the network keeps Home alive, below your people (the end says why) */
   if (parts.net.length){
-    h += '<div class="band netband">Around the network</div><p class="fnetnote">From people you don’t follow yet. Follow a few more and Home becomes yours.</p>';
+    h += '<div class="band netband">Around the network</div>';
     parts.net.forEach(function(e){ h += feedEntryHTML(e, 'fnet'); });
   }
-  if (entries.length || parts.net.length) h += '<div class="fend">That’s the last three weeks. <button class="btn" data-act="explorekind" data-id="events">'+ic('cal')+'All events</button></div>';
-  return h;
+  return h + homeEndHTML(sc, !h, entries.length > 0, parts.net.length > 0);
+}
+/* the end of Home: that's all, what Home shows, how to get more of it — and the way there (Explore's people, all events).
+   It only says what is true of the page above it: "here is everyone" under someone's activity, "the rest of Hypernet
+   fills in" under Around the network, "haven't done anything" only when nothing is there at all */
+function homeEndHTML(sc, empty, stream, net){
+  var say = sc.all ? 'Home shows what the people you follow do. You don’t follow anyone yet' + (stream ? ', so here is everyone on Hypernet.' : '.') + ' Follow a few people to make it yours.'
+          : empty ? 'The people you follow haven’t done anything in the last three weeks. Follow more people to see more here.'
+          : net ? 'Home shows what the people you follow do. Until you follow a few more, the rest of Hypernet fills in below them.'
+          : 'Home shows what the people you follow do. Follow more people to see more here.';
+  return '<section class="fend endnote'+(empty ? ' fempty' : '')+'" aria-label="End of Home"><h3>'+(empty ? 'Nothing here yet' : 'That’s the last three weeks')+'</h3>' +
+    '<p>'+esc(say)+'</p><div class="endbtns"><button class="btn'+(empty || sc.all || sc.few ? ' primary' : '')+'" data-act="explorekind" data-id="people">'+ic('people')+'Find people</button>' +
+    '<button class="btn" data-act="explorekind" data-id="events">'+ic('cal')+'All events</button></div></section>';
 }
 function renderHome(){
   var lb = $('listbody'), top = lb.scrollTop;

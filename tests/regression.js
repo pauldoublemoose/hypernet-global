@@ -53,7 +53,11 @@
    its container (Home 640, lists 720, Explore's overview and the calendar 1120, the heading on its edge), Explore's
    overview is one row of whole squares per section, and the window steps the list aside (beside it at 1280, 1440 with
    and without the dock and 1920, the list whole and clickable; over the centre only where both can't fit), with no
-   overflow at 1920 either. Checks that spoke of Home logged out now use an account that follows nobody. */
+   overflow at 1920 either. Checks that spoke of Home logged out now use an account that follows nobody;
+   2026-10-05 (v5-homechats): Home starts with what happened and ends with what it is and how to see more (Find people,
+   All events) — the whole page only when nothing is above it, never "nothing happened" under activity (offline, and
+   online on a mocked /api/bootstrap: only your own row, following a quiet person, nothing at all); an empty chat list
+   says "No chats yet" and how a chat starts, over the people to message when there are any. */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch(e){
   try { ({ chromium } = require('playwright-core')); } catch(e2){
@@ -700,7 +704,11 @@ async function overflowEverywhere(p, label){
     /* a new account follows nobody: the whole network, and a nudge to follow people */
     await c.evaluate(() => doLogout()); await c.waitForTimeout(200);
     await join(c, 'Nora Field', 'nora' + kind);
-    ok(await ev(c, () => /Make Home yours/.test(document.querySelector('#listbody').textContent) && document.querySelectorAll('#listbody .fitem[data-ts]').length >= 20), kind + ': following nobody, Home is the whole network with a nudge to follow people');
+    /* 2026-10-05 (v5-homechats): the nudge is at the end of Home, not over it */
+    ok(await ev(c, () => { const lb = document.querySelector('#listbody'), end = lb.querySelector('.fend');
+      return document.querySelectorAll('#listbody .fitem[data-ts]').length >= 20 && !!end && lb.lastElementChild === end && /You don’t follow anyone yet/.test(end.textContent) &&
+        !!end.querySelector('[data-act="explorekind"][data-id="people"]') && !/Make Home yours/.test(lb.textContent); }),
+       kind + ': following nobody, Home is the whole network with a nudge to follow people at its end');
     ok(!c.errors.length, kind + ': no console errors (v1 Home / Explore) ' + c.errors.join(' '));
     ok((await overflow(c)) <= 0, kind + ': no overflow (v1 Home)');
   }
@@ -1566,6 +1574,96 @@ async function overflowEverywhere(p, label){
     ok(hm.cl === 0 && hm.cw === hm.panelW - hm.sb && hm.head === 16 && ex.cw === ex.panelW - ex.sb && cols === 3 && wv,
        '768: Home and Explore fill the white, the overview is three squares wide, an opened event takes the centre ' + JSON.stringify([hm, ex, cols, wv]));
     ok(!c.errors.length && (await overflow(c)) <= 0, '768: no console errors, no overflow (layout)');
+  }
+
+  /* 2026-10-05 (v5-homechats): Home never says "nothing happened" over something that did; it starts straight away with
+     what happened, and what Home is (and how to see more there) is said once at its end — the whole page when there is
+     nothing at all. An empty chat list says "No chats yet" and how a chat starts. Offline states run on the fixtures,
+     online ones on a mocked /api/bootstrap (window.HN_BACKEND set before the page loads, every /api/ call answered here) */
+  {
+    const NOWMS = NOWPIN ? NOWPIN.getTime() : Date.now();
+    const ME = '11111111-1111-4111-8111-111111111111', ANNA = '22222222-2222-4222-8222-222222222222', E1 = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const P = (id, handle, name) => ({ id, handle, displayName:name, bio:'', skills:[], cities:['Brno'], look:null, lastSeenAt:null, createdAt:'2026-09-01T10:00:00Z' });
+    /* o.mine: you are going to the one event (a row 30 minutes old) · o.follow: who you follow · o.alone: nobody else here */
+    const boot = o => ({ hypernet:1, me:P(ME, 'hana', 'Hana Cerna'), login:null,
+      people:[P(ME, 'hana', 'Hana Cerna')].concat(o.alone ? [] : [P(ANNA, 'annav', 'Anna Vale')]), follows:(o.follow || []).map(x => [ME, x]),
+      events:[{ id:E1, slug:'brno-burn', title:'Brno Burn', startsOn:new Date(NOWMS + 16 * 86400000).toISOString().slice(0, 10), endsOn:null, startTime:null, endTime:null,
+        timezone:'Europe/Prague', hostId:null, hostName:'Brno Burn', description:'A small burn.', kind:'burn', privacy:'everyone', city:'Brno', region:null, country:'CZ',
+        venue:null, access:null, whatToBring:[], details:{}, look:null, source:'import', previousEditionId:null }],
+      rsvps:o.mine ? [{ personId:ME, eventId:E1, status:'going', went:false, shiftIndex:null, updatedAt:new Date(NOWMS - 1800000).toISOString() }] : [],
+      promotions:[], horizons:[], hzFollows:[], callouts:[], replies:[], chats:[],
+      activity:o.mine ? [{ actor:ME, verb:'going', objType:'event', objId:E1, ts:new Date(NOWMS - 1800000).toISOString(), extra:null }] : [] });
+    const online = async (kind, o) => {
+      const c = await ctx(kind);
+      await c.addInitScript(() => { window.HN_BACKEND = { branch:'test' }; });
+      await c.context().route('**/api/**', r => { const u = r.request().url();
+        return r.fulfill({ status:200, contentType:'application/json', body:JSON.stringify(/\/api\/bootstrap/.test(u) ? boot(o) : /\/api\/chats/.test(u) ? { chats:[] } : {}) }); });
+      await c.goto(URL + '#/home'); await c.waitForTimeout(700);
+      return c;
+    };
+    /* what Home says: is anything on it, does anything say "nothing", is the end last, what it says */
+    const homeSays = c => ev(c, () => { const lb = document.getElementById('listbody'), end = lb.querySelector('.fend'), kids = [...lb.children];
+      return { online:ONLINE, kids:kids.map(x => x.className.split(' ')[0] || x.tagName), stuff:!!lb.querySelector('.fitem, .costrip, .fup'),
+               nothing:/Nothing here yet|haven’t done anything|Nothing has happened/.test(lb.textContent), last:!!end && kids[kids.length - 1] === end,
+               head:end ? end.querySelector('h3').textContent : '', say:end ? end.querySelector('p').textContent : '',
+               people:!!(end && end.querySelector('[data-act="explorekind"][data-id="people"]')), primary:!!(end && end.querySelector('.btn.primary[data-id="people"]')),
+               old:!!lb.querySelector('.empty, .fnetnote') || /Make Home yours/.test(lb.textContent) }; });
+    const chatSays = async (c, kind) => {
+      if (kind === 'phone') await c.tap('#tabbar [data-id="chats"]'); else if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right');
+      await c.waitForTimeout(350);
+      return ev(c, () => { const el = document.getElementById('chats'), e = el.querySelector('.chempty');
+        return { shown:el.offsetParent !== null, head:e ? e.querySelector('h3').textContent : '', how:e ? e.querySelector('p').textContent : '', band:!!el.querySelector('.band'),
+                 rows:el.querySelectorAll('.chrow[data-act="dm"]').length, chats:el.querySelectorAll('.chrow[data-act="chatsel"]').length }; });
+    };
+    for (const kind of ['phone', 'desk']){
+      /* offline, following nobody: the stream first, the nudge at its end; Find people goes to Explore's people */
+      let c = await ctx(kind);
+      await open(c, '#/home', true);
+      await guest(c, 'Hugo Home', 'hugohome');
+      let s = await homeSays(c);
+      ok(s.stuff && !s.nothing && !s.old && s.last && /^(costrip|band|fitem)$/.test(s.kids[0]) && s.head === 'That’s the last three weeks' &&
+         /You don’t follow anyone yet, so here is everyone on Hypernet/.test(s.say) && s.people && s.primary,
+         kind + ': following nobody, Home starts with what happened and ends saying what Home is and how to see more ' + JSON.stringify(Object.assign({}, s, { kids:s.kids.slice(0, 3) })));
+      ok(await ev(c, () => !!document.querySelector('#listbody .ffof .ffh') && document.querySelector('#listbody .ffof .ffh').textContent === 'People to follow'), kind + ': people to follow are in the stream, not over it');
+      const chOff = await chatSays(c, kind);
+      ok(chOff.shown && chOff.head === 'No chats yet' && /Message on someone’s profile/.test(chOff.how) && chOff.band && chOff.rows >= 5 && !chOff.chats,
+         kind + ': a new account’s Chats says "No chats yet", how a chat starts, then people to message ' + JSON.stringify(chOff));
+      if (kind === 'phone'){ await c.tap('#tabbar [data-id="home"]'); await c.waitForTimeout(300); }
+      await c.evaluate(() => { const l = document.getElementById('listbody'); l.scrollTop = l.scrollHeight; }); await c.waitForTimeout(150);
+      await c.click('#listbody .fend [data-act="explorekind"][data-id="people"]'); await c.waitForTimeout(400);
+      ok(await ev(c, () => S.folder.kind === 'explore' && S.folder.id === 'people' && location.hash === '#/explore/people'), kind + ': Find people at the end of Home goes to Explore → People');
+      /* following one person: theirs, then Around the network — no note in between, no "nothing", the end says why */
+      await c.goto(URL + '#/home'); await c.waitForTimeout(350);
+      await c.evaluate(() => followP('p-mira')); await c.waitForTimeout(300);
+      s = await homeSays(c);
+      ok(s.kids.indexOf('band') >= 0 && await ev(c, () => !!document.querySelector('#listbody .netband')) && !s.nothing && !s.old && s.last && /the rest of Hypernet fills in/.test(s.say),
+         kind + ': following one person, Around the network carries no note; the end says the rest of Hypernet fills in ' + JSON.stringify(s.say));
+      ok(!c.errors.length && (await overflow(c)) <= 0, kind + ': no console errors, no overflow (Home end, offline) ' + c.errors.join(' '));
+      await c.context().close();
+      /* online, only your own row: "You: going to …", then the end — never "nothing happened" under it */
+      c = await online(kind, { mine:true });
+      s = await homeSays(c);
+      ok(s.online && JSON.stringify(s.kids) === '["fitem","fend"]' && !s.nothing && s.head === 'That’s the last three weeks' && !/here is everyone/.test(s.say) && /Follow a few people/.test(s.say),
+         kind + ': online with only your own row, Home is your line and its end, with no "nothing happened" ' + JSON.stringify(s));
+      if (kind === 'phone') await shot(c, 'homechats-only-mine-phone');
+      const chOn = await chatSays(c, kind);
+      ok(chOn.shown && chOn.head === 'No chats yet' && chOn.rows === 1 && !chOn.chats, kind + ': online with no chats, Chats says "No chats yet" over the one person to message ' + JSON.stringify(chOn));
+      await c.context().close();
+      /* online, following someone who did nothing, and your own row: still no "haven't done anything" */
+      c = await online(kind, { mine:true, follow:[ANNA] });
+      s = await homeSays(c);
+      ok(s.online && s.stuff && !s.nothing && s.last && /Follow more people to see more here/.test(s.say), kind + ': online, following a quiet person, your line is not followed by "haven’t done anything" ' + JSON.stringify(s));
+      await c.context().close();
+      /* online, nothing at all and nobody else here: the end is the whole page; Chats has no people band */
+      c = await online(kind, { alone:true });
+      s = await homeSays(c);
+      ok(s.online && JSON.stringify(s.kids) === '["fend"]' && s.head === 'Nothing here yet' && s.people && s.primary, kind + ': online with nothing at all, the end is the whole page ' + JSON.stringify(s));
+      if (kind === 'desk') await shot(c, 'homechats-nothing-desk');
+      const chAlone = await chatSays(c, kind);
+      ok(chAlone.head === 'No chats yet' && !chAlone.band && !chAlone.rows, kind + ': with nobody to message, Chats is just "No chats yet" ' + JSON.stringify(chAlone));
+      ok(!c.errors.length && (await overflow(c)) <= 0, kind + ': no console errors, no overflow (Home end, Chats, online) ' + c.errors.join(' '));
+      await c.context().close();
+    }
   }
 
   /* ---------------- tablet ---------------- */

@@ -585,6 +585,12 @@ body.is-phone .dbar .dbtn{ height:44px; }
 .fhelp{ font-size:var(--fs-s); color:var(--dim); }
 .ferr{ font-size:var(--fs-s); font-weight:bold; color:var(--ink); }
 .ferr::before{ content:"\26A0\FE0E  "; }
+/* the ⚠ only with something to say: an empty error line is not drawn at all (2026-10-05) */
+.ferr:empty{ display:none; }
+/* the login code's "Send a new code (0:30)": at the footer's left, in line with Back and Log in; its countdown in
+   figures of one width, so the label doesn't shiver as it counts */
+.dfoot .lgresend{ margin-right:auto; font-variant-numeric:tabular-nums; }
+body.is-phone .dfoot .btn.lgresend{ flex:0 0 auto; }
 input[aria-invalid="true"]{ outline:1px solid #000; outline-offset:-4px; }
 .demolink{ margin:4px 0 0; font-size:var(--fs-s); color:var(--dim); }
 .demolink button{ min-height:32px; padding:0; border:0; background:none; color:var(--ink2); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
@@ -647,7 +653,6 @@ body.is-phone .demolink button{ min-height:44px; }
 .czdrop .czhint{ position:absolute; left:0; right:0; bottom:0; padding:3px 0; background:rgba(0,0,0,.55); color:#fff; font:bold 12px var(--sys); text-align:center; }
 .czimgside{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:6px; }
 .czimgside .fhelp{ margin:0; line-height:1.4; }
-.czimgside .ferr:empty{ display:none; }
 .czfile{ position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; pointer-events:none; }
 .previewbox{ padding:12px; max-height:470px; overflow:auto; background:#fff; box-shadow:var(--in); }
 .plabel{ margin:10px 0 6px; font:bold 12px var(--sys); color:var(--dim); }

@@ -41,10 +41,14 @@
      The numbers live in CW (the layout engine), which sets --pl / --pr: the container's insets from the centre's edges,
      and --hr: the heading's right inset. Every container starts at the white's left (2026-10-05), so --pl is 0 on every
      screen */
-  --pl:0px; --pr:0px; --sbw:0px; --hr:0px;
+  --pl:0px; --pr:0px; --sbw:0px; --hr:0px; --fr:0px;
   --out: inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white), inset -2px -2px 0 var(--shadow), inset 2px 2px 0 var(--face-lt);
   --in:  inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white), inset 2px 2px 0 var(--dark), inset -2px -2px 0 var(--face);
   --thin: inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white);
+  /* a sunken field that scrolls (the list, the window's page, the sidebar, a chat, a dialog's list) is framed by a real
+     2px border, the same two lines as --in, so its scrollbar sits inside the frame, flush against it, the way a Windows
+     list box's does (2026-10-05, v5-retro: a frame painted over the content covered the bar's edges and read as a gap) */
+  --sunk:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='6' shape-rendering='crispEdges'%3E%3Crect width='6' height='6' fill='%23fff'/%3E%3Crect x='1' y='1' width='4' height='4' fill='%23d4d0c8'/%3E%3Crect x='1' y='1' width='4' height='1' fill='%23404040'/%3E%3Crect x='1' y='1' width='1' height='4' fill='%23404040'/%3E%3Crect width='6' height='1' fill='%23808080'/%3E%3Crect width='1' height='6' fill='%23808080'/%3E%3C/svg%3E") 2;
 }
 @media (pointer:coarse){ :root{ --ctl:44px; --act:44px; } }
 *{ box-sizing:border-box; }
@@ -112,12 +116,31 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 #app.dock-over #chats{ position:absolute; top:8px; right:8px; bottom:8px; z-index:20; width:min(344px, calc(100% - var(--nav-w) - 40px));
   background:var(--face); padding:0 0 0 6px; box-shadow:-3px 0 0 var(--face), -4px 0 0 var(--shadow), -8px 0 16px rgba(0,0,0,.18); }
 #center{ flex:1 1 auto; }
-.panel{ flex:1; min-height:0; overflow:auto; background:#fff; box-shadow:var(--in); overscroll-behavior:contain; }
+.panel{ flex:1; min-height:0; overflow:auto; background:#fff; overscroll-behavior:contain; }
+.panel, .msgs, .picklist, .previewbox, .pvpage{ border:2px solid var(--face); border-image:var(--sunk); box-shadow:none; }
+/* the scrollbar: Windows' own, 16 wide — the dithered track, a raised thumb, raised arrow buttons with a small black
+   triangle that press in. With a mouse only: a touch screen keeps its own thin overlay bars (2026-10-05, v5-retro) */
 @media (pointer:fine){
-  .panel::-webkit-scrollbar{ width:16px; height:16px; }
-  .panel::-webkit-scrollbar-track{ background:repeating-conic-gradient(#fff 0 25%, #d4d0c8 0 50%) 0 0/2px 2px; }
-  .panel::-webkit-scrollbar-thumb{ background:var(--face); box-shadow:var(--out); }
+  ::-webkit-scrollbar{ width:16px; height:16px; }
+  ::-webkit-scrollbar-track{ background:repeating-conic-gradient(#fff 0 25%, #d4d0c8 0 50%) 0 0/2px 2px; }
+  ::-webkit-scrollbar-thumb{ background:#d4d0c8; box-shadow:inset -1px -1px 0 #404040, inset 1px 1px 0 #fff, inset -2px -2px 0 #808080, inset 2px 2px 0 #e8e5df; }
+  ::-webkit-scrollbar-corner{ background:#d4d0c8; }
+  /* the triangle on whole pixels (7×4 in 16: 4 in, 6 down), one pixel down and right when pressed, as Windows did */
+  ::-webkit-scrollbar-button{ display:block; width:16px; height:16px; background-color:#d4d0c8; background-repeat:no-repeat; background-position:4px 6px;
+    box-shadow:inset -1px -1px 0 #404040, inset 1px 1px 0 #fff, inset -2px -2px 0 #808080, inset 2px 2px 0 #e8e5df; }
+  ::-webkit-scrollbar-button:active{ box-shadow:inset 0 0 0 1px #808080; background-position:5px 7px; }
+  ::-webkit-scrollbar-button:horizontal{ background-position:6px 4px; }
+  ::-webkit-scrollbar-button:horizontal:active{ background-position:7px 5px; }
+  ::-webkit-scrollbar-button:vertical:start:increment, ::-webkit-scrollbar-button:vertical:end:decrement,
+  ::-webkit-scrollbar-button:horizontal:start:increment, ::-webkit-scrollbar-button:horizontal:end:decrement{ display:none; }
+  ::-webkit-scrollbar-button:vertical:start:decrement{ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='4' shape-rendering='crispEdges'%3E%3Cpath d='M3 0h1v1h1v1h1v1h1v1H0V3h1V2h1V1h1z'/%3E%3C/svg%3E"); }
+  ::-webkit-scrollbar-button:vertical:end:increment{ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='4' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h7v1H6v1H5v1H4v1H3V3H2V2H1V1H0z'/%3E%3C/svg%3E"); }
+  ::-webkit-scrollbar-button:horizontal:start:decrement{ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='7' shape-rendering='crispEdges'%3E%3Cpath d='M3 0h1v7H3V6H2V5H1V4H0V3h1V2h1V1h1z'/%3E%3C/svg%3E"); }
+  ::-webkit-scrollbar-button:horizontal:end:increment{ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='7' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h1v1h1v1h1v1h1v1H3v1H2v1H1v1H0z'/%3E%3C/svg%3E"); }
 }
+/* Firefox has no ::-webkit-scrollbar: its own bar in the same greys. Only there — in Chrome, scrollbar-color (inherited)
+   would switch the Windows bar above off */
+@supports not selector(::-webkit-scrollbar){ @media (pointer:fine){ :root{ scrollbar-color:#d4d0c8 #eeece8; } } }
 #appbar, #tabbar{ display:none; }
 /* logged out, the whole app is a preview: a bar across the bottom says so and offers the way in (Spotify's pattern).
    It is a row of the app's own column, so it takes its space instead of covering anything. */
@@ -176,10 +199,11 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
    its edges, 16 inside (the rows' own gutter). What stands on the grey above the white — the heading and its subtitle,
    the calendar's bar — starts at the white's own left edge ("Explore should be left-aligned with the white rectangle
    below it"); the calendar bar's tools end where the month does */
-#app.desk #chead, #app.desk .calbar{ padding-left:var(--pl); padding-right:calc(max(var(--pr), var(--sbw)) + 16px); }
+#app.desk #chead, #app.desk .calbar{ padding-left:var(--pl); padding-right:calc(max(var(--pr), var(--sbw)) + 16px + var(--fr)); }
 /* the heading's tools end at the white's right edge in every view, so the List / Calendar switch keeps its place */
-#app.desk #chead{ padding-right:calc(max(var(--hr), var(--sbw)) + 16px); }
-#app.desk #listbody{ scrollbar-gutter:stable; padding:16px max(0px, calc(var(--pr) - var(--sbw))) 0 var(--pl); }
+#app.desk #chead{ padding-right:calc(max(var(--hr), var(--sbw)) + 16px + var(--fr)); }
+/* the first band (or the first entry) starts at the white's top edge (2026-10-05, v5-retro: "i dont like the space above today") */
+#app.desk #listbody{ scrollbar-gutter:stable; padding:0 max(0px, calc(var(--pr) - var(--sbw))) 0 var(--pl); }
 #app.desk .shelves > .shelf:first-child{ margin-top:8px; }
 #app.desk .calpanel{ padding:16px calc(var(--pr) + 16px) 16px calc(var(--pl) + 16px); }
 .calpanel{ display:flex; flex-direction:column; container:cal / inline-size; }
@@ -205,9 +229,14 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .panempty{ display:none; }
 
 /* rows */
-/* a band is Outlook's "group by" bar: grey, one line, the group's name and how many */
-.band{ position:sticky; top:0; z-index:6; display:flex; align-items:center; gap:8px; min-height:32px; padding:0 16px; background:var(--face-lt);
-  border-top:1px solid #fff; border-bottom:1px solid var(--rule); font:bold 12px/16px var(--sys); color:var(--ink); }
+/* a band is Outlook's "group by" line (2026-10-05, v5-retro: "the grey line everywhere"): the group's name in bold and
+   how many, then one grey hairline running to the container's right edge, as the hairlines between entries do — on the white, not a grey block. It stays at the
+   top while its group scrolls under it (the white keeps the rows from showing through). It lies over the hairline under
+   the entry before it, so a group starts with one line, never two */
+.band{ position:sticky; top:0; z-index:6; display:flex; align-items:center; gap:8px; min-height:32px; margin-top:-1px; padding:0 0 0 16px;
+  background:#fff; font:bold 12px/16px var(--sys); color:var(--ink); }
+.band::after{ content:""; order:1; flex:1 1 0; min-width:16px; height:1px; background:var(--rule); }
+.band:first-child{ margin-top:0; }
 .band .cnt{ color:var(--dim); font-weight:normal; }
 /* a thing in a list: its square (48), title over its facts, its date and states at the right */
 .row{ display:flex; align-items:center; gap:8px; min-height:64px; padding:8px 16px; border-bottom:1px solid var(--line); }
@@ -830,8 +859,12 @@ body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 1
 .fsent b{ color:var(--ink); }
 .fmeta{ font-size:12px; line-height:16px; color:var(--dim); }
 .fexpl{ color:var(--dim); }
-.fwho{ display:inline; padding:0; border:0; background:none; font:inherit; font-weight:bold; color:var(--ink); cursor:pointer; text-align:left; }
+/* a name or a title in a sentence is a link that flows as words: a long title wraps inside the sentence and ", followed
+   Sebastian" keeps its place after it (a <button> can't: it is one box, so a long title broke the line around it) */
+.fwho{ display:inline; padding:0; border:0; background:none; font:inherit; font-weight:bold; color:var(--ink); cursor:pointer; text-align:left;
+  text-decoration:none; white-space:normal; overflow-wrap:anywhere; }
 .fwho:hover{ text-decoration:underline; }
+.fwho:focus-visible{ outline:1px dotted #000; outline-offset:1px; }
 /* how long ago is legible; under a day old it is in ink */
 .ftime{ font:12px/16px var(--sys); color:var(--dim); white-space:nowrap; }
 .ftime.fresh{ color:var(--ink); font-weight:bold; }
@@ -909,11 +942,12 @@ button.fcoe:hover{ background:#2e2e2e; }
 .fcard .btn, .fcard .pill, .fuprow .soc{ position:relative; z-index:1; }
 /* call outs for you: one at a time, stepped in the band */
 .costrip .fitem{ border-bottom:0; }
-.band .bx{ margin-left:auto; display:flex; gap:4px; }
+.band .bx{ order:2; display:flex; gap:4px; padding-right:16px; }
 .band .bx .ib{ width:24px; height:24px; }
 .band .bx .ib[disabled]{ color:#8a8a8a; cursor:default; }
-/* you, in one line */
-.fitem.fyou{ background:var(--face-lt); }
+/* you, in one line: an entry like the others on the white, a hairline under it — only quieter, a header line with
+   nothing under it, so 8 above and below instead of 16 (2026-10-05, v5-retro: no grey fill, which blurred into the bands) */
+.fitem.fyou{ padding-top:8px; padding-bottom:8px; }
 /* following only a few: the rest of the network, below your people */
 .fnet{ background:#fbfaf8; }
 .fnet .fav{ opacity:.6; filter:grayscale(1); }
@@ -1004,11 +1038,8 @@ button.fcoe:hover{ background:#2e2e2e; }
 .mbody{ white-space:pre-wrap; }
 .field .opt{ font-weight:normal; font-size:12px; color:var(--dim); }
 .fhint{ font-size:12px; line-height:1.4; color:var(--dim); }
-/* the list's sunken frame is drawn on top of its rows: a band, a hovered or a selected row (Coming up with your people,
-   a lit list row) never paints over the frame's left edge */
-#app.desk #listcol{ position:relative; }
-#app.desk #listcol::after{ content:""; position:absolute; inset:0; z-index:8; box-shadow:var(--in); pointer-events:none; }
-#app.desk #listbody{ box-shadow:none; }
+/* the list's sunken frame is its border (--sunk): the rows scroll inside it, so a band, a hovered or a selected row
+   never paints over it, and the scrollbar sits inside it, flush (v5-retro; was a frame painted over the rows and the bar) */
 /* people your friends follow */
 .ffh.fsent{ font-weight:bold; color:var(--ink); }
 .av.sys{ background:var(--face); color:var(--ink2); box-shadow:var(--out); }
@@ -1044,7 +1075,7 @@ input[type=search]::-webkit-search-cancel-button{ -webkit-appearance:none; displ
 #app.phone.scr-you #nav{ display:flex; }
 #app.phone.scr-chats #chats{ display:flex; }
 #app.phone.scr-you #center, #app.phone.scr-chats #center{ display:none; }
-#app.phone .panel{ box-shadow:none; }
+#app.phone .panel{ box-shadow:none; border:0; }
 #app.phone #chead{ min-height:0; padding:8px 10px; border-bottom:1px solid var(--shadow); box-shadow:0 1px 0 #fff; gap:8px; flex-wrap:nowrap; }
 #app.phone #chead .ct{ display:none; }
 #app.phone #chead .ctools{ flex:1; justify-content:space-between; flex-wrap:nowrap; }
@@ -1062,11 +1093,11 @@ input[type=search]::-webkit-search-cancel-button{ -webkit-appearance:none; displ
 #app.phone #win > .dbar .dtitle{ white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-height:16px; }
 #app.phone #win > .dbar .dtitle small{ display:block; font-size:12px; font-weight:normal; opacity:.8; }
 #app.phone .wicon, #app.phone .wicon .sq, #app.phone .wicon .av, #app.phone .wicon .wglyph{ width:24px; height:24px; flex-basis:24px; }
-#app.phone #win > #dscroll{ margin:0; box-shadow:none; }
+#app.phone #win > #dscroll{ margin:0; box-shadow:none; border:0; }
 #app.phone .calbar{ padding:8px 10px; }
 #app.phone .phead{ display:none; }
 #app.phone .conv{ gap:0; }
-#app.phone .msgs{ box-shadow:none; }
+#app.phone .msgs{ box-shadow:none; border:0; }
 #app.phone .composer{ padding:8px; background:var(--face); box-shadow:inset 0 1px 0 #fff, 0 -1px 0 var(--shadow); }
 #app.phone .row{ min-height:64px; padding:8px 16px; }
 #app.phone .nrow{ min-height:48px; margin:0; padding:0 16px; font-size:14px; border-bottom:1px solid var(--line); }
@@ -3834,7 +3865,13 @@ function whoName(pid, full){
   if (full) return p.displayName || '';
   return nameClash(pid) && p.handle ? '@' + p.handle : firstName(pid);
 }
-function objLink(type, id, label){ return '<button type="button" class="fwho" data-act="row" data-type="'+type+'" data-id="'+id+'">'+esc(label)+'</button>'; }
+/* a name or a title inside a sentence: a link (to the thing's own address) that flows as words — a button is one box
+   and broke the sentence around a long title. A click opens it in the window, as a button did (the app's click
+   handler takes [data-act] links and keeps the browser from following the href); Enter does the same */
+function objLink(type, id, label){
+  var href = ''; try { href = ' href="#/' + esc(itemPath({ type:type, id:id })) + '"'; } catch(e){}
+  return '<a class="fwho"'+href+' data-act="row" data-type="'+type+'" data-id="'+id+'">'+esc(label)+'</a>';
+}
 function whoLink(pid, full){ return objLink('person', pid === myActor() ? 'self' : pid, whoName(pid, full)); }
 /* one name in full; two or three by first name; more as "Anna, Rio and 2 others". You come first. */
 function namesHTML(ids, link){
@@ -4259,23 +4296,24 @@ function centreKind(){
   if (isOverview() || isCal()) return 'wide';
   return 'list';
 }
-var SBW = null;
+var SBW = null, FR = 2;
 function layoutCentre(){
   var app = $('app'), c = $('center'), lb = $('listbody');
   L.fit = null; L.win = ''; L.wg = null;
   if (L.phone){ L.cw = window.innerWidth; app.classList.remove('win-over', 'win-cover'); return; }
-  /* the list's scrollbar (16 with a mouse, 0 where scrollbars float): the heading's right edge keeps clear of it */
-  if (lb.offsetParent) SBW = lb.offsetWidth - lb.clientWidth;
-  var sb = SBW != null ? SBW : (window.matchMedia && matchMedia('(pointer:fine)').matches ? 16 : 0);
+  /* the list's scrollbar (16 with a mouse, 0 where scrollbars float): the heading's right edge keeps clear of it. It sits
+     inside the white's sunken frame (FR, its 2px border), flush against it */
+  if (lb.offsetParent){ SBW = lb.offsetWidth - lb.clientWidth - 2 * lb.clientLeft; FR = lb.clientLeft; }
+  var sb = SBW != null ? SBW : (window.matchMedia && matchMedia('(pointer:fine)').matches ? 16 : 0), fr = FR;
   /* a list with a calendar keeps one slot, the calendar's, in both its views (2026-10-05): the list sits at the slot's
      left and the heading spans the slot, so the List / Calendar switch at its right never moves when you switch. The
      slot, like every container, starts at the white's left */
-  var C = c.clientWidth, slot = Math.min(CW[viewsOf().indexOf('calendar') >= 0 ? 'wide' : centreKind()], C);
+  var C = c.clientWidth, slot = Math.min(CW[viewsOf().indexOf('calendar') >= 0 ? 'wide' : centreKind()], C - 2 * fr);
   var cw = Math.min(CW[centreKind()], slot), pl = 0;
   if (S.stack.length){
     /* a tablet's chat dock floats over the centre's right: the window keeps clear of it */
     var over = L.dockOver && L.right, CE = C - (over ? $('chats').offsetWidth + WEDGE : 0);
-    var right = over ? CE : C - sb - WEDGE, ww = Math.min(WINW.max, right - WEDGE - LKEEP);
+    var right = over ? CE : C - fr - sb - WEDGE, ww = Math.min(WINW.max, right - WEDGE - LKEEP);
     /* offsets in #main, the window's own frame (#cbody's is already there: #center isn't positioned) */
     var top = $('cbody').offsetTop, bottom = c.offsetTop + c.offsetHeight;
     if (ww >= WINW.min){
@@ -4288,8 +4326,9 @@ function layoutCentre(){
       L.wg = { x:c.offsetLeft, y:c.offsetTop, w:CE === C ? C : CE >= WINW.min ? CE : Math.min(C, Math.max(WINW.min, C - 64)), h:c.offsetHeight };
     }
   }
-  L.cw = cw; L.pl = pl; L.pr = C - pl - cw;
-  app.style.setProperty('--pl', pl + 'px'); app.style.setProperty('--pr', L.pr + 'px'); app.style.setProperty('--sbw', sb + 'px');
+  /* the container is measured inside the frame: Home's 640 is 640 of white */
+  L.cw = cw; L.pl = pl; L.pr = Math.max(0, C - 2 * fr - pl - cw);
+  app.style.setProperty('--pl', pl + 'px'); app.style.setProperty('--pr', L.pr + 'px'); app.style.setProperty('--sbw', sb + 'px'); app.style.setProperty('--fr', fr + 'px');
   /* the heading's tools sit at the white's right edge (2026-10-05: "align the calendar all the way to right"), wherever
      the view's container ends — a window lies over it and never changes it */
   app.style.setProperty('--hr', '0px');

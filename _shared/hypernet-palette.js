@@ -22,7 +22,8 @@
       the accent, or plain 8% of the ink if that would cost the tag's text its 4.5:1.
    5. Accent. Colour 2 when given; else made from the ground's hue (L 0.52 on light pages, 0.78 on dark, chroma
       0.09–0.19), or the ink itself when the page is grey. `accent` is the colour as a fill (the square's glyph,
-      bullets, marks); `accentInk` is the same hue moved in lightness until it reads as text (4.5:1) on the ground.
+      bullets, marks); `accentInk` is the same hue moved in lightness until it reads as text on the ground (4.6:1 —
+      a hair over AA, so anti-aliased type still clears it).
    6. Header (the band with the square and the title). Colour 3 when given, exactly as picked; else, when step 1 had to
       move the page off colour 1, colour 1 itself — the colour you chose stays, at full strength, where the type is
       large; else colour 1 a step deeper on a light page (L −0.06, a little more chroma) or a step raised on a dark one
@@ -143,13 +144,13 @@
     return {
       dark: !g.light, nudged: g.hex !== page,
       bg: g.hex, ink: ink, dim: dimFor(ink, g.hex),
-      accent: acc, accentInk: reach(acc, g.hex, 4.5, !g.light), onAccent: contrast(white, acc) >= contrast(dark, acc) ? white : dark,
+      accent: acc, accentInk: reach(acc, g.hex, 4.6, !g.light), onAccent: contrast(white, acc) >= contrast(dark, acc) ? white : dark,
       rule: mix(g.hex, ink, g.light ? 0.26 : 0.34), line: mix(g.hex, ink, g.light ? 0.12 : 0.16), hover: mix(g.hex, ink, 0.06),
       chip: chip,
-      band: b.hex, bandInk: bink, bandDim: dimFor(bink, b.hex), bandAccent: reach(acc, b.hex, 4.5, !b.light),
+      band: b.hex, bandInk: bink, bandDim: dimFor(bink, b.hex), bandAccent: reach(acc, b.hex, 4.6, !b.light),
       bandRule: mix(b.hex, bink, b.light ? 0.26 : 0.30),
       /* 7. the square: the ground, its glyph the accent at 3:1 */
-      sq: g.hex, sqGlyph: reach(acc, g.hex, 3, !g.light)
+      sq: g.hex, sqGlyph: reach(acc, g.hex, 3.1, !g.light)
     };
   }
   HN_PALETTE.contrast = contrast;

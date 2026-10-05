@@ -17,7 +17,7 @@
    and the 2026-09-27 owner changes: the logged-out preview bar, one-view Home, the always-there sidebar;
    one button style on every event page; 2026-09-28: the reading pane closed to an empty pane (now: the window, below), event / horizon / person share one page template, uncustomised things are plain, a customised profile
    persists; and 2026-10-01: a look is three colours and a square image on the calm plain layout (no canvas art, nothing
-   moves, nothing covers a control, text AA on every look), Customize shows exactly 3 colour inputs and 1 image upload,
+   moves, nothing covers a control, text AA on every look), Customize shows exactly 3 colour inputs and 1 image upload (2026-10-05: 1 to 3, in Edit),
    an uploaded image shows in the page square and in list rows and survives reload, a too-faint text colour is
    corrected, bad files are refused, the profile photo comes from Edit profile, old looks migrate; and 2026-10-01 (v1): Home is the network's
    activity (newest first, an inverted call-out card, friends of friends, your own actions live at the top, the whole
@@ -62,7 +62,17 @@
    end at 1280, 1440, 1920 and 768 — a list with a calendar keeps the calendar's slot — and the phone's app bar), ‹ Today ›
    lead the calendar's bar and never move with the title, a narrow month's events are readable titled lines, and a narrow
    day is a page of its own (one event opens straight away, an empty day is just a date; back, forward, reload, ‹ month,
-   a cold link with its month underneath). */
+   a cold link with its month underneath);
+   2026-10-05 (v5-editlook): One Edit — your Event Horizon's toolbar is Add events · Edit · Share · ⋯ (Delete only; no
+   Publish that turns into Share, no Published ✓), Share on a private one explains and offers to make it public, Edit
+   holds name, description, Private / Public, picture and colours in one save; an event you host has one Edit (no
+   Customize; the phone's bar Edit · Call out · ⋯) of sections; your page has one Edit profile whose preview is your page
+   as others see it with the unsaved changes (Preview and Back to editing on a phone); the whole page wears its look
+   (ground, band, hairlines, labels, accent) while its toolbar stays chrome; one to three colours (Add accent, Add header
+   colour, each removable) and the text is never picked — AA on light, dark, neon, mid-grey and 2–3 colour pages, a
+   mid-tone moves off the middle and says so, looks saved before picks still render; your own avatar wears your look
+   after Neon and your account id reads it too; the New event wizard has one primary at a time on one row (Next, Next,
+   Publish event), short tabs, legible waiting buttons, and × keeps the draft with Discard in the toast. */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch(e){
   try { ({ chromium } = require('playwright-core')); } catch(e2){
@@ -171,7 +181,7 @@ async function join(p, name, handle){
   await p.evaluate(() => loginDialog()); await p.waitForTimeout(150);
   await p.fill('#pf-name', name); await p.fill('#pf-handle', handle); await p.click('#pfsave'); await p.waitForTimeout(300);
 }
-/* the New event wizard filled the way a host has to (2026-10-04): Basics, Next, Words; then Publish unless told not to */
+/* the New event wizard filled the way a host has to (2026-10-04): Basics, Next, Words; then Next, Publish unless told not to */
 async function newEvent(c, o){
   await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
   await c.fill('#w-t', o.title); await c.fill('#w-d', o.date);
@@ -179,7 +189,9 @@ async function newEvent(c, o){
   if (o.privacy) await c.selectOption('#w-p', o.privacy);
   await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(200);
   await c.fill('#w-desc', o.desc || 'A slow evening with friends.');
-  if (o.publish !== false){ await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(500); }
+  /* 2026-10-05: Publish event is the Look step's one primary (Next, Next, Publish event) */
+  if (o.publish !== false){ await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(200);
+                            await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(500); }
 }
 async function overflowEverywhere(p, label){
   const worst = [];
@@ -637,7 +649,7 @@ async function overflowEverywhere(p, label){
     await c.fill('#nh-n', 'Plain places'); await c.click('#nh-go'); await c.waitForTimeout(500);
     const ph = await ev(c, () => { const k = MYHORIZONS[MYHORIZONS.length - 1]; return { stored:!!HZTHEME[k], page:!!document.querySelector('.pg-horizon.plain') }; });
     ok(!ph.stored && ph.page, kind + ': a new horizon wears the plain default');
-    /* your profile: Customize from your page, keep it across reload; nobody else's page offers it */
+    /* your profile: its colours from Edit profile on your page, kept across reload; nobody else's page offers it */
     await c.evaluate(() => { openItem('person', 'self'); }); await c.waitForTimeout(400);
     await c.click('.pg-person .actbar [data-act="editprofile"]'); await c.waitForTimeout(250);
     await c.click('.dlg [data-czact="start"][data-i="1"]'); await c.waitForTimeout(150);
@@ -1847,6 +1859,147 @@ async function overflowEverywhere(p, label){
       await cold.close();
       ok(!c.errors.length && (await overflow(c)) <= 0, w + ': no console errors, no overflow (narrow calendar) ' + c.errors.join(' '));
     }
+  }
+
+  /* 2026-10-05 (v5-editlook): One Edit — an Event Horizon, an event you host and your profile each have one Edit
+     (facts, who can see it, picture, colours); Share is always Share; the whole page wears its look (one to three
+     colours, text chosen for contrast, controls stay chrome); your face wears your look everywhere; Edit profile
+     previews your page as others see it (Preview on a phone); the New event wizard shows one primary at a time */
+  for (const kind of ['desk', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '', true);
+    await join(c, 'Edda Lund', 'edda' + kind);
+    /* an Event Horizon of yours: Add events, Edit, Share, ⋯ — nothing that turns into something else */
+    await c.evaluate(() => runCmd('new-horizon')); await c.waitForTimeout(200);
+    await c.fill('#nh-n', 'Zurich events'); await c.click('#nh-go'); await c.waitForTimeout(400);
+    const hz = await ev(c, () => S.stack[0].id);
+    const bar = await ev(c, () => { const vs = [...document.querySelectorAll('#dscroll .pg-horizon .actbar .btn')];
+      return { acts:vs.map(b => b.getAttribute('data-act')).join(), tops:new Set(vs.map(b => Math.round(b.getBoundingClientRect().top))).size,
+               fit:vs.every(b => b.scrollWidth <= b.clientWidth + 1), more:(document.querySelector('#dscroll [data-act="hzmore"]') || {}).getAttribute('data-more') }; });
+    ok(bar.acts === 'addevents,edithz,share,hzmore' && bar.tops === 1 && bar.fit && bar.more === 'delete',
+       kind + ': your horizon\'s toolbar is Add events · Edit · Share · ⋯ in one row, ⋯ holds Delete only ' + JSON.stringify(bar));
+    await c.click('#dscroll [data-act="hzmore"]'); await c.waitForTimeout(250);
+    ok(await ev(c, () => { const t = [...document.querySelectorAll('.ctxmenu .ci, .ctxsheet .sheetrow')].map(x => x.textContent.trim()); return t.length === 1 && /Delete/.test(t[0]); }), kind + ': ⋯ has no Published ✓, only Delete');
+    await c.keyboard.press('Escape'); await ev(c, () => { closeCtx(); closeDialogs(); }); await c.waitForTimeout(150);
+    /* Share on a private horizon says it is private and offers to make it public, then copies the link */
+    await c.evaluate(() => { window.__exec = []; Object.defineProperty(navigator, 'clipboard', { value:undefined, configurable:true }); document.execCommand = function(cmd){ window.__exec.push(cmd); return true; }; });
+    await c.click('#dscroll .actbar [data-act="share"]'); await c.waitForTimeout(250);
+    const sh = await ev(c, h => ({ dlg:/private/.test((document.querySelector('.dlg .cmsg') || {}).textContent || ''), copied:window.__exec.length, pub:HORIZONS[h].isPublished }), hz);
+    await c.click('.dlg [data-act="confirmok"]'); await c.waitForTimeout(300);
+    const sh2 = await ev(c, h => ({ pub:HORIZONS[h].isPublished, copied:window.__exec.length, toast:document.getElementById('toasts').textContent, eyebrow:document.querySelector('#dscroll .pg-horizon .eyebrow').textContent }), hz);
+    ok(sh.dlg && !sh.copied && !sh.pub && sh2.pub && sh2.copied === 1 && /Link copied/.test(sh2.toast) && !/Private/.test(sh2.eyebrow),
+       kind + ': Share on a private horizon explains, then makes it public and copies its link ' + JSON.stringify([sh, sh2]));
+    /* Edit holds the name, the description, who can see it, the picture and the colours — one save */
+    await c.click('#dscroll [data-act="edithz"]'); await c.waitForTimeout(300);
+    const ed = await ev(c, () => ({ secs:[...document.querySelectorAll('.dlg .edsec > h3')].map(h => h.textContent).join(), name:!!document.getElementById('ed-n'), desc:!!document.getElementById('ed-d'),
+      vis:[...document.querySelectorAll('.dlg input[name="ed-vis"]')].map(r => r.value + (r.checked ? '*' : '')).join(), file:!!document.getElementById('cz-file'), colors:document.querySelectorAll('.dlg [data-czlook] input[type=color]').length }));
+    ok(ed.secs === 'Details,Who can see it,Look' && ed.name && ed.desc && ed.vis === 'private,public*' && ed.file && ed.colors === 1, kind + ': Edit Event Horizon has its details, who can see it and its look ' + JSON.stringify(ed));
+    await c.fill('#ed-n', 'Zurich, autumn'); await c.check('.dlg input[name="ed-vis"][value="private"]');
+    await c.fill('#cz-c1', '#0d1b2e'); await c.waitForTimeout(150);
+    await c.click('.dlg .czadd'); await c.waitForTimeout(150); await c.fill('#cz-c2', '#ffd400'); await c.waitForTimeout(150);
+    if (kind === 'desk') await shot(c, 'editlook-edit-horizon-desk');
+    await c.click('.dlg [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(400);
+    const sv = await ev(c, h => ({ name:HORIZONS[h].name, pub:HORIZONS[h].isPublished, colors:(HZTHEME[h] || {}).colors, eyebrow:document.querySelector('#dscroll .pg-horizon .eyebrow').textContent }), hz);
+    ok(sv.name === 'Zurich, autumn' && sv.pub === false && sv.colors && sv.colors.join() === '#0d1b2e,#ffd400' && /Private/.test(sv.eyebrow), kind + ': one Save keeps the name, Private and the two colours ' + JSON.stringify(sv));
+    /* the whole page wears the look; its controls stay the app's */
+    const pg = await ev(c, () => { const cv = document.querySelector('#dscroll .pg-horizon'), cs = x => getComputedStyle(x);
+      const btn = cv.querySelector('.actbar .btn'), box = cv.querySelector('.facts'), fk = cv.querySelector('.fk'), band = cv.querySelector('.banner');
+      const rgb = s => '#' + s.match(/\d+/g).slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join('');
+      const p = lookPal(HZTHEME[S.stack[0].id]);
+      return { bg:rgb(cs(cv).backgroundColor) === p.bg, band:rgb(cs(band).backgroundColor) === p.band, rule:rgb(cs(box).borderTopColor) === p.rule, fk:contrast(rgb(cs(fk).color), p.bg) >= 4.5,
+               eyebrow:contrast(rgb(cs(cv.querySelector('.eyebrow')).color), p.band) >= 4.5, accent:rgb(cs(cv.querySelector('.eyebrow')).color) !== rgb(cs(cv.querySelector('.hl')).color),
+               chrome:cs(btn).backgroundColor === 'rgb(212, 208, 200)' && cs(btn).color === 'rgb(20, 20, 20)' }; });
+    ok(Object.values(pg).every(Boolean), kind + ': the whole page wears the look (ground, band, hairlines, labels AA, the accent), the toolbar stays chrome ' + JSON.stringify(pg));
+    if (kind === 'phone') await shot(c, 'editlook-horizon-themed-phone');
+    /* an event you host: one Edit (Customize is part of it); the phone's bar is Edit · Call out · ⋯ */
+    await newEvent(c, { title:'Sauna on the ridge', date:'2026-11-08', city:'Brno' }); await c.waitForTimeout(200);
+    const host = await ev(c, () => ({ acts:[...document.querySelectorAll(L.phone ? '#evbar .btn' : '#dscroll .pg-event .actbar .btn')].map(b => b.getAttribute('data-act')),
+      menu:ctxItems({ type:'event', id:S.stack[0].id }).filter(i => i !== '-').map(i => i.code) }));
+    ok(host.acts.indexOf('editevent') >= 0 && host.acts.indexOf('customize') < 0 && host.menu.indexOf('customize') < 0 && host.menu.indexOf('edit') >= 0 &&
+       (kind === 'desk' || host.acts.join() === 'editevent,newcalloutfor,evmore'), kind + ': an event you host has one Edit, no Customize ' + JSON.stringify(host));
+    await c.evaluate(() => editEventDialog(S.stack[0].id)); await c.waitForTimeout(300);
+    const ee = await ev(c, () => ({ secs:[...document.querySelectorAll('.dlg .edsec > h3')].map(h => h.textContent).join(), priv:!!document.querySelector('.dlg .edsec #w-p'), look:!!document.querySelector('.dlg [data-czlook] #cz-c1'), tabs:!!document.querySelector('.dlg .wizsteps') }));
+    ok(ee.secs === 'Details,Words,Who can see it,Look' && ee.priv && ee.look && !ee.tabs, kind + ': Edit event is one form of sections — details, words, who can see it, look ' + JSON.stringify(ee));
+    if (kind === 'phone') await shot(c, 'editlook-edit-event-phone');
+    await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+    /* your profile: one Edit profile; its colours, and your page as others see it beside it (Preview on a phone) */
+    await c.evaluate(() => openItem('person', 'self')); await c.waitForTimeout(350);
+    ok(await ev(c, () => [...document.querySelectorAll('#dscroll .pg-person .actbar .btn')].map(b => b.getAttribute('data-act')).join() === 'editprofile'), kind + ': your page has one Edit profile');
+    await c.click('#dscroll [data-act="editprofile"]'); await c.waitForTimeout(300);
+    await c.fill('#pf-name', 'Edda Preview'); await c.click('.dlg [data-czact="start"][data-i="5"]'); await c.waitForTimeout(250);
+    let pv;
+    if (kind === 'phone'){
+      ok(await ev(c, () => !document.querySelector('.dlg .custprev') && !!document.querySelector('.dlg .dfoot [data-act="pfpreview"]')), 'phone: Edit profile has Preview instead of a squeezed side preview');
+      await c.click('.dlg [data-act="pfpreview"]'); await c.waitForTimeout(300);
+      await shot(c, 'editlook-profile-preview-phone');
+    }
+    pv = await ev(c, () => { const pg = document.querySelector('.dlg .pvpage .pg-person'); return pg && { name:pg.querySelector('.hl').textContent, plain:pg.classList.contains('plain'),
+      bg:getComputedStyle(pg).backgroundColor, other:!!pg.querySelector('[data-act="followp"]') && !pg.querySelector('[data-act="editprofile"]'), inert:pg.closest('[inert]') !== null, saved:PEOPLE.self.displayName }; });
+    ok(pv && pv.name === 'Edda Preview' && !pv.plain && pv.bg === 'rgb(0, 0, 0)' && pv.other && pv.inert && pv.saved === 'Edda Lund',
+       kind + ': the preview is your page as others see it, with the unsaved name and colours ' + JSON.stringify(pv));
+    if (kind === 'phone'){
+      await c.click('.dlg [data-act="pfpreview"][data-id="off"]'); await c.waitForTimeout(250);
+      ok(await ev(c, () => document.getElementById('pf-name').value === 'Edda Preview' && DRAFT.c1 === '#000000'), 'phone: Back to editing keeps what you typed and picked');
+    } else await shot(c, 'editlook-edit-profile-desk');
+    await c.click('#pfsave'); await c.waitForTimeout(400);
+    /* the profile look shows wherever you are: your page, your avatar (toolbar or You tab), and under your account's id */
+    if (kind === 'phone'){ await c.evaluate(() => { S.stack = []; setTab('you'); }); await c.waitForTimeout(300); }
+    const face = await ev(c, () => { const av = document.querySelector(L.phone ? '.acctcard .av' : '#acct .av'); return { lk:av.classList.contains('lk'), bg:getComputedStyle(av).backgroundColor,
+      mine:personLook(myActor()) === PTHEME.self, cust:[...document.querySelectorAll('[data-act="customizeme"]')].length }; });
+    ok(face.lk && face.bg === 'rgb(0, 0, 0)' && face.mine && !face.cust, kind + ': after Neon your own avatar wears it (not the grey initials), and your account id reads the same look ' + JSON.stringify(face));
+    await c.evaluate(() => openItem('person', 'self')); await c.waitForTimeout(350);
+    ok(await ev(c, () => { const pg = document.querySelector('#dscroll .pg-person'); return !pg.classList.contains('plain') && getComputedStyle(pg).backgroundColor === 'rgb(0, 0, 0)' && !!pg.querySelector('.banner .av.lk'); }),
+       kind + ': your page shows your look, its face your initials in it');
+    if (kind === 'desk') await shot(c, 'editlook-profile-themed-desk');
+    await c.reload(); await c.waitForTimeout(800);
+    ok(await ev(c, () => !!PTHEME.self && PTHEME.self.colors && PTHEME.self.colors[0] === '#000000' && PEOPLE.self.displayName === 'Edda Preview'), kind + ': the profile, its look and its picks survive a reload');
+    ok(!c.errors.length, kind + ': no console errors (One Edit) ' + c.errors.join(' '));
+  }
+  /* the palette: one, two and three colours on a real page — light, dark, neon, a mid-grey — every text AA on its ground */
+  {
+    const c = await ctx('desk');
+    await open(c, '#/event/deep-listening-lab', true);
+    const sets = [['#ffffff'], ['#f6e7b0'], ['#000000', '#ff2fd0'], ['#808080'], ['#1e5eff', '#ffd400'], ['#e8f4ff', '#ff3366', '#0b2a4a'], ['#39ff88', null, '#111111']];
+    const res = [];
+    for (const cols of sets){
+      res.push(await ev(c, cols => {
+        window.HYPERNET_THEMES.themes['evt-deep-listening'] = asLook({ colors:cols, glyph:'☾' }); render();
+        const cv = document.querySelector('#dscroll .pg-event'), rgb = s => '#' + s.match(/\d+/g).slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join('');
+        const bg = rgb(getComputedStyle(cv).backgroundColor), band = rgb(getComputedStyle(cv.querySelector('.banner')).backgroundColor);
+        const on = (sel, g) => [...cv.querySelectorAll(sel)].map(n => contrast(rgb(getComputedStyle(n).color), g));
+        const body = [].concat(on('.fk', bg), on('.fv', bg), on('.fs', bg), on('.evdesc', bg), on('.sect > h3', bg), on('.fvlink', bg)), head = [].concat(on('.eyebrow', band), on('.psub2', band));
+        return { cols:cols.join(' '), body:Math.min.apply(null, body).toFixed(2), head:Math.min.apply(null, head).toFixed(2), hl:on('.hl', band)[0].toFixed(2) };
+      }, cols));
+    }
+    ok(res.every(r => r.body >= 4.5 && r.head >= 4.5 && r.hl >= 3), 'palette: every text on 1–3 colour pages is AA on its ground ' + JSON.stringify(res));
+    /* old looks (bg / ink / accent, no picks) still render: the page wears their ground */
+    await c.evaluate(() => { window.HYPERNET_THEMES.themes['evt-deep-listening'] = { bg:'#06080e', ink:'#e9e7e0', accent:'#6fd6c8', image:null, glyph:'☾' }; render(); });
+    ok(await ev(c, () => getComputedStyle(document.querySelector('#dscroll .pg-event')).backgroundColor === 'rgb(6, 8, 14)'), 'palette: a look saved before picks wears its own ground');
+    ok(!c.errors.length, 'palette: no console errors ' + c.errors.join(' '));
+  }
+  /* the New event wizard on a phone: short tabs, one primary at a time, nothing overflowing; × keeps the draft, the toast discards */
+  {
+    const c = await ctx('phone');
+    await open(c, '', true);
+    await join(c, 'Wiz Phone', 'wizphone');
+    await c.evaluate(() => newEventDialog()); await c.waitForTimeout(300);
+    const fit = () => ev(c, () => { const b = [...document.querySelectorAll('.dlg .dfoot .btn')], t = [...document.querySelectorAll('.dlg .wizsteps .ws')];
+      return { prim:b.filter(x => x.classList.contains('primary')).map(x => x.textContent.trim()).join(), rows:new Set(b.map(x => Math.round(x.getBoundingClientRect().top))).size,
+               fit:b.concat(t).every(x => x.scrollWidth <= x.clientWidth + 1), inside:b.every(x => x.getBoundingClientRect().right <= innerWidth), tabs:t.map(x => x.textContent.trim()).join(), dis:b.filter(x => x.getAttribute('aria-disabled') === 'true').map(x => getComputedStyle(x).textShadow).join() }; });
+    const w1 = await fit();
+    await c.fill('#w-t', 'Lake swim'); await c.fill('#w-d', '2026-11-03'); await c.fill('#w-c', 'Brno'); await c.click('.dlg [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(250);
+    await c.fill('#w-desc', 'Cold water, warm tea.'); await c.waitForTimeout(100);
+    const w2 = await fit();
+    await c.click('.dlg [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(250);
+    const w3 = await fit();
+    await shot(c, 'editlook-wizard-footer-phone');
+    ok(w1.prim === 'Next' && w2.prim === 'Next' && w3.prim === 'Publish event' && [w1, w2, w3].every(w => w.rows === 1 && w.fit && w.inside) && w1.tabs === '1Basics,2Words,3Look' && w1.dis === 'none',
+       'phone: the wizard has one primary at a time (Next, Next, Publish event) on one row, tabs and buttons never overflow, waiting buttons not embossed ' + JSON.stringify([w1, w2, w3]));
+    await c.click('.dlg .dbar [data-act="closedlg"]'); await c.waitForTimeout(250);
+    const kept = await ev(c, () => ({ draft:!!FORMDRAFTS.event, toast:document.getElementById('toasts').textContent, discard:!!document.querySelector('#toasts [data-act="toastundo"]'), dbtn:document.querySelectorAll('.dbar .dbtn').length }));
+    await c.click('#toasts [data-act="toastundo"]'); await c.waitForTimeout(250);
+    ok(kept.draft && /Draft kept/.test(kept.toast) && kept.discard && await ev(c, () => !FORMDRAFTS.event), 'phone: × keeps the draft; the toast\'s Discard throws it away ' + JSON.stringify(kept));
+    ok(!c.errors.length, 'phone: no console errors (wizard) ' + c.errors.join(' '));
   }
 
   /* ---------------- tablet ---------------- */

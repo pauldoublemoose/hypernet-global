@@ -20,8 +20,9 @@ import {
 const citext = customType<{ data: string }>({ dataType: () => "citext" });
 const tstz = (name: string) => timestamp(name, { withTimezone: true });
 
-/** A look (2026-10-01): three #rrggbb colours, an optional square picture URL in our bucket, a glyph. */
-export type Look = { bg: string; ink: string; accent: string; image?: string | null; glyph?: string | null };
+/** A look (2026-10-01): three #rrggbb colours, an optional square picture URL in our bucket, a glyph; since 2026-10-05
+ *  also the picks they come from: [page, accent | null, header | null] (lib/validation.ts checks them). */
+export type Look = { bg: string; ink: string; accent: string; image?: string | null; glyph?: string | null; colors?: (string | null)[] | null };
 
 export const privacy = pgEnum("privacy", ["everyone", "friends", "only_me"]);
 export const rsvpStatus = pgEnum("rsvp", ["going", "interested"]);

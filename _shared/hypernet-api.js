@@ -358,7 +358,14 @@
   };
 
   /* ---------- the app's records → request bodies ---------- */
-  function lookOut(t){ if (!t) return null; var l = asLook(t); return { bg:l.bg, ink:l.ink, accent:l.accent, image:l.image || null, glyph:l.glyph || null }; }
+  /* a look as the API takes it: the colours the page wears (the database CHECK reads these) and, since 2026-10-05, the
+     one to three picks they come from */
+  function lookOut(t){
+    if (!t) return null;
+    var l = asLook(t), o = { bg:l.bg, ink:l.ink, accent:l.accent, image:l.image || null, glyph:l.glyph || null };
+    if (l.colors) o.colors = l.colors;
+    return o;
+  }
   var COLS = ['id','title','date','endDate','startTime','endTime','timezone','privacy','hostName','description','whatToBring','kind','city','region','country','venue','access','_prev','_prevYear'];
   function eventBody(id){
     var e = EVENTS[id], r = REC[id] || {}, details = {};

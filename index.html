@@ -249,8 +249,8 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
   .row.sel .r-dm{ color:#fff; }
 }
 
-/* ---------- 6. looks — the only colour in the product: three colours and a square ---------- */
-.sq{ position:relative; overflow:hidden; display:grid; place-items:center; flex:0 0 auto; background:var(--ebg); color:var(--eac); line-height:1; }
+/* ---------- 6. looks — the only colour in the product: one to three colours and a square ---------- */
+.sq{ position:relative; overflow:hidden; display:grid; place-items:center; flex:0 0 auto; background:var(--esq, var(--ebg)); color:var(--esqg, var(--eac)); line-height:1; }
 .sq .g{ position:relative; }
 .sq img, .av.img img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
 .sq.plain:not(.img){ box-shadow:inset 0 0 0 1px rgba(0,0,0,.3); }
@@ -266,23 +266,40 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .sq.s96{ width:96px; height:96px; font-size:52px; }
 .row.sel .sq{ box-shadow:0 0 0 2px #fff; }
 
-/* the page: a document in the app's window. One font, the app's greys and hairlines; the look's three colours reach
-   only its square and its title band. Sections are group boxes, their caption in the line; labels in one column,
-   values in the other. Nothing moves. */
+/* the page: a document in the app's window. One font; sections are group boxes, their caption in the line; labels in
+   one column, values in the other. Nothing moves. Plain, it is the app's white sheet and greys under a paper band; a
+   customised page wears its look everywhere — ground, text, hairlines, tags, links, the band (2026-10-05) — while its
+   controls stay the app's (below). */
 .canvas{ position:relative; min-height:100%; background:#fff; color:var(--ink); overflow:clip; isolation:isolate; font-family:var(--sys); line-height:20px; }
-.banner{ position:relative; display:flex; background:var(--ebg); color:var(--eink); border-bottom:1px solid var(--rule); }
+.banner{ position:relative; display:flex; background:var(--eband, var(--ebg)); color:var(--ebink, var(--eink)); border-bottom:1px solid var(--rule); }
 .banner .bin{ position:relative; width:100%; display:flex; align-items:center; gap:16px; padding:24px; }
 .btxt{ flex:1; min-width:0; }
-.eyebrow{ margin:0; font:bold 12px/16px var(--sys); color:var(--eac); }
-.hl{ margin:0; color:var(--eink); overflow-wrap:anywhere; font-size:20px; line-height:24px; font-weight:bold; }
-.psub2{ margin:4px 0 0; max-width:60ch; font-size:14px; line-height:20px; color:var(--eink); }
-.pgnote{ margin:4px 0 0; max-width:60ch; font-size:12px; line-height:16px; color:var(--edim); }
+.eyebrow{ margin:0; font:bold 12px/16px var(--sys); color:var(--ebac, var(--eac)); }
+.hl{ margin:0; color:var(--ebink, var(--eink)); overflow-wrap:anywhere; font-size:20px; line-height:24px; font-weight:bold; }
+.psub2{ margin:4px 0 0; max-width:60ch; font-size:14px; line-height:20px; color:var(--ebink, var(--eink)); }
+.pgnote{ margin:4px 0 0; max-width:60ch; font-size:12px; line-height:16px; color:var(--ebdim, var(--edim)); }
 .dlg .kdesc.inline{ margin:0 0 16px; padding:0; border:0; background:none; font-size:12px; color:var(--dim); }
 .sqwrap{ position:relative; flex:0 0 auto; }
-.pg .banner .sqwrap > .sq:not(.plain), .pg .banner .sqwrap > .sq.img{ box-shadow:0 0 0 1px color-mix(in srgb, var(--eink) 22%, transparent); }
+.pg .banner .sqwrap > .sq:not(.plain), .pg .banner .sqwrap > .sq.img, .pg .banner .sqwrap > .av.lk{ box-shadow:0 0 0 1px color-mix(in srgb, var(--ebink, var(--eink)) 24%, transparent); }
 .pg-horizon .banner .mosaic{ box-shadow:0 0 0 1px var(--rule); }
-/* below the band everything is the app's: the look's variables are put back to the app's greys */
-.canvas > .actbar, .canvas > .entry, .canvas > .edition, .canvas > .layer{ --ebg:#fff; --eink:var(--ink); --eac:var(--ink); --eac2:var(--rule); --edim:var(--dim); --eon:#fff; --epanel:#fff; }
+/* A customised page: the app's own tokens, mapped onto the look, so everything in the document that is drawn in ink,
+   muted ink, hairlines or tag fills takes the look's (2026-10-05, owner: "make the whole page some color, not only the
+   header"). Supersedes B2's "below the band the page is the app's white sheet and greys". */
+.canvas.pg:not(.plain){ --ink:var(--eink); --ink2:var(--eink); --dim:var(--edim); --line:var(--eline); --rule:var(--erule); --gb:var(--erule);
+  --hover:var(--ehover); --face-lt:var(--echip); background:var(--ebg); color:var(--eink); }
+.canvas.pg:not(.plain) .banner{ border-bottom-color:var(--ebrule); }
+.canvas.pg:not(.plain) :is(.sect, .facts, .entry, .edcard){ box-shadow:none; }
+.canvas.pg:not(.plain) :is(.sect > h3, .facts > .fh){ background:var(--ebg); }
+.canvas.pg:not(.plain) :is(.fvlink, .layer a:not(.btn):not(.chip)){ color:var(--eac); }
+.canvas.pg:not(.plain) span.chip{ box-shadow:inset 0 0 0 1px var(--erule); }
+.canvas.pg:not(.plain) .track.past .tt{ color:var(--edim); }
+.canvas.pg:not(.plain) .sst.on{ color:var(--ebg); }
+.canvas.pg:not(.plain) .blist li::before{ background:var(--eacf); }
+.canvas.pg:not(.plain) .rpav .av{ box-shadow:0 0 0 2px var(--ebg); }
+/* Controls are system chrome (2026-09-27): the toolbar, buttons, pressable chips, fields, and the call-out card (the
+   app's one inverted element) put the app's own tokens back, whatever page they are on */
+.canvas.pg :is(.actbar, .btn, .ib, button.chip:not(.who), a.chip, .seg, input, textarea, select, .fco, .edgo, .ctag, .hzchk, .replybox){
+  --ink:#141414; --ink2:#3a3a3a; --dim:#666; --line:#e2dfd8; --rule:#c9c5bc; --gb:#bdb9b0; --hover:#f0eee9; --face-lt:#e8e5df; }
 
 /* The verbs are the window's controls, not the event's: one toolbar in the app's own bevel style. */
 .actbar{ position:sticky; top:0; z-index:6; margin:0; padding:8px 16px; background:var(--face); color:var(--ink); font-family:var(--sys);
@@ -633,12 +650,18 @@ body.is-phone .demolink button{ min-height:44px; }
 .linkrow:hover{ background:var(--hover); }
 .linkrow .lr{ flex:1; min-width:0; }
 .linkrow .lstate{ font:12px var(--sys); color:var(--dim); }
-.wizsteps{ display:flex; margin:0 0 18px; }
-.wizsteps .ws{ flex:1; min-height:var(--ctl); padding:8px 4px; border:0; text-align:center; font:bold 12px var(--sys); background:var(--face-dk); box-shadow:var(--out); color:var(--ink2); }
-.wizsteps .ws:hover{ color:#000; }
+/* the wizard's steps: three short tabs of one width that always fit (a number and a word), the current one sunk and
+   white; a step you can't reach yet is legible, only quieter (2026-10-05: no embossed grey) */
+.wizsteps{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:4px; margin:0 0 16px; }
+.wizsteps .ws{ min-width:0; min-height:var(--ctl); display:flex; align-items:center; justify-content:center; gap:8px; padding:0 8px; border:0;
+  font:bold 12px var(--sys); white-space:nowrap; overflow:hidden; background:var(--face); box-shadow:var(--out); color:var(--ink); }
+.wizsteps .ws .wsn{ flex:0 0 20px; height:20px; display:grid; place-items:center; border-radius:50%; box-shadow:inset 0 0 0 1px currentColor; font-weight:bold; }
 .wizsteps .ws.on{ background:#fff; color:#000; box-shadow:var(--in); }
-.wizsteps .ws[aria-disabled="true"]{ color:#8a8a8a; text-shadow:1px 1px 0 #fff; cursor:default; }
-.wizsteps .wsopt{ font-weight:normal; color:var(--dim); text-transform:lowercase; }
+.wizsteps .ws.on .wsn{ background:#000; color:#fff; box-shadow:none; }
+.wizsteps .ws[aria-disabled="true"]{ color:#6b6b6b; font-weight:normal; cursor:default; }
+.wzopt{ margin:0 0 16px; font-size:12px; line-height:16px; color:var(--dim); }
+.frow{ display:flex; gap:12px; flex-wrap:wrap; }
+.frow > .field{ flex:1 1 160px; min-width:0; }
 .wherein{ display:flex; align-items:center; gap:14px; }
 .wherein input[type="text"]{ flex:1; min-width:0; }
 .wherein input[disabled]{ background:var(--face-lt); }
@@ -647,7 +670,12 @@ body.is-phone .demolink button{ min-height:44px; }
 /* what the wizard's Next / Publish are waiting for, beside them */
 .wizneed{ margin-right:auto; align-self:center; font-size:var(--fs-s); line-height:1.35; color:var(--ink2); }
 .wizneed:empty{ display:none; }
-/* Customize: three colours and a square image, with a live preview of the square and the title block */
+/* the wizard's buttons: Back, then the one primary (Next, or Publish event on the last step) */
+.wizbtns{ display:flex; gap:8px; margin-left:auto; }
+.wizbtns .wzgo{ min-width:120px; }
+/* a button that is waiting for something (aria-disabled: it still says what is missing when pressed) stays legible */
+.btn[aria-disabled="true"]{ color:#5f5f5f; text-shadow:none; }
+/* The look editor: one to three colours and a square picture, with a live preview (2026-10-05) */
 .custwrap{ display:flex; gap:18px; }
 .custcol{ flex:0 0 340px; min-width:0; }
 .custprev{ flex:1; min-width:0; position:sticky; top:0; align-self:flex-start; }
@@ -656,7 +684,13 @@ body.is-phone .demolink button{ min-height:44px; }
 .czstart{ justify-content:flex-start; gap:7px; padding:0 8px; font-size:var(--fs-s); white-space:nowrap; overflow:hidden; }
 .czstart .sw{ flex:0 0 18px; height:18px; display:grid; place-items:center; font-size:11px; line-height:1; box-shadow:inset 0 0 0 1px rgba(0,0,0,.35); }
 .czcolor{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-.czcolor > label{ flex:0 0 84px; font-size:var(--fs-s); font-weight:bold; }
+.czcolor > label{ flex:0 0 64px; font-size:var(--fs-s); font-weight:bold; }
+.czcolor .czrm{ flex:0 0 var(--ctl); }
+.czadds{ display:flex; flex-wrap:wrap; gap:8px; margin:0 0 8px; }
+.czadds .btn{ gap:4px; }
+.czreset{ margin-top:8px; }
+.czmini{ margin:8px 0 0; }
+.czmini .previewbox{ box-shadow:var(--in); }
 .czcolor input[type=color]{ flex:0 0 46px; width:46px; height:var(--ctl); padding:3px; border:0; background:#fff; box-shadow:var(--in); cursor:pointer; }
 .czcolor .czhex{ flex:1; min-width:0; font-family:var(--sys); }
 .cznote{ margin:0 0 12px; font-size:var(--fs-s); color:var(--ink2); }
@@ -670,6 +704,32 @@ body.is-phone .demolink button{ min-height:44px; }
 .czimgside .fhelp{ margin:0; line-height:1.4; }
 .czfile{ position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; pointer-events:none; }
 .previewbox{ padding:12px; max-height:470px; overflow:auto; background:#fff; box-shadow:var(--in); }
+/* ONE EDIT (2026-10-05): sections in one dialog — a hairline and a heading each — and the live preview beside them */
+.edwrap .custcol{ flex:0 0 420px; }
+.edsec{ margin:0 0 16px; padding:16px 0 0; border-top:1px solid var(--rule); }
+.edsec:first-child{ padding-top:0; border-top:0; }
+.edsec > h3{ margin:0 0 16px; font:bold 14px/20px var(--sys); color:var(--ink); }
+.edsec .czlook{ margin-top:-8px; }
+.visopts{ display:flex; flex-direction:column; gap:8px; }
+.visopt{ display:flex; align-items:flex-start; gap:8px; padding:8px 12px; background:#fff; box-shadow:var(--in); cursor:pointer; }
+.visopt input{ flex:0 0 auto; width:18px; height:18px; margin:1px 0 0; accent-color:#262626; }
+.visopt b{ display:block; font-size:14px; line-height:20px; }
+.visopt small{ display:block; font-size:12px; line-height:16px; color:var(--dim); }
+.visopt.on{ outline:1px solid #000; outline-offset:-1px; }
+.edfix{ margin:0; line-height:16px; }
+/* your page as others see it, drawn by the real template, inert (nothing in it can be pressed) */
+.pfprev{ align-self:stretch; }
+.pfprev .pvpage, .pvpage{ max-height:min(70vh, 640px); overflow:auto; box-shadow:var(--in); background:#fff; }
+.pvpage .canvas{ min-height:0; }
+.pvpage .canvas .actbar{ position:relative; }
+.pvnote{ margin:0 0 16px; font-size:12px; line-height:16px; color:var(--ink2); }
+/* on a desktop an Edit has a fixed height: the form scrolls on the left, the preview stays whole on the right */
+body:not(.is-phone) .dlg.edlg{ height:min(820px, calc(100vh - 32px)); }
+body:not(.is-phone) .edlg .dbody{ display:flex; overflow:hidden; padding:0; }
+body:not(.is-phone) .edlg .edwrap{ flex:1; min-height:0; gap:0; }
+body:not(.is-phone) .edlg .edform{ overflow:auto; padding:20px; }
+body:not(.is-phone) .edlg .custprev{ position:static; align-self:stretch; overflow:auto; padding:20px 20px 20px 4px; }
+body:not(.is-phone) .edlg .custprev .previewbox, body:not(.is-phone) .edlg .pvpage{ max-height:none; }
 .plabel{ margin:10px 0 6px; font:bold 12px var(--sys); color:var(--dim); }
 .plabel:first-child{ margin-top:0; }
 .minicanvas{ overflow:hidden; position:relative; container:detail / inline-size; }
@@ -1033,6 +1093,12 @@ body.is-phone .dfoot{ padding:10px 12px calc(12px + env(safe-area-inset-bottom))
 body.is-phone .dfoot .btn{ flex:1; }
 body.is-phone .dfoot{ flex-wrap:wrap; }
 body.is-phone .wizneed{ flex:1 0 100%; margin:0 0 2px; }
+body.is-phone .wizbtns{ flex:1 1 100%; margin:0; }
+body.is-phone .wizbtns .wzback{ flex:0 0 auto; }
+body.is-phone .wizbtns .wzgo{ flex:1 1 auto; }
+body.is-phone .edlg .custprev{ display:none; }
+body.is-phone .edwrap .custcol{ flex:0 0 auto; }
+body.is-phone .pvpage{ max-height:none; margin:0 -16px; box-shadow:none; }
 body.is-phone .dlg.sheet{ top:auto !important; bottom:0 !important; }
 body.is-phone .dlg.sheet .dbody{ padding:6px 0; }
 body.is-phone .custwrap{ flex-direction:column; }
@@ -1096,6 +1162,7 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 <div id="toasts" aria-live="polite"></div>
 
 <script src="_shared/hypernet-data.js"></script>
+<script src="_shared/hypernet-palette.js"></script>
 <script src="_shared/hypernet-themes.js"></script>
 <script src="_shared/hypernet-event-details.js"></script>
 <script src="_shared/hypernet-api.js"></script>
@@ -1288,26 +1355,32 @@ function loadRealEvents(){
 }
 
 /* =========================================================================
-   1. LOOKS — three colours and a square
-   A look is { bg, ink, accent, image, glyph } (see _shared/hypernet-themes.js). Anything nobody customised wears
-   the plain one, with a glyph for its kind so lists stay scannable. Every look renders on the same calm layout.
+   1. LOOKS — one to three colours and a square (2026-10-05)
+   A look is { bg, ink, accent, image, glyph, colors } (see _shared/hypernet-themes.js): `colors` are what the person
+   picked (page, accent, header), and HN_PALETTE (_shared/hypernet-palette.js) derives the whole page from them —
+   ground, ink, muted ink, hairlines, tags, the header band. Looks from before have no `colors`; their bg and accent are
+   the picks. Anything nobody customised wears the plain one, with a glyph for its kind so lists stay scannable.
    ========================================================================= */
 var PLAINGLYPH = { burn:'✦', burn_night:'✳', decompression:'☾', meetup:'◉', build:'▲', workshop:'■', volunteer_day:'✜', fundraiser:'◈',
                    camp_meeting:'◗', town_hall:'▤', sale:'⬟', gathering:'✦', other:'◆' };
 var PLAINCACHE = {};
 function plainTheme(glyph){ var t = Object.assign({}, window.HN_PLAIN); if (glyph) t.glyph = glyph; return t; }
-/* any stored look, old or new, in the flat shape, its text colour legible on its ground */
+/* any stored look, old or new, in the flat shape. A look with picks carries the colours its picks give (so the
+   database and anything older read the page it really is); an old one keeps its own, its text made legible */
 function asLook(t){
   if (!t) return null;
   var m = window.HN_MIGRATE_LOOK(t);
-  m.ink = fixInk(m.bg, m.ink);
+  if (m.colors){ var p = window.HN_PALETTE(m.colors[0], m.colors[1], m.colors[2]); m.bg = p.bg; m.ink = p.ink; m.accent = p.accent; }
+  else m.ink = fixInk(m.bg, m.ink);
   return m;
 }
-/* a look is drawn only when it is already clean: hex colours (HN_HEX), a picture or nothing (HN_IMAGE). Anything else —
-   an old shape, a stray value, a string from a database — goes through asLook first, which falls back to plain */
+/* a look is drawn only when it is already clean: hex colours (HN_HEX), clean picks (HN_COLORS), a picture or nothing
+   (HN_IMAGE). Anything else — an old shape, a stray value, a string from a database — goes through asLook first,
+   which falls back to plain */
 function lookOk(t){
   return !!t && typeof t === 'object' && !t.palette && window.HN_HEX(t.bg) === t.bg && window.HN_HEX(t.ink) === t.ink &&
-         window.HN_HEX(t.accent) === t.accent && (t.image == null || window.HN_IMAGE(t.image) === t.image);
+         window.HN_HEX(t.accent) === t.accent && (t.image == null || window.HN_IMAGE(t.image) === t.image) &&
+         (t.colors == null || JSON.stringify(window.HN_COLORS(t.colors)) === JSON.stringify(t.colors));
 }
 function cleanLook(t){ return lookOk(t) ? t : (asLook(t) || window.HN_PLAIN); }
 function TH(id){
@@ -1316,8 +1389,8 @@ function TH(id){
   if (!PLAINCACHE[id]){ var r = (typeof REC !== 'undefined' && REC[id]) || {}; PLAINCACHE[id] = plainTheme(PLAINGLYPH[r.kind] || PLAINGLYPH[r.scale] || '◆'); }
   return PLAINCACHE[id];
 }
-/* plain = the plain colours (a plain look may still carry an image) */
-function isPlain(t){ var P = window.HN_PLAIN; return !!t && (!!t.plain || (t.bg === P.bg && t.ink === P.ink && t.accent === P.accent)); }
+/* plain = the plain colours and no picks (a plain look may still carry an image) */
+function isPlain(t){ var P = window.HN_PLAIN; return !!t && (!!t.plain || (!t.colors && t.bg === P.bg && t.ink === P.ink && t.accent === P.accent)); }
 function hex2rgb(h){
   h = String(h||'#000').replace('#','');
   if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
@@ -1329,40 +1402,54 @@ function relLum(h){
 }
 function contrast(a,b){ var l1=relLum(a), l2=relLum(b); if (l1<l2){ var t=l1; l1=l2; l2=t; } return (l1+0.05)/(l2+0.05); }
 function onColor(bg){ return contrast('#ffffff',bg) >= contrast('#000000',bg) ? '#ffffff' : '#000000'; }
-/* text colours reach AA against the ground: a colour that falls short is nudged until it clears, keeping its hue */
 function mixHex(a, b, t){ var x = hex2rgb(a), y = hex2rgb(b); return '#' + x.map(function(v, i){ return ('0' + Math.round(v + (y[i] - v) * t).toString(16)).slice(-2); }).join(''); }
-function readable(c, p, need){ for (var t = 0; t <= 1.001; t += .05){ var m = mixHex(c, p.ink, t); if (contrast(m, p.bg) >= need) return m; } return p.ink; }
-function safeAccent(p){ return readable(p.accent, p, 4.8); }
-function safeDim(p){ return readable(p.dim, p, 5.2); }
-/* the text colour itself: AA (4.5:1) on the ground, pushed toward black or white, whichever the ground allows */
+/* an old look's own text colour: AA (4.5:1) on its ground, pushed toward black or white, whichever the ground allows */
 function fixInk(bg, ink){
   if (contrast(ink, bg) >= 4.5) return ink;
   var to = onColor(bg);
   for (var t = .05; t <= 1.001; t += .05){ var m = mixHex(ink, to, t); if (contrast(m, bg) >= 4.5) return m; }
   return to;
 }
-/* the five colours a page needs, from the three a person picks */
+/* the look's picks: [page, accent|null, header|null] */
+function lookPicks(t){ return window.HN_LOOK_PICKS(cleanLook(t)); }
+/* every colour a page needs, from the one to three a person picked (HN_PALETTE) */
+var PALCACHE = {};
 function lookPal(t){
-  var ink = fixInk(t.bg, t.ink), away = relLum(ink) < relLum(t.bg) ? '#ffffff' : '#000000';
-  return { bg:t.bg, ink:ink, accent:t.accent, accent2:mixHex(t.bg, ink, .2), dim:mixHex(ink, t.bg, .4),
-           panel: isPlain(t) ? '#ffffff' : mixHex(t.bg, away, away === '#ffffff' ? .5 : .22) };
+  var c = lookPicks(t), k = c.join(',');
+  return PALCACHE[k] || (PALCACHE[k] = window.HN_PALETTE(c[0], c[1], c[2]));
 }
+/* The page's colours as CSS variables. The page (.canvas.pg:not(.plain)) maps the app's own tokens onto them, so the
+   whole document wears the look; its controls put the app's tokens back (section 6). --ebg / --eink / --eac keep
+   their old meaning (the look's ground, text and readable accent) for everything else that uses them.
+   The plain look is the app's: paper band, white sheet, greys. */
 var VARCACHE = {};
+var PLAINVARS = '--ebg:#f8f7f3;--eink:#161616;--eac:#262626;--eacf:#262626;--eac2:#e2dfd8;--edim:#5f5f5c;--eon:#ffffff;--epanel:#ffffff;' +
+  '--eband:#f8f7f3;--ebink:#161616;--ebdim:#5f5f5c;--ebac:#262626;--esq:#f8f7f3;--esqg:#262626;';
 function themeVars(t){
   t = cleanLook(t);
-  var k = t.bg + t.ink + t.accent + (isPlain(t) ? 'p' : '');
+  if (isPlain(t)) return PLAINVARS;
+  var k = lookPicks(t).join(',');
   if (!VARCACHE[k]){
-    var p = lookPal(t), ac = safeAccent(p);
-    VARCACHE[k] = '--ebg:'+p.bg+';--eink:'+p.ink+';--eac:'+ac+';--eac2:'+p.accent2+';--edim:'+safeDim(p)+';--eon:'+onColor(ac)+';--epanel:'+p.panel+';';
+    var p = lookPal(t);
+    VARCACHE[k] = '--ebg:'+p.bg+';--eink:'+p.ink+';--eac:'+p.accentInk+';--eacf:'+p.accent+';--eac2:'+p.line+';--edim:'+p.dim+';--eon:'+p.onAccent+';--epanel:'+p.bg+';' +
+      '--erule:'+p.rule+';--eline:'+p.line+';--ehover:'+p.hover+';--echip:'+p.chip+';' +
+      '--eband:'+p.band+';--ebink:'+p.bandInk+';--ebdim:'+p.bandDim+';--ebac:'+p.bandAccent+';--ebrule:'+p.bandRule+';' +
+      '--esq:'+p.sq+';--esqg:'+p.sqGlyph+';';
   }
   return VARCACHE[k];
+}
+/* a square needs only its own two colours (lists draw hundreds of them) */
+function sqVars(t){
+  t = cleanLook(t);
+  if (isPlain(t)) return '--esq:#f8f7f3;--esqg:#262626;--eink:#161616;';
+  var p = lookPal(t); return '--esq:'+p.sq+';--esqg:'+p.sqGlyph+';--eink:'+p.ink+';';
 }
 /* the square: the look's image, or its glyph on its ground */
 function sqInner(t){ var img = window.HN_IMAGE(t.image); return img ? '<img src="'+esc(img)+'" alt="" draggable="false">' : '<span class="g">'+esc(t.glyph)+'</span>'; }
 function sqCls(t, extra){ return 'sq' + (isPlain(t) ? ' plain' : '') + (window.HN_IMAGE(t.image) ? ' img' : '') + (extra ? ' ' + extra : ''); }
 function sqHTML(id, size, extraCls){
   var t = TH(id);
-  return '<div class="'+sqCls(t, 's'+size+(extraCls?' '+extraCls:''))+'" style="'+themeVars(t)+'">'+sqInner(t)+'</div>';
+  return '<div class="'+sqCls(t, 's'+size+(extraCls?' '+extraCls:''))+'" style="'+sqVars(t)+'">'+sqInner(t)+'</div>';
 }
 
 /* one small monochrome icon set, drawn in the 20px grid */
@@ -1496,11 +1583,15 @@ function titleCase(s){ return String(s).toLowerCase().replace(/(^|[\s\-\/&])([a-
 function cityShort(c){ if(!c) return ''; var b=String(c).split('|'); return titleCase(b[b.length-1]); }
 function initials(n){ var b=String(n).trim().split(/\s+/); return (b[0][0]+(b[1]?b[1][0]:'')).toUpperCase(); }
 function person(id){ return PEOPLE[id] || { id:id, displayName:id, handle:id, skills:[], city:'', bio:'' }; }
-/* a person's avatar: the photo on their look when they have one, else their initials */
-function avHTML(id, cls){
-  var p = person(id), lk = typeof PTHEME !== 'undefined' && PTHEME[id];
-  if (lk && window.HN_IMAGE(lk.image)) return '<span class="av img '+(cls||'')+'" aria-hidden="true"><img src="'+esc(lk.image)+'" alt="" draggable="false"></span>';
-  return '<span class="av '+(cls||'')+'" style="background:'+(AVCOLOR[id]||'#5a5a5a')+'" aria-hidden="true">'+esc(initials(p.displayName))+'</span>';
+/* a person's face, everywhere they appear (lists, chats, the toolbar, the You tab, their page): the photo on their look
+   when they have one; else their initials — in their look's colours when they customised it (2026-10-05: before, only
+   the photo reached the avatars, so a look without a photo showed nowhere but on the page's band) */
+function avHTML(id, cls, px){
+  var p = person(id), lk = typeof PTHEME !== 'undefined' && personLook(id), sz = px ? 'width:'+px+'px;height:'+px+'px;flex-basis:'+px+'px;font-size:'+Math.round(px*.35)+'px;' : '';
+  if (lk && window.HN_IMAGE(lk.image)) return '<span class="av img '+(cls||'')+'"'+(sz ? ' style="'+sz+'"' : '')+' aria-hidden="true"><img src="'+esc(lk.image)+'" alt="" draggable="false"></span>';
+  if (lk && !isPlain(cleanLook(lk))){ var pl = lookPal(lk);
+    return '<span class="av lk '+(cls||'')+'" style="'+sz+'background:'+pl.sq+';color:'+pl.accentInk+'" aria-hidden="true">'+esc(initials(p.displayName || '?'))+'</span>'; }
+  return '<span class="av '+(cls||'')+'" style="'+sz+'background:'+(AVCOLOR[id]||'#5a5a5a')+'" aria-hidden="true">'+esc(initials(p.displayName || '?'))+'</span>';
 }
 function allEvents(){ return Object.keys(EVENTS).map(function(k){ return EVENTS[k]; }); }
 function ownEvent(e){ return !!e && S.loggedIn && MYEVENTS.indexOf(e.id) >= 0; }
@@ -1525,7 +1616,7 @@ function hzCover(hzId){
 }
 /* a square from a look, at any pixel size (the event square, drawn for anything that has a look) */
 function sqT(t, px, extra){
-  return '<div class="'+sqCls(t, extra)+'" style="'+themeVars(t)+'width:'+px+'px;height:'+px+'px;font-size:'+Math.round(px*0.54)+'px">'+sqInner(t)+'</div>';
+  return '<div class="'+sqCls(t, extra)+'" style="'+sqVars(t)+'width:'+px+'px;height:'+px+'px;font-size:'+Math.round(px*0.54)+'px">'+sqInner(t)+'</div>';
 }
 function hzOwnSquare(hzId){ return HZCOVER[hzId] === 'own' && HZTHEME[hzId]; }
 /* one square standing for a horizon: its own, its chosen event's, or the first event's */
@@ -2356,8 +2447,9 @@ function stateGroupHTML(evId){
     vb('v-interested', evId, 'Interested', 'heart', { on:st === 'interested', pressed:st === 'interested' }) +
     vb('v-going', evId, 'Going', 'check', { on:st === 'going', pressed:st === 'going' }) + '</div>';
 }
+/* the host's one Edit: the facts, who can see it, the picture and colours (2026-10-05; Customize is part of it) */
 function hostGroupHTML(evId){
-  return '<div class="vgroup" role="group" aria-label="Your event">' + vb('editevent', evId, 'Edit', 'edit', { primary:true }) + vb('customize', evId, 'Customize', 'paint') + '</div>';
+  return '<div class="vgroup" role="group" aria-label="Your event">' + vb('editevent', evId, 'Edit', 'edit', { primary:true }) + '</div>';
 }
 function verbsHTML(evId){
   var h = '<div class="verbs">';
@@ -2518,11 +2610,12 @@ function playlistHTML(hzId, withTracks){
   if (!mine) bar = toolbarHTML(vb('followhz', hzId, fol ? 'Following' : 'Follow', fol ? 'check' : 'plus', { on:fol, primary:!fol, pressed:!!fol, cls:'plmain' }),
                                vb('share', hzId, 'Share', 'share', { attrs:' data-type="horizon"' }));
   else {
-    /* your own horizon: filling it is the job, so Add events leads; a private one's next step is publishing, a published one's is sharing */
+    /* your own horizon: filling it is the job, so Add events leads; Edit holds everything else about it — its name, who
+       can see it, its look — and Share is always Share (a private one says so when pressed, and offers to make it
+       public). ⋯ keeps Delete. Your personal list is never public, so it has no Share */
     bar = toolbarHTML(vb('addevents', hzId, 'Add events', 'plus', { primary:true, cls:'plmain' }),
-      vb('customizehz', hzId, 'Customize', 'paint') + vb('renamehz', hzId, 'Edit details', 'edit') +
-      (!hz.isPublished && !hz.isPersonalDefault ? vb('publishhz', hzId, 'Publish', 'horizon', { pressed:false }) : hz.isPublished ? vb('share', hzId, 'Share', 'share', { attrs:' data-type="horizon"' }) : '') +
-      vb('hzmore', hzId, '', 'dots', { aria:'More', attrs:' data-more="'+(hz.isPublished ? 'publish,delete' : 'delete')+'" aria-haspopup="menu"' }));
+      vb('edithz', hzId, 'Edit', 'edit') + (hz.isPersonalDefault ? '' : vb('share', hzId, 'Share', 'share', { attrs:' data-type="horizon"' })) +
+      vb('hzmore', hzId, '', 'dots', { aria:'More', attrs:' data-more="delete" aria-haspopup="menu"' }));
   }
   var owner = mine ? 'You' : hz.ownerName, ownerLink = !mine && hz.ownerId && PEOPLE[hz.ownerId] && hz.ownerId !== 'self' ? { type:'person', id:hz.ownerId } : null;
   var facts = factGrid([['By', owner, '', ownerLink], ['Events', String(evs.length)], ['Followers', String(hzFollowers(hzId))], ['When', hzRange(hzId) || '—']]);
@@ -2562,21 +2655,24 @@ function publishedHorizonsOf(pid){
 /* ---- person ---- */
 var PTHEME = {};                 /* pid -> a customised look; people nobody customised are plain */
 Object.keys(window.HYPERNET_THEMES.people || {}).forEach(function(k){ PTHEME[k] = window.HYPERNET_THEMES.people[k]; });
-function personTheme(pid){ return PTHEME[pid] || plainTheme('◉'); }
-function personCover(pid, px){
-  var t = PTHEME[pid];
-  return t ? sqT(t, px) : '<span class="av a'+px+'" style="background:'+(AVCOLOR[pid]||'#5a5a5a')+'" aria-hidden="true">'+esc(initials(person(pid).displayName))+'</span>';
-}
+/* your own look lives under 'self' while you are logged in; your account's person id (what others' rows, replies and
+   activity carry) is you too, so it reads the same look — one face, wherever you are clicked */
+function personLook(pid){ return (pid !== 'self' && S.loggedIn && pid === myActor() && PTHEME.self) || PTHEME[pid] || null; }
+function personTheme(pid){ return personLook(pid) || plainTheme('◉'); }
+/* a person's page shows their face (photo, or initials in their look), the same as every avatar of them */
+function personCover(pid, px){ return avHTML(pid, 'a'+px); }
 function goingOf(pid){
   if (pid === 'self') return S.loggedIn ? Object.keys(RSVP).filter(function(k){ return RSVP[k] === 'going' && EVENTS[k]; }).map(function(k){ return EVENTS[k]; }) : [];
   return allEvents().filter(function(e){ return canSeeEvent(e) && attendees(e.id).indexOf(pid) >= 0; });
 }
-function personHTML(pid){
-  var p = person(pid), hz = publishedHorizonsOf(pid), st = PRESENCE[pid] || 'offline', fol = S.loggedIn && PFOLLOW[pid], me = pid === 'self';
+/* `asOther`: your own page as anybody else sees it (Edit profile's preview) */
+function personHTML(pid, asOther){
+  var p = person(pid), hz = publishedHorizonsOf(pid), st = PRESENCE[pid] || (asOther ? 'online' : 'offline'), fol = S.loggedIn && PFOLLOW[pid], me = pid === 'self' && !asOther;
   var hosts = allEvents().filter(function(e){ return canSeeEvent(e) && hostPersonOf(e) === PEOPLE[pid]; }).sort(byDate);
   var going = goingOf(pid).filter(function(e){ return !isPast(lastDay(e)); }).sort(byDate);
   var calls = CALLOUTS.filter(function(c){ return c.hostId === pid && calloutOpen(c); });
-  var bar = me ? (S.loggedIn ? toolbarHTML(vb('editprofile', 'self', 'Edit profile', 'edit', { primary:true }), vb('customizeme', 'self', 'Customize', 'paint')) : '')
+  /* your page: one Edit profile (name, photo, colours and the rest) — 2026-10-05, Customize is part of it */
+  var bar = me ? (S.loggedIn ? toolbarHTML(vb('editprofile', 'self', 'Edit profile', 'edit', { primary:true })) : '')
                : toolbarHTML(vb('followp', pid, fol ? 'Following' : 'Follow', fol ? 'check' : 'plus', { on:fol, primary:!fol, pressed:!!fol }), vb('dm', pid, 'Message', 'chat'));
   var facts = factGrid([['Based in', citiesOf(p).join(', ') || '—'], ['Hosting', String(hosts.filter(function(e){ return !isPast(lastDay(e)); }).length)],
                         ['Going', String(going.length)], ['Horizons', String(hz.length)]]);
@@ -3875,8 +3971,7 @@ function renderNav(){
          '<div class="an">'+esc(me.displayName)+'<small>@'+esc(me.handle)+(citiesOf(me).length ? ' · '+esc(citiesOf(me).join(', ')) : '')+'</small></div></div>' +
          (me.bio ? '<p class="acbio">'+esc(me.bio)+'</p>' : '') +
          ((me.skills||[]).length ? '<div class="tags">' + me.skills.map(function(x){ return '<span class="tag">'+esc(skillLabel(x))+'</span>'; }).join('') + '</div>' : '') +
-         '<div class="acbtns"><button class="btn" data-act="editprofile">'+ic('edit')+'Edit profile</button>' +
-         '<button class="btn" data-act="customizeme">'+ic('paint')+'Customize</button></div></div>';
+         '<div class="acbtns"><button class="btn" data-act="editprofile">'+ic('edit')+'Edit profile</button></div></div>';
   }
   if (S.folder.kind === 'search' && S.query.trim() && !L.phone){
     h += '<div class="nrow sel search">'+ic('search')+'<span class="nlab">“'+esc(S.query)+'”</span>' +
@@ -4173,19 +4268,23 @@ function demoRowHTML(){
   if (ONLINE) return '';   /* no demo account on the real network */
   return '<p class="demolink">Just looking? <button type="button" data-act="useacct" data-id="demo">Explore as the demo account</button></p>';
 }
-/* your photo is your profile look's image: the same picture as the square in Customize */
+/* your photo is your profile look's picture: the face on your page and on every avatar of you */
+/* the face the photo field shows: the photo, or your initials in the colours picked so far */
+function pfFaceHTML(){
+  var me = person('self'), lk = DRAFT && DRAFT.form === 'profile' ? draftLook(DRAFT) : PTHEME.self, pl = lk && !isPlain(lk) ? lookPal(lk) : null;
+  return PF.photo ? sqT(Object.assign({}, lk || plainTheme('◉'), { image:PF.photo }), 80)
+    : '<span class="av'+(pl ? ' lk' : '')+'" style="width:80px;height:80px;flex-basis:80px;font-size:28px;background:'+(pl ? pl.sq+';color:'+pl.accentInk : (AVCOLOR.self||'#5a5a5a'))+'">'+esc(initials(PF.name || me.displayName || 'You'))+'</span>';
+}
 function pfPhotoHTML(){
-  var me = person('self'), sq = PF.photo ? sqT(Object.assign({}, PTHEME.self || plainTheme('◉'), { image:PF.photo }), 80)
-    : '<span class="av" style="width:80px;height:80px;flex-basis:80px;font-size:28px;background:'+(AVCOLOR.self||'#5a5a5a')+'">'+esc(initials(PF.name || me.displayName || 'You'))+'</span>';
   return '<div class="field"><span class="flabel" id="pf-ph-l">Photo</span><div class="czimg" role="group" aria-labelledby="pf-ph-l">' +
-    '<button type="button" class="czdrop" data-pfact="pick" data-czdrop="photo" aria-label="'+(PF.photo ? 'Replace your photo' : 'Choose a photo')+'">' + sq + '</button>' +
+    '<button type="button" class="czdrop" data-pfact="pick" data-czdrop="photo" aria-label="'+(PF.photo ? 'Replace your photo' : 'Choose a photo')+'">' + pfFaceHTML() + '</button>' +
     '<div class="czimgside"><input type="file" id="pf-photo" class="czfile" accept="image/*" data-czfile="photo" tabindex="-1" aria-hidden="true">' +
       '<button type="button" class="btn" data-pfact="pick">'+(PF.photo ? 'Replace photo' : 'Upload photo')+'</button>' +
       (PF.photo ? '<button type="button" class="btn" data-pfact="rm">Remove photo</button>' : '') +
-      '<p class="fhelp">Square, cropped from the centre, up to 10 MB. It is also your profile’s square in Customize.</p>' +
+      '<p class="fhelp">Square, cropped from the centre, up to 10 MB. Without one, your initials stand in, in your colours.</p>' +
       '<p class="ferr" id="pf-imgerr" role="alert"></p></div></div></div>';
 }
-function pfRepaint(){ pfSync(); var b = $('pfbody'); if (b) b.innerHTML = profileForm(); pfSync(); }
+function pfRepaint(){ pfSync(); var b = $('pfbody'); if (b) b.innerHTML = profileForm(); pfSync(); czPreviews(); }
 function pfTakePhoto(file){
   var err = $('pf-imgerr'), bad = imageProblem(file), pf = PF;
   if (err) err.textContent = bad;
@@ -4199,13 +4298,53 @@ document.addEventListener('click', function(ev){
   if (b.getAttribute('data-pfact') === 'pick'){ var f = $('pf-photo'); if (f) f.click(); }
   else { PF.photo = null; pfRepaint(); }
 });
+/* Edit profile is one dialog too (2026-10-05): who you are, your photo, and your colours, with your page beside it as
+   others will see it (on a phone, behind Preview) — the same look, the same save */
+function profileEditBodyHTML(){
+  return edWrap('<section class="edsec"><h3>Profile</h3><div id="pfbody">' + profileForm() + '</div></section>' + edSec('Look', czControlsHTML(DRAFT)),
+                profilePreviewHTML()).replace('class="custprev"', 'class="custprev pfprev"');
+}
+function profileEditFootHTML(){
+  return (L.phone ? '<button class="btn" data-act="pfpreview" data-id="on">'+ic('user')+'Preview</button>' : '<button class="btn" data-act="closedlg">Cancel</button>') +
+    '<button class="btn primary" data-act="pfsave" id="pfsave">Save</button>';
+}
+/* your page with what you have typed and picked, as anybody else sees it: drawn from the real template with your
+   profile and look swapped in for the moment it takes to draw */
+function profilePreviewHTML(){
+  if (!PF) return '';
+  var p = PEOPLE.self, keep = { displayName:p.displayName, handle:p.handle, bio:p.bio, skills:p.skills, cities:p.cities, city:p.city }, had = 'self' in PTHEME, kl = PTHEME.self;
+  try {
+    Object.assign(p, { displayName:PF.name.trim() || p.displayName || 'You', handle:normHandle(PF.handle) || p.handle, bio:PF.about.trim(), skills:PF.skills.slice(), cities:PF.cities.slice() });
+    var lk = DRAFT && DRAFT.form === 'profile' ? draftLook(Object.assign({}, DRAFT, { image:PF.photo || null })) : kl;
+    if (lk) PTHEME.self = lk; else delete PTHEME.self;
+    return '<div class="pvpage" inert>' + personHTML('self', true) + '</div>';
+  } finally { Object.assign(p, keep); if (had) PTHEME.self = kl; else delete PTHEME.self; }
+}
+/* on a phone: Preview shows the page, Back to editing returns to the form as you left it */
+function pfPreview(on){
+  var d = DLGS[DLGS.length-1]; if (!d || !PF || PF.mode !== 'edit') return;
+  if (on){
+    pfSync(); PF.previewing = true;
+    d.querySelector('.dbody').innerHTML = '<p class="pvnote">This is your profile as others see it. Nothing is saved yet.</p>' + profilePreviewHTML();
+    d.querySelector('.dfoot').innerHTML = '<button class="btn" data-act="pfpreview" data-id="off">'+ic('back')+'Back to editing</button><button class="btn primary" data-act="pfsave" id="pfsave">Save</button>';
+    d.querySelector('.dbody').scrollTop = 0;
+  } else {
+    PF.previewing = false;
+    d.querySelector('.dbody').innerHTML = profileEditBodyHTML(); d.querySelector('.dfoot').innerHTML = profileEditFootHTML(); pfSync();
+  }
+}
 function profileDialog(mode){
   if (ONLINE && mode === 'signup' && !HNAPI.login){ HNAPI.loginDialog(); return; }   /* the email code comes first */
   var p = PEOPLE['self'], up = mode === 'signup';
   PF = { mode:mode, name: up ? '' : p.displayName, handle: up ? '' : p.handle, photo: up ? null : (PTHEME.self && PTHEME.self.image) || null,
          about: up ? '' : (p.bio || ''), skills: up ? [] : (p.skills || []).slice(), cities: up ? [] : citiesOf(p).slice() };
-  dialog(up ? (JOINFOR || 'Join Hypernet') : 'Edit profile', '<div id="pfbody">' + profileForm() + '</div>' + (up ? demoRowHTML() : ''),
-    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="pfsave" id="pfsave"'+(up?' disabled':'')+'>'+(up ? 'Join' : 'Save')+'</button>', 560);
+  if (up){
+    dialog(JOINFOR || 'Join Hypernet', '<div id="pfbody">' + profileForm() + '</div>' + demoRowHTML(),
+      '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="pfsave" id="pfsave" disabled>Join</button>', 560);
+  } else {
+    DRAFT = Object.assign({ form:'profile', kind:'person', editing:'self', lookTouched:false }, lookDraft(PTHEME.self ? asLook(PTHEME.self) : plainTheme('◉')));
+    dialog('Edit profile', profileEditBodyHTML(), profileEditFootHTML(), 940, 'edlg pfdlg');
+  }
   focusIn('pf-name');
 }
 /* a handle from a name: first name, lower case, plain letters; a number when it is taken */
@@ -4227,6 +4366,7 @@ function pfValid(){
   return !!n && !!hd && /^[a-z0-9._-]+$/.test(hd) && !handleTaken(hd);
 }
 function pfSync(){
+  if (!$('pf-name')) return;            /* the form isn't on screen (the phone's Preview): PF already holds it */
   PF.name = ($('pf-name')||{}).value || ''; PF.handle = (($('pf-handle')||{}).value || '').replace(/^@/, '');
   PF.about = ($('pf-about')||{}).value || '';
   var b = $('pfsave'); if (b) b.disabled = !pfValid();
@@ -4242,6 +4382,7 @@ function pfAddCity(){
   if (PF.cities.indexOf(v) < 0) PF.cities.push(v);
   pfSync();
   $('pfbody').innerHTML = profileForm();
+  if (PF.mode === 'edit') czPreviews();
   var ni = $('pf-city'); if (ni) ni.focus();
 }
 function pfSave(){
@@ -4257,11 +4398,11 @@ function pfSave(){
     return;
   }
   Object.keys(prof).forEach(function(k){ PEOPLE['self'][k] = prof[k]; });
-  if (PF.photo !== ((PTHEME.self && PTHEME.self.image) || null)){
-    var lk = asLook(Object.assign({}, PTHEME.self || plainTheme('◉'), { image:PF.photo || null }));
-    if (isPlain(lk) && !lk.image) delete PTHEME.self; else PTHEME.self = lk;
-    if (ONLINE) HNAPI.saveMyLook();
-  }
+  /* the look: the colours picked here and the photo, which is the look's picture */
+  var photo = PF.photo !== ((PTHEME.self && PTHEME.self.image) || null), cz = DRAFT && DRAFT.form === 'profile' && DRAFT.lookTouched, lk = null;
+  if (cz) lk = draftLook(Object.assign({}, DRAFT, { image:PF.photo || null }));
+  else if (photo){ lk = asLook(Object.assign({}, PTHEME.self || plainTheme('◉'), { image:PF.photo || null })); if (isPlain(lk) && !lk.image) lk = null; }
+  if (cz || photo){ if (lk) PTHEME.self = lk; else delete PTHEME.self; if (ONLINE) HNAPI.saveMyLook(); }
   if (ONLINE) HNAPI.saveProfile(prof);
   S.me = { name:prof.displayName, handle:prof.handle }; closeDialogs(); render(); toast('Profile saved', '');
 }
@@ -4361,13 +4502,8 @@ function doLogout(){
   closeDialogs(); closePopup(); render();
   toast('Logged out', '');
 }
-function renameHzDialog(hzId){
-  dialog('Edit details',
-    '<div class="field"><label for="rh-n">Name</label><input type="text" id="rh-n" value="'+esc(HORIZONS[hzId].name)+'"></div>' +
-    '<div class="field"><label for="rh-d">Description</label><textarea id="rh-d" rows="3">'+esc(HORIZONS[hzId].description||'')+'</textarea></div>',
-    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="dorename" data-id="'+hzId+'">Save changes</button>', 460);
-  focusIn('rh-n');
-}
+/* Edit details became the one Edit (2026-10-05) */
+function renameHzDialog(hzId){ editHorizonDialog(hzId); }
 function addToDialog(evId){
   var h = '<p class="kdesc inline">'+esc(KINDDESC.horizons)+'</p><div class="picklist"><div class="linkrow" data-act="new-horizon" data-id="'+evId+'" role="button"><span class="r-ic">'+ic('plus')+'</span><div class="lr"><b>New Event Horizon</b></div></div>' +
     MYHORIZONS.slice().reverse().map(function(k){
@@ -4576,54 +4712,74 @@ function pickerDone(){
 </script>
 <script>
 /* =========================================================================
-   12. THE HOST'S EDITOR — New Event wizard, ending in Customize
+   12. THE HOST'S EDITOR — the New event wizard, One Edit (2026-10-05), and the look editor they share
    ========================================================================= */
-/* Customize is three colours and a square image (owner, 2026-10-01: "Keep pick your colors … just select colors and
-   image for now"). A few one-click starting points; the text colour is always kept legible on the background. */
+/* A look is picked as one to three colours (owner, 2026-10-05: "pick just one color that will color the whole page; if
+   we want we can add another color which will add some accent; then a third color; behind the scenes figure out how to
+   make it look good"): the page colour, then an accent, then a header colour. HN_PALETTE makes everything else, the
+   text included, so there is no text colour to pick and nothing to "correct". A few one-click starting points, one
+   square picture, Reset to plain. The same controls are the New event wizard's Look step and the Look of every Edit. */
 var LOOKSTARTS = [
-  { n:'Plain paper', bg:window.HN_PLAIN.bg, ink:window.HN_PLAIN.ink, accent:window.HN_PLAIN.accent },
-  { n:'Night',  bg:'#0e1018', ink:'#e8e9ef', accent:'#8fb4ff' },
-  { n:'Desert', bg:'#3a2a12', ink:'#fdf3df', accent:'#e6b23c' },
-  { n:'Sea',    bg:'#0d1b2e', ink:'#eaf2ff', accent:'#5ea8ff' },
-  { n:'Forest', bg:'#10201a', ink:'#e4f4ea', accent:'#48c98a' },
-  { n:'Neon',   bg:'#000000', ink:'#f5f5f5', accent:'#ff2fd0' }
+  { n:'Plain' },
+  { n:'Night',  c:['#0e1018', '#8fb4ff'] },
+  { n:'Sand',   c:['#f1e4c8', '#c2541e'] },
+  { n:'Sea',    c:['#0d1b2e', '#5ea8ff'] },
+  { n:'Forest', c:['#10201a', '#48c98a'] },
+  { n:'Neon',   c:['#000000', '#ff2fd0'] }
 ];
 var DRAFT = null;
 /* the draft fields that make up a look (anything else is a fact about the thing) */
-var LOOKKEYS = /^(bg|ink|accent|image)$/;
-function lookDraft(t){ return { bg:t.bg, ink:t.ink, accent:t.accent, image:t.image || null, glyph:t.glyph }; }
-/* the look a draft stands for, its text colour corrected; draftLook is null when that is just the plain look */
-function draftTheme(d){ return asLook({ bg:d.bg, ink:d.ink, accent:d.accent, image:d.image || null, glyph:d.glyph }); }
+var LOOKKEYS = /^(c[123]|image)$/;
+/* a look as the editor holds it: c1 the page colour (null = plain), c2 the accent, c3 the header; the picture; the glyph */
+function lookDraft(t){
+  t = cleanLook(t);
+  var c = isPlain(t) ? [] : lookPicks(t);
+  return { c1:c[0] || null, c2:c[1] || null, c3:c[2] || null, image:t.image || null, glyph:t.glyph };
+}
+/* a draft kept from before 2026-10-05 held bg / ink / accent: it becomes its picks */
+function normLookDraft(d){
+  if (d && !('c1' in d) && d.bg) Object.assign(d, lookDraft(asLook({ bg:d.bg, ink:d.ink, accent:d.accent, image:d.image, glyph:d.glyph })));
+  if (d){ delete d.bg; delete d.ink; delete d.accent; if (!('c1' in d)) Object.assign(d, { c1:null, c2:null, c3:null }); }
+  return d;
+}
+/* the look a draft stands for; draftLook is null when that is just the plain look */
+function draftTheme(d){
+  var P = window.HN_PLAIN;
+  if (!d.c1) return asLook({ bg:P.bg, ink:P.ink, accent:P.accent, image:d.image || null, glyph:d.glyph });
+  return asLook({ colors:[d.c1, d.c2 || null, d.c3 || null], image:d.image || null, glyph:d.glyph });
+}
 function draftLook(d){ var t = draftTheme(d); return isPlain(t) && !t.image ? null : t; }
 /* a horizon shows its own square when it has a picture, or no events to make a cover from */
 function hzOwnsSquare(hzId, lk){
   var hz = HORIZONS[hzId];
   return !!lk && (!!lk.image || !hz.eventIds.some(function(id){ return EVENTS[id]; }));
 }
-/* what the preview shows for the thing being customised: its square, eyebrow, title and two facts */
+/* what the preview shows for the thing being edited: its square, eyebrow, title and two facts, as typed so far */
 function czSubject(d, t, px){
   var lk = draftLook(d);
   if (d.kind === 'horizon'){
     var hz = HORIZONS[d.editing];
     return { cover: hzOwnsSquare(d.editing, lk) ? '<div class="mosaic one" style="width:'+px+'px;height:'+px+'px">'+sqT(t, px)+'</div>' : mosaicOf(hz.eventIds, px),
-             eyebrow:'Event Horizon', title:hz.name, facts:[['By', 'You'], ['Events', String(hz.eventIds.length)]] };
+             eyebrow:'Event Horizon' + ((d.published != null ? d.published : hz.isPublished) ? '' : ' · Private'), title:(d.name != null ? d.name : hz.name) || 'Untitled',
+             facts:[['By', 'You'], ['Events', String(hz.eventIds.length)]] };
   }
   if (d.kind === 'person'){
-    var me = person('self');
-    return { cover: lk ? sqT(t, px) : '<span class="av" style="width:'+px+'px;height:'+px+'px;flex-basis:'+px+'px;font-size:'+Math.round(px*.35)+'px;background:'+(AVCOLOR.self||'#5a5a5a')+'">'+esc(initials(me.displayName || 'You'))+'</span>',
-             eyebrow:'@'+esc(me.handle || 'you'), title:me.displayName || 'You', facts:[['Based in', citiesOf(me).join(', ') || '—'], ['Going', '3']] };
+    var me = person('self'), nm = (PF && PF.name) || me.displayName || 'You', pl = lk && !isPlain(lk) ? lookPal(lk) : null;
+    return { cover: lk && lk.image ? sqT(t, px) : '<span class="av'+(pl ? ' lk' : '')+'" style="width:'+px+'px;height:'+px+'px;flex-basis:'+px+'px;font-size:'+Math.round(px*.35)+'px;background:'+(pl ? pl.sq+';color:'+pl.accentInk : (AVCOLOR.self||'#5a5a5a'))+'">'+esc(initials(nm))+'</span>',
+             eyebrow:'@'+esc((PF && normHandle(PF.handle)) || me.handle || 'you'), title:nm, facts:[['Based in', ((PF && PF.cities) || citiesOf(me)).join(', ') || '—'], ['Going', String(goingOf('self').length)]] };
   }
   return { cover:sqT(t, px), eyebrow:esc(KINDLAB[d.kind] || 'Event'), title:d.title || 'Untitled event',
-           facts:[['When', isoDate(d.date) ? fmtDate(d.date) : '—'], ['Where', String(d.city || '').trim() || '—']] };
+           facts:[['When', isoDate(d.date) ? fmtDate(d.date) : '—'], ['Where', d.online ? 'Online' : String(d.city || '').trim() || '—']] };
 }
-function customizePreviewHTML(){
+/* the preview: the page's title band, its toolbar and a group box, in the look (on a phone, or `small`, the band alone) */
+function customizePreviewHTML(small){
   var d = DRAFT, t = draftTheme(d), sub = czSubject(d, t, 72);
-  var page = '<div class="minicanvas"><div class="canvas pg'+(isPlain(t) ? ' plain' : '')+'" style="'+themeVars(t)+'">' +
+  var page = '<div class="minicanvas" inert><div class="canvas pg'+(isPlain(t) ? ' plain' : '')+'" style="'+themeVars(t)+'">' +
     titleBlockHTML(sub.cover, sub.eyebrow, sub.title, '') +
-    '<div class="actbar"><div class="verbs"><span class="btn vb">'+ic('heart',16)+'Interested</span><span class="btn vb on">'+ic('check',16)+'Going</span></div></div>' +
+    '<div class="actbar"><div class="verbs">' + (d.kind === 'horizon' ? '<span class="btn vb primary">'+ic('plus',16)+'Follow</span><span class="btn vb">'+ic('share',16)+'Share</span>'
+      : '<span class="btn vb">'+ic('heart',16)+'Interested</span><span class="btn vb on">'+ic('check',16)+'Going</span>') + '</div></div>' +
     '<div class="layer"><div class="lin">' + factGrid(sub.facts) + '</div></div></div></div>';
-  /* on a phone the preview is the title block itself, small, and it stays in view while you change things */
-  if (L.phone) return '<div class="previewbox compact">' + page + '</div>';
+  if (L.phone || small) return '<div class="previewbox compact">' + page + '</div>';
   var row = '<div class="row unread" style="border:1px solid var(--line);cursor:default">' + sqT(t, 40) +
     '<div class="r-main"><div class="r-title">'+esc(sub.title)+'</div><div class="r-meta">'+esc(sub.facts.map(function(f){ return f[1]; }).join(' · '))+'</div></div></div>';
   return '<div class="previewbox"><div class="plabel">Page</div>' + page +
@@ -4631,44 +4787,82 @@ function customizePreviewHTML(){
     [120, 64, 40, 20].map(function(px){ return sqT(t, px); }).join('') + '</div>' +
     '<div class="plabel">Row</div>' + row + '</div>';
 }
-function czColorRow(k, label, v){
-  return '<div class="czcolor"><label for="cz-'+k+'">'+label+'</label><input type="color" id="cz-'+k+'" data-cz="'+k+'" value="'+esc(v)+'">' +
-    '<input type="text" class="czhex" data-cz="'+k+'" value="'+esc(v)+'" maxlength="7" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="'+label+' colour, hex"></div>';
+var CZROLE = { c1:'Page', c2:'Accent', c3:'Header' };
+function czColorRow(k, v){
+  var lab = CZROLE[k];
+  return '<div class="czcolor" data-czrow="'+k+'"><label for="cz-'+k+'">'+lab+'</label><input type="color" id="cz-'+k+'" data-cz="'+k+'" value="'+esc(v)+'">' +
+    '<input type="text" class="czhex" data-cz="'+k+'" value="'+esc(v)+'" maxlength="7" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="'+lab+' colour, hex">' +
+    (k === 'c1' ? '' : '<button type="button" class="ib czrm" data-czact="rm" data-k="'+k+'" aria-label="Remove the '+lab.toLowerCase()+' colour" title="Remove">'+ic('close', 16)+'</button>') + '</div>';
 }
-/* a text colour that is too faint for its background is corrected, and the editor says so, quietly */
+/* what the palette made of the picks, in a line: the text is chosen for you; a mid-tone page moved off the middle */
 function czNoteHTML(d){
-  var t = draftTheme(d);
-  return t.ink !== String(d.ink).toLowerCase() ? 'Adjusted for readability: text shows as <span class="sw" style="background:'+t.ink+'"></span>'+t.ink : '';
+  if (!d.c1) return 'Plain: paper and ink. Pick a page colour and the whole page takes it.';
+  var p = window.HN_PALETTE(d.c1, d.c2, d.c3), sw = function(c){ return '<span class="sw" style="background:'+c+'"></span>'; };
+  if (!p.nudged) return 'Text colours are chosen for you, readable on every colour you pick.';
+  return 'The page shows as ' + sw(p.bg) + (p.dark ? 'a little darker' : 'a little lighter') + ' than your colour, so text stays readable' +
+    (d.c3 ? '.' : '; the header keeps it exactly.');
 }
-function czDropHTML(d){ var t = draftTheme(d); return sqT(t, 96) + '<span class="czhint" aria-hidden="true">'+(t.image ? 'Replace' : 'Drop image')+'</span>'; }
+function czColorsHTML(d){
+  var h = '<div class="czsect">Colours</div><div class="czstarts" role="group" aria-label="Start from">' + LOOKSTARTS.map(function(s, i){
+      var p = s.c ? window.HN_PALETTE(s.c[0], s.c[1]) : null;
+      return '<button type="button" class="btn czstart" data-czact="start" data-i="'+i+'"><span class="sw" style="background:'+(p ? p.bg : window.HN_PLAIN.bg)+';color:'+(p ? p.sqGlyph : '#262626')+'" aria-hidden="true">'+esc(d.glyph || '◆')+'</span>'+esc(s.n)+'</button>';
+    }).join('') + '</div>';
+  h += czColorRow('c1', d.c1 || window.HN_PLAIN.bg);
+  if (d.c2) h += czColorRow('c2', d.c2);
+  if (d.c3) h += czColorRow('c3', d.c3);
+  /* one more at a time: an accent first, then a header colour */
+  var add = !d.c2 ? ['c2', 'Add accent'] : !d.c3 ? ['c3', 'Add header colour'] : null;
+  if (add) h += '<div class="czadds"><button type="button" class="btn czadd" data-czact="add" data-k="'+add[0]+'">'+ic('plus', 16)+add[1]+'</button></div>';
+  return h + '<p class="cznote" id="cz-note" role="status">'+czNoteHTML(d)+'</p>';
+}
+function czDropHTML(d){ var t = draftTheme(d); return sqT(t, 96) + '<span class="czhint" aria-hidden="true">'+(t.image ? 'Replace' : 'Drop picture')+'</span>'; }
+function czImageHTML(d){
+  return '<div class="czsect">Picture</div><div class="czimg">' +
+    '<button type="button" class="czdrop" data-czact="pick" data-czdrop="look" aria-label="'+(d.image ? 'Replace the picture' : 'Choose a square picture')+'">'+czDropHTML(d)+'</button>' +
+    '<div class="czimgside"><input type="file" id="cz-file" class="czfile" accept="image/*" data-czfile="look" tabindex="-1" aria-hidden="true">' +
+      '<button type="button" class="btn" data-czact="pick">'+(d.image ? 'Replace picture' : 'Upload picture')+'</button>' +
+      (d.image ? '<button type="button" class="btn" data-czact="rmimg">Remove picture</button>' : '') +
+      '<p class="fhelp">Shown as a square, cropped from the centre. JPG, PNG, WebP or GIF, up to 10 MB. Or drop one on the square.</p>' +
+      '<p class="ferr" id="cz-imgerr" role="alert"></p></div></div>';
+}
+/* the look's controls: the picture (a profile's is its photo, in its own field), the colours, Reset; in an Edit on a
+   phone the title band under them, so a colour shows where you picked it */
+function czControlsInner(d){
+  return (d.form === 'profile' ? '' : czImageHTML(d)) + czColorsHTML(d) +
+    (d.form && L.phone ? '<div class="czmini">' + customizePreviewHTML(true) + '</div>' : '') +
+    '<button type="button" class="btn czreset" data-czact="reset">'+(d.form === 'profile' ? 'Reset colours' : 'Reset to plain')+'</button>';
+}
+function czControlsHTML(d){ return '<div class="czlook" data-czlook>' + czControlsInner(d) + '</div>'; }
+/* the New event wizard's Look step: the controls beside a live preview */
 function customizeHTML(){
-  var d = DRAFT, note;
+  var d = DRAFT;
   if (d.kind !== 'horizon' && d.kind !== 'person' && !d.editing) d.glyph = PLAINGLYPH[d.kind] || '◆';
-  note = czNoteHTML(d);
-  var left = '<div class="custcol">' +
-    '<div class="czsect" id="cz-start-l">Start from</div><div class="czstarts" role="group" aria-labelledby="cz-start-l">' + LOOKSTARTS.map(function(s, i){
-      return '<button type="button" class="btn czstart" data-czact="start" data-i="'+i+'"><span class="sw" style="background:'+s.bg+';color:'+s.accent+'" aria-hidden="true">'+esc(d.glyph || '◆')+'</span>'+esc(s.n)+'</button>'; }).join('') + '</div>' +
-    '<div class="czsect">Colours</div>' + czColorRow('bg', 'Background', d.bg) + czColorRow('ink', 'Text', d.ink) + czColorRow('accent', 'Accent', d.accent) +
-    '<p class="cznote" id="cz-note" role="status"'+(note ? '' : ' hidden')+'>'+note+'</p>' +
-    '<div class="czsect">Image</div><div class="czimg">' +
-      '<button type="button" class="czdrop" data-czact="pick" data-czdrop="look" aria-label="'+(d.image ? 'Replace the image' : 'Choose a square image')+'">'+czDropHTML(d)+'</button>' +
-      '<div class="czimgside"><input type="file" id="cz-file" class="czfile" accept="image/*" data-czfile="look" tabindex="-1" aria-hidden="true">' +
-        '<button type="button" class="btn" data-czact="pick">'+(d.image ? 'Replace image' : 'Upload image')+'</button>' +
-        (d.image ? '<button type="button" class="btn" data-czact="rmimg">Remove image</button>' : '') +
-        '<p class="fhelp">Shown as a square, cropped from the centre. JPG, PNG, WebP or GIF, up to 10 MB. Or drop one on the square.</p>' +
-        '<p class="ferr" id="cz-imgerr" role="alert"></p></div></div>' +
-    '<button type="button" class="btn" data-czact="reset">Reset to plain</button></div>';
-  return '<div class="custwrap">' + left + '<div class="custprev">' + customizePreviewHTML() + '</div></div>';
+  return '<div class="custwrap"><div class="custcol"><p class="wzopt">Optional — a plain page is fine. Colours and a picture make it yours.</p>' + czControlsHTML(d) + '</div>' +
+    '<div class="custprev">' + customizePreviewHTML() + '</div></div>';
+}
+/* the previews in the open dialog, drawn again */
+function czPreviews(dlg){
+  dlg = dlg || DLGS[DLGS.length-1]; if (!dlg || !DRAFT) return;
+  var box = dlg.querySelector('.custprev'); if (box) box.innerHTML = DRAFT.form === 'profile' ? profilePreviewHTML() : customizePreviewHTML();
+  var face = DRAFT.form === 'profile' && PF && dlg.querySelector('.czdrop[data-czdrop="photo"]'); if (face) face.innerHTML = pfFaceHTML();
+  var mini = dlg.querySelector('.czmini'); if (mini) mini.innerHTML = customizePreviewHTML(true);
 }
 /* a colour change repaints only what shows it, so a picker that is open stays open */
 function czRefresh(except){
   var dlg = DLGS[DLGS.length-1];
-  if (!dlg || !DRAFT || !dlg.querySelector('.custwrap')) return;
-  ['bg','ink','accent'].forEach(function(k){ dlg.querySelectorAll('[data-cz="'+k+'"]').forEach(function(n){ if (n !== except && n.value !== DRAFT[k]) n.value = DRAFT[k]; }); });
-  var note = czNoteHTML(DRAFT), nb = $('cz-note'); if (nb){ nb.innerHTML = note; nb.hidden = !note; }
-  var dz = dlg.querySelector('.czdrop'); if (dz) dz.innerHTML = czDropHTML(DRAFT);
-  var box = dlg.querySelector('.custprev'); if (box) box.innerHTML = customizePreviewHTML();
+  if (!dlg || !DRAFT || !dlg.querySelector('[data-czlook]')) return;
+  ['c1','c2','c3'].forEach(function(k){ var v = DRAFT[k] || (k === 'c1' ? window.HN_PLAIN.bg : '');
+    dlg.querySelectorAll('[data-cz="'+k+'"]').forEach(function(n){ if (n !== except && v && n.value !== v) n.value = v; }); });
+  var nb = $('cz-note'); if (nb) nb.innerHTML = czNoteHTML(DRAFT);
+  var dz = dlg.querySelector('.czdrop[data-czdrop="look"]'); if (dz) dz.innerHTML = czDropHTML(DRAFT);
+  czPreviews(dlg);
   refreshWizFoot(); schedulePersist();
+}
+/* the controls change shape (a colour added or taken away, a starting point, a picture): draw them again in place */
+function czRepaint(){
+  var dlg = DLGS[DLGS.length-1], z = dlg && dlg.querySelector('[data-czlook]');
+  if (!z){ paintWiz(); return; }
+  z.innerHTML = czControlsInner(DRAFT); czPreviews(dlg); refreshWizFoot(); schedulePersist();
 }
 function czSetColor(k, v, from){
   v = String(v || '').trim().toLowerCase();
@@ -4720,20 +4914,24 @@ function czTakeFile(file){
   var err = $('cz-imgerr'), bad = imageProblem(file), d = DRAFT;
   if (err) err.textContent = bad;
   if (bad || !d) return;
-  squareImage(file, d.bg).then(function(url){
+  squareImage(file, draftTheme(d).bg).then(function(url){
     if (DRAFT !== d) return;
-    d.image = url; d.lookTouched = true; paintWiz(); schedulePersist();
+    d.image = url; d.lookTouched = true; czRepaint();
   }, function(){ var e2 = $('cz-imgerr'); if (e2) e2.textContent = 'That image couldn’t be read. Try another file.'; });
 }
 document.addEventListener('click', function(ev){
   var b = ev.target.closest && ev.target.closest('[data-czact]');
   if (!b || !DRAFT) return;
-  var a = b.getAttribute('data-czact');
+  var a = b.getAttribute('data-czact'), k = b.getAttribute('data-k'), d = DRAFT;
   if (a === 'pick'){ var f = $('cz-file'); if (f) f.click(); return; }
-  if (a === 'start'){ var s = LOOKSTARTS[+b.getAttribute('data-i')]; DRAFT.bg = s.bg; DRAFT.ink = s.ink; DRAFT.accent = s.accent; }
-  else if (a === 'rmimg') DRAFT.image = null;
-  else if (a === 'reset') Object.assign(DRAFT, { bg:window.HN_PLAIN.bg, ink:window.HN_PLAIN.ink, accent:window.HN_PLAIN.accent, image:null });
-  DRAFT.lookTouched = true; paintWiz(); schedulePersist();
+  if (a === 'start'){ var s = LOOKSTARTS[+b.getAttribute('data-i')]; d.c1 = s.c ? s.c[0] : null; d.c2 = s.c ? s.c[1] || null : null; d.c3 = null; }
+  else if (a === 'rmimg') d.image = null;
+  else if (a === 'reset'){ d.c1 = d.c2 = d.c3 = null; if (d.form !== 'profile') d.image = null; }
+  /* a new accent starts from the one the palette had made; a new header from the band it had made */
+  else if (a === 'add'){ var p = window.HN_PALETTE(d.c1 || window.HN_PLAIN.bg, d.c2, d.c3); d.c1 = d.c1 || window.HN_PLAIN.bg; d[k] = k === 'c2' ? p.accent : p.band; }
+  else if (a === 'rm') d[k] = null;
+  d.lookTouched = true; czRepaint();
+  if (a === 'add' || a === 'rm'){ var n = a === 'add' ? $('cz-' + k) : document.querySelector('.dlg .czadd'); if (n) n.focus(); }
 });
 /* drop a picture on the square (the customize square, or the profile photo) */
 function dropZone(ev){ var z = ev.target.closest && ev.target.closest('[data-czdrop]'); return z && ev.dataTransfer && [].indexOf.call(ev.dataTransfer.types || [], 'Files') >= 0 ? z : null; }
@@ -4745,40 +4943,59 @@ document.addEventListener('drop', function(ev){
   var f = ev.dataTransfer.files && ev.dataTransfer.files[0];
   if (z.getAttribute('data-czdrop') === 'photo') pfTakePhoto(f); else czTakeFile(f);
 });
-function wizBodyHTML(){
-  var d = DRAFT, h = '';
-  /* the steps are tabs: back is always open, forward only past steps that have everything they need (2026-10-04) */
-  /* Edit changes the facts; the look is Customize's job */
-  if (!d.editing || d.mode === 'edit') h += '<div class="wizsteps" role="tablist">' + (d.mode === 'edit' ? ['1 · Basics','2 · Words'] : ['1 · Basics','2 · Words','3 · Look']).map(function(l,i){
+/* the fields of an event, by section: the same markup in the wizard's steps and in Edit */
+function wzErr(miss, k){ return '<span class="ferr" id="err-'+k+'" data-err="'+k+'" role="alert"'+(miss[k] ? '' : ' hidden')+'>'+esc(miss[k] || '')+'</span>'; }
+function wzBad(miss, k){ return miss[k] ? ' aria-invalid="true"' : ''; }
+var WZOPT = ' <span class="opt">optional</span>';
+function basicsHTML(d, miss, withPrivacy){
+  var newEv = d.mode !== 'edit', bad = function(k){ return wzBad(miss, k); }, err = function(k){ return wzErr(miss, k); }, opt = WZOPT;
+  return '<div class="field"><label for="w-t">Title</label><input type="text" id="w-t" data-cz="title" value="'+esc(d.title)+'" placeholder="Ridge sauna, midnight" autocomplete="off" aria-required="true" aria-describedby="err-title"'+bad('title')+'>' + err('title') + '</div>' +
+    '<div class="frow"><div class="field"><label for="w-d">Starts</label><input type="date" id="w-d" data-cz="date" value="'+esc(d.date)+'"'+(newEv ? ' min="'+TODAY_ISO+'"' : '')+' aria-required="true" aria-describedby="err-date"'+bad('date')+'>' + err('date') + '</div>' +
+    '<div class="field"><label for="w-e">Ends'+opt+'</label><input type="date" id="w-e" data-cz="end" value="'+esc(d.end)+'"'+(d.date?' min="'+esc(d.date)+'"':'')+' aria-describedby="err-end"'+bad('end')+'>' + err('end') + '</div></div>' +
+    '<div class="frow"><div class="field"><label for="w-st">From'+opt+'</label><input type="time" id="w-st" data-cz="startTime" value="'+esc(d.startTime||'')+'"></div>' +
+    '<div class="field"><label for="w-et">Until'+opt+'</label><input type="time" id="w-et" data-cz="endTime" value="'+esc(d.endTime||'')+'"></div></div>' +
+    '<div class="field"><label for="w-ty">Type</label><select id="w-ty" data-cz="kind">' +
+      EVENTKINDS.map(function(k){ return '<option value="'+k+'"'+(k===(d.kind||'meetup')?' selected':'')+'>'+esc(KINDLAB[k])+'</option>'; }).join('') + '</select></div>' +
+    /* a place, or Online */
+    '<div class="field"><label for="w-c">Where</label><div class="wherein"><input type="text" id="w-c" data-cz="city" value="'+esc(d.online ? '' : d.city)+'" placeholder="'+(d.online ? 'Online' : 'Stockholm')+'"'+(d.online ? ' disabled' : '')+' aria-required="true" aria-describedby="err-city"'+bad('city')+'>' +
+      '<label class="wzon"><input type="checkbox" id="w-on" data-cz="online"'+(d.online ? ' checked' : '')+'>Online</label></div>' + err('city') + '</div>' +
+    (withPrivacy ? privacyHTML(d) : '') +
+    '<div class="field"><label for="w-k">Entry</label><select id="w-k" data-cz="entry">' +
+      ['free','donation','pay_what_you_can','ticket','membership','invite'].concat(ACCESSLAB[d.entry] && ['free','donation','pay_what_you_can','ticket','membership','invite'].indexOf(d.entry) < 0 ? [d.entry] : []).map(function(p){ return '<option value="'+p+'"'+(p===d.entry?' selected':'')+'>'+ACCESSLAB[p]+'</option>'; }).join('') +
+    '</select></div>';
+}
+function privacyHTML(d){
+  return '<div class="field"><label for="w-p">Who can see it</label><select id="w-p" data-cz="privacy">' +
+    Object.keys(PRIVACY).map(function(p){ return '<option value="'+p+'"'+(p===d.privacy?' selected':'')+'>'+PRIVACY[p]+'</option>'; }).join('') +
+    '</select><p class="fhelp">Friends are the people you follow. Only me keeps it to you.</p></div>';
+}
+function wordsHTML(d, miss){
+  return '<div class="field"><label for="w-desc">Description</label><textarea id="w-desc" data-cz="desc" rows="5" placeholder="Hot box on the ridge, a bucket of lake water, and nobody checking the time." aria-required="true" aria-describedby="err-desc"'+wzBad(miss, 'desc')+'>'+esc(d.desc)+'</textarea>' + wzErr(miss, 'desc') + '</div>' +
+    '<div class="field"><label for="w-b">Bring'+WZOPT+'</label><textarea id="w-b" data-cz="bring" rows="3" placeholder="A towel&#10;Something warm for after">'+esc(d.bring)+'</textarea></div>';
+}
+/* the steps, as short tabs that always fit (owner, 2026-10-05: the "1 · Basics / 2 · Words / 3 · Look optional" tabs
+   overflowed on a phone): back is always open, forward only past steps that have everything they need (2026-10-04) */
+function wizStepsHTML(d){
+  return '<div class="wizsteps" role="tablist" aria-label="Steps">' + ['Basics', 'Words', 'Look'].map(function(l, i){
     var on = d.step === i + 1, open = on || wizReach(d, i + 1);
-    return '<button type="button" role="tab" class="ws'+(on?' on':'')+'" aria-selected="'+on+'"'+(open ? '' : ' aria-disabled="true"')+' data-act="wizstep" data-id="'+(i+1)+'">'+l +
-      (i === 2 ? ' <span class="wsopt">optional</span>' : '') + '</button>'; }).join('') + '</div>';
-  var miss = d.showErr ? wizMissing(d, d.step) : {};
-  var bad = function(k){ return miss[k] ? ' aria-invalid="true"' : ''; };
-  var err = function(k){ return '<span class="ferr" id="err-'+k+'" data-err="'+k+'" role="alert"'+(miss[k] ? '' : ' hidden')+'>'+esc(miss[k] || '')+'</span>'; };
-  var opt = ' <span class="opt">optional</span>';
-  if (d.step === 1){
-    var newEv = d.mode !== 'edit';
-    h += '<div class="field"><label for="w-t">Title</label><input type="text" id="w-t" data-cz="title" value="'+esc(d.title)+'" placeholder="Ridge sauna, midnight" autocomplete="off" aria-required="true" aria-describedby="err-title"'+bad('title')+'>' + err('title') + '</div>' +
-         '<div style="display:flex;gap:12px;flex-wrap:wrap"><div class="field" style="flex:1 1 160px"><label for="w-d">Starts</label><input type="date" id="w-d" data-cz="date" value="'+esc(d.date)+'"'+(newEv ? ' min="'+TODAY_ISO+'"' : '')+' aria-required="true" aria-describedby="err-date"'+bad('date')+'>' + err('date') + '</div>' +
-         '<div class="field" style="flex:1 1 160px"><label for="w-e">Ends'+opt+'</label><input type="date" id="w-e" data-cz="end" value="'+esc(d.end)+'"'+(d.date?' min="'+esc(d.date)+'"':'')+' aria-describedby="err-end"'+bad('end')+'>' + err('end') + '</div></div>' +
-         '<div style="display:flex;gap:12px;flex-wrap:wrap"><div class="field" style="flex:1 1 160px"><label for="w-st">From'+opt+'</label><input type="time" id="w-st" data-cz="startTime" value="'+esc(d.startTime||'')+'"></div>' +
-         '<div class="field" style="flex:1 1 160px"><label for="w-et">Until'+opt+'</label><input type="time" id="w-et" data-cz="endTime" value="'+esc(d.endTime||'')+'"></div></div>' +
-         '<div class="field"><label for="w-ty">Type</label><select id="w-ty" data-cz="kind">' +
-           EVENTKINDS.map(function(k){ return '<option value="'+k+'"'+(k===(d.kind||'meetup')?' selected':'')+'>'+esc(KINDLAB[k])+'</option>'; }).join('') + '</select></div>' +
-         /* a place, or Online */
-         '<div class="field"><label for="w-c">Where</label><div class="wherein"><input type="text" id="w-c" data-cz="city" value="'+esc(d.online ? '' : d.city)+'" placeholder="'+(d.online ? 'Online' : 'Stockholm')+'"'+(d.online ? ' disabled' : '')+' aria-required="true" aria-describedby="err-city"'+bad('city')+'>' +
-           '<label class="wzon"><input type="checkbox" id="w-on" data-cz="online"'+(d.online ? ' checked' : '')+'>Online</label></div>' + err('city') + '</div>' +
-         '<div class="field"><label for="w-p">Who can see it</label><select id="w-p" data-cz="privacy">' +
-           Object.keys(PRIVACY).map(function(p){ return '<option value="'+p+'"'+(p===d.privacy?' selected':'')+'>'+PRIVACY[p]+'</option>'; }).join('') +
-         '</select><p class="fhelp">Friends are the people you follow. Only me keeps it to you.</p></div>' +
-         '<div class="field"><label for="w-k">Entry</label><select id="w-k" data-cz="entry">' +
-           ['free','donation','pay_what_you_can','ticket','membership','invite'].concat(ACCESSLAB[d.entry] && ['free','donation','pay_what_you_can','ticket','membership','invite'].indexOf(d.entry) < 0 ? [d.entry] : []).map(function(p){ return '<option value="'+p+'"'+(p===d.entry?' selected':'')+'>'+ACCESSLAB[p]+'</option>'; }).join('') +
-         '</select></div>';
-  } else if (d.step === 2){
-    h += '<div class="field"><label for="w-desc">Description</label><textarea id="w-desc" data-cz="desc" rows="5" placeholder="Hot box on the ridge, a bucket of lake water, and nobody checking the time." aria-required="true" aria-describedby="err-desc"'+bad('desc')+'>'+esc(d.desc)+'</textarea>' + err('desc') + '</div>' +
-         '<div class="field"><label for="w-b">Bring'+opt+'</label><textarea id="w-b" data-cz="bring" rows="3" placeholder="A towel&#10;Something warm for after">'+esc(d.bring)+'</textarea></div>';
-  } else h += customizeHTML();
+    return '<button type="button" role="tab" class="ws'+(on?' on':'')+'" aria-selected="'+on+'"'+(open ? '' : ' aria-disabled="true"')+' data-act="wizstep" data-id="'+(i+1)+'">' +
+      '<span class="wsn" aria-hidden="true">'+(i+1)+'</span>'+l+'</button>'; }).join('') + '</div>';
+}
+/* ONE EDIT (owner, 2026-10-05: "some general Edit button which would allow me to set the privacy and also the details and
+   the title and the image, everything"): one dialog of sections — the facts, who can see it, the look — beside a live
+   preview on a desktop; on a phone the title band sits under the colours. Sections, not tabs: it is one form, saved once. */
+function edSec(title, body){ return '<section class="edsec"><h3>'+esc(title)+'</h3>' + body + '</section>'; }
+function edWrap(form, prev){ return '<div class="custwrap edwrap"><div class="custcol edform">' + form + '</div>' + (L.phone ? '' : '<div class="custprev">' + prev + '</div>') + '</div>'; }
+function wizBodyHTML(){
+  var d = DRAFT;
+  if (d.form === 'horizon') return editHorizonBodyHTML();
+  var miss = d.showErr ? wizMissingNow(d) : {};
+  if (d.mode === 'edit') return edWrap(edSec('Details', basicsHTML(d, miss, false)) + edSec('Words', wordsHTML(d, miss)) +
+                                       edSec('Who can see it', privacyHTML(d)) + edSec('Look', czControlsHTML(d)), customizePreviewHTML());
+  var h = wizStepsHTML(d);
+  if (d.step === 1) h += basicsHTML(d, miss, true);
+  else if (d.step === 2) h += wordsHTML(d, miss);
+  else h += customizeHTML();
   return h;
 }
 /* ---- what each step needs before you can go on (owner, 2026-10-04: "not possible to go to the next step until you have
@@ -4799,6 +5016,8 @@ function wizMissing(d, step){
   if (step === 2 && !String(d.desc || '').trim()) m.desc = 'Add a line or two about it';
   return m;
 }
+/* what is missing in what is on screen: the step in the wizard, the whole form in Edit */
+function wizMissingNow(d){ return d.mode === 'edit' ? Object.assign({}, wizMissing(d, 1), wizMissing(d, 2)) : wizMissing(d, d.step); }
 function wizValid(d, step){ return !Object.keys(wizMissing(d, step)).length; }
 /* the first step (of those before `upTo`) that still needs something; 0 = none */
 function wizFirstBad(d, upTo){ for (var i = 1; i < Math.min(upTo || 3, 3); i++) if (!wizValid(d, i)) return i; return 0; }
@@ -4820,7 +5039,7 @@ function wizShowMissing(step){
 /* once you have tried to go on, the messages follow what you type (without repainting the field you are in) */
 function wizSyncErrs(){
   var dl = DLGS[DLGS.length-1]; if (!dl || !DRAFT) return;
-  var m = DRAFT.showErr ? wizMissing(DRAFT, DRAFT.step) : {};
+  var m = DRAFT.showErr ? wizMissingNow(DRAFT) : {};
   dl.querySelectorAll('[data-err]').forEach(function(sp){
     var k = sp.getAttribute('data-err'), msg = m[k] || '', inp = $(WIZFIELD[k]);
     if (sp.textContent !== msg) sp.textContent = msg;
@@ -4828,23 +5047,26 @@ function wizSyncErrs(){
     if (inp){ if (msg) inp.setAttribute('aria-invalid', 'true'); else inp.removeAttribute('aria-invalid'); }
   });
 }
+/* the footer: one primary action at a time, always in the same place — Next on Basics and Words, Publish event on Look
+   (owner, 2026-10-05: "Publish event button is not looking nice": four equal buttons in one row on a phone). Back
+   beside it; what it is waiting for in a line of its own; no Cancel — × in the title bar closes and keeps the draft */
 function wizFootHTML(){
   var d = DRAFT, dis = function(ok){ return ok ? '' : ' aria-disabled="true"'; };
+  if (d.form === 'horizon') return '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="wiz" data-id="finish"'+dis(String(d.name || '').trim())+'>Save changes</button>';
   if (!wizEvent(d)) return '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="wiz" data-id="finish">Apply</button>';
   var need = '<span class="wizneed" id="wiz-need" role="status">'+esc(wizNeedText(d))+'</span>', all = !wizFirstBad(d);
   if (d.mode === 'edit') return need + '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="wiz" data-id="finish"'+dis(all)+'>Save changes</button>';
-  setTimeout(function(){ syncDiscard('event'); }, 0);
-  /* Next waits for this step; Publish (from Words on — the look is optional) waits for Basics and Words */
-  return need + '<button class="btn" data-act="closedlg">Cancel</button>' +
-    (d.step > 1 ? '<button class="btn" data-act="wiz" data-id="back">'+ic('back')+'Back</button>' : '') +
-    (d.step < 3 ? '<button class="btn'+(d.step === 1 ? ' primary' : '')+'" data-act="wiz" data-id="next"'+dis(wizReach(d, d.step + 1))+'>Next</button>' : '') +
-    (d.step > 1 ? '<button class="btn primary" data-act="wiz" data-id="finish"'+dis(all)+'>Publish event</button>' : '');
+  return need + '<span class="wizbtns">' + (d.step > 1 ? '<button class="btn wzback" data-act="wiz" data-id="back">'+ic('back')+'Back</button>' : '') +
+    (d.step < 3 ? '<button class="btn primary wzgo" data-act="wiz" data-id="next"'+dis(wizReach(d, d.step + 1))+'>Next</button>'
+                : '<button class="btn primary wzgo" data-act="wiz" data-id="finish"'+dis(all)+'>Publish event</button>') + '</span>';
 }
 function paintWiz(){
   var d = DLGS[DLGS.length-1];
   if (!d) return;
-  d.querySelector('.dbody').innerHTML = wizBodyHTML();
+  var b = d.querySelector('.dbody'), top = b.scrollTop;
+  b.innerHTML = wizBodyHTML();
   d.querySelector('.dfoot').innerHTML = wizFootHTML();
+  if (DRAFT && (DRAFT.form || DRAFT.mode === 'edit')) b.scrollTop = top;
   placeDlg(d);
 }
 /* a create form starts empty and is its own draft: closing it keeps what you typed, Discard throws it away */
@@ -4861,7 +5083,7 @@ function eventDraftDirty(d){
 /* repaint the footer only when it changes: replacing a button under the pointer would swallow its click */
 function refreshWizFoot(){
   var d = DLGS[DLGS.length-1], f = d && DRAFT && d.querySelector('.wizsteps, .custwrap') && d.querySelector('.dfoot');
-  if (!f) return;
+  if (!f || d.classList.contains('pfdlg')) return;
   var h = wizFootHTML(), probe = document.createElement('div'); probe.innerHTML = h;
   if (probe.innerHTML !== f.innerHTML) f.innerHTML = h;
   /* the step tabs open up as a step gets what it needs */
@@ -4869,40 +5091,89 @@ function refreshWizFoot(){
   tabs.forEach(function(t, i){ var open = DRAFT.step === i + 1 || wizReach(DRAFT, i + 1); if (open) t.removeAttribute('aria-disabled'); else t.setAttribute('aria-disabled', 'true'); });
   wizSyncErrs();
 }
+/* closing the wizard keeps what you typed; the toast says so and is the one place to throw it away (and take it back) */
+function draftKeptToast(){
+  toast('Draft kept', 'New event', { label:'Discard', run:function(){ var k0 = FORMDRAFTS.event; FORMDRAFTS.event = null; schedulePersist();
+    toast('Draft discarded', '', function(){ FORMDRAFTS.event = k0; schedulePersist(); toast('Draft restored', ''); }); } });
+}
+/* is the open dialog the New event wizard with something typed in it? (× keeps it, and the toast offers Discard) */
+function wizDraftOpen(){
+  var dl = DLGS[DLGS.length-1];
+  return !!(dl && dl.querySelector('.wizsteps') && DRAFT && !DRAFT.editing && FORMDRAFTS.event === DRAFT && eventDraftDirty(DRAFT));
+}
 var newEventDialog = gated(function(){
   DRAFT = FORMDRAFTS.event || blankEventDraft();
-  /* a draft kept from before looks were three colours gets the plain look's */
-  if (!DRAFT.bg){ ['mood','pal','surface','type','headline','motion','shape','density','pattern','backdrop','atmosphere','parallax','orn'].forEach(function(k){ delete DRAFT[k]; });
-                  Object.assign(DRAFT, lookDraft(plainTheme('◉'))); }
+  /* a draft kept from before looks were picked colours gets its picks (or the plain look) */
+  ['mood','pal','surface','type','headline','motion','shape','density','pattern','backdrop','atmosphere','parallax','orn'].forEach(function(k){ delete DRAFT[k]; });
+  normLookDraft(DRAFT);
   if (DRAFT.online == null) DRAFT.online = false;
   DRAFT.showErr = false;
   FORMDRAFTS.event = DRAFT;
-  dialog('New event', wizBodyHTML(), wizFootHTML(), 900);
+  dialog('New event', wizBodyHTML(), wizFootHTML(), 900, 'wizdlg');
   if (DRAFT.step === 1) focusIn('w-t');
 });
-/* events, horizons and your profile share one Customize: the same three colours and square */
-function openCustomize(what, id){
-  var t, d;
-  if (what === 'horizon'){ t = HZTHEME[id] ? asLook(HZTHEME[id]) : plainTheme('◗'); d = { kind:'horizon', title:HORIZONS[id].name }; }
-  else if (what === 'person'){ t = PTHEME[id] ? asLook(PTHEME[id]) : plainTheme('◉'); d = { kind:'person', title:person(id).displayName }; }
-  else { var e = EVENTS[id]; t = TH(id); d = { kind:recOf(id).kind || 'meetup', title:e.title, date:e.date, city:cityShort(e.city) }; }
-  DRAFT = Object.assign(d, { step:3, editing:id, lookTouched:false }, lookDraft(t));
-  dialog(what === 'person' ? 'Customize your profile' : 'Customize ' + d.title, wizBodyHTML(), wizFootHTML(), 900);
-}
-var customizeDialog = gated(function(evId){ openCustomize('event', evId); });
-var customizeHorizonDialog = gated(function(hzId){ openCustomize('horizon', hzId); });
-var customizePersonDialog = gated(function(){ openCustomize('person', 'self'); });
-/* Edit is the whole wizard again, filled in, saved from any step */
+/* ---- Edit an event you host: its facts, its words, who can see it and its look, in one dialog ---- */
 var editEventDialog = gated(function(evId){
   var e = EVENTS[evId], r = recOf(evId);
   if (!e || !isMine(evId)) return;
-  DRAFT = Object.assign({ mode:'edit', step:1, editing:evId, title:e.title, date:e.date, end:r.endDate || '', city:r.city || cityShort(e.city), online:r.venueKind === 'virtual',
+  DRAFT = Object.assign({ form:'event', mode:'edit', step:1, editing:evId, title:e.title, date:e.date, end:r.endDate || '', city:r.city || cityShort(e.city), online:r.venueKind === 'virtual',
             privacy:e.privacy || 'everyone', entry:(r.access && r.access.model) || 'free', desc:descOf(e),
             kind:r.kind || 'meetup', startTime:r.startTime || '', endTime:r.endTime || '',
-            bring: Array.isArray(r.whatToBring) ? r.whatToBring.join('\n') : (r.whatToBring || '') }, lookDraft(TH(evId)));
-  dialog('Edit ' + e.title, wizBodyHTML(), wizFootHTML(), 900);
+            bring: Array.isArray(r.whatToBring) ? r.whatToBring.join('\n') : (r.whatToBring || ''), lookTouched:false }, lookDraft(TH(evId)));
+  dialog('Edit ' + e.title, wizBodyHTML(), wizFootHTML(), 900, 'edlg');
   focusIn('w-t');
 });
+/* ---- Edit an Event Horizon of yours: its name and description, who can see it, its picture and colours ----
+   Who can see it lives here, not on a Publish button that turns into Share (owner, 2026-10-05: "It is weird how the
+   Publish button changes into a Share button"): Private (only you) or Public (anyone with the link, Explore, your
+   profile). Your personal list of interested events is always private. */
+var editHorizonDialog = gated(function(hzId){
+  var hz = HORIZONS[hzId];
+  if (!hz || !hzOwnedByMe(hzId)) return;
+  DRAFT = Object.assign({ form:'horizon', kind:'horizon', editing:hzId, name:hz.name, desc:hz.description || '', published:!!hz.isPublished, lookTouched:false },
+                        lookDraft(HZTHEME[hzId] ? asLook(HZTHEME[hzId]) : plainTheme('◗')));
+  dialog('Edit Event Horizon', wizBodyHTML(), wizFootHTML(), 900, 'edlg');
+  focusIn('ed-n');
+});
+var VISOPTS = [['private', 'Private', 'Only you. It isn’t listed anywhere, and its link opens for nobody else.'],
+               ['public', 'Public', 'Anyone can find it, open its link and follow it. It shows on your profile.']];
+function editHorizonBodyHTML(){
+  var d = DRAFT, hz = HORIZONS[d.editing];
+  var vis = hz.isPersonalDefault ? '<p class="fhelp edfix">Private: your own list of the events you’re interested in. It can’t be made public — make a new Event Horizon to share a list.</p>'
+    : '<div class="visopts" role="radiogroup" aria-label="Who can see it">' + VISOPTS.map(function(o){
+        var on = (o[0] === 'public') === !!d.published;
+        return '<label class="visopt'+(on ? ' on' : '')+'"><input type="radio" name="ed-vis" value="'+o[0]+'" data-cz="vis"'+(on ? ' checked' : '')+'><span><b>'+o[1]+'</b><small>'+o[2]+'</small></span></label>';
+      }).join('') + '</div>';
+  return edWrap(edSec('Details', '<div class="field"><label for="ed-n">Name</label><input type="text" id="ed-n" data-cz="name" value="'+esc(d.name)+'" autocomplete="off" aria-required="true" aria-describedby="err-name">' +
+        '<span class="ferr" id="err-name" role="alert"'+(d.showErr && !String(d.name || '').trim() ? '' : ' hidden')+'>Add a name</span></div>' +
+      '<div class="field"><label for="ed-d">Description'+WZOPT+'</label><textarea id="ed-d" data-cz="desc" rows="3" placeholder="Every build weekend on the ridge this autumn">'+esc(d.desc)+'</textarea></div>') +
+    edSec('Who can see it', vis) + edSec('Look', czControlsHTML(d)), customizePreviewHTML());
+}
+/* a horizon goes public or private: its activity row says what is true now */
+function setHzPublished(hzId, on){
+  HORIZONS[hzId].isPublished = on;
+  if (on){ unlogAct('created_horizon', hzId); logAct('published_horizon', 'horizon', hzId); } else unlogAct('published_horizon', hzId);
+}
+function saveHorizonEdit(){
+  var d = DRAFT, id = d.editing, hz = HORIZONS[id], nm = String(d.name || '').trim();
+  if (!hz) return;
+  if (!nm){ d.showErr = true; var e0 = $('err-name'); if (e0) e0.hidden = false; var n0 = $('ed-n'); if (n0){ n0.setAttribute('aria-invalid', 'true'); n0.focus(); } return; }
+  hz.name = nm; hz.description = String(d.desc || '').trim();
+  var was = !!hz.isPublished;
+  if (!hz.isPersonalDefault && !!d.published !== was) setHzPublished(id, !!d.published);
+  if (d.lookTouched){
+    var t = draftLook(d);
+    if (t) HZTHEME[id] = t; else delete HZTHEME[id];
+    if (hzOwnsSquare(id, HZTHEME[id])) HZCOVER[id] = 'own'; else if (HZCOVER[id] === 'own') delete HZCOVER[id];
+  }
+  if (ONLINE) HNAPI.saveHorizon(id);
+  closeDialogs(); render();
+  toast(!hz.isPersonalDefault && was !== !!hz.isPublished ? (hz.isPublished ? 'Public now' : 'Private now') : 'Saved', nm);
+}
+/* Customize is part of Edit now; the old entry points open Edit */
+var customizeDialog = function(evId){ editEventDialog(evId); };
+var customizeHorizonDialog = function(hzId){ editHorizonDialog(hzId); };
+var customizePersonDialog = function(){ gated(function(){ profileDialog('edit'); })(); };
 /* store a look for an event: a look, or null for plain (undefined = the look was not touched) */
 function setEventLook(id, t){
   if (t === undefined) return;
@@ -4939,31 +5210,11 @@ function wizAct(which){
     if (DRAFT.step === 2 && !L.phone) focusIn('w-desc');
     return;
   }
+  if (DRAFT.form === 'horizon'){ saveHorizonEdit(); return; }
   var bad = wizFirstBad(DRAFT); if (bad){ wizShowMissing(bad); return; }
   /* a look is stored only when someone changed it; changed back to plain (no image), it is removed */
   var t = DRAFT.lookTouched ? draftLook(DRAFT) : undefined;
   if (DRAFT.mode === 'edit'){ saveEventEdit(t); return; }
-  if (DRAFT.kind === 'person'){
-    if (t !== undefined){ if (t) PTHEME['self'] = t; else delete PTHEME['self']; if (ONLINE) HNAPI.saveMyLook(); }
-    closeDialogs(); render(); schedulePersist();
-    toast('Look updated', 'Your profile');
-    return;
-  }
-  if (DRAFT.kind === 'horizon'){
-    var hid = DRAFT.editing;
-    if (t !== undefined){ if (t) HZTHEME[hid] = t; else delete HZTHEME[hid]; }
-    if (hzOwnsSquare(hid, HZTHEME[hid])) HZCOVER[hid] = 'own'; else if (HZCOVER[hid] === 'own') delete HZCOVER[hid];
-    if (ONLINE && t !== undefined) HNAPI.saveHorizon(hid);
-    closeDialogs(); render();
-    toast('Look updated', HORIZONS[hid].name);
-    return;
-  }
-  if (DRAFT.editing){
-    if (t !== undefined){ setEventLook(DRAFT.editing, t); EDITED[DRAFT.editing] = true; if (ONLINE) HNAPI.saveEventLook(DRAFT.editing); }
-    closeDialogs(); render();
-    toast('Look updated', EVENTS[DRAFT.editing].title);
-    return;
-  }
   var id = ONLINE ? HNAPI.uuid() : 'evt-new-' + Date.now().toString(36);
   var start = isoDate(DRAFT.date) || TODAY_ISO, end = isoDate(DRAFT.end);
   FORMDRAFTS.event = null;
@@ -5038,8 +5289,7 @@ function ctxItems(t, only){
   if (t.type === 'event'){
     var st = S.loggedIn ? RSVP[id] : '', mine = isMine(id), past = isPast(lastDay(EVENTS[id]));
     /* the host's menu leads with the host's verbs, like the host's page */
-    if (mine) out.push({ code:'edit', label:'Edit…', icon:'edit', run:function(){ editEventDialog(id); } },
-                       { code:'customize', label:'Customize…', icon:'paint', run:function(){ customizeDialog(id); } });
+    if (mine) out.push({ code:'edit', label:'Edit…', icon:'edit', run:function(){ editEventDialog(id); } });
     else if (past) out.push({ code:'went', label:'Went', icon:'check', check: S.loggedIn && !!WENT[id],
       run: ctxVerb(function(){ setWent(id); }, function(){ return !!WENT[id]; }, 'Marked as went', EVENTS[id].title) });
     else out.push(
@@ -5060,12 +5310,9 @@ function ctxItems(t, only){
     var hmine = hzOwnedByMe(id), fol = S.loggedIn && HZFOLLOW[id], hz = HORIZONS[id];
     if (!hmine) out.push({ code:'follow', label: fol ? 'Unfollow' : 'Follow', icon: fol ? 'close' : 'plus',
       run: ctxVerb(function(){ followHz(id); }, function(){ return !!HZFOLLOW[id]; }, 'Following', HORIZONS[id].name) });
-    else {
-      out.push({ code:'customize', label:'Customize…', icon:'paint', run:function(){ customizeHorizonDialog(id); } },
-               { code:'edit', label:'Edit details…', icon:'edit', run:function(){ gated(renameHzDialog)(id); } });
-      if (!hz.isPersonalDefault) out.push({ code:'publish', label:'Published', icon:'check', check: !!hz.isPublished, run:function(){ publishHz(id); } });
-    }
-    if (hz.isPublished) out.push({ code:'share', label:'Share', icon:'share', run:function(){ shareLink('horizon', id); } });
+    /* who can see it is in Edit, not a checkbox here (2026-10-05) */
+    else out.push({ code:'edit', label:'Edit…', icon:'edit', run:function(){ editHorizonDialog(id); } });
+    if (hz.isPublished || (hmine && !hz.isPersonalDefault)) out.push({ code:'share', label:'Share', icon:'share', run:function(){ shareHorizon(id); } });
     if (hmine) out.push('-', { code:'delete', label:'Delete…', icon:'trash', run:function(){ deleteHorizonDialog(id); } });
   }
   if (only){
@@ -5476,20 +5723,21 @@ var followHz = gated(function(hzId){
   render();
   toast(HZFOLLOW[hzId] ? 'Following' : 'Unfollowed', HORIZONS[hzId].name);
 });
-var renameHz = gated(function(hzId){
-  var nm = (($('rh-n')||{}).value || '').trim() || HORIZONS[hzId].name;
-  HORIZONS[hzId].name = nm; HORIZONS[hzId].description = (($('rh-d')||{}).value || '').trim();
-  if (ONLINE) HNAPI.saveHorizon(hzId);
-  closeDialogs(); render();
-  toast('Saved', nm);
-});
 var publishHz = gated(function(hzId){
-  HORIZONS[hzId].isPublished = !HORIZONS[hzId].isPublished;
-  if (HORIZONS[hzId].isPublished){ unlogAct('created_horizon', hzId); logAct('published_horizon', 'horizon', hzId); } else unlogAct('published_horizon', hzId);
+  setHzPublished(hzId, !HORIZONS[hzId].isPublished);
   if (ONLINE) HNAPI.saveHorizon(hzId);
   render();
-  toast(HORIZONS[hzId].isPublished ? 'Published' : 'Private again', HORIZONS[hzId].name);
+  toast(HORIZONS[hzId].isPublished ? 'Public now' : 'Private now', HORIZONS[hzId].name);
 });
+/* Share is always Share (2026-10-05). A private horizon of yours says so and offers to make it public, then copies the link */
+function shareHorizon(hzId){
+  var hz = HORIZONS[hzId]; if (!hz) return;
+  if (hz.isPublished || !hzOwnedByMe(hzId) || hz.isPersonalDefault){ shareLink('horizon', hzId); return; }
+  CONFIRMFN = function(){ closeDialogs(); setHzPublished(hzId, true); if (ONLINE) HNAPI.saveHorizon(hzId); render(); shareLink('horizon', hzId); };
+  dialog('Share “' + hz.name + '”', '<p class="cmsg">“' + esc(hz.name) + '” is private: only you can see it. Make it public to share it — anyone with its link can then open and follow it.</p>' +
+    '<p class="fhelp" style="margin:12px 0 0">You can make it private again in Edit.</p>',
+    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="confirmok">'+ic('share')+'Make public and copy link</button>', 440);
+}
 var followP = gated(function(pid){
   if (!(RESUMING && PFOLLOW[pid])) PFOLLOW[pid] = !PFOLLOW[pid];
   if (PFOLLOW[pid]) logAct('followed_person', 'person', pid);
@@ -5689,13 +5937,12 @@ document.addEventListener('click', function(ev){
     case 'v-went':       setWent(id); break;
     case 'addto':        gated(addToDialog)(id); break;
     case 'dofile':       toggleInHorizon(id, n.getAttribute('data-hz')); break;
-    case 'share':        shareLink(n.getAttribute('data-type') || 'event', id); break;
+    case 'share':        if (n.getAttribute('data-type') === 'horizon') shareHorizon(id); else shareLink(n.getAttribute('data-type') || 'event', id); break;
     case 'ctxrun':       ctxSheetRun(+id); break;
     case 'ctxback':      ctxSheetBack(); break;
-    case 'customize':    customizeDialog(id); break;
+    case 'customize':    editEventDialog(id); break;
     case 'followhz':     followHz(id); break;
-    case 'renamehz':     gated(renameHzDialog)(id); break;
-    case 'dorename':     renameHz(id); break;
+    case 'renamehz': case 'edithz': case 'customizehz': editHorizonDialog(id); break;
     case 'publishhz':    publishHz(id); break;
     case 'followp':      followP(id); break;
     case 'dm':           messagePerson(id); break;
@@ -5726,10 +5973,18 @@ document.addEventListener('click', function(ev){
       var arr = act === 'pfskill' ? PF.skills : PF.cities, ix = arr.indexOf(id);
       if (ix < 0) arr.push(id); else arr.splice(ix, 1);
       n.classList.toggle('on', ix < 0); n.setAttribute('aria-pressed', ix < 0);
+      if (PF.mode === 'edit') czPreviews();
       break;
     }
+    case 'pfpreview':    pfPreview(id === 'on'); break;
     case 'logout':       doLogout(); break;
-    case 'closedlg':     closeDialogs(); S.pending = null; break;
+    case 'closedlg': {
+      /* the New event wizard has one way out, ×: what you typed is kept, and the toast offers to throw it away */
+      var kept = wizDraftOpen();
+      closeDialogs(); S.pending = null;
+      if (kept) draftKeptToast();
+      break;
+    }
     case 'donewhorizon': {
       var nm = (($('nh-n')||{}).value || '').trim();
       if (!nm) break;
@@ -5751,7 +6006,6 @@ document.addEventListener('click', function(ev){
       break;
     }
     case 'addevents':    addEventsDialog(id); break;
-    case 'customizehz':  customizeHorizonDialog(id); break;
     case 'customizeme':  customizePersonDialog(); break;
     case 'pkpick': {
       var pi = PK.sel.indexOf(id);
@@ -5831,12 +6085,16 @@ document.addEventListener('change', function(ev){
   if (n.getAttribute('data-czfile')){ var fl = n.files && n.files[0]; n.value = ''; if (n.getAttribute('data-czfile') === 'photo') pfTakePhoto(fl); else czTakeFile(fl); return; }
   if (n.closest('[data-cz]') && DRAFT){
     var k = n.getAttribute('data-cz');
-    if (/^(bg|ink|accent)$/.test(k)){ czSetColor(k, n.value, n); return; }
+    if (/^c[123]$/.test(k)){ czSetColor(k, n.value, n); return; }
+    /* who can see a horizon: Private or Public, shown in the preview's eyebrow at once */
+    if (k === 'vis'){ DRAFT.published = n.value === 'public';
+      document.querySelectorAll('.dlg .visopt').forEach(function(l){ l.classList.toggle('on', l.querySelector('input').checked); }); czPreviews(); return; }
     DRAFT[k] = n.type === 'checkbox' ? n.checked : n.value;
     if (k === 'online'){ var wc = $('w-c'); if (wc){ wc.disabled = n.checked; wc.placeholder = n.checked ? 'Online' : 'Stockholm'; wc.value = n.checked ? '' : DRAFT.city || ''; } }
     if (LOOKKEYS.test(k)) DRAFT.lookTouched = true;
-    /* text fields already updated the preview as you typed; repainting here would swallow the click that blurred them */
-    if (DRAFT.step === 3 && n.tagName === 'SELECT') paintWiz(); else refreshWizFoot();
+    /* text fields already updated the preview as you typed; repainting the form here would swallow the click that blurred them */
+    refreshWizFoot();
+    if (document.querySelector('.dlg [data-czlook]')) czPreviews();
     schedulePersist();
     return;
   }
@@ -5852,18 +6110,20 @@ document.addEventListener('input', function(ev){
   if (n.id === 'nc-q' && NC){ NC.q = n.value; paintNewChat(); return; }
   if (n.id === 'pf-handle' && PF) PF.handleTouched = true;
   if (n.id === 'pf-name' && PF && PF.mode === 'signup' && !PF.handleTouched){ var hi0 = $('pf-handle'); if (hi0) hi0.value = suggestHandle(n.value); }
-  if (/^pf-(name|handle|about)$/.test(n.id)){ pfSync(); return; }
+  if (/^pf-(name|handle|about)$/.test(n.id)){ pfSync(); if (PF && PF.mode === 'edit') czPreviews(); return; }
   if (n.id === 'chatbox'){ growBox(n); var ac = activeChat(); if (ac){ if (n.value) CHATDRAFT[ac] = n.value; else delete CHATDRAFT[ac]; schedulePersist(); } return; }
   if (n.id === 'coreply'){ growBox(n); if (n.value) REPLYDRAFT[n.getAttribute('data-id')] = n.value; else delete REPLYDRAFT[n.getAttribute('data-id')]; return; }
   if (/^co-[tbx]$/.test(n.id)){ saveForm('callout'); return; }
   if (/^nh-[nd]$/.test(n.id)){ saveForm('horizon'); return; }
   if (n.id === 'pk-q'){ PK.q = n.value; pickerPaint(); return; }
-  if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT' || n.type === 'checkbox') return;
-  if (/^(bg|ink|accent)$/.test(n.getAttribute('data-cz'))){ czSetColor(n.getAttribute('data-cz'), n.value, n); return; }
-  DRAFT[n.getAttribute('data-cz')] = n.value;
-  if (LOOKKEYS.test(n.getAttribute('data-cz'))) DRAFT.lookTouched = true;
+  if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT' || n.type === 'checkbox' || n.type === 'radio') return;
+  var kz = n.getAttribute('data-cz');
+  if (/^c[123]$/.test(kz)){ czSetColor(kz, n.value, n); return; }
+  DRAFT[kz] = n.value;
+  if (kz === 'name' && n.value.trim()){ var en = $('err-name'); if (en) en.hidden = true; n.removeAttribute('aria-invalid'); }
+  if (LOOKKEYS.test(kz)) DRAFT.lookTouched = true;
   refreshWizFoot(); schedulePersist();
-  if (DRAFT.step === 3) czRefresh(n);
+  if (document.querySelector('.dlg [data-czlook]')) czPreviews();
 });
 document.addEventListener('mousedown', function(ev){ if (!ev.target.closest('.popmenu, [data-act="newmenu"], [data-act="acctmenu"]')) closePopup(); });
 
@@ -5891,7 +6151,7 @@ document.addEventListener('drop', function(ev){
 document.addEventListener('keydown', function(ev){
   var ae = document.activeElement, inField = ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
   if (ev.key === 'Escape'){
-    if (DLGS.length){ closeDialogs(); S.pending = null; return; }
+    if (DLGS.length){ var kept = wizDraftOpen(); closeDialogs(); S.pending = null; if (kept) draftKeptToast(); return; }
     if (POP){ closePopup(); return; }
     if (ae && ae.id === 'q' && S.folder.kind === 'search'){ leaveSearch(); render(); ae.blur(); return; }
     if (inField){ ae.blur(); return; }

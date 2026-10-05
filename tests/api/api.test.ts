@@ -84,6 +84,12 @@ describe("login and join", () => {
     expect((await a.patch("/api/me", { look: { bg: "#FFF", ink: "#000000", accent: "#123456" } })).body.person.look.bg).toBe("#ffffff");
     expect((await a.patch("/api/me", { look: { bg: "red", ink: "#000000", accent: "#123456" } })).status).toBe(400);
     expect((await a.patch("/api/me", { look: { bg: "#ffffff", ink: "#000000", accent: "#123456", image: "https://evil.example/x.png" } })).status).toBe(400);
+    /* 2026-10-05: a look keeps the one to three colours it was picked from (page, accent or null, header or null) */
+    const picked = await a.patch("/api/me", { look: { bg: "#000000", ink: "#f5f5f5", accent: "#ff2fd0", colors: ["#000000", null, "#FF2FD0"] } });
+    expect(picked.body.person.look.colors).toEqual(["#000000", null, "#ff2fd0"]);
+    expect((await a.patch("/api/me", { look: { bg: "#000000", ink: "#f5f5f5", accent: "#ff2fd0", colors: ["red"] } })).status).toBe(400);
+    expect((await a.patch("/api/me", { look: { bg: "#000000", ink: "#f5f5f5", accent: "#ff2fd0", colors: [null, "#ffffff"] } })).status).toBe(400);
+    expect((await a.patch("/api/me", { look: { bg: "#000000", ink: "#f5f5f5", accent: "#ff2fd0", colors: ["#000000", "#111111", "#222222", "#333333"] } })).status).toBe(400);
   });
 });
 

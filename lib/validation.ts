@@ -15,6 +15,14 @@ const hex = z
 /** Only pictures in our own storage bucket (HN_IMAGE; the database checks the same pattern). */
 export const IMAGE_URL = /^https:\/\/br-[a-z0-9-]+\.storage\.c-[0-9]+\.[a-z0-9-]+\.aws\.neon\.tech\/images\/[A-Za-z0-9/_.-]+$/;
 
+/** What the person picked (2026-10-05): the page colour, then an accent and a header colour, each of those two may be
+ *  null. bg / ink / accent are what the picks give (HN_PALETTE in _shared/hypernet-palette.js), kept for the CHECK. */
+const picks = z
+  .array(hex.nullable())
+  .min(1)
+  .max(3)
+  .refine((a) => a[0] !== null, "the first colour is the page's");
+
 export const look = z
   .object({
     bg: hex,
@@ -22,6 +30,7 @@ export const look = z
     accent: hex,
     image: z.string().regex(IMAGE_URL, "an image uploaded through /api/images").nullish(),
     glyph: z.string().max(4).nullish(),
+    colors: picks.nullish(),
   })
   .strip();
 

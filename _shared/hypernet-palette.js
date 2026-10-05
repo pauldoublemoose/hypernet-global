@@ -17,7 +17,7 @@
       ground's own hue (OKLCH L 0.23 / 0.97, a little of its chroma), pushed further only if it would fall under 7:1.
       Dragging colour 1 across the midpoint therefore swaps between two inks that both belong to the colour.
    3. Muted text: the ink mixed toward the ground (in OKLab) as far as it can go and still keep 4.6:1.
-   4. Lines: the ink mixed into the ground — 26–30% for group-box borders (`rule`), 12–16% for row separators
+   4. Lines: the ink mixed into the ground — 26–34% for group-box borders (`rule`), 12–16% for row separators
       (`line`), 6% for hover; tags (`chip`) are the ground moved 5% (light) or 14% (dark) toward the ink, with 12% of
       the accent, or plain 8% of the ink if that would cost the tag's text its 4.5:1.
    5. Accent. Colour 2 when given; else made from the ground's hue (L 0.52 on light pages, 0.78 on dark, chroma
@@ -144,7 +144,7 @@
       dark: !g.light, nudged: g.hex !== page,
       bg: g.hex, ink: ink, dim: dimFor(ink, g.hex),
       accent: acc, accentInk: reach(acc, g.hex, 4.5, !g.light), onAccent: contrast(white, acc) >= contrast(dark, acc) ? white : dark,
-      rule: mix(g.hex, ink, g.light ? 0.26 : 0.30), line: mix(g.hex, ink, g.light ? 0.12 : 0.16), hover: mix(g.hex, ink, 0.06),
+      rule: mix(g.hex, ink, g.light ? 0.26 : 0.34), line: mix(g.hex, ink, g.light ? 0.12 : 0.16), hover: mix(g.hex, ink, 0.06),
       chip: chip,
       band: b.hex, bandInk: bink, bandDim: dimFor(bink, b.hex), bandAccent: reach(acc, b.hex, 4.5, !b.light),
       bandRule: mix(b.hex, bink, b.light ? 0.26 : 0.30),

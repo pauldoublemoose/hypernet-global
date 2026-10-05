@@ -373,7 +373,7 @@ async function overflowEverywhere(p, label){
     const f = await ctx(kind, kind === 'desk' ? { viewport:{ width:w, height:h } } : {});
     await open(f, '', true);
     const pb = await rb(f, '#previewbar');
-    ok(!!pb && Math.abs(pb.w - w) < 2 && await ev(f, () => !!document.querySelector('#previewbar [data-act="join"]')), w + ': logged out, the preview bar spans the bottom with Join free');
+    ok(!!pb && Math.abs(pb.w - w) < 2 && await ev(f, () => (() => { const b = [...document.querySelectorAll('#previewbar button')]; return b.length === 1 && b[0].textContent.trim() === 'Join or log in'; })()), w + ': logged out, the preview bar spans the bottom with one button, Join or log in');
     /* 2026-10-04: logged out there is no Home — an old Home link lands on Explore */
     await f.goto(URL + '#/home?view=calendar'); await f.waitForTimeout(400);
     ok(await ev(f, () => location.hash === '#/explore' && S.folder.kind === 'explore' && !document.getElementById('app').classList.contains('v-cal')), w + ': logged out, an old #/home?view=calendar link lands on Explore');

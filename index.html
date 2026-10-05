@@ -177,7 +177,7 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
    the calendar's bar — starts at the white's own left edge ("Explore should be left-aligned with the white rectangle
    below it"); the calendar bar's tools end where the month does */
 #app.desk #chead, #app.desk .calbar{ padding-left:var(--pl); padding-right:calc(max(var(--pr), var(--sbw)) + 16px); }
-/* the heading spans its slot: a list with a calendar has the calendar's in both views, so the switch keeps its place */
+/* the heading's tools end at the white's right edge in every view, so the List / Calendar switch keeps its place */
 #app.desk #chead{ padding-right:calc(max(var(--hr), var(--sbw)) + 16px); }
 #app.desk #listbody{ scrollbar-gutter:stable; padding:16px max(0px, calc(var(--pr) - var(--sbw))) 0 var(--pl); }
 #app.desk .shelves > .shelf:first-child{ margin-top:8px; }
@@ -1756,8 +1756,8 @@ function renderPreview(){
   if (S.loggedIn){ el.innerHTML = ''; return; }
   var has = !!ACCTS.me;
   el.innerHTML = '<div class="pvt"><div class="pvk">Preview of Hypernet</div><div class="pvl">' + esc(HN_PITCH) + '</div></div>' +
-    '<div class="pva">' + (has ? '<button class="btn primary" data-act="login">Log in</button>'
-      : '<button class="btn primary" data-act="join">Join free</button><button class="btn pvlogin" data-act="loginpick">Log in</button>') + '</div>';
+    /* one way in (2026-10-05): joining and logging in are the same emailed code, so one button does both */
+    '<div class="pva"><button class="btn primary" data-act="' + (has ? 'login' : 'loginpick') + '">Join or log in</button></div>';
 }
 /* Log in without an account here yet: the only account to log in to is the demo */
 function loginPicker(){
@@ -4154,8 +4154,9 @@ function layoutCentre(){
   }
   L.cw = cw; L.pl = pl; L.pr = C - pl - cw;
   app.style.setProperty('--pl', pl + 'px'); app.style.setProperty('--pr', L.pr + 'px'); app.style.setProperty('--sbw', sb + 'px');
-  /* the heading's right inset: the slot's — a window lies over it and never changes it */
-  app.style.setProperty('--hr', (C - pl - slot) + 'px');
+  /* the heading's tools sit at the white's right edge (2026-10-05: "align the calendar all the way to right"), wherever
+     the view's container ends — a window lies over it and never changes it */
+  app.style.setProperty('--hr', '0px');
   app.classList.toggle('win-over', L.win === 'over'); app.classList.toggle('win-cover', L.win === 'cover');
   /* Explore's overview: as many whole squares (at least 152) as the container holds, 16 apart, inside its 16 gutters */
   if (isOverview()){ var inner = cw - 32, cols = Math.max(1, Math.floor((inner + 16) / (152 + 16))); L.fit = { cols:cols, sq:Math.floor((inner - (cols - 1) * 16) / cols) }; }

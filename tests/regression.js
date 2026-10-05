@@ -202,8 +202,9 @@ async function overflowEverywhere(p, label){
   await p.evaluate(() => { [...document.querySelectorAll('#pk-list input[data-act="pkpick"]')].slice(0, 3).forEach(i => i.click()); });
   await p.tap('.dlg [data-act="pkdone"]'); await p.waitForTimeout(250);
   ok(await ev(p, h => HORIZONS[h].eventIds.length === 3, hz), 'phone: horizon filled with 3 events');
-  await p.tap('#dscroll [data-act="customizehz"]'); await p.waitForTimeout(250);
-  await p.fill('#cz-bg', '#000000'); await p.waitForTimeout(150);
+  /* 2026-10-05: the horizon's look is in its one Edit; one colour colours the page */
+  await p.tap('#dscroll [data-act="edithz"]'); await p.waitForTimeout(250);
+  await p.fill('#cz-c1', '#000000'); await p.waitForTimeout(150);
   await p.tap('.dlg [data-act="wiz"][data-id="finish"]'); await p.waitForTimeout(250);
   await p.reload(); await p.waitForTimeout(700);
   ok(await ev(p, h => HORIZONS[h] && HORIZONS[h].eventIds.length === 3 && HZTHEME[h] && HZTHEME[h].bg === '#000000' && S.stack[0].id === h && !!document.querySelector('#dscroll .pg-horizon:not(.plain)'), hz), 'phone: horizon, its events and its look survive reload, page restored');
@@ -258,7 +259,7 @@ async function overflowEverywhere(p, label){
   await d.fill('#pk-q', 'decompression'); await d.waitForTimeout(150);
   await d.evaluate(() => { [...document.querySelectorAll('#pk-list input[data-act="pkpick"]')].slice(0, 2).forEach(i => i.click()); });
   await d.click('.dlg [data-act="pkdone"]'); await d.waitForTimeout(250);
-  await d.click('#dscroll [data-act="customizehz"]'); await d.waitForTimeout(250);
+  await d.click('#dscroll [data-act="edithz"]'); await d.waitForTimeout(250);
   await d.click('.dlg [data-czact="start"][data-i="3"]'); await d.waitForTimeout(150);
   await d.click('.dlg [data-act="wiz"][data-id="finish"]'); await d.waitForTimeout(250);
   await d.reload(); await d.waitForTimeout(700);
@@ -330,7 +331,9 @@ async function overflowEverywhere(p, label){
   await o.fill('#nh-n', 'Driftwood crew season'); await o.click('#nh-go'); await o.waitForTimeout(300);
   ok(await ev(o, () => S.stack[0].type === 'horizon' && !document.getElementById('win').hidden && document.querySelectorAll('#navbody .nrow.sel').length === 1 && document.querySelectorAll('#navbody .nrow.open').length === 1),
      'R2: a new horizon opens in the window; one sidebar row lit (the list), its own row marked open');
-  ok(await ev(o, () => !!document.querySelector('#dscroll [data-act="publishhz"]') && !document.querySelector('#dscroll [data-act="share"]')), 'R2: an empty private horizon offers Publish, no Share');
+  /* 2026-10-05: no Publish button that turns into Share — Edit holds who can see it, Share is always Share */
+  ok(await ev(o, () => !!document.querySelector('#dscroll [data-act="edithz"]') && !!document.querySelector('#dscroll [data-act="share"]') && !document.querySelector('#dscroll [data-act="publishhz"]')),
+     'R2: a private horizon has Edit and Share, no Publish button');
   const priv = await ev(o, () => location.hash);
   const x = await ctx('desk');
   await open(x, priv, true);
@@ -626,14 +629,14 @@ async function overflowEverywhere(p, label){
     ok(!ph.stored && ph.page, kind + ': a new horizon wears the plain default');
     /* your profile: Customize from your page, keep it across reload; nobody else's page offers it */
     await c.evaluate(() => { openItem('person', 'self'); }); await c.waitForTimeout(400);
-    await c.click('.pg-person .actbar [data-act="customizeme"]'); await c.waitForTimeout(250);
+    await c.click('.pg-person .actbar [data-act="editprofile"]'); await c.waitForTimeout(250);
     await c.click('.dlg [data-czact="start"][data-i="1"]'); await c.waitForTimeout(150);
-    await c.click('.dlg [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(500);
+    await c.click('#pfsave'); await c.waitForTimeout(500);
     await c.reload(); await c.waitForTimeout(800);
     const pp = await ev(c, () => ({ look:!!PTHEME.self, page:!!document.querySelector('.pg-person:not(.plain)') }));
     ok(pp.look && pp.page, kind + ': a customised profile persists across reload');
     await c.goto(URL + '#/person/kai'); await c.waitForTimeout(400);
-    ok(await ev(c, () => !!document.querySelector('.pg-person.plain') && !document.querySelector('[data-act="customizeme"]:not(.acctcard *)')), kind + ': someone else\'s profile has no Customize, and an uncustomised one is plain');
+    ok(await ev(c, () => !!document.querySelector('.pg-person.plain') && !document.querySelector('#dscroll [data-act="editprofile"], #dscroll [data-act="customizeme"]')), kind + ': someone else\'s profile has no Edit profile, and an uncustomised one is plain');
     ok(!c.errors.length, kind + ': no console errors (optional customize) ' + c.errors.join(' '));
   }
 
@@ -877,7 +880,7 @@ async function overflowEverywhere(p, label){
     ok(!c.errors.length && (await overflow(c)) <= 0, 'phone Home (demo): no console errors, no overflow');
   }
 
-  /* ---------------- 2026-10-01: Customize is three colours and a square image ---------------- */
+  /* ---------------- 2026-10-01: Customize is three colours and a square image (2026-10-05: one to three colours, in Edit) ---------------- */
   {
     /* a generated picture: a 900×600 PNG, landscape, so the centre crop is visible */
     const pngOf = async p => Buffer.from(await p.evaluate(() => {
@@ -895,24 +898,39 @@ async function overflowEverywhere(p, label){
       const showPage = () => ev(c, id => { goFolder({ kind:'hosting' }); if (L.phone) S.tab = 'you'; S.stack = [{ type:'event', id }]; render(); }, own);
       const showList = () => ev(c, () => { goFolder({ kind:'hosting' }); if (L.phone) S.tab = 'you'; S.stack = []; render(); });
       await showPage(); await c.waitForTimeout(300);
-      if (kind === 'desk') await c.click('#dscroll .actbar [data-act="customize"]'); else await c.evaluate(id => customizeDialog(id), own);
+      /* 2026-10-05: the look is the Look section of the event's one Edit */
+      if (kind === 'desk') await c.click('#dscroll .actbar [data-act="editevent"]'); else await c.evaluate(id => editEventDialog(id), own);
       await c.waitForTimeout(300);
-      const ctl = await ev(c, () => ({ color:document.querySelectorAll('.dlg input[type=color]').length, file:document.querySelectorAll('.dlg input[type=file]').length,
-        selects:document.querySelectorAll('.dlg select').length, boxes:document.querySelectorAll('.dlg input[type=checkbox]').length }));
-      ok(ctl.color === 3 && ctl.file === 1 && !ctl.selects && !ctl.boxes, kind + ': Customize shows exactly 3 colour inputs and 1 image upload, no dropdowns ' + JSON.stringify(ctl));
-      ok((await overflow(c)) <= 0, kind + ': Customize open, no horizontal overflow');
+      const lookCtl = () => ev(c, () => { const z = document.querySelector('.dlg [data-czlook]'); return { color:z.querySelectorAll('input[type=color]').length, file:z.querySelectorAll('input[type=file]').length,
+        selects:z.querySelectorAll('select').length, boxes:z.querySelectorAll('input[type=checkbox]').length, adds:[...z.querySelectorAll('.czadd')].map(b => b.textContent.trim()) }; });
+      const ctl = await lookCtl();
+      ok(ctl.color === 1 && ctl.file === 1 && !ctl.selects && !ctl.boxes && ctl.adds.join() === 'Add accent', kind + ': the Look starts with one colour and one picture upload, and Add accent ' + JSON.stringify(ctl));
+      ok((await overflow(c)) <= 0, kind + ': Edit open, no horizontal overflow');
       const png = await pngOf(c);
       await c.setInputFiles('#cz-file', { name:'square.png', mimeType:'image/png', buffer:png }); await c.waitForTimeout(700);
       const up = await ev(c, async () => ({ img:/^data:image\/(webp|jpeg)/.test(DRAFT.image || ''), size:(DRAFT.image || '').length * .75,
         dims:await new Promise(r => { const i = new Image(); i.onload = () => r(i.naturalWidth + 'x' + i.naturalHeight); i.onerror = () => r('unreadable'); i.src = DRAFT.image; }),
-        shown:!!document.querySelector('.dlg .czdrop img') && !!document.querySelector('.dlg .custprev .sqwrap img') }));
+        shown:!!document.querySelector('.dlg .czdrop img') && !!document.querySelector('.dlg :is(.custprev, .czmini) .sqwrap img') }));
       ok(up.img && up.size < 150 * 1024 && up.dims === '512x512' && up.shown, kind + ': an upload is centre-cropped to a 512×512 image under 150 KB and previewed ' + JSON.stringify(up));
-      /* a text colour too faint for its background is corrected, and the editor says so */
-      await c.fill('#cz-bg', '#ffffff'); await c.fill('#cz-ink', '#f0f0f0'); await c.waitForTimeout(200);
-      ok(await ev(c, () => !$('cz-note').hidden && /readability/i.test($('cz-note').textContent)), kind + ': a low-contrast text colour is flagged "adjusted for readability"');
+      /* one to three colours: Add accent, then Add header colour; each but the page can be taken away again */
+      await c.click('.dlg .czadd'); await c.waitForTimeout(150);
+      const two = await lookCtl();
+      await c.click('.dlg .czadd'); await c.waitForTimeout(150);
+      const three = await lookCtl();
+      await c.click('.dlg .czrm[data-k="c2"]'); await c.waitForTimeout(150);
+      const gone = await ev(c, () => ({ c2:DRAFT.c2, c3:!!DRAFT.c3, rows:[...document.querySelectorAll('.dlg [data-czrow]')].map(r => r.getAttribute('data-czrow')).join() }));
+      ok(two.color === 2 && two.adds.join() === 'Add header colour' && three.color === 3 && !three.adds.length && gone.c2 === null && gone.c3 && gone.rows === 'c1,c3',
+         kind + ': Add accent gives a second colour, Add header colour a third, and the accent can go while the header stays ' + JSON.stringify([two, three, gone]));
+      /* the text is never picked: dark ink on a light page, light ink on a dark one; a mid-tone page moves off the middle and says so */
+      await c.fill('#cz-c1', '#ffffff'); await c.waitForTimeout(150);
+      const lightInk = await ev(c, () => relLum(draftTheme(DRAFT).ink) < .2);
+      await c.fill('#cz-c1', '#808080'); await c.waitForTimeout(150);
+      const mid = await ev(c, () => ({ note:$('cz-note').textContent, bg:draftTheme(DRAFT).bg, cr:contrast(draftTheme(DRAFT).ink, draftTheme(DRAFT).bg) }));
+      ok(lightInk && /lighter/.test(mid.note) && mid.bg !== '#808080' && mid.cr >= 7, kind + ': text is chosen for you; a mid-grey page shows a little lighter and the editor says so ' + JSON.stringify(mid));
       await c.click('.dlg [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(500);
-      const st = await ev(c, id => { const t = window.HYPERNET_THEMES.themes[id]; return { keys:Object.keys(t).sort().join(','), cr:contrast(t.ink, t.bg), img:/^data:image/.test(t.image || '') }; }, own);
-      ok(st.keys === 'accent,bg,glyph,image,ink' && st.cr >= 4.5 && st.img, kind + ': the saved look is { bg, ink, accent, image, glyph }, its text corrected to AA ' + JSON.stringify(st));
+      const st = await ev(c, id => { const t = window.HYPERNET_THEMES.themes[id]; return { keys:Object.keys(t).sort().join(','), colors:t.colors, cr:contrast(t.ink, t.bg), img:/^data:image/.test(t.image || '') }; }, own);
+      ok(st.keys === 'accent,bg,colors,glyph,image,ink' && st.colors[0] === '#808080' && st.colors[1] === null && /^#[0-9a-f]{6}$/.test(st.colors[2]) && st.cr >= 4.5 && st.img,
+         kind + ': the saved look keeps its picks and the colours they give, its text AA ' + JSON.stringify(st));
       await showPage(); await c.waitForTimeout(300);
       const pageImg = () => ev(c, () => !!document.querySelector('#dscroll .pg-event .sqwrap .sq.img img') && !!document.querySelector('#dscroll .pg-event:not(.plain)'));
       ok(await pageImg(), kind + ': the image is the page square');
@@ -924,7 +942,7 @@ async function overflowEverywhere(p, label){
       await showList(); await c.waitForTimeout(300); const a2 = await rowImg();
       ok(a1 && a2, kind + ': the image survives a reload');
       /* the wrong file is refused, with a reason */
-      await c.evaluate(id => customizeDialog(id), own); await c.waitForTimeout(300);
+      await c.evaluate(id => editEventDialog(id), own); await c.waitForTimeout(300);
       await c.setInputFiles('#cz-file', { name:'huge.png', mimeType:'image/png', buffer:Buffer.alloc(10 * 1024 * 1024 + 1024, 7) }); await c.waitForTimeout(200);
       const big = await c.textContent('#cz-imgerr');
       await c.setInputFiles('#cz-file', { name:'notes.txt', mimeType:'text/plain', buffer:Buffer.from('not a picture') }); await c.waitForTimeout(200);
@@ -937,7 +955,8 @@ async function overflowEverywhere(p, label){
       /* the new-event wizard's look step is the same three colours and a square */
       await newEvent(c, { title:'Lantern swap', date:'2026-11-05', publish:false });
       await c.click('.dlg [data-act="wizstep"][data-id="3"]'); await c.waitForTimeout(200);
-      ok(await ev(c, () => document.querySelectorAll('.dlg input[type=color]').length === 3 && document.querySelectorAll('.dlg input[type=file]').length === 1), kind + ': the New event look step is the same Customize');
+      ok(await ev(c, () => document.querySelectorAll('.dlg [data-czlook] input[type=color]').length === 1 && document.querySelectorAll('.dlg [data-czlook] input[type=file]').length === 1 && !!document.querySelector('.dlg .czadd')),
+         kind + ': the New event Look step is the same look editor (one colour to start, Add accent, one picture)');
       await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
       /* your photo: from Edit profile, it is your avatar and your profile's square */
       await c.evaluate(() => profileDialog('edit')); await c.waitForTimeout(200);
@@ -955,8 +974,8 @@ async function overflowEverywhere(p, label){
     await open(tb, '', true);
     await tb.evaluate(() => loginDialog()); await tb.waitForTimeout(150);
     await tb.click('.dlg [data-act="useacct"][data-id="demo"]'); await tb.waitForTimeout(300);
-    await tb.evaluate(() => customizeDialog(MYEVENTS[0])); await tb.waitForTimeout(300);
-    ok((await overflow(tb)) <= 0 && !tb.errors.length, '768: Customize open, no horizontal overflow, no console errors');
+    await tb.evaluate(() => editEventDialog(MYEVENTS[0])); await tb.waitForTimeout(300);
+    ok((await overflow(tb)) <= 0 && !tb.errors.length, '768: Edit open, no horizontal overflow, no console errors');
   }
 
   /* ---------------- 2026-10-01 (trust): privacy, the network, one clock, closed call outs, clean colours, storage ---------------- */
@@ -1231,7 +1250,8 @@ async function overflowEverywhere(p, label){
       invalid:[...document.querySelectorAll('.dlg [aria-invalid="true"]')].map(x => x.id), tabs:[...document.querySelectorAll('.dlg .wizsteps .ws')].map(t => t.getAttribute('aria-disabled') === 'true' ? 'off' : 'on'),
       focus:document.activeElement && document.activeElement.id, toast:(document.getElementById('toasts') || {}).textContent || '' }));
     const f0 = await foot();
-    ok(f0.step === 1 && f0.btns.join('|') === 'Cancel|Next:off' && /title.*start date.*where/.test(f0.need) && !f0.errs.length && f0.tabs.join() === 'on,off,off',
+    /* 2026-10-05: one primary at a time — Next on Basics and Words, Publish event on Look; no Cancel (× keeps the draft) */
+    ok(f0.step === 1 && f0.btns.join('|') === 'Next:off' && /title.*start date.*where/.test(f0.need) && !f0.errs.length && f0.tabs.join() === 'on,off,off',
        kind + ': an empty Basics step — Next is off, no Publish yet, it says what is still needed, no errors before you try ' + JSON.stringify(f0));
     /* trying anyway shows what is missing inline, at the fields, and stays */
     await c.fill('#w-t', 'Moth night'); await c.waitForTimeout(100);
@@ -1254,17 +1274,17 @@ async function overflowEverywhere(p, label){
     await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(250);
     /* Words needs a description; Publish waits for it; Bring stays optional */
     const f4 = await foot();
-    ok(f4.step === 2 && f4.btns.join('|') === 'Cancel|Back|Next:off|Publish event:off' && /description/.test(f4.need) && !f4.errs.length && f4.tabs.join() === 'on,on,off', kind + ': Words — Next and Publish wait for a description ' + JSON.stringify(f4));
-    await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]', { force:true }); await c.waitForTimeout(250);
+    ok(f4.step === 2 && f4.btns.join('|') === 'Back|Next:off' && /description/.test(f4.need) && !f4.errs.length && f4.tabs.join() === 'on,on,off', kind + ': Words — Next waits for a description, Back beside it ' + JSON.stringify(f4));
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]', { force:true }); await c.waitForTimeout(250);
     const f5 = await foot();
-    ok(f5.step === 2 && f5.errs.join() === 'desc' && f5.focus === 'w-desc' && await ev(c, () => !MYEVENTS.some(id => EVENTS[id] && EVENTS[id].title === 'Moth night')), kind + ': Publish with no description says so inline and publishes nothing');
+    ok(f5.step === 2 && f5.errs.join() === 'desc' && f5.focus === 'w-desc' && await ev(c, () => !MYEVENTS.some(id => EVENTS[id] && EVENTS[id].title === 'Moth night')), kind + ': Next with no description says so inline and publishes nothing');
     await c.fill('#w-desc', 'Sheets, a lamp and whatever flies in.'); await c.waitForTimeout(100);
     const f6 = await foot();
-    ok(!f6.errs.length && f6.btns.join('|') === 'Cancel|Back|Next|Publish event' && f6.tabs.join() === 'on,on,on', kind + ': with a description both are on, the Look tab opens; Bring is optional ' + JSON.stringify(f6));
+    ok(!f6.errs.length && f6.btns.join('|') === 'Back|Next' && f6.tabs.join() === 'on,on,on', kind + ': with a description Next is on, the Look tab opens; Bring is optional ' + JSON.stringify(f6));
     /* back to Basics keeps it all; Look is optional and Publish works from it too */
     await c.click('.dlg .wizsteps .ws[data-id="3"]'); await c.waitForTimeout(200);
     const f7 = await foot();
-    ok(f7.step === 3 && f7.btns.join('|') === 'Cancel|Back|Publish event', kind + ': Look is reachable and optional ' + JSON.stringify(f7.btns));
+    ok(f7.step === 3 && f7.btns.join('|') === 'Back|Publish event', kind + ': Look is reachable and optional; Publish event is its one primary ' + JSON.stringify(f7.btns));
     ok((await overflow(c)) <= 0, kind + ': New event, no horizontal overflow');
     await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(500);
     const pub = await ev(c, () => { const id = MYEVENTS[MYEVENTS.length - 1], e = EVENTS[id]; return { title:e && e.title, where:e && whereOf(e), desc:e && descOf(e), page:!!document.querySelector('.pg-event') }; });

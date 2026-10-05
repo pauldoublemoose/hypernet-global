@@ -84,8 +84,9 @@
 
   function personRow(p){
     var cities = p.cities || [];
+    /* joinedAt: when the account was made (Home's "N people joined Hypernet", Explore → People newest first) */
     return { id:p.id, displayName:p.displayName, handle:p.handle, bio:p.bio || '', skills:(p.skills || []).slice(), cities:cities.slice(),
-             city: cities[0] ? String(cities[0]).toUpperCase() : '' };
+             city: cities[0] ? String(cities[0]).toUpperCase() : '', joinedAt: ms(p.createdAt) };
   }
   function eventRows(e){
     var det = e.details || {}, r = Object.assign({}, det);

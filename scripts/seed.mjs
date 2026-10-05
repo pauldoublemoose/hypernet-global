@@ -220,7 +220,7 @@ export function buildSeed(target, { now = Date.now(), only = null } = {}) {
     out.push(insert("people", {
       id: q(pid(fid)), auth_user_id: q(seedUuid("auth:" + fid)), email: q(`${p.handle}@seed.hypernet.invalid`), handle: q(p.handle),
       display_name: q(p.displayName), bio: q(p.bio ? String(p.bio).slice(0, 120) : null), skills: qa(p.skills), cities: qa(cities),
-      look: qj(look), created_at: qts(now - 60 * DAY),
+      look: qj(look), created_at: qts(p.joinedMinutesAgo != null ? now - p.joinedMinutesAgo * 60000 : now - 60 * DAY), // newcomers joined lately (Home: "N people joined")
     }));
   }
 

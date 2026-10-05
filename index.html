@@ -864,6 +864,15 @@ body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 1
 }
 .fmore{ align-self:flex-start; }
 .fmore.static{ min-height:0; font-size:12px; color:var(--dim); }
+/* the network's news (people joined, an event picking up): faces at 32 in the thing's frame, the way on at the right */
+.fjoin{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:8px; background:#fff; border-top:1px solid var(--line); min-width:0; }
+.fjoin:first-child{ border-top:0; }
+.ffaces{ display:flex; align-items:center; gap:4px; flex:1 1 auto; min-width:0; }
+.fface{ display:flex; padding:0; border:0; background:none; cursor:pointer; }
+.fface:hover .av{ box-shadow:0 0 0 2px var(--ink); }
+.fface:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+.ffmore{ font:12px/16px var(--sys); color:var(--ink2); padding-left:4px; white-space:nowrap; }
+.fnew{ flex:0 0 auto; margin-left:auto; }
 /* a closing note: a bold line, what to do, the way there — Home's end (the whole page when nothing is above it), an
    empty chat list */
 .endnote{ display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:24px 16px 32px; }
@@ -1239,6 +1248,9 @@ var CALLOUTS = H.callouts.map(function(c){
 
 /* the fixture people (seed scaffolding: fake attendees and activity). The network itself is networkPeople() */
 var CREW = ['p-anna','p-rio','p-kai','p-mira','p-jon','p-sasha'];
+/* the fixture's newcomers (2026-10-05, v5-feed): people who joined lately and have not done anything yet — the ones
+   Home's "N people joined Hypernet" is about. Not crew: they make no seed activity */
+var NEWCOMERS = H.people.filter(function(p){ return CREW.indexOf(p.id) < 0; }).map(function(p){ return p.id; });
 var PRESENCE = { 'p-anna':'online','p-rio':'online','p-kai':'idle','p-mira':'offline','p-jon':'offline','p-sasha':'offline' };
 /* people are chrome, so their avatars stay in the greys */
 var AVCOLOR  = { 'self':'#1c1c1c','p-michal':'#1c1c1c','p-anna':'#4b4b4b','p-rio':'#6b6b6b','p-kai':'#363636',
@@ -1819,13 +1831,20 @@ function networkPeople(){
   if (ONLINE) return HNAPI.network();
   var me = myPid();
   var accts = Object.keys(PEOPLE).filter(function(k){ return CREW.indexOf(k) < 0 && (k === 'p-michal' || /^u-/.test(k)); });
-  return CREW.concat(accts).filter(function(k){ return PEOPLE[k] && k !== me && k !== 'self'; });
+  return CREW.concat(NEWCOMERS, accts).filter(function(k){ return PEOPLE[k] && k !== me && k !== 'self'; });
 }
 /* a first name, with the handle when someone else here has the same first name ("Kai @kai.lowend") */
 function firstOf(pid){ return String(person(pid).displayName || '').trim().split(/\s+/)[0]; }
 function shortName(pid){
   var f = firstOf(pid), others = networkPeople().concat(S.loggedIn ? ['self'] : []).filter(function(k){ return k !== pid && k !== myPid(); });
   return others.some(function(k){ return fold(firstOf(k)) === fold(f); }) ? f + ' @' + person(pid).handle : f;
+}
+/* when someone joined Hypernet (ms; 0 = long before anything here). Online, their account's created_at; offline, the
+   fixture newcomers' joinedMinutesAgo (from when the app started) and the accounts made in this browser */
+function joinedAt(pid){
+  var p = PEOPLE[pid]; if (!p || pid === 'self') return 0;
+  if (p.joinedAt) return p.joinedAt;
+  return p.joinedMinutesAgo != null ? FIXNOW - p.joinedMinutesAgo * 60000 : 0;
 }
 function browsablePeople(){ var ids = networkPeople(); if (S.loggedIn) ids.unshift('self'); return ids; }
 /* Explore's kinds: each is a list of one family; the overview (no kind) is the categorical sections, as shelves of squares */
@@ -1878,7 +1897,9 @@ function folderItems(f){
     if (f.id === 'events')   return feedEvents().map(function(e){ return { type:'event', id:e.id }; });
     if (f.id === 'horizons') return browsableHorizons().sort(function(a, b){ return hzFollowers(b) - hzFollowers(a); }).map(function(h){ return { type:'horizon', id:h }; });
     if (f.id === 'callouts') return openCallouts().map(function(c){ return { type:'callout', id:c.id }; });
-    if (f.id === 'people')   return browsablePeople().map(function(p){ return { type:'person', id:p }; });
+    /* newest first (2026-10-05): Home's "See who's new" lands here; you stay at the top */
+    if (f.id === 'people')   return browsablePeople().map(function(p, i){ return { p:p, i:i, t:p === 'self' ? Infinity : joinedAt(p) }; })
+                                .sort(function(a, b){ return b.t - a.t || a.i - b.i; }).map(function(x){ return { type:'person', id:x.p }; });
     return [];
   }
   if (k === 'shelf')    return shelfItems(f.id);
@@ -2068,6 +2089,9 @@ function rowHTML(it){
     lead = avHTML(it.id, 'a48');
     title = esc(p.displayName) + (it.id === 'self' ? ' <span class="r-meta" style="display:inline">(you)</span>' : '');
     meta = esc(['@'+p.handle, cityShort(p.city), p.bio].filter(Boolean).join(' · '));
+    /* new on Hypernet (the last three weeks): when they joined */
+    var jt = joinedAt(it.id);
+    if (jt && appNow() - jt < ACTWINDOW * 86400000) date = 'joined ' + agoLabel(jt);
     side = (it.id !== 'self' && S.loggedIn && PFOLLOW[it.id]) ? '<span class="pill going">'+ic('check',11)+'<span>Following</span></span>' : '';
   } else if (it.type === 'callout'){
     var c = calloutOf(it.id);
@@ -3259,7 +3283,9 @@ var NETFOLLOWS = (function(){
   var add = function(a, b){ if (a === b || !/^p-/.test(a) || !/^p-/.test(b)) return; g[a] = g[a] || []; if (g[a].indexOf(b) < 0) g[a].push(b); };
   (H.friendships || []).forEach(function(f){ add(f[0], f[1]); add(f[1], f[0]); });
   [['p-anna','p-mira'], ['p-rio','p-mira'], ['p-kai','p-jon'], ['p-sasha','p-kai'], ['p-sasha','p-jon'], ['p-jon','p-kai'],
-   ['p-michal','p-anna'], ['p-michal','p-rio'], ['p-michal','p-kai'], ['p-michal','p-sasha']].forEach(function(x){ add(x[0], x[1]); });
+   ['p-michal','p-anna'], ['p-michal','p-rio'], ['p-michal','p-kai'], ['p-michal','p-sasha'],
+   /* a few of the newcomers already have a follower or two (never before they joined: see seedActivity) */
+   ['p-anna','p-lena'], ['p-kai','p-priya'], ['p-mira','p-ines']].forEach(function(x){ add(x[0], x[1]); });
   return g;
 })();
 /* the fixture call outs name no event; these are the ones they are for when no event record lists them */
@@ -3295,6 +3321,9 @@ function seedActivity(){
   var rows = [], lo = FIXNOW - ACTWINDOW * 86400000, byKey = {};
   var row = function(actor, verb, objType, objId, ms, extra){
     if (!PEOPLE[actor] || actor === 'self' || /^u-/.test(actor) || ms < lo || ms > FIXNOW) return null;
+    /* nobody does anything, or is followed, before they joined: such a row moves to some time after */
+    var j = Math.max(joinedAt(actor), objType === 'person' ? joinedAt(objId) : 0);
+    if (j && ms < j) ms = j + (.1 + .8 * seedU(verb + '|' + actor + '|' + objId + '#j')) * (FIXNOW - j);
     var r = { id:'a-' + verb + '-' + actor + '-' + objId, actor:actor, verb:verb, objType:objType, objId:objId, ts:tsIso(ms), extra:extra || null };
     rows.push(r); byKey[verb + '|' + actor + '|' + objId] = r; return r;
   };
@@ -3566,9 +3595,22 @@ function whoAllDialog(evId){
 var GROUPWIN = 3 * 3600000;
 var MANYACTORS = { going:1, interested:1, promoted:1, replied_callout:1 };
 var HZVERBS = { published_horizon:4, created_horizon:3, added_to_horizon:2, followed_horizon:1 };
+/* what you did is said the way a sitting is: your rows join one "You: …" line while each is within half an hour of the
+   one after it (the web's session timeout) and nothing else is said between them — a morning and an afternoon are two
+   lines, and someone else's activity in between splits them. The line takes its newest row's time, and sits where
+   that time puts it, among everyone else's (owner, 2026-10-05: "I did some activities before Sebastian joined in") */
+var YOUGAP = 30 * 60000;
 function groupRows(rows){
   var out = [], idx = {};
   rows.forEach(function(r){
+    /* a network entry (people joined, an event picking up) is said where its time puts it, and splits your sitting */
+    if (r.net){ out.push(r.net); return; }
+    if (actIsMe(r.a)){
+      var y = out[out.length - 1], yb = dayBand(r.ms);
+      if (y && y.verb === 'you' && y.band === yb && y.oldest - r.ms <= YOUGAP){ y.rows.push(r); y.oldest = r.ms; return; }
+      out.push({ band:yb, ms:r.ms, oldest:r.ms, verb:'you', objType:'you', objId:null, actors:[r.a.actor], objs:[], eventIds:[], parts:{}, rows:[r] });
+      return;
+    }
     var a = r.a, band = dayBand(r.ms), ids = ((a.extra && a.extra.eventIds) || []).filter(function(x){ return EVENTS[x]; });
     var k = MANYACTORS[a.verb] ? a.verb + '|' + a.objId : a.verb === 'followed_person' ? 'fp|' + a.actor : HZVERBS[a.verb] ? 'hz|' + a.objId : null;
     var e = k && idx[k];
@@ -3589,25 +3631,115 @@ function groupRows(rows){
   });
   return out;
 }
-/* Home's stream, in three parts:
-   mine — your own rows of the last day, which Home says in one line at the top;
-   stream — the people Home follows (everyone, when it follows nobody);
+/* Home's stream, in two parts:
+   stream — you and the people Home follows (everyone, when it follows nobody), with the network's own news (who
+            joined, an event picking up) where their times put them; your own rows are your "You: …" lines in it;
    net — following only a few, the rest of the network, below your people.
    A call out already in the strip at the top is never repeated in the stream. */
 function homeParts(){
-  var sc = homeScope(), strip = {}, mine = [], fol = [], net = [], now = appNow();
+  var sc = homeScope(), strip = {}, fol = [], net = [];
   homeCallouts().forEach(function(x){ strip[x.id] = 1; });
   activityRows().forEach(function(a){
     if (a.verb === 'posted_callout' && (strip[a.objId] || !calloutOpen(calloutOf(a.objId)))) return;
     var r = { a:a, ms:actTime(a) };
-    if (actIsMe(a)){ if (now - r.ms < 86400000) mine.push(r); return; }
-    if (sc.all || sc.fol.indexOf(a.actor) >= 0) fol.push(r);
+    if (actIsMe(a) || sc.all || sc.fol.indexOf(a.actor) >= 0) fol.push(r);
     else if (sc.few) net.push(r);
   });
+  netEntries().forEach(function(e){ fol.push({ net:e, ms:e.ms }); });
   var byTime = function(x, y){ return y.ms - x.ms; };
-  return { mine:mine.sort(byTime), stream:groupRows(fol.sort(byTime)), net:groupRows(net.sort(byTime)).slice(0, NETMAX) };
+  return { stream:groupRows(fol.sort(byTime)), net:groupRows(net.sort(byTime)).slice(0, NETMAX) };
 }
 var NETMAX = 12;
+/* ---- the network's own news: entries no one person did, grouped so they never flood the stream ----
+   At most one of each kind per day band, each at its newest row's time:
+   · joined   — "Lena, Tomas and 3 others joined Hypernet": everyone (but you) whose account was made in the band; the
+                ones near you first (followed by people you follow, in your city, sharing a skill), a Follow on them,
+                the rest as faces and "See who's new" (Explore → People, newest first). Joining is public: the network
+                is everyone's list (bootstrap's people, created_at).
+   · trending — "4 people decided to go to Zurich Decompression 2026 this week": the one upcoming event the most people
+                (but you) decided on in the band, from three on — today, yesterday or this week, never "Earlier". Not
+                when one line in the stream already says it (all of them people Home shows, within three hours). */
+var JOINFACES = 6, TRENDMIN = 3;
+var BANDSAY = { 'Today':'today', 'Yesterday':'yesterday', 'This week':'this week' };
+function netEntries(){
+  if (!S.loggedIn) return [];
+  return joinedEntries().concat(trendEntries());
+}
+/* why someone new might matter to you: who you follow follows them, your city, your skill */
+function joinWhy(pid){
+  var me = PEOPLE['self'], p = person(pid);
+  var via = followedPeople().filter(function(f){ return followsOf(f).indexOf(pid) >= 0; });
+  var myC = citiesOf(me).map(fold), myS = me.skills || [];
+  var city = citiesOf(p).filter(function(c){ return myC.indexOf(fold(c)) >= 0; })[0];
+  var skill = (p.skills || []).filter(function(x){ return myS.indexOf(x) >= 0; })[0];
+  return { score:(via.length ? 4 : 0) + (city ? 2 : 0) + (skill ? 1 : 0),
+           why: via.length ? whoName(via[0]) + (via.length > 1 ? ' and ' + (via.length - 1) + ' more you follow follow ' : ' follows ') + firstName(pid)
+              : city ? 'In ' + city + ', like you' : skill ? skillLabel(skill) + ', like you' : '' };
+}
+function joinedEntries(){
+  var me = myActor(), now = appNow(), lo = now - ACTWINDOW * 86400000, by = {};
+  networkPeople().forEach(function(pid){
+    var t = joinedAt(pid);
+    if (pid === me || pid === 'self' || !t || t < lo || t > now) return;
+    var w = joinWhy(pid), b = dayBand(t);
+    (by[b] = by[b] || []).push({ pid:pid, ms:t, score:w.score, why:w.why });
+  });
+  return Object.keys(by).map(function(b){
+    var l = by[b].sort(function(x, y){ return y.score - x.score || y.ms - x.ms; });
+    return { band:b, ms:Math.max.apply(null, l.map(function(x){ return x.ms; })), verb:'joined', objType:'person', objId:null,
+             actors:[], objs:l.map(function(x){ return x.pid; }), eventIds:[], parts:{}, people:l };
+  });
+}
+function trendEntries(){
+  var sc = homeScope(), by = {}, best = {};
+  activityRows().forEach(function(a){
+    if (a.objType !== 'event' || (a.verb !== 'going' && a.verb !== 'interested') || actIsMe(a) || !PEOPLE[a.actor]) return;
+    var e = EVENTS[a.objId]; if (!e || isPast(lastDay(e))) return;
+    var ms = actTime(a), b = dayBand(ms); if (!BANDSAY[b]) return;
+    var o = (by[b + '|' + a.objId] = by[b + '|' + a.objId] || { band:b, ev:a.objId, ms:0, lo:ms, who:{} });
+    if (o.who[a.actor] !== 'going') o.who[a.actor] = a.verb;
+    o.ms = Math.max(o.ms, ms); o.lo = Math.min(o.lo, ms);
+  });
+  Object.keys(by).forEach(function(k){
+    var o = by[k], ids = Object.keys(o.who); o.n = ids.length;
+    if (o.n < TRENDMIN) return;
+    /* one line in the stream already says it: everyone in it is someone Home shows, and they decided within three hours */
+    if (o.ms - o.lo <= GROUPWIN && ids.every(function(p){ return sc.all || sc.fol.indexOf(p) >= 0; }) && ids.every(function(p){ return o.who[p] === o.who[ids[0]]; })) return;
+    var cur = best[o.band]; if (!cur || o.n > cur.n || (o.n === cur.n && o.ms > cur.ms)) best[o.band] = o;
+  });
+  return Object.keys(best).map(function(b){
+    var o = best[b], ids = Object.keys(o.who).sort(function(x, y){ return (PFOLLOW[y] ? 1 : 0) - (PFOLLOW[x] ? 1 : 0) || (o.who[x] === 'going' ? 0 : 1) - (o.who[y] === 'going' ? 0 : 1); });
+    return { band:b, ms:o.ms, verb:'trending', objType:'event', objId:o.ev, actors:[], objs:[o.ev], eventIds:[], parts:{}, people:ids,
+             going:ids.filter(function(p){ return o.who[p] === 'going'; }).length, interested:ids.filter(function(p){ return o.who[p] === 'interested'; }).length };
+  });
+}
+/* faces at 32, each opening the person, "+N" for the rest, and a way on at the right (under them when narrow) */
+function facesHTML(pids, more, btn){
+  return '<div class="fjoin"><div class="ffaces">' + pids.map(function(pid){ var n = person(pid).displayName;
+      return '<button type="button" class="fface" data-act="row" data-type="person" data-id="'+pid+'" title="'+esc(n)+'" aria-label="'+esc(n)+'">'+avHTML(pid, 'a32')+'</button>'; }).join('') +
+    (more > 0 ? '<span class="ffmore">+'+more+'</span>' : '') + '</div>' + (btn || '') + '</div>';
+}
+function sysAv(icon){ return '<span class="av a32 sys" aria-hidden="true">'+ic(icon, 16)+'</span>'; }
+function joinedHTML(e, cls){
+  var l = e.people, n = l.length;
+  var cards = l.filter(function(x){ return x.score > 0; }).slice(0, 2);
+  if (!cards.length && n <= 2) cards = l.slice();
+  var rest = l.filter(function(x){ return cards.indexOf(x) < 0; });
+  var body = '<div class="fstack fjoins">' + cards.map(function(x){ return fPersonCard(x.pid, x.why); }).join('') +
+    (rest.length ? facesHTML(rest.slice(0, JOINFACES).map(function(x){ return x.pid; }), rest.length - JOINFACES,
+      '<button type="button" class="btn s fnew" data-act="explorekind" data-id="people">'+ic('people', 14)+'See who’s new</button>') : '') + '</div>';
+  return '<article class="fitem fnetw'+(cls ? ' ' + cls : '')+'" data-ts="'+tsIso(e.ms)+'" data-verb="joined">' +
+    headHTML(sysAv('people'), namesHTML(e.objs, true) + ' joined Hypernet', timeHTML(e.ms)) + body + '</article>';
+}
+function trendHTML(e, cls){
+  var g = e.going, i = e.interested, many = function(k){ return '<b>' + k + (k === 1 ? ' person' : ' people') + '</b>'; };
+  var sent = g ? many(g) + ' decided to go to ' + evLink(e.objId) + ' ' + BANDSAY[e.band] + (i ? ', ' + i + ' more ' + (i === 1 ? 'is' : 'are') + ' interested' : '')
+               : many(i) + ' are interested in ' + evLink(e.objId) + ' ' + BANDSAY[e.band];
+  var body = '<div class="fstack">' + fEventCard(e.objId) + facesHTML(e.people.slice(0, JOINFACES), e.people.length - JOINFACES,
+    '<button type="button" class="btn s fnew" data-act="whoall" data-id="'+e.objId+'">'+ic('people', 14)+'Who’s going</button>') + '</div>';
+  return '<article class="fitem fnetw'+(cls ? ' ' + cls : '')+'" data-ts="'+tsIso(e.ms)+'" data-verb="trending">' +
+    headHTML(sysAv('check'), sent, timeHTML(e.ms) + ' · <span class="fexpl">The most decided on Hypernet ' + BANDSAY[e.band] + '</span>') + body + '</article>';
+}
 function homeEntries(){ var p = homeParts(); return p.stream.concat(p.net); }
 /* what an entry opens, in feed order: Home's list for the reading pane and the arrow keys */
 function homeItems(){
@@ -3615,6 +3747,7 @@ function homeItems(){
   var push = function(t, id){ var k = t + ':' + id; if (!seen[k]){ seen[k] = 1; out.push({ type:t, id:id }); } };
   upWithPeople().slice(0, UPALL ? 99 : UPMAX).forEach(function(x){ push('event', x.e.id); });
   homeEntries().forEach(function(e){
+    if (e.verb === 'you') return;
     if (e.verb === 'added_to_horizon') e.eventIds.slice(0, 2).forEach(function(id){ push('event', id); });
     else e.objs.slice(0, 3).forEach(function(id){ push(e.objType, id); });
   });
@@ -3740,7 +3873,7 @@ function actSentence(e){
   }
   return who;
 }
-/* everything you did in the last day, said once: "You: going to X, followed Kai, posted a call out" */
+/* one sitting of yours, said once: "You: going to X, followed Kai, posted a call out" (newest first, four parts) */
 function youLineHTML(rows){
   if (!rows.length) return '';
   var by = {}, order = [];
@@ -3859,6 +3992,9 @@ function peopleCardHTML(list, title, note){
 }
 var HZEXPLAINED = false;
 function feedEntryHTML(e, cls){
+  if (e.verb === 'you') return youLineHTML(e.rows);
+  if (e.verb === 'joined') return joinedHTML(e, cls);
+  if (e.verb === 'trending') return trendHTML(e, cls);
   var at = ' data-ts="'+tsIso(e.ms)+'" data-verb="'+e.verb+'"', lead = e.actors[0];
   var av = avHTML(lead === myActor() ? 'self' : lead, 'a32'), meta = timeHTML(e.ms), body = '';
   if (e.verb === 'posted_callout') return '<article class="fitem fitco'+(cls ? ' ' + cls : '')+'"'+at+'>' + headHTML(av, actSentence(e), meta) + fCalloutCard(e.objId, e.ms) + '</article>';
@@ -3905,7 +4041,6 @@ function homeHTML(){
   HZEXPLAINED = false;
   h += coForYouHTML(cos, sc);
   h += upHTML();
-  h += youLineHTML(parts.mine);
   /* every so often, people to follow: the ones your friends follow, or — following nobody — the most followed. After
      the third entry (after the last, when there are fewer) and every ninth from there */
   var fof = sc.all ? popularPeople() : fofPeople(), fi = 0, band = '';
@@ -3922,7 +4057,8 @@ function homeHTML(){
     h += '<div class="band netband">Around the network</div>';
     parts.net.forEach(function(e){ h += feedEntryHTML(e, 'fnet'); });
   }
-  return h + homeEndHTML(sc, !h, entries.length > 0, parts.net.length > 0);
+  /* "here is everyone" only under someone else's activity: your own lines are in the stream too now */
+  return h + homeEndHTML(sc, !h, entries.some(function(e){ return e.verb !== 'you'; }), parts.net.length > 0);
 }
 /* the end of Home: that's all, what Home shows, how to get more of it — and the way there (Explore's people, all events).
    It only says what is true of the page above it: "here is everyone" under someone's activity, "the rest of Hypernet
@@ -4436,7 +4572,7 @@ function captureAcct(){
   return { profile:{ displayName:p.displayName, handle:p.handle, bio:p.bio, skills:p.skills, cities:p.cities, city:p.city },
            rsvp:RSVP, went:WENT, promoted:PROMOTED, hzfollow:HZFOLLOW, pfollow:PFOLLOW, myevents:MYEVENTS, myhorizons:MYHORIZONS,
            chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT, drafts:{ forms:FORMDRAFTS, chat:CHATDRAFT }, shift:SHIFT, read:READ,
-           look:PTHEME['self'] || null };
+           look:PTHEME['self'] || null, joinedAt:(ACCTS[S.acct] || {}).joinedAt || 0 };
 }
 function loadAcct(a){
   a = a || blankAcct({ displayName:'', handle:'', bio:'', skills:[], cities:[], city:'' });
@@ -4466,12 +4602,12 @@ function syncAcctPeople(){
     if (!(S.loggedIn && S.acct === k)){ if (look) PTHEME[pid] = look; else if (k !== 'demo' || !window.HYPERNET_THEMES.people[pid]) delete PTHEME[pid]; }
     if (k === 'demo') return;
     if (S.loggedIn && S.acct === k) delete PEOPLE[pid];
-    else PEOPLE[pid] = Object.assign({ id:pid }, ACCTS[k].profile);
+    else PEOPLE[pid] = Object.assign({ id:pid }, ACCTS[k].profile, ACCTS[k].joinedAt ? { joinedAt:ACCTS[k].joinedAt } : {});
   });
 }
 function useAcct(k){
   if (S.loggedIn && S.acct){ if (S.acct === k){ closeDialogs(); return; } ACCTS[S.acct] = captureAcct(); }
-  if (!ACCTS[k]) ACCTS[k] = k === 'demo' ? demoAcct() : blankAcct({ displayName:'', handle:'' });
+  if (!ACCTS[k]){ ACCTS[k] = k === 'demo' ? demoAcct() : blankAcct({ displayName:'', handle:'' }); if (k !== 'demo') ACCTS[k].joinedAt = Date.now(); }
   S.acct = k;
   loadAcct(ACCTS[k]);
   S.loggedIn = true;

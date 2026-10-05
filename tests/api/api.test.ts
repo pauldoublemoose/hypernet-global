@@ -93,6 +93,17 @@ describe("login and join", () => {
   });
 });
 
+describe("the network", () => {
+  // 2026-10-05 (v5-feed): Home's "N people joined Hypernet" and Explore → People newest first read when an account was made
+  it("says when people joined, and never their emails", async () => {
+    const people = (await anon.get("/api/bootstrap")).body.people as Record<string, unknown>[];
+    const pa = people.find((p) => p.id === aId);
+    expect(pa).toBeDefined();
+    expect(Date.parse(String(pa!.createdAt))).toBeGreaterThan(Date.now() - 3600_000);
+    expect(people.every((p) => !("email" in p) && !("authUserId" in p))).toBe(true);
+  });
+});
+
 describe("events and privacy", () => {
   it("creates events with the browser's ids", async () => {
     for (const [id, privacy] of [[ids.pub, "everyone"], [ids.fri, "friends"], [ids.me, "only_me"]] as const) {

@@ -83,7 +83,11 @@
    picking up ("4 people decided to go to … this week") once per band with Who's going;
    2026-10-05 (v5-whosgoing): Who's going always has someone or a sentence in it — when no one going is known by name
    (only a count) it says "18 people are going" and shows who is interested (the ones you follow first), never a bare
-   "and N more"; a few going (none followed), some followed and many going still show people (offline and online). */
+   "and N more"; a few going (none followed), some followed and many going still show people (offline and online).;
+   2026-10-05 (v5-retro): the Windows scrollbar (arrow buttons with black triangles, read from the pixels) flush inside
+   the white's 2px frame, nothing painted over it, native overlay bars on a phone; no space above the first band in any
+   list; bands are a grey line on the white (sticky, one line, never two); your "You: …" rows unfilled like every entry;
+   a long title in a sentence flows as words (", followed Sebastian" right after it) and opens with Enter. */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch(e){
   try { ({ chromium } = require('playwright-core')); } catch(e2){
@@ -129,7 +133,8 @@ async function launch(){
   if (browser) return browser;
   var tries = [process.env.PW_CHROME || undefined].concat(process.env.PW_CHROME ? [] : cachedChromes());
   for (var i = 0; i < tries.length; i++){
-    try { browser = await chromium.launch({ executablePath: tries[i], args: ['--no-sandbox'] }); if (tries[i]) console.log('browser: ' + tries[i]); return browser; }
+    /* scrollbars painted (headless hides them by default): the v5-retro checks look at the Windows bar's pixels */
+    try { browser = await chromium.launch({ executablePath: tries[i], args: ['--no-sandbox'], ignoreDefaultArgs: ['--hide-scrollbars'] }); if (tries[i]) console.log('browser: ' + tries[i]); return browser; }
     catch(e){ if (i === tries.length - 1){
       console.error('No Chromium to run. Install one with  npx playwright install chromium-headless-shell  or set PW_CHROME=<path>.\n' + String(e.message).split('\n')[0]);
       process.exit(2);
@@ -168,18 +173,19 @@ const winState = p => p.evaluate(() => { const w = document.getElementById('win'
 /* 2026-10-04 (layout): where the white and the view's container sit. panelL / panelR: the white's distance from the sidebar
    and from the dock (or the main area's edge); cw: the container's width; cl / cr: its insets in the white (cr counts the
    list's scrollbar, sb); head: the heading's offset from the container's edge (2026-10-05: 0 — the heading stands on the
-   white's left edge, which is the container's) */
+   white's left edge, which is the container's). 2026-10-05 (v5-retro): the white is framed by a 2px border (fr) with the
+   scrollbar inside it, so panelW, cl and cr are measured inside the frame (the white itself) */
 const geoOf = p => p.evaluate(() => {
   const app = document.getElementById('app'), cal = app.classList.contains('v-cal'), lb = document.getElementById('listbody'), cp = document.querySelector('#calcol .calpanel');
   const panel = (cal ? cp : document.getElementById('listcol')).getBoundingClientRect(), nav = document.getElementById('nav').getBoundingClientRect();
   const dock = document.getElementById('chats'), m = document.getElementById('main').getBoundingClientRect();
   const edge = dock.offsetParent && !app.classList.contains('dock-over') ? dock.getBoundingClientRect().left : m.right;
-  let left, right, sb = 0;
-  if (cal){ const r = cp.getBoundingClientRect(), cs = getComputedStyle(cp); left = r.left + parseFloat(cs.paddingLeft) - 16; right = r.right - parseFloat(cs.paddingRight) + 16; }
-  else { const r = lb.getBoundingClientRect(), cs = getComputedStyle(lb); sb = lb.offsetWidth - lb.clientWidth; left = r.left + parseFloat(cs.paddingLeft); right = r.left + lb.clientWidth - parseFloat(cs.paddingRight); }
+  let left, right, sb = 0, fr = 0;
+  if (cal){ const r = cp.getBoundingClientRect(), cs = getComputedStyle(cp); fr = cp.clientLeft; left = r.left + fr + parseFloat(cs.paddingLeft) - 16; right = r.left + fr + cp.clientWidth - parseFloat(cs.paddingRight) + 16; }
+  else { const r = lb.getBoundingClientRect(), cs = getComputedStyle(lb); fr = lb.clientLeft; sb = lb.offsetWidth - lb.clientWidth - 2 * fr; left = r.left + fr + parseFloat(cs.paddingLeft); right = r.left + fr + lb.clientWidth - parseFloat(cs.paddingRight); }
   const h2 = document.querySelector('#chead h2').getBoundingClientRect();
-  return { panelL:Math.round(panel.left - nav.right), panelR:Math.round(edge - panel.right), panelW:Math.round(panel.width), sb, cw:Math.round(right - left),
-           cl:Math.round(left - panel.left), cr:Math.round(panel.right - right), head:Math.round(h2.left - left), win:L.win || '' };
+  return { panelL:Math.round(panel.left - nav.right), panelR:Math.round(edge - panel.right), panelW:Math.round(panel.width - 2 * fr), sb, fr, cw:Math.round(right - left),
+           cl:Math.round(left - panel.left - fr), cr:Math.round(panel.right - fr - right), head:Math.round(h2.left - left + fr), win:L.win || '' };
 });
 async function shot(p, name){ await p.screenshot({ path: path.join(SHOTS, name + '.png') }); }
 let fails = 0;
@@ -1249,7 +1255,7 @@ async function overflowEverywhere(p, label){
       /* 2026-10-04 (layout): on a desktop or tablet each section is one row of whole squares that fills the container —
          nothing to scroll sideways, nothing cut at the edge, the same columns in every section; Show all when there is more */
       const fit = await ev(c, () => { const lb = document.getElementById('listbody'), cs = getComputedStyle(lb), r = lb.getBoundingClientRect();
-        const left = r.left + parseFloat(cs.paddingLeft) + 16, right = r.left + lb.clientWidth - parseFloat(cs.paddingRight) - 16;
+        const left = r.left + lb.clientLeft + parseFloat(cs.paddingLeft) + 16, right = r.left + lb.clientLeft + lb.clientWidth - parseFloat(cs.paddingRight) - 16;
         const secs = [...document.querySelectorAll('#listbody .shelf')].map(sh => { const row = sh.querySelector('.srow'), cards = [...row.querySelectorAll('.card2')].map(x => x.getBoundingClientRect()), id = row.getAttribute('data-shelf');
           return { id, n:cards.length, total:homeSections().find(x => x.id === id).items.length, xs:cards.map(q => Math.round(q.left)), right:cards.length ? Math.round(cards[cards.length - 1].right) : 0,
                    scroll:row.scrollWidth - row.clientWidth, oneRow:cards.every(q => Math.abs(q.top - cards[0].top) < 1), all:!!sh.querySelector('.showall') }; });
@@ -1478,8 +1484,9 @@ async function overflowEverywhere(p, label){
       CALLOUTS.unshift({ id:'co-new-sauna', title:'Sauna master', body:'Someone who can bring the sauna to life', eventId:id, skill:null, expiresAt:isoOf(new Date(Date.now() + 30 * 864e5)),
         hostName:S.me.name, hostId:acctPid(S.acct), hostAcct:S.acct }); logAct('posted_callout', 'callout', 'co-new-sauna'); render(); return id; });
     await c.evaluate(() => openItem('callout', 'co-new-sauna')); await c.waitForTimeout(350);
+    /* 2026-10-05 (v5-retro): the window's page has its 2px sunken frame as a border — what fits is inside it */
     const pg = () => ev(c, () => { const sc = document.getElementById('dscroll'), band = sc.querySelector('.pg-callout > .coband'), w = sc.getBoundingClientRect();
-      const out = [...sc.querySelectorAll('.pg-callout *')].filter(e => { const r = e.getBoundingClientRect(); return r.width && (r.left < w.left - 0.5 || r.right > w.left + sc.clientWidth + 0.5); }).map(e => e.className || e.tagName);
+      const out = [...sc.querySelectorAll('.pg-callout *')].filter(e => { const r = e.getBoundingClientRect(); return r.width && (r.left < w.left + sc.clientLeft - 0.5 || r.right > w.left + sc.clientLeft + sc.clientWidth + 0.5); }).map(e => e.className || e.tagName);
       const ta = sc.querySelector('#coreply'), bt = sc.querySelector('[data-act="postreply"]'), box = sc.querySelector('.sect[data-sect="replies"]'), bs = box && getComputedStyle(box);
       return { band:!!band && getComputedStyle(band).backgroundColor === 'rgb(20, 20, 20)', title:band && band.querySelector('h1').textContent, ev:band && (band.querySelector('.fcoe[data-type="event"]') || {}).getAttribute && band.querySelector('.fcoe').getAttribute('data-id'),
                by:band && (band.querySelector('.coby .rpn, .coby b') || {}).textContent, meta:band && (band.querySelector('.coby small') || {}).textContent, card:sc.querySelectorAll('.fco').length,
@@ -1724,11 +1731,11 @@ async function overflowEverywhere(p, label){
   const listGeo = p => p.evaluate(() => { const lb = document.getElementById('listbody'), cs = getComputedStyle(lb);
     return { pad:cs.padding, fit:JSON.stringify(L.fit), st:lb.scrollTop, rects:[...lb.querySelectorAll('.card2, .cart, .row, .fitem, .fuprow, .band, .shh')].slice(0, 80).map(e => { const r = e.getBoundingClientRect(); return [r.left, r.top, r.width, r.height].map(Math.round).join(','); }).join(';') }; });
   const winOver = p => p.evaluate(() => { const w = document.getElementById('win'), wr = w.getBoundingClientRect(), lb = document.getElementById('listbody'), r = lb.getBoundingClientRect(),
-      ce = document.getElementById('center').getBoundingClientRect(), white = document.getElementById('listcol').getBoundingClientRect(), sb = lb.offsetWidth - lb.clientWidth;
+      ce = document.getElementById('center').getBoundingClientRect(), white = document.getElementById('listcol').getBoundingClientRect(), fr = lb.clientLeft, sb = lb.offsetWidth - lb.clientWidth - 2 * fr;
     /* under the first 320 of every entry in view is the list, never the window */
     const hits = [...lb.querySelectorAll('.fitem, .fuprow, .band, .card2, .row')].filter(x => { const q = x.getBoundingClientRect(); return q.top > r.top + 8 && q.bottom < r.bottom - 8 && q.left < r.left + 300; })
       .map(x => { const q = x.getBoundingClientRect(), el = document.elementFromPoint(Math.min(q.right - 4, r.left + 310), (q.top + q.bottom) / 2); return !!el && !!el.closest('#listbody'); });
-    return { open:!w.hidden, mode:L.win, ww:Math.round(wr.width), keep:Math.round(wr.left - r.left), rgap:Math.round(ce.right - wr.right), sb, tgap:Math.round(wr.top - white.top), bgap:Math.round(ce.bottom - wr.bottom),
+    return { open:!w.hidden, mode:L.win, ww:Math.round(wr.width), keep:Math.round(wr.left - r.left), rgap:Math.round(ce.right - wr.right), sb, fr, tgap:Math.round(wr.top - white.top), bgap:Math.round(ce.bottom - wr.bottom),
              hits:hits.length, under:hits.filter(x => !x).length, cover:Math.round(wr.left) === Math.round(ce.left) && Math.round(wr.right) === Math.round(ce.right) }; });
   for (const [w, h] of [[1440, 900], [1920, 1080], [1280, 800]]){
     const c = await ctx('desk', { viewport:{ width:w, height:h } });
@@ -1764,8 +1771,8 @@ async function overflowEverywhere(p, label){
       const still = [g1, g2, g3].every(g => g.rects === g0.rects && g.pad === g0.pad && g.fit === g0.fit && g.st === g0.st);
       ok(still && g0.rects.length > 20, tag + ': opening, replacing and closing the window moves nothing in the list (place, padding, squares)');
       if (wg.mode === 'over'){
-        ok(wg.open && wg.ww >= 440 && wg.ww <= 720 && wg.keep >= 320 && wg.rgap === wg.sb + 8 && wg.tgap === 8 && wg.bgap === 8 && wg.hits >= 2 && !wg.under && wg2.keep === wg.keep && wg2.ww === wg.ww,
-           tag + ': the window lies over the right of the white (inset 8, the scrollbar clear), the list\'s first 320 in view and clickable ' + JSON.stringify(wg));
+        ok(wg.open && wg.ww >= 440 && wg.ww <= 720 && wg.keep >= 320 && wg.rgap === wg.sb + wg.fr + 8 && wg.tgap === 8 && wg.bgap === 8 && wg.hits >= 2 && !wg.under && wg2.keep === wg.keep && wg2.ww === wg.ww,
+           tag + ': the window lies over the right of the white (inset 8, the scrollbar and the frame clear), the list\'s first 320 in view and clickable ' + JSON.stringify(wg));
       } else ok(w === 1280 && dock && wg.open && wg.cover, tag + ': with no room for both, the window takes the centre ' + JSON.stringify(wg));
       if (w === 1440 && dock && hh === '#/home'){ await pick(c, sel + ' >> nth=0'); await c.waitForTimeout(350); await shot(c, 'layout-1440-home-window-dock'); await c.click('#dbar [data-act="closewin"]'); await c.waitForTimeout(250); }
     }
@@ -2029,6 +2036,25 @@ async function overflowEverywhere(p, label){
         await c.click('#listbody .fitem[data-verb="trending"] [data-act="whoall"]'); await c.waitForTimeout(300);
         ok(await ev(c, () => document.querySelectorAll('.dlg .whorow').length === 4), kind + ': Who’s going opens the four');
         await c.evaluate(() => closeDialogs()); await c.waitForTimeout(150);
+      }
+      /* 2026-10-05 (v5-retro): a long title in your line flows as words — ", followed Sebastian" carries on right after it
+         instead of breaking onto a line of its own (a <button> is one box: the title wrapped as a block). The names and
+         titles are links to the thing's own address that open it in the window, by click or by Enter */
+      const wrap = await ev(c, () => { const y = [...document.querySelectorAll('#listbody .fyou')].find(x => /followed Sebastian/.test(x.textContent));
+        const links = [...y.querySelectorAll('.fsent .fwho')], t = links.find(a => /Webdesigner/.test(a.textContent)), rs = t.getClientRects(), last = rs[rs.length - 1];
+        const rg = document.createRange(); rg.setStart(t.nextSibling, 0); rg.setEnd(t.nextSibling, 1); const ar = rg.getBoundingClientRect();
+        y.scrollIntoView({ block:'center' });
+        return { kinds:[...new Set(links.map(a => a.tagName + ':' + getComputedStyle(a).display))].join(), lines:rs.length, after:JSON.stringify(t.nextSibling.textContent),
+                 same:Math.abs(ar.top - last.top) < 2 && ar.left >= last.right - 1, href:t.getAttribute('href'), seb:links[links.length - 1].getAttribute('href') }; });
+      ok(wrap.kinds === 'A:inline' && wrap.after === '", followed "' && wrap.same && /^#\/callout\//.test(wrap.href) && /^#\/person\//.test(wrap.seb) && (kind !== 'phone' || wrap.lines >= 2),
+         kind + ': a long title in "You: …" flows as words, ", followed Sebastian" right after it (v5-retro) ' + JSON.stringify(wrap));
+      if (kind === 'phone') await shot(c, 'retro-you-phone');
+      if (kind === 'desk'){
+        await c.evaluate(() => [...document.querySelectorAll('#listbody .fyou .fwho')].find(a => /Webdesigner/.test(a.textContent)).focus());
+        await c.keyboard.press('Enter'); await c.waitForTimeout(350);
+        const kb = await ev(c, () => ({ top:S.stack.length ? S.stack[S.stack.length - 1].type : '', hash:location.hash }));
+        ok(kb.top === 'callout' && /^#\/callout\//.test(kb.hash), kind + ': Enter on a title in a sentence opens it in the window (v5-retro) ' + JSON.stringify(kb));
+        await c.keyboard.press('Escape'); await c.waitForTimeout(250);
       }
       /* See who's new: Explore → People, you first, then the newest, each new one saying when they joined */
       await c.evaluate(() => { const b = document.querySelector('#listbody .fitem[data-verb="joined"] [data-act="explorekind"]'); b.scrollIntoView({ block:'center' }); }); await c.waitForTimeout(150);
@@ -2374,6 +2400,81 @@ async function overflowEverywhere(p, label){
       ok(!c.errors.length && (await overflow(c)) <= 0, kind + ': no console errors, no overflow (v5-whosgoing, online) ' + c.errors.join(' '));
       await c.context().close();
     }
+  }
+
+  /* ---------------- 2026-10-05 (v5-retro): Windows' scrollbar, flush in the white's frame; nothing above the first band;
+     bands are a grey line, not a grey block; your own rows are entries like the others ---------------- */
+  {
+    /* the colours of a few pixels of the screen, read back through a canvas */
+    const pixels = async (c, clip, pts) => { const b64 = (await c.screenshot({ clip })).toString('base64');
+      return c.evaluate(async ([b, ps]) => { const img = new Image(); img.src = 'data:image/png;base64,' + b; await img.decode();
+        const cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height; const g = cv.getContext('2d'); g.drawImage(img, 0, 0);
+        return ps.map(([x, y]) => [...g.getImageData(x, y, 1, 1).data].slice(0, 3).join(',')); }, [b64, pts]); };
+    const firstTop = c => ev(c, () => { const lb = document.getElementById('listbody'), r = lb.getBoundingClientRect(), f = lb.firstElementChild;
+      const fb = f && (f.classList.contains('band') ? f : f.querySelector(':scope > .band:first-child'));
+      return { gap:f ? Math.round(f.getBoundingClientRect().top - r.top - lb.clientTop) : null, band:fb ? fb.textContent.trim().slice(0, 24) : '',
+               bandGap:fb ? Math.round(fb.getBoundingClientRect().top - r.top - lb.clientTop) : null }; });
+    const bandLook = c => ev(c, () => [...document.querySelectorAll('#listbody .band')].map(b => { const cs = getComputedStyle(b), a = getComputedStyle(b, '::after');
+      return { bg:cs.backgroundColor, pos:cs.position, bb:cs.borderBottomWidth, line:a.height === '1px' && a.backgroundColor !== 'rgba(0, 0, 0, 0)' && parseFloat(a.width) >= 16 }; })
+      .filter(x => !(x.bg === 'rgb(255, 255, 255)' && x.pos === 'sticky' && x.bb === '0px' && x.line)).length);
+    for (const [w, h] of [[1440, 900], [1280, 800]]){
+      const c = await ctx('desk', { viewport:{ width:w, height:h } });
+      await open(c, '', true);
+      await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+      await c.evaluate(() => { S.rightOpen = false; render(); }); await c.waitForTimeout(200);
+      /* no space above the first band, or the first entry where there is no band, in every list */
+      const tops = {}, looks = {};
+      for (const hh of ['#/home', '#/going', '#/interested', '#/hosting', '#/explore/events', '#/explore/callouts', '#/explore/people', '#/search?q=burn', '#/search?q=']){
+        await c.goto(URL + hh); await c.waitForTimeout(400); tops[hh] = await firstTop(c); looks[hh] = await bandLook(c);
+      }
+      const gaps = Object.keys(tops).filter(k => tops[k].gap !== 0 || (tops[k].bandGap != null && tops[k].bandGap !== 0));
+      ok(!gaps.length && tops['#/home'].band, w + ': the first band (or entry) starts at the white\'s top edge in every list ' + JSON.stringify(tops));
+      ok(Object.keys(looks).every(k => !looks[k]), w + ': every band is a line on the white (white, sticky, no rule under it, a 1px grey line after its name) ' + JSON.stringify(looks));
+      /* the scrollbar: inside the white's 2px frame and flush against it; Windows' own (raised arrow buttons with a black
+         triangle, the button's dark edge in view, the frame's two lines right of it — nothing painted over the bar) */
+      await c.goto(URL + '#/home'); await c.waitForTimeout(400);
+      const g = await ev(c, () => { const lb = document.getElementById('listbody'), r = lb.getBoundingClientRect(), col = document.getElementById('listcol').getBoundingClientRect();
+        return { fr:lb.clientLeft, sb:lb.offsetWidth - lb.clientWidth - 2 * lb.clientLeft, x:Math.round(r.right), y:Math.round(r.top), b:Math.round(r.bottom), edge:Math.round(col.right - r.right),
+                 over:getComputedStyle(document.getElementById('listcol'), '::after').content, scrolls:lb.scrollHeight > lb.clientHeight }; });
+      const L0 = g.x - g.fr - g.sb;
+      const up = await pixels(c, { x:L0 - 2, y:g.y, width:g.sb + g.fr + 4, height:g.fr + 16 }, [[2 + 8, g.fr + 8], [2 + 15, g.fr + 8], [2 + g.sb, g.fr + 8], [2 + g.sb + 1, g.fr + 8], [2 + g.sb + 2, g.fr + 8]]);
+      const dn = await pixels(c, { x:L0 - 2, y:g.b - g.fr - 16, width:g.sb + 4, height:16 }, [[2 + 8, 7]]);
+      ok(g.fr === 2 && g.sb === 16 && !g.edge && (g.over === 'none' || g.over === 'normal') && g.scrolls &&
+         up[0] === '0,0,0' && up[1] === '64,64,64' && up[2] === '212,208,200' && up[3] === '255,255,255' && up[4] === '212,208,200' && dn[0] === '0,0,0',
+         w + ': the list\'s scrollbar is Windows\' (16, arrow buttons with black triangles) and sits flush inside the white\'s frame — nothing painted over it ' + JSON.stringify({ g, up, dn }));
+      /* Home is one calm document: your rows are entries like the others (no grey fill, the same hairline under them),
+         a band lies over the hairline before it (one line, never two), and stays at the top while its group scrolls */
+      const co = await ev(c, () => { const lb = document.getElementById('listbody'), bands = [...lb.querySelectorAll('.band')], you = lb.querySelector('.fitem.fyou');
+        const other = lb.querySelector('.fitem[data-verb]:not(.fyou):not(.fnet):not(.fitco)'), cs = x => getComputedStyle(x);
+        const two = bands.filter(b => { const p = b.previousElementSibling; return p && cs(p).borderBottomWidth !== '0px' && Math.round(p.getBoundingClientRect().bottom - b.getBoundingClientRect().top) !== 1; }).length;
+        return { you:!!you && !!other, bg:you && cs(you).backgroundColor, otherBg:other && cs(other).backgroundColor,
+                 rule:you && cs(you).borderBottom === cs(other).borderBottom, two }; });
+      ok(co.you && co.bg === co.otherBg && co.bg === 'rgba(0, 0, 0, 0)' && co.rule && !co.two,
+         w + ': your "You: …" rows are on the white like every entry, the same hairline under them; a band never doubles a line ' + JSON.stringify(co));
+      const stuck = await ev(c, async () => { const lb = document.getElementById('listbody'); lb.scrollTop = 1400; await new Promise(r => setTimeout(r, 150));
+        const top = lb.getBoundingClientRect().top + lb.clientTop, b = [...lb.querySelectorAll('.band')].find(x => Math.abs(x.getBoundingClientRect().top - top) < 1);
+        const hit = b && document.elementFromPoint(b.getBoundingClientRect().left + 200, top + 16);
+        return { band:b ? b.textContent.trim() : '', onTop:!!hit && !!hit.closest('.band') }; });
+      ok(stuck.band && stuck.onTop, w + ': scrolled, the group\'s band stays at the top of the white, over its rows ' + JSON.stringify(stuck));
+      if (w === 1440){
+        await c.evaluate(() => { document.getElementById('listbody').scrollTop = 0; }); await c.waitForTimeout(150); await shot(c, 'retro-home-1440');
+        await c.screenshot({ path:path.join(SHOTS, 'retro-scrollbar-1x.png'), clip:{ x:L0 - 40, y:g.y - 4, width:g.sb + g.fr + 48, height:120 } });
+      }
+      ok(!c.errors.length && (await overflow(c)) <= 0, w + ': no console errors, no overflow (v5-retro) ' + c.errors.join(' '));
+      await c.context().close();
+    }
+    /* a touch phone keeps its own overlay scrollbars and no frame; Home starts with its first band at the top; your rows unfilled */
+    const c = await ctx('phone');
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    await c.goto(URL + '#/home'); await c.waitForTimeout(400);
+    const ph = await firstTop(c), pl = await bandLook(c);
+    const pg = await ev(c, () => { const lb = document.getElementById('listbody'), you = lb.querySelector('.fitem.fyou');
+      return { sb:lb.offsetWidth - lb.clientWidth, fr:lb.clientLeft, you:!!you, bg:you ? getComputedStyle(you).backgroundColor : '' }; });
+    ok(ph.gap === 0 && ph.bandGap === 0 && !pl && pg.sb === 0 && pg.fr === 0 && pg.you && pg.bg === 'rgba(0, 0, 0, 0)',
+       'phone: native overlay scrollbars, no frame; the first band at the top; bands are lines; your rows unfilled (v5-retro) ' + JSON.stringify([ph, pl, pg]));
+    ok(!c.errors.length && (await overflow(c)) <= 0, 'phone: no console errors, no overflow (v5-retro) ' + c.errors.join(' '));
+    await c.context().close();
   }
 
   /* ---------------- tablet ---------------- */

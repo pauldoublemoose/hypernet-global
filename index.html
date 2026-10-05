@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#3a3a3a">
+<!-- the app has one look, light; Android Chrome's "darken web pages" must not invert it (2026-10-05) -->
+<meta name="color-scheme" content="only light">
 <title>Hypernet</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23d4d0c8'/%3E%3Cpath d='M16 4 28 16 16 28 4 16z' fill='%23141414'/%3E%3C/svg%3E">
 <style>
@@ -20,6 +22,9 @@
 
 /* ---------- 1. tokens ------------------------------------------------ */
 :root{
+  /* one look, light: "only" opts out of the browser's automatic darkening (Android Chrome's Auto Dark, a WebView's
+     algorithmic darkening), which otherwise inverts the greys and leaves events unreadable (2026-10-05) */
+  color-scheme:only light;
   --face:#d4d0c8; --face-lt:#e8e5df; --face-dk:#c2beb5;
   --white:#fff; --shadow:#808080; --dark:#404040;
   --ink:#141414; --ink2:#3a3a3a; --dim:#666; --line:#e2dfd8; --hover:#f0eee9; --rule:#c9c5bc; --gb:#bdb9b0;

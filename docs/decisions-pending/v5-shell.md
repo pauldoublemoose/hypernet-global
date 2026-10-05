@@ -28,8 +28,9 @@ To be merged into `docs/DECISIONS.md` (newest last), in this order.
   container starts at the white panel's left, at every width: Home keeps its 640 reading measure, lists their 720,
   Explore's overview and every calendar their 1120 — only their left edge is fixed, the room to their right stays white.
   The heading and its subtitle (and the calendar's bar under them) stand on the grey with their left edge on the white
-  rectangle's left edge; bands, rows and squares keep their 16 gutter inside the white; the heading's tools still end
-  where the rows do. Supersedes 2026-10-04 "The white spans the centre … (C)" in part: "Inside it a view sits in one
+  rectangle's left edge; bands, rows and squares keep their 16 gutter inside the white. A list that has a calendar
+  (v5-calendar's slot) sits at the left of its calendar's 1120, so the heading spans that slot and the List / Calendar
+  switch stays at its top right in both views; elsewhere the heading's tools end where the rows do. Supersedes 2026-10-04 "The white spans the centre … (C)" in part: "Inside it a view sits in one
   container" stands, but containers are no longer centred, "the heading moves with its view's container … 16 inside
   it" becomes "the heading stands on the white's edge", and "At 1920 Home stays 640 in the middle of the white" becomes
   "at the white's left".
@@ -39,7 +40,8 @@ To be merged into `docs/DECISIONS.md` (newest last), in this order.
   keeps its exact place, width, padding, scroll and square sizes whether a window opens, is replaced or closes; nothing
   reflows. The window lies over the right of the white: inset 8 from the white's top, right and bottom (clear of the
   list's scrollbar, so the list can still be scrolled), 440 to 720 wide while the list's first 320 stay in view beside it
-  (the avatars, who did what, titles, the call out's Answer). 1440: 720 wide, 420 of the list in view; 1440 with the
+  (the avatars, who did what, titles, the call out's Answer). The heading row stays clear above it, so the heading's
+  tools (the List / Calendar switch) are not under the window. 1440: 720 wide, 420 of the list in view; 1440 with the
   dock: 504, 328 in view; 1280: 688, 328; 1920: 720, the whole 720 list beside it. Where the centre has no room for
   both (a tablet; 1280 with the chat dock open) the window is the centre, as before, clear of a tablet's floating dock
   where it can be. Everything else about the window stands: one at a time, drag it anywhere in the main area, □ or a

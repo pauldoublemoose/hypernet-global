@@ -62,7 +62,11 @@
    end at 1280, 1440, 1920 and 768 — a list with a calendar keeps the calendar's slot — and the phone's app bar), ‹ Today ›
    lead the calendar's bar and never move with the title, a narrow month's events are readable titled lines, and a narrow
    day is a page of its own (one event opens straight away, an empty day is just a date; back, forward, reload, ‹ month,
-   a cold link with its month underneath). */
+   a cold link with its month underneath);
+   2026-10-05 (v5-callout): a call out's page is the call out (its band holds the ask, the event, who and until when; no
+   card inside, one short line at most, Edit · Close / Answer · Share), the icon is a megaphone and both new icons stay in
+   their box, an event's call out says "No replies yet" (no box; Answer / Reply open the call out, box focused), and on a
+   phone the reply box keeps focus as the keyboard shrinks the viewport and through a redraw. */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch(e){
   try { ({ chromium } = require('playwright-core')); } catch(e2){

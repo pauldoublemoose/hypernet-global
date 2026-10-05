@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#3a3a3a">
+<!-- the app has one look, light; Android Chrome's "darken web pages" must not invert it (2026-10-05) -->
+<meta name="color-scheme" content="only light">
 <title>Hypernet</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23d4d0c8'/%3E%3Cpath d='M16 4 28 16 16 28 4 16z' fill='%23141414'/%3E%3C/svg%3E">
 <style>
@@ -20,6 +22,9 @@
 
 /* ---------- 1. tokens ------------------------------------------------ */
 :root{
+  /* one look, light: "only" opts out of the browser's automatic darkening (Android Chrome's Auto Dark, a WebView's
+     algorithmic darkening), which otherwise inverts the greys and leaves events unreadable (2026-10-05) */
+  color-scheme:only light;
   --face:#d4d0c8; --face-lt:#e8e5df; --face-dk:#c2beb5;
   --white:#fff; --shadow:#808080; --dark:#404040;
   --ink:#141414; --ink2:#3a3a3a; --dim:#666; --line:#e2dfd8; --hover:#f0eee9; --rule:#c9c5bc; --gb:#bdb9b0;
@@ -33,7 +38,9 @@
   --nav-w:252px; --chat-w:344px;
   /* the centre's containers (2026-10-04): the white spans the centre, what it holds is only as wide as the view needs —
      640 to read (Home), 720 to scan rows (every list), 1120 to browse squares or a month (Explore's overview, the calendar).
-     The numbers live in CW (the layout engine), which sets --pl / --pr: the container's insets from the centre's edges */
+     The numbers live in CW (the layout engine), which sets --pl / --pr: the container's insets from the centre's edges,
+     and --hr: the heading's right inset. Every container starts at the white's left (2026-10-05), so --pl is 0 on every
+     screen */
   --pl:0px; --pr:0px; --sbw:0px; --hr:0px;
   --out: inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white), inset -2px -2px 0 var(--shadow), inset 2px 2px 0 var(--face-lt);
   --in:  inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white), inset 2px 2px 0 var(--dark), inset -2px -2px 0 var(--face);
@@ -148,7 +155,7 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .nrow .sq{ font-size:12px; }
 .acctcard{ display:none; }
 
-/* ---------- 5. centre: the white spans it, the view's container sits in it, the window beside it ---------- */
+/* ---------- 5. centre: the white spans it, the view's container sits at its left, the window lies over it ---------- */
 #chead{ flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:0 4px 8px; min-height:56px; flex-wrap:wrap; }
 #chead .ct{ flex:1 1 220px; min-width:0; }
 #chead h2{ margin:0; font-size:20px; line-height:24px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -165,16 +172,18 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 #app.v-cal #listcol{ display:none; }
 #app.v-cal #calcol{ display:flex; }
 /* desktop and tablet: the white panel takes everything between the sidebar and the chat dock; the view's container sits
-   in it (centred, or stepped left beside an open window), and the heading, its tools, the calendar's bar and every band,
-   row and square keep to the same two edges — 16 inside the container, the rows' own gutter */
-#app.desk #chead, #app.desk .calbar{ padding-left:calc(var(--pl) + 16px); padding-right:calc(max(var(--pr), var(--sbw)) + 16px); }
+   at its left (2026-10-05: "make everything left aligned like the Explore page"), and every band, row and square keeps to
+   its edges, 16 inside (the rows' own gutter). What stands on the grey above the white — the heading and its subtitle,
+   the calendar's bar — starts at the white's own left edge ("Explore should be left-aligned with the white rectangle
+   below it"); the calendar bar's tools end where the month does */
+#app.desk #chead, #app.desk .calbar{ padding-left:var(--pl); padding-right:calc(max(var(--pr), var(--sbw)) + 16px); }
 /* the heading spans its slot: a list with a calendar has the calendar's in both views, so the switch keeps its place */
 #app.desk #chead{ padding-right:calc(max(var(--hr), var(--sbw)) + 16px); }
 #app.desk #listbody{ scrollbar-gutter:stable; padding:16px max(0px, calc(var(--pr) - var(--sbw))) 0 var(--pl); }
 #app.desk .shelves > .shelf:first-child{ margin-top:8px; }
 #app.desk .calpanel{ padding:16px calc(var(--pr) + 16px) 16px calc(var(--pl) + 16px); }
 .calpanel{ display:flex; flex-direction:column; container:cal / inline-size; }
-/* the window: a Windows 2000 frame beside the list (over the centre where there is no room), dragged by its title bar */
+/* the window: a Windows 2000 frame lying over the list (which never moves for it), dragged by its title bar */
 #win{ position:absolute; z-index:30; display:flex; flex-direction:column; min-width:0; padding:4px; background:var(--face);
   box-shadow:var(--out), 0 0 0 1px #000, 6px 6px 0 rgba(0,0,0,.2); }
 #win[hidden]{ display:none; }
@@ -591,6 +600,12 @@ body.is-phone .dbar .dbtn{ height:44px; }
 .fhelp{ font-size:var(--fs-s); color:var(--dim); }
 .ferr{ font-size:var(--fs-s); font-weight:bold; color:var(--ink); }
 .ferr::before{ content:"\26A0\FE0E  "; }
+/* the ⚠ only with something to say: an empty error line is not drawn at all (2026-10-05) */
+.ferr:empty{ display:none; }
+/* the login code's "Send a new code (0:30)": at the footer's left, in line with Back and Log in; its countdown in
+   figures of one width, so the label doesn't shiver as it counts */
+.dfoot .lgresend{ margin-right:auto; font-variant-numeric:tabular-nums; }
+body.is-phone .dfoot .btn.lgresend{ flex:0 0 auto; }
 input[aria-invalid="true"]{ outline:1px solid #000; outline-offset:-4px; }
 .demolink{ margin:4px 0 0; font-size:var(--fs-s); color:var(--dim); }
 .demolink button{ min-height:32px; padding:0; border:0; background:none; color:var(--ink2); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
@@ -653,7 +668,6 @@ body.is-phone .demolink button{ min-height:44px; }
 .czdrop .czhint{ position:absolute; left:0; right:0; bottom:0; padding:3px 0; background:rgba(0,0,0,.55); color:#fff; font:bold 12px var(--sys); text-align:center; }
 .czimgside{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:6px; }
 .czimgside .fhelp{ margin:0; line-height:1.4; }
-.czimgside .ferr:empty{ display:none; }
 .czfile{ position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; pointer-events:none; }
 .previewbox{ padding:12px; max-height:470px; overflow:auto; background:#fff; box-shadow:var(--in); }
 .plabel{ margin:10px 0 6px; font:bold 12px var(--sys); color:var(--dim); }
@@ -1001,6 +1015,10 @@ input[type=search]::-webkit-search-cancel-button{ -webkit-appearance:none; displ
 #app.phone .acctcard .an{ flex:1; min-width:0; font-size:14px; font-weight:bold; }
 #app.phone .acctcard .an small{ display:block; font-size:12px; font-weight:normal; color:var(--dim); }
 #app.phone #tabbar{ display:flex; flex:0 0 auto; gap:4px; padding:5px 5px calc(5px + env(safe-area-inset-bottom)); background:var(--face); box-shadow:inset 0 1px 0 var(--white), 0 -1px 0 var(--shadow); }
+/* logged out a phone has no tabs (2026-10-05, "when I'm not logged in I don't need to see the bottom bar at all"): the
+   preview bar is the only bar at the foot, so it keeps clear of the home indicator itself */
+#app.phone.preview #tabbar{ display:none; }
+#app.phone.preview #previewbar{ padding-bottom:calc(8px + env(safe-area-inset-bottom)); }
 .tab{ position:relative; flex:1 1 0; min-width:0; min-height:54px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
   border:0; background:transparent; color:var(--ink2); font-size:12px; }
 .tab.on{ background:#fff; color:#000; font-weight:bold; box-shadow:var(--in); }
@@ -2725,9 +2743,8 @@ function renderDetail(){
   w.setAttribute('aria-label', (KINDNAME[it.type] || 'Window') + ': ' + name);
   placeWin();
 }
-/* where the window sits: by default beside the list, in the room the list stepped aside to leave (layoutCentre), the
-   full height of the centre; where there is no such room, over the centre. Once you drag it, where you put it — always
-   inside the main area */
+/* where the window sits: by default over the right of the white, the list's left part in view beside it (layoutCentre);
+   where there is no such room, over the centre. Once you drag it, where you put it — always inside the main area */
 function placeWin(){
   var w = $('win'); if (!w || w.hidden) return;
   if (L.phone){ ['left','top','width','height'].forEach(function(k){ w.style[k] = ''; }); w.classList.remove('max'); return; }
@@ -3944,7 +3961,7 @@ function exploreKindsHTML(){
     return '<button role="tab" class="kind'+(on?' on':'')+'" aria-selected="'+on+'" data-act="explorekind" data-id="'+k[0]+'">'+esc(k[0] === 'horizons' ? 'Horizons' : k[1])+'</button>';
   }).join('') + '</div>';
 }
-/* ---- the phone shell: an app bar on top, five tabs at the bottom ---- */
+/* ---- the phone shell: an app bar on top, five tabs at the bottom (none logged out: the preview bar is the foot) ---- */
 function phoneCanBack(){
   return S.phoneSearch || S.folder.kind !== tabRootFolder(S.tab).kind;
 }
@@ -3971,9 +3988,9 @@ function renderAppbar(){
   if (hadFocus || S.phoneSearch){ var pq = $('pq'); if (pq){ pq.focus(); var n = pq.value.length; pq.setSelectionRange(n, n); } }
 }
 function renderTabbar(){
+  if (!S.loggedIn){ $('tabbar').innerHTML = ''; return; }
   var un = unreadChats();
-  var tabs = [['home','home','Home'],['explore','explore','Explore'],['new','plus','New'],['chats','chat','Chats'],['you','user','You']]
-    .filter(function(t){ return S.loggedIn || t[0] !== 'home'; });
+  var tabs = [['home','home','Home'],['explore','explore','Explore'],['new','plus','New'],['chats','chat','Chats'],['you','user','You']];
   $('tabbar').innerHTML = tabs.map(function(t){
     if (t[0] === 'new') return '<button class="tab new" data-act="newsheet" aria-label="New"><span class="tnew">'+ic('plus',22)+'</span>New</button>';
     return '<button class="tab'+(S.tab===t[0]?' on':'')+'" data-act="tab" data-id="'+t[0]+'" aria-current="'+(S.tab===t[0]?'page':'false')+'">' +
@@ -3994,15 +4011,18 @@ function computeLayout(){
   /* the container's width and where it and the window sit are measured once the frame is laid out (layoutCentre) */
   return { phone:false, left:true, right:right, navW:navW, dockOver:over, cw:CW[centreKind()], narrowDock:narrow };
 }
-/* ---------- the centre's containers, and the window's place beside them ----------
+/* ---------- the centre's containers, and where the window lies over them ----------
    The white panel spans the centre; the view sits in a container as wide as what it is for: READ (Home's feed, one
-   measure), LIST (rows to scan: Explore's kinds, Show all, search, your lists), WIDE (squares to browse, a month).
-   Opening something steps the list aside instead of covering it: the list and the window sit side by side (centred as a
-   pair when there is more room than both need), the list giving up width down to LMIN before the window drops below
-   its minimum. Where even that doesn't fit (a tablet, or 1280 with the chat dock open) the window takes the centre:
-   one thing at a time. */
+   measure), LIST (rows to scan: Explore's kinds, Show all, search, your lists), WIDE (squares to browse, a month), and
+   every container starts at the white's left (2026-10-05, "make everything left aligned like the Explore page").
+   Opening something never moves the page (2026-10-05, "the new window should just overlay what's behind it and the
+   content underneath should not shift"): the container keeps its place, width, padding and squares whether a window
+   is open, closed or replaced. The window lies over the right of the white, inset 8 from its edges and clear of the
+   list's scrollbar, as wide as it can be (440 to 720) while the list's first LKEEP stay in view — avatars, who did
+   what, titles, the call out's Answer. Where the centre has no room for both (a tablet, 1280 with the chat dock open)
+   the window is the centre: one thing at a time. */
 var CW = { read:640, list:720, wide:1120 };
-var WINW = { min:440, max:720 }, WGAP = 16, WEDGE = 8;
+var WINW = { min:440, max:720 }, WEDGE = 8, LKEEP = 320;
 function centreKind(){
   if (S.folder.kind === 'home') return 'read';
   if (isOverview() || isCal()) return 'wide';
@@ -4012,38 +4032,38 @@ var SBW = null;
 function layoutCentre(){
   var app = $('app'), c = $('center'), lb = $('listbody');
   L.fit = null; L.win = ''; L.wg = null;
-  if (L.phone){ L.cw = window.innerWidth; app.classList.remove('win-side', 'win-cover'); return; }
+  if (L.phone){ L.cw = window.innerWidth; app.classList.remove('win-over', 'win-cover'); return; }
   /* the list's scrollbar (16 with a mouse, 0 where scrollbars float): the heading's right edge keeps clear of it */
   if (lb.offsetParent) SBW = lb.offsetWidth - lb.clientWidth;
   var sb = SBW != null ? SBW : (window.matchMedia && matchMedia('(pointer:fine)').matches ? 16 : 0);
   /* a list with a calendar keeps one slot, the calendar's, in both its views (2026-10-05): the list sits at the slot's
-     left and the heading spans the slot, so the List / Calendar switch at its right never moves when you switch */
+     left and the heading spans the slot, so the List / Calendar switch at its right never moves when you switch. The
+     slot, like every container, starts at the white's left */
   var C = c.clientWidth, slot = Math.min(CW[viewsOf().indexOf('calendar') >= 0 ? 'wide' : centreKind()], C);
-  var cw = Math.min(CW[centreKind()], slot), lw = cw, pl = Math.max(0, Math.floor((C - slot) / 2));
+  var cw = Math.min(CW[centreKind()], slot), pl = 0;
   if (S.stack.length){
-    /* a tablet's chat dock floats over the centre's right: the list and the window share what it leaves */
-    var CE = C - (L.dockOver && L.right ? $('chats').offsetWidth + WEDGE : 0);
-    var avail = CE - 2 * WEDGE - WGAP, lmin = isCal() ? 640 : 360;
-    var ww = Math.min(WINW.max, Math.max(WINW.min, avail - cw)), lw2 = Math.min(cw, avail - ww);
-    if (lw2 >= lmin){
-      L.win = 'side'; lw = lw2;
-      pl = Math.max(WEDGE, Math.floor((CE - lw - WGAP - ww) / 2));
-      L.wg = { x:c.offsetLeft + pl + lw + WGAP, w:ww };
+    /* a tablet's chat dock floats over the centre's right: the window keeps clear of it */
+    var over = L.dockOver && L.right, CE = C - (over ? $('chats').offsetWidth + WEDGE : 0);
+    var right = over ? CE : C - sb - WEDGE, ww = Math.min(WINW.max, right - WEDGE - LKEEP);
+    /* offsets in #main, the window's own frame (#cbody's is already there: #center isn't positioned) */
+    var top = $('cbody').offsetTop, bottom = c.offsetTop + c.offsetHeight;
+    if (ww >= WINW.min){
+      L.win = 'over';
+      L.wg = { x:c.offsetLeft + right - ww, y:top + WEDGE, w:ww, h:bottom - top - 2 * WEDGE };
     } else {
       /* no room for both: the window is the centre (the sidebar, and a docked chat, stay beside it); beside a floating
          dock it keeps clear of it, or — too narrow for that — leaves its edge to be touched */
       L.win = 'cover';
-      L.wg = { x:c.offsetLeft, w:CE === C ? C : CE >= WINW.min ? CE : Math.min(C, Math.max(WINW.min, C - 64)) };
+      L.wg = { x:c.offsetLeft, y:c.offsetTop, w:CE === C ? C : CE >= WINW.min ? CE : Math.min(C, Math.max(WINW.min, C - 64)), h:c.offsetHeight };
     }
-    L.wg.y = c.offsetTop; L.wg.h = c.offsetHeight;
   }
-  L.cw = lw; L.pl = pl; L.pr = C - pl - lw;
+  L.cw = cw; L.pl = pl; L.pr = C - pl - cw;
   app.style.setProperty('--pl', pl + 'px'); app.style.setProperty('--pr', L.pr + 'px'); app.style.setProperty('--sbw', sb + 'px');
-  /* the heading's right inset: the slot's, except beside a window, where it ends with the list */
-  app.style.setProperty('--hr', (L.win === 'side' ? L.pr : C - pl - slot) + 'px');
-  app.classList.toggle('win-side', L.win === 'side'); app.classList.toggle('win-cover', L.win === 'cover');
+  /* the heading's right inset: the slot's — a window lies over it and never changes it */
+  app.style.setProperty('--hr', (C - pl - slot) + 'px');
+  app.classList.toggle('win-over', L.win === 'over'); app.classList.toggle('win-cover', L.win === 'cover');
   /* Explore's overview: as many whole squares (at least 152) as the container holds, 16 apart, inside its 16 gutters */
-  if (isOverview()){ var inner = lw - 32, cols = Math.max(1, Math.floor((inner + 16) / (152 + 16))); L.fit = { cols:cols, sq:Math.floor((inner - (cols - 1) * 16) / cols) }; }
+  if (isOverview()){ var inner = cw - 32, cols = Math.max(1, Math.floor((inner + 16) / (152 + 16))); L.fit = { cols:cols, sq:Math.floor((inner - (cols - 1) * 16) / cols) }; }
 }
 </script>
 <script>
@@ -5326,6 +5346,8 @@ function phoneBack(){
 }
 /* logged out there is no Home (2026-10-04): Explore is where a visitor lands, and the root of what was Home's tab */
 function landingFolder(){ return S.loggedIn ? { kind:'home', id:null } : { kind:'explore', id:null }; }
+/* the places that are an account's own: a visitor is never in them (2026-10-05) */
+var ACCTPLACES = /^(you|chats|going|interested|hosting|promoted)$/;
 function tabRootFolder(t){ return t === 'explore' || t === 'chats' || t === 'you' ? { kind:t, id:null } : landingFolder(); }
 function tabOfFolder(f){
   var k = (f || S.folder).kind;
@@ -6129,7 +6151,9 @@ window.addEventListener('popstate', function(ev){
   ROUTE.applying = false;
   restoreScroll(s.scroll);
   if (!ev.state) revealSel();
-  if (!ev.state || s.modal){ var c = snapNow(); c.idx = s.idx || 0; c.scroll = CURSCROLL; history.replaceState(c, '', hashOf(c)); }
+  /* an entry a visitor can't be on (an account's place, from before logging out) now names where it landed: Explore */
+  var shown = snapNow();
+  if (!ev.state || s.modal || (!S.loggedIn && navKeyOf(shown) !== navKeyOf(s))){ shown.idx = s.idx || 0; shown.scroll = CURSCROLL; history.replaceState(shown, '', hashOf(shown)); }
 });
 /* a link (not a history step): its row, if the list has one, is lit and in view */
 function revealSel(){
@@ -6169,9 +6193,14 @@ function startRoutes(){
    15. RENDER + BOOT
    ========================================================================= */
 function render(){
-  /* logged out there is no Home: whatever asked for it (a link, a tab, an old history entry) lands on Explore */
-  if (!S.loggedIn){ if (S.folder.kind === 'home') S.folder = { kind:'explore', id:null }; if (S.tab === 'home') S.tab = 'explore'; }
-  var wasWin = L.win;
+  /* logged out there is no Home: whatever asked for it (a link, a tab, an old history entry) lands on Explore. Nor is
+     there anything of an account's (2026-10-05, "doesn't make sense to be able to click on the profile and see nothing
+     there"): You, Chats and your lists land on Explore too, and a phone has no tabs — Explore is a visitor's one place */
+  if (!S.loggedIn){
+    if (S.folder.kind === 'home' || ACCTPLACES.test(S.folder.kind)) S.folder = { kind:'explore', id:null };
+    S.tab = 'explore';
+    S.stack = S.stack.filter(function(it){ return it.type !== 'chat' && !(it.type === 'missing' && /^chats\//.test(it.id)); });
+  }
   L = computeLayout();
   noticeNewEvents();
   var app = $('app');
@@ -6179,7 +6208,7 @@ function render(){
     /* a phone conversation screen becomes the chat dock on a wider screen */
     var ct = S.stack.filter(function(it){ return it.type === 'chat'; }).pop();
     if (ct){ S.stack = S.stack.filter(function(it){ return it.type !== 'chat'; }); S.chatOpen = ct.id; S.rightOpen = true; S.lastOpened = 'right'; L = computeLayout(); }
-    if (S.folder.kind === 'you' || S.folder.kind === 'chats') goFolder({ kind:'home' });
+    if (S.folder.kind === 'you' || S.folder.kind === 'chats') goFolder(landingFolder());
   } else if (S.stack.some(function(it){ return it.type === 'chat'; })){
     /* and a conversation in the stack (a link, a desktop's dock) becomes the phone's Chats tab */
     S.chatOpen = S.stack.filter(function(it){ return it.type === 'chat'; }).pop().id;
@@ -6216,11 +6245,6 @@ function render(){
   /* the phone's sheet ends above the preview bar, which is always there when logged out (the tabs under it stay) */
   placePvh();
   placeWin();
-  /* the list just stepped aside for the window (or back): what is lit in it stays in view */
-  if (!L.phone && wasWin !== L.win && !ROUTE.applying){
-    var lit = document.querySelector('#listbody .sel'), lbr = $('listbody').getBoundingClientRect();
-    if (lit){ var r = lit.getBoundingClientRect(); if (r.top < lbr.top || r.bottom > lbr.bottom) lit.scrollIntoView({ block:'nearest' }); }
-  }
   placeToasts();
   document.title = (S.stack.length ? itemName(S.stack[S.stack.length-1]) : folderName()) + ' · Hypernet';
   schedulePersist();

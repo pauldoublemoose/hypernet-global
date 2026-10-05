@@ -3917,7 +3917,8 @@ function layoutCentre(){
     /* a tablet's chat dock floats over the centre's right: the window keeps clear of it */
     var over = L.dockOver && L.right, CE = C - (over ? $('chats').offsetWidth + WEDGE : 0);
     var right = over ? CE : C - sb - WEDGE, ww = Math.min(WINW.max, right - WEDGE - LKEEP);
-    var top = c.offsetTop + $('cbody').offsetTop, bottom = c.offsetTop + c.offsetHeight;
+    /* offsets in #main, the window's own frame (#cbody's is already there: #center isn't positioned) */
+    var top = $('cbody').offsetTop, bottom = c.offsetTop + c.offsetHeight;
     if (ww >= WINW.min){
       L.win = 'over';
       L.wg = { x:c.offsetLeft + right - ww, y:top + WEDGE, w:ww, h:bottom - top - 2 * WEDGE };

@@ -68,7 +68,8 @@ const path = require('path'), fs = require('fs'), os = require('os');
 const ROOT = process.env.HN_ROOT ? path.resolve(process.env.HN_ROOT) : null;
 const URL = process.env.HN_URL || (ROOT ? 'http://hn.test/' : 'http://127.0.0.1:8936/');
 const NOWPIN = process.env.HN_NOW === 'real' ? null : new Date(process.env.HN_NOW || '2026-10-01T10:00:00');
-const TYPES = { '.html':'text/html', '.js':'application/javascript', '.json':'application/json', '.css':'text/css', '.png':'image/png', '.svg':'image/svg+xml', '.ico':'image/x-icon' };
+const TYPES = { '.html':'text/html', '.js':'application/javascript', '.json':'application/json', '.css':'text/css', '.png':'image/png', '.svg':'image/svg+xml', '.ico':'image/x-icon',
+                '.jpg':'image/jpeg', '.webp':'image/webp' };
 /* HN_ROOT: answer every request to the test origin from the folder on disk */
 async function serveRoot(route){
   const u = new (require('url').URL)(route.request().url());
@@ -1125,6 +1126,55 @@ async function overflowEverywhere(p, label){
     }));
     ok(dates.length >= 3 && dates.every(x => x.off <= 1.5 && x.edge === 16 && x.sq === 48 && /^\d+ \w{3}\w{3}$/.test(x.text)), kind + ': Coming up with your people — a 48 square per row, the date ("7 Oct", "Wed") flush right ' + JSON.stringify(dates));
     ok((await overflow(c)) <= 0 && !c.errors.length, kind + ': Home, no horizontal overflow, no console errors ' + c.errors.join(' '));
+  }
+
+  /* 2026-10-05 (v5-pictures): every real event whose own site has a picture wears it as its square (data/real-events.json
+     `picture`, a 512 JPEG in data/pictures; online the same file comes from storage). Explore, Home and the event page show
+     it, the next edition inherits it, an event without one (Čarodění) keeps its glyph, a picture someone chose is never
+     replaced, every picture loads (no 404s) and every file in data/pictures belongs to an event. */
+  {
+    const real = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data/real-events.json'), 'utf8')).events.filter(e => !e.illustrative);
+    const pics = real.filter(e => e.picture).map(e => e.picture), files = fs.readdirSync(path.join(__dirname, '..', 'data/pictures')).map(f => 'data/pictures/' + f);
+    ok(pics.length >= 10 && pics.every(f => /^data\/pictures\/[a-z0-9-]+\.jpg$/.test(f) && files.includes(f)) && files.every(f => pics.includes(f)) && real.some(e => !e.picture),
+       'pictures: each real event names a file in data/pictures, each file belongs to one, and an event may have none ' + JSON.stringify([pics.length, files.length]));
+    for (const kind of ['desk', 'phone']){
+      const c = await ctx(kind);
+      await open(c, '#/explore', true);
+      await c.waitForFunction(() => [...document.images].every(i => i.complete));
+      const st = await ev(c, () => {
+        const withPic = Object.keys(REC).filter(k => REC[k] && REC[k].picture);
+        return { n:withPic.length, wear:withPic.filter(k => TH(k).image !== REC[k].picture),
+                 bare:REALIDS.filter(k => !REC[k].picture).map(k => [k, TH(k).image]),
+                 next:REALIDS.filter(k => REC[k]._prev && REC[k].picture).length,
+                 cards:[...document.querySelectorAll('#listbody .card2[data-type="event"]')].filter(x => REALIDS.indexOf(x.getAttribute('data-id')) >= 0).map(x => {
+                   const r = REC[x.getAttribute('data-id')], im = x.querySelector('.cart img');
+                   return { id:x.getAttribute('data-id'), pic:r.picture || null, src:im && im.getAttribute('src'), w:im ? im.naturalWidth : 0, h:im ? im.naturalHeight : 0, glyph:!!x.querySelector('.cart .g') }; }) };
+      });
+      const shown = st.cards.filter(x => x.pic), bad = st.cards.filter(x => x.pic ? !(x.src === x.pic && x.w === 512 && x.h === 512) : (x.src || !x.glyph));
+      ok(st.n >= 10 && !st.wear.length && st.next >= 3 && st.bare.length >= 1 && st.bare.every(x => x[1] == null) && shown.length >= 5 && !bad.length,
+         kind + ': real events wear the picture from their own site on Explore (512 squares, loaded), next editions too, Čarodění keeps its glyph ' + JSON.stringify({ n:st.n, wear:st.wear, next:st.next, bare:st.bare, shown:shown.length, bad }));
+      const all = await ev(c, () => Promise.all([...new Set(Object.keys(REC).map(k => REC[k] && REC[k].picture).filter(Boolean))].map(src => new Promise(res => {
+        const i = new Image(); i.onload = () => res([src, i.naturalWidth, i.naturalHeight]); i.onerror = () => res([src, 0, 0]); i.src = src; }))));
+      ok(all.length >= 10 && all.every(x => x[1] === 512 && x[2] === 512), kind + ': every real event picture loads as a 512 square ' + JSON.stringify(all.filter(x => x[1] !== 512 || x[2] !== 512)));
+      /* the event page's own square */
+      await c.goto(URL + '#/event/burning-man-2027'); await c.waitForTimeout(450);
+      await c.waitForFunction(() => [...document.images].every(i => i.complete));
+      ok(await ev(c, () => { const im = document.querySelector('#win .banner .sq img'); return !!im && im.getAttribute('src') === 'data/pictures/burning-man.jpg' && im.naturalWidth === 512; }),
+         kind + ': the event page shows the real event\'s picture in its square');
+      if (kind === 'desk'){
+        await shot(c, 'pictures-1440-event');
+        /* Home: the things in the stream are squares too */
+        await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+        await c.goto(URL + '#/home'); await c.waitForTimeout(450);
+        await c.waitForFunction(() => [...document.images].every(i => i.complete));
+        const hm = await ev(c, () => [...document.querySelectorAll('#listbody img')].filter(i => /^data\/pictures\//.test(i.getAttribute('src'))).map(i => i.naturalWidth));
+        ok(hm.length >= 1 && hm.every(w => w === 512), 'desk: Home shows real events with their pictures ' + JSON.stringify(hm));
+      }
+      /* a picture someone chose stays: merging the record again does not replace it */
+      ok(await ev(c, () => { const k = REALIDS.filter(x => REC[x].picture)[0], mine = 'data:image/png;base64,iVBORw0KGgo=';
+        window.HYPERNET_THEMES.themes[k] = Object.assign({}, TH(k), { image:mine }); mergeReal(REC[k]); return TH(k).image === mine; }), kind + ': a picture someone chose is not replaced by the site\'s');
+      ok(!c.errors.length, kind + ': no console errors or failed requests with the pictures ' + c.errors.join(' '));
+    }
   }
 
   /* ---------------- 2026-10-04: Explore's overview is squares at every width, its kinds and old links stay ---------------- */

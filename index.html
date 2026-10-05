@@ -1168,6 +1168,8 @@ function mergeReal(raw){
   e.city = raw.city || raw.region || COUNTRY[raw.country] || raw.country || e.city || '';
   REC[id] = raw;
   if (isNew) PROMOCOUNT[id] = hashId(id) % 17;
+  /* its square is the picture from its own site (data/pictures), unless its look already carries one */
+  if (window.HN_IMAGE(raw.picture) && !window.HN_IMAGE(TH(id).image)) window.HYPERNET_THEMES.themes[id] = Object.assign({}, TH(id), { image:raw.picture });
   /* a camp's own events land on the camp's horizon */
   (raw.ownerGroupIds || []).forEach(function(g){
     Object.keys(HORIZONS).forEach(function(k){ var hz = HORIZONS[k]; if (hz.ownerGroupId === g && hz.eventIds.indexOf(id) < 0) hz.eventIds.push(id); });

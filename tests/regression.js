@@ -53,7 +53,16 @@
    its container (Home 640, lists 720, Explore's overview and the calendar 1120, the heading on its edge), Explore's
    overview is one row of whole squares per section, and the window steps the list aside (beside it at 1280, 1440 with
    and without the dock and 1920, the list whole and clickable; over the centre only where both can't fit), with no
-   overflow at 1920 either. Checks that spoke of Home logged out now use an account that follows nobody. */
+   overflow at 1920 either. Checks that spoke of Home logged out now use an account that follows nobody;
+   2026-10-05 (v5-homechats): Home starts with what happened and ends with what it is and how to see more (Find people,
+   All events) — the whole page only when nothing is above it, never "nothing happened" under activity (offline, and
+   online on a mocked /api/bootstrap: only your own row, following a quiet person, nothing at all); an empty chat list
+   says "No chats yet" and how a chat starts, over the people to message when there are any;
+   2026-10-05 (v5-calendar): the List / Calendar switch keeps one place at the top right in both views (the heading's right
+   end at 1280, 1440, 1920 and 768 — a list with a calendar keeps the calendar's slot — and the phone's app bar), ‹ Today ›
+   lead the calendar's bar and never move with the title, a narrow month's events are readable titled lines, and a narrow
+   day is a page of its own (one event opens straight away, an empty day is just a date; back, forward, reload, ‹ month,
+   a cold link with its month underneath). */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch(e){
   try { ({ chromium } = require('playwright-core')); } catch(e2){
@@ -64,7 +73,8 @@ const path = require('path'), fs = require('fs'), os = require('os');
 const ROOT = process.env.HN_ROOT ? path.resolve(process.env.HN_ROOT) : null;
 const URL = process.env.HN_URL || (ROOT ? 'http://hn.test/' : 'http://127.0.0.1:8936/');
 const NOWPIN = process.env.HN_NOW === 'real' ? null : new Date(process.env.HN_NOW || '2026-10-01T10:00:00');
-const TYPES = { '.html':'text/html', '.js':'application/javascript', '.json':'application/json', '.css':'text/css', '.png':'image/png', '.svg':'image/svg+xml', '.ico':'image/x-icon' };
+const TYPES = { '.html':'text/html', '.js':'application/javascript', '.json':'application/json', '.css':'text/css', '.png':'image/png', '.svg':'image/svg+xml', '.ico':'image/x-icon',
+                '.jpg':'image/jpeg', '.webp':'image/webp' };
 /* HN_ROOT: answer every request to the test origin from the folder on disk */
 async function serveRoot(route){
   const u = new (require('url').URL)(route.request().url());
@@ -703,7 +713,11 @@ async function overflowEverywhere(p, label){
     /* a new account follows nobody: the whole network, and a nudge to follow people */
     await c.evaluate(() => doLogout()); await c.waitForTimeout(200);
     await join(c, 'Nora Field', 'nora' + kind);
-    ok(await ev(c, () => /Make Home yours/.test(document.querySelector('#listbody').textContent) && document.querySelectorAll('#listbody .fitem[data-ts]').length >= 20), kind + ': following nobody, Home is the whole network with a nudge to follow people');
+    /* 2026-10-05 (v5-homechats): the nudge is at the end of Home, not over it */
+    ok(await ev(c, () => { const lb = document.querySelector('#listbody'), end = lb.querySelector('.fend');
+      return document.querySelectorAll('#listbody .fitem[data-ts]').length >= 20 && !!end && lb.lastElementChild === end && /You don’t follow anyone yet/.test(end.textContent) &&
+        !!end.querySelector('[data-act="explorekind"][data-id="people"]') && !/Make Home yours/.test(lb.textContent); }),
+       kind + ': following nobody, Home is the whole network with a nudge to follow people at its end');
     ok(!c.errors.length, kind + ': no console errors (v1 Home / Explore) ' + c.errors.join(' '));
     ok((await overflow(c)) <= 0, kind + ': no overflow (v1 Home)');
   }
@@ -1138,6 +1152,55 @@ async function overflowEverywhere(p, label){
     ok((await overflow(c)) <= 0 && !c.errors.length, kind + ': Home, no horizontal overflow, no console errors ' + c.errors.join(' '));
   }
 
+  /* 2026-10-05 (v5-pictures): every real event whose own site has a picture wears it as its square (data/real-events.json
+     `picture`, a 512 JPEG in data/pictures; online the same file comes from storage). Explore, Home and the event page show
+     it, the next edition inherits it, an event without one (Čarodění) keeps its glyph, a picture someone chose is never
+     replaced, every picture loads (no 404s) and every file in data/pictures belongs to an event. */
+  {
+    const real = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data/real-events.json'), 'utf8')).events.filter(e => !e.illustrative);
+    const pics = real.filter(e => e.picture).map(e => e.picture), files = fs.readdirSync(path.join(__dirname, '..', 'data/pictures')).map(f => 'data/pictures/' + f);
+    ok(pics.length >= 10 && pics.every(f => /^data\/pictures\/[a-z0-9-]+\.jpg$/.test(f) && files.includes(f)) && files.every(f => pics.includes(f)) && real.some(e => !e.picture),
+       'pictures: each real event names a file in data/pictures, each file belongs to one, and an event may have none ' + JSON.stringify([pics.length, files.length]));
+    for (const kind of ['desk', 'phone']){
+      const c = await ctx(kind);
+      await open(c, '#/explore', true);
+      await c.waitForFunction(() => [...document.images].every(i => i.complete));
+      const st = await ev(c, () => {
+        const withPic = Object.keys(REC).filter(k => REC[k] && REC[k].picture);
+        return { n:withPic.length, wear:withPic.filter(k => TH(k).image !== REC[k].picture),
+                 bare:REALIDS.filter(k => !REC[k].picture).map(k => [k, TH(k).image]),
+                 next:REALIDS.filter(k => REC[k]._prev && REC[k].picture).length,
+                 cards:[...document.querySelectorAll('#listbody .card2[data-type="event"]')].filter(x => REALIDS.indexOf(x.getAttribute('data-id')) >= 0).map(x => {
+                   const r = REC[x.getAttribute('data-id')], im = x.querySelector('.cart img');
+                   return { id:x.getAttribute('data-id'), pic:r.picture || null, src:im && im.getAttribute('src'), w:im ? im.naturalWidth : 0, h:im ? im.naturalHeight : 0, glyph:!!x.querySelector('.cart .g') }; }) };
+      });
+      const shown = st.cards.filter(x => x.pic), bad = st.cards.filter(x => x.pic ? !(x.src === x.pic && x.w === 512 && x.h === 512) : (x.src || !x.glyph));
+      ok(st.n >= 10 && !st.wear.length && st.next >= 3 && st.bare.length >= 1 && st.bare.every(x => x[1] == null) && shown.length >= 5 && !bad.length,
+         kind + ': real events wear the picture from their own site on Explore (512 squares, loaded), next editions too, Čarodění keeps its glyph ' + JSON.stringify({ n:st.n, wear:st.wear, next:st.next, bare:st.bare, shown:shown.length, bad }));
+      const all = await ev(c, () => Promise.all([...new Set(Object.keys(REC).map(k => REC[k] && REC[k].picture).filter(Boolean))].map(src => new Promise(res => {
+        const i = new Image(); i.onload = () => res([src, i.naturalWidth, i.naturalHeight]); i.onerror = () => res([src, 0, 0]); i.src = src; }))));
+      ok(all.length >= 10 && all.every(x => x[1] === 512 && x[2] === 512), kind + ': every real event picture loads as a 512 square ' + JSON.stringify(all.filter(x => x[1] !== 512 || x[2] !== 512)));
+      /* the event page's own square */
+      await c.goto(URL + '#/event/burning-man-2027'); await c.waitForTimeout(450);
+      await c.waitForFunction(() => [...document.images].every(i => i.complete));
+      ok(await ev(c, () => { const im = document.querySelector('#win .banner .sq img'); return !!im && im.getAttribute('src') === 'data/pictures/burning-man.jpg' && im.naturalWidth === 512; }),
+         kind + ': the event page shows the real event\'s picture in its square');
+      if (kind === 'desk'){
+        await shot(c, 'pictures-1440-event');
+        /* Home: the things in the stream are squares too */
+        await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+        await c.goto(URL + '#/home'); await c.waitForTimeout(450);
+        await c.waitForFunction(() => [...document.images].every(i => i.complete));
+        const hm = await ev(c, () => [...document.querySelectorAll('#listbody img')].filter(i => /^data\/pictures\//.test(i.getAttribute('src'))).map(i => i.naturalWidth));
+        ok(hm.length >= 1 && hm.every(w => w === 512), 'desk: Home shows real events with their pictures ' + JSON.stringify(hm));
+      }
+      /* a picture someone chose stays: merging the record again does not replace it */
+      ok(await ev(c, () => { const k = REALIDS.filter(x => REC[x].picture)[0], mine = 'data:image/png;base64,iVBORw0KGgo=';
+        window.HYPERNET_THEMES.themes[k] = Object.assign({}, TH(k), { image:mine }); mergeReal(REC[k]); return TH(k).image === mine; }), kind + ': a picture someone chose is not replaced by the site\'s');
+      ok(!c.errors.length, kind + ': no console errors or failed requests with the pictures ' + c.errors.join(' '));
+    }
+  }
+
   /* ---------------- 2026-10-04: Explore's overview is squares at every width, its kinds and old links stay ---------------- */
   for (const kind of ['desk', 'tab', 'phone']){
     const c = await ctx(kind);
@@ -1537,9 +1600,13 @@ async function overflowEverywhere(p, label){
                    '#/explore':1120, '#/explore/events?view=calendar':1120 };
     const got = {};
     for (const hh of Object.keys(want)){ await c.goto(URL + hh); await c.waitForTimeout(350); got[hh] = await geoOf(c); }
+    /* 2026-10-05 (v5-calendar): a list that also has a calendar keeps the calendar's slot — its 720 sits at the slot's left,
+       where the calendar's 1120 starts — so the heading (and the List / Calendar switch at its right) stays put */
+    const slotted = ['#/explore/events', '#/explore/soon', '#/going'], calCl = got['#/explore/events?view=calendar'].cl;
     const bad = Object.keys(want).filter(k => { const g = got[k];
-      return !(g.panelL === 8 && g.panelR === 8 && g.cw === Math.min(want[k], g.panelW - g.sb) && (Math.abs(g.cl - g.cr) <= 1 || g.cl === 0) && g.head === 16); });
-    ok(!bad.length, w + ': the white spans the centre; Home sits in 640, lists in 720, Explore\'s overview and the calendar in 1120 — centred, the heading on the container\'s edge ' + JSON.stringify(bad.map(k => [k, got[k]])));
+      const placed = slotted.indexOf(k) >= 0 ? g.cl === calCl : (Math.abs(g.cl - g.cr) <= 1 || g.cl === 0);
+      return !(g.panelL === 8 && g.panelR === 8 && g.cw === Math.min(want[k], g.panelW - g.sb) && placed && g.head === 16); });
+    ok(!bad.length, w + ': the white spans the centre; Home sits in 640, lists in 720, Explore\'s overview and the calendar in 1120 — centred (a list with a calendar at the calendar\'s left), the heading on the container\'s edge ' + JSON.stringify(bad.map(k => [k, got[k]])));
     if (w === 1440){ await c.goto(URL + '#/explore'); await c.waitForTimeout(350); await shot(c, 'layout-1440-explore'); }
     if (w === 1920){ await c.goto(URL + '#/home'); await c.waitForTimeout(350); await shot(c, 'layout-1920-home'); await overflowEverywhere(c, 'desktop 1920'); }
     /* the window steps the list aside: beside it where there is room (the pair centred when there is more), over the centre only where there isn't */
@@ -1586,6 +1653,200 @@ async function overflowEverywhere(p, label){
     ok(hm.cl === 0 && hm.cw === hm.panelW - hm.sb && hm.head === 16 && ex.cw === ex.panelW - ex.sb && cols === 3 && wv,
        '768: Home and Explore fill the white, the overview is three squares wide, an opened event takes the centre ' + JSON.stringify([hm, ex, cols, wv]));
     ok(!c.errors.length && (await overflow(c)) <= 0, '768: no console errors, no overflow (layout)');
+  }
+
+  /* 2026-10-05 (v5-homechats): Home never says "nothing happened" over something that did; it starts straight away with
+     what happened, and what Home is (and how to see more there) is said once at its end — the whole page when there is
+     nothing at all. An empty chat list says "No chats yet" and how a chat starts. Offline states run on the fixtures,
+     online ones on a mocked /api/bootstrap (window.HN_BACKEND set before the page loads, every /api/ call answered here) */
+  {
+    const NOWMS = NOWPIN ? NOWPIN.getTime() : Date.now();
+    const ME = '11111111-1111-4111-8111-111111111111', ANNA = '22222222-2222-4222-8222-222222222222', E1 = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const P = (id, handle, name) => ({ id, handle, displayName:name, bio:'', skills:[], cities:['Brno'], look:null, lastSeenAt:null, createdAt:'2026-09-01T10:00:00Z' });
+    /* o.mine: you are going to the one event (a row 30 minutes old) · o.follow: who you follow · o.alone: nobody else here */
+    const boot = o => ({ hypernet:1, me:P(ME, 'hana', 'Hana Cerna'), login:null,
+      people:[P(ME, 'hana', 'Hana Cerna')].concat(o.alone ? [] : [P(ANNA, 'annav', 'Anna Vale')]), follows:(o.follow || []).map(x => [ME, x]),
+      events:[{ id:E1, slug:'brno-burn', title:'Brno Burn', startsOn:new Date(NOWMS + 16 * 86400000).toISOString().slice(0, 10), endsOn:null, startTime:null, endTime:null,
+        timezone:'Europe/Prague', hostId:null, hostName:'Brno Burn', description:'A small burn.', kind:'burn', privacy:'everyone', city:'Brno', region:null, country:'CZ',
+        venue:null, access:null, whatToBring:[], details:{}, look:null, source:'import', previousEditionId:null }],
+      rsvps:o.mine ? [{ personId:ME, eventId:E1, status:'going', went:false, shiftIndex:null, updatedAt:new Date(NOWMS - 1800000).toISOString() }] : [],
+      promotions:[], horizons:[], hzFollows:[], callouts:[], replies:[], chats:[],
+      activity:o.mine ? [{ actor:ME, verb:'going', objType:'event', objId:E1, ts:new Date(NOWMS - 1800000).toISOString(), extra:null }] : [] });
+    const online = async (kind, o) => {
+      const c = await ctx(kind);
+      await c.addInitScript(() => { window.HN_BACKEND = { branch:'test' }; });
+      await c.context().route('**/api/**', r => { const u = r.request().url();
+        return r.fulfill({ status:200, contentType:'application/json', body:JSON.stringify(/\/api\/bootstrap/.test(u) ? boot(o) : /\/api\/chats/.test(u) ? { chats:[] } : {}) }); });
+      await c.goto(URL + '#/home'); await c.waitForTimeout(700);
+      return c;
+    };
+    /* what Home says: is anything on it, does anything say "nothing", is the end last, what it says */
+    const homeSays = c => ev(c, () => { const lb = document.getElementById('listbody'), end = lb.querySelector('.fend'), kids = [...lb.children];
+      return { online:ONLINE, kids:kids.map(x => x.className.split(' ')[0] || x.tagName), stuff:!!lb.querySelector('.fitem, .costrip, .fup'),
+               nothing:/Nothing here yet|haven’t done anything|Nothing has happened/.test(lb.textContent), last:!!end && kids[kids.length - 1] === end,
+               head:end ? end.querySelector('h3').textContent : '', say:end ? end.querySelector('p').textContent : '',
+               people:!!(end && end.querySelector('[data-act="explorekind"][data-id="people"]')), primary:!!(end && end.querySelector('.btn.primary[data-id="people"]')),
+               old:!!lb.querySelector('.empty, .fnetnote') || /Make Home yours/.test(lb.textContent) }; });
+    const chatSays = async (c, kind) => {
+      if (kind === 'phone') await c.tap('#tabbar [data-id="chats"]'); else if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right');
+      await c.waitForTimeout(350);
+      return ev(c, () => { const el = document.getElementById('chats'), e = el.querySelector('.chempty');
+        return { shown:el.offsetParent !== null, head:e ? e.querySelector('h3').textContent : '', how:e ? e.querySelector('p').textContent : '', band:!!el.querySelector('.band'),
+                 rows:el.querySelectorAll('.chrow[data-act="dm"]').length, chats:el.querySelectorAll('.chrow[data-act="chatsel"]').length }; });
+    };
+    for (const kind of ['phone', 'desk']){
+      /* offline, following nobody: the stream first, the nudge at its end; Find people goes to Explore's people */
+      let c = await ctx(kind);
+      await open(c, '#/home', true);
+      await guest(c, 'Hugo Home', 'hugohome');
+      let s = await homeSays(c);
+      ok(s.stuff && !s.nothing && !s.old && s.last && /^(costrip|band|fitem)$/.test(s.kids[0]) && s.head === 'That’s the last three weeks' &&
+         /You don’t follow anyone yet, so here is everyone on Hypernet/.test(s.say) && s.people && s.primary,
+         kind + ': following nobody, Home starts with what happened and ends saying what Home is and how to see more ' + JSON.stringify(Object.assign({}, s, { kids:s.kids.slice(0, 3) })));
+      ok(await ev(c, () => !!document.querySelector('#listbody .ffof .ffh') && document.querySelector('#listbody .ffof .ffh').textContent === 'People to follow'), kind + ': people to follow are in the stream, not over it');
+      const chOff = await chatSays(c, kind);
+      ok(chOff.shown && chOff.head === 'No chats yet' && /Message on someone’s profile/.test(chOff.how) && chOff.band && chOff.rows >= 5 && !chOff.chats,
+         kind + ': a new account’s Chats says "No chats yet", how a chat starts, then people to message ' + JSON.stringify(chOff));
+      if (kind === 'phone'){ await c.tap('#tabbar [data-id="home"]'); await c.waitForTimeout(300); }
+      await c.evaluate(() => { const l = document.getElementById('listbody'); l.scrollTop = l.scrollHeight; }); await c.waitForTimeout(150);
+      await c.click('#listbody .fend [data-act="explorekind"][data-id="people"]'); await c.waitForTimeout(400);
+      ok(await ev(c, () => S.folder.kind === 'explore' && S.folder.id === 'people' && location.hash === '#/explore/people'), kind + ': Find people at the end of Home goes to Explore → People');
+      /* following one person: theirs, then Around the network — no note in between, no "nothing", the end says why */
+      await c.goto(URL + '#/home'); await c.waitForTimeout(350);
+      await c.evaluate(() => followP('p-mira')); await c.waitForTimeout(300);
+      s = await homeSays(c);
+      ok(s.kids.indexOf('band') >= 0 && await ev(c, () => !!document.querySelector('#listbody .netband')) && !s.nothing && !s.old && s.last && /the rest of Hypernet fills in/.test(s.say),
+         kind + ': following one person, Around the network carries no note; the end says the rest of Hypernet fills in ' + JSON.stringify(s.say));
+      ok(!c.errors.length && (await overflow(c)) <= 0, kind + ': no console errors, no overflow (Home end, offline) ' + c.errors.join(' '));
+      await c.context().close();
+      /* online, only your own row: "You: going to …", then the end — never "nothing happened" under it */
+      c = await online(kind, { mine:true });
+      s = await homeSays(c);
+      ok(s.online && JSON.stringify(s.kids) === '["fitem","fend"]' && !s.nothing && s.head === 'That’s the last three weeks' && !/here is everyone/.test(s.say) && /Follow a few people/.test(s.say),
+         kind + ': online with only your own row, Home is your line and its end, with no "nothing happened" ' + JSON.stringify(s));
+      if (kind === 'phone') await shot(c, 'homechats-only-mine-phone');
+      const chOn = await chatSays(c, kind);
+      ok(chOn.shown && chOn.head === 'No chats yet' && chOn.rows === 1 && !chOn.chats, kind + ': online with no chats, Chats says "No chats yet" over the one person to message ' + JSON.stringify(chOn));
+      await c.context().close();
+      /* online, following someone who did nothing, and your own row: still no "haven't done anything" */
+      c = await online(kind, { mine:true, follow:[ANNA] });
+      s = await homeSays(c);
+      ok(s.online && s.stuff && !s.nothing && s.last && /Follow more people to see more here/.test(s.say), kind + ': online, following a quiet person, your line is not followed by "haven’t done anything" ' + JSON.stringify(s));
+      await c.context().close();
+      /* online, nothing at all and nobody else here: the end is the whole page; Chats has no people band */
+      c = await online(kind, { alone:true });
+      s = await homeSays(c);
+      ok(s.online && JSON.stringify(s.kids) === '["fend"]' && s.head === 'Nothing here yet' && s.people && s.primary, kind + ': online with nothing at all, the end is the whole page ' + JSON.stringify(s));
+      if (kind === 'desk') await shot(c, 'homechats-nothing-desk');
+      const chAlone = await chatSays(c, kind);
+      ok(chAlone.head === 'No chats yet' && !chAlone.band && !chAlone.rows, kind + ': with nobody to message, Chats is just "No chats yet" ' + JSON.stringify(chAlone));
+      ok(!c.errors.length && (await overflow(c)) <= 0, kind + ': no console errors, no overflow (Home end, Chats, online) ' + c.errors.join(' '));
+      await c.context().close();
+    }
+  }
+
+  /* 2026-10-05 (v5-calendar): the List / Calendar switch stays at the top right in both views; ‹ Today › lead the calendar's
+     bar so a month's name never moves them; a narrow screen's day is a page of its own (one event opens straight away,
+     none is just a date), with back / forward / reload; a narrow month's events are readable lines, not faint bars */
+  {
+    const box = (c, sel) => c.evaluate(s => { const e = document.querySelector(s); if (!e || !e.offsetParent) return null; const r = e.getBoundingClientRect();
+      return { x:Math.round(r.left), y:Math.round(r.top), r:Math.round(r.right), w:Math.round(r.width), h:Math.round(r.height) }; }, sel);
+    const same = (a, b) => !!a && !!b && a.x === b.x && a.y === b.y && a.w === b.w;
+    for (const [kind, w] of [['desk', 1440], ['desk', 1920], ['desk', 1280], ['tab', 768], ['phone', 375]]){
+      const c = await ctx(kind, kind === 'desk' ? { viewport:{ width:w, height:w === 1920 ? 1080 : w === 1280 ? 800 : 900 } } : undefined);
+      await open(c, '', true);
+      await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+      if (kind === 'desk') await c.evaluate(() => { S.rightOpen = false; render(); });
+      /* the switch: one place in List and Calendar; a desktop's and tablet's at the heading's right end, a phone's in the app bar */
+      const sw = {};
+      for (const hh of ['#/going', '#/going?view=calendar', '#/explore/events', '#/explore/events?view=calendar', '#/explore/events?view=calendar&at=2026-05-01']){
+        await c.goto(URL + hh); await c.waitForTimeout(350);
+        sw[hh] = Object.assign(await box(c, '.vsw') || {}, await c.evaluate(ph => {
+          const v = document.querySelector('.vsw'), hd = document.getElementById('chead'), hr = hd.getBoundingClientRect();
+          return { inBar:!!(v && v.closest(ph ? '#appbar' : '#chead')), last:!!v && !v.nextElementSibling || (ph && !!v && v.nextElementSibling.getAttribute('data-act') === 'psearch'),
+                   end:ph ? null : Math.round(hr.right - parseFloat(getComputedStyle(hd).paddingRight)) };
+        }, kind === 'phone'));
+      }
+      const g = sw['#/going'], gc = sw['#/going?view=calendar'], e = sw['#/explore/events'], ec = sw['#/explore/events?view=calendar'], em = sw['#/explore/events?view=calendar&at=2026-05-01'];
+      ok(same(g, gc) && same(e, ec) && same(ec, em) && [g, gc, e, ec].every(x => x.inBar && x.last) && (kind === 'phone' || [g, gc, e, ec].every(x => Math.abs(x.r - x.end) <= 1)) &&
+         (kind !== 'phone' || (g.r >= 375 - 12 && g.h <= 44 && g.w <= 160)),
+         w + ': the List / Calendar switch is at the top right ' + (kind === 'phone' ? '(the app bar, compact)' : '(the heading\'s right end)') + ' and keeps its place in List and Calendar ' + JSON.stringify([g, gc, e, ec]));
+      /* ‹ Today ›: before the title, in the same place for a long and a short month, and (wide) in week and day too */
+      const bars = [];
+      for (const hh of ['#/going?view=calendar&at=2026-09-01', '#/going?view=calendar&at=2026-05-01', '#/going?view=calendar&at=2026-10-01'].concat(kind === 'desk' ? ['#/going?view=calendar&at=2026-09-30&cal=week', '#/going?view=calendar&at=2026-09-30&cal=day'] : [])){
+        await c.goto(URL + hh); await c.waitForTimeout(300);
+        bars.push(Object.assign({ prev:await box(c, '[data-act="calnav"][data-id="-1"]'), today:await box(c, '[data-act="caltoday"]'), next:await box(c, '[data-act="calnav"][data-id="1"]'), ttl:await box(c, '#calcol .calbar .ttl') }));
+      }
+      ok(bars.every(b => same(b.prev, bars[0].prev) && same(b.today, bars[0].today) && same(b.next, bars[0].next) && b.next.r < b.ttl.x),
+         w + ': ‹ Today › lead the calendar bar and never move (September, May, October' + (kind === 'desk' ? ', week, day' : '') + ') ' + JSON.stringify(bars.map(b => [b.today, b.ttl])));
+      if (kind === 'desk'){ ok(!c.errors.length, w + ': no console errors (calendar)' + c.errors.join(' ')); continue; }
+      /* narrow: the month's events are lines in their own look, each readable, its title in it; today is marked */
+      await c.goto(URL + '#/explore/events?view=calendar'); await c.waitForTimeout(400);
+      const marks = await ev(c, () => {
+        const rgb = s => (s.match(/\d+(\.\d+)?/g) || []).slice(0, 3).map(Number), hex = a => '#' + a.map(v => ('0' + Math.round(v).toString(16)).slice(-2)).join('');
+        const out = [...document.querySelectorAll('#calcol .calcell[data-act="calday"]')].map(cell => {
+          const evs = eventsOn(cell.getAttribute('data-id')), mk = [...cell.querySelectorAll('.mk')];
+          return { n:evs.length, mk:mk.length, ok:mk.every(m => { const cs = getComputedStyle(m), r = m.getBoundingClientRect();
+            return contrast(hex(rgb(cs.color)), hex(rgb(cs.backgroundColor))) >= 4.5 && r.height >= 16 && m.textContent.trim().length > 0; }),
+            titled:mk.filter(m => !m.classList.contains('more')).every((m, i) => m.textContent === evs[i].title) };
+        });
+        const t = document.querySelector('#calcol .calcell.today .dn'), tc = t && getComputedStyle(t);
+        return { cells:out.length, bad:out.filter(x => !x.ok || !x.titled || x.mk !== Math.min(x.n, 2)), empties:[...document.querySelectorAll('#calcol .calcell:not([data-act])')].filter(x => eventsOn(x.getAttribute('data-id')).length).length,
+                 today:!!t && contrast(hex(rgb(tc.color)), hex(rgb(tc.backgroundColor))) >= 7, dots:document.querySelectorAll('#calcol .dots').length };
+      });
+      ok(marks.cells >= 5 && !marks.bad.length && !marks.empties && marks.today && !marks.dots,
+         w + ': a narrow month shows each day\'s events as readable lines with their titles (two at most, "+N"), today is marked ' + JSON.stringify(marks));
+      if (kind === 'phone') await shot(c, 'v5-calendar-375-month');
+      /* a day with several events opens its own page; back is the month, forward and reload bring the day back */
+      const days = await ev(c, () => { const ids = [...document.querySelectorAll('#calcol .calcell[data-act="calday"]:not(.oth)')].map(x => x.getAttribute('data-id'));
+        return { two:ids.find(d => eventsOn(d).length >= 2), one:ids.find(d => eventsOn(d).length === 1), none:[...document.querySelectorAll('#calcol .calcell:not(.oth):not([data-act])')].map(x => x.getAttribute('data-id'))[0] }; });
+      const tapDay = d => c.tap('#calcol .calcell[data-id="' + d + '"]').then(() => c.waitForTimeout(350));
+      const dst = () => ev(c, () => ({ hash:location.hash, page:!!document.querySelector('#calcol .dayhead'), rows:document.querySelectorAll('#calcol .daypanel .row').length, grid:!!document.querySelector('#calcol .calgrid'),
+        win:!document.getElementById('win').hidden, top:S.stack.length ? S.stack[S.stack.length - 1].id : '', back:(document.querySelector('#calcol [data-act="calback"]') || {}).textContent || '',
+        full:(() => { const p = document.querySelector('#calcol .daypanel'); if (!p) return false; const r = p.getBoundingClientRect(); return r.top < 300 && r.width >= innerWidth - 260; })() }));
+      await tapDay(days.two);
+      const d1 = await dst(), nTwo = await ev(c, d => eventsOn(d).length, days.two);
+      ok(d1.page && !d1.grid && d1.rows === nTwo && d1.full && /[?&]day=/.test(d1.hash) && d1.back === 'October' && !d1.win,
+         w + ': tapping a day with ' + nTwo + ' events opens that day as a page of its own, its events as rows, ‹ October to go back ' + JSON.stringify(d1));
+      if (kind === 'phone') await shot(c, 'v5-calendar-375-day');
+      await c.goBack(); await c.waitForTimeout(350);
+      const d2 = await dst();
+      await c.goForward(); await c.waitForTimeout(350);
+      const d3 = await dst();
+      await c.reload(); await c.waitForTimeout(500);
+      const d4 = await dst();
+      ok(!d2.page && d2.grid && !/day=/.test(d2.hash) && d3.page && d3.rows === nTwo && d4.page && d4.rows === nTwo,
+         w + ': back returns to the month, forward and reload bring the day back ' + JSON.stringify([d2.hash, d3.hash, d4.hash]));
+      /* an event opened from the day comes back to the day; ‹ October goes to the month and the day is outlined there */
+      await c.tap('#calcol .daypanel .row >> nth=0'); await c.waitForTimeout(350);
+      const d5 = await dst();
+      await c.goBack(); await c.waitForTimeout(350);
+      const d6 = await dst();
+      await c.tap('#calcol [data-act="calback"]'); await c.waitForTimeout(350);
+      const d7 = await dst(), outl = await ev(c, d => { const x = document.querySelector('#calcol .calcell[data-id="' + d + '"]'); return !!x && x.classList.contains('picked') && getComputedStyle(x).outlineStyle === 'solid'; }, days.two);
+      ok(d5.win && d6.page && !d6.win && !d7.page && d7.grid && outl, w + ': an event opened from the day returns to the day; ‹ October returns to the month, the day outlined ' + JSON.stringify([d5.win, d6.page, d7.hash, outl]));
+      /* one event opens straight away; back is the month. A day with nothing on is just a date */
+      await tapDay(days.one);
+      const o1 = await dst(), oneId = await ev(c, d => eventsOn(d)[0].id, days.one);
+      await c.goBack(); await c.waitForTimeout(350);
+      const o2 = await dst();
+      ok(o1.win && o1.top === oneId && !o1.page && /^#\/event\//.test(o1.hash) && !o2.win && o2.grid && !o2.page, w + ': a day with one event opens the event straight away; back is the month ' + JSON.stringify([o1.hash, o2.hash]));
+      const h0 = await ev(c, () => location.hash);
+      await c.tap('#calcol .calcell[data-id="' + days.none + '"]'); await c.waitForTimeout(300);
+      const n1 = await dst();
+      ok(!!days.none && !n1.page && !n1.win && n1.hash === h0 && await ev(c, d => { const x = document.querySelector('#calcol .calcell[data-id="' + d + '"]'); return !x.getAttribute('role') && getComputedStyle(x).cursor !== 'pointer'; }, days.none),
+         w + ': a day with nothing on is just a date: no page, no window, not a button');
+      /* a day's link opened cold: the month is underneath it, so ‹ October and back go to the month (not the tab's front page) */
+      const cold = await c.context().newPage(); cold.errors = []; cold.on('pageerror', x => cold.errors.push(x.message));
+      await cold.goto(URL + '#/going?view=calendar&day=' + (await ev(c, () => { const ids = Object.keys(RSVP).filter(k => RSVP[k] === 'going' && EVENTS[k]); return EVENTS[ids[0]].date; })));
+      await cold.waitForTimeout(500);
+      const c1 = await cold.evaluate(() => ({ page:!!document.querySelector('#calcol .dayhead'), idx:history.state.idx }));
+      await cold.tap('#calcol [data-act="calback"]'); await cold.waitForTimeout(400);
+      const c2 = await cold.evaluate(() => ({ hash:location.hash, grid:!!document.querySelector('#calcol .calgrid') }));
+      ok(c1.page && c2.hash === '#/going?view=calendar' && c2.grid && !cold.errors.length, w + ': a day\'s link opened cold has its month underneath ' + JSON.stringify([c1, c2]));
+      await cold.close();
+      ok(!c.errors.length && (await overflow(c)) <= 0, w + ': no console errors, no overflow (narrow calendar) ' + c.errors.join(' '));
+    }
   }
 
   /* ---------------- tablet ---------------- */

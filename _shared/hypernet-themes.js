@@ -44,10 +44,12 @@ window.HN_HEX = function(v){
   if (/^#[0-9a-f]{3}$/i.test(v)) return ("#" + v[1] + v[1] + v[2] + v[2] + v[3] + v[3]).toLowerCase();
   return null;
 };
-/* The only images a look may carry: a base64 PNG, JPEG, WebP or GIF data URL; anything else is null.
-   (With Neon this also accepts the app's own Blob storage URLs, and nothing else.) */
+/* The only images a look may carry: a base64 PNG, JPEG, WebP or GIF data URL, or a real event's picture shipped
+   with the page (data/pictures/<name>.jpg — offline; online the same picture is in storage); anything else is null.
+   (With Neon this also accepts the app's own storage URLs, and nothing else.) */
 window.HN_IMAGE = function(v){
-  return typeof v === "string" && /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+\/]+=*$/.test(v) ? v : null;
+  return typeof v === "string" && (/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+\/]+=*$/.test(v) ||
+    /^data\/pictures\/[a-z0-9-]+\.(jpg|png|webp)$/.test(v)) ? v : null;
 };
 window.HN_MIGRATE_LOOK = function(t){
   if (!t || typeof t !== "object") return null;

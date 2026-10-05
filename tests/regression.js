@@ -80,7 +80,10 @@
    2026-10-05 (v5-feed): your own actions keep their time — one "You: …" line per sitting (within 30 minutes, nothing
    else between), in its band among everyone's (the owner's morning replayed online); "N people joined Hypernet" once
    per band, never you, the near ones first with Follow, See who's new → Explore → People newest first; an event
-   picking up ("4 people decided to go to … this week") once per band with Who's going. */
+   picking up ("4 people decided to go to … this week") once per band with Who's going;
+   2026-10-05 (v5-whosgoing): Who's going always has someone or a sentence in it — when no one going is known by name
+   (only a count) it says "18 people are going" and shows who is interested (the ones you follow first), never a bare
+   "and N more"; a few going (none followed), some followed and many going still show people (offline and online). */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch(e){
   try { ({ chromium } = require('playwright-core')); } catch(e2){
@@ -2304,6 +2307,73 @@ async function overflowEverywhere(p, label){
     await c.click('#toasts [data-act="toastundo"]'); await c.waitForTimeout(250);
     ok(kept.draft && /Draft kept/.test(kept.toast) && kept.discard && await ev(c, () => !FORMDRAFTS.event), 'phone: × keeps the draft; the toast\'s Discard throws it away ' + JSON.stringify(kept));
     ok(!c.errors.length, 'phone: no console errors (wizard) ' + c.errors.join(' '));
+  }
+
+  /* 2026-10-05 (v5-whosgoing) — an event page's Who's going is never a bare "and N more": when only a count is known it
+     says so in words and shows who is interested instead; with names, the ones you follow first, "and N more" after them.
+     Offline on the fixtures (the demo account; Baltic Circuit build weekend has 18 going and none of them named), online
+     on a mocked /api/bootstrap (nobody, a few none followed, many with two followed, and a count with no names) */
+  {
+    const whoSays = (c, id) => ev(c, id => { openItem('event', id); return new Promise(r => setTimeout(() => {
+      const s = [...document.querySelectorAll('#dscroll section.sect')].find(x => /^Who/.test(x.querySelector('h3').textContent));
+      if (!s) return r(null);
+      const box = s.querySelector('.whochips'), first = box && box.firstElementChild;
+      r({ chips:[...s.querySelectorAll('.chip.who')].map(x => ({ fol:x.classList.contains('fol'), sub:x.querySelector('small').textContent })),
+          count:(s.querySelector('.whocount') || {}).textContent || '', more:(s.querySelector('[data-act="whoall"]') || {}).textContent || '',
+          bare:!!first && first.getAttribute('data-act') === 'whoall' });
+    }, 450)); }, id);
+    for (const kind of ['phone', 'desk']){
+      const c = await ctx(kind);
+      await open(c, '', true);
+      await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+      const bal = await whoSays(c, 'ill-baltic-build-weekend');
+      ok(bal && bal.count === '18 people are going' && !bal.bare && !bal.more && bal.chips.length === 1 && bal.chips[0].fol && /^you follow · interested/.test(bal.chips[0].sub),
+         kind + ': only a count going — "18 people are going" in words and the person you follow who is interested, no bare "and N more" ' + JSON.stringify(bal));
+      ok(await ev(c, () => !!document.querySelector('#dscroll .whocount') && document.documentElement.scrollWidth <= innerWidth), kind + ': the sentence fits (no overflow)');
+      await shot(c, 'whosgoing-count-only-' + kind);
+      await c.evaluate(() => whoAllDialog('ill-baltic-build-weekend')); await c.waitForTimeout(250);
+      ok(await ev(c, () => { const n = document.querySelector('.dlg .whonote'); return !!n && n.textContent === '18 people are going, keeping their names to themselves' && document.querySelectorAll('.dlg .whorow').length === 1; }),
+         kind + ': its dialog says the count in words (no "and" before no one) and lists who is interested');
+      await c.evaluate(() => closeDialogs()); await c.waitForTimeout(150);
+      const few = await whoSays(c, 'evt-fill-0'), fol = await whoSays(c, 'evt-world-borderland-2026');
+      ok(few && few.chips.length >= 2 && !few.count && !few.bare && fol && fol.chips[0].fol && fol.chips.some(x => !x.fol) && !fol.count && /^and \d+ more$/.test(fol.more) &&
+         fol.chips.every((x, i) => !i || fol.chips[i - 1].fol >= x.fol),
+         kind + ': a few going (none followed) and some followed still show people, the ones you follow first, "and N more" after them ' + JSON.stringify([few, fol]));
+      /* every event, every account state: someone or a sentence before any "and N more" */
+      ok(await ev(c, () => Object.keys(EVENTS).every(id => { const h = whoGoingHTML(id, isPast(lastDay(EVENTS[id])));
+           return !h || /class="chip who|class="whocount/.test(h.split('data-act="whoall"')[0]); })), kind + ': no event\'s Who\'s going starts with "and N more"');
+      ok(await ev(c, () => whoCountText(1, false) === '1 person is going' && whoCountText(3, true) === '3 people went' && whoCountText(18, false) === '18 people are going'), kind + ': the count reads as a sentence (one person, past)');
+      ok(!c.errors.length, kind + ': no console errors (v5-whosgoing, offline) ' + c.errors.join(' '));
+      await c.context().close();
+    }
+    const NOWMS = NOWPIN ? NOWPIN.getTime() : Date.now();
+    const U = n => '00000000-0000-4000-8000-' + String(n).padStart(12, '0'), ME = U(1);
+    const P = (id, name) => ({ id, handle:'h' + id.slice(-4), displayName:name, bio:'', skills:[], cities:['Brno'], look:null, lastSeenAt:null, createdAt:'2026-09-01T10:00:00Z' });
+    const EV = (n, title) => ({ id:U(100 + n), slug:'e' + n, title, startsOn:new Date(NOWMS + 19 * 86400000).toISOString().slice(0, 10), endsOn:null, startTime:null, endTime:null,
+      timezone:'Europe/Prague', hostId:null, hostName:title, description:'x', kind:'burn', privacy:'everyone', city:'Brno', region:null, country:'CZ', venue:null, access:null,
+      whatToBring:[], details:{}, look:null, source:'import', previousEditionId:null });
+    const names = ['Anna Vale', 'Rio Sand', 'Kai Moss', 'Mira Lux', 'Jon Fell', 'Sasha Kern', 'Ivo Kral', 'Eva Lind', 'Ola Nord', 'Kim Berg'];
+    const people = [P(ME, 'Hana Cerna')].concat(names.map((n, i) => P(U(10 + i), n)));
+    const R = (pid, e, status, m) => ({ personId:pid, eventId:e, status, went:false, shiftIndex:null, updatedAt:new Date(NOWMS - m * 60000).toISOString() });
+    const boot = { hypernet:1, me:people[0], login:null, people, follows:[[ME, U(17)], [ME, U(19)]],
+      events:[EV(1, 'Nobody yet'), EV(2, 'A few going'), EV(3, 'Many going')], promotions:[], horizons:[], hzFollows:[], callouts:[], replies:[], activity:[], chats:[],
+      rsvps:[R(U(10), U(102), 'going', 30), R(U(11), U(102), 'going', 90), R(U(12), U(102), 'interested', 20)].concat(names.map((_, i) => R(U(10 + i), U(103), 'going', 10 + i * 37))) };
+    for (const kind of ['phone', 'desk']){
+      const c = await ctx(kind);
+      await c.addInitScript(() => { window.HN_BACKEND = { branch:'test' }; });
+      await c.context().route('**/api/**', r => r.fulfill({ status:200, contentType:'application/json', body:JSON.stringify(/\/api\/bootstrap/.test(r.request().url()) ? boot : /\/api\/chats/.test(r.request().url()) ? { chats:[] } : {}) }));
+      await c.goto(URL + '#/home'); await c.waitForTimeout(800);
+      const none = await whoSays(c, U(101)), few = await whoSays(c, U(102)), many = await whoSays(c, U(103));
+      ok(await ev(c, () => ONLINE) && none === null && few && few.chips.length === 2 && few.chips.every(x => !x.fol) && !few.more && !few.count &&
+         many && many.chips.length === 6 && many.chips[0].fol && many.chips[1].fol && !many.chips[2].fol && many.more === 'and 4 more' && !many.bare,
+         kind + ': online — nobody going has no Who\'s going; a few (none followed) are shown; many: the two you follow first, six people, "and 4 more" ' + JSON.stringify([none, few, many]));
+      /* a count the server knows without names (none sent today, but never a bare "and N more" if it does) */
+      await c.evaluate(id => { const g = HNAPI.goingCount; HNAPI.goingCount = x => x === id ? 5 : g(x); }, U(101));
+      const cnt = await whoSays(c, U(101));
+      ok(cnt && cnt.count === '5 people are going' && !cnt.chips.length && !cnt.bare, kind + ': online, a count with no names reads "5 people are going" ' + JSON.stringify(cnt));
+      ok(!c.errors.length && (await overflow(c)) <= 0, kind + ': no console errors, no overflow (v5-whosgoing, online) ' + c.errors.join(' '));
+      await c.context().close();
+    }
   }
 
   /* ---------------- tablet ---------------- */

@@ -2,7 +2,8 @@
 // A migration file or a seed as ONE request body for Neon's SQL-over-HTTP endpoint (one transaction: all or
 // nothing). It needs no secrets; the connection string is added by curl inside `with-secrets`:
 //
-//   node scripts/sql-payload.mjs db/migrations/0002_v2_api.sql > "$TMPDIR/q.json"     (or: seed:dev, seed:main)
+//   node scripts/sql-payload.mjs db/migrations/0002_v2_api.sql > "$TMPDIR/q.json"     (or: seed:dev, seed:main,
+//                                                                                       pictures:dev, pictures:main)
 //   with-secrets --dir . -- curl -sS --fail-with-body \
 //     --variable %DATABASE_URL_UNPOOLED --expand-header 'Neon-Connection-String: {{DATABASE_URL_UNPOOLED}}' \
 //     -H 'Content-Type: application/json' -H 'Neon-Batch-Isolation-Level: Serializable' \
@@ -16,8 +17,10 @@ import { buildSeed } from "./seed.mjs";
 
 const arg = process.argv[2];
 if (!arg) {
-  console.error("usage: node scripts/sql-payload.mjs <file.sql | seed:dev | seed:main>");
+  console.error("usage: node scripts/sql-payload.mjs <file.sql | seed:dev | seed:main | pictures:dev | pictures:main>");
   process.exit(1);
 }
-const statements = arg.startsWith("seed:") ? buildSeed(arg.slice(5)) : splitSql(readFileSync(arg, "utf8"));
+const statements = arg.startsWith("seed:") ? buildSeed(arg.slice(5))
+  : arg.startsWith("pictures:") ? buildSeed(arg.slice(9), { only: "pictures" })
+  : splitSql(readFileSync(arg, "utf8"));
 console.log(JSON.stringify({ queries: statements.map((query) => ({ query, params: [] })) }));

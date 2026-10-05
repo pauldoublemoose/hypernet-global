@@ -139,6 +139,21 @@ with-secrets --dir . -- curl -sS --fail-with-body \
 Applied: `0001_init`, `0002_v2_api` on both branches; `seed-dev` on dev, `seed-main` on main (the `_migrations`
 table lists them; `GET /api/health` shows the last). Seeds are idempotent (`on conflict do nothing`).
 
+**Real events' pictures** (2026-10-05). The files are committed in `data/pictures/` (offline the page shows them
+directly); online each branch keeps its own copy in its `images` bucket. One script does both steps for a branch —
+upload (curl SigV4 with the storage-only key, each file checked readable by anyone) and the guarded look update
+(`seed.mjs pictures:<branch>`) — and is safe to run again:
+
+```bash
+scripts/real-pictures.sh main --dry-run   # what it would upload and run, touching nothing
+scripts/real-pictures.sh dev              # applied 2026-10-05 ("rows changed: 16", a second run: 0)
+scripts/real-pictures.sh main             # production — only when the owner says so
+```
+
+Run it from a normal terminal (inside Claude's sandbox the nested `with-secrets` can't decrypt). A new or replaced
+picture: put the file in `data/pictures/`, name it in `data/real-events.json` (`picture`), run the script per branch.
+Provenance: `docs/research/real-event-pictures.md`.
+
 ## Neon Auth settings (per branch)
 
 | | dev | main |

@@ -8,7 +8,8 @@
       "`unverified` lists field paths that come only from third-party directories.",
       "`access.asOf` gives the edition year the prices belong to.",
       "Relative to 2026-09-23, the 2026 editions of big burns are in the past. `burn.nextEdition` holds any announced 2027 dates.",
-      "`ownerIds` is empty for real external events because no Hypernet user owns them. The illustrative events reuse the existing cast (p-anna, g-baltic)."
+      "`ownerIds` is empty for real external events because no Hypernet user owns them. The illustrative events reuse the existing cast (p-anna, g-baltic).",
+      "`picture` is the event's square profile picture (512 px JPEG in data/pictures/), taken from its own site; where each one comes from is in docs/research/real-event-pictures.md. An event without a usable picture has none."
     ]
   },
   "events": [
@@ -39,6 +40,7 @@
       "description": "The flagship burn: a temporary city of about 70,000 in the Nevada desert, built by its participants and taken down without a trace.",
       "privacy": "everyone",
       "externalUrl": "https://burningman.org/black-rock-city/",
+      "picture": "data/pictures/burning-man.jpg",
       "access": {
         "model": "ticket",
         "currency": "USD",
@@ -336,6 +338,7 @@
       "description": "A members-only participatory gathering on 100 ha of forest and lakes that the community owns. Art is funded through Dreams, and there is no central production team.",
       "privacy": "everyone",
       "externalUrl": "https://talk.theborderland.se/main/",
+      "picture": "data/pictures/borderland.jpg",
       "access": {
         "model": "membership",
         "currency": "SEK",
@@ -559,6 +562,7 @@
       "description": "Tankwa Town, a temporary city in the Karoo desert, built around the San Clan effigy.",
       "privacy": "everyone",
       "externalUrl": "https://tickets.afrikaburn.org/",
+      "picture": "data/pictures/afrikaburn.jpg",
       "access": {
         "model": "ticket",
         "currency": "ZAR",
@@ -785,6 +789,7 @@
       "description": "The UK's largest regional burn, at a secret location in Devon. The Effigy burns on Saturday and the Temple on Sunday.",
       "privacy": "everyone",
       "externalUrl": "https://burningnest.co.uk/",
+      "picture": "data/pictures/burning-nest.jpg",
       "access": {
         "model": "ticket",
         "currency": "GBP",
@@ -1034,6 +1039,7 @@
       "description": "The Monegros desert burn formerly known as Nowhere, now run by the community as Elsewhere. Every ticket holder is expected to volunteer.",
       "privacy": "everyone",
       "externalUrl": "https://nobodies.team/",
+      "picture": "data/pictures/elsewhere.jpg",
       "access": {
         "model": "ticket",
         "currency": "EUR",
@@ -1153,6 +1159,7 @@
       "description": "Austria's official regional burn, the closest official regional to Czechia.",
       "privacy": "everyone",
       "externalUrl": "https://burners.at/event/schoenburn-2026",
+      "picture": "data/pictures/schoenburn.jpg",
       "access": {
         "model": "membership",
         "sales": [
@@ -1216,6 +1223,7 @@
       "description": "Norway's spring burn, a small membership-based regional about 2.5 hours north of Oslo. Its winter sibling is Frostlys.",
       "privacy": "everyone",
       "externalUrl": "https://www.frostlys.no/",
+      "picture": "data/pictures/varlys.jpg",
       "access": {
         "model": "membership",
         "note": "Buy in advance only; no sales at the gate."
@@ -1342,6 +1350,7 @@
       "description": "A three-day city decompression: The Grand Hotel for Peculiar Burners. Music, art, performances, workshops and hidden rooms.",
       "privacy": "everyone",
       "externalUrl": "https://eventfrog.ch/fr/p/festivals/art-culture/burningman-zurich-decompression-2026-7494012302284356141.html",
+      "picture": "data/pictures/zurich-decompression.jpg",
       "access": {
         "model": "ticket",
         "currency": "CHF",
@@ -1420,6 +1429,7 @@
       "description": "The Bay Area's official decompression. Outdoors until midnight, indoors until 3am.",
       "privacy": "everyone",
       "externalUrl": "https://here.burningman.org/event/decompression2026",
+      "picture": "data/pictures/sf-decompression.jpg",
       "access": {
         "model": "ticket",
         "currency": "USD",
@@ -1489,6 +1499,7 @@
       "description": "The joint Burning Man and Nowhere community decompression. Tickets are sold only to members, and membership is free.",
       "privacy": "everyone",
       "externalUrl": "https://londondecom.org/",
+      "picture": "data/pictures/london-decompression.jpg",
       "access": {
         "model": "members_only",
         "lowIncome": {
@@ -1544,6 +1555,7 @@
       "description": "A monthly drop-in for local burners at a non-profit community space.",
       "privacy": "everyone",
       "externalUrl": "https://junkyardsocialclub.org/drop-in-event/burner/",
+      "picture": "data/pictures/boulder-burner-meetup.jpg",
       "access": {
         "model": "free",
         "note": "No ticket needed"

@@ -34,7 +34,7 @@
   /* the centre's containers (2026-10-04): the white spans the centre, what it holds is only as wide as the view needs —
      640 to read (Home), 720 to scan rows (every list), 1120 to browse squares or a month (Explore's overview, the calendar).
      The numbers live in CW (the layout engine), which sets --pl / --pr: the container's insets from the centre's edges */
-  --pl:0px; --pr:0px; --sbw:0px;
+  --pl:0px; --pr:0px; --sbw:0px; --hr:0px;
   --out: inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--white), inset -2px -2px 0 var(--shadow), inset 2px 2px 0 var(--face-lt);
   --in:  inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white), inset 2px 2px 0 var(--dark), inset -2px -2px 0 var(--face);
   --thin: inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--white);
@@ -168,6 +168,8 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
    in it (centred, or stepped left beside an open window), and the heading, its tools, the calendar's bar and every band,
    row and square keep to the same two edges — 16 inside the container, the rows' own gutter */
 #app.desk #chead, #app.desk .calbar{ padding-left:calc(var(--pl) + 16px); padding-right:calc(max(var(--pr), var(--sbw)) + 16px); }
+/* the heading spans its slot: a list with a calendar has the calendar's in both views, so the switch keeps its place */
+#app.desk #chead{ padding-right:calc(max(var(--hr), var(--sbw)) + 16px); }
 #app.desk #listbody{ scrollbar-gutter:stable; padding:16px max(0px, calc(var(--pr) - var(--sbw))) 0 var(--pl); }
 #app.desk .shelves > .shelf:first-child{ margin-top:8px; }
 #app.desk .calpanel{ padding:16px calc(var(--pr) + 16px) 16px calc(var(--pl) + 16px); }
@@ -491,7 +493,11 @@ span.chip{ border-color:transparent; background:var(--face-lt); box-shadow:var(-
 
 /* ---------- 9. calendar ---------------------------------------------- */
 .calbar{ flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:0 0 8px; flex-wrap:wrap; }
-.calbar .ttl{ font-size:20px; font-weight:bold; min-width:0; margin-right:6px; }
+/* ‹ Today › first, at the bar's left edge, then the title: "May 2026" or "September 2026", the controls stay put
+   (2026-10-05; the title used to come first and push them along) */
+.calbar .calctl{ flex:0 0 auto; display:flex; gap:4px; }
+.calbar .ttl{ flex:0 1 auto; min-width:0; margin-left:8px; font-size:20px; line-height:24px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.calbar .calback .ic{ margin-left:-4px; }
 .calbar .spring{ flex:1; }
 .calbar label{ display:flex; gap:8px; align-items:center; min-height:var(--ctl); padding:0 4px; font-size:var(--fs-s); cursor:pointer; }
 .calgrid{ flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column; }
@@ -516,15 +522,22 @@ span.chip{ border-color:transparent; background:var(--face-lt); box-shadow:var(-
 .dayband{ display:flex; border-top:1px solid #d6d2c9; min-height:42px; }
 .dayband .hr{ flex:0 0 66px; padding:4px 8px; text-align:right; font:12px var(--sys); color:var(--dim); background:var(--face-lt); border-right:1px solid #b9b4a8; }
 .dayband .slot{ flex:1; padding:3px; display:flex; flex-direction:column; gap:3px; }
-.calcell .dots{ display:flex; flex-wrap:wrap; gap:3px; margin-top:4px; }
-.calcell .dots i{ width:100%; height:6px; background:var(--eac); pointer-events:none; }
+/* a narrow month's events (2026-10-05): a line each in the event's own look — its ground, its text, its accent down the
+   left — with the title as far as it fits, and a hairline so a plain (white) look still reads as a thing on the white.
+   The bars of bare accent they replace were near invisible for the many plain events, and vanished on a darkened page.
+   Two lines at most: a third event turns the second line into "+2". */
+.calcell .marks{ display:flex; flex-direction:column; gap:2px; margin-top:2px; pointer-events:none; }
+.calcell .mk{ display:block; height:16px; padding:0 1px 0 3px; overflow:hidden; white-space:nowrap; text-overflow:clip;
+  font:12px/16px var(--sys); background:var(--ebg); color:var(--eink); border-left:3px solid var(--eac); box-shadow:inset 0 0 0 1px rgba(0,0,0,.22); }
+.calcell .mk.more{ background:var(--face-lt); color:var(--ink); border-left-color:var(--shadow); font-weight:bold; }
 .calcell[data-act]{ cursor:pointer; }
 .calcell[data-act]:hover{ background:var(--hover); }
-.calcell.picked{ outline:2px solid #000; outline-offset:-2px; background:#fff; }
+/* the day you just came back from: the month shows where you were */
+.calcell.picked{ outline:2px solid #000; outline-offset:-2px; }
 .weekcol .wh[data-act]{ cursor:pointer; }
-.calall{ margin-left:auto; min-height:32px; padding:0 8px; border:0; background:transparent; font:bold 12px var(--sys); color:var(--ink2); text-decoration:underline; }
-body.is-phone .calall{ min-height:44px; }
 .agenda{ border-top:1px solid #b9b4a8; }
+/* a narrow screen's day is a page of its own: its events as the list's rows, on the container's edges like a list */
+#app.desk .calpanel.daypanel{ scrollbar-gutter:stable; padding:16px max(0px, calc(var(--pr) - var(--sbw))) 16px var(--pl); }
 @container cal (max-width:640px){
   .calrow{ min-height:58px; }
   .calcell{ padding:3px 2px; }
@@ -904,8 +917,6 @@ button.fcoe:hover{ background:#2e2e2e; }
 .kind{ flex:1 0 auto; height:38px; padding:0 10px; border:0; background:var(--face); box-shadow:var(--out); color:var(--ink); font-size:12px; white-space:nowrap; }
 .kind.on{ background:var(--sel); color:#fff; font-weight:bold; box-shadow:inset 1px 1px 0 #000; }
 #app.phone #chead.kindhead .ctools{ flex-direction:column; align-items:stretch; gap:8px; min-width:0; }
-.ctrow{ display:flex; gap:8px; }
-.ctrow .seg{ flex:1 1 auto; }
 
 /* ---------- 11. phone: its own shell, not a squeezed desktop --------- */
 #app.phone{ --act:44px; font-size:14px; }
@@ -934,8 +945,9 @@ input[type=search]::-webkit-search-cancel-button{ -webkit-appearance:none; displ
 #app.phone #chead .ctools{ flex:1; justify-content:space-between; flex-wrap:nowrap; }
 #app.phone #chead.none{ display:none; }
 #chead.hzhead{ display:none; }
-#app.phone .seg{ flex:1 1 auto; }
-#app.phone .seg button{ flex:1; padding:0 8px; }
+/* the List / Calendar switch sits at the app bar's right, compact: the bevel buttons of the app bar's New chat */
+#app.phone #appbar .vsw{ flex:0 0 auto; margin:0 6px 0 4px; }
+#app.phone #appbar .vsw button{ height:44px; padding:0 12px; }
 #app.phone .sortsel .sl{ display:none; }
 #app.phone #cbody{ gap:0; }
 /* on a phone the window is a sheet over the whole screen, ending above the preview bar when there is one */
@@ -2852,6 +2864,13 @@ function calBlock(e){
     (S.loggedIn && RSVP[e.id]==='going' ? '<span style="margin-left:auto">'+ic('check',12)+'</span>' : '') + '</div>';
 }
 function narrowCal(){ return L.phone || L.cw < 640; }
+/* a narrow screen's day page is open (?day=): the day you tapped, in place of its month */
+function dayOpen(){ return !!S.calDay && isCal() && narrowCal(); }
+/* the day you last opened from a narrow month, outlined when you come back to it (not part of the route; moving to
+   another month forgets it) */
+var CALLAST = null;
+var DAYFULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+function dayTitle(iso){ var d = dOf(iso); return DAYFULL[d.getDay()] + ' ' + d.getDate() + ' ' + MONFULL[d.getMonth()] + (d.getFullYear() !== dOf(TODAY_ISO).getFullYear() ? ' ' + d.getFullYear() : ''); }
 function monthGrid(anchorIso){
   var a = dOf(anchorIso), y = a.getFullYear(), m = a.getMonth();
   var first = new Date(y, m, 1, 18), start = new Date(first);
@@ -2863,27 +2882,46 @@ function monthGrid(anchorIso){
     for (var d = 0; d < 7; d++){
       var day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + w*7 + d, 18);
       var iso = isoOf(day), evs = eventsOn(iso);
-      /* the whole day is the target: on a phone it lists that day below, on a desktop it opens the day */
-      var picked = narrow && S.calDay === iso;
-      h += '<div class="calcell'+(day.getMonth()!==m?' oth':'')+(iso===TODAY_ISO?' today':'')+(picked?' picked':'')+'" data-act="calday" data-id="'+iso+'" role="button" ' +
-             'aria-label="'+esc(fmtDate(iso) + (evs.length ? ', ' + evs.length + ' event' + (evs.length === 1 ? '' : 's') : ''))+'"'+(narrow ? ' aria-pressed="'+picked+'"' : '')+'>' +
-           '<span class="dn">'+day.getDate()+'</span>' +
-           (narrow ? '<div class="dots">' + evs.slice(0,3).map(function(e){ return '<i style="'+themeVars(TH(e.id))+'"></i>'; }).join('') + '</div>'
-                   : evs.map(calBlock).join('')) + '</div>';
+      var cls = 'calcell'+(day.getMonth()!==m?' oth':'')+(iso===TODAY_ISO?' today':'');
+      if (narrow){
+        /* the whole day is the target: one event opens it, several open the day's own page; a day with nothing on it is
+           just a date (2026-10-05). Its events are lines in their own look, the title as far as it fits */
+        var shown = evs.length > 2 ? evs.slice(0, 1) : evs;
+        var marks = shown.map(function(e){ return '<span class="mk" style="'+themeVars(TH(e.id))+'">'+esc(e.title)+'</span>'; }).join('') +
+                    (evs.length > 2 ? '<span class="mk more">+'+(evs.length - 1)+'</span>' : '');
+        h += evs.length
+          ? '<div class="'+cls+(CALLAST === iso ? ' picked' : '')+'" data-act="calday" data-id="'+iso+'" role="button" ' +
+              'aria-label="'+esc(dayTitle(iso) + ': ' + evs.map(function(e){ return e.title; }).join(', '))+'"><span class="dn">'+day.getDate()+'</span><div class="marks">'+marks+'</div></div>'
+          : '<div class="'+cls+'" data-id="'+iso+'"><span class="dn">'+day.getDate()+'</span></div>';
+      } else {
+        /* on a desktop the day opens its day view */
+        h += '<div class="'+cls+'" data-act="calday" data-id="'+iso+'" role="button" ' +
+               'aria-label="'+esc(fmtDate(iso) + (evs.length ? ', ' + evs.length + ' event' + (evs.length === 1 ? '' : 's') : ''))+'">' +
+             '<span class="dn">'+day.getDate()+'</span>' + evs.map(calBlock).join('') + '</div>';
+      }
     }
     h += '</div>';
   }
   if (narrow){
-    var dayPick = S.calDay && dOf(S.calDay).getMonth() === m ? S.calDay : null;
-    var list = dayPick ? eventsOn(dayPick).sort(byDate)
-             : calEvents().filter(function(e){ var dd = dOf(e.date); return dd.getMonth() === m && dd.getFullYear() === y; }).sort(byDate);
-    var head = dayPick ? fmtDate(dayPick) : MONFULL[m];
-    h += '<div class="agenda"><div class="band">'+esc(head)+' <span class="cnt">'+list.length+'</span>' +
-      (dayPick ? '<button class="calall" data-act="calday" data-id="'+dayPick+'">All of '+MONFULL[m]+'</button>' : '') + '</div>' +
+    /* under a narrow month, the month's events as rows (scroll down to them) */
+    var list = calEvents().filter(function(e){ var dd = dOf(e.date); return dd.getMonth() === m && dd.getFullYear() === y; }).sort(byDate);
+    h += '<div class="agenda"><div class="band">'+esc(MONFULL[m])+' <span class="cnt">'+list.length+'</span></div>' +
       (list.length ? list.map(function(e){ return rowHTML({ type:'event', id:e.id }).replace('data-act="row"', 'data-act="open-reset"'); }).join('')
-                   : '<div class="empty">Nothing on '+esc(head)+'.</div>') + '</div>';
+                   : '<div class="empty">Nothing in '+esc(MONFULL[m])+'.</div>') + '</div>';
   }
   return h + '</div>';
+}
+/* a narrow screen's day (2026-10-05): owner, "when I click on a day on a small screen I don't see the bottom selection …
+   open up a full-page view of the day and its events". The day takes the calendar's place: ‹ <its month> goes back to
+   the month where you were (so does the back gesture), then the day's events as the list's rows */
+function dayPage(iso){
+  /* ‹ names the month it returns to: the one you tapped the day in (a day of the next month, shown greyed, included) */
+  var evs = eventsOn(iso).sort(byDate), mon = MONFULL[dOf(S.calAnchor).getMonth()];
+  var bar = '<div class="calbar dayhead"><span class="calctl"><button class="btn calback" data-act="calback" aria-label="Back to '+esc(mon)+'">'+ic('back')+esc(mon)+'</button></span>' +
+            '<span class="ttl">'+esc(dayTitle(iso))+'</span></div>';
+  var body = evs.length ? evs.map(function(e){ return rowHTML({ type:'event', id:e.id }).replace('data-act="row"', 'data-act="open-reset"'); }).join('')
+                        : '<div class="empty">Nothing on '+esc(dayTitle(iso))+'.</div>';
+  return bar + '<div class="panel calpanel daypanel">' + body + '</div>';
 }
 function weekGrid(anchorIso){
   var a = dOf(anchorIso), start = new Date(a.getFullYear(), a.getMonth(), a.getDate() - ((a.getDay()+6)%7), 18);
@@ -2904,16 +2942,21 @@ function dayGrid(anchorIso){
   return h + '</div>';
 }
 function renderCalendar(){
-  var mode = narrowCal() ? 'month' : S.calMode;
+  var narrow = narrowCal();
+  /* a narrow screen's day (a ?day= link) on a wide one is that day in the day view */
+  if (!narrow && S.calDay){ S.calMode = 'day'; S.calAnchor = S.calDay; S.calDay = null; }
+  if (narrow && S.calDay){ CALLAST = S.calDay; $('calcol').innerHTML = dayPage(S.calDay); return; }
+  var mode = narrow ? 'month' : S.calMode;
   var a = dOf(S.calAnchor);
   var title = mode === 'month' ? MONFULL[a.getMonth()] + ' ' + a.getFullYear() : mode === 'week' ? 'Week of ' + fmtShort(S.calAnchor) : fmtDate(S.calAnchor);
-  /* on a phone the day tap is the day view, so month is the only mode */
-  var modes = narrowCal() ? [] : ['day','week','month'];
-  var bar = '<div class="calbar"><span class="ttl">'+esc(title)+'</span>' +
+  /* on a narrow screen a day opens its own page, so month is the only mode */
+  var modes = narrow ? [] : ['day','week','month'];
+  /* ‹ Today › lead the bar and the title follows: the controls never move with the length of a month's name */
+  var bar = '<div class="calbar"><span class="calctl">' +
     '<button class="ib" data-act="calnav" data-id="-1" aria-label="Previous">'+ic('back')+'</button>' +
     '<button class="btn" data-act="caltoday">Today</button>' +
-    '<button class="ib" data-act="calnav" data-id="1" aria-label="Next" style="transform:scaleX(-1)">'+ic('back')+'</button>' +
-    '<span class="spring"></span>' +
+    '<button class="ib" data-act="calnav" data-id="1" aria-label="Next" style="transform:scaleX(-1)">'+ic('back')+'</button></span>' +
+    '<span class="ttl">'+esc(title)+'</span><span class="spring"></span>' +
     (modes.length ? '<span class="seg">' + modes.map(function(m){ return '<button class="'+(mode===m?'on':'')+'" data-act="calmode" data-id="'+m+'">'+titleCase(m)+'</button>'; }).join('') + '</span>' : '') +
     (S.loggedIn ? '<label><input type="checkbox" data-act="calmine"'+(S.calMine?' checked':'')+'> Only mine</label>' : '') + '</div>';
   var body = mode === 'month' ? monthGrid(S.calAnchor) : mode === 'week' ? weekGrid(S.calAnchor) : dayGrid(S.calAnchor);
@@ -3818,19 +3861,27 @@ function renderToolbar(){
   if (document.activeElement !== q) q.value = S.folder.kind === 'search' ? S.query : '';
   $('wintitle').textContent = '— ' + folderName() + (isCal() ? ' · Calendar' : '');
 }
+/* the List / Calendar switch (2026-10-05): owner, "when I'm in a list and I click on Calendar, the buttons shift around.
+   Let's just keep them in one single place — top right." It is always the last thing at the top right — the heading's
+   right end on a desktop or tablet (which spans the calendar's width in both views, see layoutCentre), the app bar's on
+   a phone — and the same size in both views */
+function viewSwitchHTML(){
+  var views = viewsOf(), v = viewOf();
+  return views.length > 1 ? '<span class="seg vsw" role="tablist" aria-label="View">' + views.map(function(x){
+    return '<button role="tab" class="'+(x===v?'on':'')+'" aria-selected="'+(x===v)+'" data-act="setview" data-id="'+x+'">'+titleCase(x)+'</button>'; }).join('') + '</span>' : '';
+}
 function renderCHead(){
-  var el = $('chead'), views = viewsOf(), v = viewOf();
+  var el = $('chead'), v = viewOf();
   var tools = '';
   if (!L.phone && v === 'list' && !isCal() && viewsOf().length && !(S.folder.kind === 'explore' && S.folder.id === 'horizons')){
     tools += '<label class="sortsel"><span class="sl">Sort</span><select data-act="sort" aria-label="Sort">' +
       [['date','Date'],['title','Title'],['host','Host'],['city','City']].map(function(o){ return '<option value="'+o[0]+'"'+(S.sort===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('') +
       '</select></label>';
   }
-  if (views.length > 1) tools += '<span class="seg" role="tablist">' + views.map(function(x){
-    return '<button role="tab" class="'+(x===v?'on':'')+'" aria-selected="'+(x===v)+'" data-act="setview" data-id="'+x+'">'+titleCase(x)+'</button>'; }).join('') + '</span>';
+  if (!L.phone) tools += viewSwitchHTML();
   /* on a phone Explore's kinds are tabs across its top (a desktop has them in the sidebar) */
   var kinds = L.phone && S.folder.kind === 'explore' && !S.phoneSearch;
-  if (kinds) tools = exploreKindsHTML() + (tools ? '<div class="ctrow">' + tools + '</div>' : '');
+  if (kinds) tools = exploreKindsHTML();
   if (L.phone && S.phoneSearch && S.folder.kind !== 'search') tools = '';
   el.className = (tools ? '' : 'none') + (kinds ? ' kindhead' : '');
   el.innerHTML = '<div class="ct"><h2>'+esc(folderName())+'</h2><div class="csub">'+esc(folderSub())+'</div></div>' + (tools ? '<div class="ctools">'+tools+'</div>' : '');
@@ -3861,7 +3912,7 @@ function renderAppbar(){
     h += '<label class="ab-search">'+ic('search')+'<input id="pq" type="search" placeholder="Search" value="'+esc(S.query)+'" autocomplete="off" aria-label="Search">' +
       (S.query ? '<button class="abclear" data-act="clearq" aria-label="Clear search">'+ic('close',16)+'</button>' : '') + '</label>';
   } else {
-    h += '<div class="ab-title">'+esc(folderName())+'</div>';
+    h += '<div class="ab-title">'+esc(folderName())+'</div>' + viewSwitchHTML();
     if (S.tab === 'home' || S.tab === 'explore') h += '<button class="ab-btn" data-act="psearch" aria-label="Search">'+ic('search',22)+'</button>';
   }
   var ab = $('appbar'), hadFocus = document.activeElement && document.activeElement.id === 'pq';
@@ -3914,7 +3965,10 @@ function layoutCentre(){
   /* the list's scrollbar (16 with a mouse, 0 where scrollbars float): the heading's right edge keeps clear of it */
   if (lb.offsetParent) SBW = lb.offsetWidth - lb.clientWidth;
   var sb = SBW != null ? SBW : (window.matchMedia && matchMedia('(pointer:fine)').matches ? 16 : 0);
-  var C = c.clientWidth, cw = Math.min(CW[centreKind()], C), lw = cw, pl = Math.max(0, Math.floor((C - cw) / 2));
+  /* a list with a calendar keeps one slot, the calendar's, in both its views (2026-10-05): the list sits at the slot's
+     left and the heading spans the slot, so the List / Calendar switch at its right never moves when you switch */
+  var C = c.clientWidth, slot = Math.min(CW[viewsOf().indexOf('calendar') >= 0 ? 'wide' : centreKind()], C);
+  var cw = Math.min(CW[centreKind()], slot), lw = cw, pl = Math.max(0, Math.floor((C - slot) / 2));
   if (S.stack.length){
     /* a tablet's chat dock floats over the centre's right: the list and the window share what it leaves */
     var CE = C - (L.dockOver && L.right ? $('chats').offsetWidth + WEDGE : 0);
@@ -3934,6 +3988,8 @@ function layoutCentre(){
   }
   L.cw = lw; L.pl = pl; L.pr = C - pl - lw;
   app.style.setProperty('--pl', pl + 'px'); app.style.setProperty('--pr', L.pr + 'px'); app.style.setProperty('--sbw', sb + 'px');
+  /* the heading's right inset: the slot's, except beside a window, where it ends with the list */
+  app.style.setProperty('--hr', (L.win === 'side' ? L.pr : C - pl - slot) + 'px');
   app.classList.toggle('win-side', L.win === 'side'); app.classList.toggle('win-cover', L.win === 'cover');
   /* Explore's overview: as many whole squares (at least 152) as the container holds, 16 apart, inside its 16 gutters */
   if (isOverview()){ var inner = lw - 32, cols = Math.max(1, Math.floor((inner + 16) / (152 + 16))); L.fit = { cols:cols, sq:Math.floor((inner - (cols - 1) * 16) / cols) }; }
@@ -4865,7 +4921,7 @@ function wizAct(which){
    exists elsewhere (the verbs, the Horizon sheet, Share, Customize), so the
    menu is a shortcut, never a second implementation.
    ========================================================================= */
-var CTXSEL = '.row[data-type], .card2[data-type], .calev[data-type], .calcell .dots i[data-type], ' +
+var CTXSEL = '.row[data-type], .card2[data-type], .calev[data-type], ' +
              '.track[data-type], .crow, .nrow[data-kind="horizon"], .nrow[data-type="horizon"], .nrow[data-type="person"], .chrow[data-act="chatsel"], ' +
              '.fcard[data-type], .fco[data-type], .cotile[data-type]';
 /* what was pressed: the item's element, the element that opens it, and what it stands for */
@@ -5190,7 +5246,8 @@ document.addEventListener('click', function(ev){
    ========================================================================= */
 function goFolder(f){
   if (L.phone && S.tab === 'you' && f.kind !== 'you'){ /* stays in the You tab */ }
-  if (!sameFolder(S.folder, f)){ S.folder = { kind:f.kind, id:f.id || null }; }
+  /* a narrow calendar's open day belongs to the list it was opened in */
+  if (!sameFolder(S.folder, f)){ S.folder = { kind:f.kind, id:f.id || null }; S.calDay = null; }
   S.stack = [];
   if (f.kind !== 'search'){ S.phoneSearch = false; S.query = ''; SEARCHRET = null; }
 }
@@ -5208,9 +5265,10 @@ function openItem(type, id, mode){
   render();
   $('dscroll').scrollTop = 0;
 }
-function goBack(){ if (S.stack.length){ S.stack.pop(); render(); } }
+function goBack(){ if (S.stack.length){ S.stack.pop(); render(); } else if (dayOpen()){ S.calDay = null; render(); } }
 function phoneBack(){
   if (S.stack.length){ S.stack.pop(); render(); return; }
+  if (dayOpen()){ S.calDay = null; render(); return; }
   if (S.phoneSearch && S.folder.kind !== 'search'){ S.phoneSearch = false; SEARCHRET = null; render(); return; }
   if (S.folder.kind === 'search'){ leaveSearch(); S.phoneSearch = false; render(); return; }
   if (S.folder.kind !== tabRootFolder(S.tab).kind){ goFolder(tabRootFolder(S.tab)); render(); return; }
@@ -5224,7 +5282,7 @@ function tabOfFolder(f){
 }
 /* each tab keeps its own place: switching back returns you there; tapping the tab you are on goes to its top */
 var TABMEM = {};
-function rememberTab(){ TABMEM[S.tab] = { folder:S.folder, stack:S.stack.slice(), query:S.query, ps:S.phoneSearch, searchret:SEARCHRET, scroll:copyScroll(CURSCROLL) }; }
+function rememberTab(){ TABMEM[S.tab] = { folder:S.folder, stack:S.stack.slice(), query:S.query, ps:S.phoneSearch, searchret:SEARCHRET, day:S.calDay, scroll:copyScroll(CURSCROLL) }; }
 function setTab(t){
   var m = S.tab === t ? null : TABMEM[t];
   if (S.tab !== t) rememberTab();
@@ -5232,7 +5290,7 @@ function setTab(t){
   else if (t === 'chats' && phoneConv()){ CONVUP = false; S.chatOpen = null; }
   S.tab = t;
   if (m){
-    S.folder = m.folder; S.stack = m.stack.filter(validItem); S.query = m.query; S.phoneSearch = m.ps; SEARCHRET = m.searchret;
+    S.folder = m.folder; S.stack = m.stack.filter(validItem); S.query = m.query; S.phoneSearch = m.ps; SEARCHRET = m.searchret; S.calDay = m.day || null;
     ROUTE.restore = m.scroll;
   } else {
     S.phoneSearch = false; goFolder(tabRootFolder(t));
@@ -5537,7 +5595,7 @@ document.addEventListener('click', function(ev){
     case 'clearq':       { doSearch(''); var pq0 = $('pq'); if (pq0){ pq0.value = ''; pq0.focus(); } break; }
     case 'hzpast':       HZPAST[id] = !HZPAST[id]; render(); break;
     case 'gohome':       if (L.phone) setTab(S.loggedIn ? 'home' : 'explore'); else { goFolder(landingFolder()); render(); } break;
-    case 'setview':  S.view[destKey()] = id; S.stack = []; render(); break;
+    case 'setview':  S.view[destKey()] = id; S.stack = []; S.calDay = null; render(); break;
     case 'row':      openItem(n.getAttribute('data-type'), id); break;
     case 'open':     openItem(n.getAttribute('data-type'), id, 'push'); break;
     case 'open-reset': openItem(n.getAttribute('data-type'), id); break;
@@ -5670,14 +5728,24 @@ document.addEventListener('click', function(ev){
       break;
     }
     case 'calmode':      S.calMode = id; render(); break;
-    case 'caltoday':     S.calAnchor = TODAY_ISO; S.calDay = null; render(); break;
-    case 'calday':       if (narrowCal()) S.calDay = S.calDay === id ? null : id; else { S.calMode = 'day'; S.calAnchor = id; S.calDay = null; } render(); break;
+    case 'caltoday':     S.calAnchor = TODAY_ISO; S.calDay = null; CALLAST = null; render(); break;
+    case 'calday': {
+      if (!narrowCal()){ S.calMode = 'day'; S.calAnchor = id; S.calDay = null; render(); break; }
+      /* narrow: one event opens straight away, several open the day's own page (its own history entry, so back is the month) */
+      var dEvs = eventsOn(id);
+      CALLAST = id;
+      if (dEvs.length === 1) openItem('event', dEvs[0].id);
+      else if (dEvs.length > 1){ S.calDay = id; render(); }
+      break;
+    }
+    case 'calback':      navBack(); break;
     case 'calnav': {
-      var a = dOf(S.calAnchor), step = +id, mode = narrowCal() && S.calMode === 'week' ? 'month' : S.calMode;
+      /* a narrow calendar is always a month, whatever mode a wider screen left behind */
+      var a = dOf(S.calAnchor), step = +id, mode = narrowCal() ? 'month' : S.calMode;
       if (mode === 'month'){ a.setDate(1); a.setMonth(a.getMonth() + step); }
       else if (mode === 'week') a.setDate(a.getDate() + 7*step);
       else a.setDate(a.getDate() + step);
-      S.calAnchor = isoOf(a); S.calDay = null; render();
+      S.calAnchor = isoOf(a); S.calDay = null; CALLAST = null; render();
       break;
     }
   }
@@ -6032,7 +6100,10 @@ function startRoutes(){
   if (deep){
     /* a link opened cold: put its tab's front page underneath, so back stays inside Hypernet */
     root.idx = 0; history.replaceState(root, '', hashOf(root));
-    cur.idx = 1; history.pushState(cur, '', hashOf(cur));
+    cur.idx = 1;
+    /* a narrow calendar's day: its month goes underneath too, so back and ‹ <month> return to the month */
+    if (dayOpen()){ var mon = Object.assign({}, cur, { cal:Object.assign({}, cur.cal, { day:null }), stack:[], idx:1 }); history.pushState(mon, '', hashOf(mon)); cur.idx = 2; }
+    history.pushState(cur, '', hashOf(cur));
   } else {
     cur.idx = st ? st.idx || 0 : 0;
     if (st && st.scroll) restoreScroll(st.scroll);

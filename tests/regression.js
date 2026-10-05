@@ -57,7 +57,12 @@
    2026-10-05 (v5-homechats): Home starts with what happened and ends with what it is and how to see more (Find people,
    All events) — the whole page only when nothing is above it, never "nothing happened" under activity (offline, and
    online on a mocked /api/bootstrap: only your own row, following a quiet person, nothing at all); an empty chat list
-   says "No chats yet" and how a chat starts, over the people to message when there are any. */
+   says "No chats yet" and how a chat starts, over the people to message when there are any;
+   2026-10-05 (v5-calendar): the List / Calendar switch keeps one place at the top right in both views (the heading's right
+   end at 1280, 1440, 1920 and 768 — a list with a calendar keeps the calendar's slot — and the phone's app bar), ‹ Today ›
+   lead the calendar's bar and never move with the title, a narrow month's events are readable titled lines, and a narrow
+   day is a page of its own (one event opens straight away, an empty day is just a date; back, forward, reload, ‹ month,
+   a cold link with its month underneath). */
 let chromium;
 try { ({ chromium } = require('playwright')); } catch(e){
   try { ({ chromium } = require('playwright-core')); } catch(e2){
@@ -1575,9 +1580,13 @@ async function overflowEverywhere(p, label){
                    '#/explore':1120, '#/explore/events?view=calendar':1120 };
     const got = {};
     for (const hh of Object.keys(want)){ await c.goto(URL + hh); await c.waitForTimeout(350); got[hh] = await geoOf(c); }
+    /* 2026-10-05 (v5-calendar): a list that also has a calendar keeps the calendar's slot — its 720 sits at the slot's left,
+       where the calendar's 1120 starts — so the heading (and the List / Calendar switch at its right) stays put */
+    const slotted = ['#/explore/events', '#/explore/soon', '#/going'], calCl = got['#/explore/events?view=calendar'].cl;
     const bad = Object.keys(want).filter(k => { const g = got[k];
-      return !(g.panelL === 8 && g.panelR === 8 && g.cw === Math.min(want[k], g.panelW - g.sb) && (Math.abs(g.cl - g.cr) <= 1 || g.cl === 0) && g.head === 16); });
-    ok(!bad.length, w + ': the white spans the centre; Home sits in 640, lists in 720, Explore\'s overview and the calendar in 1120 — centred, the heading on the container\'s edge ' + JSON.stringify(bad.map(k => [k, got[k]])));
+      const placed = slotted.indexOf(k) >= 0 ? g.cl === calCl : (Math.abs(g.cl - g.cr) <= 1 || g.cl === 0);
+      return !(g.panelL === 8 && g.panelR === 8 && g.cw === Math.min(want[k], g.panelW - g.sb) && placed && g.head === 16); });
+    ok(!bad.length, w + ': the white spans the centre; Home sits in 640, lists in 720, Explore\'s overview and the calendar in 1120 — centred (a list with a calendar at the calendar\'s left), the heading on the container\'s edge ' + JSON.stringify(bad.map(k => [k, got[k]])));
     if (w === 1440){ await c.goto(URL + '#/explore'); await c.waitForTimeout(350); await shot(c, 'layout-1440-explore'); }
     if (w === 1920){ await c.goto(URL + '#/home'); await c.waitForTimeout(350); await shot(c, 'layout-1920-home'); await overflowEverywhere(c, 'desktop 1920'); }
     /* the window steps the list aside: beside it where there is room (the pair centred when there is more), over the centre only where there isn't */
@@ -1713,6 +1722,110 @@ async function overflowEverywhere(p, label){
       ok(chAlone.head === 'No chats yet' && !chAlone.band && !chAlone.rows, kind + ': with nobody to message, Chats is just "No chats yet" ' + JSON.stringify(chAlone));
       ok(!c.errors.length && (await overflow(c)) <= 0, kind + ': no console errors, no overflow (Home end, Chats, online) ' + c.errors.join(' '));
       await c.context().close();
+    }
+  }
+
+  /* 2026-10-05 (v5-calendar): the List / Calendar switch stays at the top right in both views; ‹ Today › lead the calendar's
+     bar so a month's name never moves them; a narrow screen's day is a page of its own (one event opens straight away,
+     none is just a date), with back / forward / reload; a narrow month's events are readable lines, not faint bars */
+  {
+    const box = (c, sel) => c.evaluate(s => { const e = document.querySelector(s); if (!e || !e.offsetParent) return null; const r = e.getBoundingClientRect();
+      return { x:Math.round(r.left), y:Math.round(r.top), r:Math.round(r.right), w:Math.round(r.width), h:Math.round(r.height) }; }, sel);
+    const same = (a, b) => !!a && !!b && a.x === b.x && a.y === b.y && a.w === b.w;
+    for (const [kind, w] of [['desk', 1440], ['desk', 1920], ['desk', 1280], ['tab', 768], ['phone', 375]]){
+      const c = await ctx(kind, kind === 'desk' ? { viewport:{ width:w, height:w === 1920 ? 1080 : w === 1280 ? 800 : 900 } } : undefined);
+      await open(c, '', true);
+      await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+      if (kind === 'desk') await c.evaluate(() => { S.rightOpen = false; render(); });
+      /* the switch: one place in List and Calendar; a desktop's and tablet's at the heading's right end, a phone's in the app bar */
+      const sw = {};
+      for (const hh of ['#/going', '#/going?view=calendar', '#/explore/events', '#/explore/events?view=calendar', '#/explore/events?view=calendar&at=2026-05-01']){
+        await c.goto(URL + hh); await c.waitForTimeout(350);
+        sw[hh] = Object.assign(await box(c, '.vsw') || {}, await c.evaluate(ph => {
+          const v = document.querySelector('.vsw'), hd = document.getElementById('chead'), hr = hd.getBoundingClientRect();
+          return { inBar:!!(v && v.closest(ph ? '#appbar' : '#chead')), last:!!v && !v.nextElementSibling || (ph && !!v && v.nextElementSibling.getAttribute('data-act') === 'psearch'),
+                   end:ph ? null : Math.round(hr.right - parseFloat(getComputedStyle(hd).paddingRight)) };
+        }, kind === 'phone'));
+      }
+      const g = sw['#/going'], gc = sw['#/going?view=calendar'], e = sw['#/explore/events'], ec = sw['#/explore/events?view=calendar'], em = sw['#/explore/events?view=calendar&at=2026-05-01'];
+      ok(same(g, gc) && same(e, ec) && same(ec, em) && [g, gc, e, ec].every(x => x.inBar && x.last) && (kind === 'phone' || [g, gc, e, ec].every(x => Math.abs(x.r - x.end) <= 1)) &&
+         (kind !== 'phone' || (g.r >= 375 - 12 && g.h <= 44 && g.w <= 160)),
+         w + ': the List / Calendar switch is at the top right ' + (kind === 'phone' ? '(the app bar, compact)' : '(the heading\'s right end)') + ' and keeps its place in List and Calendar ' + JSON.stringify([g, gc, e, ec]));
+      /* ‹ Today ›: before the title, in the same place for a long and a short month, and (wide) in week and day too */
+      const bars = [];
+      for (const hh of ['#/going?view=calendar&at=2026-09-01', '#/going?view=calendar&at=2026-05-01', '#/going?view=calendar&at=2026-10-01'].concat(kind === 'desk' ? ['#/going?view=calendar&at=2026-09-30&cal=week', '#/going?view=calendar&at=2026-09-30&cal=day'] : [])){
+        await c.goto(URL + hh); await c.waitForTimeout(300);
+        bars.push(Object.assign({ prev:await box(c, '[data-act="calnav"][data-id="-1"]'), today:await box(c, '[data-act="caltoday"]'), next:await box(c, '[data-act="calnav"][data-id="1"]'), ttl:await box(c, '#calcol .calbar .ttl') }));
+      }
+      ok(bars.every(b => same(b.prev, bars[0].prev) && same(b.today, bars[0].today) && same(b.next, bars[0].next) && b.next.r < b.ttl.x),
+         w + ': ‹ Today › lead the calendar bar and never move (September, May, October' + (kind === 'desk' ? ', week, day' : '') + ') ' + JSON.stringify(bars.map(b => [b.today, b.ttl])));
+      if (kind === 'desk'){ ok(!c.errors.length, w + ': no console errors (calendar)' + c.errors.join(' ')); continue; }
+      /* narrow: the month's events are lines in their own look, each readable, its title in it; today is marked */
+      await c.goto(URL + '#/explore/events?view=calendar'); await c.waitForTimeout(400);
+      const marks = await ev(c, () => {
+        const rgb = s => (s.match(/\d+(\.\d+)?/g) || []).slice(0, 3).map(Number), hex = a => '#' + a.map(v => ('0' + Math.round(v).toString(16)).slice(-2)).join('');
+        const out = [...document.querySelectorAll('#calcol .calcell[data-act="calday"]')].map(cell => {
+          const evs = eventsOn(cell.getAttribute('data-id')), mk = [...cell.querySelectorAll('.mk')];
+          return { n:evs.length, mk:mk.length, ok:mk.every(m => { const cs = getComputedStyle(m), r = m.getBoundingClientRect();
+            return contrast(hex(rgb(cs.color)), hex(rgb(cs.backgroundColor))) >= 4.5 && r.height >= 16 && m.textContent.trim().length > 0; }),
+            titled:mk.filter(m => !m.classList.contains('more')).every((m, i) => m.textContent === evs[i].title) };
+        });
+        const t = document.querySelector('#calcol .calcell.today .dn'), tc = t && getComputedStyle(t);
+        return { cells:out.length, bad:out.filter(x => !x.ok || !x.titled || x.mk !== Math.min(x.n, 2)), empties:[...document.querySelectorAll('#calcol .calcell:not([data-act])')].filter(x => eventsOn(x.getAttribute('data-id')).length).length,
+                 today:!!t && contrast(hex(rgb(tc.color)), hex(rgb(tc.backgroundColor))) >= 7, dots:document.querySelectorAll('#calcol .dots').length };
+      });
+      ok(marks.cells >= 5 && !marks.bad.length && !marks.empties && marks.today && !marks.dots,
+         w + ': a narrow month shows each day\'s events as readable lines with their titles (two at most, "+N"), today is marked ' + JSON.stringify(marks));
+      if (kind === 'phone') await shot(c, 'v5-calendar-375-month');
+      /* a day with several events opens its own page; back is the month, forward and reload bring the day back */
+      const days = await ev(c, () => { const ids = [...document.querySelectorAll('#calcol .calcell[data-act="calday"]:not(.oth)')].map(x => x.getAttribute('data-id'));
+        return { two:ids.find(d => eventsOn(d).length >= 2), one:ids.find(d => eventsOn(d).length === 1), none:[...document.querySelectorAll('#calcol .calcell:not(.oth):not([data-act])')].map(x => x.getAttribute('data-id'))[0] }; });
+      const tapDay = d => c.tap('#calcol .calcell[data-id="' + d + '"]').then(() => c.waitForTimeout(350));
+      const dst = () => ev(c, () => ({ hash:location.hash, page:!!document.querySelector('#calcol .dayhead'), rows:document.querySelectorAll('#calcol .daypanel .row').length, grid:!!document.querySelector('#calcol .calgrid'),
+        win:!document.getElementById('win').hidden, top:S.stack.length ? S.stack[S.stack.length - 1].id : '', back:(document.querySelector('#calcol [data-act="calback"]') || {}).textContent || '',
+        full:(() => { const p = document.querySelector('#calcol .daypanel'); if (!p) return false; const r = p.getBoundingClientRect(); return r.top < 300 && r.width >= innerWidth - 260; })() }));
+      await tapDay(days.two);
+      const d1 = await dst(), nTwo = await ev(c, d => eventsOn(d).length, days.two);
+      ok(d1.page && !d1.grid && d1.rows === nTwo && d1.full && /[?&]day=/.test(d1.hash) && d1.back === 'October' && !d1.win,
+         w + ': tapping a day with ' + nTwo + ' events opens that day as a page of its own, its events as rows, ‹ October to go back ' + JSON.stringify(d1));
+      if (kind === 'phone') await shot(c, 'v5-calendar-375-day');
+      await c.goBack(); await c.waitForTimeout(350);
+      const d2 = await dst();
+      await c.goForward(); await c.waitForTimeout(350);
+      const d3 = await dst();
+      await c.reload(); await c.waitForTimeout(500);
+      const d4 = await dst();
+      ok(!d2.page && d2.grid && !/day=/.test(d2.hash) && d3.page && d3.rows === nTwo && d4.page && d4.rows === nTwo,
+         w + ': back returns to the month, forward and reload bring the day back ' + JSON.stringify([d2.hash, d3.hash, d4.hash]));
+      /* an event opened from the day comes back to the day; ‹ October goes to the month and the day is outlined there */
+      await c.tap('#calcol .daypanel .row >> nth=0'); await c.waitForTimeout(350);
+      const d5 = await dst();
+      await c.goBack(); await c.waitForTimeout(350);
+      const d6 = await dst();
+      await c.tap('#calcol [data-act="calback"]'); await c.waitForTimeout(350);
+      const d7 = await dst(), outl = await ev(c, d => { const x = document.querySelector('#calcol .calcell[data-id="' + d + '"]'); return !!x && x.classList.contains('picked') && getComputedStyle(x).outlineStyle === 'solid'; }, days.two);
+      ok(d5.win && d6.page && !d6.win && !d7.page && d7.grid && outl, w + ': an event opened from the day returns to the day; ‹ October returns to the month, the day outlined ' + JSON.stringify([d5.win, d6.page, d7.hash, outl]));
+      /* one event opens straight away; back is the month. A day with nothing on is just a date */
+      await tapDay(days.one);
+      const o1 = await dst(), oneId = await ev(c, d => eventsOn(d)[0].id, days.one);
+      await c.goBack(); await c.waitForTimeout(350);
+      const o2 = await dst();
+      ok(o1.win && o1.top === oneId && !o1.page && /^#\/event\//.test(o1.hash) && !o2.win && o2.grid && !o2.page, w + ': a day with one event opens the event straight away; back is the month ' + JSON.stringify([o1.hash, o2.hash]));
+      const h0 = await ev(c, () => location.hash);
+      await c.tap('#calcol .calcell[data-id="' + days.none + '"]'); await c.waitForTimeout(300);
+      const n1 = await dst();
+      ok(!!days.none && !n1.page && !n1.win && n1.hash === h0 && await ev(c, d => { const x = document.querySelector('#calcol .calcell[data-id="' + d + '"]'); return !x.getAttribute('role') && getComputedStyle(x).cursor !== 'pointer'; }, days.none),
+         w + ': a day with nothing on is just a date: no page, no window, not a button');
+      /* a day's link opened cold: the month is underneath it, so ‹ October and back go to the month (not the tab's front page) */
+      const cold = await c.context().newPage(); cold.errors = []; cold.on('pageerror', x => cold.errors.push(x.message));
+      await cold.goto(URL + '#/going?view=calendar&day=' + (await ev(c, () => { const ids = Object.keys(RSVP).filter(k => RSVP[k] === 'going' && EVENTS[k]); return EVENTS[ids[0]].date; })));
+      await cold.waitForTimeout(500);
+      const c1 = await cold.evaluate(() => ({ page:!!document.querySelector('#calcol .dayhead'), idx:history.state.idx }));
+      await cold.tap('#calcol [data-act="calback"]'); await cold.waitForTimeout(400);
+      const c2 = await cold.evaluate(() => ({ hash:location.hash, grid:!!document.querySelector('#calcol .calgrid') }));
+      ok(c1.page && c2.hash === '#/going?view=calendar' && c2.grid && !cold.errors.length, w + ': a day\'s link opened cold has its month underneath ' + JSON.stringify([c1, c2]));
+      await cold.close();
+      ok(!c.errors.length && (await overflow(c)) <= 0, w + ': no console errors, no overflow (narrow calendar) ' + c.errors.join(' '));
     }
   }
 

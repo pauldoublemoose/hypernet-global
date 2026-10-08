@@ -543,6 +543,13 @@ span.chip{ border-color:transparent; background:var(--face-lt); box-shadow:var(-
 .mbody{ display:inline-block; padding:8px 12px; background:var(--face-lt); border:1px solid #d8d4cb; text-align:left; line-height:1.4; overflow-wrap:anywhere; }
 .msg.me .mbody{ background:#2a2a2a; border-color:#2a2a2a; color:#fff; }
 .msg.sys{ align-self:center; font:12px var(--sys); color:var(--dim); text-align:center; }
+/* where a new day starts in a conversation: Today, Yesterday or the date, on a hairline like a band. It stays at the top
+   while that day's messages scroll under it */
+.mday{ position:sticky; top:-16px; z-index:1; align-self:stretch; display:flex; align-items:center; gap:6px; margin:0 -14px; padding:4px 14px;
+  background:#fff; font:12px/16px var(--sys); color:var(--ink); }
+/* Windows dressing: the day on a small raised grey plate, like a status bar panel, between etched rules */
+.mday span{ padding:1px 8px; background:var(--face); box-shadow:inset -1px -1px 0 var(--shadow), inset 1px 1px 0 var(--white), 0 0 0 1px var(--face-dk); }
+.mday::before, .mday::after{ content:""; flex:1 1 0; height:2px; box-shadow:inset 0 1px 0 var(--shadow), inset 0 -1px 0 var(--face-lt); }
 .composer{ flex:0 0 auto; display:flex; gap:8px; }
 .composer input{ flex:1; }
 .members{ display:flex; gap:4px; }
@@ -3198,6 +3205,22 @@ function msgTs(m){
   return BOOTNOW - 48 * H;
 }
 function stamp(){ return { t:nowClock(), ts:tsIso(nowMs()) }; }
+/* the day a message was sent, said the way a chat says it: Today, Yesterday, then the date (the year only when it isn't this one) */
+function chatDayKey(ms){ var d = new Date(ms); return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); }
+function chatDay(ms){
+  var d0 = new Date(appNow()); d0.setHours(0, 0, 0, 0);
+  var d = new Date(ms), t = new Date(ms); t.setHours(0, 0, 0, 0);
+  var dd = Math.round((d0 - t) / 86400000);
+  if (dd <= 0) return 'Today';
+  if (dd === 1) return 'Yesterday';
+  return DAY[d.getDay()] + ' ' + d.getDate() + ' ' + MON[d.getMonth()] + (d.getFullYear() !== d0.getFullYear() ? ' ' + d.getFullYear() : '');
+}
+/* the chat list's time: the clock today, then Yesterday, then the date */
+function chatListTime(m){
+  if (!m) return '';
+  var day = chatDay(msgTs(m));
+  return day === 'Today' ? (/^\d{1,2}:\d{2}$/.test(m.t || '') ? m.t : nowClock()) : day === 'Yesterday' ? day : day.replace(/^\w+ /, '');
+}
 /* the chat list: newest message first; a chat with nothing in it yet is not listed */
 function chatList(){
   /* a chat is listed once it has a message, or something you started typing in it (a draft floats to the top) */
@@ -3229,7 +3252,7 @@ function chatListHTML(){
       var c = CHATS[k], m = lastMsg(c), un = UNREADCHAT[k];
       return '<div class="chrow'+(un?' unread':'')+'" data-act="chatsel" data-id="'+k+'" role="button">' + chatAv(c) +
         '<div class="cmn"><div class="cnm">'+esc(c.name)+'</div><div class="cpv">'+(CHATDRAFT[k] ? '<b>Draft:</b> '+esc(CHATDRAFT[k]) : esc(msgPreview(m, c)))+'</div></div>' +
-        '<div class="cside"><span class="ctime">'+esc(m ? m.t : '')+'</span>'+(un?'<span class="udot" aria-label="Unread"></span>':'')+'</div></div>';
+        '<div class="cside"><span class="ctime">'+esc(chatListTime(m))+'</span>'+(un?'<span class="udot" aria-label="Unread"></span>':'')+'</div></div>';
     }).join('') + '</div>';
 }
 function convHTML(cid){
@@ -3239,11 +3262,14 @@ function convHTML(cid){
   var h = '<div class="phead"><button class="ib" data-act="chatback" aria-label="All chats">'+ic('back')+'</button>' +
     '<button type="button" class="ptitle ptbtn" data-act="chatprofile" data-id="'+pid+'">'+esc(c.name)+'<small>'+esc(sub)+'</small></button>' +
     '<button class="ib" data-act="chatprofile" data-id="'+pid+'" aria-label="Profile">'+ic('user')+'</button></div>';
+  var lastDay = null;
   h += '<div class="conv"><div class="msgs" id="msgs" data-chat="'+cid+'">' + (c.messages.length ? c.messages.map(function(m){
-    if (m.from === 'sys') return '<div class="msg sys">'+esc(m.text)+'</div>';
+    var ms = msgTs(m), key = chatDayKey(ms), day = key !== lastDay ? '<div class="mday"><span>'+esc(chatDay(ms))+'</span></div>' : '';
+    lastDay = key;
+    if (m.from === 'sys') return day + '<div class="msg sys">'+esc(m.text)+'</div>';
     var me = m.from === 'self';
-    var head = '<div class="mfrom">'+(me ? '' : '<button type="button" class="mwho" data-act="chatprofile" data-id="'+esc(m.from)+'">'+esc(person(m.from).displayName)+'</button>')+'<span class="mt">'+esc(m.t)+'</span></div>';
-    return '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+'</div></div>';
+    var head = '<div class="mfrom">'+(me ? '' : '<button type="button" class="mwho" data-act="chatprofile" data-id="'+esc(m.from)+'">'+esc(person(m.from).displayName)+'</button>')+'<span class="mt">'+esc(/^\d{1,2}:\d{2}$/.test(m.t || '') ? m.t : '')+'</span></div>';
+    return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+'</div></div>';
   }).join('') : '<div class="msg sys">No messages yet</div>') + '</div>';
   /* the box grows with what you write: Enter sends, Shift+Enter starts a new line */
   h += '<div class="composer"><textarea id="chatbox" rows="1" placeholder="Message '+esc(c.name.split(' ')[0])+'" autocomplete="off" aria-label="Message" aria-describedby="chathint">'+esc(CHATDRAFT[cid] || '')+'</textarea>' +

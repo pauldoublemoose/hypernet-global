@@ -819,10 +819,12 @@ body:not(.is-phone) .edlg .custprev .previewbox, body:not(.is-phone) .edlg .pvpa
 .coart .ic{ margin-bottom:auto; }
 .coart span{ font:bold 12px var(--sys); color:var(--dim); }
 .coart b{ font-size:14px; line-height:1.15; }
-.mosaic{ display:grid; grid-template-columns:1fr 1fr; background:#000; overflow:hidden; }
+.mosaic{ display:grid; grid-template-columns:1fr 1fr; flex:0 0 auto; background:#000; overflow:hidden; }
 .mosaic .sq{ border-radius:0 !important; clip-path:none !important; }
 .mosaic.one{ display:block; }
-.mosaic.empty{ display:grid; place-items:center; background:var(--face); color:var(--dim); box-shadow:var(--out); }
+/* a horizon with no events: its glyph centred on the grey face — not `.empty`, the empty-state note, whose padding
+   stretched the 48 square to 80 and pushed the glyph off centre */
+.mosaic.mempty{ grid-template-columns:1fr; place-items:center; background:var(--face); color:var(--dim); box-shadow:var(--out); }
 .trm{ flex:0 0 auto; }
 .rrm{ width:32px; height:32px; }
 .pksearch{ position:sticky; top:-20px; z-index:3; margin:-20px -20px 12px; padding:20px 20px 12px; background:var(--face); }
@@ -2956,7 +2958,7 @@ function sqPx(id, px, extra){ return sqT(TH(id), px, extra); }
 /* a horizon's cover: the owner's pick, or a 2×2 mosaic of its first four events */
 function mosaicOf(ids, px){
   ids = ids.filter(function(id){ return EVENTS[id]; });
-  if (!ids.length) return '<div class="mosaic empty" style="width:'+px+'px;height:'+px+'px">'+ic('horizon', Math.round(px/3))+'</div>';
+  if (!ids.length) return '<div class="mosaic mempty" style="width:'+px+'px;height:'+px+'px">'+ic('horizon', Math.round(px/3))+'</div>';
   if (ids.length < 4) return '<div class="mosaic one" style="width:'+px+'px;height:'+px+'px">' + sqPx(ids[0], px) + '</div>';
   var h = Math.floor(px/2);
   return '<div class="mosaic" style="width:'+(h*2)+'px;height:'+(h*2)+'px">' + ids.slice(0,4).map(function(id){ return sqPx(id, h); }).join('') + '</div>';
@@ -2964,7 +2966,7 @@ function mosaicOf(ids, px){
 function hzMosaic(hzId, px){
   var hz = HORIZONS[hzId], ids = hzEventIds(hzId);
   if (hzOwnSquare(hzId)) return '<div class="mosaic one" style="width:'+px+'px;height:'+px+'px">' + sqT(HZTHEME[hzId], px) + '</div>';
-  if (!ids.length) return '<div class="mosaic empty" style="width:'+px+'px;height:'+px+'px">'+ic('horizon', Math.round(px/3))+'</div>';
+  if (!ids.length) return '<div class="mosaic mempty" style="width:'+px+'px;height:'+px+'px">'+ic('horizon', Math.round(px/3))+'</div>';
   if (HZCOVER[hzId] || ids.length < 4) return '<div class="mosaic one" style="width:'+px+'px;height:'+px+'px">' + sqPx(hzCover(hzId), px) + '</div>';
   var h = Math.floor(px/2);
   return '<div class="mosaic" style="width:'+(h*2)+'px;height:'+(h*2)+'px">' + ids.slice(0,4).map(function(id){ return sqPx(id, h); }).join('') + '</div>';

@@ -1186,6 +1186,21 @@ async function overflowEverywhere(p, label){
       return { off:Math.max.apply(null, out.concat([0])), edge:Math.round(row.right - r.right), sq:d.closest('.fuprow').querySelector('.sq').offsetWidth, text:d.textContent };
     }));
     ok(dates.length >= 3 && dates.every(x => x.off <= 1.5 && x.edge === 16 && x.sq === 48 && /^\d+ \w{3}\w{3}$/.test(x.text)), kind + ': Coming up with your people — a 48 square per row, the date ("7 Oct", "Wed") flush right ' + JSON.stringify(dates));
+    /* 2026-10-16: every thing on Home has a 48 square — a horizon with no events too (its cover once took the empty-state
+       note's padding: 48 × 80, the glyph low and right), its glyph in the middle, and the same at 96 and 150 */
+    const sqs = await ev(c, () => {
+      const src = Object.keys(HORIZONS)[0];
+      HORIZONS['hz-none'] = Object.assign({}, HORIZONS[src], { id:'hz-none', name:'Co-residencies', eventIds:[], isPublished:true });
+      const box = document.createElement('div'); box.className = 'fitem'; box.innerHTML = fHorizonCard('hz-none') + hzMosaic('hz-none', 96) + mosaicOf([], 150);
+      document.querySelector('#listbody .fitem').before(box);
+      const off = m => { const r = m.getBoundingClientRect(), g = m.querySelector('svg').getBoundingClientRect();
+        return [Math.round(r.width), Math.round(r.height), Math.round(g.left + g.width / 2 - r.left - r.width / 2), Math.round(g.top + g.height / 2 - r.top - r.height / 2)].join(' '); };
+      const out = { empty:[...box.querySelectorAll('.mosaic')].map(off),
+        bad:[...document.querySelectorAll('#listbody .fcard > :first-child, #listbody .fcoe > :first-child')].filter(m => m.offsetWidth !== 48 || m.offsetHeight !== 48).map(m => m.className + ' ' + m.offsetWidth + 'x' + m.offsetHeight) };
+      box.remove(); delete HORIZONS['hz-none'];
+      return out;
+    });
+    ok(sqs.empty.join() === '48 48 0 0,96 96 0 0,150 150 0 0' && !sqs.bad.length, kind + ': Home — every thing\'s square is 48 × 48, an empty horizon\'s glyph centred (48, 96, 150) ' + JSON.stringify(sqs));
     ok((await overflow(c)) <= 0 && !c.errors.length, kind + ': Home, no horizontal overflow, no console errors ' + c.errors.join(' '));
   }
 

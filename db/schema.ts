@@ -77,6 +77,8 @@ export const events = pgTable(
     details: jsonb("details").$type<Record<string, unknown> | null>(),
     look: jsonb("look").$type<Look | null>(),
     source: text("source").notNull().default("user"),
+    sourceUrl: text("source_url"),
+    addedBy: uuid("added_by").references(() => people.id, { onDelete: "set null" }),
     previousEditionId: uuid("previous_edition_id"),
     createdAt: tstz("created_at").notNull().defaultNow(),
     updatedAt: tstz("updated_at").notNull().defaultNow(),

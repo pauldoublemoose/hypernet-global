@@ -416,3 +416,30 @@ Short, dated product decisions that change the standing rules (`reference/IA-v2.
     list keeps its place), □ or a double-click to maximise, ×, Esc and back to close, whichever of window and dock you
     touched last in front. Closing it gives the list back its centred width. The phone's sheet is unchanged.
   Supersedes B2's "by default it sits over the right of the list (the list's left edge … stays in view)".
+- **2026-10-16 · Events that already exist elsewhere come in from a link.** Owner: "while filling up the Event horizon
+  you could enter a URL … and then click a button for autofill of event details (time, host etc)." No bulk import:
+  "everything from Billetto" would fill Hypernet with events nobody here picked. A horizon's Add events has three ways
+  in, above the search: pick events already here (the list, as before), **New event** (the wizard, titled "New event
+  for <horizon>"; once published it is on that horizon, which opens) and **From a link**. From a link turns the dialog
+  into one form: the link and **Autofill** (Enter does the same), which reads the page's schema.org Event block, else
+  its og: tags (`lib/link-event.ts`, `POST /api/events/autofill`), and fills in who hosts it, the title, day, times,
+  type, place, entry and description; a note says what the page didn't say, and anything can be fixed by hand ("Or
+  fill it in yourself" skips Autofill; offline it always does). Add event saves it (`POST /api/events/link`) and goes
+  back to the list with it ticked at the top; the list's Add N events puts it on the horizon, as for any other pick.
+  - An event from a link (`source = 'link'`) is **public**, **hosted by nobody here** (`host_id` null, `host_name` is
+    the organiser the page names) and **credited to whoever added it** (`added_by`). Its page says "Added from
+    billetto.se by Anna. Nobody on Hypernet hosts it.", the Host fact says "From billetto.se", and Get tickets / its
+    Links go to the page it came from. Its square is the picture from that page, copied into our storage.
+  - **One link is one event.** The link is kept without tracking parameters or #fragment (or as the page's canonical
+    link); the same link again, by anyone, offers the event already here ("Already on Hypernet · Add this one"), so
+    curators share one event and one Going list.
+  - Whoever added it **may correct it**: Edit (the same form; the link stays) and Delete, on its page, its ⋯ and its
+    right-click menu. They are not its host: none of the host's verbs (no Hosting pill, no New call out), and it is
+    not in their Hosting list. Claiming it as its real host comes later, with groups.
+  - **Publishers grow out of what people bring in:** an event from a link lists the organiser's other upcoming events
+    here, "More from Svenska kyrkan Hägersten". A feed from one publisher is switched on only once people keep pasting
+    from it. Facebook events can't be read (they need a login): fill those in by hand.
+  - The server reads only public addresses (no localhost, private or link-local IPs, other ports), follows at most 5
+    redirects, gives up after 8 s and reads 3 MB at most; logged-in people only, so it is no open proxy. It sends a
+    browser's user agent: Billetto's CloudFront refuses a bot's (checked 2026-10-16).
+  Context: `docs/internal/` (the WhatsApp chat with Seb, the options). Schema: `db/migrations/0003_link_events.sql`.

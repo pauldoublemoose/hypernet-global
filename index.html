@@ -831,6 +831,20 @@ body.is-phone .pksearch{ top:-18px; margin:-18px -16px 12px; padding:18px 16px 1
 /* Add events: one row of filters under the search; the list keeps its height as you switch, so the dialog doesn't jump */
 #pk-list{ height:min(58vh, 460px); }
 .pkchips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+/* New event · From a link, above the search */
+.pknew{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:12px; }
+.pknewt{ color:var(--dim); margin-right:auto; }
+.pknew .btn{ gap:6px; }
+/* the link form: the link and Autofill on one line, what it found under it */
+.lkrow{ display:flex; gap:8px; }
+.lkrow input{ flex:1; min-width:0; }
+.lkrow .btn{ flex:none; }
+.lkhave{ margin:0 0 16px; padding:8px; background:#fff; box-shadow:var(--in); }
+.lkhave .lkhavet{ font-weight:bold; margin-bottom:8px; }
+.lkhave .crow{ margin-bottom:8px; }
+.lkpic{ display:flex; align-items:center; gap:8px; margin:0 0 16px; color:var(--dim); }
+.lkpic img{ width:48px; height:48px; object-fit:cover; box-shadow:var(--in); }
+.linkbtn{ border:0; background:none; padding:0; color:var(--ink); text-decoration:underline; cursor:pointer; font:inherit; }
 .pkchip{ display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 10px; border:0; background:var(--face); box-shadow:var(--out); color:var(--ink); font-size:12px; white-space:nowrap; }
 .pkchip:active{ box-shadow:var(--in); }
 .pkchip .n{ font:12px var(--sys); color:var(--dim); }
@@ -1561,6 +1575,7 @@ var PFOLLOW  = {};
 var DEMOHOST = Object.keys(EVENTS).filter(function(id){ return EVENTS[id].hostName === 'You'; });   /* what the demo account hosts */
 DEMOHOST.forEach(function(id){ EVENTS[id].hostName = 'Michal'; });
 var MYEVENTS = [];
+var ADDEDBYME = [];             /* events you added from a link: yours to correct, though nobody here hosts them */
 var MYHORIZONS = [];
 
 var CHATS = {}, CHATORDER = [], UNREADCHAT = {};
@@ -1762,6 +1777,12 @@ function whereOf(e){
   return r.city || r.region || COUNTRY[r.country] || r.country || cityShort(e.city);
 }
 function isMine(evId){ return S.loggedIn && ownEvent(EVENTS[evId]); }
+/* an event that already exists elsewhere, added from a link (2026-10-16): nobody here hosts it, whoever added it may
+   correct it (Edit, Delete) — they are not its host, so none of the host's verbs */
+function isLinkEvent(evId){ return !!EVENTS[evId] && EVENTS[evId].kind === 'link'; }
+function addedByMe(evId){ return S.loggedIn && isLinkEvent(evId) && ADDEDBYME.indexOf(evId) >= 0; }
+function canFix(evId){ return isMine(evId) || addedByMe(evId); }
+function linkSite(u){ return String(u || '').replace(/^https?:\/\/(www\.)?/i, '').replace(/[\/?#].*$/, ''); }
 /* the entry point for someone without an account says so */
 function joinLabel(){ return ACCTS.me ? 'Log in' : 'Join / Log in'; }
 function calloutOf(id){ return CALLOUTS.filter(function(x){ return x.id === id; })[0]; }
@@ -2316,7 +2337,7 @@ function factsHTML(evId){
   var org = r.organiser;
   var hp0 = hostPersonOf(e), camp = (r.ownerGroupIds || []).map(groupHorizon).filter(Boolean)[0];
   var hostTo = hp0 && hp0.id !== 'self' ? { type:'person', id:hp0.id } : camp ? { type:'horizon', id:camp } : null;
-  f.push(['Host', (org && org.name) || hostLabel(e), [org && org.legalForm, org && org.name && e.hostName !== org.name ? 'as ' + e.hostName : ''].filter(Boolean).join(' · '), hostTo]);
+  f.push(['Host', (org && org.name) || hostLabel(e), [org && org.legalForm, org && org.name && e.hostName !== org.name ? 'as ' + e.hostName : '', isLinkEvent(evId) ? 'From ' + linkSite(e.sourceUrl || r.externalUrl) : ''].filter(Boolean).join(' · '), hostTo]);
   if (r.age && (r.age.min || r.age.kidsFreeUpTo != null)) f.push(['Age', r.age.min ? r.age.min + '+' : 'All ages', r.age.kidsFreeUpTo != null ? 'Kids free up to ' + r.age.kidsFreeUpTo : '']);
   /* the Event Horizons it is on: one line each, the first labelled */
   horizonsOf(evId).forEach(function(k, i){
@@ -2460,6 +2481,7 @@ function sourcesHTML(r){
 }
 function provenance(evId){
   var r = recOf(evId);
+  if (isLinkEvent(evId)) return linkCredit(evId);
   if (/^evt-new-/.test(evId)) return '';
   if (r.illustrative) return 'Illustrative example';
   if (r.sources || r.externalUrl) return 'From the event’s own pages' + (r.unverified && r.unverified.length ? ' · from directories only: ' + r.unverified.join(', ') : '');
@@ -2523,6 +2545,7 @@ function verbsHTML(evId){
     return h + '</span></div>';
   }
   h += stateGroupHTML(evId) + promoBtnHTML(evId) + '<span class="vsec">' + addtoBtnHTML(evId) + vb('share', evId, 'Share', 'share');
+  if (addedByMe(evId)) h += vb('editevent', evId, 'Edit', 'edit') + vb('evmore', evId, '', 'dots', { aria:'More', attrs:' data-more="delete" aria-haspopup="menu"' });
   return h + '</span></div>';
 }
 /* the phone's bottom bar: the two verbs that matter here, and ⋯ for the rest (the same menu as a long-press) */
@@ -2540,6 +2563,7 @@ function evbarHTML(evId){
     h += stateGroupHTML(evId) + promoBtnHTML(evId, true);
     more = 'addto,share';
   }
+  if (!mine && addedByMe(evId)) more += ',edit,delete';
   return h + vb('evmore', evId, '', 'dots', { aria:'More', attrs:' data-more="'+more+'" aria-haspopup="menu"' }) + '</div>';
 }
 /* where the official way in lives: the organiser's ticket or membership page */
@@ -2641,6 +2665,7 @@ function canvasHTML(evId){
   if (b.vocabulary && b.vocabulary.length) s += sect('Words used here', '<dl class="kv vocab">' + b.vocabulary.map(function(v){
     return '<dt>'+esc(v.term)+'</dt><dd>'+esc(v.meaning)+'</dd>'; }).join('') + '</dl>');
   if (b.nextEdition && !NEXTED[evId]) s += sect('Next edition', nextHTML(b.nextEdition));
+  if (isLinkEvent(evId)) s += moreFromHTML(evId);
   var pv = provenance(evId), links = sourcesHTML(r);
   s += sect('Links', links ? links + (pv ? '<div class="srcline">' + esc(pv) + '</div>' : '') : '');
   if (pv && !links) s += '<div class="srcline">' + esc(pv) + '</div>';
@@ -4649,7 +4674,7 @@ function demoAcct(){
 function captureAcct(){
   var p = PEOPLE['self'];
   return { profile:{ displayName:p.displayName, handle:p.handle, bio:p.bio, skills:p.skills, cities:p.cities, city:p.city },
-           rsvp:RSVP, went:WENT, promoted:PROMOTED, hzfollow:HZFOLLOW, pfollow:PFOLLOW, myevents:MYEVENTS, myhorizons:MYHORIZONS,
+           rsvp:RSVP, went:WENT, promoted:PROMOTED, hzfollow:HZFOLLOW, pfollow:PFOLLOW, myevents:MYEVENTS, addedbyme:ADDEDBYME, myhorizons:MYHORIZONS,
            chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT, drafts:{ forms:FORMDRAFTS, chat:CHATDRAFT }, shift:SHIFT, read:READ,
            look:PTHEME['self'] || null, joinedAt:(ACCTS[S.acct] || {}).joinedAt || 0 };
 }
@@ -4660,6 +4685,7 @@ function loadAcct(a){
   p.skills = (pr.skills || []).slice(); p.cities = (pr.cities || []).slice();
   RSVP = a.rsvp || {}; WENT = a.went || {}; PROMOTED = a.promoted || {}; HZFOLLOW = a.hzfollow || {}; PFOLLOW = a.pfollow || {};
   MYEVENTS = (a.myevents || []).filter(function(id){ return EVENTS[id]; });
+  ADDEDBYME = (a.addedbyme || []).filter(function(id){ return EVENTS[id]; });
   MYHORIZONS = (a.myhorizons || []).filter(function(k){ return HORIZONS[k]; });
   CHATS = (a.chats && a.chats.byId) || {};
   /* group chats kept from before chat was person to person are put away */
@@ -4867,8 +4893,9 @@ function pickerIn(f, e){
 }
 function pickerEvents(f){
   f = f || PK.f;
+  var fresh = PK.fresh || [], fr = function(e){ var i = fresh.indexOf(e.id); return i < 0 ? 1e9 : i; };
   return pickerPool().filter(function(e){ return pickerIn(f, e); })
-    .sort(function(a, b){ return f === 'past' ? -byDate(a, b) : byDate(a, b); });
+    .sort(function(a, b){ return fr(a) - fr(b) || (f === 'past' ? -byDate(a, b) : byDate(a, b)); });
 }
 function pickRow(e){
   var on = PK.sel.indexOf(e.id) >= 0, st = stateOf(e.id), why = PK.f === 'people' ? pickerWhy(e) : '';
@@ -4905,15 +4932,31 @@ function pickerFoot(){
 }
 var addEventsDialog = gated(function(hzId){
   var hz = HORIZONS[hzId];
-  PK = { hz:hzId, q:'', f:'upcoming', sel:hz.eventIds.slice(), start:hz.eventIds.slice() };
-  dialog('Add events to ' + hz.name,
-    '<div class="field pksearch"><input type="search" id="pk-q" placeholder="Search events" autocomplete="off" aria-label="Search events">' +
-    '<div class="pkchips" id="pk-chips" role="group" aria-label="Show">' + pickerChips() + '</div></div>' +
-    '<div class="picklist tall" id="pk-list">' + pickerList() + '</div>',
-    '<span id="pkfoot" style="display:contents"></span>', 520);
+  PK = { hz:hzId, q:'', f:'upcoming', sel:hz.eventIds.slice(), start:hz.eventIds.slice(), fresh:[] };
+  dialog('Add events to ' + hz.name, pickerBodyHTML(), '<span id="pkfoot" style="display:contents"></span>', 520);
   pickerFoot();
   if (!L.phone) focusIn('pk-q');
 });
+/* three ways to fill a horizon (owner, 2026-10-16): pick events already here, make a new one, or bring one in from
+   a link. The last two sit above the search, so they are there whatever the list shows. */
+function pickerBodyHTML(){
+  return '<div class="field pksearch"><div class="pknew"><span class="pknewt">Not here yet?</span>' +
+      '<button type="button" class="btn" data-act="pknewev">'+ic('plus', 16)+'New event</button>' +
+      '<button type="button" class="btn" data-act="pklink">'+ic('ext', 16)+'From a link</button></div>' +
+    '<input type="search" id="pk-q" value="'+esc(PK.q)+'" placeholder="Search events" autocomplete="off" aria-label="Search events">' +
+    '<div class="pkchips" id="pk-chips" role="group" aria-label="Show">' + pickerChips() + '</div></div>' +
+    '<div class="picklist tall" id="pk-list">' + pickerList() + '</div>';
+}
+/* back to the list (from the link form), with what you just brought in ticked at the top */
+function pickerShow(){
+  var dl = DLGS[DLGS.length-1], hz = PK && HORIZONS[PK.hz]; if (!dl || !hz) return;
+  DRAFT = null;
+  dl.querySelector('.dtitle').textContent = 'Add events to ' + hz.name;
+  dl.querySelector('.dbody').innerHTML = pickerBodyHTML();
+  dl.querySelector('.dfoot').innerHTML = '<span id="pkfoot" style="display:contents"></span>';
+  pickerFoot(); placeDlg(dl);
+  $('pk-list').scrollTop = 0;
+}
 function pickerDone(){
   var hz = HORIZONS[PK.hz];
   var kept = hz.eventIds.filter(function(id){ return PK.sel.indexOf(id) >= 0; });
@@ -4923,6 +4966,182 @@ function pickerDone(){
   if (added.length) logAct('added_to_horizon', 'horizon', PK.hz, { eventIds:added.slice() });
   closeDialogs(); render();
   if (added.length) toast('Added ' + added.length + ' event' + (added.length === 1 ? '' : 's'), hz.name);
+}
+/* ---- an event that already exists elsewhere, from a link (owner, 2026-10-16: "while filling up the Event horizon you
+   could enter a URL … and then click a button for autofill of event details (time, host etc)"). Paste the event's
+   page, Autofill reads it (the server: /api/events/autofill), you check what it found, Add. Nobody here hosts it: it
+   keeps the organiser's name, links back to its page and credits whoever added it, who may correct it later. One
+   link is one event: a link already here offers that event instead. The same form edits it afterwards. ---- */
+function blankLinkDraft(){
+  return { form:'link', step:1, ctx:'picker', editing:null, url:'', host:'', title:'', date:'', end:'', startTime:'', endTime:'', kind:'other',
+           city:'', online:false, privacy:'everyone', entry:'free', desc:'', bring:'', filled:false, busy:false, note:'', existing:null,
+           image:null, extra:null, showErr:false };
+}
+function lkMissing(d){
+  var m = wizMissing(Object.assign({}, d, { editing:null }), 1);
+  if (!/^https?:\/\/[^\s\/]+\.[^\s]+$/i.test(String(d.url || '').trim())) m.url = 'Paste the link to the event';
+  if (!String(d.host || '').trim()) m.host = 'Add who puts it on';
+  return m;
+}
+function linkFormHTML(d){
+  var miss = d.showErr ? lkMissing(d) : {}, edit = !!d.editing;
+  var h = '<div class="field"><label for="lk-u">Link to the event</label><div class="lkrow">' +
+      '<input type="url" id="lk-u" data-cz="url" value="'+esc(d.url)+'" placeholder="https://billetto.se/e/…" autocomplete="off" inputmode="url" aria-describedby="lk-note err-url"' +
+        (edit ? ' readonly' : '') + wzBad(miss, 'url') + '>' +
+      (edit ? '' : '<button type="button" class="btn'+(d.filled ? '' : ' primary')+'" data-act="lkfill"'+(d.busy ? ' aria-disabled="true"' : '')+'>'+(d.busy ? 'Reading…' : 'Autofill')+'</button>') +
+    '</div>' + wzErr(miss, 'url') +
+    '<p class="fhelp" id="lk-note" role="status">'+esc(d.note || (edit ? 'Where it came from. Fix anything the page got wrong.' :
+      'The event’s own page: a ticket shop, the organiser’s site. Autofill fills in the rest.'))+'</p></div>';
+  var have = d.existing && EVENTS[d.existing];
+  if (have) h += '<div class="lkhave"><div class="lkhavet">Already on Hypernet</div>' + eventCRow(have, false) +
+    '<button type="button" class="btn primary" data-act="lkuse" data-id="'+have.id+'">'+(PK && PK.sel.indexOf(have.id) >= 0 ? 'Back to the list' : 'Add this one')+'</button></div>';
+  if (!d.filled && !edit){
+    if (!have) h += '<p><button type="button" class="linkbtn" data-act="lkmanual">Or fill it in yourself</button></p>';
+    return h;
+  }
+  if (d.image) h += '<div class="lkpic"><img src="'+esc(d.image)+'" alt="" referrerpolicy="no-referrer"><span>Its picture, from the page</span></div>';
+  h += '<div class="field"><label for="lk-h">Hosted by</label><input type="text" id="lk-h" data-cz="host" value="'+esc(d.host)+'" placeholder="Who puts it on" autocomplete="off" aria-required="true" aria-describedby="err-host"'+wzBad(miss, 'host')+'>' +
+    wzErr(miss, 'host') + '<p class="fhelp">Nobody on Hypernet hosts it. You’re adding it, so you can fix it later.</p></div>';
+  h += basicsHTML(d, miss, false);
+  h += '<div class="field"><label for="w-desc">Description'+WZOPT+'</label><textarea id="w-desc" data-cz="desc" rows="4">'+esc(d.desc)+'</textarea></div>';
+  return h;
+}
+function linkFootHTML(d){
+  var ok = (d.filled || d.editing) && !Object.keys(lkMissing(d)).length, need = '<span class="wizneed" id="wiz-need" role="status">'+esc(d.filled || d.editing ? wizNeedText(d) : '')+'</span>';
+  if (d.editing) return need + '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="lkadd"'+(ok ? '' : ' aria-disabled="true"')+'>Save changes</button>';
+  return need + '<button class="btn" data-act="lkback">'+ic('back')+'Back</button><button class="btn primary" data-act="lkadd"'+(ok ? '' : ' aria-disabled="true"')+'>Add event</button>';
+}
+function paintLink(){
+  var dl = DLGS[DLGS.length-1]; if (!dl || !DRAFT || DRAFT.form !== 'link') return;
+  var b = dl.querySelector('.dbody'), top = b.scrollTop;
+  /* replacing the focused link field makes Chrome send its change as it goes: let that carry the link as the form has
+     it now (Autofill adds https://), not as it was typed */
+  var lu = $('lk-u'); if (lu) lu.value = DRAFT.url;
+  b.innerHTML = linkFormHTML(DRAFT);
+  dl.querySelector('.dfoot').innerHTML = linkFootHTML(DRAFT);
+  b.scrollTop = top; placeDlg(dl);
+}
+/* as you type: the footer and the messages follow, the field you are in is left alone */
+function lkSync(){
+  var dl = DLGS[DLGS.length-1], f = dl && dl.querySelector('.dfoot'); if (!f) return;
+  var h = linkFootHTML(DRAFT), probe = document.createElement('div'); probe.innerHTML = h;
+  if (probe.innerHTML !== f.innerHTML) f.innerHTML = h;
+  wizSyncErrs();
+}
+function linkOpenInPicker(){
+  var dl = DLGS[DLGS.length-1]; if (!dl || !PK) return;
+  DRAFT = blankLinkDraft();
+  dl.querySelector('.dtitle').textContent = 'Add an event from a link';
+  paintLink();
+  focusIn('lk-u');
+}
+/* what the page said, into the form; the note says what it didn't */
+var LKSAID = { title:'the title', startsOn:'the day', startTime:'the time', city:'the place', hostName:'who hosts it' };
+function linkTake(d, x){
+  d.url = x.sourceUrl || d.url;
+  d.title = x.title || ''; d.date = x.startsOn || ''; d.end = x.endsOn || ''; d.startTime = x.startTime || ''; d.endTime = x.endTime || '';
+  d.online = !!x.online; d.city = x.online ? '' : (x.city || (x.venue && x.venue.name) || '');
+  d.host = x.hostName || ''; d.desc = x.description || '';
+  d.entry = (x.access && x.access.model) || 'free';
+  d.image = x.imageUrl || null;
+  d.extra = { timezone:x.timezone || null, region:x.region || null, country:x.country || null, venue:x.venue || null, access:x.access || null, organizerUrl:x.organizerUrl || null };
+  var gone = Object.keys(LKSAID).filter(function(k){ return !(x.found || []).some(function(f){ return f === k || (k === 'city' && (f === 'venue' || f === 'online')); }); }).map(function(k){ return LKSAID[k]; });
+  d.note = 'Filled in from ' + (x.site || linkSite(d.url)) + '. ' + (gone.length ? 'It didn’t say ' + gone.join(', ').replace(/, ([^,]*)$/, ' or $1') + '. ' : '') + 'Check it, then add it.';
+  d.filled = true;
+}
+function linkAutofill(){
+  var d = DRAFT; if (!d || d.form !== 'link' || d.busy || d.editing) return;
+  var u = String(d.url || '').trim();
+  if (u && !/^https?:\/\//i.test(u) && /\./.test(u)) u = 'https://' + u;
+  d.url = u;
+  if (lkMissing(d).url){ d.showErr = true; paintLink(); focusIn('lk-u'); return; }
+  if (!ONLINE){
+    d.filled = true; d.note = 'Autofill reads pages on the live site only. Here, fill in the details yourself.';
+    paintLink(); focusIn('lk-h'); return;
+  }
+  d.busy = true; d.existing = null; d.note = 'Reading ' + linkSite(u) + '…'; paintLink();
+  HNAPI.autofill(u).then(function(r){
+    if (DRAFT !== d) return;
+    d.busy = false;
+    if (r && r.existing){ HNAPI.takeEvent(r.existing); d.existing = r.existing.id; d.note = 'This link is already an event here.'; }
+    if (r && r.draft) linkTake(d, r.draft);
+    paintLink();
+    var k = Object.keys(lkMissing(d))[0];
+    if (d.filled) focusIn(k ? WIZFIELD[k] : 'lk-h');
+  }, function(err){
+    if (DRAFT !== d) return;
+    d.busy = false; d.filled = true;
+    d.note = (err && err.message ? err.message.replace(/\.?$/, '.') : 'Couldn’t read that page.') + ' Fill in the details yourself.';
+    paintLink(); focusIn('lk-h');
+  });
+}
+function linkUseExisting(id){
+  if (!PK || !EVENTS[id]) return;
+  if (PK.sel.indexOf(id) < 0) PK.sel.push(id);
+  PK.fresh = [id].concat(PK.fresh.filter(function(x){ return x !== id; }));
+  PK.q = ''; PK.f = isPast(lastDay(EVENTS[id])) ? 'past' : 'upcoming';
+  pickerShow();
+}
+function linkAdd(){
+  var d = DRAFT; if (!d || d.form !== 'link') return;
+  if (!d.filled && !d.editing){ linkAutofill(); return; }
+  if (Object.keys(lkMissing(d)).length){ d.showErr = true; paintLink(); focusIn(WIZFIELD[Object.keys(lkMissing(d))[0]]); return; }
+  if (d.editing){ linkSaveEdit(d); return; }
+  var id = ONLINE ? HNAPI.uuid() : 'evt-new-l' + Date.now().toString(36);
+  var x = d.extra || {}, start = isoDate(d.date), end = isoDate(d.end), city = d.online ? '' : String(d.city || '').trim(), url = String(d.url).trim();
+  EVENTS[id] = { id:id, title:d.title.trim(), date:start, description:d.desc, hostName:d.host.trim(), privacy:'everyone', ownerIds:[], kind:'link', city:city,
+                 sourceUrl:url, addedBy:'self' };
+  REC[id] = { kind:d.kind || 'other', startTime:d.startTime || undefined, endTime:d.endTime || undefined, endDate: end && end > start ? end : undefined,
+              timezone:x.timezone || undefined, region:x.region || undefined, country:x.country || undefined, scale: end && end > start ? 'gathering' : 'meetup',
+              venueKind: d.online ? 'virtual' : 'physical', city:city,
+              venue: d.online ? undefined : (x.venue && x.venue.name ? x.venue : { name:city, addressVisibility:'public' }),
+              description:d.desc, access:Object.assign({}, x.access || {}, { model:d.entry, url:url }), whatToBring:[],
+              externalUrl:url, sourceSite:linkSite(url), organizerUrl:x.organizerUrl || undefined };
+  ADDEDBYME.push(id); READ[id] = true; PROMOCOUNT[id] = 0;
+  if (ONLINE) HNAPI.createLinkEvent(id, d.image);
+  schedulePersist();
+  PK.sel.push(id); PK.fresh.unshift(id); PK.q = ''; PK.f = isPast(lastDay(EVENTS[id])) ? 'past' : 'upcoming';
+  pickerShow();
+  toast('Added from ' + linkSite(url), EVENTS[id].title);
+}
+/* Edit on an event you added from a link: the same form, its link kept */
+function linkEditOpen(evId){
+  var e = EVENTS[evId], r = recOf(evId);
+  DRAFT = Object.assign(blankLinkDraft(), { ctx:'edit', editing:evId, filled:true, url:e.sourceUrl || r.externalUrl || '', host:e.hostName || '',
+    title:e.title, date:e.date, end:r.endDate || '', startTime:r.startTime || '', endTime:r.endTime || '', kind:r.kind || 'other',
+    online:r.venueKind === 'virtual', city: r.venueKind === 'virtual' ? '' : (r.city || e.city || ''), entry:(r.access && r.access.model) || 'free', desc:descOf(e) });
+  dialog('Edit event', linkFormHTML(DRAFT), linkFootHTML(DRAFT), 520, 'lkdlg');
+  focusIn('lk-h');
+}
+function linkSaveEdit(d){
+  var id = d.editing, e = EVENTS[id], r = REC[id] = REC[id] || {};
+  var start = isoDate(d.date), end = isoDate(d.end), city = d.online ? '' : String(d.city || '').trim();
+  if (!d.online && (!r.venue || !r.venue.name || r.venue.name === r.city)) r.venue = Object.assign({}, r.venue || { addressVisibility:'public' }, { name:city });
+  if (d.online) r.venue = undefined;
+  e.title = d.title.trim(); e.date = start; e.description = d.desc; e.hostName = d.host.trim(); e.city = city;
+  r.endDate = end && end > start ? end : undefined; r.startTime = d.startTime || undefined; r.endTime = d.endTime || undefined;
+  r.kind = d.kind || r.kind || 'other'; r.description = d.desc; r.venueKind = d.online ? 'virtual' : 'physical'; r.city = city;
+  r.access = Object.assign({}, r.access || {}, { model:d.entry });
+  delete PLAINCACHE[id]; EDITED[id] = true; SLUGS = null;
+  if (ONLINE) HNAPI.saveEvent(id);
+  schedulePersist();
+  DRAFT = null; closeDialogs(); render();
+  toast('Saved', e.title);
+}
+/* "Added from billetto.se by Anna" — who brought it in, under its links */
+function linkCredit(evId){
+  var e = EVENTS[evId], site = linkSite(e.sourceUrl || recOf(evId).externalUrl);
+  var by = addedByMe(evId) ? 'you' : e.addedBy && PEOPLE[e.addedBy] ? PEOPLE[e.addedBy].displayName : '';
+  return 'Added from ' + site + (by ? ' by ' + by : '') + '. Nobody on Hypernet hosts it.';
+}
+/* publishers grow out of what people bring in (owner, 2026-10-16): the organiser's other events here */
+function moreFromHTML(evId){
+  var e = EVENTS[evId], name = String(e.hostName || '').trim().toLowerCase();
+  if (!name) return '';
+  var evs = allEvents().filter(function(x){ return x.id !== evId && !NEXTED[x.id] && canSeeEvent(x) && String(x.hostName || '').trim().toLowerCase() === name && !isPast(lastDay(x)); }).sort(byDate);
+  if (!evs.length) return '';
+  return sect('More from ' + e.hostName, evs.slice(0, 6).map(function(x){ return eventCRow(x, false); }).join('') +
+    (evs.length > 6 ? '<p class="fhelp">And ' + (evs.length - 6) + ' more.</p>' : ''));
 }
 </script>
 <script>
@@ -5163,7 +5382,7 @@ function wzErr(miss, k){ return '<span class="ferr" id="err-'+k+'" data-err="'+k
 function wzBad(miss, k){ return miss[k] ? ' aria-invalid="true"' : ''; }
 var WZOPT = ' <span class="opt">optional</span>';
 function basicsHTML(d, miss, withPrivacy){
-  var newEv = d.mode !== 'edit', bad = function(k){ return wzBad(miss, k); }, err = function(k){ return wzErr(miss, k); }, opt = WZOPT;
+  var newEv = d.mode !== 'edit' && d.form !== 'link', bad = function(k){ return wzBad(miss, k); }, err = function(k){ return wzErr(miss, k); }, opt = WZOPT;
   return '<div class="field"><label for="w-t">Title</label><input type="text" id="w-t" data-cz="title" value="'+esc(d.title)+'" placeholder="Ridge sauna, midnight" autocomplete="off" aria-required="true" aria-describedby="err-title"'+bad('title')+'>' + err('title') + '</div>' +
     '<div class="frow"><div class="field"><label for="w-d">Starts</label><input type="date" id="w-d" data-cz="date" value="'+esc(d.date)+'"'+(newEv ? ' min="'+TODAY_ISO+'"' : '')+' aria-required="true" aria-describedby="err-date"'+bad('date')+'>' + err('date') + '</div>' +
     '<div class="field"><label for="w-e">Ends'+opt+'</label><input type="date" id="w-e" data-cz="end" value="'+esc(d.end)+'"'+(d.date?' min="'+esc(d.date)+'"':'')+' aria-describedby="err-end"'+bad('end')+'>' + err('end') + '</div></div>' +
@@ -5224,7 +5443,7 @@ function wizMissing(d, step){
     var st = isoDate(d.date), en = String(d.end || '').trim() ? isoDate(d.end) : '';
     if (!String(d.title || '').trim()) m.title = 'Add a title';
     if (!st) m.date = 'Add the day it starts';
-    else if (d.mode !== 'edit' && st < TODAY_ISO) m.date = 'Pick today or a later day';
+    else if (d.mode !== 'edit' && d.form !== 'link' && st < TODAY_ISO) m.date = 'Pick today or a later day';
     if (en === null || (en && st && en < st)) m.end = 'It ends before it starts';
     if (!d.online && !String(d.city || '').trim()) m.city = 'Add where it is, or tick Online';
   }
@@ -5232,17 +5451,18 @@ function wizMissing(d, step){
   return m;
 }
 /* what is missing in what is on screen: the step in the wizard, the whole form in Edit */
-function wizMissingNow(d){ return d.mode === 'edit' ? Object.assign({}, wizMissing(d, 1), wizMissing(d, 2)) : wizMissing(d, d.step); }
+function wizMissingNow(d){ if (d.form === 'link') return lkMissing(d); return d.mode === 'edit' ? Object.assign({}, wizMissing(d, 1), wizMissing(d, 2)) : wizMissing(d, d.step); }
 function wizValid(d, step){ return !Object.keys(wizMissing(d, step)).length; }
 /* the first step (of those before `upTo`) that still needs something; 0 = none */
 function wizFirstBad(d, upTo){ for (var i = 1; i < Math.min(upTo || 3, 3); i++) if (!wizValid(d, i)) return i; return 0; }
 function wizReach(d, step){ return !wizFirstBad(d, step); }
-var WIZFIELD = { title:'w-t', date:'w-d', end:'w-e', city:'w-c', desc:'w-desc' };
-var WIZNEED = { title:'a title', date:'the start date', end:'an end after the start', city:'where it is', desc:'a description' };
+var WIZFIELD = { title:'w-t', date:'w-d', end:'w-e', city:'w-c', desc:'w-desc', url:'lk-u', host:'lk-h' };
+var WIZNEED = { title:'a title', date:'the start date', end:'an end after the start', city:'where it is', desc:'a description', url:'the link', host:'who puts it on' };
 /* "Still needed: a title and where it is" — what the button beside it is waiting for */
 function wizNeedText(d){
   var upTo = d.mode === 'edit' || d.step === 3 ? 3 : d.step + 1, need = [];
-  for (var i = 1; i < upTo; i++) Object.keys(wizMissing(d, i)).forEach(function(k){ need.push(WIZNEED[k]); });
+  if (d.form === 'link') Object.keys(lkMissing(d)).forEach(function(k){ need.push(WIZNEED[k]); });
+  else for (var i = 1; i < upTo; i++) Object.keys(wizMissing(d, i)).forEach(function(k){ need.push(WIZNEED[k]); });
   if (!need.length) return '';
   return 'Still needed: ' + (need.length === 1 ? need[0] : need.slice(0, -1).join(', ') + ' and ' + need[need.length - 1]);
 }
@@ -5297,6 +5517,7 @@ function eventDraftDirty(d){
 }
 /* repaint the footer only when it changes: replacing a button under the pointer would swallow its click */
 function refreshWizFoot(){
+  if (DRAFT && DRAFT.form === 'link'){ lkSync(); return; }
   var d = DLGS[DLGS.length-1], f = d && DRAFT && d.querySelector('.wizsteps, .custwrap') && d.querySelector('.dfoot');
   if (!f || d.classList.contains('pfdlg')) return;
   var h = wizFootHTML(), probe = document.createElement('div'); probe.innerHTML = h;
@@ -5316,21 +5537,24 @@ function wizDraftOpen(){
   var dl = DLGS[DLGS.length-1];
   return !!(dl && dl.querySelector('.wizsteps') && DRAFT && !DRAFT.editing && FORMDRAFTS.event === DRAFT && eventDraftDirty(DRAFT));
 }
-var newEventDialog = gated(function(){
+var newEventDialog = gated(function(into){
   DRAFT = FORMDRAFTS.event || blankEventDraft();
+  /* opened from a horizon's Add events: once published, it goes on that horizon */
+  DRAFT.into = into && HORIZONS[into] ? into : null;
   /* a draft kept from before looks were picked colours gets its picks (or the plain look) */
   ['mood','pal','surface','type','headline','motion','shape','density','pattern','backdrop','atmosphere','parallax','orn'].forEach(function(k){ delete DRAFT[k]; });
   normLookDraft(DRAFT);
   if (DRAFT.online == null) DRAFT.online = false;
   DRAFT.showErr = false;
   FORMDRAFTS.event = DRAFT;
-  dialog('New event', wizBodyHTML(), wizFootHTML(), 900, 'wizdlg');
+  dialog(DRAFT.into ? 'New event for ' + HORIZONS[DRAFT.into].name : 'New event', wizBodyHTML(), wizFootHTML(), 900, 'wizdlg');
   if (DRAFT.step === 1) focusIn('w-t');
 });
 /* ---- Edit an event you host: its facts, its words, who can see it and its look, in one dialog ---- */
 var editEventDialog = gated(function(evId){
   var e = EVENTS[evId], r = recOf(evId);
-  if (!e || !isMine(evId)) return;
+  if (!e || !canFix(evId)) return;
+  if (isLinkEvent(evId)){ linkEditOpen(evId); return; }
   DRAFT = Object.assign({ form:'event', mode:'edit', step:1, editing:evId, title:e.title, date:e.date, end:r.endDate || '', city:r.city || cityShort(e.city), online:r.venueKind === 'virtual',
             privacy:e.privacy || 'everyone', entry:(r.access && r.access.model) || 'free', desc:descOf(e),
             kind:r.kind || 'meetup', startTime:r.startTime || '', endTime:r.endTime || '',
@@ -5442,6 +5666,17 @@ function wizAct(which){
   if (t){ t.glyph = PLAINGLYPH[REC[id].kind] || '◆'; window.HYPERNET_THEMES.themes[id] = t; }
   MYEVENTS.push(id); PROMOCOUNT[id] = 0; READ[id] = true;
   if (ONLINE) HNAPI.createEvent(id);
+  var into = DRAFT.into && HORIZONS[DRAFT.into] && hzOwnedByMe(DRAFT.into) ? DRAFT.into : null;
+  if (into){
+    HORIZONS[into].eventIds.push(id);
+    logAct('added_to_horizon', 'horizon', into, { eventIds:[id] });
+    if (ONLINE) HNAPI.horizonEvents(into);
+    closeDialogs();
+    S.stack = [{ type:'horizon', id:into }];
+    render();
+    toast('Published and added', HORIZONS[into].name);
+    return;
+  }
   closeDialogs();
   goFolder({ kind:'hosting' });
   if (L.phone) S.tab = 'you';
@@ -5520,7 +5755,8 @@ function ctxItems(t, only){
     else out.push({ code:'addto', label:'Add to horizon', icon:'addhorizon', run:function(){ gated(addToDialog)(id); } });
     out.push({ code:'share', label:'Share', icon:'share', run:function(){ shareLink('event', id); } });
     if (mine && !past) out.push({ code:'callout', label:'New call out…', icon:'callout', run:function(){ runCmd('new-callout', id); } });
-    if (mine) out.push('-', { code:'delete', label:'Delete…', icon:'trash', run:function(){ deleteEventDialog(id); } });
+    if (!mine && addedByMe(id)) out.push('-', { code:'edit', label:'Edit…', icon:'edit', run:function(){ editEventDialog(id); } });
+    if (mine || addedByMe(id)) out.push('-', { code:'delete', label:'Delete…', icon:'trash', run:function(){ deleteEventDialog(id); } });
   } else {
     var hmine = hzOwnedByMe(id), fol = S.loggedIn && HZFOLLOW[id], hz = HORIZONS[id];
     if (!hmine) out.push({ code:'follow', label: fol ? 'Unfollow' : 'Follow', icon: fol ? 'close' : 'plus',
@@ -5895,7 +6131,7 @@ function confirmDialog(title, text, okLabel, fn){
 }
 var DELETED = { events:[], horizons:[] };
 function deleteEventDialog(evId){
-  if (!isMine(evId)) return;
+  if (!canFix(evId)) return;
   confirmDialog('Delete event', 'Delete “' + EVENTS[evId].title + '”? It leaves Hypernet, every horizon it is on and everyone’s lists.', 'Delete event', function(){ deleteEvent(evId); });
 }
 function deleteEvent(evId){
@@ -5904,6 +6140,7 @@ function deleteEvent(evId){
   delete EVENTS[evId]; delete REC[evId]; delete EDITED[evId];
   if (!/^evt-new-/.test(evId) && DELETED.events.indexOf(evId) < 0) DELETED.events.push(evId);
   MYEVENTS = MYEVENTS.filter(function(x){ return x !== evId; });
+  ADDEDBYME = ADDEDBYME.filter(function(x){ return x !== evId; });
   Object.keys(HORIZONS).forEach(function(k){ var i = HORIZONS[k].eventIds.indexOf(evId); if (i >= 0) HORIZONS[k].eventIds.splice(i, 1); if (HZCOVER[k] === evId) delete HZCOVER[k]; });
   SLUGS = null;
   S.stack = S.stack.filter(validItem); ROUTE.replace = true;
@@ -6229,6 +6466,19 @@ document.addEventListener('click', function(ev){
     }
     case 'pkdone':       pickerDone(); break;
     case 'pkfilter':     pickerFilter(id); break;
+    case 'pklink':       linkOpenInPicker(); break;
+    case 'pknewev': {
+      /* keep what you ticked, then make the new event for this horizon */
+      var nhz = PK.hz, changed = PK.sel.join() !== HORIZONS[nhz].eventIds.join();
+      if (changed) pickerDone(); else closeDialogs();
+      newEventDialog(nhz);
+      break;
+    }
+    case 'lkfill':       linkAutofill(); break;
+    case 'lkmanual':     DRAFT.filled = true; DRAFT.note = ''; paintLink(); focusIn('lk-h'); break;
+    case 'lkadd':        linkAdd(); break;
+    case 'lkback':       pickerShow(); break;
+    case 'lkuse':        linkUseExisting(id); break;
     case 'unfile':       removeFromHorizon(id, n.getAttribute('data-hz')); break;
     case 'donewcallout': {
       var cot = (($('co-t')||{}).value || '').trim();
@@ -6365,6 +6615,7 @@ document.addEventListener('drop', function(ev){
 /* keyboard: the list follows the arrows; Escape steps back out */
 document.addEventListener('keydown', function(ev){
   var ae = document.activeElement, inField = ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
+  if (ev.key === 'Enter' && ae && ae.id === 'lk-u' && !ae.readOnly){ ev.preventDefault(); linkAutofill(); return; }
   if (ev.key === 'Escape'){
     if (DLGS.length){ var kept = wizDraftOpen(); closeDialogs(); S.pending = null; if (kept) draftKeptToast(); return; }
     if (POP){ closePopup(); return; }

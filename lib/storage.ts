@@ -28,6 +28,11 @@ function s3(): S3Client {
   return _s3;
 }
 
+/** Store bytes the server itself fetched (a picture from an event's own page). */
+export async function putObject(key: string, contentType: string, body: Buffer): Promise<void> {
+  await s3().send(new PutObjectCommand({ Bucket: IMAGES_BUCKET, Key: key, ContentType: contentType, ContentLength: body.byteLength, Body: body }));
+}
+
 export function publicUrl(key: string): string {
   return `${branch().storageEndpoint}/${IMAGES_BUCKET}/${key}`;
 }

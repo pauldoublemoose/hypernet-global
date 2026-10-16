@@ -1339,6 +1339,55 @@ async function overflowEverywhere(p, label){
     ok(!c.errors.length, kind + ': no console errors (Add events filters) ' + c.errors.join(' '));
   }
 
+  /* ---------------- 2026-10-16: Add events: New event and From a link (an event that already exists elsewhere) ---------------- */
+  for (const kind of ['desk', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    const hz = await ev(c, () => MYHORIZONS[0]);
+    const toHz = async () => { await c.evaluate(h => { goFolder({ kind:'explore', id:'horizons' }); S.stack = [{ type:'horizon', id:h }]; render(); }, hz); await c.waitForTimeout(350); };
+    await toHz();
+    await c.click('#dscroll [data-act="addevents"]'); await c.waitForTimeout(300);
+    ok(await ev(c, () => !!document.querySelector('.dlg .pksearch [data-act="pknewev"]') && !!document.querySelector('.dlg .pksearch [data-act="pklink"]')),
+       kind + ': Add events offers New event and From a link above the search');
+    await c.click('.dlg [data-act="pklink"]'); await c.waitForTimeout(200);
+    ok(await ev(c, () => document.querySelector('.dlg .dtitle').textContent === 'Add an event from a link' && document.activeElement.id === 'lk-u'),
+       kind + ': From a link turns the dialog into the link form, the cursor in the link');
+    await c.fill('#lk-u', 'billetto.se/e/w-a-mozart-requiem-biljetter-1984010'); await c.press('#lk-u', 'Enter'); await c.waitForTimeout(200);
+    const f0 = await ev(c, () => ({ url:DRAFT.url, filled:DRAFT.filled, need:document.getElementById('wiz-need').textContent, dis:document.querySelector('.dlg [data-act="lkadd"]').getAttribute('aria-disabled') }));
+    ok(f0.url === 'https://billetto.se/e/w-a-mozart-requiem-biljetter-1984010' && f0.filled, kind + ': Enter is Autofill; offline it opens the fields to fill in by hand ' + JSON.stringify(f0));
+    ok(/who puts it on/.test(f0.need) && f0.dis === 'true', kind + ': Add event waits for what is missing, who puts it on included');
+    await c.fill('#lk-h', 'Svenska kyrkan Hägersten'); await c.fill('#w-t', 'W A Mozart: Requiem'); await c.fill('#w-d', '2026-10-17');
+    await c.fill('#w-c', 'Hägersten'); await c.selectOption('#w-k', 'ticket'); await c.waitForTimeout(150);
+    await c.click('.dlg [data-act="lkadd"]'); await c.waitForTimeout(300);
+    const id = await ev(c, () => ADDEDBYME[ADDEDBYME.length - 1]);
+    ok(await ev(c, i => { const r = document.querySelector('#pk-list .pick'); return !!r && r.querySelector('input').getAttribute('data-id') === i && r.querySelector('input').checked && /Add 1 event/.test(document.querySelector('.dlg .dfoot').textContent); }, id),
+       kind + ': the added event is back in the list, ticked, at the top');
+    await c.click('.dlg [data-act="pkdone"]'); await c.waitForTimeout(300);
+    ok(await ev(c, ([h, i]) => HORIZONS[h].eventIds.indexOf(i) >= 0 && EVENTS[i].kind === 'link' && EVENTS[i].privacy === 'everyone' && MYEVENTS.indexOf(i) < 0, [hz, id]),
+       kind + ': it is on the horizon, public, and not in your Hosting');
+    await c.evaluate(i => { S.stack = [{ type:'event', id:i }]; render(); }, id); await c.waitForTimeout(350);
+    const pg = await ev(c, () => { const w = L.phone ? document.body : document.getElementById('win');
+      return { credit:[...w.querySelectorAll('.srcline')].map(x => x.textContent).join(' '), host:!!w.querySelector('.pill.host'), edit:!!document.querySelector('[data-act="editevent"]'),
+               callout:!!document.querySelector('[data-act="newcalloutfor"]'), link:[...w.querySelectorAll('.chips a')].some(a => /billetto\.se/.test(a.href)) }; });
+    ok(/Added from billetto\.se by you/.test(pg.credit) && pg.link, kind + ': its page credits who added it and links to its page ' + JSON.stringify(pg));
+    ok(pg.edit && !pg.host && !pg.callout, kind + ': whoever added it may edit it, without the host\'s verbs');
+    /* New event from Add events: once published it is on the horizon */
+    await toHz();
+    await c.click('#dscroll [data-act="addevents"]'); await c.waitForTimeout(300);
+    await c.click('.dlg [data-act="pknewev"]'); await c.waitForTimeout(300);
+    ok(await ev(c, h => document.querySelector('.dlg .dtitle').textContent === 'New event for ' + HORIZONS[h].name, hz), kind + ': New event from Add events says which horizon it is for');
+    await c.fill('#w-t', 'Ridge sauna'); await c.fill('#w-d', '2030-11-02'); await c.fill('#w-c', 'Brno'); await c.waitForTimeout(100);
+    await c.click('.dlg [data-id="next"]'); await c.waitForTimeout(150);
+    await c.fill('#w-desc', 'Hot box on the ridge.'); await c.waitForTimeout(100);
+    await c.click('.dlg [data-id="next"]'); await c.waitForTimeout(150);
+    await c.click('.dlg [data-id="finish"]'); await c.waitForTimeout(350);
+    ok(await ev(c, h => { const ids = HORIZONS[h].eventIds, last = EVENTS[ids[ids.length - 1]]; return last.title === 'Ridge sauna' && S.stack[0].type === 'horizon' && S.stack[0].id === h; }, hz),
+       kind + ': the new event is published onto the horizon, which opens');
+    ok((await overflow(c)) <= 0, kind + ': New event / From a link, no horizontal overflow');
+    ok(!c.errors.length, kind + ': no console errors (From a link) ' + c.errors.join(' '));
+  }
+
   /* ---------------- 2026-10-04: New event goes on only when a step has what it needs ---------------- */
   for (const kind of ['desk', 'tab', 'phone']){
     const c = await ctx(kind);

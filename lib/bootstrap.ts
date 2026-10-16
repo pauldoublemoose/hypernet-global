@@ -12,6 +12,7 @@ export const EVENT_JSON = `json_build_object(
   'startsOn', e.starts_on, 'endsOn', e.ends_on, 'startTime', to_char(e.start_time, 'HH24:MI'), 'endTime', to_char(e.end_time, 'HH24:MI'),
   'timezone', e.timezone, 'kind', e.kind, 'privacy', e.privacy, 'city', e.city, 'region', e.region, 'country', e.country,
   'venue', e.venue, 'access', e.access, 'whatToBring', e.what_to_bring, 'details', e.details, 'look', e.look, 'source', e.source,
+  'sourceUrl', e.source_url, 'addedBy', e.added_by,
   'previousEditionId', e.previous_edition_id, 'createdAt', e.created_at, 'updatedAt', e.updated_at)`;
 
 export const PERSON_JSON = `json_build_object('id', p.id, 'handle', p.handle, 'displayName', p.display_name, 'bio', p.bio,

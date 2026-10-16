@@ -122,6 +122,11 @@ vercel deploy            # preview (dev branch)
 vercel deploy --prod     # production (main branch)
 ```
 
+**Install on Vercel.** `vercel.json` installs with `npm ci --legacy-peer-deps`: since 2026-10-16 a plain `npm install`
+(or `npm ci`) of this lockfile crashes in npm's tree builder ("Cannot read properties of null (reading 'children')")
+on better-auth's optional peers (a vitest 4 beside our 5). With the flag npm installs the lockfile as it is; without
+`ci`, `npm install --legacy-peer-deps` would drop about 60 packages from it.
+
 **Migrations and seeds.** `db/migrations/*.sql` is the source of truth (`db/schema.ts` mirrors it for TypeScript).
 Each file runs as one transaction over Neon's SQL-over-HTTP endpoint, with the connection string added by curl
 inside `with-secrets` (nothing prints it):

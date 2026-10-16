@@ -90,9 +90,43 @@ export const eventCreate = z
   .strict()
   .refine(endsAfterStart, { message: "endsOn is before startsOn", path: ["endsOn"] });
 
-/** PATCH: any subset of the same fields. Ids, host, slug and timestamps are not editable here. */
+const webUrl = z.string().trim().max(2000).regex(/^https?:\/\/\S+$/i, "a link starting with https://");
+
+/** POST /api/events/autofill: the link to read. */
+export const linkRead = z.object({ url: webUrl }).strict();
+
+/** POST /api/events/link: an event that already exists elsewhere, as the person checked it after Autofill. Always
+ *  public (the page it came from is), hosted by whoever the page names; `imageUrl` is copied into our storage. */
+export const eventLink = z
+  .object({
+    id: z.uuid().optional(),
+    sourceUrl: webUrl,
+    hostName: z.string().trim().min(1).max(80),
+    imageUrl: webUrl.nullish(),
+    ...eventFields,
+    description: eventFields.description.default(""),
+    endsOn: eventFields.endsOn.optional(),
+    startTime: eventFields.startTime.optional(),
+    endTime: eventFields.endTime.optional(),
+    timezone: eventFields.timezone.default("Europe/Stockholm"),
+    kind: eventFields.kind.default("other"),
+    city: eventFields.city.optional(),
+    region: eventFields.region.optional(),
+    country: eventFields.country.optional(),
+    venue: eventFields.venue.optional(),
+    access: eventFields.access.optional(),
+    whatToBring: eventFields.whatToBring.default([]),
+    details: eventFields.details.optional(),
+    look: eventFields.look.optional(),
+  })
+  .omit({ privacy: true })
+  .strict()
+  .refine(endsAfterStart, { message: "endsOn is before startsOn", path: ["endsOn"] });
+
+/** PATCH: any subset of the same fields. Ids, host, slug and timestamps are not editable here — except the host's
+ *  name of an event added from a link (nobody here hosts it; whoever added it corrects what the page said). */
 export const eventPatch = z
-  .object(eventFields)
+  .object({ ...eventFields, hostName: z.string().trim().min(1).max(80) })
   .partial()
   .strict()
   .refine((p) => Object.keys(p).length > 0, { message: "nothing to change" })

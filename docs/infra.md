@@ -136,7 +136,7 @@ with-secrets --dir . -- curl -sS --fail-with-body \
 # "password authentication failed".
 ```
 
-Applied: `0001_init`, `0002_v2_api` on both branches; `seed-dev` on dev, `seed-main` on main (the `_migrations`
+Applied: `0001_init`, `0002_v2_api` on both branches, `0003_link_events` on both branches (2026-10-16); `seed-dev` on dev, `seed-main` on main (the `_migrations`
 table lists them; `GET /api/health` shows the last). Seeds are idempotent (`on conflict do nothing`).
 
 **Real events' pictures** (2026-10-05). The files are committed in `data/pictures/` (offline the page shows them

@@ -97,7 +97,8 @@
       access:e.access || undefined, whatToBring:e.whatToBring || [] });
     if (!r.venueKind) r.venueKind = e.city || e.venue ? 'physical' : undefined;
     var ev = { id:e.id, slug:e.slug, title:e.title, date:e.startsOn, description:e.description, hostName:e.hostName, hostId:e.hostId,
-               privacy:e.privacy, city:e.city || '', kind: det._kind || (e.source === 'import' ? 'real' : 'own'), ownerIds:[], source:e.source };
+               privacy:e.privacy, city:e.city || '', kind: det._kind || (e.source === 'import' ? 'real' : e.source === 'link' ? 'link' : 'own'), ownerIds:[], source:e.source,
+               sourceUrl:e.sourceUrl || undefined, addedBy:e.addedBy || undefined };
     return { ev:ev, rec:r };
   }
   function chatRows(list, me){
@@ -150,6 +151,7 @@
     fill(EVENTS, E); fill(REC, R); fill(NEXTED, NX); fill(PLAINCACHE, {});
     window.REALIDS = real.map(function(id){ return NX[id] || id; });
     window.MYEVENTS = d.events.filter(function(e){ return me && e.hostId === me; }).map(function(e){ return e.id; });
+    window.ADDEDBYME = d.events.filter(function(e){ return me && e.source === 'link' && e.addedBy === me; }).map(function(e){ return e.id; });
     window.EDITED = {}; window.DELETED = { events:[], horizons:[] }; window.SLUGS = null;
     /* RSVPs and promotions */
     var RS = {}, WT = {}, SH = {}, PM = {}, PC = {};
@@ -198,6 +200,14 @@
     S.stack = (S.stack || []).filter(validItem);
   }
   HN.apply = apply;
+  /* one event from the server (an answer to Autofill or to adding a link) into the app's records */
+  HN.takeEvent = function(e){
+    if (!e || !e.id) return;
+    var x = eventRows(e); EVENTS[e.id] = x.ev; REC[e.id] = x.rec;
+    if (e.look) window.HYPERNET_THEMES.themes[e.id] = asLook(e.look);
+    if (e.source === 'link' && e.addedBy === meId() && ADDEDBYME.indexOf(e.id) < 0) ADDEDBYME.push(e.id);
+    SLUGS = null;
+  };
 
   /* the activity rows (seedActivity) and the people on an event (eventPeople), from the server */
   HN.activity = function(){ return ACTSEED.rows; };
@@ -401,6 +411,13 @@
       whatToBring: Array.isArray(r.whatToBring) ? r.whatToBring : [], details:details,
       look: lookOut(window.HYPERNET_THEMES.themes[id] || null) };
   }
+  /* an event from a link: the same fields, plus where it came from and who puts it on (never who can see it: it is public) */
+  function linkBody(id){
+    var b = eventBody(id), e = EVENTS[id], r = REC[id] || {};
+    delete b.privacy;
+    ['externalUrl', 'sourceSite'].forEach(function(k){ delete b.details[k]; });
+    return Object.assign(b, { sourceUrl:e.sourceUrl, hostName:e.hostName, timezone:r.timezone || undefined, region:r.region || null, country:r.country || null });
+  }
 
   /* ---------- one call per action (index.html calls these right after it changed its own state) ---------- */
   function title(id){ return EVENTS[id] ? EVENTS[id].title : ''; }
@@ -410,7 +427,37 @@
       if (r && r.event && EVENTS[id]){ EVENTS[id].slug = r.event.slug; SLUGS = null; if (ROUTE.ready) render(); }
     });
   };
-  HN.saveEvent = function(id){ return write('ev:' + id, 'PATCH', '/api/events/' + id, function(){ return eventBody(id); }, title(id)); };
+  HN.saveEvent = function(id){
+    return write('ev:' + id, 'PATCH', '/api/events/' + id, function(){
+      var b = eventBody(id);
+      if (EVENTS[id] && EVENTS[id].kind === 'link'){ b.hostName = EVENTS[id].hostName; delete b.privacy; }
+      return b;
+    }, title(id));
+  };
+  /* Autofill: what the page says (nothing is saved), or the event this link already is */
+  HN.autofill = function(url){ return req('POST', '/api/events/autofill', { url:url }); };
+  /* add an event from a link; the server copies its picture. The same link added a moment ago by someone else answers
+     with their event: this one is put away and theirs takes its place (in your horizon too) */
+  HN.createLinkEvent = function(id, imageUrl){
+    return write('ev:' + id, 'POST', '/api/events/link', Object.assign({ id:id, imageUrl:imageUrl || null }, linkBody(id)), title(id)).then(function(r){
+      if (!r || !r.event) return;
+      var got = r.event;
+      if (got.id !== id){
+        HN.takeEvent(got);
+        Object.keys(HORIZONS).forEach(function(k){
+          var ids = HORIZONS[k].eventIds, i = ids.indexOf(id);
+          if (i >= 0){ if (ids.indexOf(got.id) >= 0) ids.splice(i, 1); else ids[i] = got.id; }
+        });
+        delete EVENTS[id]; delete REC[id];
+        window.ADDEDBYME = ADDEDBYME.filter(function(x){ return x !== id; });
+      } else {
+        if (got.look) window.HYPERNET_THEMES.themes[id] = asLook(got.look);
+        if (EVENTS[id]) EVENTS[id].slug = got.slug;
+        SLUGS = null; delete PLAINCACHE[id];
+      }
+      if (ROUTE.ready) render();
+    });
+  };
   HN.saveEventLook = function(id){ return write('ev:' + id, 'PATCH', '/api/events/' + id, function(){ return { look: lookOut(window.HYPERNET_THEMES.themes[id] || null) }; }, title(id)); };
   HN.deleteEvent = function(id){ return write('ev:' + id, 'DELETE', '/api/events/' + id, undefined, 'the event'); };
   HN.rsvp = function(id){
@@ -436,6 +483,9 @@
   };
   HN.horizonEvents = function(hzId){
     if (!HORIZONS[hzId] || !hzOwnedByMe(hzId)) return Promise.resolve();
+    /* an event made a moment ago (New event, From a link) must exist on the server before the horizon lists it */
+    var waits = HORIZONS[hzId].eventIds.map(function(id){ return QUEUE['ev:' + id]; }).filter(Boolean);
+    if (waits.length) QUEUE['hz:' + hzId] = Promise.all([QUEUE['hz:' + hzId] || Promise.resolve()].concat(waits)).catch(function(){});
     return write('hz:' + hzId, 'PUT', '/api/horizons/' + hzId + '/events', function(){ return { eventIds:(HORIZONS[hzId] ? HORIZONS[hzId].eventIds : []).filter(HN.isId) }; }, HORIZONS[hzId].name);
   };
   HN.deleteHorizon = function(hzId){ return write('hz:' + hzId, 'DELETE', '/api/horizons/' + hzId, undefined, 'the horizon'); };

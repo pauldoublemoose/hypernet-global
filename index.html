@@ -1477,6 +1477,7 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 <script src="_shared/hypernet-palette.js"></script>
 <script src="_shared/hypernet-themes.js"></script>
 <script src="_shared/hypernet-event-details.js"></script>
+<script src="_shared/hypernet-audience.js"></script>
 <script src="_shared/hypernet-api.js"></script>
 <script>
 /* =========================================================================
@@ -1960,11 +1961,13 @@ function hzWhen(hzId){
   return 'Ended ' + fmtShort(evs.map(lastDay).sort().pop());
 }
 function hzOwnedByMe(hzId){ return S.loggedIn && MYHORIZONS.indexOf(hzId) >= 0; }
-/* PRIVACY — who can see an event. One rule, used by every list, search, calendar, horizon and activity row:
+/* PRIVACY — who can see an event. One rule, used by every list, search, calendar, horizon and activity row.
+   Online, the server already applied can_see_event, and a logged-out viewer sees no events.
+   Offline, the fixture rule stays so the demo still shows public events while logged out:
      everyone  anyone, logged out too
      friends   its host, and the people its host follows
      only_me   its host alone
-   Any other value counts as only_me (closed by default). With Neon this is the same predicate in SQL (a view or RLS). */
+   Any other value counts as only_me (closed by default). */
 var PRIVACY = { everyone:'Everyone', friends:'Friends', only_me:'Only me' };
 /* the person who hosts an event: an account's own, a fixture person by name, else its fixture owner ("self" there is the demo) */
 function eventHostPid(e){
@@ -1989,6 +1992,7 @@ function followsOf(pid){
 function myPid(){ return S.loggedIn && S.acct && typeof acctPid === 'function' ? acctPid(S.acct) : null; }
 function canSeeEvent(e){
   if (!e) return false;
+  if (ONLINE) return !!myPid();
   var pv = e.privacy || 'everyone';
   if (pv === 'everyone') return true;
   if (ownEvent(e)) return true;
@@ -3665,13 +3669,15 @@ function actTime(a){ return a.at || isoMs(a.ts); }
      select * from activity where ts > now() - interval '21 days' order by ts desc
    ------------------------------------------------------------------------- */
 var ACTWINDOW = 21;
-/* who follows whom: the fixture friendships both ways, plus a few one-way follows.
+/* who follows whom. Friendships in the fixture are a separate fact and are not copied in here.
+   The pairs that used to be derived from those friendships are follows in their own right, so the demo graph stays.
    p-michal's are the demo account's (see demoAcct), so his rows agree with what the demo follows. */
 var NETFOLLOWS = (function(){
   var g = {};
   var add = function(a, b){ if (a === b || !/^p-/.test(a) || !/^p-/.test(b)) return; g[a] = g[a] || []; if (g[a].indexOf(b) < 0) g[a].push(b); };
-  (H.friendships || []).forEach(function(f){ add(f[0], f[1]); add(f[1], f[0]); });
-  [['p-anna','p-mira'], ['p-rio','p-mira'], ['p-kai','p-jon'], ['p-sasha','p-kai'], ['p-sasha','p-jon'], ['p-jon','p-kai'],
+  [['p-anna','p-rio'], ['p-rio','p-anna'], ['p-rio','p-kai'], ['p-kai','p-rio'],
+   ['p-mira','p-sasha'], ['p-sasha','p-mira'], ['p-jon','p-anna'], ['p-anna','p-jon'],
+   ['p-anna','p-mira'], ['p-rio','p-mira'], ['p-kai','p-jon'], ['p-sasha','p-kai'], ['p-sasha','p-jon'], ['p-jon','p-kai'],
    ['p-michal','p-anna'], ['p-michal','p-rio'], ['p-michal','p-kai'], ['p-michal','p-sasha'],
    /* a few of the newcomers already have a follower or two (never before they joined: see seedActivity) */
    ['p-anna','p-lena'], ['p-kai','p-priya'], ['p-mira','p-ines']].forEach(function(x){ add(x[0], x[1]); });
@@ -4217,11 +4223,18 @@ function fofPeople(){
     .map(function(x){ return { id:x, via:via[x] }; });
 }
 /* logged out, or following nobody: the people most followed on the network */
+function followerCountOf(pid){
+  var p = PEOPLE[pid];
+  if (p && typeof p.followerCount === 'number') return p.followerCount;
+  var n = 0;
+  Object.keys(NETFOLLOWS || {}).forEach(function(a){ if ((NETFOLLOWS[a] || []).indexOf(pid) >= 0) n++; });
+  return n;
+}
 function popularPeople(){
-  var me = myActor(), by = {};
-  Object.keys(NETFOLLOWS).forEach(function(a){ NETFOLLOWS[a].forEach(function(b){ (by[b] = by[b] || []).push(a); }); });
+  var me = myActor(), by = {}, counted = networkPeople().some(function(id){ return typeof (PEOPLE[id] || {}).followerCount === 'number'; });
+  if (!counted) Object.keys(NETFOLLOWS).forEach(function(a){ NETFOLLOWS[a].forEach(function(b){ (by[b] = by[b] || []).push(a); }); });
   return networkPeople().filter(function(x){ return x !== me && !(S.loggedIn && PFOLLOW[x]); })
-    .sort(function(a, b){ return (by[b] || []).length - (by[a] || []).length; }).map(function(x){ return { id:x, via:by[x] || [], popular:true }; });
+    .sort(function(a, b){ return followerCountOf(b) - followerCountOf(a); }).map(function(x){ return { id:x, via: counted ? [] : (by[x] || []), popular:true }; });
 }
 /* first names, unless two people (or you and someone) share one: then their @handle */
 function firstName(pid){ return String(person(pid).displayName || '').split(' ')[0]; }

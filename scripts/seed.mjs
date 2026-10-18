@@ -256,6 +256,11 @@ export function buildSeed(target, { now = Date.now(), only = null } = {}) {
       timezone: q(r.timezone || H.meta?.timezone || "Europe/Stockholm"), kind: q(kind),
       tags: tags ? qa(tags) : "null", schedule: schedule && schedule.length ? qj(schedule) : "null",
       privacy: `${q(["everyone", "friends", "only_me"].includes(e.privacy) ? e.privacy : "only_me")}::privacy`,
+      audience: `${q(
+        e.privacy === "friends" ? '{"include":["friends"],"exclude":[]}'
+        : e.privacy === "everyone" ? '{"include":["everyone"],"exclude":[]}'
+        : '{"include":[],"exclude":[]}',
+      )}::jsonb`,
       city: q(r.city || cityShort(e.city) || null), region: q(r.region || null), country: q(r.country || null),
       venue: qj(r.venue || null), access: qj(r.access || null),
       what_to_bring: qa(Array.isArray(r.whatToBring) ? r.whatToBring.map(String) : r.whatToBring ? [String(r.whatToBring)] : []),

@@ -122,17 +122,22 @@ describe("events and privacy", () => {
     expect(stranger).toContain(ids.pub);
     expect(stranger).not.toContain(ids.fri);
     expect(stranger).not.toContain(ids.me);
-    expect(nobody).toContain(ids.pub);
+    expect(nobody).not.toContain(ids.pub);
     expect(nobody).not.toContain(ids.fri);
-    // friends = the people the HOST follows (one way)
+    expect(nobody).not.toContain(ids.me);
+    // a follow is not a friendship, and a pending request is not one either
     expect((await b.put(`/api/people/${aId}/follow`)).status).toBe(200);
     expect(await seen(b)).not.toContain(ids.fri);
-    expect((await a.put(`/api/people/${bId}/follow`)).status).toBe(200);
+    expect((await a.put(`/api/people/${bId}/friend`)).body.friendship.status).toBe("pending");
+    expect(await seen(b)).not.toContain(ids.fri);
+    expect((await b.put(`/api/people/${aId}/friend`)).body.friendship.status).toBe("accepted");
     expect(await seen(b)).toContain(ids.fri);
     expect(await seen(b)).not.toContain(ids.me);
+    expect((await a.put(`/api/people/${bId}/follow`)).status).toBe(200);
     expect((await b.get(`/api/events/${ids.me}`)).status).toBe(404);
     expect((await b.get(`/api/events/not-a-uuid`)).status).toBe(404);
-    expect(evIds(await anon.get("/api/events?limit=200"))).not.toContain(ids.fri);
+    expect((await anon.get(`/api/events/${ids.pub}`)).status).toBe(404);
+    expect(evIds(await anon.get("/api/events?limit=200"))).not.toContain(ids.pub);
   });
   it("only the host edits; validation answers 400", async () => {
     expect((await b.patch(`/api/events/${ids.pub}`, { title: "Hijack" })).status).toBe(404);
@@ -163,7 +168,7 @@ describe("RSVPs, promotions, follows, activity", () => {
     expect(actA).toContainEqual(expect.objectContaining({ actor: bId, verb: "interested", objId: ids.fri }));
     expect(actA).toContainEqual(expect.objectContaining({ actor: aId, verb: "followed_person", objId: bId }));
     const actAnon = (await anon.get("/api/bootstrap")).body.activity;
-    expect(actAnon.some((x: any) => x.objId === ids.fri || x.objId === ids.me)).toBe(false);
+    expect(actAnon.some((x: any) => x.objId === ids.pub || x.objId === ids.fri || x.objId === ids.me)).toBe(false);
   });
   it("cannot follow yourself or nobody", async () => {
     expect((await a.put(`/api/people/${aId}/follow`)).status).toBe(400);
@@ -182,7 +187,9 @@ describe("horizons", () => {
     const hzB = (await b.get("/api/bootstrap")).body.horizons.find((h: any) => h.id === ids.hz);
     expect(hzB.eventIds).toEqual([ids.pub, ids.fri]); // only_me stays hidden inside a public horizon
     expect((await b.put(`/api/horizons/${ids.hz}/follow`)).status).toBe(200);
-    expect((await anon.get(`/api/horizons/${ids.hz}`)).body.horizon.followers).toBe(1);
+    const hzAnon = (await anon.get(`/api/horizons/${ids.hz}`)).body.horizon;
+    expect(hzAnon.followers).toBe(1);
+    expect(hzAnon.eventIds).toEqual([]);
   });
   it("its owner reorders and removes; nobody else can", async () => {
     expect((await b.put(`/api/horizons/${ids.hz}/events`, { eventIds: [] })).status).toBe(404);
@@ -198,7 +205,7 @@ describe("call outs and replies", () => {
     expect(c.status, JSON.stringify(c.body)).toBe(201);
     const r = await b.post(`/api/callouts/${ids.co}/replies`, { id: ids.re, text: "I can do it" });
     expect(r.status).toBe(201);
-    expect((await anon.get("/api/bootstrap")).body.replies).toContainEqual(expect.objectContaining({ id: ids.re, authorId: bId }));
+    expect((await anon.get("/api/bootstrap")).body.replies.some((r: { id: string }) => r.id === ids.re)).toBe(false);
     expect((await b.del(`/api/replies/${ids.re}`)).status).toBe(200);
     const r2 = await b.post(`/api/callouts/${ids.co}/replies`, { text: "Again" });
     expect((await a.del(`/api/replies/${r2.body.reply.id}`)).status).toBe(200); // the call out's author may remove any
@@ -244,6 +251,46 @@ describe("images", () => {
     const bad = await fetch(r3.body.upload.url, { method: "PUT", headers: r3.body.upload.headers, body: png });
     expect(bad.ok).toBe(false);
   }, 30_000);
+});
+
+describe("friends and contact lists", () => {
+  it("friendship does not follow, and a stranger or yourself cannot", async () => {
+    const follows = (await a.get("/api/bootstrap")).body.follows as [string, string][];
+    expect(follows.some((f) => f[0] === aId && f[1] === bId || f[0] === bId && f[1] === aId)).toBe(true);
+    expect((await a.put(`/api/people/${aId}/friend`)).status).toBe(400);
+    expect((await a.put(`/api/people/${randomUUID()}/friend`)).status).toBe(404);
+    expect((await a.del(`/api/people/${randomUUID()}/friend`)).status).toBe(404);
+    const boot = (await b.get("/api/bootstrap")).body;
+    expect(boot.friendships).toEqual([expect.objectContaining({ status: "accepted" })]);
+    expect(boot.follows.every((f: string[]) => f.includes(bId))).toBe(true);
+    expect((await anon.get("/api/bootstrap")).body.follows).toEqual([]);
+    expect((await anon.get("/api/bootstrap")).body.friendships).toEqual([]);
+  });
+  it("lists are the owner's; a duplicate name is 409; exclude blocks delete", async () => {
+    const created = await a.post("/api/lists", { name: `Crew ${RUN}` });
+    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    const listId = created.body.list.id as string;
+    expect((await a.post("/api/lists", { name: `Crew ${RUN}` })).status).toBe(409);
+    expect((await b.patch(`/api/lists/${listId}`, { name: "Nope" })).status).toBe(404);
+    expect((await a.put(`/api/lists/${listId}/members/${bId}`)).body.member).toBe(true);
+    expect((await a.put(`/api/lists/${listId}/members/${randomUUID()}`)).status).toBe(404);
+    expect((await b.put(`/api/lists/${listId}/members/${aId}`)).status).toBe(404);
+    const hidden = await a.post("/api/events", {
+      title: `List only ${RUN}`, startsOn: "2030-07-01",
+      audience: { include: [`list:${listId}`], exclude: [`list:${listId}`] },
+    });
+    expect(hidden.status, JSON.stringify(hidden.body)).toBe(201);
+    expect(hidden.body.event.audience.include).toEqual([`list:${listId}`]);
+    expect(hidden.body.event.privacy).toBe("friends");
+    expect((await b.get(`/api/events/${hidden.body.event.id}`)).status).toBe(404);
+    const blocked = await a.del(`/api/lists/${listId}`);
+    expect(blocked.status).toBe(409);
+    expect(blocked.body.events).toEqual([expect.objectContaining({ id: hidden.body.event.id })]);
+    expect((await a.patch(`/api/events/${hidden.body.event.id}`, { audience: { include: ["friends"], exclude: [] } })).status).toBe(200);
+    expect((await a.del(`/api/lists/${listId}`)).status).toBe(200);
+    expect((await b.get("/api/bootstrap")).body.lists).toEqual([]);
+    expect((await a.get("/api/bootstrap")).body.lists).toEqual([]);
+  });
 });
 
 describe("deleting", () => {

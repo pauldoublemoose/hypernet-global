@@ -1,17 +1,17 @@
 import { randomBytes } from "node:crypto";
 import { sqlx } from "./db";
-import { EVENT_JSON } from "./bootstrap";
+import { EVENT_JSON, presentEvent } from "./bootstrap";
 
 /** One event as the app reads it, if the viewer may see it (else null). */
 export async function eventFor(id: string, viewer: string | null): Promise<unknown | null> {
   const rows = (await sqlx().query(`select ${EVENT_JSON} v from events e where e.id = $1 and can_see_event($2::uuid, e)`, [id, viewer])) as { v: unknown }[];
-  return rows[0]?.v ?? null;
+  return presentEvent((rows[0]?.v ?? null) as { hostId: string | null } | null, viewer);
 }
 
 /** The event made from this (cleaned) link, if there is one the viewer may see: one link is one event. */
 export async function eventByLink(url: string, viewer: string | null): Promise<unknown | null> {
   const rows = (await sqlx().query(`select ${EVENT_JSON} v from events e where e.source_url = $1 and can_see_event($2::uuid, e)`, [url, viewer])) as { v: unknown }[];
-  return rows[0]?.v ?? null;
+  return presentEvent((rows[0]?.v ?? null) as { hostId: string | null } | null, viewer);
 }
 
 /** Is this event visible to the viewer? (the one privacy rule, can_see_event) */

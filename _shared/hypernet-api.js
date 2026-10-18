@@ -85,8 +85,11 @@
   function personRow(p){
     var cities = p.cities || [];
     /* joinedAt: when the account was made (Home's "N people joined Hypernet", Explore → People newest first) */
-    return { id:p.id, displayName:p.displayName, handle:p.handle, bio:p.bio || '', skills:(p.skills || []).slice(), cities:cities.slice(),
+    var row = { id:p.id, displayName:p.displayName, handle:p.handle, bio:p.bio || '', skills:(p.skills || []).slice(), cities:cities.slice(),
              city: cities[0] ? String(cities[0]).toUpperCase() : '', joinedAt: ms(p.createdAt) };
+    if (typeof p.followerCount === 'number') row.followerCount = p.followerCount;
+    if (typeof p.followingCount === 'number') row.followingCount = p.followingCount;
+    return row;
   }
   function eventRows(e){
     var det = e.details || {}, r = Object.assign({}, det);
@@ -103,6 +106,7 @@
     var ev = { id:e.id, slug:e.slug, title:e.title, date:e.startsOn, description:e.description, hostName:e.hostName, hostId:e.hostId,
                privacy:e.privacy, city:e.city || '', kind: det._kind || (e.source === 'import' ? 'real' : e.source === 'link' ? 'link' : 'own'), ownerIds:[], source:e.source,
                sourceUrl:e.sourceUrl || undefined, addedBy:e.addedBy || undefined };
+    if (e.audience) ev.audience = e.audience;
     return { ev:ev, rec:r };
   }
   function chatRows(list, me){
@@ -140,6 +144,7 @@
     /* who follows whom */
     var NF = {}, PF = {};
     d.follows.forEach(function(f){ (NF[f[0]] = NF[f[0]] || []).push(f[1]); if (f[0] === me) PF[f[1]] = true; });
+    (d.friendFollows || []).forEach(function(f){ (NF[f[0]] = NF[f[0]] || []).push(f[1]); });
     window.NETFOLLOWS = NF; window.PFOLLOW = PF;
     /* events */
     var E = {}, R = {}, T = window.HYPERNET_THEMES.themes, NX = {}, real = [];

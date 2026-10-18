@@ -10,13 +10,25 @@ import { sqlx } from "./db";
 export const EVENT_JSON = `json_build_object(
   'id', e.id, 'slug', e.slug, 'hostId', e.host_id, 'hostName', e.host_name, 'title', e.title, 'description', e.description,
   'startsOn', e.starts_on, 'endsOn', e.ends_on, 'startTime', to_char(e.start_time, 'HH24:MI'), 'endTime', to_char(e.end_time, 'HH24:MI'),
-  'timezone', e.timezone, 'kind', e.kind, 'tags', e.tags, 'schedule', e.schedule, 'privacy', e.privacy, 'city', e.city, 'region', e.region, 'country', e.country,
+  'timezone', e.timezone, 'kind', e.kind, 'tags', e.tags, 'schedule', e.schedule, 'privacy', e.privacy, 'audience', e.audience, 'city', e.city, 'region', e.region, 'country', e.country,
   'venue', e.venue, 'access', e.access, 'whatToBring', e.what_to_bring, 'details', e.details, 'look', e.look, 'source', e.source,
   'sourceUrl', e.source_url, 'addedBy', e.added_by,
   'previousEditionId', e.previous_edition_id, 'createdAt', e.created_at, 'updatedAt', e.updated_at)`;
 
 export const PERSON_JSON = `json_build_object('id', p.id, 'handle', p.handle, 'displayName', p.display_name, 'bio', p.bio,
-  'skills', p.skills, 'cities', p.cities, 'look', p.look, 'lastSeenAt', p.last_seen_at, 'createdAt', p.created_at)`;
+  'skills', p.skills, 'cities', p.cities, 'look', p.look, 'lastSeenAt', p.last_seen_at, 'createdAt', p.created_at,
+  'followerCount', (select count(*) from person_follows f where f.followee_id = p.id),
+  'followingCount', (select count(*) from person_follows f where f.follower_id = p.id))`;
+
+/** Audience leaves the process only for the host. Everyone else keeps `privacy`. */
+export function presentEvent<T extends { hostId?: string | null; audience?: unknown }>(event: T | null, viewer: string | null): T | null {
+  if (!event) return null;
+  if (viewer && event.hostId === viewer) return event;
+  if (!("audience" in event)) return event;
+  const copy = { ...event };
+  delete copy.audience;
+  return copy;
+}
 
 export const CALLOUT_JSON = `json_build_object('id', c.id, 'authorId', c.author_id, 'eventId', c.event_id, 'title', c.title, 'body', c.body,
   'skill', c.skill, 'expiresOn', c.expires_on, 'closedAt', c.closed_at, 'createdAt', c.created_at)`;
@@ -36,6 +48,9 @@ export type Bootstrap = {
   replies: unknown[];
   activity: unknown[];
   chats: unknown[];
+  friendships: unknown[];
+  lists: unknown[];
+  friendFollows: [string, string][];
 };
 
 /** The bootstrap for a viewer (a person id, or null when logged out / not joined). */
@@ -46,7 +61,8 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
   const results = await sql.transaction(
     [
       none(`select coalesce(json_agg(${PERSON_JSON} order by p.created_at), '[]') v from people p`),
-      none(`select coalesce(json_agg(json_build_array(f.follower_id, f.followee_id)), '[]') v from person_follows f`),
+      one(`select coalesce(json_agg(json_build_array(f.follower_id, f.followee_id)), '[]') v from person_follows f
+             where $1::uuid is not null and (f.follower_id = $1::uuid or f.followee_id = $1::uuid)`),
       one(`select coalesce(json_agg(${EVENT_JSON} order by e.starts_on), '[]') v from events e where can_see_event($1::uuid, e)`),
       one(`select coalesce(json_agg(json_build_object('personId', r.person_id, 'eventId', r.event_id, 'status', r.status, 'went', r.went,
              'shiftIndex', r.shift_index, 'updatedAt', r.updated_at)), '[]') v
@@ -82,6 +98,15 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
              'messages', coalesce((select json_agg(json_build_object('id', m.id, 'senderId', m.sender_id, 'body', m.body, 'createdAt', m.created_at)
                                    order by m.created_at) from messages m where m.thread_id = t.id), '[]'))), '[]') v
              from dm_threads t where $1::uuid is not null and (t.a = $1::uuid or t.b = $1::uuid)`),
+      one(`select coalesce(json_agg(json_build_object('a', f.a, 'b', f.b, 'requestedBy', f.requested_by, 'status', f.status,
+             'acceptedAt', f.accepted_at)), '[]') v from friendships f
+             where $1::uuid is not null and (f.a = $1::uuid or f.b = $1::uuid)`),
+      one(`select coalesce(json_agg(json_build_object('id', l.id, 'name', l.name, 'createdAt', l.created_at,
+             'memberIds', coalesce((select json_agg(m.person_id) from contact_list_members m where m.list_id = l.id), '[]'))), '[]') v
+             from contact_lists l where l.owner_id = $1::uuid`),
+      one(`select coalesce(json_agg(json_build_array(f.follower_id, f.followee_id)), '[]') v from person_follows f
+             where $1::uuid is not null
+               and f.follower_id in (select followee_id from person_follows where follower_id = $1::uuid)`),
     ],
     { readOnly: true, isolationLevel: "RepeatableRead" },
   );
@@ -97,7 +122,7 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
     hypernet: 1,
     people: v(0),
     follows: v(1),
-    events: v(2),
+    events: (v(2) as { hostId: string | null }[]).map((e) => presentEvent(e, viewer)),
     rsvps: v(3),
     promotions: v(4),
     horizons: v(5),
@@ -106,6 +131,9 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
     replies: v(8),
     activity,
     chats: v(10),
+    friendships: v(11),
+    lists: v(12),
+    friendFollows: v(13),
   };
 }
 

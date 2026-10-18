@@ -148,6 +148,8 @@ const TAB = { viewport:{ width:768, height:1024 }, hasTouch:true };
 async function ctx(kind, opts){
   const b = await launch();
   const c = await b.newContext(Object.assign({}, kind === 'phone' ? PHONE : kind === 'tab' ? TAB : DESK, opts || {}));
+  /* the product default is Y2Fresh; these checks describe the Windows look, so pin it before first paint */
+  await c.addInitScript(() => { try { localStorage.setItem('hypernet-theme', 'win2k'); } catch (e) {} });
   if (ROOT) await c.route(new (require('url').URL)(URL).origin + '/**', serveRoot);
   if (NOWPIN) await c.clock.install({ time:NOWPIN });
   const p = await c.newPage();

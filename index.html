@@ -3,10 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#3a3a3a">
+<meta name="theme-color" content="#e4eef7">
 <!-- the app has one look, light; Android Chrome's "darken web pages" must not invert it (2026-10-05) -->
 <meta name="color-scheme" content="only light">
-<title>Hypernet</title>
+<!-- apply the saved theme before first paint. Default is Y2Fresh; "win2k" is the Windows look. -->
+<script>
+(function(){
+  var t = 'y2fresh';
+  try { var s = localStorage.getItem('hypernet-theme'); if (s === 'win2k' || s === 'y2fresh') t = s; } catch (e) {}
+  document.documentElement.setAttribute('data-theme', t);
+  var m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.setAttribute('content', t === 'win2k' ? '#3a3a3a' : '#e4eef7');
+})();
+</script>
+<title>HYPERNET · GLOBAL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600&family=Oxanium:wght@400;500;600;700&display=swap">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23d4d0c8'/%3E%3Cpath d='M16 4 28 16 16 28 4 16z' fill='%23141414'/%3E%3C/svg%3E">
 <style>
 /* =======================================================================
@@ -29,6 +42,7 @@
   --white:#fff; --shadow:#808080; --dark:#404040;
   --ink:#141414; --ink2:#3a3a3a; --dim:#666; --line:#e2dfd8; --hover:#f0eee9; --rule:#c9c5bc; --gb:#bdb9b0;
   --sel:#262626; --seldim:#c8c8c8;
+  --alert:#b42318;   /* notification badges; the Windows look keeps today's black pills, the token is here for them */
   --bar:linear-gradient(90deg,#262626 0%,#555 58%,#9b9b9b 100%);
   --sys:Tahoma,"Segoe UI",Verdana,Geneva,sans-serif;
   --mono:var(--sys);     /* one font: what used to be monospaced is Tahoma too */
@@ -1181,12 +1195,203 @@ body.is-phone .pkchips::-webkit-scrollbar{ display:none; }
 body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .sheetrow{ display:flex; align-items:center; gap:14px; min-height:60px; padding:0 18px; border-bottom:1px solid var(--line); background:#fff; font-size:14px; cursor:pointer; }
 .sheetrow small{ display:block; color:var(--dim); font-size:12px; }
+
+/* ---------- themes ---------------------------------------------------
+   Windows (data-theme="win2k") is :root above, unchanged.
+   Y2Fresh overrides tokens and paint only. Layout stays the app's.
+   The wordmark's dot is centred on the cap-height, with equal gaps. */
+#titlebar #wintitle{ flex:1; min-width:0; }
+.wordmark{ display:inline-flex; align-items:center; gap:0.45em; line-height:1; letter-spacing:0; font-weight:bold;
+  text-transform:uppercase; white-space:nowrap; }
+.wordmark .wm-txt{ letter-spacing:0; text-box-trim:trim-both; text-box-edge:cap alphabetic; }
+.wordmark .wm-dot{ width:0.30em; height:0.30em; border-radius:50%; background:currentColor; flex:0 0 auto; }
+#previewbar .wordmark{ color:#fff; }
+.themesw{ display:inline-flex; align-items:center; flex:0 0 auto; margin-left:auto; }
+#titlebar .themesw select, #appbar .themesw select{
+  height:22px; min-height:0; width:auto; max-width:7.6rem; padding:0 4px; border:0; border-radius:0;
+  background:#fff; color:#141414; box-shadow:var(--in); font:12px/20px var(--sys); }
+#app.phone #appbar .themesw{ margin-left:2px; flex:0 0 auto; }
+#app.phone #appbar .themesw select{ height:36px; width:7.4em; max-width:7.4em; padding:0 2px; font-size:13px; }
+
+[data-theme="y2fresh"]{
+  color-scheme:only light;
+  --bg:#e4eef7; --surface:#ffffff; --surface2:#e4edf7; --text:#0a1a2e; --muted:#4b6480;
+  --accent:#000000; --accent-ink:#ffffff; --sel-text:#ffffff;
+  --face:#e4eef7; --face-lt:#e4edf7; --face-dk:#c3d5e6;
+  --white:#ffffff; --shadow:#9db4cb; --dark:#3d5670;
+  --ink:#0a1a2e; --ink2:#1e3a56; --dim:#4b6480;
+  --line:rgba(157,180,203,.55); --rule:#9db4cb; --gb:#9db4cb;
+  --hover:rgba(10,26,46,.07); --sel:#5d6a7e; --seldim:#e8eef6;
+  --alert:#be2b2b;
+  --bar:linear-gradient(135deg,#ffffff,#86abd4 40%,#eaf5ff 55%,#86abd4);
+  --chrome:var(--bar);
+  --sys:"Oxanium","Segoe UI",Tahoma,sans-serif; --mono:var(--sys);
+  --font-ui:var(--sys); --font-display:"Orbitron","Oxanium",sans-serif;
+  --fs-xs:12px; --fs-s:12px; --fs:12px; --fs-m:13px; --fs-l:21px; --fs-xl:21px;
+  --ctl:38px; --act:38px;
+  --surface-fill:rgba(255,255,255,.62); --field-bg:rgba(255,255,255,.9); --btn-bg:rgba(255,255,255,.72);
+  --titlebar-ink:#111111;
+  --out:0 4px 14px rgba(0,0,0,.2), inset 0 1px 0 #fff, inset 0 -2px 0 rgba(0,0,0,.08);
+  --in:inset 0 2px 6px rgba(0,0,0,.16);
+  --thin:inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(0,0,0,.06);
+  --btn-gloss:linear-gradient(rgba(255,255,255,.55),rgba(255,255,255,.08) 50%,rgba(255,255,255,0) 51%);
+  --glass-filter:saturate(130%);
+  --dur:280ms; --ease:cubic-bezier(.34,1.56,.64,1);
+  --cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Ccircle cx='8' cy='8' r='5' fill='%23000' fill-opacity='.85' stroke='%23fff' stroke-opacity='.7'/%3E%3C/svg%3E") 8 8, auto;
+  --focus:#0a6cff;
+}
+@media (pointer:coarse){ [data-theme="y2fresh"]{ --ctl:44px; --act:44px; } }
+[data-theme="y2fresh"] body{
+  background-color:var(--bg);
+  background-image:
+    radial-gradient(40% 50% at 18% 22%, rgba(181,221,255,.75), transparent 70%),
+    radial-gradient(35% 45% at 82% 30%, rgba(95,160,221,.6), transparent 70%),
+    radial-gradient(45% 50% at 55% 92%, rgba(42,126,162,.6), transparent 70%);
+  background-attachment:fixed;
+  color:var(--text);
+  font:400 12px/16px var(--font-ui);
+  letter-spacing:-0.04em;
+  cursor:var(--cursor);
+}
+[data-theme="y2fresh"] body::before{
+  content:""; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.69;
+  background-image:linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px);
+  background-size:60px 60px;
+}
+[data-theme="y2fresh"] #app{ z-index:1; }
+[data-theme="y2fresh"] #app.phone{ font-size:14px; line-height:20px; letter-spacing:-0.03em; }
+[data-theme="y2fresh"] :is(button, a, label, summary, [data-act], .row, .nrow, .tab, .kind, select){ cursor:var(--cursor); }
+[data-theme="y2fresh"] :is(input, textarea){ cursor:text; }
+[data-theme="y2fresh"] .ic{ stroke-width:.9; stroke-linecap:round; stroke-linejoin:round; }
+[data-theme="y2fresh"] ::selection{ background:#0a6cff; color:#fff; }
+[data-theme="y2fresh"] :is(#titlebar, #app.phone #appbar, .dbar, #previewbar){
+  background:var(--chrome); color:var(--titlebar-ink);
+}
+[data-theme="y2fresh"] :is(#titlebar .tglyph, .wicon .wglyph, .dbar .x, .ab-btn.boxed){
+  background:#fff; color:#111; box-shadow:var(--out); border:1px solid #86abd4;
+}
+[data-theme="y2fresh"] :is(.ab-btn, #previewbar .pva .btn.pvlogin, .dbar .dbtn){ color:var(--titlebar-ink); }
+[data-theme="y2fresh"] #previewbar{ box-shadow:inset 0 1px 0 rgba(255,255,255,.8); }
+[data-theme="y2fresh"] #previewbar .pvk{ color:#1e3a56; }
+[data-theme="y2fresh"] #previewbar .wordmark{ color:#111; }
+[data-theme="y2fresh"] #previewbar .btn{ color:#111; }
+[data-theme="y2fresh"] .wordmark{ font-family:var(--font-display); font-weight:600; gap:0.55em; }
+[data-theme="y2fresh"] .wordmark .wm-txt{ letter-spacing:0.08em; margin-right:-0.08em; }
+[data-theme="y2fresh"] :is(#chead h2, .hl, .calbar .ttl, .ab-title){
+  font-family:var(--font-display); font-weight:500; text-transform:uppercase; letter-spacing:0.04em;
+  font-size:21px; line-height:1.2;
+}
+[data-theme="y2fresh"] .ab-title{ font-size:14px; font-weight:600; letter-spacing:0.06em; }
+[data-theme="y2fresh"] .ab-title small{
+  font-family:var(--font-ui); font-weight:400; text-transform:none; letter-spacing:-0.02em; font-size:12px;
+}
+[data-theme="y2fresh"] .band{
+  font-family:var(--font-ui); font-weight:600; text-transform:uppercase; letter-spacing:0.08em;
+  background:rgba(244,249,253,.94); color:var(--text);
+}
+[data-theme="y2fresh"] :is(.panel, .canvas, .msgs, .picklist, .previewbox, .pvpage, .kdesc, .sheetrow, .linkrow, .fcard, .fjoin, .lkhave, .pkband, .visopt){
+  background-color:var(--surface-fill);
+  -webkit-backdrop-filter:var(--glass-filter); backdrop-filter:var(--glass-filter);
+}
+[data-theme="y2fresh"] :is(.panel, .msgs, .picklist, .previewbox, .pvpage){
+  border:3px solid rgba(157,180,203,.8); border-image:none;
+}
+[data-theme="y2fresh"] :is(.btn, .ib, .kind, .seg button){
+  background-color:var(--btn-bg); background-image:var(--btn-gloss); color:var(--text);
+  border:3px solid rgba(157,180,203,.85); box-shadow:var(--out);
+}
+[data-theme="y2fresh"] .btn.primary{
+  background-color:transparent; background-image:var(--btn-gloss), var(--chrome);
+  color:#111; border-color:#86abd4; box-shadow:var(--out), 0 0 10px rgba(0,0,0,.28);
+}
+[data-theme="y2fresh"] .btn.primary:active{ box-shadow:var(--in), 0 0 0 1px #86abd4; }
+[data-theme="y2fresh"] :is(.btn:active, .btn.on, .ib:active){ box-shadow:var(--in); background-color:var(--face-lt); }
+[data-theme="y2fresh"] .ib.on{ background:var(--sel); color:#fff; box-shadow:var(--in); }
+[data-theme="y2fresh"] :is(.btn[disabled], .btn[aria-disabled="true"]){ color:var(--muted); text-shadow:none; }
+[data-theme="y2fresh"] :is(.seg button.on, .tab.on, .kind.on){ background:#5d6a7e; background-image:none; color:#fff; border-color:#5d6a7e; }
+[data-theme="y2fresh"] :is(input[type=text], input[type=search], input[type=date], select, textarea, .searchbox, .ab-search, .handlein){
+  background:var(--field-bg); border:3px solid rgba(157,180,203,.85); box-shadow:var(--in); color:var(--text);
+}
+[data-theme="y2fresh"] :is(.searchbox input, .ab-search input){ border:0; box-shadow:none; background:transparent; }
+[data-theme="y2fresh"] :is(.btn:focus-visible, .ib:focus-visible, .seg button:focus-visible, input:focus, select:focus, textarea:focus, .searchbox:focus-within){
+  outline:2px solid var(--focus); outline-offset:2px;
+}
+[data-theme="y2fresh"] :is(.popmenu, .ctxmenu){
+  background:rgba(255,255,255,.94); color:var(--text); border:3px solid #9db4cb;
+  box-shadow:var(--out), 0 20px 50px rgba(0,0,0,.28);
+}
+[data-theme="y2fresh"] .dlg{
+  padding:0; background:rgba(255,255,255,.92); color:var(--text); border:3px solid #9db4cb;
+  box-shadow:var(--out), 0 20px 50px rgba(0,0,0,.28);
+}
+[data-theme="y2fresh"] #mask{ background:rgba(20,10,40,.25); }
+[data-theme="y2fresh"] #win{ box-shadow:var(--out), 0 20px 50px rgba(0,0,0,.22); }
+[data-theme="y2fresh"] .av{ border-radius:50%; }
+[data-theme="y2fresh"] .badge-n{ background:var(--alert); color:#fff; }
+[data-theme="y2fresh"] :is(.actbar, #evbar, #tabbar){
+  background:rgba(228,238,247,.78); -webkit-backdrop-filter:var(--glass-filter); backdrop-filter:var(--glass-filter);
+}
+/* event colours follow the theme (the lab's eventLook "overridden"). The --e* variables stay on the elements. */
+[data-theme="y2fresh"] .sq:not(.img){ background:var(--surface2); color:var(--accent); box-shadow:inset 0 0 0 1px rgba(157,180,203,.45); }
+[data-theme="y2fresh"] .banner{ background:var(--surface2); color:var(--text); border-bottom-color:var(--rule); }
+[data-theme="y2fresh"] :is(.hl, .psub2, .eyebrow){ color:var(--text); }
+[data-theme="y2fresh"] .pgnote{ color:var(--muted); }
+[data-theme="y2fresh"] .canvas.pg:not(.plain){
+  --ink:#0a1a2e; --ink2:#1e3a56; --dim:#4b6480; --line:rgba(157,180,203,.55); --rule:#9db4cb; --gb:#9db4cb;
+  --hover:rgba(10,26,46,.07); --face-lt:#e4edf7; --face:#e4eef7;
+  background:transparent; color:var(--text);
+}
+[data-theme="y2fresh"] .canvas.pg:not(.plain) :is(.sect > h3, .facts > .fh){ background:#fff; color:var(--text); }
+[data-theme="y2fresh"] .canvas.pg:not(.plain) :is(.fvlink, .layer a:not(.btn):not(.chip)){ color:var(--ink); }
+[data-theme="y2fresh"] .canvas.pg :is(.actbar, .btn, .ib, button.chip:not(.who), a.chip, .seg, input, textarea, select, .fco, .edgo, .ctag, .hzchk, .replybox){
+  --ink:#0a1a2e; --ink2:#1e3a56; --dim:#4b6480; --line:rgba(157,180,203,.55); --rule:#9db4cb; --gb:#9db4cb;
+  --hover:rgba(10,26,46,.07); --face-lt:#e4edf7; --face:#e4eef7; --sel:#5d6a7e;
+}
+[data-theme="y2fresh"] :is(.calev, .calcell .mk:not(.more)){
+  background:var(--surface-fill); color:var(--text); border-left-color:var(--accent);
+}
+[data-theme="y2fresh"] .calev .cg{ color:var(--accent); }
+[data-theme="y2fresh"] :is(.caldow, .weekcol .wh, .dayband .hr){ background:var(--surface2); border-color:var(--rule); }
+[data-theme="y2fresh"] :is(.calrow, .calcell, .weekcol, .dayband, .caldow div){ border-color:rgba(157,180,203,.45); }
+[data-theme="y2fresh"] .calcell.oth{ background:rgba(228,237,247,.55); color:var(--muted); }
+[data-theme="y2fresh"] :is(.sect > h3, .facts > .fh){ background:#fff; }
+@media (pointer:fine){
+  [data-theme="y2fresh"] ::-webkit-scrollbar{ width:12px; height:12px; }
+  [data-theme="y2fresh"] ::-webkit-scrollbar-track{ background:rgba(10,26,46,.05); }
+  [data-theme="y2fresh"] ::-webkit-scrollbar-thumb{
+    background:linear-gradient(90deg,#86abd4,#fff 45%,#86abd4); border-radius:6px;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.25); border:2px solid transparent; background-clip:padding-box;
+  }
+  [data-theme="y2fresh"] ::-webkit-scrollbar-corner{ background:transparent; }
+  [data-theme="y2fresh"] ::-webkit-scrollbar-button,
+  [data-theme="y2fresh"] ::-webkit-scrollbar-button:vertical:start:decrement,
+  [data-theme="y2fresh"] ::-webkit-scrollbar-button:vertical:end:increment,
+  [data-theme="y2fresh"] ::-webkit-scrollbar-button:horizontal:start:decrement,
+  [data-theme="y2fresh"] ::-webkit-scrollbar-button:horizontal:end:increment{
+    display:none; width:0; height:0; background:none;
+  }
+}
+@supports not selector(::-webkit-scrollbar){
+  @media (pointer:fine){ [data-theme="y2fresh"]{ scrollbar-color:#86abd4 rgba(10,26,46,.08); } }
+}
+@media (prefers-reduced-motion:no-preference){
+  [data-theme="y2fresh"] :is(.btn, .ib, .row, .nrow, .tab, .kind, .seg button){
+    transition:background-color var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  [data-theme="y2fresh"] .btn:hover:not([disabled]):not([aria-disabled="true"]){ transform:translateY(-2px); }
+  [data-theme="y2fresh"] .btn:active{ transform:translateY(1px); }
+}
+@media (prefers-reduced-motion:reduce){
+  [data-theme="y2fresh"]{ --dur:0ms; }
+  [data-theme="y2fresh"] :is(.btn, .ib, .row, .nrow){ transition:none; }
+}
 </style>
 </head>
 <body>
 
 <div id="app">
-  <div id="titlebar"><span class="tglyph">&#9670;</span><b>Hypernet</b><span id="wintitle"></span></div>
+  <div id="titlebar"><span class="tglyph">&#9670;</span><b class="wordmark"><span class="wm-txt">HYPERNET</span><span class="wm-dot" aria-hidden="true"></span><span class="wm-txt">GLOBAL</span></b><span id="wintitle"></span><label class="themesw"><span class="sr">Theme</span><select class="themePick" aria-label="Theme"><option value="y2fresh">Y2Fresh</option><option value="win2k">Windows</option></select></label></div>
+<script>(function(){ var t = document.documentElement.getAttribute('data-theme'), s = document.querySelector('#titlebar .themePick'); if (s && (t === 'win2k' || t === 'y2fresh')) s.value = t; })();</script>
 
   <div id="toolbar">
     <button class="btn primary" data-act="newmenu" aria-haspopup="menu" id="newbtn"></button>
@@ -1824,12 +2029,15 @@ function placeToasts(){
   box.style.bottom = Math.max(12, window.innerHeight - top + 10) + 'px';
 }
 /* the preview bar: what Hypernet is in one plain line, and the way in. Join when there is no account here yet; Log in when there is */
-var HN_PITCH = 'Hypernet — find the events your people are going to, and the people to build them with.';
+var HN_PITCH = 'HYPERNET · GLOBAL — find the events your people are going to, and the people to build them with.';
+function wordmarkHTML(){
+  return '<span class="wordmark"><span class="wm-txt">HYPERNET</span><span class="wm-dot" aria-hidden="true"></span><span class="wm-txt">GLOBAL</span></span>';
+}
 function renderPreview(){
   var el = $('previewbar'); if (!el) return;
   if (S.loggedIn){ el.innerHTML = ''; return; }
   var has = !!ACCTS.me;
-  el.innerHTML = '<div class="pvt"><div class="pvk">Preview of Hypernet</div><div class="pvl">' + esc(HN_PITCH) + '</div></div>' +
+  el.innerHTML = '<div class="pvt"><div class="pvk">Preview of ' + wordmarkHTML() + '</div><div class="pvl">' + esc(HN_PITCH) + '</div></div>' +
     /* one way in (2026-10-05): joining and logging in are the same emailed code, so one button does both */
     '<div class="pva"><button class="btn primary" data-act="' + (has ? 'login' : 'loginpick') + '">Join or log in</button></div>';
 }
@@ -1837,7 +2045,7 @@ function renderPreview(){
 function loginPicker(){
   if (ONLINE){ HNAPI.loginDialog(); return; }
   if (ACCTS.me){ loginDialog(); return; }
-  dialog('Log in to Hypernet', '<p class="fhelp" style="margin:0 0 12px">There is no account in this browser yet. Join free with your name — it takes a few seconds.</p>' + demoRowHTML(),
+  dialog('Log in to HYPERNET · GLOBAL', '<p class="fhelp" style="margin:0 0 12px">There is no account in this browser yet. Join free with your name — it takes a few seconds.</p>' + demoRowHTML(),
     '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="join">Join free</button>', 420);
 }
 /* logged-out actions ask for a login, then carry on with what you asked for.
@@ -4299,6 +4507,25 @@ function exploreKindsHTML(){
 function phoneCanBack(){
   return S.phoneSearch || S.folder.kind !== tabRootFolder(S.tab).kind;
 }
+function hnTheme(){ return document.documentElement.getAttribute('data-theme') === 'win2k' ? 'win2k' : 'y2fresh'; }
+function hnSetTheme(id){
+  id = id === 'win2k' ? 'win2k' : 'y2fresh';
+  document.documentElement.setAttribute('data-theme', id);
+  var meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', id === 'win2k' ? '#3a3a3a' : '#e4eef7');
+  try { localStorage.setItem('hypernet-theme', id); } catch (e) {}
+  document.querySelectorAll('.themePick').forEach(function(el){ el.value = id; });
+}
+function themeSwitchHTML(){
+  var cur = hnTheme();
+  return '<label class="themesw"><span class="sr">Theme</span><select class="themePick" aria-label="Theme">' +
+    '<option value="y2fresh"' + (cur === 'y2fresh' ? ' selected' : '') + '>Y2Fresh</option>' +
+    '<option value="win2k"' + (cur === 'win2k' ? ' selected' : '') + '>Windows</option></select></label>';
+}
+document.addEventListener('change', function(ev){
+  var t = ev.target;
+  if (t && t.classList && t.classList.contains('themePick')) hnSetTheme(t.value);
+});
 function renderAppbar(){
   var h = '', conv = phoneConv(), back = conv || phoneCanBack();
   /* in a conversation, back is all chats; its name and the profile button open their profile over it */
@@ -4314,9 +4541,11 @@ function renderAppbar(){
     h += '<label class="ab-search">'+ic('search')+'<input id="pq" type="search" placeholder="Search" value="'+esc(S.query)+'" autocomplete="off" aria-label="Search">' +
       (S.query ? '<button class="abclear" data-act="clearq" aria-label="Clear search">'+ic('close',16)+'</button>' : '') + '</label>';
   } else {
-    h += '<div class="ab-title">'+esc(folderName())+'</div>' + viewSwitchHTML();
+    /* the theme control sits left of the List / Calendar switch, which stays the bar's right-hand control (Search may follow it) */
+    h += '<div class="ab-title">'+esc(folderName())+'</div>' + themeSwitchHTML() + viewSwitchHTML();
     if (S.tab === 'home' || S.tab === 'explore') h += '<button class="ab-btn" data-act="psearch" aria-label="Search">'+ic('search',22)+'</button>';
   }
+  if (conv || S.tab === 'chats' || S.folder.kind === 'search' || S.phoneSearch) h += themeSwitchHTML();
   var ab = $('appbar'), hadFocus = document.activeElement && document.activeElement.id === 'pq';
   ab.innerHTML = h;
   if (hadFocus || S.phoneSearch){ var pq = $('pq'); if (pq){ pq.focus(); var n = pq.value.length; pq.setSelectionRange(n, n); } }
@@ -4581,7 +4810,7 @@ function profileDialog(mode){
   PF = { mode:mode, name: up ? '' : p.displayName, handle: up ? '' : p.handle, photo: up ? null : (PTHEME.self && PTHEME.self.image) || null,
          about: up ? '' : (p.bio || ''), skills: up ? [] : (p.skills || []).slice(), cities: up ? [] : citiesOf(p).slice() };
   if (up){
-    dialog(JOINFOR || 'Join Hypernet', '<div id="pfbody">' + profileForm() + '</div>' + demoRowHTML(),
+    dialog(JOINFOR || 'Join HYPERNET · GLOBAL', '<div id="pfbody">' + profileForm() + '</div>' + demoRowHTML(),
       '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="pfsave" id="pfsave" disabled>Join</button>', 560);
   } else {
     DRAFT = Object.assign({ form:'profile', kind:'person', editing:'self', lookTouched:false }, lookDraft(PTHEME.self ? asLook(PTHEME.self) : plainTheme('◉')));
@@ -4652,7 +4881,7 @@ function loginDialog(){
   if (ONLINE){ HNAPI.loginDialog(); return; }
   if (!ACCTS.me){ profileDialog('signup'); return; }
   var p = ACCTS.me.profile;
-  dialog('Log in to Hypernet',
+  dialog('Log in to HYPERNET · GLOBAL',
     '<div class="picklist"><div class="linkrow" data-act="useacct" data-id="me" role="button">'+avHTML(acctPid('me'),'a40') +
       '<div class="lr"><b>'+esc(p.displayName)+'</b><div class="fhelp">@'+esc(p.handle)+'</div></div></div></div>' + demoRowHTML(),
     '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="useacct" data-id="me">Log in</button>', 420);
@@ -6974,7 +7203,7 @@ function render(){
   placePvh();
   placeWin();
   placeToasts();
-  document.title = (S.stack.length ? itemName(S.stack[S.stack.length-1]) : folderName()) + ' · Hypernet';
+  document.title = (S.stack.length ? itemName(S.stack[S.stack.length-1]) : folderName()) + ' · HYPERNET · GLOBAL';
   schedulePersist();
   syncRoute();
 }

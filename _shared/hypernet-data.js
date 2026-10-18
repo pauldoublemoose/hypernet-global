@@ -725,6 +725,9 @@ window.HYPERNET = {
       "isPublished": true,
       "ownerName": "Rio Moss",
       "ownerId": "p-rio",
+      "collaboratorIds": [
+        "p-michal"
+      ],
       "eventIds": [
         "evt-world-burning-man-2026",
         "evt-fill-3",
@@ -744,6 +747,22 @@ window.HYPERNET = {
         "evt-deep-listening",
         "evt-fill-0",
         "evt-fill-7"
+      ]
+    },
+    {
+      "id": "horizon-ridge",
+      "name": "Ridge week",
+      "description": "Dawn stretches and the night kitchen, the week Michal keeps.",
+      "isPersonalDefault": false,
+      "isPublished": true,
+      "ownerName": "Michal",
+      "ownerId": "p-michal",
+      "collaboratorIds": [
+        "p-anna"
+      ],
+      "eventIds": [
+        "evt-fill-0",
+        "evt-fill-1"
       ]
     }
   ],

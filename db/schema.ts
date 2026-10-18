@@ -1,6 +1,7 @@
 // Drizzle's view of the tables in db/migrations/*.sql. The SQL files are the source of truth (they also hold the
 // CHECK constraints, the privacy functions and the views); this file only gives TypeScript the column names and
 // types. When a migration changes a table, change it here in the same commit.
+import { sql } from "drizzle-orm";
 import {
   boolean,
   customType,
@@ -12,7 +13,7 @@ import {
   pgTable,
   primaryKey,
   text,
-  unique,
+  uniqueIndex,
   time,
   timestamp,
   uuid,
@@ -165,7 +166,7 @@ export const contactLists = pgTable(
     name: text("name").notNull(),
     createdAt: tstz("created_at").notNull().defaultNow(),
   },
-  (t) => [unique().on(t.ownerId, t.name)],
+  (t) => [uniqueIndex("contact_lists_owner_lower_name").on(t.ownerId, sql`lower(${t.name})`)],
 );
 
 export const contactListMembers = pgTable(

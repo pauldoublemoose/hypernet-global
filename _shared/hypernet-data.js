@@ -436,6 +436,16 @@ window.HYPERNET = {
       "p-anna"
     ]
   ],
+  "bonds": [
+    { "a": "p-anna", "b": "p-rio", "requestedBy": "p-anna", "status": "accepted" },
+    { "a": "p-kai", "b": "p-rio", "requestedBy": "p-rio", "status": "accepted" },
+    { "a": "p-mira", "b": "p-sasha", "requestedBy": "p-mira", "status": "accepted" },
+    { "a": "p-anna", "b": "p-jon", "requestedBy": "p-jon", "status": "accepted" },
+    { "a": "p-anna", "b": "p-michal", "requestedBy": "p-michal", "status": "accepted" },
+    { "a": "p-michal", "b": "p-mira", "requestedBy": "p-mira", "status": "accepted" },
+    { "a": "p-jon", "b": "p-michal", "requestedBy": "p-michal", "status": "pending" },
+    { "a": "p-michal", "b": "p-tomas", "requestedBy": "p-tomas", "status": "pending" }
+  ],
   "events": [
     {
       "id": "evt-world-borderland-2026",

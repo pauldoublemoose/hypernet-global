@@ -1239,6 +1239,23 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .ttwhat{ min-width:0; }
 @media (pointer:coarse){ .schedend{ min-height:44px; } }
 
+/* FRIENDS & PRIVACY */
+.relacts{ display:flex; flex-direction:column; align-items:flex-start; gap:6px; color:var(--ink); }
+.relbtns{ display:flex; flex-wrap:wrap; gap:6px; }
+.relcounts{ display:flex; flex-wrap:wrap; gap:10px; color:var(--dim); }
+.relcounts button{ border:0; padding:0; background:transparent; color:var(--ink2); font:inherit; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+.relcounts span{ color:var(--ink2); }
+.relbar{ display:flex; align-items:center; gap:8px; margin:0 0 8px; }
+.rel-badge{ display:inline-block; min-width:1.2em; margin-left:6px; padding:0 4px; border:1px solid var(--alert); color:var(--alert); font-weight:bold; text-align:center; }
+.profile-actions{ min-width:0; max-width:100%; }
+#chats > .profile-actions{ padding:0 4px 8px; }
+.relrow{ display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:36px; color:var(--ink); }
+.relrow small, .relempty{ color:var(--dim); }
+.dlg.rel-dlg h3{ margin:12px 0 6px; color:var(--ink); font-size:inherit; }
+.dlg.rel-dlg h3:first-child{ margin-top:0; }
+[data-theme="y2fresh"] .relacts .btn, [data-theme="y2fresh"] .relrow .btn, [data-theme="y2fresh"] .relbar .btn{ border:3px solid var(--rule); }
+.relacts .btn:focus, .relcounts button:focus, .relbar .btn:focus{ outline:1px dotted var(--ink); outline-offset:2px; }
+
 /* ---------- themes ---------------------------------------------------
    Windows (data-theme="win2k") is :root above, unchanged.
    Y2Fresh overrides tokens and paint only. Layout stays the app's.
@@ -1478,6 +1495,7 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 <script src="_shared/hypernet-themes.js"></script>
 <script src="_shared/hypernet-event-details.js"></script>
 <script src="_shared/hypernet-audience.js"></script>
+<script src="_shared/hypernet-rel.js"></script>
 <script src="_shared/hypernet-api.js"></script>
 <script>
 /* =========================================================================
@@ -1993,6 +2011,7 @@ function myPid(){ return S.loggedIn && S.acct && typeof acctPid === 'function' ?
 function canSeeEvent(e){
   if (!e) return false;
   if (ONLINE) return !!myPid();
+  if (e.audience && window.HNAudience && window.HNRel) return HNAudience.canSee(myPid(), eventHostPid(e), e.audience, HNRel.audienceGraph());
   var pv = e.privacy || 'everyone';
   if (pv === 'everyone') return true;
   if (ownEvent(e)) return true;
@@ -2472,6 +2491,7 @@ function renderList(){
   /* an Explore kind says in a line what it is */
   var kd = S.folder.kind === 'explore' && KINDDESC[S.folder.id];
   if (kd && items.length) h = '<p class="kdesc">' + esc(kd) + '</p>' + h;
+  if (S.loggedIn && S.folder.kind === 'explore' && S.folder.id === 'people' && window.HNRel) h = HNRel.requestsButton() + h;
   /* on a phone Sort sits above the list it sorts, so FEED / LIST / CALENDAR never move */
   if (L.phone && viewOf() === 'list' && items.length && items.every(function(it){ return it.type === 'event'; }) && S.folder.kind !== 'search')
     h = '<label class="sortrow">Sort <select data-act="sort" aria-label="Sort">' +
@@ -3583,7 +3603,7 @@ function chatsEmptyHTML(){
 function chatListHTML(){
   var list = chatList();
   return '<div class="phead"><div class="ptitle">Chats</div><button class="btn primary" data-act="newchat">'+ic('edit')+'New chat</button></div>' +
-    '<div class="panel">' + (list.length ? '' : chatsEmptyHTML()) + list.map(function(k){
+    '<div class="panel">' + (window.HNRel ? HNRel.requestsButton() : '') + (list.length ? '' : chatsEmptyHTML()) + list.map(function(k){
       var c = CHATS[k], m = lastMsg(c), un = UNREADCHAT[k];
       return '<div class="chrow'+(un?' unread':'')+'" data-act="chatsel" data-id="'+k+'" role="button">' + chatAv(c) +
         '<div class="cmn"><div class="cnm">'+esc(c.name)+'</div><div class="cpv">'+(CHATDRAFT[k] ? '<b>Draft:</b> '+esc(CHATDRAFT[k]) : esc(msgPreview(m, c)))+'</div></div>' +
@@ -3594,9 +3614,11 @@ function convHTML(cid){
   var c = CHATS[cid], pid = c.memberIds[0];
   var sub = chatSub(c);
   /* their name and the profile button open their profile in a window over the chat; closing it leaves you here */
+  /* under the header, not inside it: .phead does not wrap, and a 300px dock would overflow */
+  var slot = '<div class="profile-actions" data-pid="'+pid+'" data-rel="compact"></div>';
   var h = '<div class="phead"><button class="ib" data-act="chatback" aria-label="All chats">'+ic('back')+'</button>' +
     '<button type="button" class="ptitle ptbtn" data-act="chatprofile" data-id="'+pid+'">'+esc(c.name)+'<small>'+esc(sub)+'</small></button>' +
-    '<button class="ib" data-act="chatprofile" data-id="'+pid+'" aria-label="Profile">'+ic('user')+'</button></div>';
+    '<button class="ib" data-act="chatprofile" data-id="'+pid+'" aria-label="Profile">'+ic('user')+'</button></div>' + slot;
   var lastDay = null;
   h += '<div class="conv"><div class="msgs" id="msgs" data-chat="'+cid+'">' + (c.messages.length ? c.messages.map(function(m){
     var ms = msgTs(m), key = chatDayKey(ms), day = key !== lastDay ? '<div class="mday"><span>'+esc(chatDay(ms))+'</span></div>' : '';
@@ -3680,7 +3702,8 @@ var NETFOLLOWS = (function(){
    ['p-anna','p-mira'], ['p-rio','p-mira'], ['p-kai','p-jon'], ['p-sasha','p-kai'], ['p-sasha','p-jon'], ['p-jon','p-kai'],
    ['p-michal','p-anna'], ['p-michal','p-rio'], ['p-michal','p-kai'], ['p-michal','p-sasha'],
    /* a few of the newcomers already have a follower or two (never before they joined: see seedActivity) */
-   ['p-anna','p-lena'], ['p-kai','p-priya'], ['p-mira','p-ines']].forEach(function(x){ add(x[0], x[1]); });
+    ['p-anna','p-lena'], ['p-kai','p-priya'], ['p-mira','p-ines'],
+    ['p-lena','p-michal'], ['p-priya','p-michal']].forEach(function(x){ add(x[0], x[1]); });
   return g;
 })();
 /* the fixture call outs name no event; these are the ones they are for when no event record lists them */
@@ -4213,9 +4236,9 @@ function upHTML(){
     }).join('') +
     (all.length > UPMAX ? '<div class="fupfoot"><button class="btn fupmore" data-act="upall" aria-expanded="'+UPALL+'">'+(UPALL ? 'Show fewer' : 'Show '+(all.length - UPMAX)+' more')+'</button></div>' : '') + '</section>';
 }
-/* the people the people you follow follow, and you don't yet: how you meet friends of friends */
+/* the people your accepted friends follow, and you don't yet */
 function fofPeople(){
-  var me = myActor(), fol = followedPeople(), via = {};
+  var me = myActor(), fol = window.HNRel ? HNRel.friendIds(me) : followedPeople(), via = {};
   fol.forEach(function(f){ followsOf(f).forEach(function(x){
     if (x !== me && !PFOLLOW[x] && PEOPLE[x] && fol.indexOf(x) < 0) (via[x] = via[x] || []).push(f);
   }); });
@@ -4234,7 +4257,10 @@ function popularPeople(){
   var me = myActor(), by = {}, counted = networkPeople().some(function(id){ return typeof (PEOPLE[id] || {}).followerCount === 'number'; });
   if (!counted) Object.keys(NETFOLLOWS).forEach(function(a){ NETFOLLOWS[a].forEach(function(b){ (by[b] = by[b] || []).push(a); }); });
   return networkPeople().filter(function(x){ return x !== me && !(S.loggedIn && PFOLLOW[x]); })
-    .sort(function(a, b){ return followerCountOf(b) - followerCountOf(a); }).map(function(x){ return { id:x, via: counted ? [] : (by[x] || []), popular:true }; });
+    .sort(function(a, b){ return followerCountOf(b) - followerCountOf(a); }).map(function(x){
+      var via = counted ? ((PEOPLE[x] && PEOPLE[x].followedBy) || []).filter(function(id){ return PEOPLE[id]; }) : (by[x] || []);
+      return { id:x, via:via, popular:true };
+    });
 }
 /* first names, unless two people (or you and someone) share one: then their @handle */
 function firstName(pid){ return String(person(pid).displayName || '').split(' ')[0]; }
@@ -4350,10 +4376,10 @@ function fHorizonCard(hzId){
     verbs: mine ? '' : fbtn('followhz', hzId, fol, 'Follow', 'Following', 'plus', 'check', true) });
 }
 function fPersonCard(pid, sub){
-  var p = person(pid), fol = S.loggedIn && PFOLLOW[pid], me = pid === myActor() || pid === 'self';
+  var p = person(pid), me = pid === myActor() || pid === 'self';
   return thingHTML({ type:'person', id:pid, cls:'fp', art:avHTML(pid, 'a48'), title:p.displayName,
     l2:esc(['@' + p.handle, citiesOf(p)[0], p.bio].filter(Boolean).join(' · ')), l3: sub ? '<div class="fcs3">'+esc(sub)+'</div>' : '',
-    verbs: me ? '' : fbtn('followp', pid, fol, 'Follow', 'Following', 'plus', 'check', true) });
+    verbs: me ? '' : '<div class="profile-actions" data-pid="'+pid+'" data-rel="compact"></div>' });
 }
 /* what a call out offers you: Answer while it is open — a public reply under it. `own` (an event's page): on your own
    call out, once someone answered, Reply — both open the call out with its box ready */
@@ -6852,13 +6878,7 @@ function shareHorizon(hzId){
     '<p class="fhelp" style="margin:12px 0 0">You can make it private again in Edit.</p>',
     '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="confirmok">'+ic('share')+'Make public and copy link</button>', 440);
 }
-var followP = gated(function(pid){
-  if (!(RESUMING && PFOLLOW[pid])) PFOLLOW[pid] = !PFOLLOW[pid];
-  if (PFOLLOW[pid]) logAct('followed_person', 'person', pid);
-  if (ONLINE) HNAPI.followPerson(pid);
-  render();
-  toast(PFOLLOW[pid] ? 'Following' : 'Unfollowed', person(pid).displayName);
-});
+var followP = gated(function(pid){ HNRel.toggleFollow(pid); });
 /* a conversation is never a page of its own: it opens in the chat dock on a desktop or tablet, and in the Chats tab on a
    phone. Whichever it is stays the open one (S.chatOpen) while you go elsewhere, and across a reload, until you go
    back to all chats. */
@@ -7655,6 +7675,7 @@ function render(){
   placeWin();
   placeToasts();
   document.title = (S.stack.length ? itemName(S.stack[S.stack.length-1]) : folderName()) + ' · HYPERNET · GLOBAL';
+  if (window.HNRel) HNRel.mount(document);
   schedulePersist();
   syncRoute();
 }

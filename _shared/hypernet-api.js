@@ -89,6 +89,8 @@
              city: cities[0] ? String(cities[0]).toUpperCase() : '', joinedAt: ms(p.createdAt) };
     if (typeof p.followerCount === 'number') row.followerCount = p.followerCount;
     if (typeof p.followingCount === 'number') row.followingCount = p.followingCount;
+    if (typeof p.friendCount === 'number') row.friendCount = p.friendCount;
+    if (Array.isArray(p.followedBy)) row.followedBy = p.followedBy.slice();
     return row;
   }
   function eventRows(e){
@@ -146,6 +148,7 @@
     d.follows.forEach(function(f){ (NF[f[0]] = NF[f[0]] || []).push(f[1]); if (f[0] === me) PF[f[1]] = true; });
     (d.friendFollows || []).forEach(function(f){ (NF[f[0]] = NF[f[0]] || []).push(f[1]); });
     window.NETFOLLOWS = NF; window.PFOLLOW = PF;
+    if (window.HNRel) HNRel.ingest(d);
     /* events */
     var E = {}, R = {}, T = window.HYPERNET_THEMES.themes, NX = {}, real = [];
     fill(T, {});
@@ -494,6 +497,18 @@
   HN.followPerson = function(pid){
     if (!HN.isId(pid)) return Promise.resolve();
     return write('pf:' + pid, PFOLLOW[pid] ? 'PUT' : 'DELETE', '/api/people/' + pid + '/follow', undefined, person(pid).displayName);
+  };
+  HN.friendWrite = function(pid, method){
+    if (!HN.isId(pid)) return Promise.resolve();
+    delete RELCACHE[pid];
+    if (HN.me) delete RELCACHE[HN.me.id];
+    return write('fr:' + pid, method, '/api/people/' + pid + '/friend', undefined, person(pid).displayName);
+  };
+  var RELCACHE = {};
+  HN.relations = function(pid){
+    if (!HN.isId(pid)) return Promise.resolve({ followers:[], following:[], friends:null });
+    if (RELCACHE[pid]) return Promise.resolve(RELCACHE[pid]);
+    return req('GET', '/api/people/' + pid + '/relations').then(function(d){ RELCACHE[pid] = d; return d; });
   };
   HN.followHorizon = function(hzId){ return write('hf:' + hzId, HZFOLLOW[hzId] ? 'PUT' : 'DELETE', '/api/horizons/' + hzId + '/follow', undefined, (HORIZONS[hzId] || {}).name); };
   HN.createHorizon = function(hzId){

@@ -38,7 +38,7 @@
         var j = null; try { j = t ? JSON.parse(t) : null; } catch(e){}
         if (!r.ok){
           var err = new Error((j && (j.message || (j.issues && j.issues[0] && j.issues[0].message) || j.error)) || ('Server answered ' + r.status));
-          err.status = r.status; err.code = j && (j.error || j.code); throw err;
+          err.status = r.status; err.code = j && (j.error || j.code); err.body = j; throw err;
         }
         return j;
       });
@@ -148,7 +148,7 @@
     d.follows.forEach(function(f){ (NF[f[0]] = NF[f[0]] || []).push(f[1]); if (f[0] === me) PF[f[1]] = true; });
     (d.friendFollows || []).forEach(function(f){ (NF[f[0]] = NF[f[0]] || []).push(f[1]); });
     window.NETFOLLOWS = NF; window.PFOLLOW = PF;
-    if (window.HNRel) HNRel.ingest(d);
+    if (window.HNRel) { HNRel.ingest(d); if (HNRel.ingestLists) HNRel.ingestLists(d.lists); }
     /* events */
     var E = {}, R = {}, T = window.HYPERNET_THEMES.themes, NX = {}, real = [];
     fill(T, {});
@@ -505,6 +505,15 @@
     return write('fr:' + pid, method, '/api/people/' + pid + '/friend', undefined, person(pid).displayName);
   };
   var RELCACHE = {};
+  /* a refused delete is 409 {events} and no message. write() would toast and reload, so these stay on req() */
+function listResult(p){ return p.then(function(d){ return { ok:true, list:d && d.list, body:d }; }, function(err){ return { ok:false, status:err.status, message:err.message, events:err.body && err.body.events }; }); }
+  HN.listCreate = function(list){ return listResult(req('POST', '/api/lists', { id:list.id, name:list.name })); };
+  HN.listRename = function(id, name){ return listResult(req('PATCH', '/api/lists/' + id, { name:name })); };
+  HN.listDelete = function(id){ return listResult(req('DELETE', '/api/lists/' + id)); };
+  HN.listMember = function(listId, personId, on){
+    if (!HN.isId(listId) || !HN.isId(personId)) return Promise.resolve({ ok:true });
+    return listResult(req(on ? 'PUT' : 'DELETE', '/api/lists/' + listId + '/members/' + personId));
+  };
   HN.relations = function(pid){
     if (!HN.isId(pid)) return Promise.resolve({ followers:[], following:[], friends:null });
     if (RELCACHE[pid]) return Promise.resolve(RELCACHE[pid]);

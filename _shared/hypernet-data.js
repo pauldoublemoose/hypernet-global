@@ -446,6 +446,10 @@ window.HYPERNET = {
     { "a": "p-jon", "b": "p-michal", "requestedBy": "p-michal", "status": "pending" },
     { "a": "p-michal", "b": "p-tomas", "requestedBy": "p-tomas", "status": "pending" }
   ],
+  "lists": [
+    { "id": "list-work", "name": "Work", "memberIds": ["p-anna", "p-rio"] },
+    { "id": "list-close", "name": "Close", "memberIds": ["p-mira", "p-kai"] }
+  ],
   "events": [
     {
       "id": "evt-world-borderland-2026",

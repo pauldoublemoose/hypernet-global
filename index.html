@@ -1245,15 +1245,21 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .relcounts{ display:flex; flex-wrap:wrap; gap:10px; color:var(--dim); }
 .relcounts button{ border:0; padding:0; background:transparent; color:var(--ink2); font:inherit; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
 .relcounts span{ color:var(--ink2); }
-.relbar{ display:flex; align-items:center; gap:8px; margin:0 0 8px; }
+.relbar{ display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:0 0 8px; }
 .rel-badge{ display:inline-block; min-width:1.2em; margin-left:6px; padding:0 4px; border:1px solid var(--alert); color:var(--alert); font-weight:bold; text-align:center; }
 .profile-actions{ min-width:0; max-width:100%; }
 #chats > .profile-actions{ padding:0 4px 8px; }
-.relrow{ display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:36px; color:var(--ink); }
+.relrow{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; min-height:36px; color:var(--ink); }
+.relrow > .btn{ min-width:0; max-width:100%; white-space:normal; overflow-wrap:anywhere; text-align:left; }
 .relrow small, .relempty{ color:var(--dim); }
+.relerr{ margin:0 0 8px; color:var(--alert); }
+.relcreate{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:8px; margin-top:12px; }
+.relcreate .field{ flex:1 1 10em; min-width:0; margin:0; }
+.relcheck{ display:flex; align-items:center; gap:8px; width:100%; min-height:36px; padding:4px 0; border:0; background:transparent; color:var(--ink); font:inherit; cursor:pointer; text-align:left; overflow-wrap:anywhere; }
+.relcheck .ic{ flex:0 0 auto; }
 .dlg.rel-dlg h3{ margin:12px 0 6px; color:var(--ink); font-size:inherit; }
 .dlg.rel-dlg h3:first-child{ margin-top:0; }
-[data-theme="y2fresh"] .relacts .btn, [data-theme="y2fresh"] .relrow .btn, [data-theme="y2fresh"] .relbar .btn{ border:3px solid var(--rule); }
+[data-theme="y2fresh"] .relacts .btn, [data-theme="y2fresh"] .relrow .btn, [data-theme="y2fresh"] .relbar .btn, [data-theme="y2fresh"] .dlg.rel-dlg .btn{ border:3px solid var(--rule); }
 .relacts .btn:focus, .relcounts button:focus, .relbar .btn:focus{ outline:1px dotted var(--ink); outline-offset:2px; }
 
 /* ---------- themes ---------------------------------------------------
@@ -5036,14 +5042,19 @@ function demoAcct(){
   a.pfollow = { 'p-anna':true, 'p-rio':true, 'p-kai':true, 'p-sasha':true };
   a.myevents = DEMOHOST.slice(); a.myhorizons = ['horizon-default'];
   a.chats = fixtureChats(); a.unread = { 'c-kai':true };
+  a.lists = fixtureLists();
   return a;
+}
+function fixtureLists(){
+  return ((H && H.lists) || []).map(function(l){ return { id:l.id, name:l.name, memberIds:(l.memberIds || []).slice() }; });
 }
 function captureAcct(){
   var p = PEOPLE['self'];
   return { profile:{ displayName:p.displayName, handle:p.handle, bio:p.bio, skills:p.skills, cities:p.cities, city:p.city },
            rsvp:RSVP, went:WENT, promoted:PROMOTED, hzfollow:HZFOLLOW, pfollow:PFOLLOW, myevents:MYEVENTS, addedbyme:ADDEDBYME, myhorizons:MYHORIZONS,
            chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT, drafts:{ forms:FORMDRAFTS, chat:CHATDRAFT }, shift:SHIFT, read:READ,
-           look:PTHEME['self'] || null, joinedAt:(ACCTS[S.acct] || {}).joinedAt || 0 };
+           look:PTHEME['self'] || null, joinedAt:(ACCTS[S.acct] || {}).joinedAt || 0,
+           lists: window.HNRel ? HNRel.lists() : [] };
 }
 function loadAcct(a){
   a = a || blankAcct({ displayName:'', handle:'', bio:'', skills:[], cities:[], city:'' });
@@ -5065,6 +5076,7 @@ function loadAcct(a){
   SHIFT = a.shift || {};
   if (a.read) Object.keys(a.read).forEach(function(k){ READ[k] = true; });
   if (a.look) PTHEME['self'] = a.look = asLook(a.look); else delete PTHEME['self'];
+  if (window.HNRel) HNRel.ingestLists(a.lists || []);
   S.me = { name:p.displayName || 'You', handle:p.handle || 'you' };
 }
 /* an account that is not logged in is, to everyone else, just a person on the network */
@@ -5080,6 +5092,8 @@ function syncAcctPeople(){
 function useAcct(k){
   if (S.loggedIn && S.acct){ if (S.acct === k){ closeDialogs(); return; } ACCTS[S.acct] = captureAcct(); }
   if (!ACCTS[k]){ ACCTS[k] = k === 'demo' ? demoAcct() : blankAcct({ displayName:'', handle:'' }); if (k !== 'demo') ACCTS[k].joinedAt = Date.now(); }
+  /* no key means this demo was saved before lists; [] means the owner deleted them */
+  if (k === 'demo' && !('lists' in ACCTS[k])) ACCTS[k].lists = fixtureLists();
   S.acct = k;
   loadAcct(ACCTS[k]);
   S.loggedIn = true;
@@ -7750,6 +7764,7 @@ function restore(){
   if (d.ui){ S.rightOpen = !!d.ui.rightOpen; S.chatOpen = d.ui.chatOpen || null; RECENTQ = d.ui.recent || []; }
   ACCTS = d.accounts || {};
   var k = d.session && d.session.acct;
+  if (k === 'demo' && ACCTS[k] && !('lists' in ACCTS[k])) ACCTS[k].lists = fixtureLists(); /* same rule as useAcct */
   if (k && ACCTS[k]){ S.acct = k; S.loggedIn = true; loadAcct(ACCTS[k]); }
   syncAcctPeople();
 }

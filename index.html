@@ -1254,12 +1254,18 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .ptagx{ width:18px; height:18px; margin-left:4px; }
 .pnamerow{ display:flex; align-items:center; gap:12px; }
 .pnamerow .hl, .pnamerow .peditname{ flex:1; min-width:0; }
-.peditname, .peditbio, .pfind{ color:var(--ink); background:#fff; }
 .peditname{ height:auto; margin:0; padding:2px 8px; font:bold 20px/24px var(--sys); }
 .peditbio{ display:block; width:100%; margin:4px 0 0; box-sizing:border-box; font:14px/20px var(--sys); }
 .pheadtags{ margin-top:12px; }
-.banner .pheadtags .chh{ color:inherit; }
+.banner .pheadtags .chh, .banner .prow .chh{ color:inherit; }
+.prows{ display:flex; flex-direction:column; gap:10px; margin-top:10px; }
+.prow .chips{ align-items:center; }
+.pedithandle{ display:inline-flex; max-width:16em; height:28px; vertical-align:middle; color:#141414; background:#fff; }
+.pedithandle > span, .pedithandle input{ color:#141414; }
+.pedithandle input{ height:28px; }
+.banner .ferr{ color:var(--alert); }
 .pmore{ margin-top:8px; }
+.peditname, .peditbio, .pfind, .prow .addcity input{ color:var(--ink); background:#fff; }
 .pfind{ display:block; width:100%; max-width:280px; margin:0 0 8px; box-sizing:border-box; height:auto; padding:4px 8px; font:12px/16px var(--sys); }
 
 /* ---------- themes ---------------------------------------------------
@@ -3163,9 +3169,13 @@ var PNAME = null, PBIO = null;
 var PEXP = {}, PFILT = {};
 function captureProfileEdit(){
   if (!PEDIT) return;
-  var n = $('pedit-name'), b = $('pedit-bio');
+  var n = $('pedit-name'), b = $('pedit-bio'), h = $('pf-handle');
   if (n) PNAME = n.value;
   if (b) PBIO = b.value;
+  if (!PF) return;
+  if (n) PF.name = n.value;
+  if (b) PF.about = b.value;
+  if (h) PF.handle = h.value.replace(/^@/, '');
 }
 function profileEditing(pid, asOther){ return !!(PEDIT && pid === 'self' && S.loggedIn && !asOther); }
 function eventEntry(e){ return { name:e.title, html:eventCRow(e, false) }; }
@@ -3309,6 +3319,8 @@ function personHeadBits(pid, asOther){
   var under = editing
     ? '<textarea id="pedit-bio" class="peditbio" rows="2" maxlength="120" aria-label="About you">'+esc(bio)+'</textarea>'
     : (bio ? '<p class="psub2">'+esc(bio)+'</p>' : '');
+  var rows = profileRowsHTML(pid, asOther);
+  if (rows) under += '<div class="prows">'+rows+'</div>';
   return { heading:heading, under:under, tail:tagsHeadHTML(pid, asOther) };
 }
 /* `asOther`: your own page as anybody else sees it (Edit profile's preview) */
@@ -3317,17 +3329,20 @@ function personHTML(pid, asOther){
   var calls = CALLOUTS.filter(function(c){ return c.hostId === pid && calloutOpen(c); });
   var bar = me ? (S.loggedIn ? toolbarHTML(vb(PEDIT ? 'profiledone' : 'editprofile', 'self', PEDIT ? 'Done' : 'Edit profile', PEDIT ? 'check' : 'edit', { primary:true })) : '')
                : toolbarHTML(vb('followp', pid, fol ? 'Following' : 'Follow', fol ? 'check' : 'plus', { on:fol, primary:!fol, pressed:!!fol }), vb('dm', pid, 'Message', 'chat'));
+  var eye = profileEditing(pid, asOther) && PF
+    ? '<span class="handlein pedithandle"><span>@</span><input type="text" id="pf-handle" value="'+esc(PF.handle)+'" placeholder="yourname" autocomplete="username" autocapitalize="off" spellcheck="false" aria-label="Handle" aria-describedby="pf-herr"></span><span class="ferr" id="pf-herr" hidden></span><p class="ferr" id="pf-imgerr" role="alert"></p>'
+    : '@'+esc(p.handle) + (me ? '' : ' · <span class="pres '+st+'"></span>'+esc(st));
   var up = upcomingOf(pid);
-  var facts = factGrid([['Based in', citiesOf(p).join(', ') || '—'], ['Hosting', String(up.host.length)],
+  var where = (profileEditing(pid, asOther) && PF ? PF.cities : profileLocations(p)).join(', ');
+  var facts = factGrid([['Based in', where || '—'], ['Hosting', String(up.host.length)],
                         ['Going', String(up.attendee.length)], ['Horizons', String(horizonsCreated(pid).length + horizonsFollowed(pid).length)]]);
   var s = upcomingSection(pid, asOther) + horizonSection(pid, asOther) + chronicleSection(pid, asOther);
-  if (citiesOf(p).length > 1) s += sect('Cities', chipsHTML(citiesOf(p)));
   s += sect('Call outs', calls.map(function(c){
       return '<div class="crow"><span class="r-ic">'+ic('callout')+'</span><div class="cm" data-act="open" data-type="callout" data-id="'+c.id+'"><div class="r-title">'+esc(c.title)+'</div>' +
         '<div class="r-meta">open until '+esc(fmtDate(c.expiresAt))+'</div></div></div>';
     }).join(''));
-  return pageHTML({ kind:'person', t:personTheme(pid), cover:personCover(pid, 96),
-    eyebrow:'@'+esc(p.handle) + (me ? '' : ' · <span class="pres '+st+'"></span>'+esc(st)), title:p.displayName || 'You',
+  return pageHTML({ kind:'person', t:personTheme(pid), cover:profileEditing(pid, asOther) && PF ? profilePhotoHTML() : personCover(pid, 96),
+    eyebrow:eye, title:p.displayName || 'You',
     toolbar:bar, facts:facts, body:s, more:personHeadBits(pid, asOther) });
 }
 function isOwnCallout(c){ return !!c && S.loggedIn && !!c.hostAcct && c.hostAcct === S.acct; }
@@ -5057,14 +5072,14 @@ function skillLabel(v){
   return titleCase(b[1] || b[0]).replace(/\bPa\b/g,'PA').replace(/\bDj/g,'DJ');
 }
 /* Profile tags are not event tags. A new one is "c:<category>:<label>" in the existing skills list.
-   Skill and Role are one category, Skills & Roles. New tags use the key skill.
-   A stored c:role: tag and an older uncategorised skill are read into that same category. Nothing is rewritten. */
+   Categories are Skills & Roles, Interest and Scene. New skill tags use the key skill.
+   A stored c:role: tag and an older uncategorised skill are read into Skills & Roles. Nothing is rewritten.
+   Locations are the cities list. An older c:location: tag is read into that row and, on Done, moved into cities.
+   Languages stay here as c:language:. Only the Languages row reads and writes them. */
 var TAG_CATS = [
-  ['location','Location',['Stockholm','Berlin','Black Rock City','Eksjö']],
   ['skill','Skills & Roles',['Cooking','Sound','Building','First aid','DJ','Host','Photographer','Volunteer']],
   ['interest','Interest',['Sauna','Dawn walks','Workshops','Camping']],
-  ['scene','Scene',['Burns','Techno','Supper clubs','Retreats']],
-  ['language','Language',['English','Swedish','Spanish','German']]
+  ['scene','Scene',['Burns','Techno','Supper clubs','Retreats']]
 ];
 var TAG_CAT = {}; TAG_CATS.forEach(function(c){ TAG_CAT[c[0]] = c; });
 var TAGFLOW = null;
@@ -5099,6 +5114,67 @@ function tagFlowHTML(state){
     return '<button type="button" class="btn" data-act="ptagpick" data-id="'+esc('c:'+cat[0]+':'+label)+'">'+esc(label)+'</button>';
   }).join('') + '</div><div class="addcity"><input type="text" id="ptag-custom" maxlength="40" placeholder="Or type your own" aria-label="Your own tag"><button type="button" class="btn" data-act="ptagcustom">Add</button></div>' +
     '<button type="button" class="btn" data-act="ptagback">All categories</button></div>';
+}
+function profileLocations(p){
+  var seen = {}, out = [];
+  function add(c){
+    c = String(c || '').trim();
+    if (!c) return;
+    var k = c.toLowerCase();
+    if (seen[k]) return;
+    seen[k] = 1; out.push(c);
+  }
+  citiesOf(p).forEach(add);
+  (p.skills || []).forEach(function(v){
+    var t = parseProfileTag(v);
+    if (t.coded && t.cat === 'location') add(t.label);
+  });
+  return out;
+}
+function profileLanguages(p){
+  var seen = {}, out = [];
+  (p.skills || []).forEach(function(v){
+    var t = parseProfileTag(v);
+    if (!(t.coded && t.cat === 'language') || !t.label) return;
+    var k = t.label.toLowerCase();
+    if (seen[k]) return;
+    seen[k] = 1; out.push(t.label);
+  });
+  return out;
+}
+/* Done writes languages back as c:language: and drops c:location:, which now lives in cities. */
+function profileSkillsForSave(skills, langs){
+  var out = [];
+  (skills || []).forEach(function(v){
+    var t = parseProfileTag(v);
+    if (t.coded && (t.cat === 'location' || t.cat === 'language')) return;
+    out.push(v);
+  });
+  (langs || []).forEach(function(label){
+    var raw = 'c:language:' + label;
+    if (out.indexOf(raw) < 0) out.push(raw);
+  });
+  return out;
+}
+function profileLine(kind, label, items, editing){
+  if (!editing && !items.length) return '';
+  var chips = items.map(function(c){
+    var x = editing ? '<button type="button" class="ib ptagx" data-act="'+(kind === 'loc' ? 'pfcity' : 'pflangrm')+'" data-id="'+esc(c)+'" aria-label="Remove '+esc(c)+'">'+ic('close',12)+'</button>' : '';
+    return '<span class="chip plain">'+esc(c)+x+'</span>';
+  }).join('');
+  var add = '';
+  if (editing){
+    var fid = kind === 'loc' ? 'pf-city' : 'pf-lang', act = kind === 'loc' ? 'pfaddcity' : 'pfaddlang';
+    var ph = kind === 'loc' ? 'Add a location' : 'Add a language';
+    add = '<span class="addcity"><input type="text" id="'+fid+'" placeholder="'+ph+'" aria-label="'+ph+'"><button type="button" class="btn" data-act="'+act+'">Add</button></span>';
+  }
+  return '<div class="prow" data-prow="'+kind+'"><h4 class="chh">'+esc(label)+'</h4><div class="chips">'+chips+add+'</div></div>';
+}
+function profileRowsHTML(pid, asOther){
+  var editing = profileEditing(pid, asOther), p = person(pid);
+  var locs = editing && PF ? (PF.cities || []) : profileLocations(p);
+  var langs = editing && PF ? (PF.langs || []) : profileLanguages(p);
+  return profileLine('loc', 'Locations', locs || [], editing) + profileLine('lang', 'Languages', langs || [], editing);
 }
 function tagsHeadHTML(pid, asOther){
   var editing = profileEditing(pid, asOther), groups = profileTagGroups(person(pid).skills);
@@ -5174,10 +5250,16 @@ function demoRowHTML(){
 }
 /* your photo is your profile look's picture: the face on your page and on every avatar of you */
 /* the face the photo field shows: the photo, or your initials in the colours picked so far */
-function pfFaceHTML(){
+function pfFaceHTML(px){
+  px = px || 80;
   var me = person('self'), lk = DRAFT && DRAFT.form === 'profile' ? draftLook(DRAFT) : PTHEME.self, pl = lk && !isPlain(lk) ? lookPal(lk) : null;
-  return PF.photo ? sqT(Object.assign({}, lk || plainTheme('◉'), { image:PF.photo }), 80)
-    : '<span class="av'+(pl ? ' lk' : '')+'" style="width:80px;height:80px;flex-basis:80px;font-size:28px;background:'+(pl ? pl.sq+';color:'+pl.accentInk : (AVCOLOR.self||'#5a5a5a'))+'">'+esc(initials(PF.name || me.displayName || 'You'))+'</span>';
+  var face = pl ? pl.sq+';color:'+pl.accentInk : (AVCOLOR.self||'#5a5a5a');
+  return PF.photo ? sqT(Object.assign({}, lk || plainTheme('◉'), { image:PF.photo }), px)
+    : '<span class="av'+(pl ? ' lk' : '')+'" style="width:'+px+'px;height:'+px+'px;flex-basis:'+px+'px;font-size:'+Math.round(px*.35)+'px;background:'+face+'">'+esc(initials(PF.name || me.displayName || 'You'))+'</span>';
+}
+function profilePhotoHTML(){
+  return '<button type="button" class="czdrop pphoto" data-pfact="pick" data-czdrop="photo" aria-label="'+(PF && PF.photo ? 'Replace your photo' : 'Choose a photo')+'">' + pfFaceHTML(96) + '</button>' +
+    '<input type="file" id="pf-photo" class="czfile" accept="image/*" data-czfile="photo" tabindex="-1" aria-hidden="true">';
 }
 function pfPhotoHTML(){
   return '<div class="field"><span class="flabel" id="pf-ph-l">Photo</span><div class="czimg" role="group" aria-labelledby="pf-ph-l">' +
@@ -5188,7 +5270,12 @@ function pfPhotoHTML(){
       '<p class="fhelp">Square, cropped from the centre, up to 10 MB. Without one, your initials stand in, in your colours.</p>' +
       '<p class="ferr" id="pf-imgerr" role="alert"></p></div></div></div>';
 }
-function pfRepaint(){ pfSync(); var b = $('pfbody'); if (b) b.innerHTML = profileForm(); pfSync(); czPreviews(); }
+function pfRepaint(){
+  pfSync();
+  var b = $('pfbody');
+  if (b){ b.innerHTML = profileForm(); pfSync(); czPreviews(); return; }
+  if (PEDIT) render();
+}
 function pfTakePhoto(file){
   var err = $('pf-imgerr'), bad = imageProblem(file), pf = PF;
   if (err) err.textContent = bad;
@@ -5265,29 +5352,49 @@ function handleTaken(h){
   var mine = S.loggedIn && S.acct ? acctPid(S.acct) : null;
   return !!h && Object.keys(PEOPLE).some(function(k){ return k !== 'self' && k !== mine && normHandle(PEOPLE[k].handle) === h; });
 }
+function pfNameEl(){ return $('pf-name') || (PEDIT ? $('pedit-name') : null); }
+function pfAboutEl(){ return $('pf-about') || (PEDIT ? $('pedit-bio') : null); }
 function pfValid(){
-  var n = (($('pf-name')||{}).value || '').trim(), hd = normHandle(($('pf-handle')||{}).value);
+  if (!PF) return false;
+  var nameEl = pfNameEl(), handleEl = $('pf-handle');
+  var n = String(nameEl ? nameEl.value : PF.name || '').trim();
+  var hd = normHandle(handleEl ? handleEl.value : PF.handle);
   return !!n && !!hd && /^[a-z0-9._-]+$/.test(hd) && !handleTaken(hd);
 }
 function pfSync(){
-  if (!$('pf-name')) return;            /* the form isn't on screen (the phone's Preview): PF already holds it */
-  PF.name = ($('pf-name')||{}).value || ''; PF.handle = (($('pf-handle')||{}).value || '').replace(/^@/, '');
-  PF.about = ($('pf-about')||{}).value || '';
+  if (!PF) return;
+  var nameEl = pfNameEl(), aboutEl = pfAboutEl(), handleEl = $('pf-handle');
+  if (!nameEl && !aboutEl && !handleEl) return;   /* phone Preview: PF already holds it */
+  if (nameEl) PF.name = nameEl.value || '';
+  if (handleEl) PF.handle = (handleEl.value || '').replace(/^@/, '');
+  if (aboutEl) PF.about = aboutEl.value || '';
   var b = $('pfsave'); if (b) b.disabled = !pfValid();
   var hd = normHandle(PF.handle), err = $('pf-herr'), bad = hd && !/^[a-z0-9._-]+$/.test(hd);
-  var msg = handleTaken(hd) ? '@' + hd + ' is taken' : bad ? 'Letters, numbers, dots and dashes' : '';
+  var msg = !hd ? '' : handleTaken(hd) ? '@' + hd + ' is taken' : bad ? 'Letters, numbers, dots and dashes' : '';
   if (err){ err.textContent = msg; err.hidden = !msg; }
-  var hi = $('pf-handle'); if (hi){ if (msg) hi.setAttribute('aria-invalid', 'true'); else hi.removeAttribute('aria-invalid'); }
+  if (handleEl){ if (msg) handleEl.setAttribute('aria-invalid', 'true'); else handleEl.removeAttribute('aria-invalid'); }
 }
 function pfAddCity(){
   var inp = $('pf-city'), v = inp ? inp.value.trim() : '';
-  if (!v) return;
+  if (!v || !PF) return;
   v = v.charAt(0).toUpperCase() + v.slice(1);
   if (PF.cities.indexOf(v) < 0) PF.cities.push(v);
-  pfSync();
-  $('pfbody').innerHTML = profileForm();
-  if (PF.mode === 'edit') czPreviews();
+  var body = $('pfbody');
+  if (body){
+    pfSync();
+    body.innerHTML = profileForm();
+    if (PF.mode === 'edit') czPreviews();
+  } else if (PEDIT) render();
   var ni = $('pf-city'); if (ni) ni.focus();
+}
+function pfAddLang(){
+  var inp = $('pf-lang'), v = inp ? inp.value.trim().replace(/\s+/g, ' ').replace(/:/g, '') : '';
+  if (!v || !PF) return;
+  v = v.charAt(0).toUpperCase() + v.slice(1);
+  if (v.length > 40){ toast('Up to 40 characters', ''); return; }
+  if (!PF.langs.some(function(x){ return x.toLowerCase() === v.toLowerCase(); })) PF.langs.push(v);
+  render();
+  var ni = $('pf-lang'); if (ni) ni.focus();
 }
 function pfSave(){
   pfSync(); if (!pfValid()) return;
@@ -5315,7 +5422,10 @@ function writeProfile(prof){
   S.me = { name:prof.displayName, handle:prof.handle };
 }
 function beginProfileEdit(){
+  var p = PEOPLE.self;
   PEDIT = true; PNAME = null; PBIO = null;
+  PF = { mode:'edit', name:p.displayName || '', handle:p.handle || '', photo:(PTHEME.self && PTHEME.self.image) || null,
+         about:p.bio || '', skills:(p.skills || []).slice(), cities:profileLocations(p).slice(), langs:profileLanguages(p).slice() };
   var top = S.stack[S.stack.length - 1];
   if (top && top.type === 'person' && top.id === 'self') render();
   else openItem('person', 'self');
@@ -5323,12 +5433,28 @@ function beginProfileEdit(){
 }
 function finishProfileEdit(){
   captureProfileEdit();
-  var p = PEOPLE.self;
-  var name = String(PNAME != null ? PNAME : p.displayName).trim();
-  var bio = String(PBIO != null ? PBIO : (p.bio || '')).trim();
-  if (!name){ toast('Add your name', ''); return; }
-  writeProfile({ displayName:name, handle:p.handle, bio:bio, skills:(p.skills || []).slice(), cities:citiesOf(p).slice(), city:p.city || '' });
-  PEDIT = false; PNAME = null; PBIO = null;
+  pfSync();
+  if (!PF){ PEDIT = false; PNAME = null; PBIO = null; render(); return; }
+  if (!pfValid()){
+    if (!String(PF.name || '').trim()) toast('Add your name', '');
+    else {
+      var err = $('pf-herr');
+      if (err && err.hidden){ err.textContent = 'Add a handle'; err.hidden = false; }
+      toast('Check your handle', '');
+    }
+    return;
+  }
+  var cities = PF.cities.slice();
+  writeProfile({ displayName:PF.name.trim(), handle:normHandle(PF.handle), bio:String(PF.about || '').trim(),
+    skills:profileSkillsForSave(PEOPLE.self.skills, PF.langs), cities:cities, city:cities.length ? cities[0].toUpperCase() : '' });
+  var prev = (PTHEME.self && PTHEME.self.image) || null;
+  if (PF.photo !== prev){
+    var lk = asLook(Object.assign({}, PTHEME.self || plainTheme('◉'), { image:PF.photo || null }));
+    if (isPlain(lk) && !lk.image) lk = null;
+    if (lk) PTHEME.self = lk; else delete PTHEME.self;
+    if (ONLINE) HNAPI.saveMyLook();
+  }
+  PEDIT = false; PNAME = null; PBIO = null; PF = null;
   render();
   toast('Profile saved', '');
 }
@@ -5351,7 +5477,7 @@ function demoAcct(){
   var m = PEOPLE['p-michal'];
   var a = blankAcct({ displayName:m.displayName, handle:m.handle, bio:m.bio, skills:m.skills.slice(), cities:m.cities.slice(), city:m.city });
   /* the plain skill stays as it was. The rest are categorised tags, so the demo shows more than Skill. */
-  a.profile.skills = a.profile.skills.concat(['c:role:Host','c:scene:Burns','c:language:Swedish','c:language:English','c:interest:Sauna']);
+  a.profile.skills = a.profile.skills.concat(['c:role:Host','c:scene:Burns','c:location:Berlin','c:language:Swedish','c:language:English','c:interest:Sauna']);
   a.rsvp = { 'evt-deep-listening':'interested', 'evt-fill-0':'going', 'evt-fill-6':'going', 'evt-harbour-walk':'going' };
   /* Warehouse is only_me and the demo is its host, so the demo can see it. The role files it as co-created.
      Camp kitchen dinner is friends-only and its host does not follow the demo, so it would never appear.
@@ -5427,7 +5553,7 @@ function logIn(){
 }
 function doLogout(){
   if (ONLINE){ HNAPI.logout(); return; }
-  PEDIT = false; PNAME = null; PBIO = null;
+  PEDIT = false; PNAME = null; PBIO = null; PF = null;
   if (S.acct) ACCTS[S.acct] = captureAcct();
   S.loggedIn = false; S.acct = null; loadAcct(null); syncAcctPeople();
   S.chatOpen = null; S.rightOpen = false;
@@ -7483,6 +7609,13 @@ document.addEventListener('click', function(ev){
     case 'profiledone':  finishProfileEdit(); break;
     case 'pmore':        PEXP[id] = !PEXP[id]; render(); break;
     case 'pfaddcity':    pfAddCity(); break;
+    case 'pfaddlang':    pfAddLang(); break;
+    case 'pflangrm': {
+      if (!PF || !PF.langs) break;
+      PF.langs = PF.langs.filter(function(x){ return x.toLowerCase() !== String(id || '').toLowerCase(); });
+      render();
+      break;
+    }
     case 'addtag':       gated(openTagDialog)(); break;
     case 'ptagopen':     if (PF){ PF.adding = true; PF.tagCat = ''; pfRepaint(); } break;
     case 'ptagcat':
@@ -7507,10 +7640,13 @@ document.addEventListener('click', function(ev){
       break;
     }
     case 'pfskill': case 'pfcity': {
+      if (!PF) break;
       var arr = act === 'pfskill' ? PF.skills : PF.cities, ix = arr.indexOf(id);
       if (ix < 0) arr.push(id); else arr.splice(ix, 1);
-      n.classList.toggle('on', ix < 0); n.setAttribute('aria-pressed', ix < 0);
-      if (PF.mode === 'edit') czPreviews();
+      if ($('pfbody')){
+        n.classList.toggle('on', ix < 0); n.setAttribute('aria-pressed', ix < 0);
+        if (PF.mode === 'edit') czPreviews();
+      } else if (PEDIT) render();
       break;
     }
     case 'pfpreview':    pfPreview(id === 'on'); break;
@@ -7665,7 +7801,9 @@ document.addEventListener('input', function(ev){
   if (n.id === 'nc-q' && NC){ NC.q = n.value; paintNewChat(); return; }
   if (n.id === 'pf-handle' && PF) PF.handleTouched = true;
   if (n.id === 'pf-name' && PF && PF.mode === 'signup' && !PF.handleTouched){ var hi0 = $('pf-handle'); if (hi0) hi0.value = suggestHandle(n.value); }
-  if (/^pf-(name|handle|about)$/.test(n.id)){ pfSync(); if (PF && PF.mode === 'edit') czPreviews(); return; }
+  if (n.id === 'pedit-name' || n.id === 'pedit-bio' || /^pf-(name|handle|about)$/.test(n.id)){
+    pfSync(); if (PF && PF.mode === 'edit' && $('pfbody')) czPreviews(); return;
+  }
   if (n.id === 'chatbox'){ growBox(n); var ac = activeChat(); if (ac){ if (n.value) CHATDRAFT[ac] = n.value; else delete CHATDRAFT[ac]; schedulePersist(); } return; }
   if (n.id === 'coreply'){ growBox(n); if (n.value) REPLYDRAFT[n.getAttribute('data-id')] = n.value; else delete REPLYDRAFT[n.getAttribute('data-id')]; return; }
   if (/^co-[tbx]$/.test(n.id)){ saveForm('callout'); return; }
@@ -7743,7 +7881,11 @@ document.addEventListener('keydown', function(ev){
     if (ae.id === 'coreply'){ if (ev.shiftKey || ev.isComposing) return; postReply(ae.getAttribute('data-id')); ev.preventDefault(); return; }
     if (ae.id === 'q' || ae.id === 'pq'){ rememberQuery(ae.value); if (L.phone) ae.blur(); ev.preventDefault(); return; }
     if (ae.id === 'pf-city'){ pfAddCity(); ev.preventDefault(); return; }
-    if (/^pf-(name|handle|about)$/.test(ae.id)){ pfSave(); ev.preventDefault(); return; }
+    if (ae.id === 'pf-lang'){ pfAddLang(); ev.preventDefault(); return; }
+    if (/^pf-(name|handle|about)$/.test(ae.id)){
+      if (!(PEDIT && !$('pfbody'))) pfSave();
+      ev.preventDefault(); return;
+    }
     if (ae.id === 'nc-q'){ var nf = document.querySelector('#nc-list [data-act="ncdm"]'); if (nf) nf.click(); ev.preventDefault(); return; }
     if (ae.id === 'nh-n'){ var go = $('nh-go'); if (go && !go.disabled) go.click(); ev.preventDefault(); return; }
     if (ae.classList.contains('pi')){ ae.click(); ev.preventDefault(); return; }

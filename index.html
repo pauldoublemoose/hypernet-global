@@ -6463,7 +6463,6 @@ function ctxItems(t, only){
   /* people, call outs and chats answer the same gesture with their own verbs */
   if (t.type === 'person' || t.type === 'callout' || t.type === 'chat') return ctxOtherItems(t, only);
   var out = [{ code:'open', label:'Open', def:true, lead: t.type === 'event' ? sqPx(id, 32) : hzIconHTML(id, 32), run:function(){ ctxOpen(t); } }, '-'];
-  /* on a track of a horizon you can edit, taking it out is the first thing you might want */
   if (t.type === 'event' && t.hz && hzCanEdit(t.hz) && HORIZONS[t.hz].eventIds.indexOf(id) >= 0)
     out.push({ code:'unfile', label:'Remove from ' + HORIZONS[t.hz].name, icon:'close', run:function(){ unfile(id, t.hz); } }, '-');
   if (t.type === 'event'){
@@ -6489,7 +6488,6 @@ function ctxItems(t, only){
     if (mine || addedByMe(id)) out.push('-', { code:'delete', label:'Delete…', icon:'trash', run:function(){ deleteEventDialog(id); } });
   } else {
     var hmine = hzOwnedByMe(id), edit = hzCanEdit(id), fol = S.loggedIn && HZFOLLOW[id], hz = HORIZONS[id];
-    /* who can see it is in Edit, not a checkbox here (2026-10-05) */
     if (edit) out.push({ code:'edit', label:'Edit…', icon:'edit', run:function(){ editHorizonDialog(id); } });
     if (!hmine) out.push({ code:'follow', label: fol ? 'Unfollow' : 'Follow', icon: fol ? 'close' : 'plus',
       run: ctxVerb(function(){ followHz(id); }, function(){ return !!HZFOLLOW[id]; }, 'Following', HORIZONS[id].name) });

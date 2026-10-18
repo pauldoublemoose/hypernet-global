@@ -2268,7 +2268,6 @@ async function overflowEverywhere(p, label){
     const c = await ctx(kind);
     await open(c, '', true);
     await join(c, 'Edda Lund', 'edda' + kind);
-    /* an Event Horizon of yours: Add events, Edit, Share, Add collaborator, ⋯ — nothing that turns into something else */
     await c.evaluate(() => runCmd('new-horizon')); await c.waitForTimeout(200);
     await c.fill('#nh-n', 'Zurich events'); await c.click('#nh-go'); await c.waitForTimeout(400);
     const hz = await ev(c, () => S.stack[0].id);

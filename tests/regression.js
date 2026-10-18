@@ -206,7 +206,11 @@ async function newEvent(c, o){
   await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
   await c.fill('#w-t', o.title); await c.fill('#w-d', o.date);
   if (o.online) await c.check('#w-on'); else await c.fill('#w-c', o.city || 'Brno');
-  if (o.privacy) await c.selectOption('#w-p', o.privacy);
+  if (o.privacy === 'only_me') await c.click('#w-p input[data-aud="include"][data-tok="everyone"]');
+  else if (o.privacy === 'friends'){
+    await c.click('#w-p input[data-aud="include"][data-tok="everyone"]');
+    await c.click('#w-p input[data-aud="include"][data-tok="friends"]');
+  }
   await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(200);
   await c.fill('#w-desc', o.desc || 'A slow evening with friends.');
   /* 2026-10-05: Publish event is the Look step's one primary (Next, Next, Publish event) */
@@ -1080,7 +1084,8 @@ async function overflowEverywhere(p, label){
     }
     /* Friends = the people the host follows */
     await c.evaluate(() => doLogout()); await c.waitForTimeout(200);
-    await c.evaluate(id => { useAcct('me'); EVENTS[id].privacy = 'friends'; followP('p-michal'); doLogout(); useAcct('demo'); }, sid); await c.waitForTimeout(300);
+    /* legacy privacy, so the follow rule still applies */
+    await c.evaluate(id => { useAcct('me'); EVENTS[id].privacy = 'friends'; delete EVENTS[id].audience; followP('p-michal'); doLogout(); useAcct('demo'); }, sid); await c.waitForTimeout(300);
     ok(await ev(c, id => canSee(id) && feedEvents().some(e => e.id === id), sid), 'trust: Friends: someone the host follows sees it');
     await c.evaluate(id => { doLogout(); }, sid); await c.waitForTimeout(200);
     ok(await ev(c, id => !canSee(id), sid), 'trust: Friends: logged out does not');

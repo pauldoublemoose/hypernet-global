@@ -434,7 +434,7 @@
       startTime:r.startTime || null, endTime:r.endTime || null, kind:r.kind || 'meetup',
       tags: Array.isArray(r.tags) ? r.tags.filter(function(id, i, a){ return typeof id === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id) && a.indexOf(id) === i; }).slice(0, 60) : null,
       schedule: scheduleOut(r.schedule),
-      privacy:e.privacy || 'everyone',
+      privacy:e.privacy || 'everyone', audience:e.audience || undefined,
       city: r.venueKind === 'virtual' ? null : (city || null), venue: r.venue || null, access: r.access || null,
       whatToBring: Array.isArray(r.whatToBring) ? r.whatToBring : [], details:details,
       look: lookOut(window.HYPERNET_THEMES.themes[id] || null) };
@@ -442,7 +442,7 @@
   /* an event from a link: the same fields, plus where it came from and who puts it on (never who can see it: it is public) */
   function linkBody(id){
     var b = eventBody(id), e = EVENTS[id], r = REC[id] || {};
-    delete b.privacy;
+    delete b.privacy; delete b.audience;
     ['externalUrl', 'sourceSite'].forEach(function(k){ delete b.details[k]; });
     return Object.assign(b, { sourceUrl:e.sourceUrl, hostName:e.hostName, timezone:r.timezone || undefined, region:r.region || null, country:r.country || null });
   }
@@ -458,7 +458,7 @@
   HN.saveEvent = function(id){
     return write('ev:' + id, 'PATCH', '/api/events/' + id, function(){
       var b = eventBody(id);
-      if (EVENTS[id] && EVENTS[id].kind === 'link'){ b.hostName = EVENTS[id].hostName; delete b.privacy; }
+      if (EVENTS[id] && EVENTS[id].kind === 'link'){ b.hostName = EVENTS[id].hostName; delete b.privacy; delete b.audience; }
       return b;
     }, title(id));
   };

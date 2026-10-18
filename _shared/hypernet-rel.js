@@ -84,6 +84,16 @@
     return { following: !!follows[low(me) + "|" + low(them)], friend: friend };
   }
 
+  function rowMark(pid) {
+    var me = typeof root.myPid === "function" ? root.myPid() : null;
+    if (!me || !pid || pid === "self" || low(pid) === low(me)) return "";
+    var k = kind(relOf(me, pid, graph()));
+    var label = { friends: "Friends", "requested-out": "Requested", "requested-in": "Incoming", following: "Following" }[k];
+    if (!label) return "";
+    var filled = k === "friends" || k === "following";
+    return '<span class="pill' + (filled ? " going" : "") + '"><span>' + root.esc(label) + "</span></span>";
+  }
+
   function kind(rel) {
     if (rel.friend !== "friend-none") return rel.friend;
     return rel.following ? "following" : "none";
@@ -107,11 +117,17 @@
     Object.keys(g.friends).forEach(function (k) { friends[k] = g.friends[k].status; });
     var lists = {};
     var owner = typeof root.myPid === "function" ? root.myPid() : null;
-    LISTS.forEach(function (l) {
+    function putList(id, who, memberIds) {
+      if (!id || lists[id]) return;
       var members = {};
-      (l.memberIds || []).forEach(function (id) { members[id] = true; });
-      lists[l.id] = { owner: owner, members: members };
-    });
+      (memberIds || []).forEach(function (m) { members[m] = true; });
+      lists[id] = { owner: who, members: members };
+    }
+    LISTS.forEach(function (l) { putList(l.id, owner, l.memberIds); });
+    /* a list token names the host's list. Another account does not carry the demo's lists, so the fixture still does. */
+    if (low(owner) !== "p-michal") {
+      ((root.HYPERNET && root.HYPERNET.lists) || []).forEach(function (l) { putList(l.id, "p-michal", l.memberIds); });
+    }
     return { follows: g.follows, friends: friends, lists: lists };
   }
 
@@ -720,7 +736,7 @@
   }
 
   var api = {
-    relOf: relOf, kind: kind, graph: graph, audienceGraph: audienceGraph, friendIds: friendIds, countsOf: countsOf,
+    relOf: relOf, kind: kind, rowMark: rowMark, graph: graph, audienceGraph: audienceGraph, friendIds: friendIds, countsOf: countsOf,
     relActionsHTML: relActionsHTML, mount: mount, toggleFollow: toggleFollow,
     requestFriend: requestFriend, acceptFriend: acceptFriend, deleteFriend: deleteFriend,
     incomingCount: incomingCount, requestsButton: requestsButton, openRequests: openRequests, openList: openList,

@@ -1261,6 +1261,18 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .dlg.rel-dlg h3:first-child{ margin-top:0; }
 [data-theme="y2fresh"] .relacts .btn, [data-theme="y2fresh"] .relrow .btn, [data-theme="y2fresh"] .relbar .btn, [data-theme="y2fresh"] .dlg.rel-dlg .btn{ border:3px solid var(--rule); }
 .relacts .btn:focus, .relcounts button:focus, .relbar .btn:focus{ outline:1px dotted var(--ink); outline-offset:2px; }
+.audpick{ display:flex; flex-direction:column; gap:2px; min-width:0; color:var(--ink); }
+.audrow{ display:flex; align-items:center; gap:8px; min-height:36px; }
+.audname{ flex:1 1 auto; min-width:0; overflow-wrap:anywhere; }
+.audboxes{ display:flex; flex:0 0 auto; gap:4px; }
+.audbox{ position:relative; display:grid; place-items:center; width:36px; height:36px; color:var(--dim); }
+.audbox input{ position:absolute; inset:0; margin:0; opacity:0; cursor:pointer; }
+.audbox:focus-within{ outline:1px dotted var(--ink); outline-offset:2px; }
+.audbox.on{ color:var(--ink); }
+.audbox.ex.on{ color:var(--alert); }
+.audsum{ margin:8px 0 0; color:var(--ink2); }
+[data-theme="y2fresh"] .audbox .ic{ stroke-width:1.6; }
+@media (pointer:coarse){ .audbox{ width:44px; height:44px; } }
 
 /* ---------- themes ---------------------------------------------------
    Windows (data-theme="win2k") is :root above, unchanged.
@@ -1654,6 +1666,7 @@ function makeNextEditions(){
     var title = /\b(19|20)\d\d\b/.test(e.title) ? e.title.replace(/\b(19|20)\d\d\b/, ny) : e.title + ' ' + ny;
     EVENTS[nid] = { id:nid, title:title, date:nd, description:e.description, hostName:e.hostName, privacy:e.privacy,
                     ownerIds:e.ownerIds || [], kind:e.kind, city:e.city };
+    if (e.audience) EVENTS[nid].audience = { include:(e.audience.include || []).slice(), exclude:(e.audience.exclude || []).slice() };
     var nr = JSON.parse(JSON.stringify(r));
     nr.id = nid; nr.date = nd; nr.endDate = isoDate(b.nextEdition.endDate) || undefined;
     nr.theme = b.nextEdition.theme ? (typeof b.nextEdition.theme === 'object' ? b.nextEdition.theme : { name:b.nextEdition.theme }) : undefined;
@@ -2433,7 +2446,7 @@ function rowHTML(it){
     /* new on Hypernet (the last three weeks): when they joined */
     var jt = joinedAt(it.id);
     if (jt && appNow() - jt < ACTWINDOW * 86400000) date = 'joined ' + agoLabel(jt);
-    side = (it.id !== 'self' && S.loggedIn && PFOLLOW[it.id]) ? '<span class="pill going">'+ic('check',11)+'<span>Following</span></span>' : '';
+    side = (window.HNRel && HNRel.rowMark(it.id)) || '';
   } else if (it.type === 'callout'){
     var c = calloutOf(it.id);
     lead = '<span class="r-ic">'+ic('callout')+'</span>';
@@ -2644,7 +2657,7 @@ function eyebrowOf(e){
   if (b.edition && b.edition.year) parts.push(b.edition.year + (b.edition.number ? ' · No. ' + b.edition.number : ''));
   if (REGLAB[b.regionalStatus]) parts.push(REGLAB[b.regionalStatus]);
   if (r.venueKind === 'virtual') parts.push('Online');
-  parts.push({ everyone:'Public', friends:'Friends' }[e.privacy || 'everyone'] || 'Private');
+  parts.push(audienceWords(e));
   if (isPast(lastDay(e))) parts.push('Past');
   if (r._prev) parts.push('Announced');
   return parts.map(esc).join(' · ');
@@ -5940,10 +5953,54 @@ function basicsHTML(d, miss, withPrivacy){
       ['free','donation','pay_what_you_can','ticket','membership','invite'].concat(ACCESSLAB[d.entry] && ['free','donation','pay_what_you_can','ticket','membership','invite'].indexOf(d.entry) < 0 ? [d.entry] : []).map(function(p){ return '<option value="'+p+'"'+(p===d.entry?' selected':'')+'>'+ACCESSLAB[p]+'</option>'; }).join('') +
     '</select></div>';
 }
+function audienceRows(){
+  var rows = [
+    { token:'everyone', label:'Everyone' },
+    { token:'friends', label:'Friends' },
+    { token:'fof', label:'Friends of friends' },
+    { token:'followers', label:'Followers' }
+  ];
+  if (window.HNRel) HNRel.lists().slice().sort(function(a, b){
+    var x = String(a.name).toLowerCase(), y = String(b.name).toLowerCase();
+    return x < y ? -1 : x > y ? 1 : 0;
+  }).forEach(function(l){ rows.push({ token:'list:'+l.id, label:l.name }); });
+  return rows;
+}
+function listTokenName(id){
+  var rows = (window.HNRel && HNRel.lists()) || [];
+  for (var i = 0; i < rows.length; i++) if (rows[i].id === id) return rows[i].name;
+  var fix = (window.HYPERNET && HYPERNET.lists) || [];
+  for (var j = 0; j < fix.length; j++) if (fix[j].id === id) return fix[j].name;
+  return 'a list';
+}
+function audienceWords(e){
+  if (!e || !window.HNAudience) return { everyone:'Everyone', friends:'Friends' }[e && e.privacy || 'everyone'] || 'Only you';
+  var a = e.audience ? HNAudience.normalize(e.audience) : HNAudience.fromPrivacy(e.privacy || 'everyone');
+  return HNAudience.summary(a, listTokenName);
+}
 function privacyHTML(d){
-  return '<div class="field"><label for="w-p">Who can see it</label><select id="w-p" data-cz="privacy">' +
-    Object.keys(PRIVACY).map(function(p){ return '<option value="'+p+'"'+(p===d.privacy?' selected':'')+'>'+PRIVACY[p]+'</option>'; }).join('') +
-    '</select><p class="fhelp">Friends are the people you follow. Only me keeps it to you.</p></div>';
+  var aud = window.HNAudience ? HNAudience.normalize(d.audience || HNAudience.fromPrivacy(d.privacy || 'everyone')) : { include:['everyone'], exclude:[] };
+  return '<div class="field"><label for="w-p">Who can see it</label>' +
+    (window.HNAudience ? HNAudience.pickerHTML(aud, audienceRows()) : '') + '</div>';
+}
+function syncAudiencePicker(){
+  var root = document.querySelector('.dlg .audpick');
+  if (!root || !DRAFT || !window.HNAudience) return;
+  var a = HNAudience.normalize(DRAFT.audience || HNAudience.fromPrivacy(DRAFT.privacy));
+  root.querySelectorAll('input[data-aud]').forEach(function(n){
+    var on = (a[n.getAttribute('data-aud')] || []).indexOf(n.getAttribute('data-tok')) >= 0;
+    n.checked = on;
+    var box = n.closest('.audbox');
+    if (box) box.classList.toggle('on', on);
+  });
+  var sum = root.querySelector('.audsum');
+  if (sum) sum.textContent = HNAudience.summary(a, listTokenName);
+}
+function applyDraftAudience(e){
+  if (!window.HNAudience){ e.privacy = DRAFT.privacy || 'everyone'; return; }
+  var a = HNAudience.normalize(DRAFT.audience || HNAudience.fromPrivacy(DRAFT.privacy || 'everyone'));
+  e.audience = a;
+  e.privacy = HNAudience.derivePrivacy(a);
 }
 function splitWhen(iso){
   var m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(iso || '');
@@ -6204,12 +6261,20 @@ function paintWiz(){
 var FORMDRAFTS = {};
 var EVENTKINDS = ['meetup','build','workshop','volunteer_day','fundraiser','camp_meeting','burn_night','town_hall','decompression','burn','sale','other'];
 function blankEventDraft(){
-  return Object.assign({ step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', baseKind:'meetup', tags:[], schedule:[], city:'', online:false, privacy:'everyone', entry:'free', desc:'', bring:'',
+  return Object.assign({ step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', baseKind:'meetup', tags:[], schedule:[], city:'', online:false, privacy:'everyone',
+           audience:HNAudience.fromPrivacy('everyone'), entry:'free', desc:'', bring:'',
            lookTouched:false }, lookDraft(plainTheme('◉')));
 }
 function eventDraftDirty(d){
   var b = blankEventDraft();
-  return Object.keys(b).some(function(k){ return k !== 'step' && k !== 'editing' && k !== 'glyph' && String(d[k] == null ? '' : d[k]) !== String(b[k] == null ? '' : b[k]); });
+  return Object.keys(b).some(function(k){
+    if (k === 'step' || k === 'editing' || k === 'glyph') return false;
+    if (k === 'audience'){
+      var da = d.audience || HNAudience.fromPrivacy(d.privacy || 'everyone');
+      return JSON.stringify(da) !== JSON.stringify(b.audience);
+    }
+    return String(d[k] == null ? '' : d[k]) !== String(b[k] == null ? '' : b[k]);
+  });
 }
 /* repaint the footer only when it changes: replacing a button under the pointer would swallow its click */
 function refreshWizFoot(){
@@ -6252,7 +6317,9 @@ var editEventDialog = gated(function(evId){
   if (!e || !canFix(evId)) return;
   if (isLinkEvent(evId)){ linkEditOpen(evId); return; }
   DRAFT = Object.assign({ form:'event', mode:'edit', step:1, editing:evId, title:e.title, date:e.date, end:r.endDate || '', city:r.city || cityShort(e.city), online:r.venueKind === 'virtual',
-            privacy:e.privacy || 'everyone', entry:(r.access && r.access.model) || 'free', desc:descOf(e),
+            privacy:e.privacy || 'everyone',
+            audience: e.audience ? HNAudience.normalize(e.audience) : HNAudience.fromPrivacy(e.privacy || 'everyone'),
+            entry:(r.access && r.access.model) || 'free', desc:descOf(e),
             kind:r.kind || 'meetup', baseKind:r.kind || 'meetup', tags:eventTagIds(r), startTime:r.startTime || '', endTime:r.endTime || '',
             bring: Array.isArray(r.whatToBring) ? r.whatToBring.join('\n') : (r.whatToBring || ''),
             schedule: (Array.isArray(r.schedule) ? r.schedule : []).map(function(b){ var o = { title:b.title || '', start:b.start || '' }; if (b.end) o.end = b.end; return o; }),
@@ -6321,7 +6388,8 @@ function saveEventEdit(t){
   var id = DRAFT.editing, e = EVENTS[id], r = REC[id] || (REC[id] = {});
   var start = isoDate(DRAFT.date), end = isoDate(DRAFT.end), city = String(DRAFT.city || '').trim();
   if (!e.slug) e.slug = evSlug(id);          /* the link people already have keeps working */
-  e.title = DRAFT.title.trim(); e.date = start; e.privacy = DRAFT.privacy; e.description = DRAFT.desc;
+  e.title = DRAFT.title.trim(); e.date = start; e.description = DRAFT.desc;
+  applyDraftAudience(e);
   if (DRAFT.online) r.venueKind = 'virtual';
   else { if (r.venueKind === 'virtual') r.venueKind = 'physical';
          if (city){ e.city = city; if (r.venue && (!r.venue.name || r.venue.name === r.city)) r.venue.name = city; r.city = city; } }
@@ -6360,6 +6428,7 @@ function wizAct(which){
   var city = DRAFT.online ? '' : String(DRAFT.city || '').trim();
   EVENTS[id] = { id:id, title:DRAFT.title.trim(), date:start, description:DRAFT.desc,
                  hostName:S.me.name, hostAcct:S.acct, privacy:DRAFT.privacy, ownerIds:['self'], kind:'own', city:city };
+  applyDraftAudience(EVENTS[id]);
   var tk = tagsForSave(DRAFT);
   REC[id] = { kind:tk.kind, tags:tk.tags, startTime:DRAFT.startTime || undefined, endTime:DRAFT.endTime || undefined, scale: end && end > start ? 'gathering' : 'meetup', endDate: end && end > start ? end : undefined,
               venueKind:DRAFT.online ? 'virtual' : 'physical', city:city, venue:DRAFT.online ? undefined : { name:city, addressVisibility:'public' }, description:DRAFT.desc,
@@ -7251,6 +7320,11 @@ document.addEventListener('change', function(ev){
   var n = ev.target;
   if (n.getAttribute && n.getAttribute('data-sched')){ schedTouch(n); return; }
   if (n.getAttribute('data-czfile')){ var fl = n.files && n.files[0]; n.value = ''; if (n.getAttribute('data-czfile') === 'photo') pfTakePhoto(fl); else czTakeFile(fl); return; }
+  if (n.getAttribute && n.getAttribute('data-aud') && DRAFT && window.HNAudience){
+    DRAFT.audience = HNAudience.toggle(DRAFT.audience || HNAudience.fromPrivacy(DRAFT.privacy), n.getAttribute('data-tok'), n.getAttribute('data-aud'));
+    DRAFT.privacy = HNAudience.derivePrivacy(DRAFT.audience);
+    syncAudiencePicker(); refreshWizFoot(); schedulePersist(); return;
+  }
   if (n.closest('[data-cz]') && DRAFT){
     var k = n.getAttribute('data-cz');
     if (/^c[123]$/.test(k)){ czSetColor(k, n.value, n); return; }

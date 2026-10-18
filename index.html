@@ -1216,7 +1216,7 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .tagopt{ display:flex; align-items:center; gap:8px; width:100%; min-height:36px; padding:4px 8px; border:0; background:transparent; color:var(--ink); font:inherit; font-size:var(--fs); line-height:20px; text-align:left; cursor:pointer; }
 .tagopt:hover, .tagopt:focus{ background:var(--sel); color:#fff; outline:0; }
 .tagmark{ flex:0 0 1.1em; display:inline-flex; align-items:center; justify-content:center; }
-.tagopt[aria-selected="true"] .tagmark::before{ content:""; width:8px; height:8px; border-radius:50%; background:currentColor; }
+.tagopt[aria-selected="true"] .tagmark::before{ content:""; width:0.3em; height:0.3em; min-width:3px; min-height:3px; border-radius:50%; background:currentColor; }
 .tagnone{ margin:8px 4px; font-size:var(--fs); line-height:20px; color:var(--dim); }
 [data-theme="y2fresh"] .tagbox, [data-theme="y2fresh"] .tagpanel{ border:3px solid var(--rule); }
 [data-theme="y2fresh"] .tagpanel{ background:var(--white); }

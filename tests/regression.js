@@ -2268,15 +2268,15 @@ async function overflowEverywhere(p, label){
     const c = await ctx(kind);
     await open(c, '', true);
     await join(c, 'Edda Lund', 'edda' + kind);
-    /* an Event Horizon of yours: Add events, Edit, Share, ⋯ — nothing that turns into something else */
+    /* an Event Horizon of yours: Add events, Edit, Share, Add collaborator, ⋯ — nothing that turns into something else */
     await c.evaluate(() => runCmd('new-horizon')); await c.waitForTimeout(200);
     await c.fill('#nh-n', 'Zurich events'); await c.click('#nh-go'); await c.waitForTimeout(400);
     const hz = await ev(c, () => S.stack[0].id);
     const bar = await ev(c, () => { const vs = [...document.querySelectorAll('#dscroll .pg-horizon .actbar .btn')];
       return { acts:vs.map(b => b.getAttribute('data-act')).join(), tops:new Set(vs.map(b => Math.round(b.getBoundingClientRect().top))).size,
                fit:vs.every(b => b.scrollWidth <= b.clientWidth + 1), more:(document.querySelector('#dscroll [data-act="hzmore"]') || {}).getAttribute('data-more') }; });
-    ok(bar.acts === 'addevents,edithz,share,hzmore' && bar.tops === 1 && bar.fit && bar.more === 'delete',
-       kind + ': your horizon\'s toolbar is Add events · Edit · Share · ⋯ in one row, ⋯ holds Delete only ' + JSON.stringify(bar));
+    ok(bar.acts === 'addevents,edithz,share,addcollab,hzmore' && bar.fit && bar.more === 'delete',
+       kind + ': your horizon\'s toolbar is Add events · Edit · Share · Add collaborator · ⋯, ⋯ holds Delete only ' + JSON.stringify(bar));
     await c.click('#dscroll [data-act="hzmore"]'); await c.waitForTimeout(250);
     ok(await ev(c, () => { const t = [...document.querySelectorAll('.ctxmenu .ci, .ctxsheet .sheetrow')].map(x => x.textContent.trim()); return t.length === 1 && /Delete/.test(t[0]); }), kind + ': ⋯ has no Published ✓, only Delete');
     await c.keyboard.press('Escape'); await ev(c, () => { closeCtx(); closeDialogs(); }); await c.waitForTimeout(150);

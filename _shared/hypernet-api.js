@@ -173,7 +173,7 @@
       var own = !!me && h.ownerId === me;
       HZ[h.id] = { id:h.id, slug:h.slug, name:h.name, description:h.description || '', isPersonalDefault:!!h.isPersonalDefault, isPublished:!!h.publishedAt,
         ownerName: own ? d.me.displayName : (h.ownerName || (h.ownerId && P[h.ownerId] ? P[h.ownerId].displayName : 'Hypernet')),
-        ownerId:h.ownerId, ownerAcct: own ? 'me' : undefined, eventIds:(h.eventIds || []).slice() };
+        ownerId:h.ownerId, ownerAcct: own ? 'me' : undefined, eventIds:(h.eventIds || []).slice(), collaboratorIds:(h.collaboratorIds || []).slice() };
       HC[h.id] = Math.max(0, (h.followers || 0) - (HF[h.id] ? 1 : 0));
       if (h.look) HT[h.id] = asLook(h.look);
       if (own) mine.push(h.id);
@@ -498,11 +498,24 @@
   };
   HN.saveHorizon = function(hzId){
     return write('hz:' + hzId, 'PATCH', '/api/horizons/' + hzId, function(){
-      var h = HORIZONS[hzId]; return h ? { name:h.name, description:h.description || '', published:!!h.isPublished, look: HZTHEME[hzId] ? lookOut(HZTHEME[hzId]) : null } : {};
+      var h = HORIZONS[hzId];
+      if (!h) return {};
+      var body = { name:h.name, description:h.description || '' };
+      if (hzOwnedByMe(hzId)){ body.published = !!h.isPublished; body.look = HZTHEME[hzId] ? lookOut(HZTHEME[hzId]) : null; }
+      return body;
     }, (HORIZONS[hzId] || {}).name);
   };
+  HN.addCollaborator = function(hzId, personId){
+    return write('hz:' + hzId, 'POST', '/api/horizons/' + hzId + '/collaborators', { personId:personId }, (HORIZONS[hzId] || {}).name);
+  };
+  HN.removeCollaborator = function(hzId, personId){
+    return write('hz:' + hzId, 'DELETE', '/api/horizons/' + hzId + '/collaborators?personId=' + encodeURIComponent(personId), undefined, (HORIZONS[hzId] || {}).name);
+  };
+  HN.leaveCollaborator = function(hzId){
+    return write('hz:' + hzId, 'DELETE', '/api/horizons/' + hzId + '/collaborators', undefined, (HORIZONS[hzId] || {}).name);
+  };
   HN.horizonEvents = function(hzId){
-    if (!HORIZONS[hzId] || !hzOwnedByMe(hzId)) return Promise.resolve();
+    if (!HORIZONS[hzId] || !hzCanEdit(hzId)) return Promise.resolve();
     /* an event made a moment ago (New event, From a link) must exist on the server before the horizon lists it */
     var waits = HORIZONS[hzId].eventIds.map(function(id){ return QUEUE['ev:' + id]; }).filter(Boolean);
     if (waits.length) QUEUE['hz:' + hzId] = Promise.all([QUEUE['hz:' + hzId] || Promise.resolve()].concat(waits)).catch(function(){});

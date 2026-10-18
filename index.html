@@ -1197,13 +1197,29 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .sheetrow small{ display:block; color:var(--dim); font-size:12px; }
 
 /* NEW EVENT PANEL */
-.tagfield .tagq{ width:100%; }
-.taggroups{ max-height:220px; overflow:auto; padding:4px 8px 8px; background:var(--white); color:var(--ink); box-shadow:var(--in); }
-.taghead{ margin:8px 0 2px; font-size:var(--fs-s); line-height:16px; font-weight:bold; color:var(--dim); }
+.tagfield{ position:relative; }
+.tagbox{ display:flex; align-items:center; gap:6px; width:100%; height:var(--ctl); padding:0 8px; background:var(--white); color:var(--ink); box-shadow:var(--in); font-size:var(--fs); line-height:20px; cursor:pointer; overflow:hidden; }
+.tagbox:focus{ outline:1px dotted var(--ink); outline-offset:-4px; }
+.tagchips{ display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow:hidden; }
+.tagph{ color:var(--dim); white-space:nowrap; }
+.tagchip{ display:inline-flex; align-items:center; gap:2px; flex:0 0 auto; max-width:100%; height:22px; padding:0 2px 0 8px; background:var(--face); color:var(--ink); box-shadow:var(--thin); font-size:var(--fs-s); line-height:20px; white-space:nowrap; }
+.taglab{ overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.tagx{ flex:0 0 auto; width:22px; height:22px; border:0; padding:0; background:transparent; color:var(--ink2); font-size:var(--fs); line-height:20px; cursor:pointer; }
+.tagmore{ flex:0 0 auto; color:var(--dim); font-size:var(--fs-s); white-space:nowrap; }
+.tagcaret{ flex:0 0 auto; color:var(--ink2); }
+.tagpanel{ position:fixed; z-index:80; display:flex; flex-direction:column; min-width:0; padding:6px; background:var(--face); color:var(--ink); box-shadow:var(--out); overflow:hidden; }
+.tagpanel[hidden]{ display:none; }
+.tagpanel .tagq{ width:100%; flex:0 0 auto; margin:0 0 6px; }
+.taggroups{ overflow:auto; min-height:0; flex:1 1 auto; }
+.taghead{ margin:8px 4px 2px; font-size:var(--fs); line-height:20px; font-weight:bold; color:var(--dim); }
 .taggroup:first-child .taghead{ margin-top:2px; }
-.tagopt{ display:flex; align-items:flex-start; gap:8px; min-height:24px; padding:2px 0; font-size:var(--fs); line-height:20px; color:var(--ink); }
-.tagopt input{ flex:0 0 auto; margin-top:3px; }
-.tagnone{ margin:8px 0 0; font-size:var(--fs-s); line-height:16px; color:var(--dim); }
+.tagopt{ display:flex; align-items:center; gap:8px; width:100%; min-height:36px; padding:4px 8px; border:0; background:transparent; color:var(--ink); font:inherit; font-size:var(--fs); line-height:20px; text-align:left; cursor:pointer; }
+.tagopt:hover, .tagopt:focus{ background:var(--sel); color:#fff; outline:0; }
+.tagmark{ flex:0 0 1.1em; font-weight:bold; }
+.tagnone{ margin:8px 4px; font-size:var(--fs); line-height:20px; color:var(--dim); }
+[data-theme="y2fresh"] .tagbox, [data-theme="y2fresh"] .tagpanel{ border:3px solid var(--rule); }
+[data-theme="y2fresh"] .tagpanel{ background:var(--white); }
+@media (pointer:coarse){ .tagopt{ min-height:44px; } .tagx{ width:28px; height:28px; } }
 
 /* ---------- themes ---------------------------------------------------
    Windows (data-theme="win2k") is :root above, unchanged.
@@ -4737,11 +4753,12 @@ function dialog(title, bodyHTML, footHTML, w, cls){
   d.style.top = Math.max(16, (window.innerHeight - d.offsetHeight) / 2.4) + 'px';
   DLGS.push(d);
   placeDlg(d);
+  tagFitSoon();
   var bar = d.querySelector('.dbar');
   bar.addEventListener('mousedown', function(ev){
     if (ev.target.closest('[data-act]') || document.body.classList.contains('is-phone')) return;
     var sx = ev.clientX, sy = ev.clientY, ox = d.offsetLeft, oy = d.offsetTop;
-    function mv(e2){ d.style.left = (ox + e2.clientX - sx)+'px'; d.style.top = Math.max(0, oy + e2.clientY - sy)+'px'; }
+    function mv(e2){ d.style.left = (ox + e2.clientX - sx)+'px'; d.style.top = Math.max(0, oy + e2.clientY - sy)+'px'; tagPlace(); }
     function up(){ document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); }
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   });
@@ -5681,28 +5698,136 @@ function tagsForSave(d){
   var tags = draftTagIds(d);
   return { tags:tags, kind:kindFromTags(tags, d.baseKind || d.kind || 'meetup') };
 }
+function orderTags(ids){
+  var want = {};
+  (ids || []).forEach(function(id){ if (tagById(id)) want[id] = 1; });
+  var out = [];
+  TAGGROUPS.forEach(function(g){ g.tags.forEach(function(t){ if (want[t.id]) out.push(t.id); }); });
+  return out;
+}
+function tagChipsInner(ids){
+  ids = orderTags(ids);
+  if (!ids.length) return '<span class="tagph">Add tags\u2026</span>';
+  return ids.map(function(id){
+    var t = tagById(id);
+    return '<span class="tagchip"><span class="taglab">'+esc(t.label)+'</span><button type="button" class="tagx" data-act="tagx" data-id="'+t.id+'" aria-label="Remove '+esc(t.label)+'">\u00d7</button></span>';
+  }).join('') + '<span class="tagmore" hidden></span>';
+}
 function tagsFieldHTML(d){
   var on = {};
-  (d.tags || []).forEach(function(id){ if (tagById(id)) on[id] = 1; });
-  return '<div class="field tagfield"><label for="w-tagq">Tags</label>' +
-    '<input type="search" id="w-tagq" class="tagq" placeholder="Filter tags" autocomplete="off" aria-label="Filter tags" aria-controls="w-taggroups">' +
-    '<div class="taggroups" id="w-taggroups" role="group" aria-label="Tags">' +
-    TAGGROUPS.map(function(g){
-      return '<div class="taggroup"><div class="taghead">'+esc(g.label)+'</div>' +
-        g.tags.map(function(t){
-          return '<label class="tagopt"><input type="checkbox" data-tag="'+t.id+'"'+(on[t.id] ? ' checked' : '')+'>'+esc(t.label)+'</label>';
-        }).join('') + '</div>';
-    }).join('') +
-    '<p class="tagnone" hidden>No tag matches.</p></div></div>';
+  orderTags(d.tags).forEach(function(id){ on[id] = 1; });
+  return '<div class="field tagfield"><label id="w-taglab">Tags</label>' +
+    '<div class="tagbox" id="w-tagbox" data-act="tagtoggle" role="combobox" tabindex="0" aria-haspopup="listbox" aria-expanded="false" aria-controls="w-tagpanel" aria-labelledby="w-taglab">' +
+      '<span class="tagchips" id="w-tagchips">'+tagChipsInner(d.tags)+'</span><span class="tagcaret" aria-hidden="true">\u25be</span></div>' +
+    '<div class="tagpanel" id="w-tagpanel" hidden>' +
+      '<input type="search" id="w-tagq" class="tagq" placeholder="Filter tags" autocomplete="off" aria-label="Filter tags" aria-controls="w-taggroups">' +
+      '<div class="taggroups" id="w-taggroups" role="listbox" aria-label="Tags" aria-multiselectable="true">' +
+      TAGGROUPS.map(function(g){
+        return '<div class="taggroup"><div class="taghead">'+esc(g.label)+'</div>' +
+          g.tags.map(function(t){
+            var sel = !!on[t.id];
+            return '<button type="button" class="tagopt" role="option" data-act="tagpick" data-id="'+t.id+'" aria-selected="'+(sel ? 'true' : 'false')+'" tabindex="-1"><span class="tagmark">'+(sel ? '\u2713' : '')+'</span>'+esc(t.label)+'</button>';
+          }).join('') + '</div>';
+      }).join('') +
+      '<p class="tagnone" hidden>No tag matches.</p></div></div></div>';
+}
+/* the dialog body scrolls, so the panel is fixed or the list would be clipped */
+function tagPlace(){
+  var box = document.getElementById('w-tagbox'), panel = document.getElementById('w-tagpanel');
+  if (!box || !panel || panel.hidden) return;
+  var r = box.getBoundingClientRect(), gap = 4;
+  var width = Math.min(r.width, window.innerWidth - 16);
+  var left = Math.max(8, Math.min(r.left, window.innerWidth - width - 8));
+  var below = window.innerHeight - r.bottom - gap - 8, above = r.top - gap - 8;
+  panel.style.left = left + 'px';
+  panel.style.width = width + 'px';
+  if (below >= 180 || below >= above){
+    panel.style.top = (r.bottom + gap) + 'px';
+    panel.style.bottom = 'auto';
+    panel.style.maxHeight = Math.max(140, Math.min(320, below)) + 'px';
+  } else {
+    panel.style.top = 'auto';
+    panel.style.bottom = (window.innerHeight - r.top + gap) + 'px';
+    panel.style.maxHeight = Math.max(140, Math.min(320, above)) + 'px';
+  }
+}
+function tagSetOpen(open){
+  var panel = document.getElementById('w-tagpanel'), box = document.getElementById('w-tagbox');
+  if (!panel || !box) return;
+  panel.hidden = !open;
+  box.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (!open) return;
+  var q = document.getElementById('w-tagq');
+  if (q){ q.value = ''; tagFilter(''); }
+  tagPlace();
+  if (q) q.focus();
+}
+function tagToggle(){
+  var panel = document.getElementById('w-tagpanel');
+  if (panel) tagSetOpen(panel.hidden);
+}
+function tagFit(){
+  var box = document.getElementById('w-tagbox');
+  if (!box || box.clientWidth < 20) return;
+  var hold = box.querySelector('.tagchips');
+  var all = Array.prototype.slice.call(box.querySelectorAll('.tagchip'));
+  var more = box.querySelector('.tagmore');
+  all.forEach(function(c){ c.hidden = false; });
+  if (more) more.hidden = true;
+  var guard = 0;
+  while (hold && all.length && hold.scrollWidth > hold.clientWidth + 1 && guard < 40){
+    var shown = all.filter(function(c){ return !c.hidden; });
+    if (shown.length <= 1) break;
+    shown[shown.length - 1].hidden = true;
+    if (more){ more.hidden = false; more.textContent = '+' + (all.length - shown.length + 1); }
+    guard++;
+  }
+}
+function tagFitSoon(){ requestAnimationFrame(tagFit); }
+function syncTagUI(){
+  if (!DRAFT) return;
+  var chips = document.getElementById('w-tagchips');
+  if (chips){ chips.innerHTML = tagChipsInner(DRAFT.tags); tagFitSoon(); }
+  document.querySelectorAll('.dlg .tagopt').forEach(function(row){
+    var on = (DRAFT.tags || []).indexOf(row.getAttribute('data-id')) >= 0;
+    row.setAttribute('aria-selected', on ? 'true' : 'false');
+    var m = row.querySelector('.tagmark');
+    if (m) m.textContent = on ? '\u2713' : '';
+  });
+}
+function tagPick(id){
+  if (!DRAFT || !tagById(id)) return;
+  var tags = (DRAFT.tags || []).slice(), i = tags.indexOf(id);
+  if (i >= 0) tags.splice(i, 1); else tags.push(id);
+  setDraftTags(orderTags(tags));
+  syncTagUI();
+}
+function tagRemove(id){
+  if (!DRAFT) return;
+  setDraftTags(orderTags((DRAFT.tags || []).filter(function(x){ return x !== id; })));
+  syncTagUI();
+}
+function tagRows(){
+  return Array.prototype.filter.call(document.querySelectorAll('.dlg .tagopt'), function(row){
+    return !row.hidden && !(row.closest('.taggroup') && row.closest('.taggroup').hidden);
+  });
+}
+function tagMove(dir){
+  var rows = tagRows(), ae = document.activeElement, i = rows.indexOf(ae);
+  if (ae && ae.id === 'w-tagq'){ if (dir > 0 && rows[0]) rows[0].focus(); return; }
+  if (i < 0){ if (rows[0]) rows[0].focus(); return; }
+  var n = i + dir;
+  if (n < 0){ var q = document.getElementById('w-tagq'); if (q) q.focus(); return; }
+  if (rows[n]) rows[n].focus();
 }
 function tagFilter(q){
   q = fold(String(q || ''));
   var any = false;
   document.querySelectorAll('.dlg .taggroup').forEach(function(g){
     var n = 0;
-    g.querySelectorAll('.tagopt').forEach(function(lab){
-      var show = !q || fold(lab.textContent).indexOf(q) >= 0;
-      lab.hidden = !show;
+    g.querySelectorAll('.tagopt').forEach(function(row){
+      var show = !q || fold(row.textContent).indexOf(q) >= 0;
+      row.hidden = !show;
       if (show) n++;
     });
     g.hidden = !n;
@@ -5710,11 +5835,10 @@ function tagFilter(q){
   });
   var empty = document.querySelector('.dlg .tagnone');
   if (empty) empty.hidden = any || !q;
-}
-function readTagChecks(root){
-  var tags = [];
-  root.querySelectorAll('input[data-tag]').forEach(function(box){ if (box.checked) tags.push(box.getAttribute('data-tag')); });
-  return tags;
+  var ae = document.activeElement;
+  if (ae && ae.classList && ae.classList.contains('tagopt') && (ae.hidden || (ae.closest('.taggroup') && ae.closest('.taggroup').hidden))){
+    var qn = document.getElementById('w-tagq'); if (qn) qn.focus();
+  }
 }
 function setDraftTags(tags){
   if (!DRAFT) return;
@@ -5849,6 +5973,7 @@ function paintWiz(){
   d.querySelector('.dfoot').innerHTML = wizFootHTML();
   if (DRAFT && (DRAFT.form || DRAFT.mode === 'edit')) b.scrollTop = top;
   placeDlg(d);
+  tagFitSoon();
 }
 /* a create form starts empty and is its own draft: closing it keeps what you typed, Discard throws it away */
 var FORMDRAFTS = {};
@@ -6706,6 +6831,9 @@ document.addEventListener('click', function(ev){
   if (act !== 'newmenu' && act !== 'acctmenu') closePopup();
   if (n.tagName === 'A') ev.preventDefault();
   switch (act){
+    case 'tagtoggle': tagToggle(); break;
+    case 'tagpick':   tagPick(id); break;
+    case 'tagx':      tagRemove(id); break;
     case 'newmenu':  if (POP){ closePopup(); break; } popup(n, NEWITEMS); break;
     case 'acctmenu': if (POP){ closePopup(); break; } popup(n, [{ label:'Your profile', cmd:'profile', icon:'user' }, { label:'Edit profile', cmd:'editprofile', icon:'edit' }, '-', { label:'Log out', cmd:'logout', icon:'back' }]); break;
     case 'newsheet': newSheet(); break;
@@ -6896,11 +7024,6 @@ document.addEventListener('click', function(ev){
 document.addEventListener('change', function(ev){
   var n = ev.target;
   if (n.getAttribute('data-czfile')){ var fl = n.files && n.files[0]; n.value = ''; if (n.getAttribute('data-czfile') === 'photo') pfTakePhoto(fl); else czTakeFile(fl); return; }
-  if (n.getAttribute('data-tag') && DRAFT){
-    var root = n.closest('.taggroups');
-    if (root) setDraftTags(readTagChecks(root));
-    return;
-  }
   if (n.closest('[data-cz]') && DRAFT){
     var k = n.getAttribute('data-cz');
     if (/^c[123]$/.test(k)){ czSetColor(k, n.value, n); return; }
@@ -6944,7 +7067,13 @@ document.addEventListener('input', function(ev){
   refreshWizFoot(); schedulePersist();
   if (document.querySelector('.dlg [data-czlook]')) czPreviews();
 });
-document.addEventListener('mousedown', function(ev){ if (!ev.target.closest('.popmenu, [data-act="newmenu"], [data-act="acctmenu"]')) closePopup(); });
+document.addEventListener('mousedown', function(ev){
+  if (!ev.target.closest('.popmenu, [data-act="newmenu"], [data-act="acctmenu"]')) closePopup();
+  var panel = document.getElementById('w-tagpanel');
+  if (panel && !panel.hidden && !ev.target.closest('.tagfield')) tagSetOpen(false);
+});
+window.addEventListener('resize', function(){ tagFit(); tagPlace(); });
+document.addEventListener('scroll', function(){ tagPlace(); }, true);
 
 /* drag an event row onto one of your horizons */
 var DRAGID = null;
@@ -6969,6 +7098,11 @@ document.addEventListener('drop', function(ev){
 /* keyboard: the list follows the arrows; Escape steps back out */
 document.addEventListener('keydown', function(ev){
   var ae = document.activeElement, inField = ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
+  var tagPanel = document.getElementById('w-tagpanel'), tagOn = tagPanel && !tagPanel.hidden;
+  if (tagOn && ev.key === 'Escape'){ ev.preventDefault(); tagSetOpen(false); var tb = document.getElementById('w-tagbox'); if (tb) tb.focus(); return; }
+  if (tagOn && (ev.key === 'ArrowDown' || ev.key === 'ArrowUp')){ ev.preventDefault(); tagMove(ev.key === 'ArrowDown' ? 1 : -1); return; }
+  if (tagOn && (ev.key === 'Enter' || ev.key === ' ') && ae && ae.classList && ae.classList.contains('tagopt')){ ev.preventDefault(); tagPick(ae.getAttribute('data-id')); return; }
+  if (!tagOn && ae && ae.id === 'w-tagbox' && (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'ArrowDown')){ ev.preventDefault(); tagSetOpen(true); return; }
   if (ev.key === 'Enter' && ae && ae.id === 'lk-u' && !ae.readOnly){ ev.preventDefault(); linkAutofill(); return; }
   if (ev.key === 'Escape'){
     if (DLGS.length){ var kept = wizDraftOpen(); closeDialogs(); S.pending = null; if (kept) draftKeptToast(); return; }

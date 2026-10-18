@@ -4970,12 +4970,12 @@ function skillLabel(v){
   return titleCase(b[1] || b[0]).replace(/\bPa\b/g,'PA').replace(/\bDj/g,'DJ');
 }
 /* Profile tags are not event tags. A new one is "c:<category>:<label>" in the existing skills list.
-   Anything else is an older skill, shown under Skill, and left stored as it was. */
+   Skill and Role are one category, Skills & Roles. New tags use the key skill.
+   A stored c:role: tag and an older uncategorised skill are read into that same category. Nothing is rewritten. */
 var TAG_CATS = [
   ['location','Location',['Stockholm','Berlin','Black Rock City','Eksjö']],
-  ['skill','Skill',['Cooking','Sound','Building','First aid']],
+  ['skill','Skills & Roles',['Cooking','Sound','Building','First aid','DJ','Host','Photographer','Volunteer']],
   ['interest','Interest',['Sauna','Dawn walks','Workshops','Camping']],
-  ['role','Role',['DJ','Host','Photographer','Volunteer']],
   ['scene','Scene',['Burns','Techno','Supper clubs','Retreats']],
   ['language','Language',['English','Swedish','Spanish','German']]
 ];
@@ -4983,7 +4983,7 @@ var TAG_CAT = {}; TAG_CATS.forEach(function(c){ TAG_CAT[c[0]] = c; });
 var TAGFLOW = null;
 function parseProfileTag(v){
   var m = /^c:(location|skill|interest|role|scene|language):(.*)$/.exec(String(v == null ? '' : v));
-  if (m && String(m[2]).trim()) return { cat:m[1], label:String(m[2]).trim(), raw:String(v), coded:true };
+  if (m && String(m[2]).trim()) return { cat: m[1] === 'role' ? 'skill' : m[1], label:String(m[2]).trim(), raw:String(v), coded:true };
   return { cat:'skill', label:'', raw:String(v == null ? '' : v), coded:false };
 }
 function encodeProfileTag(cat, label){

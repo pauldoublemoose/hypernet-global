@@ -1239,7 +1239,8 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .ttwhat{ min-width:0; }
 @media (pointer:coarse){ .schedend{ min-height:44px; } }
 
-/* PROFILE — Chronicle on a person's page. Uses the theme tokens only. */
+/* PROFILE — Chronicle and Event Horizons on a person's page. Uses the theme tokens only.
+   Horizons reuse the category layout below. */
 .chcats{ display:flex; flex-direction:column; gap:16px; }
 .chcat{ min-width:0; }
 .chnote{ margin:0 0 16px; max-width:66ch; font:12px/16px var(--sys); color:var(--ink2); }
@@ -1550,6 +1551,11 @@ HORIZONS['horizon-surface'] = { id:'horizon-surface', name:'Surfaces & Projectio
   description:'Anything you can throw light at after dark.',
   isPersonalDefault:false, isPublished:true, ownerName:'Mira Chen', ownerId:'p-mira',
   eventIds:['evt-fill-3','evt-fill-9','evt-world-hyperstition-2026'] };
+/* the demo's public Horizon. My Horizon stays private, so Created would be empty without this. */
+HORIZONS['horizon-ridge'] = { id:'horizon-ridge', name:'Ridge season',
+  description:'The builds and the nights on the ridge this year.',
+  isPersonalDefault:false, isPublished:true, ownerName:'Michal', ownerId:'p-michal',
+  eventIds:['evt-fill-0','evt-fill-6','evt-deep-listening'] };
 
 var GROUPS = {};  H.groups.forEach(function(g){ GROUPS[g.id] = g; });
 var CALLOUTS = H.callouts.map(function(c){
@@ -1829,6 +1835,9 @@ var READ = {};
 /* Relations belong to the account that is logged in; logged out there are none.
    Each account's set is swapped in on log-in (see ACCOUNTS). */
 var HZFOLLOW = {};
+/* who follows which public Horizon, for profiles that are not the account logged in.
+   The demo's own follows live on the account and match this row. */
+var HZFOLLOWBY = { 'p-michal': { 'horizon-baltic':true, 'horizon-dust':true, 'horizon-quiet':true } };
 var HZCOUNT  = { 'horizon-baltic':41, 'horizon-dust':128, 'horizon-quiet':86, 'horizon-feed':52, 'horizon-surface':37, 'horizon-default':0 };
 /* counts are everyone else plus you, so a reload never loses or doubles your own */
 function hzFollowers(k){ return (HZCOUNT[k] || 0) + (S.loggedIn && HZFOLLOW[k] ? 1 : 0); }
@@ -3158,9 +3167,52 @@ function fileChronicle(id, role){
   if (ONLINE) HNAPI.rsvp(id);
   schedulePersist();
 }
+/* the account behind a profile. 'self' is whoever is logged in. */
+function horizonActor(pid){ return pid === 'self' ? myPid() : pid; }
+function horizonMine(pid){ var a = horizonActor(pid); return pid === 'self' || (!!a && S.loggedIn && a === myPid()); }
+function horizonsCreated(pid){
+  var keys = {};
+  publishedHorizonsOf(pid).forEach(function(k){ keys[k] = 1; });
+  var actor = horizonActor(pid);
+  if (actor && actor !== pid) publishedHorizonsOf(actor).forEach(function(k){ keys[k] = 1; });
+  if (horizonMine(pid)) MYHORIZONS.forEach(function(k){ if (HORIZONS[k]) keys[k] = 1; });
+  return Object.keys(keys).filter(function(k){
+    var h = HORIZONS[k];
+    return h && h.isPublished && !h.isPersonalDefault;
+  }).sort(function(a, b){ return HORIZONS[a].name < HORIZONS[b].name ? -1 : 1; });
+}
+/* public Horizons they follow, except ones already listed as created. Private ones never appear. */
+function horizonsFollowed(pid){
+  var created = {};
+  horizonsCreated(pid).forEach(function(k){ created[k] = 1; });
+  var src = horizonMine(pid) ? HZFOLLOW : (HZFOLLOWBY[horizonActor(pid)] || {});
+  return Object.keys(src).filter(function(k){
+    var h = HORIZONS[k];
+    return src[k] && h && h.isPublished && !h.isPersonalDefault && !created[k];
+  }).sort(function(a, b){ return HORIZONS[a].name < HORIZONS[b].name ? -1 : 1; });
+}
+function hzProfileRow(k){
+  return '<div class="crow">'+(hzOwnSquare(k) || hzCover(k) ? hzArt(k, 40) : '<span class="r-ic">'+ic('horizon')+'</span>')+
+    '<div class="cm" data-act="open" data-type="horizon" data-id="'+k+'"><div class="r-title">'+esc(HORIZONS[k].name)+'</div>' +
+    '<div class="r-meta">'+hzEventIds(k).length+' events · '+hzFollowers(k)+' followers</div></div></div>';
+}
+function horizonSection(pid, asOther){
+  var mine = pid === 'self' && S.loggedIn && !asOther, made = horizonsCreated(pid), followed = horizonsFollowed(pid);
+  if (!mine && !made.length && !followed.length) return '';
+  var note = mine ? 'Public Event Horizons you made, and the ones you follow.' : 'Public Event Horizons they made, and the ones they follow.';
+  var groups = { created:['Created', made], following:['Following', followed] };
+  var body = '<p class="chnote">'+esc(note)+'</p><div class="chcats">';
+  ['created','following'].forEach(function(kind){
+    var ids = groups[kind][1];
+    if (!mine && !ids.length) return;
+    body += '<div class="chcat" data-hz="'+kind+'"><h4 class="chh">'+groups[kind][0]+'</h4>' +
+      (ids.length ? ids.map(hzProfileRow).join('') : '<p class="chempty">None yet.</p>') + '</div>';
+  });
+  return '<section class="sect" data-sect="horizons"><h3>Event Horizons</h3>'+body+'</div></section>';
+}
 /* `asOther`: your own page as anybody else sees it (Edit profile's preview) */
 function personHTML(pid, asOther){
-  var p = person(pid), hz = publishedHorizonsOf(pid), st = PRESENCE[pid] || (asOther ? 'online' : 'offline'), fol = S.loggedIn && PFOLLOW[pid], me = pid === 'self' && !asOther;
+  var p = person(pid), st = PRESENCE[pid] || (asOther ? 'online' : 'offline'), fol = S.loggedIn && PFOLLOW[pid], me = pid === 'self' && !asOther;
   var hosts = allEvents().filter(function(e){ return canSeeEvent(e) && hostPersonOf(e) === PEOPLE[pid]; }).sort(byDate);
   var going = goingOf(pid).filter(function(e){ return !isPast(lastDay(e)); }).sort(byDate);
   var calls = CALLOUTS.filter(function(c){ return c.hostId === pid && calloutOpen(c); });
@@ -3168,18 +3220,14 @@ function personHTML(pid, asOther){
   var bar = me ? (S.loggedIn ? toolbarHTML(vb('editprofile', 'self', 'Edit profile', 'edit', { primary:true })) : '')
                : toolbarHTML(vb('followp', pid, fol ? 'Following' : 'Follow', fol ? 'check' : 'plus', { on:fol, primary:!fol, pressed:!!fol }), vb('dm', pid, 'Message', 'chat'));
   var facts = factGrid([['Based in', citiesOf(p).join(', ') || '—'], ['Hosting', String(hosts.filter(function(e){ return !isPast(lastDay(e)); }).length)],
-                        ['Going', String(going.length)], ['Horizons', String(hz.length)]]);
+                        ['Going', String(going.length)], ['Horizons', String(horizonsCreated(pid).length + horizonsFollowed(pid).length)]]);
   var s = sect('About', p.bio ? '<p class="evdesc">'+esc(p.bio)+'</p>' : '');
   s += sect('Skills', (p.skills || []).length ? '<div class="chips">' + p.skills.map(function(x){ return '<span class="chip plain">'+esc(skillLabel(x))+'</span>'; }).join('') + '</div>' : '');
   if (citiesOf(p).length > 1) s += sect('Cities', chipsHTML(citiesOf(p)));
   s += chronicleSection(pid);
+  s += horizonSection(pid, asOther);
   s += sect('Hosting', hosts.map(function(e){ return eventCRow(e, false); }).join(''));
   s += sect('Going', going.map(function(e){ return eventCRow(e, false); }).join(''));
-  s += sect('Event Horizons', hz.map(function(k){
-      return '<div class="crow">'+(hzOwnSquare(k) || hzCover(k) ? hzArt(k, 40) : '<span class="r-ic">'+ic('horizon')+'</span>')+
-        '<div class="cm" data-act="open" data-type="horizon" data-id="'+k+'"><div class="r-title">'+esc(HORIZONS[k].name)+'</div>' +
-        '<div class="r-meta">'+hzEventIds(k).length+' events · '+hzFollowers(k)+' followers</div></div></div>';
-    }).join(''));
   s += sect('Call outs', calls.map(function(c){
       return '<div class="crow"><span class="r-ic">'+ic('callout')+'</span><div class="cm" data-act="open" data-type="callout" data-id="'+c.id+'"><div class="r-title">'+esc(c.title)+'</div>' +
         '<div class="r-meta">open until '+esc(fmtDate(c.expiresAt))+'</div></div></div>';
@@ -5097,9 +5145,9 @@ function demoAcct(){
      Camp kitchen dinner is friends-only and its host does not follow the demo, so it would never appear. */
   a.role = { 'evt-world-hyperstition-2026':'cocreator', 'evt-world-warehouse':'cocreator', 'evt-world-borderland-2026':'attendee', 'evt-world-burning-man-2026':'attendee' };
   a.went = { 'evt-world-hyperstition-2026':true, 'evt-world-warehouse':true, 'evt-world-borderland-2026':true, 'evt-world-burning-man-2026':true, 'evt-chronicle-supper':true };
-  a.hzfollow = { 'horizon-baltic':true, 'horizon-dust':true, 'horizon-quiet':true };
+  a.hzfollow = Object.assign({}, HZFOLLOWBY['p-michal']);
   a.pfollow = { 'p-anna':true, 'p-rio':true, 'p-kai':true, 'p-sasha':true };
-  a.myevents = DEMOHOST.slice(); a.myhorizons = ['horizon-default'];
+  a.myevents = DEMOHOST.slice(); a.myhorizons = ['horizon-default', 'horizon-ridge'];
   a.chats = fixtureChats(); a.unread = { 'c-kai':true };
   return a;
 }

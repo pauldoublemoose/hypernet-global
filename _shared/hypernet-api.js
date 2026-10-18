@@ -177,8 +177,11 @@
     d.promotions.forEach(function(p){ if (p[0] === me) PM[p[1]] = true; else PC[p[1]] = (PC[p[1]] || 0) + 1; });
     window.RSVP = RS; window.WENT = WT; window.SHIFT = SH; window.PROMOTED = PM; window.PROMOCOUNT = PC;
     /* horizons */
-    var HZ = {}, HC = {}, HT = {}, HV = {}, HF = {}, mine = [];
-    d.hzFollows.forEach(function(f){ if (f[0] === me) HF[f[1]] = true; });
+    var HZ = {}, HC = {}, HT = {}, HV = {}, HF = {}, HB = {}, mine = [];
+    d.hzFollows.forEach(function(f){
+      if (f[0] === me) HF[f[1]] = true;
+      else if (f[0]) (HB[f[0]] = HB[f[0]] || {})[f[1]] = true;
+    });
     d.horizons.forEach(function(h){
       var own = !!me && h.ownerId === me;
       HZ[h.id] = { id:h.id, slug:h.slug, name:h.name, description:h.description || '', isPersonalDefault:!!h.isPersonalDefault, isPublished:!!h.publishedAt,
@@ -191,7 +194,7 @@
     fill(HORIZONS, HZ); fill(HZCOUNT, HC); fill(HZTHEME, HT);
     d.horizons.forEach(function(h){ if (h.coverEventId && E[h.coverEventId]) HV[h.id] = h.coverEventId; else if (HT[h.id] && hzOwnsSquare(h.id, HT[h.id])) HV[h.id] = 'own'; });
     fill(HZCOVER, HV);
-    window.HZFOLLOW = HF; window.MYHORIZONS = mine;
+    window.HZFOLLOW = HF; window.HZFOLLOWBY = HB; window.MYHORIZONS = mine;
     /* call outs and their replies */
     window.CALLOUTS = d.callouts.map(function(c){
       var own = !!me && c.authorId === me;

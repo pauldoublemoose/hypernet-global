@@ -5056,6 +5056,7 @@ function captureAcct(){
            chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT, drafts:{ forms:FORMDRAFTS, chat:CHATDRAFT }, shift:SHIFT, read:READ,
            look:PTHEME['self'] || null, joinedAt:(ACCTS[S.acct] || {}).joinedAt || 0 };
 }
+function keptChatMessage(m){ return m.from === 'sys' || m.text || m.cardType === 'horizon_invite'; }
 function loadAcct(a){
   a = a || blankAcct({ displayName:'', handle:'', bio:'', skills:[], cities:[], city:'' });
   var p = PEOPLE['self'], pr = a.profile || {};
@@ -5068,8 +5069,7 @@ function loadAcct(a){
   CHATS = (a.chats && a.chats.byId) || {};
   /* group chats kept from before chat was person to person are put away */
   Object.keys(CHATS).forEach(function(k){ if (CHATS[k].kind !== 'dm') delete CHATS[k]; });
-  /* chat is words only: cards sent into chats before (a shared event, horizon or call out) are put away */
-  Object.keys(CHATS).forEach(function(k){ CHATS[k].messages = (CHATS[k].messages || []).filter(function(m){ return m.from === 'sys' || m.text || m.cardType === 'horizon_invite'; }); delete CHATS[k].pin; });
+  Object.keys(CHATS).forEach(function(k){ CHATS[k].messages = (CHATS[k].messages || []).filter(keptChatMessage); delete CHATS[k].pin; });
   CHATORDER = ((a.chats && a.chats.order) || Object.keys(CHATS)).filter(function(k){ return CHATS[k]; });
   UNREADCHAT = a.unread || {};
   FORMDRAFTS = (a.drafts && a.drafts.forms) || {}; CHATDRAFT = (a.drafts && a.drafts.chat) || {};

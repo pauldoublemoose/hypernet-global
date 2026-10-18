@@ -1,18 +1,18 @@
 import { requirePerson } from "@/lib/auth";
-import { currentPerson } from "@/lib/auth";
 import { pgCode, sqlx } from "@/lib/db";
 import { horizonFor } from "@/lib/horizons";
 import { HttpError, json, readJson, route } from "@/lib/http";
 import { idParam, j, notFound, type Ctx } from "@/lib/ids";
+import { personOrNotFound } from "@/lib/relations";
 import { horizonPatch } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
-/** GET /api/horizons/:id — a published horizon, or your own. */
+/** GET /api/horizons/:id — a published horizon, or your own. A logged-out viewer gets the same 404 as a missing id. */
 export const GET = route(async (_req: Request, ctx: Ctx) => {
   const id = await idParam(ctx.params);
-  const { person } = await currentPerson();
-  const horizon = await horizonFor(id, person?.id ?? null);
+  const me = await personOrNotFound();
+  const horizon = await horizonFor(id, me.id);
   if (!horizon) throw notFound();
   return json({ horizon });
 });

@@ -96,11 +96,12 @@ describe("login and join", () => {
 describe("the network", () => {
   // 2026-10-05 (v5-feed): Home's "N people joined Hypernet" and Explore → People newest first read when an account was made
   it("says when people joined, and never their emails", async () => {
-    const people = (await anon.get("/api/bootstrap")).body.people as Record<string, unknown>[];
+    const people = (await a.get("/api/bootstrap")).body.people as Record<string, unknown>[];
     const pa = people.find((p) => p.id === aId);
     expect(pa).toBeDefined();
     expect(Date.parse(String(pa!.createdAt))).toBeGreaterThan(Date.now() - 3600_000);
     expect(people.every((p) => !("email" in p) && !("authUserId" in p))).toBe(true);
+    expect((await anon.get("/api/bootstrap")).body.people).toEqual([]);
   });
 });
 
@@ -168,7 +169,7 @@ describe("RSVPs, promotions, follows, activity", () => {
     expect(actA).toContainEqual(expect.objectContaining({ actor: bId, verb: "interested", objId: ids.fri }));
     expect(actA).toContainEqual(expect.objectContaining({ actor: aId, verb: "followed_person", objId: bId }));
     const actAnon = (await anon.get("/api/bootstrap")).body.activity;
-    expect(actAnon.some((x: any) => x.objId === ids.pub || x.objId === ids.fri || x.objId === ids.me)).toBe(false);
+    expect(actAnon).toEqual([]);
   });
   it("cannot follow yourself or nobody", async () => {
     expect((await a.put(`/api/people/${aId}/follow`)).status).toBe(400);
@@ -187,9 +188,10 @@ describe("horizons", () => {
     const hzB = (await b.get("/api/bootstrap")).body.horizons.find((h: any) => h.id === ids.hz);
     expect(hzB.eventIds).toEqual([ids.pub, ids.fri]); // only_me stays hidden inside a public horizon
     expect((await b.put(`/api/horizons/${ids.hz}/follow`)).status).toBe(200);
-    const hzAnon = (await anon.get(`/api/horizons/${ids.hz}`)).body.horizon;
-    expect(hzAnon.followers).toBe(1);
-    expect(hzAnon.eventIds).toEqual([]);
+    expect((await anon.get(`/api/horizons/${ids.hz}`)).status).toBe(404);
+    const hzB2 = (await b.get(`/api/horizons/${ids.hz}`)).body.horizon;
+    expect(hzB2.followers).toBe(1);
+    expect(hzB2.eventIds).toEqual([ids.pub, ids.fri]);
   });
   it("its owner reorders and removes; nobody else can", async () => {
     expect((await b.put(`/api/horizons/${ids.hz}/events`, { eventIds: [] })).status).toBe(404);
@@ -265,6 +267,21 @@ describe("friends and contact lists", () => {
     expect(boot.follows.every((f: string[]) => f.includes(bId))).toBe(true);
     expect((await anon.get("/api/bootstrap")).body.follows).toEqual([]);
     expect((await anon.get("/api/bootstrap")).body.friendships).toEqual([]);
+    const empty = (await anon.get("/api/bootstrap")).body;
+    expect(empty.people).toEqual([]);
+    expect(empty.horizons).toEqual([]);
+    expect(empty.callouts).toEqual([]);
+    expect(empty.activity).toEqual([]);
+    expect(empty.events).toEqual([]);
+    const ff = (await a.get("/api/bootstrap")).body.friendFollows as [string, string][];
+    expect(ff).toContainEqual([bId, aId]);
+    expect(ff.some((f) => f[0] === aId)).toBe(false);
+    expect((await anon.get(`/api/people/${aId}/relations`)).status).toBe(404);
+    const rel = await a.get(`/api/people/${aId}/relations`);
+    expect(rel.status).toBe(200);
+    expect(rel.body.friends.map((p: { id: string }) => p.id)).toContain(bId);
+    expect((await b.get(`/api/people/${aId}/relations`)).body.friends).toBeNull();
+    expect((await b.get(`/api/people/${aId}/relations`)).body.followers.map((p: { id: string }) => p.id)).toContain(bId);
   });
   it("lists are the owner's; a duplicate name is 409; exclude blocks delete", async () => {
     const created = await a.post("/api/lists", { name: `Crew ${RUN}` });

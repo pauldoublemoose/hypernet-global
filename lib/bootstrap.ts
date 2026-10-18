@@ -18,7 +18,10 @@ export const EVENT_JSON = `json_build_object(
 export const PERSON_JSON = `json_build_object('id', p.id, 'handle', p.handle, 'displayName', p.display_name, 'bio', p.bio,
   'skills', p.skills, 'cities', p.cities, 'look', p.look, 'lastSeenAt', p.last_seen_at, 'createdAt', p.created_at,
   'followerCount', (select count(*) from person_follows f where f.followee_id = p.id),
-  'followingCount', (select count(*) from person_follows f where f.follower_id = p.id))`;
+  'followingCount', (select count(*) from person_follows f where f.follower_id = p.id),
+  'friendCount', (select count(*) from friendships fr where fr.status = 'accepted' and (fr.a = p.id or fr.b = p.id)),
+  'followedBy', (select coalesce(json_agg(s.follower_id), '[]'::json) from (
+     select pf.follower_id from person_follows pf where pf.followee_id = p.id order by pf.created_at desc limit 3) s))`;
 
 /** Audience leaves the process only for the host. Everyone else keeps `privacy`. */
 export function presentEvent<T extends { hostId?: string | null; audience?: unknown }>(event: T | null, viewer: string | null): T | null {
@@ -53,8 +56,27 @@ export type Bootstrap = {
   friendFollows: [string, string][];
 };
 
-/** The bootstrap for a viewer (a person id, or null when logged out / not joined). */
+const EMPTY_BOOTSTRAP: Bootstrap = {
+  hypernet: 1,
+  people: [],
+  follows: [],
+  events: [],
+  rsvps: [],
+  promotions: [],
+  horizons: [],
+  hzFollows: [],
+  callouts: [],
+  replies: [],
+  activity: [],
+  chats: [],
+  friendships: [],
+  lists: [],
+  friendFollows: [],
+};
+
+/** The bootstrap for a viewer (a person id, or null when logged out / not joined). A null viewer gets the empty shell and no query. */
 export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
+  if (viewer == null) return EMPTY_BOOTSTRAP;
   const sql = sqlx();
   const one = (text: string) => sql.query(text, [viewer]);
   const none = (text: string) => sql.query(text, []);
@@ -105,8 +127,10 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
              'memberIds', coalesce((select json_agg(m.person_id) from contact_list_members m where m.list_id = l.id), '[]'))), '[]') v
              from contact_lists l where l.owner_id = $1::uuid`),
       one(`select coalesce(json_agg(json_build_array(f.follower_id, f.followee_id)), '[]') v from person_follows f
-             where $1::uuid is not null
-               and f.follower_id in (select followee_id from person_follows where follower_id = $1::uuid)`),
+             where f.follower_id in (
+               select case when fr.a = $1::uuid then fr.b else fr.a end
+               from friendships fr
+               where fr.status = 'accepted' and (fr.a = $1::uuid or fr.b = $1::uuid))`),
     ],
     { readOnly: true, isolationLevel: "RepeatableRead" },
   );

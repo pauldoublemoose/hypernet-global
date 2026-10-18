@@ -19,7 +19,8 @@ const mine = (me: string) => or(eq(e.hostId, me), and(isNull(e.hostId), eq(e.sou
 export const GET = route(async (_req: Request, ctx: Ctx) => {
   const id = await idParam(ctx.params, "id", HIDDEN);
   const { person } = await currentPerson();
-  const event = await eventFor(id, person?.id ?? null);
+  if (!person) throw notFound(HIDDEN);
+  const event = await eventFor(id, person.id);
   if (!event) throw notFound(HIDDEN);
   return json({ event });
 });

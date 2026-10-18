@@ -16,6 +16,7 @@ export const dynamic = "force-dynamic";
 export const GET = route(async (req: Request) => {
   const q = eventQuery.parse(Object.fromEntries(new URL(req.url).searchParams));
   const { person } = await currentPerson();
+  if (!person) return json({ events: [], viewer: null });
   const rows = (await sqlx().query(
     `select coalesce(json_agg(v order by starts_on, title), '[]') v from (
        select ${EVENT_JSON} v, e.starts_on, e.title from events e

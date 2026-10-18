@@ -97,6 +97,8 @@
       access:e.access || undefined, whatToBring:e.whatToBring || [] });
     if (Array.isArray(e.tags)) r.tags = e.tags.slice();
     else delete r.tags;
+    if (Array.isArray(e.schedule)) r.schedule = e.schedule;
+    else delete r.schedule;
     if (!r.venueKind) r.venueKind = e.city || e.venue ? 'physical' : undefined;
     var ev = { id:e.id, slug:e.slug, title:e.title, date:e.startsOn, description:e.description, hostName:e.hostName, hostId:e.hostId,
                privacy:e.privacy, city:e.city || '', kind: det._kind || (e.source === 'import' ? 'real' : e.source === 'link' ? 'link' : 'own'), ownerIds:[], source:e.source,
@@ -402,7 +404,20 @@
     if (l.colors) o.colors = l.colors;
     return o;
   }
-  var COLS = ['id','title','date','endDate','startTime','endTime','timezone','privacy','hostName','description','whatToBring','kind','tags','city','region','country','venue','access','_prev','_prevYear'];
+  var COLS = ['id','title','date','endDate','startTime','endTime','timezone','privacy','hostName','description','whatToBring','kind','tags','schedule','city','region','country','venue','access','_prev','_prevYear'];
+  var WALL = /^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/;
+  function scheduleOut(list){
+    if (!Array.isArray(list)) return null;
+    var out = [];
+    list.forEach(function(b){
+      if (!b || typeof b.title !== 'string' || !b.title.trim() || !WALL.test(b.start || '')) return;
+      var o = { title:b.title.trim().slice(0, 140), start:b.start };
+      if (WALL.test(b.end || '') && b.end > b.start) o.end = b.end;
+      out.push(o);
+    });
+    out.sort(function(a, b){ return a.start < b.start ? -1 : a.start > b.start ? 1 : 0; });
+    return out.length ? out.slice(0, 40) : null;
+  }
   function eventBody(id){
     var e = EVENTS[id], r = REC[id] || {}, details = {};
     Object.keys(r).forEach(function(k){ if (COLS.indexOf(k) < 0 && r[k] !== undefined) details[k] = r[k]; });
@@ -410,6 +425,7 @@
     return { title:e.title, description:r.description || e.description || '', startsOn:e.date, endsOn:r.endDate || null,
       startTime:r.startTime || null, endTime:r.endTime || null, kind:r.kind || 'meetup',
       tags: Array.isArray(r.tags) ? r.tags.filter(function(id, i, a){ return typeof id === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id) && a.indexOf(id) === i; }).slice(0, 60) : null,
+      schedule: scheduleOut(r.schedule),
       privacy:e.privacy || 'everyone',
       city: r.venueKind === 'virtual' ? null : (city || null), venue: r.venue || null, access: r.access || null,
       whatToBring: Array.isArray(r.whatToBring) ? r.whatToBring : [], details:details,

@@ -59,6 +59,21 @@ const eventFields = {
     .transform((ids) => ids.filter((id, i) => ids.indexOf(id) === i))
     .nullable()
     .optional(),
+  schedule: z
+    .array(
+      z
+        .object({
+          title: z.string().trim().min(1).max(140),
+          start: z.string().regex(/^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/, "a date and time like 2026-10-18T18:00"),
+          end: z.string().regex(/^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/, "a date and time like 2026-10-18T19:00").optional(),
+        })
+        .strict()
+        .refine((b) => !b.end || b.end > b.start, { message: "ends before it starts", path: ["end"] }),
+    )
+    .max(40)
+    .transform((blocks) => (blocks.length ? [...blocks].sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0)) : null))
+    .nullable()
+    .optional(),
   privacy: z.enum(PRIVACY),
   city: z.string().max(120).nullable(),
   region: z.string().max(120).nullable(),

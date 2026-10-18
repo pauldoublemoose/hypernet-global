@@ -1221,6 +1221,23 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 [data-theme="y2fresh"] .tagbox, [data-theme="y2fresh"] .tagpanel{ border:3px solid var(--rule); }
 [data-theme="y2fresh"] .tagpanel{ background:var(--white); }
 @media (pointer:coarse){ .tagopt{ min-height:44px; } .tagx{ width:28px; height:28px; } }
+.schedfield{ display:flex; flex-direction:column; align-items:flex-start; gap:8px; }
+.schedlab{ font-size:var(--fs); line-height:20px; color:var(--ink); }
+.schedrow{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; width:100%; }
+.schedtitle{ flex:1 1 10em; min-width:8em; }
+.schedrow :is(input, select){ height:var(--ctl); margin:0; padding:0 8px; border:0; background:var(--white); color:var(--ink); box-shadow:var(--in); font:inherit; font-size:var(--fs); min-width:0; }
+.schedrow input[type=time]{ width:7.5em; flex:0 0 auto; }
+.schedrow select{ width:auto; flex:0 0 auto; }
+.schedend{ border:0; background:transparent; color:var(--ink2); font:inherit; font-size:var(--fs-s); line-height:20px; text-decoration:underline; text-underline-offset:3px; padding:4px; cursor:pointer; }
+.schedadd, .schedx{ border:0; background:var(--face); color:var(--ink); box-shadow:var(--out); font:inherit; font-size:var(--fs); cursor:pointer; }
+.schedadd{ height:var(--ctl); padding:0 14px; }
+.schedx{ width:var(--ctl); height:var(--ctl); }
+[data-theme="y2fresh"] .schedrow :is(input, select), [data-theme="y2fresh"] .schedadd, [data-theme="y2fresh"] .schedx{ border:3px solid var(--rule); }
+.tt{ display:flex; flex-direction:column; gap:4px; }
+.ttrow{ display:flex; gap:12px; align-items:baseline; font-size:var(--fs); line-height:1.45; color:var(--ink); }
+.ttwhen{ flex:0 0 auto; }
+.ttwhat{ min-width:0; }
+@media (pointer:coarse){ .schedend{ min-height:44px; } }
 
 /* ---------- themes ---------------------------------------------------
    Windows (data-theme="win2k") is :root above, unchanged.
@@ -2933,6 +2950,7 @@ function canvasHTML(evId){
   var bar = !past ? verbsHTML(evId) : S.loggedIn ? toolbarHTML(vb('v-went', evId, 'Went', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] }), vb('share', evId, 'Share', 'share')) : '';
   /* Details (the facts grid) → About → Call outs → Who's going → the plan → the rest, only what there is */
   var s = sect('About', descOf(e) ? '<p class="evdesc">'+esc(descOf(e))+'</p>' : '');
+  s += scheduleHTML(evId);
   if (r.theme) s += sect('Theme', '<div class="themeline">'+esc(typeof r.theme === 'object' ? (r.theme.name || '') : r.theme)+'</div>' +
                                    (r.theme.blurb ? '<p>'+esc(r.theme.blurb)+'</p>' : ''));
   s += sect('Call outs', calloutsHTML(r.calloutIds, evId)).replace('<section class="sect">', '<section class="sect" data-sect="callouts">');
@@ -5872,9 +5890,162 @@ function privacyHTML(d){
     Object.keys(PRIVACY).map(function(p){ return '<option value="'+p+'"'+(p===d.privacy?' selected':'')+'>'+PRIVACY[p]+'</option>'; }).join('') +
     '</select><p class="fhelp">Friends are the people you follow. Only me keeps it to you.</p></div>';
 }
+function splitWhen(iso){
+  var m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(iso || '');
+  return m ? { day:m[1], time:m[2] } : { day:'', time:'' };
+}
+function joinWhen(day, time){ return day && /^\d{2}:\d{2}$/.test(time || '') ? day + 'T' + time : ''; }
+function eventDayList(d){
+  var a = isoDate(d && d.date), b = isoDate(d && d.end);
+  if (!a) return [];
+  if (!b || b < a) b = a;
+  var days = [], cur = dOf(a), last = dOf(b), n = 0;
+  while (cur <= last && n < 21){ days.push(isoOf(cur)); cur.setDate(cur.getDate() + 1); n++; }
+  return days;
+}
+function dayName(iso, days){
+  var d = dOf(iso), repeat = days.filter(function(x){ return dOf(x).getDay() === d.getDay(); }).length > 1;
+  return DAY[d.getDay()] + (repeat ? ' ' + d.getDate() : '');
+}
+function eventStartISO(d){
+  var day = isoDate(d.date) || '';
+  var time = /^\d\d:\d\d/.test(d.startTime || '') ? String(d.startTime).slice(0, 5) : '00:00';
+  return day ? day + 'T' + time : '';
+}
+function eventEndISO(d){
+  var day = isoDate(d.end) || isoDate(d.date) || '';
+  if (!day || !/^\d\d:\d\d/.test(d.endTime || '')) return '';
+  return day + 'T' + String(d.endTime).slice(0, 5);
+}
+function addHoursWhen(iso, h){
+  var p = splitWhen(iso);
+  if (!p.day || !p.time) return '';
+  var bits = p.time.split(':'), dt = dOf(p.day);
+  dt.setHours(+bits[0] + h, +bits[1], 0, 0);
+  return isoOf(dt) + 'T' + ('0' + dt.getHours()).slice(-2) + ':' + ('0' + dt.getMinutes()).slice(-2);
+}
+function addDaysWhen(iso, n){
+  var p = splitWhen(iso);
+  if (!p.day) return iso;
+  var dt = dOf(p.day);
+  dt.setDate(dt.getDate() + n);
+  return isoOf(dt) + 'T' + p.time;
+}
+function whenFields(which, iso, days, multi){
+  var p = splitWhen(iso), time = '<input type="time" data-sched="'+which+'" value="'+esc(p.time)+'" aria-label="'+(which === 'end' ? 'End time' : 'Start time')+'">';
+  if (!multi) return time;
+  var opts = days.map(function(day){ return '<option value="'+day+'"'+(day === p.day ? ' selected' : '')+'>'+esc(dayName(day, days))+'</option>'; }).join('');
+  if (p.day && days.indexOf(p.day) < 0) opts = '<option value="'+esc(p.day)+'" selected>'+esc(dayName(p.day, days.concat([p.day])))+'</option>' + opts;
+  return '<select data-sched="'+which+'day" aria-label="'+(which === 'end' ? 'End day' : 'Start day')+'">'+opts+'</select>' + time;
+}
+function schedFieldHTML(d){
+  var days = eventDayList(d), multi = days.length > 1;
+  var rows = (d.schedule || []).map(function(b, i){
+    var end = b.end ? whenFields('end', b.end, days, multi) : '<button type="button" class="schedend" data-act="schedend" data-id="'+i+'">+ add end</button>';
+    return '<div class="schedrow" data-i="'+i+'"><input type="text" class="schedtitle" data-sched="title" value="'+esc(b.title || '')+'" placeholder="Title" aria-label="Block title" autocomplete="off">' +
+      whenFields('start', b.start, days, multi) + end +
+      '<button type="button" class="schedx" data-act="schedx" data-id="'+i+'" aria-label="Remove block">\u00d7</button></div>';
+  }).join('');
+  return '<div class="field schedfield" id="w-sched"><span class="schedlab">Time table'+WZOPT+'</span>' + rows +
+    '<button type="button" class="schedadd" data-act="schedadd">+ Add block</button></div>';
+}
+function schedMount(focusI){
+  var el = document.getElementById('w-sched');
+  if (!el || !DRAFT) return;
+  el.outerHTML = schedFieldHTML(DRAFT);
+  if (focusI == null) return;
+  var t = document.querySelector('.schedrow[data-i="'+focusI+'"] [data-sched="title"]');
+  if (t) t.focus();
+}
+function schedAdd(){
+  if (!DRAFT) return;
+  if (!DRAFT.schedule) DRAFT.schedule = [];
+  var prev = DRAFT.schedule[DRAFT.schedule.length - 1];
+  DRAFT.schedule.push({ title:'', start: prev ? (prev.end || prev.start) : eventStartISO(DRAFT) });
+  schedMount(DRAFT.schedule.length - 1);
+  schedulePersist();
+}
+function schedEnd(i){
+  var b = DRAFT && DRAFT.schedule && DRAFT.schedule[i];
+  if (!b || b.end) return;
+  var ev = eventEndISO(DRAFT);
+  b.end = ev && b.start && ev > b.start ? ev : addHoursWhen(b.start, 1);
+  schedMount(null);
+  var t = document.querySelector('.schedrow[data-i="'+i+'"] [data-sched="end"]');
+  if (t) t.focus();
+  schedulePersist();
+}
+function schedRemove(i){
+  if (!DRAFT || !DRAFT.schedule) return;
+  DRAFT.schedule.splice(i, 1);
+  schedMount(null);
+  schedulePersist();
+}
+function schedTouch(n){
+  var row = n.closest && n.closest('.schedrow');
+  if (!row || !DRAFT || !DRAFT.schedule) return false;
+  var b = DRAFT.schedule[+row.getAttribute('data-i')];
+  if (!b) return false;
+  var k = n.getAttribute('data-sched');
+  if (k === 'title'){ b.title = n.value; schedulePersist(); return true; }
+  var start = splitWhen(b.start), end = b.end ? splitWhen(b.end) : null;
+  if (k === 'start') start.time = n.value;
+  if (k === 'startday') start.day = n.value;
+  if (k === 'end' && end) end.time = n.value;
+  if (k === 'endday' && end) end.day = n.value;
+  b.start = joinWhen(start.day, start.time);
+  if (end) b.end = joinWhen(end.day, end.time);
+  schedulePersist();
+  return true;
+}
+function scheduleForSave(d){
+  var multi = eventDayList(d).length > 1;
+  var blocks = (d.schedule || []).map(function(b){
+    var o = { title:String(b.title || '').trim(), start:b.start || '' };
+    if (b.end) o.end = b.end;
+    return o;
+  }).filter(function(b){ return b.title && /^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/.test(b.start); });
+  blocks.forEach(function(b){
+    if (!b.end || !/^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/.test(b.end) || b.end <= b.start) delete b.end;
+  });
+  if (!multi){
+    var i, g;
+    for (i = 1; i < blocks.length; i++){
+      g = 0;
+      while (blocks[i].start <= blocks[i - 1].start && g < 3){
+        blocks[i].start = addDaysWhen(blocks[i].start, 1);
+        if (blocks[i].end) blocks[i].end = addDaysWhen(blocks[i].end, 1);
+        g++;
+      }
+    }
+  }
+  blocks.sort(function(a, b){ return a.start < b.start ? -1 : a.start > b.start ? 1 : 0; });
+  return blocks.length ? blocks : null;
+}
+function blockWhen(b, multi, days){
+  var a = splitWhen(b.start);
+  if (!a.time) return '';
+  var left = multi ? dayName(a.day, days) + ' ' + a.time : a.time;
+  if (!b.end) return left;
+  var e = splitWhen(b.end);
+  if (!e.time) return left;
+  if (!multi || e.day === a.day) return left + '–' + e.time;
+  return left + ' – ' + dayName(e.day, days) + ' ' + e.time;
+}
+function scheduleHTML(evId){
+  var e = EVENTS[evId], r = recOf(evId);
+  var list = (Array.isArray(r.schedule) ? r.schedule : []).filter(function(b){ return b && b.title && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(b.start || ''); })
+    .slice().sort(function(a, b){ return a.start < b.start ? -1 : a.start > b.start ? 1 : 0; });
+  if (!list.length || !e) return '';
+  var days = eventDayList({ date:e.date, end:r.endDate || '' }), multi = days.length > 1;
+  return sect('Time table', '<div class="tt">' + list.map(function(b){
+    return '<div class="ttrow"><span class="ttwhen">'+esc(blockWhen(b, multi, days))+'</span><span class="ttwhat">'+esc(b.title)+'</span></div>';
+  }).join('') + '</div>');
+}
 function wordsHTML(d, miss){
   return '<div class="field"><label for="w-desc">Description</label><textarea id="w-desc" data-cz="desc" rows="5" placeholder="Hot box on the ridge, a bucket of lake water, and nobody checking the time." aria-required="true" aria-describedby="err-desc"'+wzBad(miss, 'desc')+'>'+esc(d.desc)+'</textarea>' + wzErr(miss, 'desc') + '</div>' +
-    '<div class="field"><label for="w-b">Bring'+WZOPT+'</label><textarea id="w-b" data-cz="bring" rows="3" placeholder="A towel&#10;Something warm for after">'+esc(d.bring)+'</textarea></div>';
+    '<div class="field"><label for="w-b">Bring'+WZOPT+'</label><textarea id="w-b" data-cz="bring" rows="3" placeholder="A towel&#10;Something warm for after">'+esc(d.bring)+'</textarea></div>' +
+    schedFieldHTML(d);
 }
 /* the steps, as short tabs that always fit (owner, 2026-10-05: the "1 · Basics / 2 · Words / 3 · Look optional" tabs
    overflowed on a phone): back is always open, forward only past steps that have everything they need (2026-10-04) */
@@ -5978,7 +6149,7 @@ function paintWiz(){
 var FORMDRAFTS = {};
 var EVENTKINDS = ['meetup','build','workshop','volunteer_day','fundraiser','camp_meeting','burn_night','town_hall','decompression','burn','sale','other'];
 function blankEventDraft(){
-  return Object.assign({ step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', baseKind:'meetup', tags:[], city:'', online:false, privacy:'everyone', entry:'free', desc:'', bring:'',
+  return Object.assign({ step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', baseKind:'meetup', tags:[], schedule:[], city:'', online:false, privacy:'everyone', entry:'free', desc:'', bring:'',
            lookTouched:false }, lookDraft(plainTheme('◉')));
 }
 function eventDraftDirty(d){
@@ -6028,7 +6199,9 @@ var editEventDialog = gated(function(evId){
   DRAFT = Object.assign({ form:'event', mode:'edit', step:1, editing:evId, title:e.title, date:e.date, end:r.endDate || '', city:r.city || cityShort(e.city), online:r.venueKind === 'virtual',
             privacy:e.privacy || 'everyone', entry:(r.access && r.access.model) || 'free', desc:descOf(e),
             kind:r.kind || 'meetup', baseKind:r.kind || 'meetup', tags:eventTagIds(r), startTime:r.startTime || '', endTime:r.endTime || '',
-            bring: Array.isArray(r.whatToBring) ? r.whatToBring.join('\n') : (r.whatToBring || ''), lookTouched:false }, lookDraft(TH(evId)));
+            bring: Array.isArray(r.whatToBring) ? r.whatToBring.join('\n') : (r.whatToBring || ''),
+            schedule: (Array.isArray(r.schedule) ? r.schedule : []).map(function(b){ var o = { title:b.title || '', start:b.start || '' }; if (b.end) o.end = b.end; return o; }),
+            lookTouched:false }, lookDraft(TH(evId)));
   dialog('Edit ' + e.title, wizBodyHTML(), wizFootHTML(), 900, 'edlg');
   focusIn('w-t');
 });
@@ -6103,6 +6276,7 @@ function saveEventEdit(t){
   r.startTime = DRAFT.startTime || undefined; r.endTime = DRAFT.endTime || undefined;
   r.access = Object.assign({}, r.access || {}, { model:DRAFT.entry });
   r.whatToBring = String(DRAFT.bring || '').split('\n').map(function(x){ return x.trim(); }).filter(Boolean);
+  var schE = scheduleForSave(DRAFT); if (schE) r.schedule = schE; else delete r.schedule;
   if (!r.burn && r.scale !== 'burn') r.scale = r.endDate ? 'gathering' : 'meetup';
   setEventLook(id, t);
   delete PLAINCACHE[id];
@@ -6135,6 +6309,7 @@ function wizAct(which){
   REC[id] = { kind:tk.kind, tags:tk.tags, startTime:DRAFT.startTime || undefined, endTime:DRAFT.endTime || undefined, scale: end && end > start ? 'gathering' : 'meetup', endDate: end && end > start ? end : undefined,
               venueKind:DRAFT.online ? 'virtual' : 'physical', city:city, venue:DRAFT.online ? undefined : { name:city, addressVisibility:'public' }, description:DRAFT.desc,
               access:{ model:DRAFT.entry }, whatToBring: String(DRAFT.bring||'').split('\n').map(function(s){ return s.trim(); }).filter(Boolean) };
+  var schN = scheduleForSave(DRAFT); if (schN) REC[id].schedule = schN;
   if (t){ t.glyph = PLAINGLYPH[REC[id].kind] || '◆'; window.HYPERNET_THEMES.themes[id] = t; }
   MYEVENTS.push(id); PROMOCOUNT[id] = 0; READ[id] = true;
   if (ONLINE) HNAPI.createEvent(id);
@@ -6833,6 +7008,9 @@ document.addEventListener('click', function(ev){
     case 'tagtoggle': tagToggle(); break;
     case 'tagpick':   tagPick(id); break;
     case 'tagx':      tagRemove(id); break;
+    case 'schedadd':  schedAdd(); break;
+    case 'schedend':  schedEnd(+id); break;
+    case 'schedx':    schedRemove(+id); break;
     case 'newmenu':  if (POP){ closePopup(); break; } popup(n, NEWITEMS); break;
     case 'acctmenu': if (POP){ closePopup(); break; } popup(n, [{ label:'Your profile', cmd:'profile', icon:'user' }, { label:'Edit profile', cmd:'editprofile', icon:'edit' }, '-', { label:'Log out', cmd:'logout', icon:'back' }]); break;
     case 'newsheet': newSheet(); break;
@@ -7022,6 +7200,7 @@ document.addEventListener('click', function(ev){
 });
 document.addEventListener('change', function(ev){
   var n = ev.target;
+  if (n.getAttribute && n.getAttribute('data-sched')){ schedTouch(n); return; }
   if (n.getAttribute('data-czfile')){ var fl = n.files && n.files[0]; n.value = ''; if (n.getAttribute('data-czfile') === 'photo') pfTakePhoto(fl); else czTakeFile(fl); return; }
   if (n.closest('[data-cz]') && DRAFT){
     var k = n.getAttribute('data-cz');
@@ -7057,6 +7236,7 @@ document.addEventListener('input', function(ev){
   if (/^nh-[nd]$/.test(n.id)){ saveForm('horizon'); return; }
   if (n.id === 'pk-q'){ PK.q = n.value; pickerPaint(); return; }
   if (n.id === 'w-tagq'){ tagFilter(n.value); return; }
+  if (n.getAttribute && n.getAttribute('data-sched')){ schedTouch(n); return; }
   if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT' || n.type === 'checkbox' || n.type === 'radio') return;
   var kz = n.getAttribute('data-cz');
   if (/^c[123]$/.test(kz)){ czSetColor(kz, n.value, n); return; }

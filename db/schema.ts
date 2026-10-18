@@ -69,6 +69,8 @@ export const events = pgTable(
     kind: text("kind").notNull().default("meetup"),
     // null means the host never set tags; the client then maps kind. [] means they set none.
     tags: text("tags").array(),
+    // null means no time table. Blocks are in start order: { title, start, end? } as wall-clock YYYY-MM-DDTHH:MM.
+    schedule: jsonb("schedule").$type<{ title: string; start: string; end?: string }[] | null>(),
     privacy: privacy("privacy").notNull().default("everyone"),
     city: text("city"),
     region: text("region"),

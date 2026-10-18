@@ -239,15 +239,23 @@ export function buildSeed(target, { now = Date.now(), only = null } = {}) {
     const kind = KINDS.includes(r.kind) ? r.kind : r.kind ? String(r.kind) : "meetup";
     const tagOk = (id) => typeof id === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id);
     const tags = Array.isArray(r.tags) ? [...new Set(r.tags.filter(tagOk))].slice(0, 60) : null;
+    const wall = /^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/;
+    const schedule = Array.isArray(r.schedule) ? r.schedule.flatMap((b) => {
+      if (!b || typeof b.title !== "string" || !b.title.trim() || !wall.test(b.start || "")) return [];
+      const o = { title: b.title.trim().slice(0, 140), start: b.start };
+      if (wall.test(b.end || "") && b.end > b.start) o.end = b.end;
+      return [o];
+    }).sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0)).slice(0, 40) : null;
     const details = { ...r, _kind: e.kind };
     for (const k of ["id", "title", "date", "endDate", "startTime", "endTime", "timezone", "privacy", "hostName", "description", "whatToBring",
-      "kind", "tags", "city", "region", "country", "venue", "access", "picture"]) delete details[k];
+      "kind", "tags", "schedule", "city", "region", "country", "venue", "access", "picture"]) delete details[k];
     out.push(insert("events", {
       id: q(eventIdOf(id)), slug: q(slug), host_id: hostFid ? q(pid(hostFid)) : "null", host_name: q(e.hostName || "Hypernet"),
       title: q(e.title), description: q(r.description || e.description || ""), starts_on: q(start), ends_on: q(endRaw && endRaw > start ? endRaw : null),
       start_time: q(/^\d\d:\d\d/.test(r.startTime || "") ? r.startTime : null), end_time: q(/^\d\d:\d\d/.test(r.endTime || "") ? r.endTime : null),
       timezone: q(r.timezone || H.meta?.timezone || "Europe/Stockholm"), kind: q(kind),
-      tags: tags ? qa(tags) : "null", privacy: `${q(["everyone", "friends", "only_me"].includes(e.privacy) ? e.privacy : "only_me")}::privacy`,
+      tags: tags ? qa(tags) : "null", schedule: schedule && schedule.length ? qj(schedule) : "null",
+      privacy: `${q(["everyone", "friends", "only_me"].includes(e.privacy) ? e.privacy : "only_me")}::privacy`,
       city: q(r.city || cityShort(e.city) || null), region: q(r.region || null), country: q(r.country || null),
       venue: qj(r.venue || null), access: qj(r.access || null),
       what_to_bring: qa(Array.isArray(r.whatToBring) ? r.whatToBring.map(String) : r.whatToBring ? [String(r.whatToBring)] : []),

@@ -40,6 +40,13 @@ window.HYPERNET_DETAILS = { records: {
     "access": { "model": "invite", "note": "Camp members and their guests. Entry to the wider burn needs its own membership." },
     "principles": { "base": "10 Principles", "additions": [ "Consent", "Co-creation" ] },
     "blocks": [ { "label": "build", "date": "2026-06-10" }, { "label": "event", "date": "2026-06-12", "startTime": "16:00" }, { "label": "strike", "date": "2026-06-14", "startTime": "14:00" } ],
+    "schedule": [
+      { "title": "Build starts", "start": "2026-06-12T12:00" },
+      { "title": "Dinner", "start": "2026-06-12T18:00" },
+      { "title": "Build continues", "start": "2026-06-13T12:00", "end": "2026-06-13T18:00" },
+      { "title": "Dinner", "start": "2026-06-13T18:00" },
+      { "title": "Party", "start": "2026-06-13T20:00" }
+    ],
     "volunteering": { "expectation": "expected", "teams": [ "Build", "Exit rituals", "Strike crew" ] }
   },
 
@@ -58,6 +65,11 @@ window.HYPERNET_DETAILS = { records: {
     "startTime": "21:00", "endTime": "04:00",
     "venue": { "name": "A warehouse", "addressVisibility": "secret" },
     "description": "A one-night session for the people on the roster.",
+    "schedule": [
+      { "title": "DJ A", "start": "2026-09-04T21:00" },
+      { "title": "DJ B", "start": "2026-09-04T22:30" },
+      { "title": "DJ C", "start": "2026-09-05T00:00" }
+    ],
     "access": { "model": "invite", "note": "Participants only." }
   },
 

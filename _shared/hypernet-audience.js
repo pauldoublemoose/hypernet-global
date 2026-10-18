@@ -196,7 +196,8 @@
       if (r.token !== "everyone") boxes += audBox("exclude", r.token, r.label, exc);
       return '<div class="audrow"><span class="audname">' + escAttr(r.label) + '</span><span class="audboxes">' + boxes + "</span></div>";
     }).join("");
-    return '<div class="audpick" id="w-p" role="group" aria-label="Who can see it">' + body +
+    var head = '<div class="audrow audhead" aria-hidden="true"><span class="audname"></span><span class="audboxes"><span class="audh">Show</span><span class="audh">Hide</span></span></div>';
+    return '<div class="audpick" id="w-p" role="group" aria-label="Who can see it">' + head + body +
       '<p class="audsum">' + escAttr(summary(a, function (id) { return names[id]; })) + "</p></div>";
   }
 

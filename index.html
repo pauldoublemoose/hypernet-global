@@ -1261,18 +1261,23 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .dlg.rel-dlg h3:first-child{ margin-top:0; }
 [data-theme="y2fresh"] .relacts .btn, [data-theme="y2fresh"] .relrow .btn, [data-theme="y2fresh"] .relbar .btn, [data-theme="y2fresh"] .dlg.rel-dlg .btn{ border:3px solid var(--rule); }
 .relacts .btn:focus, .relcounts button:focus, .relbar .btn:focus{ outline:1px dotted var(--ink); outline-offset:2px; }
-.audpick{ display:flex; flex-direction:column; gap:2px; min-width:0; color:var(--ink); }
+.audpick{ display:flex; flex-direction:column; gap:2px; max-width:24rem; min-width:0; padding:6px 8px 8px; background:var(--rule); color:var(--ink); }
 .audrow{ display:flex; align-items:center; gap:8px; min-height:36px; }
+.audhead{ min-height:0; }
 .audname{ flex:1 1 auto; min-width:0; overflow-wrap:anywhere; }
 .audboxes{ display:flex; flex:0 0 auto; gap:4px; }
+.audh{ flex:0 0 36px; width:36px; text-align:center; color:var(--dim); font-size:11px; line-height:16px; }
 .audbox{ position:relative; display:grid; place-items:center; width:36px; height:36px; color:var(--dim); }
 .audbox input{ position:absolute; inset:0; margin:0; opacity:0; cursor:pointer; }
 .audbox:focus-within{ outline:1px dotted var(--ink); outline-offset:2px; }
-.audbox.on{ color:var(--ink); }
-.audbox.ex.on{ color:var(--alert); }
+.audbox.on{ background:var(--sel); color:var(--ink); }
+.audbox.ex.on{ background:transparent; color:var(--alert); box-shadow:inset 0 0 0 2px var(--alert); }
 .audsum{ margin:8px 0 0; color:var(--ink2); }
 [data-theme="y2fresh"] .audbox .ic{ stroke-width:1.6; }
-@media (pointer:coarse){ .audbox{ width:44px; height:44px; } }
+@media (pointer:coarse){
+  .audbox{ width:44px; height:44px; }
+  .audh{ flex-basis:44px; width:44px; }
+}
 
 /* ---------- themes ---------------------------------------------------
    Windows (data-theme="win2k") is :root above, unchanged.
@@ -6262,7 +6267,7 @@ var FORMDRAFTS = {};
 var EVENTKINDS = ['meetup','build','workshop','volunteer_day','fundraiser','camp_meeting','burn_night','town_hall','decompression','burn','sale','other'];
 function blankEventDraft(){
   return Object.assign({ step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', baseKind:'meetup', tags:[], schedule:[], city:'', online:false, privacy:'everyone',
-           audience:HNAudience.fromPrivacy('everyone'), entry:'free', desc:'', bring:'',
+           audience: window.HNAudience ? HNAudience.fromPrivacy('everyone') : { include:['everyone'], exclude:[] }, entry:'free', desc:'', bring:'',
            lookTouched:false }, lookDraft(plainTheme('◉')));
 }
 function eventDraftDirty(d){

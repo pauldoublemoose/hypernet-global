@@ -128,6 +128,8 @@ test("the picker is checkboxes, and Everyone has no hide box", () => {
     { token: "list:list-work", label: "Work" },
   ]);
   assert.match(html, /id="w-p"/);
+  assert.match(html, />Show</);
+  assert.match(html, />Hide</);
   assert.match(html, /aria-label="Show to Everyone"/);
   assert.match(html, /data-aud="include" data-tok="everyone" checked/);
   assert.doesNotMatch(html, /Hide from Everyone/);

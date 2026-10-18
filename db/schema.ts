@@ -67,6 +67,8 @@ export const events = pgTable(
     endTime: time("end_time"),
     timezone: text("timezone").notNull().default("Europe/Stockholm"),
     kind: text("kind").notNull().default("meetup"),
+    // null means the host never set tags; the client then maps kind. [] means they set none.
+    tags: text("tags").array(),
     privacy: privacy("privacy").notNull().default("everyone"),
     city: text("city"),
     region: text("region"),

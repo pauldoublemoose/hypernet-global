@@ -1196,6 +1196,15 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .sheetrow{ display:flex; align-items:center; gap:14px; min-height:60px; padding:0 18px; border-bottom:1px solid var(--line); background:#fff; font-size:14px; cursor:pointer; }
 .sheetrow small{ display:block; color:var(--dim); font-size:12px; }
 
+/* NEW EVENT PANEL */
+.tagfield .tagq{ width:100%; }
+.taggroups{ max-height:220px; overflow:auto; padding:4px 8px 8px; background:var(--white); color:var(--ink); box-shadow:var(--in); }
+.taghead{ margin:8px 0 2px; font-size:var(--fs-s); line-height:16px; font-weight:bold; color:var(--dim); }
+.taggroup:first-child .taghead{ margin-top:2px; }
+.tagopt{ display:flex; align-items:flex-start; gap:8px; min-height:24px; padding:2px 0; font-size:var(--fs); line-height:20px; color:var(--ink); }
+.tagopt input{ flex:0 0 auto; margin-top:3px; }
+.tagnone{ margin:8px 0 0; font-size:var(--fs-s); line-height:16px; color:var(--dim); }
+
 /* ---------- themes ---------------------------------------------------
    Windows (data-theme="win2k") is :root above, unchanged.
    Y2Fresh overrides tokens and paint only. Layout stays the app's.
@@ -2249,7 +2258,7 @@ function searchItems(q){
     var pa = isPast(lastDay(a)) ? 1 : 0, pb = isPast(lastDay(b)) ? 1 : 0;
     return pa !== pb ? pa - pb : (pa ? -byDate(a,b) : byDate(a,b));
   }).forEach(function(e){
-    if (matchAll([e.title, descOf(e), placeWords(e), e.hostName, KINDLAB[recOf(e.id).kind]], q)) out.push({ type:'event', id:e.id });
+    if (matchAll([e.title, descOf(e), placeWords(e), e.hostName, KINDLAB[recOf(e.id).kind], tagWords(e)], q)) out.push({ type:'event', id:e.id });
   });
   Object.keys(HORIZONS).forEach(function(k){
     var hz = HORIZONS[k];
@@ -2335,8 +2344,7 @@ function rowHTML(it){
     if (isPast(lastDay(e))) cls += ' past';
     lead = sqHTML(it.id, 48);
     title = esc(e.title);
-    var rk = recOf(it.id).kind;
-    var kl = rk && rk !== 'meetup' ? KINDLAB[rk] : (e.kind === 'world' ? 'World' : ''), hl = hostLabel(e);
+    var kl = rowKindText(e), hl = hostLabel(e);
     /* the host often repeats the title; on a phone the place comes first because it is what gets cut */
     if (hl && fold(e.title).indexOf(fold(hl)) >= 0) hl = '';
     meta = (L.phone ? [whereOf(e), kl, hl] : [hl, whereOf(e), kl]).filter(Boolean).map(esc).join(' · ');
@@ -2452,6 +2460,56 @@ var ACCESSEXPL = {
   lottery:'Places are given out by lottery.',
   invite:'By invitation.'
 };
+/* Tags (REC.tags). One list: group order, then tag order, labels as given. Ids are stored. */
+var TAGGROUPS = [
+  { label:'Social', tags:[
+    { id:'party-night-out', label:'Party / night out' }, { id:'rave', label:'Rave' }, { id:'day-party', label:'Day party' },
+    { id:'house-party', label:'House party' }, { id:'hangout', label:'Hangout' }, { id:'meeting', label:'Meeting' } ] },
+  { label:'Music, performance & arts', tags:[
+    { id:'concert', label:'Concert' }, { id:'live-music', label:'Live music' }, { id:'dj', label:'DJ' }, { id:'show', label:'Show' },
+    { id:'theatre', label:'Theatre' }, { id:'art-exhibition', label:'Art exhibition' }, { id:'comedy', label:'Comedy' },
+    { id:'film-screening', label:'Film screening' }, { id:'dance', label:'Dance' } ] },
+  { label:'Learning & making', tags:[
+    { id:'talk', label:'Talk' }, { id:'workshop', label:'Workshop' }, { id:'hackathon', label:'Hackathon' },
+    { id:'build', label:'Build' }, { id:'coworking', label:'Coworking' } ] },
+  { label:'Access & model', tags:[
+    { id:'participatory', label:'Participatory' }, { id:'open', label:'Open' }, { id:'ticketed', label:'Ticketed' },
+    { id:'commercial', label:'Commercial' }, { id:'facilitated', label:'Facilitated' }, { id:'intimate', label:'Intimate' },
+    { id:'online', label:'Online' }, { id:'fundraiser', label:'Fundraiser' } ] },
+  { label:'Duration & logistics', tags:[
+    { id:'build-strike', label:'Build & strike' }, { id:'retreat', label:'Retreat' }, { id:'residency', label:'Residency' },
+    { id:'pop-up', label:'Pop-up' }, { id:'recurring', label:'Recurring' }, { id:'multi-day', label:'Multi-day' },
+    { id:'burn', label:'Burn' }, { id:'festival', label:'Festival' }, { id:'conference', label:'Conference' } ] },
+  { label:'Activity & place', tags:[
+    { id:'nature', label:'Nature' }, { id:'sports', label:'Sports' }, { id:'food-drink', label:'Food & drink' },
+    { id:'meditation', label:'Meditation' } ] },
+  { label:'Audience & tone', tags:[
+    { id:'sex-positive', label:'Sex-positive' }, { id:'sober', label:'Sober' }, { id:'spiritual', label:'Spiritual' },
+    { id:'community', label:'Community' }, { id:'family', label:'Family' }, { id:'casual', label:'Casual' },
+    { id:'formal', label:'Formal' }, { id:'masquerade', label:'Masquerade' }, { id:'costumes-encouraged', label:'Costumes encouraged' } ] }
+];
+/* A kind saved before tags existed. No entry means that kind adds no tag. */
+var KINDTAGS = { workshop:['workshop'], build:['build'], burn:['burn'], meetup:['meeting'], town_hall:['meeting','community'],
+  burn_night:['burn'], decompression:['party-night-out'], camp_meeting:['meeting','community'], fundraiser:['fundraiser'] };
+var TAGBYID = {};
+TAGGROUPS.forEach(function(g){ g.tags.forEach(function(t){ TAGBYID[t.id] = t; }); });
+function tagById(id){ return TAGBYID[id] || null; }
+/* A stored array wins, including an empty one. Otherwise the kind's tags. */
+function eventTagIds(r){
+  if (r && Array.isArray(r.tags)) return r.tags.filter(function(id){ return TAGBYID[id]; });
+  return (r && KINDTAGS[r.kind] ? KINDTAGS[r.kind] : []).slice();
+}
+function tagLabels(r){ return eventTagIds(r).map(function(id){ return TAGBYID[id].label; }); }
+function tagWords(e){
+  var ids = eventTagIds(recOf(e.id));
+  return ids.map(function(id){ return TAGBYID[id].label + ' ' + id; }).join(' ');
+}
+function rowKindText(e){
+  var r = recOf(e.id), labs = tagLabels(r);
+  if (labs.length) return labs.join(', ');
+  var rk = r && r.kind;
+  return rk && rk !== 'meetup' ? (KINDLAB[rk] || '') : (e.kind === 'world' ? 'World' : '');
+}
 var KINDLAB = { burn:'Burn', decompression:'Decompression', burn_night:'Burn night', build:'Build', fundraiser:'Fundraiser', camp_meeting:'Camp meeting',
                 meetup:'Meetup', town_hall:'Town hall', workshop:'Workshop', volunteer_day:'Volunteer day', sale:'Sale', other:'Event' };
 var REGLAB = { flagship:'Flagship', official_regional:'Official regional', burn_inspired:'Burn-inspired', independent:'Independent' };
@@ -2515,7 +2573,8 @@ function fmtDay(iso){ return isoDate(iso) ? fmtShort(isoDate(iso)) : String(iso)
 
 function eyebrowOf(e){
   var r = recOf(e.id), b = r.burn || {};
-  var parts = [KINDLAB[r.kind] || (e.kind === 'world' ? 'World' : 'Event')];
+  var labs = tagLabels(r);
+  var parts = [labs.length ? labs.join(', ') : (KINDLAB[r.kind] || (e.kind === 'world' ? 'World' : 'Event'))];
   if (b.edition && b.edition.year) parts.push(b.edition.year + (b.edition.number ? ' · No. ' + b.edition.number : ''));
   if (REGLAB[b.regionalStatus]) parts.push(REGLAB[b.regionalStatus]);
   if (r.venueKind === 'virtual') parts.push('Online');
@@ -5108,7 +5167,7 @@ var PKFILTERS = [['upcoming','All upcoming'], ['going','Going'], ['interested','
 function pickerPool(){
   var q = PK.q.toLowerCase().trim();
   return allEvents().filter(function(e){ return canSeeEvent(e) && (!NEXTED[e.id] || PK.sel.indexOf(e.id) >= 0); })
-    .filter(function(e){ return !q || matchAll([e.title, whereOf(e), placeWords(e), hostLabel(e), descOf(e)], q); });
+    .filter(function(e){ return !q || matchAll([e.title, whereOf(e), placeWords(e), hostLabel(e), descOf(e), tagWords(e)], q); });
 }
 /* "from people you follow" means what it means on Explore's shelf of that name: someone you follow hosts it */
 function pickerWhy(e){
@@ -5204,7 +5263,7 @@ function pickerDone(){
    keeps the organiser's name, links back to its page and credits whoever added it, who may correct it later. One
    link is one event: a link already here offers that event instead. The same form edits it afterwards. ---- */
 function blankLinkDraft(){
-  return { form:'link', step:1, ctx:'picker', editing:null, url:'', host:'', title:'', date:'', end:'', startTime:'', endTime:'', kind:'other',
+  return { form:'link', step:1, ctx:'picker', editing:null, url:'', host:'', title:'', date:'', end:'', startTime:'', endTime:'', kind:'other', baseKind:'other', tags:[],
            city:'', online:false, privacy:'everyone', entry:'free', desc:'', bring:'', filled:false, busy:false, note:'', existing:null,
            image:null, extra:null, showErr:false };
 }
@@ -5322,7 +5381,8 @@ function linkAdd(){
   var x = d.extra || {}, start = isoDate(d.date), end = isoDate(d.end), city = d.online ? '' : String(d.city || '').trim(), url = String(d.url).trim();
   EVENTS[id] = { id:id, title:d.title.trim(), date:start, description:d.desc, hostName:d.host.trim(), privacy:'everyone', ownerIds:[], kind:'link', city:city,
                  sourceUrl:url, addedBy:'self' };
-  REC[id] = { kind:d.kind || 'other', startTime:d.startTime || undefined, endTime:d.endTime || undefined, endDate: end && end > start ? end : undefined,
+  var tk = tagsForSave(d);
+  REC[id] = { kind:tk.kind, tags:tk.tags, startTime:d.startTime || undefined, endTime:d.endTime || undefined, endDate: end && end > start ? end : undefined,
               timezone:x.timezone || undefined, region:x.region || undefined, country:x.country || undefined, scale: end && end > start ? 'gathering' : 'meetup',
               venueKind: d.online ? 'virtual' : 'physical', city:city,
               venue: d.online ? undefined : (x.venue && x.venue.name ? x.venue : { name:city, addressVisibility:'public' }),
@@ -5339,7 +5399,7 @@ function linkAdd(){
 function linkEditOpen(evId){
   var e = EVENTS[evId], r = recOf(evId);
   DRAFT = Object.assign(blankLinkDraft(), { ctx:'edit', editing:evId, filled:true, url:e.sourceUrl || r.externalUrl || '', host:e.hostName || '',
-    title:e.title, date:e.date, end:r.endDate || '', startTime:r.startTime || '', endTime:r.endTime || '', kind:r.kind || 'other',
+    title:e.title, date:e.date, end:r.endDate || '', startTime:r.startTime || '', endTime:r.endTime || '', kind:r.kind || 'other', baseKind:r.kind || 'other', tags:eventTagIds(r),
     online:r.venueKind === 'virtual', city: r.venueKind === 'virtual' ? '' : (r.city || e.city || ''), entry:(r.access && r.access.model) || 'free', desc:descOf(e) });
   dialog('Edit event', linkFormHTML(DRAFT), linkFootHTML(DRAFT), 520, 'lkdlg');
   focusIn('lk-h');
@@ -5351,7 +5411,8 @@ function linkSaveEdit(d){
   if (d.online) r.venue = undefined;
   e.title = d.title.trim(); e.date = start; e.description = d.desc; e.hostName = d.host.trim(); e.city = city;
   r.endDate = end && end > start ? end : undefined; r.startTime = d.startTime || undefined; r.endTime = d.endTime || undefined;
-  r.kind = d.kind || r.kind || 'other'; r.description = d.desc; r.venueKind = d.online ? 'virtual' : 'physical'; r.city = city;
+  var tk = tagsForSave(d);
+  r.kind = tk.kind; r.tags = tk.tags; r.description = d.desc; r.venueKind = d.online ? 'virtual' : 'physical'; r.city = city;
   r.access = Object.assign({}, r.access || {}, { model:d.entry });
   delete PLAINCACHE[id]; EDITED[id] = true; SLUGS = null;
   if (ONLINE) HNAPI.saveEvent(id);
@@ -5433,7 +5494,8 @@ function czSubject(d, t, px){
     return { cover: lk && lk.image ? sqT(t, px) : '<span class="av'+(pl ? ' lk' : '')+'" style="width:'+px+'px;height:'+px+'px;flex-basis:'+px+'px;font-size:'+Math.round(px*.35)+'px;background:'+(pl ? pl.sq+';color:'+pl.accentInk : (AVCOLOR.self||'#5a5a5a'))+'">'+esc(initials(nm))+'</span>',
              eyebrow:'@'+esc((PF && normHandle(PF.handle)) || me.handle || 'you'), title:nm, facts:[['Based in', ((PF && PF.cities) || citiesOf(me)).join(', ') || '—'], ['Going', String(goingOf('self').length)]] };
   }
-  return { cover:sqT(t, px), eyebrow:esc(KINDLAB[d.kind] || 'Event'), title:d.title || 'Untitled event',
+  var labs = (d.tags || []).map(function(id){ var tg = tagById(id); return tg ? tg.label : ''; }).filter(Boolean);
+  return { cover:sqT(t, px), eyebrow:esc(labs.length ? labs.join(', ') : (KINDLAB[d.kind] || 'Event')), title:d.title || 'Untitled event',
            facts:[['When', isoDate(d.date) ? fmtDate(d.date) : '—'], ['Where', d.online ? 'Online' : String(d.city || '').trim() || '—']] };
 }
 /* the preview: the page's title band, its toolbar and a group box, in the look (on a phone, or `small`, the band alone) */
@@ -5608,6 +5670,60 @@ document.addEventListener('drop', function(ev){
   var f = ev.dataTransfer.files && ev.dataTransfer.files[0];
   if (z.getAttribute('data-czdrop') === 'photo') pfTakePhoto(f); else czTakeFile(f);
 });
+/* the first selected tag that is still a kind, otherwise the kind the draft opened with */
+function kindFromTags(tags, fallback){
+  var i;
+  for (i = 0; i < tags.length; i++) if (EVENTKINDS.indexOf(tags[i]) >= 0) return tags[i];
+  return fallback;
+}
+function draftTagIds(d){ return (d && d.tags || []).filter(function(id){ return tagById(id); }); }
+function tagsForSave(d){
+  var tags = draftTagIds(d);
+  return { tags:tags, kind:kindFromTags(tags, d.baseKind || d.kind || 'meetup') };
+}
+function tagsFieldHTML(d){
+  var on = {};
+  (d.tags || []).forEach(function(id){ if (tagById(id)) on[id] = 1; });
+  return '<div class="field tagfield"><label for="w-tagq">Tags</label>' +
+    '<input type="search" id="w-tagq" class="tagq" placeholder="Filter tags" autocomplete="off" aria-label="Filter tags" aria-controls="w-taggroups">' +
+    '<div class="taggroups" id="w-taggroups" role="group" aria-label="Tags">' +
+    TAGGROUPS.map(function(g){
+      return '<div class="taggroup"><div class="taghead">'+esc(g.label)+'</div>' +
+        g.tags.map(function(t){
+          return '<label class="tagopt"><input type="checkbox" data-tag="'+t.id+'"'+(on[t.id] ? ' checked' : '')+'>'+esc(t.label)+'</label>';
+        }).join('') + '</div>';
+    }).join('') +
+    '<p class="tagnone" hidden>No tag matches.</p></div></div>';
+}
+function tagFilter(q){
+  q = fold(String(q || ''));
+  var any = false;
+  document.querySelectorAll('.dlg .taggroup').forEach(function(g){
+    var n = 0;
+    g.querySelectorAll('.tagopt').forEach(function(lab){
+      var show = !q || fold(lab.textContent).indexOf(q) >= 0;
+      lab.hidden = !show;
+      if (show) n++;
+    });
+    g.hidden = !n;
+    if (n) any = true;
+  });
+  var empty = document.querySelector('.dlg .tagnone');
+  if (empty) empty.hidden = any || !q;
+}
+function readTagChecks(root){
+  var tags = [];
+  root.querySelectorAll('input[data-tag]').forEach(function(box){ if (box.checked) tags.push(box.getAttribute('data-tag')); });
+  return tags;
+}
+function setDraftTags(tags){
+  if (!DRAFT) return;
+  DRAFT.tags = tags.filter(function(id){ return tagById(id); });
+  DRAFT.kind = kindFromTags(DRAFT.tags, DRAFT.baseKind || DRAFT.kind || 'meetup');
+  refreshWizFoot();
+  schedulePersist();
+  if (document.querySelector('.dlg [data-czlook], .dlg .custprev')) czPreviews();
+}
 /* the fields of an event, by section: the same markup in the wizard's steps and in Edit */
 function wzErr(miss, k){ return '<span class="ferr" id="err-'+k+'" data-err="'+k+'" role="alert"'+(miss[k] ? '' : ' hidden')+'>'+esc(miss[k] || '')+'</span>'; }
 function wzBad(miss, k){ return miss[k] ? ' aria-invalid="true"' : ''; }
@@ -5619,8 +5735,7 @@ function basicsHTML(d, miss, withPrivacy){
     '<div class="field"><label for="w-e">Ends'+opt+'</label><input type="date" id="w-e" data-cz="end" value="'+esc(d.end)+'"'+(d.date?' min="'+esc(d.date)+'"':'')+' aria-describedby="err-end"'+bad('end')+'>' + err('end') + '</div></div>' +
     '<div class="frow"><div class="field"><label for="w-st">From'+opt+'</label><input type="time" id="w-st" data-cz="startTime" value="'+esc(d.startTime||'')+'"></div>' +
     '<div class="field"><label for="w-et">Until'+opt+'</label><input type="time" id="w-et" data-cz="endTime" value="'+esc(d.endTime||'')+'"></div></div>' +
-    '<div class="field"><label for="w-ty">Type</label><select id="w-ty" data-cz="kind">' +
-      EVENTKINDS.map(function(k){ return '<option value="'+k+'"'+(k===(d.kind||'meetup')?' selected':'')+'>'+esc(KINDLAB[k])+'</option>'; }).join('') + '</select></div>' +
+    tagsFieldHTML(d) +
     /* a place, or Online */
     '<div class="field"><label for="w-c">Where</label><div class="wherein"><input type="text" id="w-c" data-cz="city" value="'+esc(d.online ? '' : d.city)+'" placeholder="'+(d.online ? 'Online' : 'Stockholm')+'"'+(d.online ? ' disabled' : '')+' aria-required="true" aria-describedby="err-city"'+bad('city')+'>' +
       '<label class="wzon"><input type="checkbox" id="w-on" data-cz="online"'+(d.online ? ' checked' : '')+'>Online</label></div>' + err('city') + '</div>' +
@@ -5739,7 +5854,7 @@ function paintWiz(){
 var FORMDRAFTS = {};
 var EVENTKINDS = ['meetup','build','workshop','volunteer_day','fundraiser','camp_meeting','burn_night','town_hall','decompression','burn','sale','other'];
 function blankEventDraft(){
-  return Object.assign({ step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', city:'', online:false, privacy:'everyone', entry:'free', desc:'', bring:'',
+  return Object.assign({ step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', baseKind:'meetup', tags:[], city:'', online:false, privacy:'everyone', entry:'free', desc:'', bring:'',
            lookTouched:false }, lookDraft(plainTheme('◉')));
 }
 function eventDraftDirty(d){
@@ -5788,7 +5903,7 @@ var editEventDialog = gated(function(evId){
   if (isLinkEvent(evId)){ linkEditOpen(evId); return; }
   DRAFT = Object.assign({ form:'event', mode:'edit', step:1, editing:evId, title:e.title, date:e.date, end:r.endDate || '', city:r.city || cityShort(e.city), online:r.venueKind === 'virtual',
             privacy:e.privacy || 'everyone', entry:(r.access && r.access.model) || 'free', desc:descOf(e),
-            kind:r.kind || 'meetup', startTime:r.startTime || '', endTime:r.endTime || '',
+            kind:r.kind || 'meetup', baseKind:r.kind || 'meetup', tags:eventTagIds(r), startTime:r.startTime || '', endTime:r.endTime || '',
             bring: Array.isArray(r.whatToBring) ? r.whatToBring.join('\n') : (r.whatToBring || ''), lookTouched:false }, lookDraft(TH(evId)));
   dialog('Edit ' + e.title, wizBodyHTML(), wizFootHTML(), 900, 'edlg');
   focusIn('w-t');
@@ -5859,7 +5974,8 @@ function saveEventEdit(t){
   else { if (r.venueKind === 'virtual') r.venueKind = 'physical';
          if (city){ e.city = city; if (r.venue && (!r.venue.name || r.venue.name === r.city)) r.venue.name = city; r.city = city; } }
   r.endDate = end && end > start ? end : undefined;
-  r.description = DRAFT.desc; r.kind = DRAFT.kind || r.kind || 'meetup';
+  var tk = tagsForSave(DRAFT);
+  r.description = DRAFT.desc; r.kind = tk.kind; r.tags = tk.tags;
   r.startTime = DRAFT.startTime || undefined; r.endTime = DRAFT.endTime || undefined;
   r.access = Object.assign({}, r.access || {}, { model:DRAFT.entry });
   r.whatToBring = String(DRAFT.bring || '').split('\n').map(function(x){ return x.trim(); }).filter(Boolean);
@@ -5891,7 +6007,8 @@ function wizAct(which){
   var city = DRAFT.online ? '' : String(DRAFT.city || '').trim();
   EVENTS[id] = { id:id, title:DRAFT.title.trim(), date:start, description:DRAFT.desc,
                  hostName:S.me.name, hostAcct:S.acct, privacy:DRAFT.privacy, ownerIds:['self'], kind:'own', city:city };
-  REC[id] = { kind:DRAFT.kind || 'meetup', startTime:DRAFT.startTime || undefined, endTime:DRAFT.endTime || undefined, scale: end && end > start ? 'gathering' : 'meetup', endDate: end && end > start ? end : undefined,
+  var tk = tagsForSave(DRAFT);
+  REC[id] = { kind:tk.kind, tags:tk.tags, startTime:DRAFT.startTime || undefined, endTime:DRAFT.endTime || undefined, scale: end && end > start ? 'gathering' : 'meetup', endDate: end && end > start ? end : undefined,
               venueKind:DRAFT.online ? 'virtual' : 'physical', city:city, venue:DRAFT.online ? undefined : { name:city, addressVisibility:'public' }, description:DRAFT.desc,
               access:{ model:DRAFT.entry }, whatToBring: String(DRAFT.bring||'').split('\n').map(function(s){ return s.trim(); }).filter(Boolean) };
   if (t){ t.glyph = PLAINGLYPH[REC[id].kind] || '◆'; window.HYPERNET_THEMES.themes[id] = t; }
@@ -6779,6 +6896,11 @@ document.addEventListener('click', function(ev){
 document.addEventListener('change', function(ev){
   var n = ev.target;
   if (n.getAttribute('data-czfile')){ var fl = n.files && n.files[0]; n.value = ''; if (n.getAttribute('data-czfile') === 'photo') pfTakePhoto(fl); else czTakeFile(fl); return; }
+  if (n.getAttribute('data-tag') && DRAFT){
+    var root = n.closest('.taggroups');
+    if (root) setDraftTags(readTagChecks(root));
+    return;
+  }
   if (n.closest('[data-cz]') && DRAFT){
     var k = n.getAttribute('data-cz');
     if (/^c[123]$/.test(k)){ czSetColor(k, n.value, n); return; }
@@ -6812,6 +6934,7 @@ document.addEventListener('input', function(ev){
   if (/^co-[tbx]$/.test(n.id)){ saveForm('callout'); return; }
   if (/^nh-[nd]$/.test(n.id)){ saveForm('horizon'); return; }
   if (n.id === 'pk-q'){ PK.q = n.value; pickerPaint(); return; }
+  if (n.id === 'w-tagq'){ tagFilter(n.value); return; }
   if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT' || n.type === 'checkbox' || n.type === 'radio') return;
   var kz = n.getAttribute('data-cz');
   if (/^c[123]$/.test(kz)){ czSetColor(kz, n.value, n); return; }

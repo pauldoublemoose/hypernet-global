@@ -95,6 +95,8 @@
       endDate:e.endsOn || undefined, startTime:e.startTime || undefined, endTime:e.endTime || undefined, timezone:e.timezone,
       city:e.city || undefined, region:e.region || undefined, country:e.country || undefined, venue:e.venue || undefined,
       access:e.access || undefined, whatToBring:e.whatToBring || [] });
+    if (Array.isArray(e.tags)) r.tags = e.tags.slice();
+    else delete r.tags;
     if (!r.venueKind) r.venueKind = e.city || e.venue ? 'physical' : undefined;
     var ev = { id:e.id, slug:e.slug, title:e.title, date:e.startsOn, description:e.description, hostName:e.hostName, hostId:e.hostId,
                privacy:e.privacy, city:e.city || '', kind: det._kind || (e.source === 'import' ? 'real' : e.source === 'link' ? 'link' : 'own'), ownerIds:[], source:e.source,
@@ -400,13 +402,15 @@
     if (l.colors) o.colors = l.colors;
     return o;
   }
-  var COLS = ['id','title','date','endDate','startTime','endTime','timezone','privacy','hostName','description','whatToBring','kind','city','region','country','venue','access','_prev','_prevYear'];
+  var COLS = ['id','title','date','endDate','startTime','endTime','timezone','privacy','hostName','description','whatToBring','kind','tags','city','region','country','venue','access','_prev','_prevYear'];
   function eventBody(id){
     var e = EVENTS[id], r = REC[id] || {}, details = {};
     Object.keys(r).forEach(function(k){ if (COLS.indexOf(k) < 0 && r[k] !== undefined) details[k] = r[k]; });
     var city = String(r.city || e.city || '').trim();
     return { title:e.title, description:r.description || e.description || '', startsOn:e.date, endsOn:r.endDate || null,
-      startTime:r.startTime || null, endTime:r.endTime || null, kind:r.kind || 'meetup', privacy:e.privacy || 'everyone',
+      startTime:r.startTime || null, endTime:r.endTime || null, kind:r.kind || 'meetup',
+      tags: Array.isArray(r.tags) ? r.tags.filter(function(id, i, a){ return typeof id === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id) && a.indexOf(id) === i; }).slice(0, 60) : null,
+      privacy:e.privacy || 'everyone',
       city: r.venueKind === 'virtual' ? null : (city || null), venue: r.venue || null, access: r.access || null,
       whatToBring: Array.isArray(r.whatToBring) ? r.whatToBring : [], details:details,
       look: lookOut(window.HYPERNET_THEMES.themes[id] || null) };

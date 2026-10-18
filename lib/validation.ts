@@ -53,6 +53,12 @@ const eventFields = {
   endTime: clock.nullable(),
   timezone: z.string().min(1).max(64),
   kind: z.enum(EVENT_KINDS),
+  tags: z
+    .array(z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "a tag id").max(40))
+    .max(60)
+    .transform((ids) => ids.filter((id, i) => ids.indexOf(id) === i))
+    .nullable()
+    .optional(),
   privacy: z.enum(PRIVACY),
   city: z.string().max(120).nullable(),
   region: z.string().max(120).nullable(),

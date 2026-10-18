@@ -237,14 +237,17 @@ export function buildSeed(target, { now = Date.now(), only = null } = {}) {
     const made = hostFid ? seedTs("made|" + id, 60, 2, true) : now - 90 * DAY;
     created[id] = made;
     const kind = KINDS.includes(r.kind) ? r.kind : r.kind ? String(r.kind) : "meetup";
+    const tagOk = (id) => typeof id === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id);
+    const tags = Array.isArray(r.tags) ? [...new Set(r.tags.filter(tagOk))].slice(0, 60) : null;
     const details = { ...r, _kind: e.kind };
     for (const k of ["id", "title", "date", "endDate", "startTime", "endTime", "timezone", "privacy", "hostName", "description", "whatToBring",
-      "kind", "city", "region", "country", "venue", "access", "picture"]) delete details[k];
+      "kind", "tags", "city", "region", "country", "venue", "access", "picture"]) delete details[k];
     out.push(insert("events", {
       id: q(eventIdOf(id)), slug: q(slug), host_id: hostFid ? q(pid(hostFid)) : "null", host_name: q(e.hostName || "Hypernet"),
       title: q(e.title), description: q(r.description || e.description || ""), starts_on: q(start), ends_on: q(endRaw && endRaw > start ? endRaw : null),
       start_time: q(/^\d\d:\d\d/.test(r.startTime || "") ? r.startTime : null), end_time: q(/^\d\d:\d\d/.test(r.endTime || "") ? r.endTime : null),
-      timezone: q(r.timezone || H.meta?.timezone || "Europe/Stockholm"), kind: q(kind), privacy: `${q(["everyone", "friends", "only_me"].includes(e.privacy) ? e.privacy : "only_me")}::privacy`,
+      timezone: q(r.timezone || H.meta?.timezone || "Europe/Stockholm"), kind: q(kind),
+      tags: tags ? qa(tags) : "null", privacy: `${q(["everyone", "friends", "only_me"].includes(e.privacy) ? e.privacy : "only_me")}::privacy`,
       city: q(r.city || cityShort(e.city) || null), region: q(r.region || null), country: q(r.country || null),
       venue: qj(r.venue || null), access: qj(r.access || null),
       what_to_bring: qa(Array.isArray(r.whatToBring) ? r.whatToBring.map(String) : r.whatToBring ? [String(r.whatToBring)] : []),

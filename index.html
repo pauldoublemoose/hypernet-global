@@ -1215,7 +1215,8 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .taggroup:first-child .taghead{ margin-top:2px; }
 .tagopt{ display:flex; align-items:center; gap:8px; width:100%; min-height:36px; padding:4px 8px; border:0; background:transparent; color:var(--ink); font:inherit; font-size:var(--fs); line-height:20px; text-align:left; cursor:pointer; }
 .tagopt:hover, .tagopt:focus{ background:var(--sel); color:#fff; outline:0; }
-.tagmark{ flex:0 0 1.1em; font-weight:bold; }
+.tagmark{ flex:0 0 1.1em; display:inline-flex; align-items:center; justify-content:center; }
+.tagopt[aria-selected="true"] .tagmark::before{ content:""; width:8px; height:8px; border-radius:50%; background:currentColor; }
 .tagnone{ margin:8px 4px; font-size:var(--fs); line-height:20px; color:var(--dim); }
 [data-theme="y2fresh"] .tagbox, [data-theme="y2fresh"] .tagpanel{ border:3px solid var(--rule); }
 [data-theme="y2fresh"] .tagpanel{ background:var(--white); }
@@ -5726,7 +5727,7 @@ function tagsFieldHTML(d){
         return '<div class="taggroup"><div class="taghead">'+esc(g.label)+'</div>' +
           g.tags.map(function(t){
             var sel = !!on[t.id];
-            return '<button type="button" class="tagopt" role="option" data-act="tagpick" data-id="'+t.id+'" aria-selected="'+(sel ? 'true' : 'false')+'" tabindex="-1"><span class="tagmark">'+(sel ? '\u2713' : '')+'</span>'+esc(t.label)+'</button>';
+            return '<button type="button" class="tagopt" role="option" data-act="tagpick" data-id="'+t.id+'" aria-selected="'+(sel ? 'true' : 'false')+'" tabindex="-1"><span class="tagmark" aria-hidden="true"></span>'+esc(t.label)+'</button>';
           }).join('') + '</div>';
       }).join('') +
       '<p class="tagnone" hidden>No tag matches.</p></div></div></div>';
@@ -5791,8 +5792,6 @@ function syncTagUI(){
   document.querySelectorAll('.dlg .tagopt').forEach(function(row){
     var on = (DRAFT.tags || []).indexOf(row.getAttribute('data-id')) >= 0;
     row.setAttribute('aria-selected', on ? 'true' : 'false');
-    var m = row.querySelector('.tagmark');
-    if (m) m.textContent = on ? '\u2713' : '';
   });
 }
 function tagPick(id){

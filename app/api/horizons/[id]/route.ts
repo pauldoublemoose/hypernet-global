@@ -37,7 +37,7 @@ export const PATCH = route(async (req: Request, ctx: Ctx) => {
          look = case when $9 then $10::jsonb else look end,
          cover_event_id = case when $11 then $12::uuid else cover_event_id end
        where id = $1 and (owner_id = $2 or exists (
-         select 1 from horizon_collaborators hc where hc.horizon_id = $1 and hc.person_id = $2
+         select 1 from horizon_collaborators hc where hc.horizon_id = $1 and hc.person_id = $2 and hc.accepted_at is not null
        )) returning id`,
       [id, me.id, has("name"), b.name ?? null, has("description"), b.description ?? "", has("published"), !!b.published,
        has("look"), j(b.look), has("coverEventId"), b.coverEventId ?? null],

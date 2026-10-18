@@ -9,10 +9,12 @@ export const HORIZON_JSON = `json_build_object('id', h.id, 'slug', h.slug, 'owne
   'eventIds', coalesce((select json_agg(he.event_id order by he.position, he.added_at) from horizon_events he join events e on e.id = he.event_id
                          where he.horizon_id = h.id and can_see_event($2::uuid, e)), '[]'),
   'followers', (select count(*) from horizon_follows hf where hf.horizon_id = h.id),
-  'collaboratorIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc where hc.horizon_id = h.id), '[]'))`;
+  'collaboratorIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc where hc.horizon_id = h.id and hc.accepted_at is not null), '[]'),
+  'pendingCollaboratorIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc
+                         where hc.horizon_id = h.id and hc.accepted_at is null and (h.owner_id = $2::uuid or hc.person_id = $2::uuid)), '[]'))`;
 
 export function horizonVisible(viewer: "$1" | "$2"): string {
-  return `(h.published_at is not null or h.owner_id = ${viewer}::uuid or exists (select 1 from horizon_collaborators hc where hc.horizon_id = h.id and hc.person_id = ${viewer}::uuid))`;
+  return `(h.published_at is not null or h.owner_id = ${viewer}::uuid or exists (select 1 from horizon_collaborators hc where hc.horizon_id = h.id and hc.person_id = ${viewer}::uuid and hc.accepted_at is not null))`;
 }
 
 async function selectHorizon(id: string, viewer: string | null, visibleOnly: boolean): Promise<unknown | null> {
@@ -37,7 +39,7 @@ export async function horizonAccess(horizonId: string, personId: string): Promis
   const rows = (await sqlx().query(
     `select h.owner_id, h.is_personal_default,
        case when h.owner_id = $2 then 'owner'
-            when exists (select 1 from horizon_collaborators hc where hc.horizon_id = h.id and hc.person_id = $2) then 'collaborator'
+            when exists (select 1 from horizon_collaborators hc where hc.horizon_id = h.id and hc.person_id = $2 and hc.accepted_at is not null) then 'collaborator'
             else 'stranger' end as role
      from horizons h where h.id = $1`,
     [horizonId, personId],

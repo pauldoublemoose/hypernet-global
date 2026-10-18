@@ -314,6 +314,13 @@ describe("horizon collaborators", () => {
     expect((await anon.get(`/api/horizons/${hzP}`)).status).toBe(404);
   });
 
+  it("a collaborator follows the private horizon, and a stranger does not", async () => {
+    const followed = await b.put(`/api/horizons/${hzP}/follow`);
+    expect(followed.status, JSON.stringify(followed.body)).toBe(200);
+    expect(followed.body.following).toBe(true);
+    expect((await s.put(`/api/horizons/${hzP}/follow`)).status).toBe(404);
+  });
+
   it("a collaborator leaves, and then the private horizon is gone for them", async () => {
     const r = await b.del(`/api/horizons/${hzP}/collaborators`);
     expect(r.status, JSON.stringify(r.body)).toBe(200);

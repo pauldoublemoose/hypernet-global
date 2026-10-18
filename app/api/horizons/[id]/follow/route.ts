@@ -1,22 +1,23 @@
 import { requirePerson } from "@/lib/auth";
 import { sqlx } from "@/lib/db";
+import { horizonVisible } from "@/lib/horizons";
 import { json, route } from "@/lib/http";
 import { idParam, notFound, type Ctx } from "@/lib/ids";
 
 export const dynamic = "force-dynamic";
 
-/** PUT /api/horizons/:id/follow — follow a published horizon. */
+/** PUT /api/horizons/:id/follow — a person can follow a horizon they can see (published, theirs, or one they collaborate on). */
 export const PUT = route(async (_req: Request, ctx: Ctx) => {
   const id = await idParam(ctx.params);
   const me = await requirePerson();
   const rows = (await sqlx().query(
     `insert into horizon_follows (person_id, horizon_id)
-       select $1, h.id from horizons h where h.id = $2 and (h.published_at is not null or h.owner_id = $1)
+       select $1, h.id from horizons h where h.id = $2 and ${horizonVisible("$1")}
      on conflict do nothing returning 1`,
     [me.id, id],
   )) as unknown[];
   if (!rows.length) {
-    const ok = (await sqlx().query(`select 1 from horizons h where h.id = $2 and (h.published_at is not null or h.owner_id = $1)`, [me.id, id])) as unknown[];
+    const ok = (await sqlx().query(`select 1 from horizons h where h.id = $2 and ${horizonVisible("$1")}`, [me.id, id])) as unknown[];
     if (!ok.length) throw notFound();
   }
   return json({ following: true });

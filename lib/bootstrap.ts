@@ -10,7 +10,7 @@ import { sqlx } from "./db";
 export const EVENT_JSON = `json_build_object(
   'id', e.id, 'slug', e.slug, 'hostId', e.host_id, 'hostName', e.host_name, 'title', e.title, 'description', e.description,
   'startsOn', e.starts_on, 'endsOn', e.ends_on, 'startTime', to_char(e.start_time, 'HH24:MI'), 'endTime', to_char(e.end_time, 'HH24:MI'),
-  'timezone', e.timezone, 'kind', e.kind, 'privacy', e.privacy, 'city', e.city, 'region', e.region, 'country', e.country,
+  'timezone', e.timezone, 'kind', e.kind, 'tags', e.tags, 'schedule', e.schedule, 'privacy', e.privacy, 'city', e.city, 'region', e.region, 'country', e.country,
   'venue', e.venue, 'access', e.access, 'whatToBring', e.what_to_bring, 'details', e.details, 'look', e.look, 'source', e.source,
   'sourceUrl', e.source_url, 'addedBy', e.added_by,
   'previousEditionId', e.previous_edition_id, 'createdAt', e.created_at, 'updatedAt', e.updated_at)`;

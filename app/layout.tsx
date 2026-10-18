@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export const metadata = { title: "Hypernet", robots: { index: false, follow: false } };
+export const metadata = { title: "HYPERNET · GLOBAL", robots: { index: false, follow: false } };
 
 // Only the small test pages under /dev use this layout; the prototype at / is plain HTML.
 export default function RootLayout({ children }: { children: ReactNode }) {

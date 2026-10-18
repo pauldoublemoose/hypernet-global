@@ -3,10 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#3a3a3a">
+<meta name="theme-color" content="#e4eef7">
 <!-- the app has one look, light; Android Chrome's "darken web pages" must not invert it (2026-10-05) -->
 <meta name="color-scheme" content="only light">
-<title>Hypernet</title>
+<!-- apply the saved theme before first paint. Default is Y2Fresh; "win2k" is the Windows look. -->
+<script>
+(function(){
+  var t = 'y2fresh';
+  try { var s = localStorage.getItem('hypernet-theme'); if (s === 'win2k' || s === 'y2fresh') t = s; } catch (e) {}
+  document.documentElement.setAttribute('data-theme', t);
+  var m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.setAttribute('content', t === 'win2k' ? '#3a3a3a' : '#e4eef7');
+})();
+</script>
+<title>HYPERNET · GLOBAL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600&family=Oxanium:wght@400;500;600;700&display=swap">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23d4d0c8'/%3E%3Cpath d='M16 4 28 16 16 28 4 16z' fill='%23141414'/%3E%3C/svg%3E">
 <style>
 /* =======================================================================
@@ -29,6 +42,7 @@
   --white:#fff; --shadow:#808080; --dark:#404040;
   --ink:#141414; --ink2:#3a3a3a; --dim:#666; --line:#e2dfd8; --hover:#f0eee9; --rule:#c9c5bc; --gb:#bdb9b0;
   --sel:#262626; --seldim:#c8c8c8;
+  --alert:#b42318;   /* notification badges; the Windows look keeps today's black pills, the token is here for them */
   --bar:linear-gradient(90deg,#262626 0%,#555 58%,#9b9b9b 100%);
   --sys:Tahoma,"Segoe UI",Verdana,Geneva,sans-serif;
   --mono:var(--sys);     /* one font: what used to be monospaced is Tahoma too */
@@ -1181,12 +1195,246 @@ body.is-phone .pkchips::-webkit-scrollbar{ display:none; }
 body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .sheetrow{ display:flex; align-items:center; gap:14px; min-height:60px; padding:0 18px; border-bottom:1px solid var(--line); background:#fff; font-size:14px; cursor:pointer; }
 .sheetrow small{ display:block; color:var(--dim); font-size:12px; }
+
+/* NEW EVENT PANEL */
+.tagfield{ position:relative; }
+.tagbox{ display:flex; align-items:center; gap:6px; width:100%; height:var(--ctl); padding:0 8px; background:var(--white); color:var(--ink); box-shadow:var(--in); font-size:var(--fs); line-height:20px; cursor:pointer; overflow:hidden; }
+.tagbox:focus{ outline:1px dotted var(--ink); outline-offset:-4px; }
+.tagchips{ display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow:hidden; }
+.tagph{ color:var(--dim); white-space:nowrap; }
+.tagchip{ display:inline-flex; align-items:center; gap:2px; flex:0 0 auto; max-width:100%; height:22px; padding:0 2px 0 8px; background:var(--face); color:var(--ink); box-shadow:var(--thin); font-size:var(--fs-s); line-height:20px; white-space:nowrap; }
+.taglab{ overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.tagx{ flex:0 0 auto; width:22px; height:22px; border:0; padding:0; background:transparent; color:var(--ink2); font-size:var(--fs); line-height:20px; cursor:pointer; }
+.tagmore{ flex:0 0 auto; color:var(--dim); font-size:var(--fs-s); white-space:nowrap; }
+.tagcaret{ flex:0 0 auto; color:var(--ink2); }
+.tagpanel{ position:fixed; z-index:80; display:flex; flex-direction:column; min-width:0; padding:6px; background:var(--face); color:var(--ink); box-shadow:var(--out); overflow:hidden; }
+.tagpanel[hidden]{ display:none; }
+.tagpanel .tagq{ width:100%; flex:0 0 auto; margin:0 0 6px; }
+.taggroups{ overflow:auto; min-height:0; flex:1 1 auto; }
+.taghead{ margin:8px 4px 2px; font-size:var(--fs); line-height:20px; font-weight:bold; color:var(--dim); }
+.taggroup:first-child .taghead{ margin-top:2px; }
+.tagopt{ display:flex; align-items:center; gap:8px; width:100%; min-height:36px; padding:4px 8px; border:0; background:transparent; color:var(--ink); font:inherit; font-size:var(--fs); line-height:20px; text-align:left; cursor:pointer; }
+.tagopt:hover, .tagopt:focus{ background:var(--sel); color:#fff; outline:0; }
+.tagmark{ flex:0 0 1.1em; display:inline-flex; align-items:center; justify-content:center; }
+.tagopt[aria-selected="true"] .tagmark::before{ content:""; width:0.3em; height:0.3em; min-width:3px; min-height:3px; border-radius:50%; background:currentColor; }
+.tagnone{ margin:8px 4px; font-size:var(--fs); line-height:20px; color:var(--dim); }
+[data-theme="y2fresh"] .tagbox, [data-theme="y2fresh"] .tagpanel{ border:3px solid var(--rule); }
+[data-theme="y2fresh"] .tagpanel{ background:var(--white); }
+@media (pointer:coarse){ .tagopt{ min-height:44px; } .tagx{ width:28px; height:28px; } }
+.schedfield{ display:flex; flex-direction:column; align-items:flex-start; gap:8px; }
+.schedlab{ font-size:var(--fs); line-height:20px; color:var(--ink); }
+.schedrow{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; width:100%; }
+.schedtitle{ flex:1 1 10em; min-width:8em; }
+.schedrow :is(input, select){ height:var(--ctl); margin:0; padding:0 8px; border:0; background:var(--white); color:var(--ink); box-shadow:var(--in); font:inherit; font-size:var(--fs); min-width:0; }
+.schedrow input[type=time]{ width:7.5em; flex:0 0 auto; }
+.schedrow select{ width:auto; flex:0 0 auto; }
+.schedend{ border:0; background:transparent; color:var(--ink2); font:inherit; font-size:var(--fs-s); line-height:20px; text-decoration:underline; text-underline-offset:3px; padding:4px; cursor:pointer; }
+.schedadd, .schedx{ border:0; background:var(--face); color:var(--ink); box-shadow:var(--out); font:inherit; font-size:var(--fs); cursor:pointer; }
+.schedadd{ height:var(--ctl); padding:0 14px; }
+.schedx{ width:var(--ctl); height:var(--ctl); }
+[data-theme="y2fresh"] .schedrow :is(input, select), [data-theme="y2fresh"] .schedadd, [data-theme="y2fresh"] .schedx{ border:3px solid var(--rule); }
+.tt{ display:flex; flex-direction:column; gap:4px; }
+.ttrow{ display:flex; gap:12px; align-items:baseline; font-size:var(--fs); line-height:1.45; color:var(--ink); }
+.ttwhen{ flex:0 0 auto; }
+.ttwhat{ min-width:0; }
+@media (pointer:coarse){ .schedend{ min-height:44px; } }
+
+/* ---------- themes ---------------------------------------------------
+   Windows (data-theme="win2k") is :root above, unchanged.
+   Y2Fresh overrides tokens and paint only. Layout stays the app's.
+   The wordmark's dot is centred on the cap-height, with equal gaps. */
+#titlebar #wintitle{ flex:1; min-width:0; }
+.wordmark{ display:inline-flex; align-items:center; gap:0.45em; line-height:1; letter-spacing:0; font-weight:bold;
+  text-transform:uppercase; white-space:nowrap; }
+.wordmark .wm-txt{ letter-spacing:0; text-box-trim:trim-both; text-box-edge:cap alphabetic; }
+.wordmark .wm-dot{ width:0.30em; height:0.30em; border-radius:50%; background:currentColor; flex:0 0 auto; }
+#previewbar .wordmark{ color:#fff; }
+.themesw{ display:inline-flex; align-items:center; flex:0 0 auto; margin-left:auto; }
+#titlebar .themesw select, #appbar .themesw select{
+  height:22px; min-height:0; width:auto; max-width:7.6rem; padding:0 4px; border:0; border-radius:0;
+  background:#fff; color:#141414; box-shadow:var(--in); font:12px/20px var(--sys); }
+#app.phone #appbar .themesw{ margin-left:2px; flex:0 0 auto; }
+#app.phone #appbar .themesw select{ height:36px; width:7.4em; max-width:7.4em; padding:0 2px; font-size:13px; }
+
+[data-theme="y2fresh"]{
+  color-scheme:only light;
+  --bg:#e4eef7; --surface:#ffffff; --surface2:#e4edf7; --text:#0a1a2e; --muted:#4b6480;
+  --accent:#000000; --accent-ink:#ffffff; --sel-text:#ffffff;
+  --face:#e4eef7; --face-lt:#e4edf7; --face-dk:#c3d5e6;
+  --white:#ffffff; --shadow:#9db4cb; --dark:#3d5670;
+  --ink:#0a1a2e; --ink2:#1e3a56; --dim:#4b6480;
+  --line:rgba(157,180,203,.55); --rule:#9db4cb; --gb:#9db4cb;
+  --hover:rgba(10,26,46,.07); --sel:#5d6a7e; --seldim:#e8eef6;
+  --alert:#be2b2b;
+  --bar:linear-gradient(135deg,#ffffff,#86abd4 40%,#eaf5ff 55%,#86abd4);
+  --chrome:var(--bar);
+  --sys:"Oxanium","Segoe UI",Tahoma,sans-serif; --mono:var(--sys);
+  --font-ui:var(--sys); --font-display:"Orbitron","Oxanium",sans-serif;
+  --fs-xs:12px; --fs-s:12px; --fs:12px; --fs-m:13px; --fs-l:21px; --fs-xl:21px;
+  --ctl:38px; --act:38px;
+  --surface-fill:rgba(255,255,255,.62); --field-bg:rgba(255,255,255,.9); --btn-bg:rgba(255,255,255,.72);
+  --titlebar-ink:#111111;
+  --out:0 4px 14px rgba(0,0,0,.2), inset 0 1px 0 #fff, inset 0 -2px 0 rgba(0,0,0,.08);
+  --in:inset 0 2px 6px rgba(0,0,0,.16);
+  --thin:inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(0,0,0,.06);
+  --btn-gloss:linear-gradient(rgba(255,255,255,.55),rgba(255,255,255,.08) 50%,rgba(255,255,255,0) 51%);
+  --glass-filter:saturate(130%);
+  --dur:280ms; --ease:cubic-bezier(.34,1.56,.64,1);
+  --cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Ccircle cx='8' cy='8' r='5' fill='%23000' fill-opacity='.85' stroke='%23fff' stroke-opacity='.7'/%3E%3C/svg%3E") 8 8, auto;
+  --focus:#0a6cff;
+}
+@media (pointer:coarse){ [data-theme="y2fresh"]{ --ctl:44px; --act:44px; } }
+[data-theme="y2fresh"] body{
+  background-color:var(--bg);
+  background-image:
+    radial-gradient(40% 50% at 18% 22%, rgba(181,221,255,.75), transparent 70%),
+    radial-gradient(35% 45% at 82% 30%, rgba(95,160,221,.6), transparent 70%),
+    radial-gradient(45% 50% at 55% 92%, rgba(42,126,162,.6), transparent 70%);
+  background-attachment:fixed;
+  color:var(--text);
+  font:400 12px/16px var(--font-ui);
+  letter-spacing:-0.04em;
+  cursor:var(--cursor);
+}
+[data-theme="y2fresh"] body::before{
+  content:""; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.69;
+  background-image:linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px);
+  background-size:60px 60px;
+}
+[data-theme="y2fresh"] #app{ z-index:1; }
+[data-theme="y2fresh"] #app.phone{ font-size:14px; line-height:20px; letter-spacing:-0.03em; }
+[data-theme="y2fresh"] :is(button, a, label, summary, [data-act], .row, .nrow, .tab, .kind, select){ cursor:var(--cursor); }
+[data-theme="y2fresh"] :is(input, textarea){ cursor:text; }
+[data-theme="y2fresh"] .ic{ stroke-width:.9; stroke-linecap:round; stroke-linejoin:round; }
+[data-theme="y2fresh"] ::selection{ background:#0a6cff; color:#fff; }
+[data-theme="y2fresh"] :is(#titlebar, #app.phone #appbar, .dbar, #previewbar){
+  background:var(--chrome); color:var(--titlebar-ink);
+}
+[data-theme="y2fresh"] :is(#titlebar .tglyph, .wicon .wglyph, .dbar .x, .ab-btn.boxed){
+  background:#fff; color:#111; box-shadow:var(--out); border:1px solid #86abd4;
+}
+[data-theme="y2fresh"] :is(.ab-btn, #previewbar .pva .btn.pvlogin, .dbar .dbtn){ color:var(--titlebar-ink); }
+[data-theme="y2fresh"] #previewbar{ box-shadow:inset 0 1px 0 rgba(255,255,255,.8); }
+[data-theme="y2fresh"] #previewbar .pvk{ color:#1e3a56; }
+[data-theme="y2fresh"] #previewbar .wordmark{ color:#111; }
+[data-theme="y2fresh"] #previewbar .btn{ color:#111; }
+[data-theme="y2fresh"] .wordmark{ font-family:var(--font-display); font-weight:600; gap:0.55em; }
+[data-theme="y2fresh"] .wordmark .wm-txt{ letter-spacing:0.08em; margin-right:-0.08em; }
+[data-theme="y2fresh"] :is(#chead h2, .hl, .calbar .ttl, .ab-title){
+  font-family:var(--font-display); font-weight:500; text-transform:uppercase; letter-spacing:0.04em;
+  font-size:21px; line-height:1.2;
+}
+[data-theme="y2fresh"] .ab-title{ font-size:14px; font-weight:600; letter-spacing:0.06em; }
+[data-theme="y2fresh"] .ab-title small{
+  font-family:var(--font-ui); font-weight:400; text-transform:none; letter-spacing:-0.02em; font-size:12px;
+}
+[data-theme="y2fresh"] .band{
+  font-family:var(--font-ui); font-weight:600; text-transform:uppercase; letter-spacing:0.08em;
+  background:rgba(244,249,253,.94); color:var(--text);
+}
+[data-theme="y2fresh"] :is(.panel, .canvas, .msgs, .picklist, .previewbox, .pvpage, .kdesc, .sheetrow, .linkrow, .fcard, .fjoin, .lkhave, .pkband, .visopt){
+  background-color:var(--surface-fill);
+  -webkit-backdrop-filter:var(--glass-filter); backdrop-filter:var(--glass-filter);
+}
+[data-theme="y2fresh"] :is(.panel, .msgs, .picklist, .previewbox, .pvpage){
+  border:3px solid rgba(157,180,203,.8); border-image:none;
+}
+[data-theme="y2fresh"] :is(.btn, .ib, .kind, .seg button){
+  background-color:var(--btn-bg); background-image:var(--btn-gloss); color:var(--text);
+  border:3px solid rgba(157,180,203,.85); box-shadow:var(--out);
+}
+[data-theme="y2fresh"] .btn.primary{
+  background-color:transparent; background-image:var(--btn-gloss), var(--chrome);
+  color:#111; border-color:#86abd4; box-shadow:var(--out), 0 0 10px rgba(0,0,0,.28);
+}
+[data-theme="y2fresh"] .btn.primary:active{ box-shadow:var(--in), 0 0 0 1px #86abd4; }
+[data-theme="y2fresh"] :is(.btn:active, .btn.on, .ib:active){ box-shadow:var(--in); background-color:var(--face-lt); }
+[data-theme="y2fresh"] .ib.on{ background:var(--sel); color:#fff; box-shadow:var(--in); }
+[data-theme="y2fresh"] :is(.btn[disabled], .btn[aria-disabled="true"]){ color:var(--muted); text-shadow:none; }
+[data-theme="y2fresh"] :is(.seg button.on, .tab.on, .kind.on){ background:#5d6a7e; background-image:none; color:#fff; border-color:#5d6a7e; }
+[data-theme="y2fresh"] :is(input[type=text], input[type=search], input[type=date], select, textarea, .searchbox, .ab-search, .handlein){
+  background:var(--field-bg); border:3px solid rgba(157,180,203,.85); box-shadow:var(--in); color:var(--text);
+}
+[data-theme="y2fresh"] :is(.searchbox input, .ab-search input){ border:0; box-shadow:none; background:transparent; }
+[data-theme="y2fresh"] :is(.btn:focus-visible, .ib:focus-visible, .seg button:focus-visible, input:focus, select:focus, textarea:focus, .searchbox:focus-within){
+  outline:2px solid var(--focus); outline-offset:2px;
+}
+[data-theme="y2fresh"] :is(.popmenu, .ctxmenu){
+  background:rgba(255,255,255,.94); color:var(--text); border:3px solid #9db4cb;
+  box-shadow:var(--out), 0 20px 50px rgba(0,0,0,.28);
+}
+[data-theme="y2fresh"] .dlg{
+  padding:0; background:rgba(255,255,255,.92); color:var(--text); border:3px solid #9db4cb;
+  box-shadow:var(--out), 0 20px 50px rgba(0,0,0,.28);
+}
+[data-theme="y2fresh"] #mask{ background:rgba(20,10,40,.25); }
+[data-theme="y2fresh"] #win{ box-shadow:var(--out), 0 20px 50px rgba(0,0,0,.22); }
+[data-theme="y2fresh"] .av{ border-radius:50%; }
+[data-theme="y2fresh"] .badge-n{ background:var(--alert); color:#fff; }
+[data-theme="y2fresh"] :is(.actbar, #evbar, #tabbar){
+  background:rgba(228,238,247,.78); -webkit-backdrop-filter:var(--glass-filter); backdrop-filter:var(--glass-filter);
+}
+/* event colours follow the theme (the lab's eventLook "overridden"). The --e* variables stay on the elements. */
+[data-theme="y2fresh"] .sq:not(.img){ background:var(--surface2); color:var(--accent); box-shadow:inset 0 0 0 1px rgba(157,180,203,.45); }
+[data-theme="y2fresh"] .banner{ background:var(--surface2); color:var(--text); border-bottom-color:var(--rule); }
+[data-theme="y2fresh"] :is(.hl, .psub2, .eyebrow){ color:var(--text); }
+[data-theme="y2fresh"] .pgnote{ color:var(--muted); }
+[data-theme="y2fresh"] .canvas.pg:not(.plain){
+  --ink:#0a1a2e; --ink2:#1e3a56; --dim:#4b6480; --line:rgba(157,180,203,.55); --rule:#9db4cb; --gb:#9db4cb;
+  --hover:rgba(10,26,46,.07); --face-lt:#e4edf7; --face:#e4eef7;
+  background:transparent; color:var(--text);
+}
+[data-theme="y2fresh"] .canvas.pg:not(.plain) :is(.sect > h3, .facts > .fh){ background:#fff; color:var(--text); }
+[data-theme="y2fresh"] .canvas.pg:not(.plain) :is(.fvlink, .layer a:not(.btn):not(.chip)){ color:var(--ink); }
+[data-theme="y2fresh"] .canvas.pg :is(.actbar, .btn, .ib, button.chip:not(.who), a.chip, .seg, input, textarea, select, .fco, .edgo, .ctag, .hzchk, .replybox){
+  --ink:#0a1a2e; --ink2:#1e3a56; --dim:#4b6480; --line:rgba(157,180,203,.55); --rule:#9db4cb; --gb:#9db4cb;
+  --hover:rgba(10,26,46,.07); --face-lt:#e4edf7; --face:#e4eef7; --sel:#5d6a7e;
+}
+[data-theme="y2fresh"] :is(.calev, .calcell .mk:not(.more)){
+  background:var(--surface-fill); color:var(--text); border-left-color:var(--accent);
+}
+[data-theme="y2fresh"] .calev .cg{ color:var(--accent); }
+[data-theme="y2fresh"] :is(.caldow, .weekcol .wh, .dayband .hr){ background:var(--surface2); border-color:var(--rule); }
+[data-theme="y2fresh"] :is(.calrow, .calcell, .weekcol, .dayband, .caldow div){ border-color:rgba(157,180,203,.45); }
+[data-theme="y2fresh"] .calcell.oth{ background:rgba(228,237,247,.55); color:var(--muted); }
+[data-theme="y2fresh"] :is(.sect > h3, .facts > .fh){ background:#fff; }
+@media (pointer:fine){
+  [data-theme="y2fresh"] ::-webkit-scrollbar{ width:12px; height:12px; }
+  [data-theme="y2fresh"] ::-webkit-scrollbar-track{ background:rgba(10,26,46,.05); }
+  [data-theme="y2fresh"] ::-webkit-scrollbar-thumb{
+    background:linear-gradient(90deg,#86abd4,#fff 45%,#86abd4); border-radius:6px;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.25); border:2px solid transparent; background-clip:padding-box;
+  }
+  [data-theme="y2fresh"] ::-webkit-scrollbar-corner{ background:transparent; }
+  [data-theme="y2fresh"] ::-webkit-scrollbar-button,
+  [data-theme="y2fresh"] ::-webkit-scrollbar-button:vertical:start:decrement,
+  [data-theme="y2fresh"] ::-webkit-scrollbar-button:vertical:end:increment,
+  [data-theme="y2fresh"] ::-webkit-scrollbar-button:horizontal:start:decrement,
+  [data-theme="y2fresh"] ::-webkit-scrollbar-button:horizontal:end:increment{
+    display:none; width:0; height:0; background:none;
+  }
+}
+@supports not selector(::-webkit-scrollbar){
+  @media (pointer:fine){ [data-theme="y2fresh"]{ scrollbar-color:#86abd4 rgba(10,26,46,.08); } }
+}
+@media (prefers-reduced-motion:no-preference){
+  [data-theme="y2fresh"] :is(.btn, .ib, .row, .nrow, .tab, .kind, .seg button){
+    transition:background-color var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  [data-theme="y2fresh"] .btn:hover:not([disabled]):not([aria-disabled="true"]){ transform:translateY(-2px); }
+  [data-theme="y2fresh"] .btn:active{ transform:translateY(1px); }
+}
+@media (prefers-reduced-motion:reduce){
+  [data-theme="y2fresh"]{ --dur:0ms; }
+  [data-theme="y2fresh"] :is(.btn, .ib, .row, .nrow){ transition:none; }
+}
 </style>
 </head>
 <body>
 
 <div id="app">
-  <div id="titlebar"><span class="tglyph">&#9670;</span><b>Hypernet</b><span id="wintitle"></span></div>
+  <div id="titlebar"><span class="tglyph">&#9670;</span><b class="wordmark"><span class="wm-txt">HYPERNET</span><span class="wm-dot" aria-hidden="true"></span><span class="wm-txt">GLOBAL</span></b><span id="wintitle"></span><label class="themesw"><span class="sr">Theme</span><select class="themePick" aria-label="Theme"><option value="y2fresh">Y2Fresh</option><option value="win2k">Windows</option></select></label></div>
+<script>(function(){ var t = document.documentElement.getAttribute('data-theme'), s = document.querySelector('#titlebar .themePick'); if (s && (t === 'win2k' || t === 'y2fresh')) s.value = t; })();</script>
 
   <div id="toolbar">
     <button class="btn primary" data-act="newmenu" aria-haspopup="menu" id="newbtn"></button>
@@ -1824,12 +2072,15 @@ function placeToasts(){
   box.style.bottom = Math.max(12, window.innerHeight - top + 10) + 'px';
 }
 /* the preview bar: what Hypernet is in one plain line, and the way in. Join when there is no account here yet; Log in when there is */
-var HN_PITCH = 'Hypernet — find the events your people are going to, and the people to build them with.';
+var HN_PITCH = 'HYPERNET · GLOBAL — find the events your people are going to, and the people to build them with.';
+function wordmarkHTML(){
+  return '<span class="wordmark"><span class="wm-txt">HYPERNET</span><span class="wm-dot" aria-hidden="true"></span><span class="wm-txt">GLOBAL</span></span>';
+}
 function renderPreview(){
   var el = $('previewbar'); if (!el) return;
   if (S.loggedIn){ el.innerHTML = ''; return; }
   var has = !!ACCTS.me;
-  el.innerHTML = '<div class="pvt"><div class="pvk">Preview of Hypernet</div><div class="pvl">' + esc(HN_PITCH) + '</div></div>' +
+  el.innerHTML = '<div class="pvt"><div class="pvk">Preview of ' + wordmarkHTML() + '</div><div class="pvl">' + esc(HN_PITCH) + '</div></div>' +
     /* one way in (2026-10-05): joining and logging in are the same emailed code, so one button does both */
     '<div class="pva"><button class="btn primary" data-act="' + (has ? 'login' : 'loginpick') + '">Join or log in</button></div>';
 }
@@ -1837,7 +2088,7 @@ function renderPreview(){
 function loginPicker(){
   if (ONLINE){ HNAPI.loginDialog(); return; }
   if (ACCTS.me){ loginDialog(); return; }
-  dialog('Log in to Hypernet', '<p class="fhelp" style="margin:0 0 12px">There is no account in this browser yet. Join free with your name — it takes a few seconds.</p>' + demoRowHTML(),
+  dialog('Log in to HYPERNET · GLOBAL', '<p class="fhelp" style="margin:0 0 12px">There is no account in this browser yet. Join free with your name — it takes a few seconds.</p>' + demoRowHTML(),
     '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="join">Join free</button>', 420);
 }
 /* logged-out actions ask for a login, then carry on with what you asked for.
@@ -2041,7 +2292,7 @@ function searchItems(q){
     var pa = isPast(lastDay(a)) ? 1 : 0, pb = isPast(lastDay(b)) ? 1 : 0;
     return pa !== pb ? pa - pb : (pa ? -byDate(a,b) : byDate(a,b));
   }).forEach(function(e){
-    if (matchAll([e.title, descOf(e), placeWords(e), e.hostName, KINDLAB[recOf(e.id).kind]], q)) out.push({ type:'event', id:e.id });
+    if (matchAll([e.title, descOf(e), placeWords(e), e.hostName, KINDLAB[recOf(e.id).kind], tagWords(e)], q)) out.push({ type:'event', id:e.id });
   });
   Object.keys(HORIZONS).forEach(function(k){
     var hz = HORIZONS[k];
@@ -2127,8 +2378,7 @@ function rowHTML(it){
     if (isPast(lastDay(e))) cls += ' past';
     lead = sqHTML(it.id, 48);
     title = esc(e.title);
-    var rk = recOf(it.id).kind;
-    var kl = rk && rk !== 'meetup' ? KINDLAB[rk] : (e.kind === 'world' ? 'World' : ''), hl = hostLabel(e);
+    var kl = rowKindText(e), hl = hostLabel(e);
     /* the host often repeats the title; on a phone the place comes first because it is what gets cut */
     if (hl && fold(e.title).indexOf(fold(hl)) >= 0) hl = '';
     meta = (L.phone ? [whereOf(e), kl, hl] : [hl, whereOf(e), kl]).filter(Boolean).map(esc).join(' · ');
@@ -2244,6 +2494,58 @@ var ACCESSEXPL = {
   lottery:'Places are given out by lottery.',
   invite:'By invitation.'
 };
+/* Tags (REC.tags). One list: group order, then tag order, labels as given. Ids are stored. */
+var TAGGROUPS = [
+  { label:'Social', tags:[
+    { id:'party-night-out', label:'Party' }, { id:'rave', label:'Rave' }, { id:'day-party', label:'Day Party' },
+    { id:'house-party', label:'House Party' }, { id:'hangout', label:'Hangout' }, { id:'meeting', label:'Meeting' } ] },
+  { label:'Music, performance & arts', tags:[
+    { id:'concert', label:'Concert' }, { id:'live-music', label:'Live music' }, { id:'dj', label:'DJ' }, { id:'show', label:'Show' },
+    { id:'theatre', label:'Theatre' }, { id:'art-exhibition', label:'Art Exhibition' }, { id:'comedy', label:'Comedy' },
+    { id:'film-screening', label:'Film' }, { id:'dance', label:'Dance' } ] },
+  { label:'Learning & making', tags:[
+    { id:'talk', label:'Talk' }, { id:'workshop', label:'Workshop' }, { id:'hackathon', label:'Hackathon' },
+    { id:'build', label:'Build' }, { id:'coworking', label:'Coworking' } ] },
+  { label:'Access & model', tags:[
+    { id:'participatory', label:'Participatory' }, { id:'open', label:'Open' }, { id:'ticketed', label:'Ticketed' },
+    { id:'commercial', label:'Commercial' }, { id:'facilitated', label:'Facilitated' }, { id:'intimate', label:'Intimate' },
+    { id:'online', label:'Online' }, { id:'fundraiser', label:'Fundraiser' } ] },
+  { label:'Duration & logistics', tags:[
+    { id:'build-strike', label:'Build & strike' }, { id:'retreat', label:'Retreat' }, { id:'residency', label:'Residency' },
+    { id:'pop-up', label:'Pop-up' }, { id:'recurring', label:'Recurring' }, { id:'multi-day', label:'Multi-day' },
+    { id:'burn', label:'Burn' }, { id:'festival', label:'Festival' }, { id:'conference', label:'Conference' } ] },
+  { label:'Activity & place', tags:[
+    { id:'nature', label:'Nature' }, { id:'sports', label:'Sports' }, { id:'food-drink', label:'Food & drink' },
+    { id:'meditation', label:'Meditation' } ] },
+  { label:'Audience & tone', tags:[
+    { id:'sex-positive', label:'Sex-positive' }, { id:'sober', label:'Sober' }, { id:'spiritual', label:'Spiritual' }, { id:'political', label:'Political' },
+    { id:'community', label:'Community' }, { id:'family', label:'Family' }, { id:'casual', label:'Casual' },
+    { id:'formal', label:'Formal' }, { id:'costumes-encouraged', label:'Costumes Encouraged' } ] }
+];
+/* A kind saved before tags existed. No entry means that kind adds no tag. */
+var KINDTAGS = { workshop:['workshop'], build:['build'], burn:['burn'], meetup:['meeting'], town_hall:['meeting','community'],
+  burn_night:['burn'], decompression:['party-night-out'], camp_meeting:['meeting','community'], fundraiser:['fundraiser'] };
+var TAGBYID = {};
+TAGGROUPS.forEach(function(g){ g.tags.forEach(function(t){ TAGBYID[t.id] = t; }); });
+function tagById(id){ return TAGBYID[id] || null; }
+/* A stored array wins, including an empty one. Otherwise the kind's tags. */
+function eventTagIds(r){
+  if (r && Array.isArray(r.tags)) return r.tags.filter(function(id){ return TAGBYID[id]; });
+  return (r && KINDTAGS[r.kind] ? KINDTAGS[r.kind] : []).slice();
+}
+function tagLabels(r){ return eventTagIds(r).map(function(id){ return TAGBYID[id].label; }); }
+/* a non-breaking space keeps the dot on the word before it, so a wrap starts on the next tag */
+function tagLine(labs){ return labs.join('\u00a0· '); }
+function tagWords(e){
+  var ids = eventTagIds(recOf(e.id));
+  return ids.map(function(id){ return TAGBYID[id].label + ' ' + id; }).join(' ');
+}
+function rowKindText(e){
+  var r = recOf(e.id), labs = tagLabels(r);
+  if (labs.length) return tagLine(labs);
+  var rk = r && r.kind;
+  return rk && rk !== 'meetup' ? (KINDLAB[rk] || '') : (e.kind === 'world' ? 'World' : '');
+}
 var KINDLAB = { burn:'Burn', decompression:'Decompression', burn_night:'Burn night', build:'Build', fundraiser:'Fundraiser', camp_meeting:'Camp meeting',
                 meetup:'Meetup', town_hall:'Town hall', workshop:'Workshop', volunteer_day:'Volunteer day', sale:'Sale', other:'Event' };
 var REGLAB = { flagship:'Flagship', official_regional:'Official regional', burn_inspired:'Burn-inspired', independent:'Independent' };
@@ -2307,7 +2609,8 @@ function fmtDay(iso){ return isoDate(iso) ? fmtShort(isoDate(iso)) : String(iso)
 
 function eyebrowOf(e){
   var r = recOf(e.id), b = r.burn || {};
-  var parts = [KINDLAB[r.kind] || (e.kind === 'world' ? 'World' : 'Event')];
+  var labs = tagLabels(r);
+  var parts = [labs.length ? tagLine(labs) : (KINDLAB[r.kind] || (e.kind === 'world' ? 'World' : 'Event'))];
   if (b.edition && b.edition.year) parts.push(b.edition.year + (b.edition.number ? ' · No. ' + b.edition.number : ''));
   if (REGLAB[b.regionalStatus]) parts.push(REGLAB[b.regionalStatus]);
   if (r.venueKind === 'virtual') parts.push('Online');
@@ -2649,6 +2952,7 @@ function canvasHTML(evId){
   var bar = !past ? verbsHTML(evId) : S.loggedIn ? toolbarHTML(vb('v-went', evId, 'Went', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] }), vb('share', evId, 'Share', 'share')) : '';
   /* Details (the facts grid) → About → Call outs → Who's going → the plan → the rest, only what there is */
   var s = sect('About', descOf(e) ? '<p class="evdesc">'+esc(descOf(e))+'</p>' : '');
+  s += scheduleHTML(evId);
   if (r.theme) s += sect('Theme', '<div class="themeline">'+esc(typeof r.theme === 'object' ? (r.theme.name || '') : r.theme)+'</div>' +
                                    (r.theme.blurb ? '<p>'+esc(r.theme.blurb)+'</p>' : ''));
   s += sect('Call outs', calloutsHTML(r.calloutIds, evId)).replace('<section class="sect">', '<section class="sect" data-sect="callouts">');
@@ -4299,6 +4603,25 @@ function exploreKindsHTML(){
 function phoneCanBack(){
   return S.phoneSearch || S.folder.kind !== tabRootFolder(S.tab).kind;
 }
+function hnTheme(){ return document.documentElement.getAttribute('data-theme') === 'win2k' ? 'win2k' : 'y2fresh'; }
+function hnSetTheme(id){
+  id = id === 'win2k' ? 'win2k' : 'y2fresh';
+  document.documentElement.setAttribute('data-theme', id);
+  var meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', id === 'win2k' ? '#3a3a3a' : '#e4eef7');
+  try { localStorage.setItem('hypernet-theme', id); } catch (e) {}
+  document.querySelectorAll('.themePick').forEach(function(el){ el.value = id; });
+}
+function themeSwitchHTML(){
+  var cur = hnTheme();
+  return '<label class="themesw"><span class="sr">Theme</span><select class="themePick" aria-label="Theme">' +
+    '<option value="y2fresh"' + (cur === 'y2fresh' ? ' selected' : '') + '>Y2Fresh</option>' +
+    '<option value="win2k"' + (cur === 'win2k' ? ' selected' : '') + '>Windows</option></select></label>';
+}
+document.addEventListener('change', function(ev){
+  var t = ev.target;
+  if (t && t.classList && t.classList.contains('themePick')) hnSetTheme(t.value);
+});
 function renderAppbar(){
   var h = '', conv = phoneConv(), back = conv || phoneCanBack();
   /* in a conversation, back is all chats; its name and the profile button open their profile over it */
@@ -4314,9 +4637,11 @@ function renderAppbar(){
     h += '<label class="ab-search">'+ic('search')+'<input id="pq" type="search" placeholder="Search" value="'+esc(S.query)+'" autocomplete="off" aria-label="Search">' +
       (S.query ? '<button class="abclear" data-act="clearq" aria-label="Clear search">'+ic('close',16)+'</button>' : '') + '</label>';
   } else {
-    h += '<div class="ab-title">'+esc(folderName())+'</div>' + viewSwitchHTML();
+    /* the theme control sits left of the List / Calendar switch, which stays the bar's right-hand control (Search may follow it) */
+    h += '<div class="ab-title">'+esc(folderName())+'</div>' + themeSwitchHTML() + viewSwitchHTML();
     if (S.tab === 'home' || S.tab === 'explore') h += '<button class="ab-btn" data-act="psearch" aria-label="Search">'+ic('search',22)+'</button>';
   }
+  if (conv || S.tab === 'chats' || S.folder.kind === 'search' || S.phoneSearch) h += themeSwitchHTML();
   var ab = $('appbar'), hadFocus = document.activeElement && document.activeElement.id === 'pq';
   ab.innerHTML = h;
   if (hadFocus || S.phoneSearch){ var pq = $('pq'); if (pq){ pq.focus(); var n = pq.value.length; pq.setSelectionRange(n, n); } }
@@ -4449,11 +4774,12 @@ function dialog(title, bodyHTML, footHTML, w, cls){
   d.style.top = Math.max(16, (window.innerHeight - d.offsetHeight) / 2.4) + 'px';
   DLGS.push(d);
   placeDlg(d);
+  tagFitSoon();
   var bar = d.querySelector('.dbar');
   bar.addEventListener('mousedown', function(ev){
     if (ev.target.closest('[data-act]') || document.body.classList.contains('is-phone')) return;
     var sx = ev.clientX, sy = ev.clientY, ox = d.offsetLeft, oy = d.offsetTop;
-    function mv(e2){ d.style.left = (ox + e2.clientX - sx)+'px'; d.style.top = Math.max(0, oy + e2.clientY - sy)+'px'; }
+    function mv(e2){ d.style.left = (ox + e2.clientX - sx)+'px'; d.style.top = Math.max(0, oy + e2.clientY - sy)+'px'; tagPlace(); }
     function up(){ document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); }
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   });
@@ -4581,7 +4907,7 @@ function profileDialog(mode){
   PF = { mode:mode, name: up ? '' : p.displayName, handle: up ? '' : p.handle, photo: up ? null : (PTHEME.self && PTHEME.self.image) || null,
          about: up ? '' : (p.bio || ''), skills: up ? [] : (p.skills || []).slice(), cities: up ? [] : citiesOf(p).slice() };
   if (up){
-    dialog(JOINFOR || 'Join Hypernet', '<div id="pfbody">' + profileForm() + '</div>' + demoRowHTML(),
+    dialog(JOINFOR || 'Join HYPERNET · GLOBAL', '<div id="pfbody">' + profileForm() + '</div>' + demoRowHTML(),
       '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="pfsave" id="pfsave" disabled>Join</button>', 560);
   } else {
     DRAFT = Object.assign({ form:'profile', kind:'person', editing:'self', lookTouched:false }, lookDraft(PTHEME.self ? asLook(PTHEME.self) : plainTheme('◉')));
@@ -4652,7 +4978,7 @@ function loginDialog(){
   if (ONLINE){ HNAPI.loginDialog(); return; }
   if (!ACCTS.me){ profileDialog('signup'); return; }
   var p = ACCTS.me.profile;
-  dialog('Log in to Hypernet',
+  dialog('Log in to HYPERNET · GLOBAL',
     '<div class="picklist"><div class="linkrow" data-act="useacct" data-id="me" role="button">'+avHTML(acctPid('me'),'a40') +
       '<div class="lr"><b>'+esc(p.displayName)+'</b><div class="fhelp">@'+esc(p.handle)+'</div></div></div></div>' + demoRowHTML(),
     '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="useacct" data-id="me">Log in</button>', 420);
@@ -4879,7 +5205,7 @@ var PKFILTERS = [['upcoming','All upcoming'], ['going','Going'], ['interested','
 function pickerPool(){
   var q = PK.q.toLowerCase().trim();
   return allEvents().filter(function(e){ return canSeeEvent(e) && (!NEXTED[e.id] || PK.sel.indexOf(e.id) >= 0); })
-    .filter(function(e){ return !q || matchAll([e.title, whereOf(e), placeWords(e), hostLabel(e), descOf(e)], q); });
+    .filter(function(e){ return !q || matchAll([e.title, whereOf(e), placeWords(e), hostLabel(e), descOf(e), tagWords(e)], q); });
 }
 /* "from people you follow" means what it means on Explore's shelf of that name: someone you follow hosts it */
 function pickerWhy(e){
@@ -4975,7 +5301,7 @@ function pickerDone(){
    keeps the organiser's name, links back to its page and credits whoever added it, who may correct it later. One
    link is one event: a link already here offers that event instead. The same form edits it afterwards. ---- */
 function blankLinkDraft(){
-  return { form:'link', step:1, ctx:'picker', editing:null, url:'', host:'', title:'', date:'', end:'', startTime:'', endTime:'', kind:'other',
+  return { form:'link', step:1, ctx:'picker', editing:null, url:'', host:'', title:'', date:'', end:'', startTime:'', endTime:'', kind:'other', baseKind:'other', tags:[],
            city:'', online:false, privacy:'everyone', entry:'free', desc:'', bring:'', filled:false, busy:false, note:'', existing:null,
            image:null, extra:null, showErr:false };
 }
@@ -5093,7 +5419,8 @@ function linkAdd(){
   var x = d.extra || {}, start = isoDate(d.date), end = isoDate(d.end), city = d.online ? '' : String(d.city || '').trim(), url = String(d.url).trim();
   EVENTS[id] = { id:id, title:d.title.trim(), date:start, description:d.desc, hostName:d.host.trim(), privacy:'everyone', ownerIds:[], kind:'link', city:city,
                  sourceUrl:url, addedBy:'self' };
-  REC[id] = { kind:d.kind || 'other', startTime:d.startTime || undefined, endTime:d.endTime || undefined, endDate: end && end > start ? end : undefined,
+  var tk = tagsForSave(d);
+  REC[id] = { kind:tk.kind, tags:tk.tags, startTime:d.startTime || undefined, endTime:d.endTime || undefined, endDate: end && end > start ? end : undefined,
               timezone:x.timezone || undefined, region:x.region || undefined, country:x.country || undefined, scale: end && end > start ? 'gathering' : 'meetup',
               venueKind: d.online ? 'virtual' : 'physical', city:city,
               venue: d.online ? undefined : (x.venue && x.venue.name ? x.venue : { name:city, addressVisibility:'public' }),
@@ -5110,7 +5437,7 @@ function linkAdd(){
 function linkEditOpen(evId){
   var e = EVENTS[evId], r = recOf(evId);
   DRAFT = Object.assign(blankLinkDraft(), { ctx:'edit', editing:evId, filled:true, url:e.sourceUrl || r.externalUrl || '', host:e.hostName || '',
-    title:e.title, date:e.date, end:r.endDate || '', startTime:r.startTime || '', endTime:r.endTime || '', kind:r.kind || 'other',
+    title:e.title, date:e.date, end:r.endDate || '', startTime:r.startTime || '', endTime:r.endTime || '', kind:r.kind || 'other', baseKind:r.kind || 'other', tags:eventTagIds(r),
     online:r.venueKind === 'virtual', city: r.venueKind === 'virtual' ? '' : (r.city || e.city || ''), entry:(r.access && r.access.model) || 'free', desc:descOf(e) });
   dialog('Edit event', linkFormHTML(DRAFT), linkFootHTML(DRAFT), 520, 'lkdlg');
   focusIn('lk-h');
@@ -5122,7 +5449,8 @@ function linkSaveEdit(d){
   if (d.online) r.venue = undefined;
   e.title = d.title.trim(); e.date = start; e.description = d.desc; e.hostName = d.host.trim(); e.city = city;
   r.endDate = end && end > start ? end : undefined; r.startTime = d.startTime || undefined; r.endTime = d.endTime || undefined;
-  r.kind = d.kind || r.kind || 'other'; r.description = d.desc; r.venueKind = d.online ? 'virtual' : 'physical'; r.city = city;
+  var tk = tagsForSave(d);
+  r.kind = tk.kind; r.tags = tk.tags; r.description = d.desc; r.venueKind = d.online ? 'virtual' : 'physical'; r.city = city;
   r.access = Object.assign({}, r.access || {}, { model:d.entry });
   delete PLAINCACHE[id]; EDITED[id] = true; SLUGS = null;
   if (ONLINE) HNAPI.saveEvent(id);
@@ -5204,7 +5532,8 @@ function czSubject(d, t, px){
     return { cover: lk && lk.image ? sqT(t, px) : '<span class="av'+(pl ? ' lk' : '')+'" style="width:'+px+'px;height:'+px+'px;flex-basis:'+px+'px;font-size:'+Math.round(px*.35)+'px;background:'+(pl ? pl.sq+';color:'+pl.accentInk : (AVCOLOR.self||'#5a5a5a'))+'">'+esc(initials(nm))+'</span>',
              eyebrow:'@'+esc((PF && normHandle(PF.handle)) || me.handle || 'you'), title:nm, facts:[['Based in', ((PF && PF.cities) || citiesOf(me)).join(', ') || '—'], ['Going', String(goingOf('self').length)]] };
   }
-  return { cover:sqT(t, px), eyebrow:esc(KINDLAB[d.kind] || 'Event'), title:d.title || 'Untitled event',
+  var labs = (d.tags || []).map(function(id){ var tg = tagById(id); return tg ? tg.label : ''; }).filter(Boolean);
+  return { cover:sqT(t, px), eyebrow:esc(labs.length ? tagLine(labs) : (KINDLAB[d.kind] || 'Event')), title:d.title || 'Untitled event',
            facts:[['When', isoDate(d.date) ? fmtDate(d.date) : '—'], ['Where', d.online ? 'Online' : String(d.city || '').trim() || '—']] };
 }
 /* the preview: the page's title band, its toolbar and a group box, in the look (on a phone, or `small`, the band alone) */
@@ -5379,6 +5708,165 @@ document.addEventListener('drop', function(ev){
   var f = ev.dataTransfer.files && ev.dataTransfer.files[0];
   if (z.getAttribute('data-czdrop') === 'photo') pfTakePhoto(f); else czTakeFile(f);
 });
+/* the first selected tag that is still a kind, otherwise the kind the draft opened with */
+function kindFromTags(tags, fallback){
+  var i;
+  for (i = 0; i < tags.length; i++) if (EVENTKINDS.indexOf(tags[i]) >= 0) return tags[i];
+  return fallback;
+}
+function draftTagIds(d){ return (d && d.tags || []).filter(function(id){ return tagById(id); }); }
+function tagsForSave(d){
+  var tags = draftTagIds(d);
+  return { tags:tags, kind:kindFromTags(tags, d.baseKind || d.kind || 'meetup') };
+}
+function orderTags(ids){
+  var want = {};
+  (ids || []).forEach(function(id){ if (tagById(id)) want[id] = 1; });
+  var out = [];
+  TAGGROUPS.forEach(function(g){ g.tags.forEach(function(t){ if (want[t.id]) out.push(t.id); }); });
+  return out;
+}
+function tagChipsInner(ids){
+  ids = orderTags(ids);
+  if (!ids.length) return '<span class="tagph">Add tags\u2026</span>';
+  return ids.map(function(id){
+    var t = tagById(id);
+    return '<span class="tagchip"><span class="taglab">'+esc(t.label)+'</span><button type="button" class="tagx" data-act="tagx" data-id="'+t.id+'" aria-label="Remove '+esc(t.label)+'">\u00d7</button></span>';
+  }).join('') + '<span class="tagmore" hidden></span>';
+}
+function tagsFieldHTML(d){
+  var on = {};
+  orderTags(d.tags).forEach(function(id){ on[id] = 1; });
+  return '<div class="field tagfield"><label id="w-taglab">Tags</label>' +
+    '<div class="tagbox" id="w-tagbox" data-act="tagtoggle" role="combobox" tabindex="0" aria-haspopup="listbox" aria-expanded="false" aria-controls="w-tagpanel" aria-labelledby="w-taglab">' +
+      '<span class="tagchips" id="w-tagchips">'+tagChipsInner(d.tags)+'</span><span class="tagcaret" aria-hidden="true">\u25be</span></div>' +
+    '<div class="tagpanel" id="w-tagpanel" hidden>' +
+      '<input type="search" id="w-tagq" class="tagq" placeholder="Filter tags" autocomplete="off" aria-label="Filter tags" aria-controls="w-taggroups">' +
+      '<div class="taggroups" id="w-taggroups" role="listbox" aria-label="Tags" aria-multiselectable="true">' +
+      TAGGROUPS.map(function(g){
+        return '<div class="taggroup"><div class="taghead">'+esc(g.label)+'</div>' +
+          g.tags.map(function(t){
+            var sel = !!on[t.id];
+            return '<button type="button" class="tagopt" role="option" data-act="tagpick" data-id="'+t.id+'" aria-selected="'+(sel ? 'true' : 'false')+'" tabindex="-1"><span class="tagmark" aria-hidden="true"></span>'+esc(t.label)+'</button>';
+          }).join('') + '</div>';
+      }).join('') +
+      '<p class="tagnone" hidden>No tag matches.</p></div></div></div>';
+}
+/* the dialog body scrolls, so the panel is fixed or the list would be clipped */
+function tagPlace(){
+  var box = document.getElementById('w-tagbox'), panel = document.getElementById('w-tagpanel');
+  if (!box || !panel || panel.hidden) return;
+  var r = box.getBoundingClientRect(), gap = 4;
+  var width = Math.min(r.width, window.innerWidth - 16);
+  var left = Math.max(8, Math.min(r.left, window.innerWidth - width - 8));
+  var below = window.innerHeight - r.bottom - gap - 8, above = r.top - gap - 8;
+  panel.style.left = left + 'px';
+  panel.style.width = width + 'px';
+  if (below >= 180 || below >= above){
+    panel.style.top = (r.bottom + gap) + 'px';
+    panel.style.bottom = 'auto';
+    panel.style.maxHeight = Math.max(140, Math.min(320, below)) + 'px';
+  } else {
+    panel.style.top = 'auto';
+    panel.style.bottom = (window.innerHeight - r.top + gap) + 'px';
+    panel.style.maxHeight = Math.max(140, Math.min(320, above)) + 'px';
+  }
+}
+function tagSetOpen(open){
+  var panel = document.getElementById('w-tagpanel'), box = document.getElementById('w-tagbox');
+  if (!panel || !box) return;
+  panel.hidden = !open;
+  box.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (!open) return;
+  var q = document.getElementById('w-tagq');
+  if (q){ q.value = ''; tagFilter(''); }
+  tagPlace();
+  if (q) q.focus();
+}
+function tagToggle(){
+  var panel = document.getElementById('w-tagpanel');
+  if (panel) tagSetOpen(panel.hidden);
+}
+function tagFit(){
+  var box = document.getElementById('w-tagbox');
+  if (!box || box.clientWidth < 20) return;
+  var hold = box.querySelector('.tagchips');
+  var all = Array.prototype.slice.call(box.querySelectorAll('.tagchip'));
+  var more = box.querySelector('.tagmore');
+  all.forEach(function(c){ c.hidden = false; });
+  if (more) more.hidden = true;
+  var guard = 0;
+  while (hold && all.length && hold.scrollWidth > hold.clientWidth + 1 && guard < 40){
+    var shown = all.filter(function(c){ return !c.hidden; });
+    if (shown.length <= 1) break;
+    shown[shown.length - 1].hidden = true;
+    if (more){ more.hidden = false; more.textContent = '+' + (all.length - shown.length + 1); }
+    guard++;
+  }
+}
+function tagFitSoon(){ requestAnimationFrame(tagFit); }
+function syncTagUI(){
+  if (!DRAFT) return;
+  var chips = document.getElementById('w-tagchips');
+  if (chips){ chips.innerHTML = tagChipsInner(DRAFT.tags); tagFitSoon(); }
+  document.querySelectorAll('.dlg .tagopt').forEach(function(row){
+    var on = (DRAFT.tags || []).indexOf(row.getAttribute('data-id')) >= 0;
+    row.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+}
+function tagPick(id){
+  if (!DRAFT || !tagById(id)) return;
+  var tags = (DRAFT.tags || []).slice(), i = tags.indexOf(id);
+  if (i >= 0) tags.splice(i, 1); else tags.push(id);
+  setDraftTags(orderTags(tags));
+  syncTagUI();
+}
+function tagRemove(id){
+  if (!DRAFT) return;
+  setDraftTags(orderTags((DRAFT.tags || []).filter(function(x){ return x !== id; })));
+  syncTagUI();
+}
+function tagRows(){
+  return Array.prototype.filter.call(document.querySelectorAll('.dlg .tagopt'), function(row){
+    return !row.hidden && !(row.closest('.taggroup') && row.closest('.taggroup').hidden);
+  });
+}
+function tagMove(dir){
+  var rows = tagRows(), ae = document.activeElement, i = rows.indexOf(ae);
+  if (ae && ae.id === 'w-tagq'){ if (dir > 0 && rows[0]) rows[0].focus(); return; }
+  if (i < 0){ if (rows[0]) rows[0].focus(); return; }
+  var n = i + dir;
+  if (n < 0){ var q = document.getElementById('w-tagq'); if (q) q.focus(); return; }
+  if (rows[n]) rows[n].focus();
+}
+function tagFilter(q){
+  q = fold(String(q || ''));
+  var any = false;
+  document.querySelectorAll('.dlg .taggroup').forEach(function(g){
+    var n = 0;
+    g.querySelectorAll('.tagopt').forEach(function(row){
+      var show = !q || fold(row.textContent).indexOf(q) >= 0;
+      row.hidden = !show;
+      if (show) n++;
+    });
+    g.hidden = !n;
+    if (n) any = true;
+  });
+  var empty = document.querySelector('.dlg .tagnone');
+  if (empty) empty.hidden = any || !q;
+  var ae = document.activeElement;
+  if (ae && ae.classList && ae.classList.contains('tagopt') && (ae.hidden || (ae.closest('.taggroup') && ae.closest('.taggroup').hidden))){
+    var qn = document.getElementById('w-tagq'); if (qn) qn.focus();
+  }
+}
+function setDraftTags(tags){
+  if (!DRAFT) return;
+  DRAFT.tags = tags.filter(function(id){ return tagById(id); });
+  DRAFT.kind = kindFromTags(DRAFT.tags, DRAFT.baseKind || DRAFT.kind || 'meetup');
+  refreshWizFoot();
+  schedulePersist();
+  if (document.querySelector('.dlg [data-czlook], .dlg .custprev')) czPreviews();
+}
 /* the fields of an event, by section: the same markup in the wizard's steps and in Edit */
 function wzErr(miss, k){ return '<span class="ferr" id="err-'+k+'" data-err="'+k+'" role="alert"'+(miss[k] ? '' : ' hidden')+'>'+esc(miss[k] || '')+'</span>'; }
 function wzBad(miss, k){ return miss[k] ? ' aria-invalid="true"' : ''; }
@@ -5390,8 +5878,7 @@ function basicsHTML(d, miss, withPrivacy){
     '<div class="field"><label for="w-e">Ends'+opt+'</label><input type="date" id="w-e" data-cz="end" value="'+esc(d.end)+'"'+(d.date?' min="'+esc(d.date)+'"':'')+' aria-describedby="err-end"'+bad('end')+'>' + err('end') + '</div></div>' +
     '<div class="frow"><div class="field"><label for="w-st">From'+opt+'</label><input type="time" id="w-st" data-cz="startTime" value="'+esc(d.startTime||'')+'"></div>' +
     '<div class="field"><label for="w-et">Until'+opt+'</label><input type="time" id="w-et" data-cz="endTime" value="'+esc(d.endTime||'')+'"></div></div>' +
-    '<div class="field"><label for="w-ty">Type</label><select id="w-ty" data-cz="kind">' +
-      EVENTKINDS.map(function(k){ return '<option value="'+k+'"'+(k===(d.kind||'meetup')?' selected':'')+'>'+esc(KINDLAB[k])+'</option>'; }).join('') + '</select></div>' +
+    tagsFieldHTML(d) +
     /* a place, or Online */
     '<div class="field"><label for="w-c">Where</label><div class="wherein"><input type="text" id="w-c" data-cz="city" value="'+esc(d.online ? '' : d.city)+'" placeholder="'+(d.online ? 'Online' : 'Stockholm')+'"'+(d.online ? ' disabled' : '')+' aria-required="true" aria-describedby="err-city"'+bad('city')+'>' +
       '<label class="wzon"><input type="checkbox" id="w-on" data-cz="online"'+(d.online ? ' checked' : '')+'>Online</label></div>' + err('city') + '</div>' +
@@ -5405,9 +5892,162 @@ function privacyHTML(d){
     Object.keys(PRIVACY).map(function(p){ return '<option value="'+p+'"'+(p===d.privacy?' selected':'')+'>'+PRIVACY[p]+'</option>'; }).join('') +
     '</select><p class="fhelp">Friends are the people you follow. Only me keeps it to you.</p></div>';
 }
+function splitWhen(iso){
+  var m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(iso || '');
+  return m ? { day:m[1], time:m[2] } : { day:'', time:'' };
+}
+function joinWhen(day, time){ return day && /^\d{2}:\d{2}$/.test(time || '') ? day + 'T' + time : ''; }
+function eventDayList(d){
+  var a = isoDate(d && d.date), b = isoDate(d && d.end);
+  if (!a) return [];
+  if (!b || b < a) b = a;
+  var days = [], cur = dOf(a), last = dOf(b), n = 0;
+  while (cur <= last && n < 21){ days.push(isoOf(cur)); cur.setDate(cur.getDate() + 1); n++; }
+  return days;
+}
+function dayName(iso, days){
+  var d = dOf(iso), repeat = days.filter(function(x){ return dOf(x).getDay() === d.getDay(); }).length > 1;
+  return DAY[d.getDay()] + (repeat ? ' ' + d.getDate() : '');
+}
+function eventStartISO(d){
+  var day = isoDate(d.date) || '';
+  var time = /^\d\d:\d\d/.test(d.startTime || '') ? String(d.startTime).slice(0, 5) : '00:00';
+  return day ? day + 'T' + time : '';
+}
+function eventEndISO(d){
+  var day = isoDate(d.end) || isoDate(d.date) || '';
+  if (!day || !/^\d\d:\d\d/.test(d.endTime || '')) return '';
+  return day + 'T' + String(d.endTime).slice(0, 5);
+}
+function addHoursWhen(iso, h){
+  var p = splitWhen(iso);
+  if (!p.day || !p.time) return '';
+  var bits = p.time.split(':'), dt = dOf(p.day);
+  dt.setHours(+bits[0] + h, +bits[1], 0, 0);
+  return isoOf(dt) + 'T' + ('0' + dt.getHours()).slice(-2) + ':' + ('0' + dt.getMinutes()).slice(-2);
+}
+function addDaysWhen(iso, n){
+  var p = splitWhen(iso);
+  if (!p.day) return iso;
+  var dt = dOf(p.day);
+  dt.setDate(dt.getDate() + n);
+  return isoOf(dt) + 'T' + p.time;
+}
+function whenFields(which, iso, days, multi){
+  var p = splitWhen(iso), time = '<input type="time" data-sched="'+which+'" value="'+esc(p.time)+'" aria-label="'+(which === 'end' ? 'End time' : 'Start time')+'">';
+  if (!multi) return time;
+  var opts = days.map(function(day){ return '<option value="'+day+'"'+(day === p.day ? ' selected' : '')+'>'+esc(dayName(day, days))+'</option>'; }).join('');
+  if (p.day && days.indexOf(p.day) < 0) opts = '<option value="'+esc(p.day)+'" selected>'+esc(dayName(p.day, days.concat([p.day])))+'</option>' + opts;
+  return '<select data-sched="'+which+'day" aria-label="'+(which === 'end' ? 'End day' : 'Start day')+'">'+opts+'</select>' + time;
+}
+function schedFieldHTML(d){
+  var days = eventDayList(d), multi = days.length > 1;
+  var rows = (d.schedule || []).map(function(b, i){
+    var end = b.end ? whenFields('end', b.end, days, multi) : '<button type="button" class="schedend" data-act="schedend" data-id="'+i+'">+ add end</button>';
+    return '<div class="schedrow" data-i="'+i+'"><input type="text" class="schedtitle" data-sched="title" value="'+esc(b.title || '')+'" placeholder="Title" aria-label="Block title" autocomplete="off">' +
+      whenFields('start', b.start, days, multi) + end +
+      '<button type="button" class="schedx" data-act="schedx" data-id="'+i+'" aria-label="Remove block">\u00d7</button></div>';
+  }).join('');
+  return '<div class="field schedfield" id="w-sched"><span class="schedlab">Time table'+WZOPT+'</span>' + rows +
+    '<button type="button" class="schedadd" data-act="schedadd">+ Add block</button></div>';
+}
+function schedMount(focusI){
+  var el = document.getElementById('w-sched');
+  if (!el || !DRAFT) return;
+  el.outerHTML = schedFieldHTML(DRAFT);
+  if (focusI == null) return;
+  var t = document.querySelector('.schedrow[data-i="'+focusI+'"] [data-sched="title"]');
+  if (t) t.focus();
+}
+function schedAdd(){
+  if (!DRAFT) return;
+  if (!DRAFT.schedule) DRAFT.schedule = [];
+  var prev = DRAFT.schedule[DRAFT.schedule.length - 1];
+  DRAFT.schedule.push({ title:'', start: prev ? (prev.end || prev.start) : eventStartISO(DRAFT) });
+  schedMount(DRAFT.schedule.length - 1);
+  schedulePersist();
+}
+function schedEnd(i){
+  var b = DRAFT && DRAFT.schedule && DRAFT.schedule[i];
+  if (!b || b.end) return;
+  var ev = eventEndISO(DRAFT);
+  b.end = ev && b.start && ev > b.start ? ev : addHoursWhen(b.start, 1);
+  schedMount(null);
+  var t = document.querySelector('.schedrow[data-i="'+i+'"] [data-sched="end"]');
+  if (t) t.focus();
+  schedulePersist();
+}
+function schedRemove(i){
+  if (!DRAFT || !DRAFT.schedule) return;
+  DRAFT.schedule.splice(i, 1);
+  schedMount(null);
+  schedulePersist();
+}
+function schedTouch(n){
+  var row = n.closest && n.closest('.schedrow');
+  if (!row || !DRAFT || !DRAFT.schedule) return false;
+  var b = DRAFT.schedule[+row.getAttribute('data-i')];
+  if (!b) return false;
+  var k = n.getAttribute('data-sched');
+  if (k === 'title'){ b.title = n.value; schedulePersist(); return true; }
+  var start = splitWhen(b.start), end = b.end ? splitWhen(b.end) : null;
+  if (k === 'start') start.time = n.value;
+  if (k === 'startday') start.day = n.value;
+  if (k === 'end' && end) end.time = n.value;
+  if (k === 'endday' && end) end.day = n.value;
+  b.start = joinWhen(start.day, start.time);
+  if (end) b.end = joinWhen(end.day, end.time);
+  schedulePersist();
+  return true;
+}
+function scheduleForSave(d){
+  var multi = eventDayList(d).length > 1;
+  var blocks = (d.schedule || []).map(function(b){
+    var o = { title:String(b.title || '').trim(), start:b.start || '' };
+    if (b.end) o.end = b.end;
+    return o;
+  }).filter(function(b){ return b.title && /^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/.test(b.start); });
+  blocks.forEach(function(b){
+    if (!b.end || !/^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/.test(b.end) || b.end <= b.start) delete b.end;
+  });
+  if (!multi){
+    var i, g;
+    for (i = 1; i < blocks.length; i++){
+      g = 0;
+      while (blocks[i].start <= blocks[i - 1].start && g < 3){
+        blocks[i].start = addDaysWhen(blocks[i].start, 1);
+        if (blocks[i].end) blocks[i].end = addDaysWhen(blocks[i].end, 1);
+        g++;
+      }
+    }
+  }
+  blocks.sort(function(a, b){ return a.start < b.start ? -1 : a.start > b.start ? 1 : 0; });
+  return blocks.length ? blocks : null;
+}
+function blockWhen(b, multi, days){
+  var a = splitWhen(b.start);
+  if (!a.time) return '';
+  var left = multi ? dayName(a.day, days) + ' ' + a.time : a.time;
+  if (!b.end) return left;
+  var e = splitWhen(b.end);
+  if (!e.time) return left;
+  if (!multi || e.day === a.day) return left + '–' + e.time;
+  return left + ' – ' + dayName(e.day, days) + ' ' + e.time;
+}
+function scheduleHTML(evId){
+  var e = EVENTS[evId], r = recOf(evId);
+  var list = (Array.isArray(r.schedule) ? r.schedule : []).filter(function(b){ return b && b.title && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(b.start || ''); })
+    .slice().sort(function(a, b){ return a.start < b.start ? -1 : a.start > b.start ? 1 : 0; });
+  if (!list.length || !e) return '';
+  var days = eventDayList({ date:e.date, end:r.endDate || '' }), multi = days.length > 1;
+  return sect('Time table', '<div class="tt">' + list.map(function(b){
+    return '<div class="ttrow"><span class="ttwhen">'+esc(blockWhen(b, multi, days))+'</span><span class="ttwhat">'+esc(b.title)+'</span></div>';
+  }).join('') + '</div>');
+}
 function wordsHTML(d, miss){
   return '<div class="field"><label for="w-desc">Description</label><textarea id="w-desc" data-cz="desc" rows="5" placeholder="Hot box on the ridge, a bucket of lake water, and nobody checking the time." aria-required="true" aria-describedby="err-desc"'+wzBad(miss, 'desc')+'>'+esc(d.desc)+'</textarea>' + wzErr(miss, 'desc') + '</div>' +
-    '<div class="field"><label for="w-b">Bring'+WZOPT+'</label><textarea id="w-b" data-cz="bring" rows="3" placeholder="A towel&#10;Something warm for after">'+esc(d.bring)+'</textarea></div>';
+    '<div class="field"><label for="w-b">Bring'+WZOPT+'</label><textarea id="w-b" data-cz="bring" rows="3" placeholder="A towel&#10;Something warm for after">'+esc(d.bring)+'</textarea></div>' +
+    schedFieldHTML(d);
 }
 /* the steps, as short tabs that always fit (owner, 2026-10-05: the "1 · Basics / 2 · Words / 3 · Look optional" tabs
    overflowed on a phone): back is always open, forward only past steps that have everything they need (2026-10-04) */
@@ -5505,12 +6145,13 @@ function paintWiz(){
   d.querySelector('.dfoot').innerHTML = wizFootHTML();
   if (DRAFT && (DRAFT.form || DRAFT.mode === 'edit')) b.scrollTop = top;
   placeDlg(d);
+  tagFitSoon();
 }
 /* a create form starts empty and is its own draft: closing it keeps what you typed, Discard throws it away */
 var FORMDRAFTS = {};
 var EVENTKINDS = ['meetup','build','workshop','volunteer_day','fundraiser','camp_meeting','burn_night','town_hall','decompression','burn','sale','other'];
 function blankEventDraft(){
-  return Object.assign({ step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', city:'', online:false, privacy:'everyone', entry:'free', desc:'', bring:'',
+  return Object.assign({ step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', baseKind:'meetup', tags:[], schedule:[], city:'', online:false, privacy:'everyone', entry:'free', desc:'', bring:'',
            lookTouched:false }, lookDraft(plainTheme('◉')));
 }
 function eventDraftDirty(d){
@@ -5559,8 +6200,10 @@ var editEventDialog = gated(function(evId){
   if (isLinkEvent(evId)){ linkEditOpen(evId); return; }
   DRAFT = Object.assign({ form:'event', mode:'edit', step:1, editing:evId, title:e.title, date:e.date, end:r.endDate || '', city:r.city || cityShort(e.city), online:r.venueKind === 'virtual',
             privacy:e.privacy || 'everyone', entry:(r.access && r.access.model) || 'free', desc:descOf(e),
-            kind:r.kind || 'meetup', startTime:r.startTime || '', endTime:r.endTime || '',
-            bring: Array.isArray(r.whatToBring) ? r.whatToBring.join('\n') : (r.whatToBring || ''), lookTouched:false }, lookDraft(TH(evId)));
+            kind:r.kind || 'meetup', baseKind:r.kind || 'meetup', tags:eventTagIds(r), startTime:r.startTime || '', endTime:r.endTime || '',
+            bring: Array.isArray(r.whatToBring) ? r.whatToBring.join('\n') : (r.whatToBring || ''),
+            schedule: (Array.isArray(r.schedule) ? r.schedule : []).map(function(b){ var o = { title:b.title || '', start:b.start || '' }; if (b.end) o.end = b.end; return o; }),
+            lookTouched:false }, lookDraft(TH(evId)));
   dialog('Edit ' + e.title, wizBodyHTML(), wizFootHTML(), 900, 'edlg');
   focusIn('w-t');
 });
@@ -5630,10 +6273,12 @@ function saveEventEdit(t){
   else { if (r.venueKind === 'virtual') r.venueKind = 'physical';
          if (city){ e.city = city; if (r.venue && (!r.venue.name || r.venue.name === r.city)) r.venue.name = city; r.city = city; } }
   r.endDate = end && end > start ? end : undefined;
-  r.description = DRAFT.desc; r.kind = DRAFT.kind || r.kind || 'meetup';
+  var tk = tagsForSave(DRAFT);
+  r.description = DRAFT.desc; r.kind = tk.kind; r.tags = tk.tags;
   r.startTime = DRAFT.startTime || undefined; r.endTime = DRAFT.endTime || undefined;
   r.access = Object.assign({}, r.access || {}, { model:DRAFT.entry });
   r.whatToBring = String(DRAFT.bring || '').split('\n').map(function(x){ return x.trim(); }).filter(Boolean);
+  var schE = scheduleForSave(DRAFT); if (schE) r.schedule = schE; else delete r.schedule;
   if (!r.burn && r.scale !== 'burn') r.scale = r.endDate ? 'gathering' : 'meetup';
   setEventLook(id, t);
   delete PLAINCACHE[id];
@@ -5662,9 +6307,11 @@ function wizAct(which){
   var city = DRAFT.online ? '' : String(DRAFT.city || '').trim();
   EVENTS[id] = { id:id, title:DRAFT.title.trim(), date:start, description:DRAFT.desc,
                  hostName:S.me.name, hostAcct:S.acct, privacy:DRAFT.privacy, ownerIds:['self'], kind:'own', city:city };
-  REC[id] = { kind:DRAFT.kind || 'meetup', startTime:DRAFT.startTime || undefined, endTime:DRAFT.endTime || undefined, scale: end && end > start ? 'gathering' : 'meetup', endDate: end && end > start ? end : undefined,
+  var tk = tagsForSave(DRAFT);
+  REC[id] = { kind:tk.kind, tags:tk.tags, startTime:DRAFT.startTime || undefined, endTime:DRAFT.endTime || undefined, scale: end && end > start ? 'gathering' : 'meetup', endDate: end && end > start ? end : undefined,
               venueKind:DRAFT.online ? 'virtual' : 'physical', city:city, venue:DRAFT.online ? undefined : { name:city, addressVisibility:'public' }, description:DRAFT.desc,
               access:{ model:DRAFT.entry }, whatToBring: String(DRAFT.bring||'').split('\n').map(function(s){ return s.trim(); }).filter(Boolean) };
+  var schN = scheduleForSave(DRAFT); if (schN) REC[id].schedule = schN;
   if (t){ t.glyph = PLAINGLYPH[REC[id].kind] || '◆'; window.HYPERNET_THEMES.themes[id] = t; }
   MYEVENTS.push(id); PROMOCOUNT[id] = 0; READ[id] = true;
   if (ONLINE) HNAPI.createEvent(id);
@@ -6360,6 +7007,12 @@ document.addEventListener('click', function(ev){
   if (act !== 'newmenu' && act !== 'acctmenu') closePopup();
   if (n.tagName === 'A') ev.preventDefault();
   switch (act){
+    case 'tagtoggle': tagToggle(); break;
+    case 'tagpick':   tagPick(id); break;
+    case 'tagx':      tagRemove(id); break;
+    case 'schedadd':  schedAdd(); break;
+    case 'schedend':  schedEnd(+id); break;
+    case 'schedx':    schedRemove(+id); break;
     case 'newmenu':  if (POP){ closePopup(); break; } popup(n, NEWITEMS); break;
     case 'acctmenu': if (POP){ closePopup(); break; } popup(n, [{ label:'Your profile', cmd:'profile', icon:'user' }, { label:'Edit profile', cmd:'editprofile', icon:'edit' }, '-', { label:'Log out', cmd:'logout', icon:'back' }]); break;
     case 'newsheet': newSheet(); break;
@@ -6549,6 +7202,7 @@ document.addEventListener('click', function(ev){
 });
 document.addEventListener('change', function(ev){
   var n = ev.target;
+  if (n.getAttribute && n.getAttribute('data-sched')){ schedTouch(n); return; }
   if (n.getAttribute('data-czfile')){ var fl = n.files && n.files[0]; n.value = ''; if (n.getAttribute('data-czfile') === 'photo') pfTakePhoto(fl); else czTakeFile(fl); return; }
   if (n.closest('[data-cz]') && DRAFT){
     var k = n.getAttribute('data-cz');
@@ -6583,6 +7237,8 @@ document.addEventListener('input', function(ev){
   if (/^co-[tbx]$/.test(n.id)){ saveForm('callout'); return; }
   if (/^nh-[nd]$/.test(n.id)){ saveForm('horizon'); return; }
   if (n.id === 'pk-q'){ PK.q = n.value; pickerPaint(); return; }
+  if (n.id === 'w-tagq'){ tagFilter(n.value); return; }
+  if (n.getAttribute && n.getAttribute('data-sched')){ schedTouch(n); return; }
   if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT' || n.type === 'checkbox' || n.type === 'radio') return;
   var kz = n.getAttribute('data-cz');
   if (/^c[123]$/.test(kz)){ czSetColor(kz, n.value, n); return; }
@@ -6592,7 +7248,13 @@ document.addEventListener('input', function(ev){
   refreshWizFoot(); schedulePersist();
   if (document.querySelector('.dlg [data-czlook]')) czPreviews();
 });
-document.addEventListener('mousedown', function(ev){ if (!ev.target.closest('.popmenu, [data-act="newmenu"], [data-act="acctmenu"]')) closePopup(); });
+document.addEventListener('mousedown', function(ev){
+  if (!ev.target.closest('.popmenu, [data-act="newmenu"], [data-act="acctmenu"]')) closePopup();
+  var panel = document.getElementById('w-tagpanel');
+  if (panel && !panel.hidden && !ev.target.closest('.tagfield')) tagSetOpen(false);
+});
+window.addEventListener('resize', function(){ tagFit(); tagPlace(); });
+document.addEventListener('scroll', function(){ tagPlace(); }, true);
 
 /* drag an event row onto one of your horizons */
 var DRAGID = null;
@@ -6617,6 +7279,11 @@ document.addEventListener('drop', function(ev){
 /* keyboard: the list follows the arrows; Escape steps back out */
 document.addEventListener('keydown', function(ev){
   var ae = document.activeElement, inField = ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
+  var tagPanel = document.getElementById('w-tagpanel'), tagOn = tagPanel && !tagPanel.hidden;
+  if (tagOn && ev.key === 'Escape'){ ev.preventDefault(); tagSetOpen(false); var tb = document.getElementById('w-tagbox'); if (tb) tb.focus(); return; }
+  if (tagOn && (ev.key === 'ArrowDown' || ev.key === 'ArrowUp')){ ev.preventDefault(); tagMove(ev.key === 'ArrowDown' ? 1 : -1); return; }
+  if (tagOn && (ev.key === 'Enter' || ev.key === ' ') && ae && ae.classList && ae.classList.contains('tagopt')){ ev.preventDefault(); tagPick(ae.getAttribute('data-id')); return; }
+  if (!tagOn && ae && ae.id === 'w-tagbox' && (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'ArrowDown')){ ev.preventDefault(); tagSetOpen(true); return; }
   if (ev.key === 'Enter' && ae && ae.id === 'lk-u' && !ae.readOnly){ ev.preventDefault(); linkAutofill(); return; }
   if (ev.key === 'Escape'){
     if (DLGS.length){ var kept = wizDraftOpen(); closeDialogs(); S.pending = null; if (kept) draftKeptToast(); return; }
@@ -6974,7 +7641,7 @@ function render(){
   placePvh();
   placeWin();
   placeToasts();
-  document.title = (S.stack.length ? itemName(S.stack[S.stack.length-1]) : folderName()) + ' · Hypernet';
+  document.title = (S.stack.length ? itemName(S.stack[S.stack.length-1]) : folderName()) + ' · HYPERNET · GLOBAL';
   schedulePersist();
   syncRoute();
 }

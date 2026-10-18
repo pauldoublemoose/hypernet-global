@@ -1074,6 +1074,15 @@ window.HYPERNET = {
           "from": "p-anna",
           "t": "yesterday",
           "text": "a basement. long tones. no phones."
+        },
+        {
+          "from": "p-anna",
+          "t": "09:40",
+          "text": "Quiet Rooms",
+          "cardType": "horizon_invite",
+          "cardId": "horizon-quiet",
+          "cardName": "Quiet Rooms",
+          "invite": "pending"
         }
       ]
     }

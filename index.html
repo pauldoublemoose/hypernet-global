@@ -1434,6 +1434,9 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .hzface .hzx{ display:inline-flex; align-items:center; justify-content:center; min-height:28px; padding:0 8px; border:1px solid var(--rule); background:transparent; color:var(--ink); font:inherit; }
 .hzface .hzx:hover{ border-color:var(--ink); }
 .hzface .hzx:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+.hzface.invited{ color:var(--dim); }
+.hzface.invited .av{ opacity:0.55; }
+.hzface.invited .hzx{ color:var(--ink); }
 </style>
 </head>
 <body>
@@ -1848,7 +1851,14 @@ function fixtureChats(){
     if (!pid || !PEOPLE[pid] || Object.keys(byId).some(function(k){ return byId[k].memberIds[0] === pid; })) return;
     var id = c.kind === 'dm' ? c.id : 'c-' + pid.replace(/^p-/, '');
     byId[id] = { id:id, name:person(pid).displayName, kind:'dm', memberIds:[pid],
-      messages: c.messages.filter(function(m){ return m.from === pid || m.from === 'self'; }).map(function(m){ return { from:m.from, t:m.t, text:m.text }; }) };
+      messages: c.messages.filter(function(m){ return m.from === pid || m.from === 'self'; }).map(function(m){
+        var row = { from:m.from, t:m.t, text:m.text };
+        if (m.cardType) row.cardType = m.cardType;
+        if (m.cardId) row.cardId = m.cardId;
+        if (m.cardName) row.cardName = m.cardName;
+        if (m.invite) row.invite = m.invite;
+        return row;
+      }) };
     order.push(id);
   });
   return { byId:byId, order:order };
@@ -3008,16 +3018,20 @@ function eventCRow(e, withVerbs){
    the events inside it carry them, per row. ---- */
 function hzTheme(hzId){ return HZTHEME[hzId] || plainTheme('◗'); }
 function hzFacesHTML(hzId){
-  var hz = HORIZONS[hzId], ids = (hz && hz.collaboratorIds) || [];
-  if (!ids.length) return '';
+  var hz = HORIZONS[hzId], ids = (hz && hz.collaboratorIds) || [], pending = (hz && hz.pendingCollaboratorIds) || [];
+  if (!ids.length && !pending.length) return '';
   var mine = hzOwnedByMe(hzId), me = myPid(), pids = [];
   if (hz.ownerId) pids.push(hz.ownerId);
   ids.forEach(function(pid){ if (pids.indexOf(pid) < 0) pids.push(pid); });
+  pending.forEach(function(pid){ if (pids.indexOf(pid) < 0) pids.push(pid); });
   return '<div class="hzfaces">' + pids.map(function(pid){
+    var invited = ids.indexOf(pid) < 0 && pending.indexOf(pid) >= 0;
     var show = PEOPLE[pid] ? pid : (pid === me ? 'self' : pid), name = person(show).displayName, ctrl = '';
-    if (mine && pid !== hz.ownerId) ctrl = '<button type="button" class="hzx" data-act="rmcollab" data-id="'+pid+'" data-hz="'+hzId+'" aria-label="Remove '+esc(name)+'">Remove</button>';
-    else if (!mine && pid === me) ctrl = '<button type="button" class="hzx" data-act="leavecollab" data-id="'+hzId+'">Leave</button>';
-    return '<span class="hzface" title="'+esc(name)+'">'+avHTML(show, 'a32', 32)+ctrl+'</span>';
+    if (mine && pid !== hz.ownerId) ctrl = invited
+      ? '<button type="button" class="hzx" data-act="rmcollab" data-id="'+pid+'" data-hz="'+hzId+'" aria-label="Cancel">Cancel</button>'
+      : '<button type="button" class="hzx" data-act="rmcollab" data-id="'+pid+'" data-hz="'+hzId+'" aria-label="Remove '+esc(name)+'">Remove</button>';
+    else if (!mine && pid === me && !invited) ctrl = '<button type="button" class="hzx" data-act="leavecollab" data-id="'+hzId+'">Leave</button>';
+    return '<span class="hzface'+(invited ? ' invited' : '')+'" title="'+esc(name)+'">'+avHTML(show, 'a32', 32)+(invited ? '<span>Invited</span>' : '')+ctrl+'</span>';
   }).join('') + '</div>';
 }
 function playlistHTML(hzId, withTracks){
@@ -3030,7 +3044,7 @@ function playlistHTML(hzId, withTracks){
        public). ⋯ keeps Delete. Your personal list is never public, so it has no Share */
     bar = toolbarHTML(vb('addevents', hzId, 'Add events', 'plus', { primary:true, cls:'plmain' }),
       vb('edithz', hzId, 'Edit', 'edit') + (hz.isPersonalDefault ? '' : vb('share', hzId, 'Share', 'share', { attrs:' data-type="horizon"' })) +
-      (hz.isPersonalDefault ? '' : vb('addcollab', hzId, 'Add collaborator', 'plus')) +
+      (hz.isPersonalDefault ? '' : vb('addcollab', hzId, 'Invite a collaborator', 'plus')) +
       vb('hzmore', hzId, '', 'dots', { aria:'More', attrs:' data-more="delete" aria-haspopup="menu"' }));
   } else if (edit) bar = toolbarHTML(vb('addevents', hzId, 'Add events', 'plus', { primary:true, cls:'plmain' }),
     vb('edithz', hzId, 'Edit', 'edit') + vb('followhz', hzId, fol ? 'Following' : 'Follow', fol ? 'check' : 'plus', { on:fol, pressed:!!fol }) +
@@ -3587,6 +3601,7 @@ function chatList(){
 }
 function msgPreview(m, c){
   if (!m) return 'No messages yet';
+  if (m.cardType === 'horizon_invite') return { accepted:'Accepted', declined:'Declined', cancelled:'Cancelled' }[m.invite] || 'Invite sent';
   var who = m.from === 'self' ? 'You: ' : '';
   if (m.from === 'sys') return m.text;
   return who + m.text;
@@ -3626,6 +3641,15 @@ function convHTML(cid){
     if (m.from === 'sys') return day + '<div class="msg sys">'+esc(m.text)+'</div>';
     var me = m.from === 'self';
     var head = '<div class="mfrom">'+(me ? '' : '<button type="button" class="mwho" data-act="chatprofile" data-id="'+esc(m.from)+'">'+esc(person(m.from).displayName)+'</button>')+'<span class="mt">'+esc(/^\d{1,2}:\d{2}$/.test(m.t || '') ? m.t : '')+'</span></div>';
+    if (m.cardType === 'horizon_invite'){
+      var name = m.cardName || (m.cardId && HORIZONS[m.cardId] && HORIZONS[m.cardId].name) || '';
+      var outcome = m.invite || 'pending';
+      var said = { accepted:'Accepted', declined:'Declined', cancelled:'Cancelled' }[outcome] || esc(outcome);
+      var body = outcome === 'pending' && !me
+        ? esc(name)+' <button type="button" class="btn" data-act="hzaccept" data-id="'+esc(m.cardId)+'" data-chat="'+esc(cid)+'">Accept</button> <button type="button" class="btn" data-act="hzdecline" data-id="'+esc(m.cardId)+'" data-chat="'+esc(cid)+'">Decline</button>'
+        : (outcome === 'pending' ? 'Invite sent' : said)+(name ? ' '+esc(name) : '');
+      return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+body+'</div></div>';
+    }
     return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+'</div></div>';
   }).join('') : '<div class="msg sys">No messages yet</div>') + '</div>';
   /* the box grows with what you write: Enter sends, Shift+Enter starts a new line */
@@ -5045,7 +5069,7 @@ function loadAcct(a){
   /* group chats kept from before chat was person to person are put away */
   Object.keys(CHATS).forEach(function(k){ if (CHATS[k].kind !== 'dm') delete CHATS[k]; });
   /* chat is words only: cards sent into chats before (a shared event, horizon or call out) are put away */
-  Object.keys(CHATS).forEach(function(k){ CHATS[k].messages = (CHATS[k].messages || []).filter(function(m){ return m.from === 'sys' || m.text; }); delete CHATS[k].pin; });
+  Object.keys(CHATS).forEach(function(k){ CHATS[k].messages = (CHATS[k].messages || []).filter(function(m){ return m.from === 'sys' || m.text || m.cardType === 'horizon_invite'; }); delete CHATS[k].pin; });
   CHATORDER = ((a.chats && a.chats.order) || Object.keys(CHATS)).filter(function(k){ return CHATS[k]; });
   UNREADCHAT = a.unread || {};
   FORMDRAFTS = (a.drafts && a.drafts.forms) || {}; CHATDRAFT = (a.drafts && a.drafts.chat) || {};
@@ -5140,7 +5164,7 @@ var addCollabDialog = gated(function(hzId){
   var hz = HORIZONS[hzId];
   if (!hz || !hzOwnedByMe(hzId) || hz.isPersonalDefault) return;
   CC = { hzId:hzId, q:'' };
-  dialog('Add collaborator', '<div class="field"><label for="cc-q">Person</label><input type="search" id="cc-q" placeholder="Search people" autocomplete="off"></div>' +
+  dialog('Invite a collaborator', '<div class="field"><label for="cc-q">Person</label><input type="search" id="cc-q" placeholder="Search people" autocomplete="off"></div>' +
     '<div class="picklist" id="cc-list"></div>', '<button class="btn" data-act="closedlg">Cancel</button>', 480);
   paintCollab();
   focusIn('cc-q');
@@ -5148,7 +5172,7 @@ var addCollabDialog = gated(function(hzId){
 function paintCollab(){
   var el = $('cc-list'); if (!CC || !el) return;
   var hz = HORIZONS[CC.hzId]; if (!hz){ el.innerHTML = ''; return; }
-  var q = String(CC.q || '').trim(), banned = (hz.collaboratorIds || []).concat([hz.ownerId, myPid(), 'self']);
+  var q = String(CC.q || '').trim(), banned = (hz.collaboratorIds || []).concat(hz.pendingCollaboratorIds || [], [hz.ownerId, myPid(), 'self']);
   var ids = networkPeople().filter(function(k){
     if (banned.indexOf(k) >= 0) return false;
     if (!q) return true;
@@ -5165,17 +5189,65 @@ function paintCollab(){
 function pickCollab(personId){
   if (!CC) return;
   var hzId = CC.hzId, hz = HORIZONS[hzId];
-  if (hz && (hz.collaboratorIds || []).indexOf(personId) < 0){
-    if (!hz.collaboratorIds) hz.collaboratorIds = [];
-    hz.collaboratorIds.push(personId);
+  closeDialogs(); CC = null;
+  if (!hz || (hz.pendingCollaboratorIds || []).indexOf(personId) >= 0 || (hz.collaboratorIds || []).indexOf(personId) >= 0){ render(); return; }
+  if (!hz.pendingCollaboratorIds) hz.pendingCollaboratorIds = [];
+  hz.pendingCollaboratorIds.push(personId);
+  var cid = openDM(personId), chat = CHATS[cid];
+  var has = (chat.messages || []).some(function(m){ return m.cardType === 'horizon_invite' && m.cardId === hzId && m.invite === 'pending'; });
+  if (!has){
+    var st = stamp();
+    chat.messages.push({ from:'self', t:st.t, ts:st.ts, text:hz.name, cardType:'horizon_invite', cardId:hzId, cardName:hz.name, invite:'pending' });
   }
-  if (ONLINE && hzId) HNAPI.addCollaborator(hzId, personId);
-  closeDialogs(); CC = null; render();
+  if (ONLINE) HNAPI.addCollaborator(hzId, personId);
+  render();
+}
+function dmCid(pid){
+  return Object.keys(CHATS).filter(function(k){ return CHATS[k].memberIds && CHATS[k].memberIds[0] === pid; })[0];
+}
+function pendingInvite(cid, hzId){
+  var c = cid && CHATS[cid];
+  if (!c) return null;
+  var hit = null;
+  (c.messages || []).forEach(function(m){
+    if (m.cardType === 'horizon_invite' && m.cardId === hzId && m.invite === 'pending' && m.from !== 'self') hit = m;
+  });
+  return hit;
+}
+function acceptHzInvite(cid, hzId){
+  var m = pendingInvite(cid, hzId), me = myPid();
+  if (!m) return;
+  m.invite = 'accepted';
+  m.text = 'accepted';
+  var hz = HORIZONS[hzId];
+  if (hz && me){
+    hz.pendingCollaboratorIds = (hz.pendingCollaboratorIds || []).filter(function(id){ return id !== me; });
+    if (!hz.collaboratorIds) hz.collaboratorIds = [];
+    if (hz.collaboratorIds.indexOf(me) < 0) hz.collaboratorIds.push(me);
+  }
+  if (ONLINE) HNAPI.acceptInvite(hzId);
+  render();
+}
+function declineHzInvite(cid, hzId){
+  var m = pendingInvite(cid, hzId), me = myPid();
+  if (!m) return;
+  m.invite = 'declined';
+  m.text = 'declined';
+  var hz = HORIZONS[hzId];
+  if (hz && me) hz.pendingCollaboratorIds = (hz.pendingCollaboratorIds || []).filter(function(id){ return id !== me; });
+  if (ONLINE) HNAPI.declineInvite(hzId);
+  render();
 }
 function removeCollab(hzId, personId){
   var hz = HORIZONS[hzId];
   if (!hz || !hzOwnedByMe(hzId)) return;
-  hz.collaboratorIds = (hz.collaboratorIds || []).filter(function(id){ return id !== personId; });
+  if ((hz.pendingCollaboratorIds || []).indexOf(personId) >= 0){
+    hz.pendingCollaboratorIds = hz.pendingCollaboratorIds.filter(function(id){ return id !== personId; });
+    var c = CHATS[dmCid(personId)];
+    if (c) (c.messages || []).forEach(function(m){
+      if (m.cardType === 'horizon_invite' && m.cardId === hzId && m.invite === 'pending'){ m.invite = 'cancelled'; m.text = 'cancelled'; }
+    });
+  } else hz.collaboratorIds = (hz.collaboratorIds || []).filter(function(id){ return id !== personId; });
   if (ONLINE) HNAPI.removeCollaborator(hzId, personId);
   render();
 }
@@ -7149,6 +7221,8 @@ document.addEventListener('click', function(ev){
     case 'addcollab':    addCollabDialog(id); break;
     case 'ccpick':       pickCollab(id); break;
     case 'rmcollab':     removeCollab(n.getAttribute('data-hz'), id); break;
+    case 'hzaccept':     acceptHzInvite(n.getAttribute('data-chat'), id); break;
+    case 'hzdecline':    declineHzInvite(n.getAttribute('data-chat'), id); break;
     case 'leavecollab':  leaveCollab(id); break;
     case 'new-event':    runCmd('new-event'); break;
     case 'new-horizon':  runCmd('new-horizon', id); break;
@@ -7182,7 +7256,7 @@ document.addEventListener('click', function(ev){
       FORMDRAFTS.horizon = null;
       var withEv = id && EVENTS[id] ? id : null;
       HORIZONS[hid] = { id:hid, name:nm, description:(($('nh-d')||{}).value||'').trim(), isPersonalDefault:false,
-                        isPublished:!!($('nh-p')||{}).checked, ownerName:S.me.name, ownerId:acctPid(S.acct), ownerAcct:S.acct, eventIds: withEv ? [withEv] : [], collaboratorIds:[] };
+                        isPublished:!!($('nh-p')||{}).checked, ownerName:S.me.name, ownerId:acctPid(S.acct), ownerAcct:S.acct, eventIds: withEv ? [withEv] : [], collaboratorIds:[], pendingCollaboratorIds:[] };
       MYHORIZONS.push(hid); HZCOUNT[hid] = 0;
       if (HORIZONS[hid].isPublished) logAct('published_horizon', 'horizon', hid); else logAct('created_horizon', 'horizon', hid);
       if (withEv) logAct('added_to_horizon', 'horizon', hid, { eventIds:[withEv] });

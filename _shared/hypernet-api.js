@@ -160,10 +160,20 @@
     /* RSVPs and promotions */
     var RS = {}, WT = {}, SH = {}, PM = {}, PC = {};
     EVP = {}; HAS = {};
+    var RO = {}, CH = {}, WB = {};
     d.rsvps.forEach(function(r){
-      if (r.personId === me){ if (r.status) RS[r.eventId] = r.status; if (r.went) WT[r.eventId] = true; if (r.shiftIndex != null) SH[r.eventId] = r.shiftIndex; }
-      else if (r.status) (EVP[r.eventId] = EVP[r.eventId] || []).push({ pid:r.personId, verb:r.status, ms:ms(r.updatedAt) });
+      if (r.personId === me){
+        if (r.status) RS[r.eventId] = r.status;
+        if (r.went) WT[r.eventId] = true;
+        if (r.shiftIndex != null) SH[r.eventId] = r.shiftIndex;
+        if (r.role) RO[r.eventId] = r.role;
+      } else {
+        if (r.status) (EVP[r.eventId] = EVP[r.eventId] || []).push({ pid:r.personId, verb:r.status, ms:ms(r.updatedAt) });
+        if (r.role) (CH[r.personId] = CH[r.personId] || {})[r.eventId] = r.role;
+        else if (r.went) (WB[r.personId] = WB[r.personId] || {})[r.eventId] = true;
+      }
     });
+    window.ROLE = RO; window.CHRON = CH; window.WENTBY = WB;
     d.promotions.forEach(function(p){ if (p[0] === me) PM[p[1]] = true; else PC[p[1]] = (PC[p[1]] || 0) + 1; });
     window.RSVP = RS; window.WENT = WT; window.SHIFT = SH; window.PROMOTED = PM; window.PROMOCOUNT = PC;
     /* horizons */
@@ -481,8 +491,10 @@
   HN.saveEventLook = function(id){ return write('ev:' + id, 'PATCH', '/api/events/' + id, function(){ return { look: lookOut(window.HYPERNET_THEMES.themes[id] || null) }; }, title(id)); };
   HN.deleteEvent = function(id){ return write('ev:' + id, 'DELETE', '/api/events/' + id, undefined, 'the event'); };
   HN.rsvp = function(id){
+    var ev = QUEUE['ev:' + id];
+    if (ev) QUEUE['rsvp:' + id] = Promise.all([QUEUE['rsvp:' + id] || Promise.resolve(), ev]).catch(function(){});
     return write('rsvp:' + id, 'PUT', '/api/events/' + id + '/rsvp', function(){
-      return { status: RSVP[id] || null, went: !!WENT[id], shiftIndex: SHIFT[id] == null ? null : SHIFT[id] };
+      return { status: RSVP[id] || null, went: !!WENT[id], shiftIndex: SHIFT[id] == null ? null : SHIFT[id], role: (typeof ROLE !== 'undefined' && ROLE[id]) || null };
     }, title(id));
   };
   HN.promote = function(id){ return write('promo:' + id, PROMOTED[id] ? 'PUT' : 'DELETE', '/api/events/' + id + '/promote', undefined, title(id)); };

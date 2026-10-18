@@ -1239,6 +1239,14 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .ttwhat{ min-width:0; }
 @media (pointer:coarse){ .schedend{ min-height:44px; } }
 
+/* PROFILE — Chronicle on a person's page. Uses the theme tokens only. */
+.chcats{ display:flex; flex-direction:column; gap:16px; }
+.chcat{ min-width:0; }
+.chnote{ margin:0 0 16px; max-width:66ch; font:12px/16px var(--sys); color:var(--ink2); }
+.chh{ margin:0 0 8px; font:bold 14px/20px var(--sys); color:var(--ink); }
+.chempty{ margin:0; font:12px/16px var(--sys); color:var(--dim); }
+.chadd{ margin-top:16px; }
+
 /* ---------- themes ---------------------------------------------------
    Windows (data-theme="win2k") is :root above, unchanged.
    Y2Fresh overrides tokens and paint only. Layout stays the app's.
@@ -1810,6 +1818,10 @@ function ic(n, sz){
    ========================================================================= */
 var RSVP = {};                 /* eventId -> 'going' | 'interested' */
 var WENT = {};                 /* past events you were at */
+var ROLE = {};                 /* eventId -> 'host' | 'cocreator' | 'attendee'. Absent means no explicit role. */
+var CHRON = {};                /* other people: pid -> { eventId: role } */
+var WENTBY = {};               /* other people: pid -> { eventId: true } when they went and named no role */
+var CHRONICLE_ADD = null;      /* role chosen in Add past event, until the new-event panel finishes or closes */
 var PROMOTED = {};
 var PROMOCOUNT = {}; Object.keys(EVENTS).forEach(function(id){ PROMOCOUNT[id] = hashId(id) % 17; });
 var READ = {};
@@ -1822,6 +1834,10 @@ var HZCOUNT  = { 'horizon-baltic':41, 'horizon-dust':128, 'horizon-quiet':86, 'h
 function hzFollowers(k){ return (HZCOUNT[k] || 0) + (S.loggedIn && HZFOLLOW[k] ? 1 : 0); }
 function promoCount(id){ return (PROMOCOUNT[id] || 0) + (S.loggedIn && PROMOTED[id] ? 1 : 0); }
 var PFOLLOW  = {};
+/* a past supper the demo hosted. only_me, so it stays off everyone else's lists. No role is stored: the creator is host. */
+EVENTS['evt-chronicle-supper'] = { id:'evt-chronicle-supper', title:'Midsummer supper', date:'2026-06-20',
+  description:'A long table after the last light, the year the ridge stayed warm.', hostName:'You', privacy:'only_me',
+  ownerIds:['self'], kind:'seed', city:'Stockholm' };
 var DEMOHOST = Object.keys(EVENTS).filter(function(id){ return EVENTS[id].hostName === 'You'; });   /* what the demo account hosts */
 DEMOHOST.forEach(function(id){ EVENTS[id].hostName = 'Michal'; });
 var MYEVENTS = [];
@@ -3059,6 +3075,89 @@ function goingOf(pid){
   if (pid === 'self') return S.loggedIn ? Object.keys(RSVP).filter(function(k){ return RSVP[k] === 'going' && EVENTS[k]; }).map(function(k){ return EVENTS[k]; }) : [];
   return allEvents().filter(function(e){ return canSeeEvent(e) && attendees(e.id).indexOf(pid) >= 0; });
 }
+/* Chronicle is past events only. An explicit role wins. With none, the creator is host, and Went is attendee. */
+var CHRONICLE_ROLE = { host:1, cocreator:1, attendee:1 };
+var CHRONICLE_LABEL = { host:'Hosted', cocreator:'Co-created', attendee:'Attended' };
+var CHRONICLE_PICK = [['host','Host','You put it on.'], ['cocreator','Co-creator','You helped make it. A DJ, a volunteer, or other crew.'], ['attendee','Attendee','You were there.']];
+function isMe(pid){ return pid === 'self' || (S.loggedIn && pid === myActor()); }
+function knownRole(r){ return CHRONICLE_ROLE[r] ? r : null; }
+function explicitRole(pid, evId){
+  if (isMe(pid)) return knownRole(ROLE[evId]);
+  var m = CHRON[pid]; return m ? knownRole(m[evId]) : null;
+}
+function wentOf(pid, evId){
+  if (isMe(pid)) return !!WENT[evId];
+  return !!(WENTBY[pid] && WENTBY[pid][evId]);
+}
+function hostsEvent(pid, e){
+  if (!e) return false;
+  if (isMe(pid)) return ownEvent(e) || eventHostPid(e) === myPid();
+  var hp = hostPersonOf(e);
+  return !!(hp && hp.id === pid);
+}
+function chronicleRole(pid, e){
+  var explicit = explicitRole(pid, e.id);
+  if (explicit) return explicit;
+  if (hostsEvent(pid, e)) return 'host';
+  if (wentOf(pid, e.id)) return 'attendee';
+  return null;
+}
+function chronicleOf(pid){
+  var out = { host:[], cocreator:[], attendee:[] };
+  allEvents().forEach(function(e){
+    if (!canSeeEvent(e) || !isPast(lastDay(e))) return;
+    var role = chronicleRole(pid, e);
+    if (role) out[role].push(e);
+  });
+  ['host','cocreator','attendee'].forEach(function(role){ out[role].sort(function(a, b){ return byDate(b, a); }); });
+  return out;
+}
+function chronicleSection(pid){
+  var mine = pid === 'self' && S.loggedIn, g = chronicleOf(pid);
+  var n = g.host.length + g.cocreator.length + g.attendee.length;
+  if (!mine && !n) return '';
+  var body = '<p class="chnote">What already happened, and the part you played.</p><div class="chcats">';
+  ['host','cocreator','attendee'].forEach(function(role){
+    var evs = g[role];
+    if (!mine && !evs.length) return;
+    body += '<div class="chcat" data-role="'+role+'"><h4 class="chh">'+esc(CHRONICLE_LABEL[role])+'</h4>' +
+      (evs.length ? evs.map(function(e){ return eventCRow(e, false); }).join('') : '<p class="chempty">None yet.</p>') + '</div>';
+  });
+  body += '</div>';
+  if (mine) body += '<div class="chadd"><button class="btn" data-act="addpastevent">'+ic('plus')+'Add past event</button></div>';
+  return '<section class="sect" data-sect="chronicle"><h3>Chronicle</h3>'+body+'</section>';
+}
+function addPastEventDialog(){
+  var h = '<p class="fhelp">An event that already happened. Pick the part you played, then fill it in.</p>' +
+    '<div class="visopts" role="radiogroup" aria-label="Your role">' + CHRONICLE_PICK.map(function(o){
+      return '<label class="visopt"><input type="radio" name="ch-role" value="'+o[0]+'"><span><b>'+esc(o[1])+'</b><small>'+esc(o[2])+'</small></span></label>';
+    }).join('') + '</div>';
+  dialog('Add past event', h, '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="chronicle-go">Continue</button>', 480);
+}
+function chronicleUnblockDate(){
+  if (!CHRONICLE_ADD) return;
+  var el = $('w-d'); if (!el) return;
+  el.removeAttribute('min');
+  if (DRAFT && DRAFT.date && el.value !== DRAFT.date) el.value = DRAFT.date;
+}
+function openPastEvent(role){
+  CHRONICLE_ADD = role;
+  var d = FORMDRAFTS.event;
+  if (!d || !eventDraftDirty(d)){
+    d = blankEventDraft();
+    d.date = shiftIso(TODAY_ISO, -7);
+    FORMDRAFTS.event = d;
+  }
+  newEventDialog();
+  chronicleUnblockDate();
+}
+function fileChronicle(id, role){
+  if (!EVENTS[id] || !knownRole(role)) return;
+  ROLE[id] = role;
+  WENT[id] = true;
+  if (ONLINE) HNAPI.rsvp(id);
+  schedulePersist();
+}
 /* `asOther`: your own page as anybody else sees it (Edit profile's preview) */
 function personHTML(pid, asOther){
   var p = person(pid), hz = publishedHorizonsOf(pid), st = PRESENCE[pid] || (asOther ? 'online' : 'offline'), fol = S.loggedIn && PFOLLOW[pid], me = pid === 'self' && !asOther;
@@ -3073,6 +3172,7 @@ function personHTML(pid, asOther){
   var s = sect('About', p.bio ? '<p class="evdesc">'+esc(p.bio)+'</p>' : '');
   s += sect('Skills', (p.skills || []).length ? '<div class="chips">' + p.skills.map(function(x){ return '<span class="chip plain">'+esc(skillLabel(x))+'</span>'; }).join('') + '</div>' : '');
   if (citiesOf(p).length > 1) s += sect('Cities', chipsHTML(citiesOf(p)));
+  s += chronicleSection(pid);
   s += sect('Hosting', hosts.map(function(e){ return eventCRow(e, false); }).join(''));
   s += sect('Going', going.map(function(e){ return eventCRow(e, false); }).join(''));
   s += sect('Event Horizons', hz.map(function(k){
@@ -4988,11 +5088,15 @@ function loginDialog(){
    What an account keeps is swapped in when it logs in and put away when it logs out. */
 var ACCTS = {};
 function acctPid(k){ if (ONLINE && k === 'me' && HNAPI.me) return HNAPI.me.id; return k === 'demo' ? 'p-michal' : 'u-' + k; }
-function blankAcct(profile){ return { profile:profile, rsvp:{}, went:{}, promoted:{}, hzfollow:{}, pfollow:{}, myevents:[], myhorizons:[], chats:{ byId:{}, order:[] }, unread:{}, drafts:{ forms:{}, chat:{} }, shift:{} }; }
+function blankAcct(profile){ return { profile:profile, rsvp:{}, went:{}, role:{}, promoted:{}, hzfollow:{}, pfollow:{}, myevents:[], myhorizons:[], chats:{ byId:{}, order:[] }, unread:{}, drafts:{ forms:{}, chat:{} }, shift:{} }; }
 function demoAcct(){
   var m = PEOPLE['p-michal'];
   var a = blankAcct({ displayName:m.displayName, handle:m.handle, bio:m.bio, skills:m.skills.slice(), cities:m.cities.slice(), city:m.city });
   a.rsvp = { 'evt-deep-listening':'interested', 'evt-fill-0':'going', 'evt-fill-6':'going' };
+  /* Warehouse is only_me and the demo is its host, so the demo can see it. The role files it as co-created.
+     Camp kitchen dinner is friends-only and its host does not follow the demo, so it would never appear. */
+  a.role = { 'evt-world-hyperstition-2026':'cocreator', 'evt-world-warehouse':'cocreator', 'evt-world-borderland-2026':'attendee', 'evt-world-burning-man-2026':'attendee' };
+  a.went = { 'evt-world-hyperstition-2026':true, 'evt-world-warehouse':true, 'evt-world-borderland-2026':true, 'evt-world-burning-man-2026':true, 'evt-chronicle-supper':true };
   a.hzfollow = { 'horizon-baltic':true, 'horizon-dust':true, 'horizon-quiet':true };
   a.pfollow = { 'p-anna':true, 'p-rio':true, 'p-kai':true, 'p-sasha':true };
   a.myevents = DEMOHOST.slice(); a.myhorizons = ['horizon-default'];
@@ -5002,7 +5106,7 @@ function demoAcct(){
 function captureAcct(){
   var p = PEOPLE['self'];
   return { profile:{ displayName:p.displayName, handle:p.handle, bio:p.bio, skills:p.skills, cities:p.cities, city:p.city },
-           rsvp:RSVP, went:WENT, promoted:PROMOTED, hzfollow:HZFOLLOW, pfollow:PFOLLOW, myevents:MYEVENTS, addedbyme:ADDEDBYME, myhorizons:MYHORIZONS,
+           rsvp:RSVP, went:WENT, role:ROLE, promoted:PROMOTED, hzfollow:HZFOLLOW, pfollow:PFOLLOW, myevents:MYEVENTS, addedbyme:ADDEDBYME, myhorizons:MYHORIZONS,
            chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT, drafts:{ forms:FORMDRAFTS, chat:CHATDRAFT }, shift:SHIFT, read:READ,
            look:PTHEME['self'] || null, joinedAt:(ACCTS[S.acct] || {}).joinedAt || 0 };
 }
@@ -5011,7 +5115,7 @@ function loadAcct(a){
   var p = PEOPLE['self'], pr = a.profile || {};
   ['displayName','handle','bio','city'].forEach(function(k){ p[k] = pr[k] || ''; });
   p.skills = (pr.skills || []).slice(); p.cities = (pr.cities || []).slice();
-  RSVP = a.rsvp || {}; WENT = a.went || {}; PROMOTED = a.promoted || {}; HZFOLLOW = a.hzfollow || {}; PFOLLOW = a.pfollow || {};
+  RSVP = a.rsvp || {}; WENT = a.went || {}; ROLE = a.role || {}; PROMOTED = a.promoted || {}; HZFOLLOW = a.hzfollow || {}; PFOLLOW = a.pfollow || {};
   MYEVENTS = (a.myevents || []).filter(function(id){ return EVENTS[id]; });
   ADDEDBYME = (a.addedbyme || []).filter(function(id){ return EVENTS[id]; });
   MYHORIZONS = (a.myhorizons || []).filter(function(k){ return HORIZONS[k]; });
@@ -6333,6 +6437,36 @@ function wizAct(which){
   render();
   toast('Published', EVENTS[id].title);
 }
+/* Add past event calls the new-event panel as it is. These wraps only relax the
+   "today or later" rule, and file the role after publish. The panel body stays. */
+(function(){
+  var miss = wizMissing, paint = paintWiz, act = wizAct;
+  wizMissing = function(d, step){
+    var m = miss(d, step);
+    if (!CHRONICLE_ADD || !d || step !== 1) return m;
+    if (m.date === 'Pick today or a later day') delete m.date;
+    var st = isoDate(d.date), en = String(d.end || '').trim() ? isoDate(d.end) : '', last = en || st;
+    if (st && last && !isPast(last)){
+      if (en && !isPast(en)) m.end = 'Pick a day that has already passed';
+      else m.date = 'Pick a day that has already passed';
+    }
+    return m;
+  };
+  paintWiz = function(){ paint(); chronicleUnblockDate(); };
+  wizAct = function(which){
+    var adding = !!(CHRONICLE_ADD && which === 'finish' && DRAFT && !DRAFT.editing && DRAFT.form !== 'horizon' && DRAFT.form !== 'link');
+    var before = adding ? Object.keys(EVENTS) : null;
+    act(which);
+    if (!before) return;
+    var id = Object.keys(EVENTS).filter(function(k){ return before.indexOf(k) < 0; })[0];
+    if (!id) return;
+    var role = CHRONICLE_ADD;
+    CHRONICLE_ADD = null;
+    fileChronicle(id, role);
+    openItem('person', 'self');
+    toast('Added to your chronicle', EVENTS[id].title);
+  };
+})();
 </script>
 <script>
 /* =========================================================================
@@ -6984,7 +7118,7 @@ function stepItem(delta){
 function runCmd(cmd, arg){
   closePopup();
   switch (cmd){
-    case 'new-event':   closeDialogs(); newEventDialog(); break;
+    case 'new-event':   CHRONICLE_ADD = null; closeDialogs(); newEventDialog(); break;
     case 'new-horizon': closeDialogs(); gated(function(){ newHorizonDialog(arg); })(); break;
     case 'newchat':     closeDialogs(); gated(function(){ newChatDialog(); })(); break;
     case 'new-callout': closeDialogs(); gated(newCalloutDialog)(arg ? { eventId:arg } : null); break;
@@ -7068,6 +7202,15 @@ document.addEventListener('click', function(ev){
     case 'newchat':      runCmd('newchat'); break;
     case 'ncdm':         closeDialogs(); NC = null; messagePerson(id); break;
     case 'new-event':    runCmd('new-event'); break;
+    case 'addpastevent': gated(addPastEventDialog)(); break;
+    case 'chronicle-go': {
+      var picked = document.querySelector('.dlg input[name="ch-role"]:checked');
+      if (!picked){ toast('Pick a role', 'Host, co-creator or attendee'); break; }
+      var pastRole = picked.value;
+      closeDialogs();
+      openPastEvent(pastRole);
+      break;
+    }
     case 'new-horizon':  runCmd('new-horizon', id); break;
     case 'login':        loginDialog(); break;
     case 'join':         closeDialogs(); if (ACCTS.me) loginDialog(); else profileDialog('signup'); break;
@@ -7085,13 +7228,7 @@ document.addEventListener('click', function(ev){
     }
     case 'pfpreview':    pfPreview(id === 'on'); break;
     case 'logout':       doLogout(); break;
-    case 'closedlg': {
-      /* the New event wizard has one way out, ×: what you typed is kept, and the toast offers to throw it away */
-      var kept = wizDraftOpen();
-      closeDialogs(); S.pending = null;
-      if (kept) draftKeptToast();
-      break;
-    }
+    case 'closedlg': dismissDialog(); break;
     case 'donewhorizon': {
       var nm = (($('nh-n')||{}).value || '').trim();
       if (!nm) break;
@@ -7202,6 +7339,13 @@ document.addEventListener('click', function(ev){
 });
 document.addEventListener('change', function(ev){
   var n = ev.target;
+  if (n.name === 'ch-role'){
+    document.querySelectorAll('.dlg .visopt').forEach(function(l){
+      var inp = l.querySelector('input[name="ch-role"]');
+      if (inp) l.classList.toggle('on', inp.checked);
+    });
+    return;
+  }
   if (n.getAttribute && n.getAttribute('data-sched')){ schedTouch(n); return; }
   if (n.getAttribute('data-czfile')){ var fl = n.files && n.files[0]; n.value = ''; if (n.getAttribute('data-czfile') === 'photo') pfTakePhoto(fl); else czTakeFile(fl); return; }
   if (n.closest('[data-cz]') && DRAFT){
@@ -7276,6 +7420,14 @@ document.addEventListener('drop', function(ev){
   if (f && DRAGID){ ev.preventDefault(); addToHorizonDrop(DRAGID, f.getAttribute('data-drop')); DRAGID = null; }
 });
 
+/* × and Escape close a dialog. A past-event draft with nothing typed is dropped, so the next New event is not stuck on a past date. */
+function dismissDialog(){
+  if (CHRONICLE_ADD && DRAFT && FORMDRAFTS.event === DRAFT && !String(DRAFT.title || '').trim() && !String(DRAFT.desc || '').trim()) FORMDRAFTS.event = null;
+  CHRONICLE_ADD = null;
+  var kept = wizDraftOpen();
+  closeDialogs(); S.pending = null;
+  if (kept) draftKeptToast();
+}
 /* keyboard: the list follows the arrows; Escape steps back out */
 document.addEventListener('keydown', function(ev){
   var ae = document.activeElement, inField = ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
@@ -7286,7 +7438,7 @@ document.addEventListener('keydown', function(ev){
   if (!tagOn && ae && ae.id === 'w-tagbox' && (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'ArrowDown')){ ev.preventDefault(); tagSetOpen(true); return; }
   if (ev.key === 'Enter' && ae && ae.id === 'lk-u' && !ae.readOnly){ ev.preventDefault(); linkAutofill(); return; }
   if (ev.key === 'Escape'){
-    if (DLGS.length){ var kept = wizDraftOpen(); closeDialogs(); S.pending = null; if (kept) draftKeptToast(); return; }
+    if (DLGS.length){ dismissDialog(); return; }
     if (POP){ closePopup(); return; }
     if (ae && ae.id === 'q' && S.folder.kind === 'search'){ leaveSearch(); render(); ae.blur(); return; }
     if (inField){ ae.blur(); return; }

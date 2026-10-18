@@ -49,7 +49,7 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
       none(`select coalesce(json_agg(json_build_array(f.follower_id, f.followee_id)), '[]') v from person_follows f`),
       one(`select coalesce(json_agg(${EVENT_JSON} order by e.starts_on), '[]') v from events e where can_see_event($1::uuid, e)`),
       one(`select coalesce(json_agg(json_build_object('personId', r.person_id, 'eventId', r.event_id, 'status', r.status, 'went', r.went,
-             'shiftIndex', r.shift_index, 'updatedAt', r.updated_at)), '[]') v
+             'shiftIndex', r.shift_index, 'role', r.role, 'updatedAt', r.updated_at)), '[]') v
              from rsvps r join events e on e.id = r.event_id where can_see_event($1::uuid, e)`),
       one(`select coalesce(json_agg(json_build_array(pr.person_id, pr.event_id)), '[]') v
              from promotions pr join events e on e.id = pr.event_id where can_see_event($1::uuid, e)`),

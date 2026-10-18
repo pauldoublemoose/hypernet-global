@@ -2534,13 +2534,15 @@ function eventTagIds(r){
   return (r && KINDTAGS[r.kind] ? KINDTAGS[r.kind] : []).slice();
 }
 function tagLabels(r){ return eventTagIds(r).map(function(id){ return TAGBYID[id].label; }); }
+/* a non-breaking space keeps the dot on the word before it, so a wrap starts on the next tag */
+function tagLine(labs){ return labs.join('\u00a0· '); }
 function tagWords(e){
   var ids = eventTagIds(recOf(e.id));
   return ids.map(function(id){ return TAGBYID[id].label + ' ' + id; }).join(' ');
 }
 function rowKindText(e){
   var r = recOf(e.id), labs = tagLabels(r);
-  if (labs.length) return labs.join(', ');
+  if (labs.length) return tagLine(labs);
   var rk = r && r.kind;
   return rk && rk !== 'meetup' ? (KINDLAB[rk] || '') : (e.kind === 'world' ? 'World' : '');
 }
@@ -2608,7 +2610,7 @@ function fmtDay(iso){ return isoDate(iso) ? fmtShort(isoDate(iso)) : String(iso)
 function eyebrowOf(e){
   var r = recOf(e.id), b = r.burn || {};
   var labs = tagLabels(r);
-  var parts = [labs.length ? labs.join(', ') : (KINDLAB[r.kind] || (e.kind === 'world' ? 'World' : 'Event'))];
+  var parts = [labs.length ? tagLine(labs) : (KINDLAB[r.kind] || (e.kind === 'world' ? 'World' : 'Event'))];
   if (b.edition && b.edition.year) parts.push(b.edition.year + (b.edition.number ? ' · No. ' + b.edition.number : ''));
   if (REGLAB[b.regionalStatus]) parts.push(REGLAB[b.regionalStatus]);
   if (r.venueKind === 'virtual') parts.push('Online');
@@ -5531,7 +5533,7 @@ function czSubject(d, t, px){
              eyebrow:'@'+esc((PF && normHandle(PF.handle)) || me.handle || 'you'), title:nm, facts:[['Based in', ((PF && PF.cities) || citiesOf(me)).join(', ') || '—'], ['Going', String(goingOf('self').length)]] };
   }
   var labs = (d.tags || []).map(function(id){ var tg = tagById(id); return tg ? tg.label : ''; }).filter(Boolean);
-  return { cover:sqT(t, px), eyebrow:esc(labs.length ? labs.join(', ') : (KINDLAB[d.kind] || 'Event')), title:d.title || 'Untitled event',
+  return { cover:sqT(t, px), eyebrow:esc(labs.length ? tagLine(labs) : (KINDLAB[d.kind] || 'Event')), title:d.title || 'Untitled event',
            facts:[['When', isoDate(d.date) ? fmtDate(d.date) : '—'], ['Where', d.online ? 'Online' : String(d.city || '').trim() || '—']] };
 }
 /* the preview: the page's title band, its toolbar and a group box, in the look (on a phone, or `small`, the band alone) */

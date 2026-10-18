@@ -295,6 +295,15 @@ export function buildSeed(target, { now = Date.now(), only = null } = {}) {
       horizon_id: q(hid), event_id: q(eid), position: String(i), added_by: h.ownerFid ? q(pid(h.ownerFid)) : "null",
       added_at: qts(i >= ids.length - 2 ? addAt : (pub || now) - DAY),
     })));
+    if (h.id === "horizon-ridge" && h.ownerFid && PEOPLE[h.ownerFid]) {
+      for (const fid of h.collaboratorIds || []) {
+        if (!PEOPLE[fid] || fid === h.ownerFid) continue;
+        out.push(insert("horizon_collaborators", {
+          horizon_id: q(hid), person_id: q(pid(fid)), added_by: q(pid(h.ownerFid)),
+          created_at: qts(seedTs("hc|" + fid + "|" + h.id)),
+        }));
+      }
+    }
   }
 
   if (mock) {

@@ -14,7 +14,7 @@ async function owned(id: string, me: string): Promise<boolean> {
   return rows.length > 0;
 }
 
-/** PATCH /api/lists/:id {name} — rename a list of yours. Anyone else's id is 404. */
+/** PATCH /api/lists/:id {name} — rename a list of yours. Anyone else's id is 404. The name is unique for you ignoring case. */
 export const PATCH = route(async (req: Request, ctx: Ctx) => {
   const id = await idParam(ctx.params);
   const me = await requirePerson();

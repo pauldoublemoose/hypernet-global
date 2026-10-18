@@ -15,7 +15,7 @@
   function nameProblem(lists, name, exceptId) {
     var n = trimName(name);
     if (!n || n.length > NAME_MAX) return "Use a name of 1 to 40 characters.";
-    if ((lists || []).some(function (l) { return l.id !== exceptId && l.name === n; })) return "You already have a list with that name.";
+    if ((lists || []).some(function (l) { return l.id !== exceptId && String(l.name).toLowerCase() === n.toLowerCase(); })) return "You already have a list with that name.";
     if (!exceptId && (lists || []).length >= LIST_CAP) return "You can keep 50 lists.";
     return "";
   }

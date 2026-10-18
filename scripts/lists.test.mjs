@@ -13,7 +13,8 @@ test("a name is 1 to 40 characters, unique for that owner, and the 51st is refus
   assert.equal(nameProblem([work], "  "), "Use a name of 1 to 40 characters.");
   assert.equal(nameProblem([work], "x".repeat(41)), "Use a name of 1 to 40 characters.");
   assert.equal(nameProblem([work], "  Work "), "You already have a list with that name.");
-  assert.equal(nameProblem([work], "work"), "");
+  assert.equal(nameProblem([work], "work"), "You already have a list with that name.");
+  assert.equal(nameProblem([work], "WORK"), "You already have a list with that name.");
   assert.equal(nameProblem([work], "Work", "list-work"), "");
   const full = Array.from({ length: 50 }, (_, i) => ({ id: "l" + i, name: "L" + i, memberIds: [] }));
   assert.equal(nameProblem(full, "One more"), "You can keep 50 lists.");

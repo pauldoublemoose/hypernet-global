@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 const LIST_JSON = `json_build_object('id', l.id, 'name', l.name, 'createdAt', l.created_at,
   'memberIds', coalesce((select json_agg(m.person_id) from contact_list_members m where m.list_id = l.id), '[]'))`;
 
-/** POST /api/lists {id?, name} — a contact list of yours. The 51st is 409, and so is a name you already use. */
+/** POST /api/lists {id?, name} — a contact list of yours. The 51st is 409. A name you already use, in any case, is 409. */
 export const POST = route(async (req: Request) => {
   const me = await requirePerson();
   const { id, name } = listCreate.parse(await readJson(req));

@@ -1,4 +1,5 @@
 import { sqlx } from "./db";
+import { horizonVisible } from "./horizons";
 
 // Everything the first screen needs, for one viewer, in ONE request to the database (one read-only transaction,
 // so every list agrees with the others). Privacy is decided here, in SQL, with can_see_event: an event the
@@ -58,11 +59,12 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
              'coverEventId', h.cover_event_id, 'createdAt', h.created_at,
              'eventIds', coalesce((select json_agg(he.event_id order by he.position, he.added_at) from horizon_events he join events e on e.id = he.event_id
                                     where he.horizon_id = h.id and can_see_event($1::uuid, e)), '[]'),
-             'followers', (select count(*) from horizon_follows hf where hf.horizon_id = h.id))
+             'followers', (select count(*) from horizon_follows hf where hf.horizon_id = h.id),
+             'collaboratorIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc where hc.horizon_id = h.id), '[]'))
              order by h.created_at), '[]') v
-             from horizons h where h.published_at is not null or (h.owner_id is not null and h.owner_id = $1::uuid)`),
+             from horizons h where ${horizonVisible("$1")}`),
       one(`select coalesce(json_agg(json_build_array(hf.person_id, hf.horizon_id)), '[]') v
-             from horizon_follows hf join horizons h on h.id = hf.horizon_id where h.published_at is not null or h.owner_id = $1::uuid`),
+             from horizon_follows hf join horizons h on h.id = hf.horizon_id where ${horizonVisible("$1")}`),
       one(`select coalesce(json_agg(${CALLOUT_JSON} order by c.created_at desc), '[]') v from callouts c where ${VISIBLE_CALLOUT}`),
       one(`select coalesce(json_agg(json_build_object('id', r.id, 'calloutId', r.callout_id, 'authorId', r.author_id, 'text', r.text,
              'createdAt', r.created_at) order by r.created_at), '[]') v
@@ -73,7 +75,7 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
              from (select * from activity a where a.ts > now() - interval '21 days' and a.actor is not null
                      and case a.obj_type
                            when 'event' then exists (select 1 from events e where e.id = a.obj_id and can_see_event($1::uuid, e))
-                           when 'horizon' then exists (select 1 from horizons h where h.id = a.obj_id and (h.published_at is not null or h.owner_id = $1::uuid))
+                           when 'horizon' then exists (select 1 from horizons h where h.id = a.obj_id and ${horizonVisible("$1")})
                            when 'callout' then exists (select 1 from callouts c where c.id = a.obj_id and ${VISIBLE_CALLOUT})
                            else true end
                    order by a.ts desc limit 600) a`),

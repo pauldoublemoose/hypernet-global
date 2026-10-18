@@ -39,8 +39,9 @@ class Client {
 const anon = new Client("anon");
 const a = new Client("a");
 const b = new Client("b");
+const s = new Client("s");
 const ids = { pub: randomUUID(), fri: randomUUID(), me: randomUUID(), hz: randomUUID(), co: randomUUID(), re: randomUUID() };
-let aId = "", bId = "";
+let aId = "", bId = "", sId = "";
 
 async function signUp(c: Client, who: string) {
   const r = await c.post("/api/auth/sign-up/email", { email: `hn-vitest-${RUN}-${who}@example.com`, password: `vitest-${RUN}-${who}-pw`, name: `Vitest ${who}` });
@@ -54,7 +55,8 @@ beforeAll(async () => {
   expect(h.body.branch, "these tests write data: run them against dev only").toBe("dev");
   await signUp(a, "a");
   await signUp(b, "b");
-}, 60_000);
+  await signUp(s, "s");
+}, 90_000);
 
 describe("login and join", () => {
   it("logged out is nobody, and cannot write", async () => {
@@ -189,6 +191,146 @@ describe("horizons", () => {
     const r = await a.put(`/api/horizons/${ids.hz}/events`, { eventIds: [ids.fri, ids.pub] });
     expect(r.body.horizon.eventIds).toEqual([ids.fri, ids.pub]);
     expect((await b.patch(`/api/horizons/${ids.hz}`, { name: "Hijack" })).status).toBe(404);
+  });
+});
+
+describe("horizon collaborators", () => {
+  const hzP = randomUUID();
+  const eventId = randomUUID();
+  const idsOf = (body: { horizons: { id: string }[] }) => body.horizons.map((h) => h.id);
+
+  beforeAll(async () => {
+    const joined = await s.post("/api/me", { handle: `vs${RUN}`, displayName: "Vitest S" });
+    expect(joined.status, JSON.stringify(joined.body)).toBe(201);
+    sId = joined.body.person.id;
+    const ev = await a.post("/api/events", { id: eventId, title: `Vitest collab ${RUN}`, startsOn: "2030-08-01", privacy: "everyone" });
+    expect(ev.status, JSON.stringify(ev.body)).toBe(201);
+    const hz = await a.post("/api/horizons", { id: hzP, name: `Vitest private ${RUN}`, description: "First", eventIds: [eventId] });
+    expect(hz.status, JSON.stringify(hz.body)).toBe(201);
+    expect(hz.body.horizon.publishedAt).toBeNull();
+    expect(hz.body.horizon.collaboratorIds).toEqual([]);
+  });
+
+  it("a private horizon stays hidden from a stranger and from a logged-out reader", async () => {
+    expect((await s.get(`/api/horizons/${hzP}`)).status).toBe(404);
+    expect((await anon.get(`/api/horizons/${hzP}`)).status).toBe(404);
+    expect(idsOf((await s.get("/api/bootstrap")).body)).not.toContain(hzP);
+    expect(idsOf((await anon.get("/api/bootstrap")).body)).not.toContain(hzP);
+  });
+
+  it("the owner cannot add themselves", async () => {
+    const r = await a.post(`/api/horizons/${hzP}/collaborators`, { personId: aId });
+    expect(r.status, JSON.stringify(r.body)).toBe(400);
+    expect(r.body.message).toBe("The owner is already on this horizon.");
+    expect((await a.get(`/api/horizons/${hzP}`)).body.horizon.collaboratorIds).toEqual([]);
+  });
+
+  it("the owner adds a collaborator, and the list shows on GET and bootstrap", async () => {
+    const r = await a.post(`/api/horizons/${hzP}/collaborators`, { personId: bId });
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.horizon.collaboratorIds).toEqual([bId]);
+    expect((await a.get(`/api/horizons/${hzP}`)).body.horizon.collaboratorIds).toEqual([bId]);
+    const mine = (await a.get("/api/bootstrap")).body.horizons.find((h: { id: string }) => h.id === hzP);
+    expect(mine.collaboratorIds).toEqual([bId]);
+  });
+
+  it("adding the same person again keeps a single row", async () => {
+    const r = await a.post(`/api/horizons/${hzP}/collaborators`, { personId: bId });
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.horizon.collaboratorIds).toEqual([bId]);
+  });
+
+  it("a collaborator renames it and rewrites the description", async () => {
+    const r = await b.patch(`/api/horizons/${hzP}`, { name: `Vitest renamed ${RUN}`, description: "Shared notes" });
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.horizon).toMatchObject({ name: `Vitest renamed ${RUN}`, description: "Shared notes" });
+  });
+
+  it("a collaborator cannot publish it", async () => {
+    const r = await b.patch(`/api/horizons/${hzP}`, { published: true });
+    expect(r.status, JSON.stringify(r.body)).toBe(403);
+    expect(r.body.message).toBe("Only the owner can change who can see this, its look, or its cover.");
+    expect((await a.get(`/api/horizons/${hzP}`)).body.horizon.publishedAt).toBeNull();
+  });
+
+  it("a collaborator cannot change its look", async () => {
+    const r = await b.patch(`/api/horizons/${hzP}`, { look: { bg: "#000000", ink: "#ffffff", accent: "#ff2fd0" } });
+    expect(r.status, JSON.stringify(r.body)).toBe(403);
+    expect(r.body.message).toBe("Only the owner can change who can see this, its look, or its cover.");
+    expect((await a.get(`/api/horizons/${hzP}`)).body.horizon.look).toBeNull();
+  });
+
+  it("a collaborator cannot set its cover", async () => {
+    const r = await b.patch(`/api/horizons/${hzP}`, { coverEventId: eventId });
+    expect(r.status, JSON.stringify(r.body)).toBe(403);
+    expect(r.body.message).toBe("Only the owner can change who can see this, its look, or its cover.");
+    expect((await a.get(`/api/horizons/${hzP}`)).body.horizon.coverEventId).toBeNull();
+  });
+
+  it("a collaborator sets the event list, in that order", async () => {
+    const other = randomUUID();
+    const ev = await a.post("/api/events", { id: other, title: `Vitest collab two ${RUN}`, startsOn: "2030-08-02", privacy: "everyone" });
+    expect(ev.status, JSON.stringify(ev.body)).toBe(201);
+    const r = await b.put(`/api/horizons/${hzP}/events`, { eventIds: [other, eventId] });
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.horizon.eventIds).toEqual([other, eventId]);
+  });
+
+  it("a collaborator cannot delete the horizon", async () => {
+    const r = await b.del(`/api/horizons/${hzP}`);
+    expect(r.status, JSON.stringify(r.body)).toBe(403);
+    expect((await a.get(`/api/horizons/${hzP}`)).status).toBe(200);
+  });
+
+  it("a collaborator cannot add or remove someone else", async () => {
+    expect((await b.post(`/api/horizons/${hzP}/collaborators`, { personId: sId })).status).toBe(403);
+    expect((await b.del(`/api/horizons/${hzP}/collaborators?personId=${sId}`)).status).toBe(403);
+    expect((await a.get(`/api/horizons/${hzP}`)).body.horizon.collaboratorIds).toEqual([bId]);
+  });
+
+  it("the owner has to name which collaborator to remove", async () => {
+    const r = await a.del(`/api/horizons/${hzP}/collaborators`);
+    expect(r.status, JSON.stringify(r.body)).toBe(400);
+    expect(r.body.message).toBe("Say which collaborator to remove.");
+    expect((await a.get(`/api/horizons/${hzP}`)).body.horizon.collaboratorIds).toEqual([bId]);
+  });
+
+  it("the owner removes a collaborator", async () => {
+    const id = randomUUID();
+    const created = await a.post("/api/horizons", { id, name: `Vitest remove ${RUN}` });
+    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    expect((await a.post(`/api/horizons/${id}/collaborators`, { personId: bId })).status).toBe(200);
+    const r = await a.del(`/api/horizons/${id}/collaborators?personId=${bId}`);
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.horizon.collaboratorIds).toEqual([]);
+    expect((await b.get(`/api/horizons/${id}`)).status).toBe(404);
+  });
+
+  it("a collaborator sees the private horizon, and a stranger does not", async () => {
+    expect((await b.get(`/api/horizons/${hzP}`)).status).toBe(200);
+    expect(idsOf((await b.get("/api/bootstrap")).body)).toContain(hzP);
+    expect((await s.get(`/api/horizons/${hzP}`)).status).toBe(404);
+    expect(idsOf((await s.get("/api/bootstrap")).body)).not.toContain(hzP);
+    expect((await anon.get(`/api/horizons/${hzP}`)).status).toBe(404);
+  });
+
+  it("a collaborator leaves, and then the private horizon is gone for them", async () => {
+    const r = await b.del(`/api/horizons/${hzP}/collaborators`);
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.horizon.collaboratorIds).toEqual([]);
+    expect((await b.get(`/api/horizons/${hzP}`)).status).toBe(404);
+    expect(idsOf((await b.get("/api/bootstrap")).body)).not.toContain(hzP);
+  });
+
+  it("a personal list cannot have collaborators", async () => {
+    const id = randomUUID();
+    const created = await a.post("/api/horizons", { id, name: `Vitest personal ${RUN}`, isPersonalDefault: true });
+    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    expect(created.body.horizon.collaboratorIds).toEqual([]);
+    const r = await a.post(`/api/horizons/${id}/collaborators`, { personId: bId });
+    expect(r.status, JSON.stringify(r.body)).toBe(400);
+    expect(r.body.message).toBe("A personal list cannot have collaborators.");
+    expect((await a.get(`/api/horizons/${id}`)).body.horizon.collaboratorIds).toEqual([]);
   });
 });
 

@@ -211,6 +211,8 @@ export const horizonPatch = z
   .refine((p) => Object.keys(p).length > 0, { message: "nothing to change" });
 /** PUT /api/horizons/:id/events — the whole list, in order (add, remove and reorder are one call). */
 export const horizonEvents = z.object({ eventIds: z.array(z.uuid()).max(500) }).strict();
+/** POST /api/horizons/:id/collaborators, and the personId query on DELETE. */
+export const horizonCollaborator = z.object({ personId: z.uuid() }).strict();
 
 const coFields = {
   title: z.string().trim().min(1).max(80),

@@ -1267,6 +1267,8 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .pmore{ margin-top:8px; }
 .peditname, .peditbio, .pfind, .prow .addcity input{ color:var(--ink); background:#fff; }
 .pfind{ display:block; width:100%; max-width:280px; margin:0 0 8px; box-sizing:border-box; height:auto; padding:4px 8px; font:12px/16px var(--sys); }
+/* The slot stays empty until Friends & Privacy mounts there. The Follow bar is not a sibling of the slot, so :has watches it. */
+.pg-person:has(.profile-actions:not(:empty)) > .actbar:has([data-act="followp"]){ display:none; }
 
 /* ---------- themes ---------------------------------------------------
    Windows (data-theme="win2k") is :root above, unchanged.
@@ -3333,8 +3335,7 @@ function personHTML(pid, asOther){
     ? '<span class="handlein pedithandle"><span>@</span><input type="text" id="pf-handle" value="'+esc(PF.handle)+'" placeholder="yourname" autocomplete="username" autocapitalize="off" spellcheck="false" aria-label="Handle" aria-describedby="pf-herr"></span><span class="ferr" id="pf-herr" hidden></span><p class="ferr" id="pf-imgerr" role="alert"></p>'
     : '@'+esc(p.handle) + (me ? '' : ' · <span class="pres '+st+'"></span>'+esc(st));
   var up = upcomingOf(pid);
-  var where = (profileEditing(pid, asOther) && PF ? PF.cities : profileLocations(p)).join(', ');
-  var facts = factGrid([['Based in', where || '—'], ['Hosting', String(up.host.length)],
+  var facts = factGrid([['Hosting', String(up.host.length)],
                         ['Going', String(up.attendee.length)], ['Horizons', String(horizonsCreated(pid).length + horizonsFollowed(pid).length)]]);
   var s = upcomingSection(pid, asOther) + horizonSection(pid, asOther) + chronicleSection(pid, asOther);
   s += sect('Call outs', calls.map(function(c){

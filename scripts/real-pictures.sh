@@ -4,7 +4,7 @@
 #      with the storage-only credential), and check each one answers 200 to anyone;
 #   2. point the real events' looks at them (node scripts/seed.mjs pictures:<branch>, one transaction).
 # Idempotent: the same bytes go to the same key, and the SQL only changes a look that doesn't carry its picture yet
-# (never one somebody chose). Secrets stay inside with-secrets (curl reads them itself; nothing prints them).
+# (never one somebody chose). Secrets stay inside scripts/with-env (curl reads them itself; nothing prints them).
 #
 #   scripts/real-pictures.sh dev               # local + previews
 #   scripts/real-pictures.sh main              # production — only when the owner says so
@@ -32,7 +32,7 @@ fi
 
 echo "== uploading to $target storage"
 while IFS=$'\t' read -r file url type; do
-  with-secrets --dir . -- curl -sS --fail-with-body -o /dev/null -T "$file" -H "Content-Type: $type" \
+  scripts/with-env curl -sS --fail-with-body -o /dev/null -T "$file" -H "Content-Type: $type" \
     --aws-sigv4 "aws:amz:eu-central-1:s3" \
     --variable %NEON_STORAGE_ACCESS_KEY_ID --variable %NEON_STORAGE_SECRET_ACCESS_KEY \
     --expand-user '{{NEON_STORAGE_ACCESS_KEY_ID}}:{{NEON_STORAGE_SECRET_ACCESS_KEY}}' "$url"
@@ -42,8 +42,8 @@ while IFS=$'\t' read -r file url type; do
 done < "$tmp/plan.tsv"
 
 echo "== pointing the looks at them ($DB)"
-with-secrets --dir . -- curl -sS --fail-with-body \
+scripts/with-env curl -sS --fail-with-body \
   --variable "%$DB" --expand-header "Neon-Connection-String: {{$DB}}" \
   -H 'Content-Type: application/json' -H 'Neon-Batch-Isolation-Level: Serializable' \
-  --data-binary @"$tmp/pictures.json" https://api.c-6.eu-central-1.aws.neon.tech/sql \
+  --data-binary @"$tmp/pictures.json" https://api.c-7.eu-central-1.aws.neon.tech/sql \
   | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);const r=j.results||[];console.log("  rows changed:",r.slice(0,-1).reduce((n,x)=>n+(x.rowCount||0),0),"of",r.length-1,"statements")})'

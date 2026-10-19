@@ -52,7 +52,7 @@ test("production refuses to send the dev database when DATABASE_URL_MAIN is miss
   assert.match(plan("production", emptyMain).errors.join(), /refusing/);
 });
 
-test("an .env.production.enc overlay wins for production only", () => {
+test("an .env.production.local overlay wins for production only", () => {
   const overlay = new Map([["AUTH_SECRET", "fake-prod-only-secret"]]);
   assert.equal(plan("production", env, overlay).send.find((s) => s.key === "AUTH_SECRET").value, "fake-prod-only-secret");
   assert.equal(plan("preview", env, overlay).send.find((s) => s.key === "AUTH_SECRET").value, env.get("AUTH_SECRET"));
@@ -62,19 +62,19 @@ test("unknown target is an error", () => {
   assert.throws(() => plan("staging", env), /unknown target/);
 });
 
-// End to end with fake `sops` (prints the fixture) and fake `vercel` (records argv and stdin).
+// End to end with the fixture as .env.local and a fake `vercel` (records argv and stdin).
 function sandbox() {
   const dir = mkdtempSync(join(tmpdir(), "env-push-"));
   const bin = join(dir, "bin");
   spawnSync("mkdir", [bin]);
-  copyFileSync(fixturePath, join(dir, ".env.enc"));
-  writeFileSync(join(bin, "sops"), '#!/bin/sh\nfor a; do f="$a"; done\ncat "$f"\n');
+  copyFileSync(fixturePath, join(dir, ".env.local"));
+  spawnSync("mkdir", [join(dir, ".vercel")]);
+  writeFileSync(join(dir, ".vercel", "project.json"), '{"orgId":"team_fake","projectId":"prj_fake"}');
   writeFileSync(
     join(bin, "vercel"),
     `#!/bin/sh\necho "ARGS $*" >> "${join(dir, "vercel.log")}"\necho "STDIN $(cat)" >> "${join(dir, "vercel.log")}"\n` +
       `echo "TOKEN \${VERCEL_TOKEN:+set} PROJECT $VERCEL_PROJECT_ID" >> "${join(dir, "vercel.log")}"\n`,
   );
-  chmodSync(join(bin, "sops"), 0o755);
   chmodSync(join(bin, "vercel"), 0o755);
   const run = (...args) =>
     spawnSync(process.execPath, [join(here, "env-push.mjs"), ...args], {

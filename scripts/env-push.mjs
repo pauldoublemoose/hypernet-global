@@ -1,23 +1,23 @@
 #!/usr/bin/env node
-// Push the app's secrets from the encrypted .env.enc to the Vercel project — run by the owner, in his terminal.
+// Push the app's secrets from the git-ignored .env.local to the Vercel project — run by the owner, in a terminal.
 //
 //   node scripts/env-push.mjs production --dry-run     # key names only, nothing sent
 //   node scripts/env-push.mjs production               # send
 //   node scripts/env-push.mjs preview | development
 //
 // How it works
-//   1. `sops -d` decrypts .env.enc in memory (nothing is written to disk). For production, an optional
-//      .env.production.enc is decrypted too; its keys win.
+//   1. Reads .env.local (git-ignored; .env.example lists every key). For production, an optional
+//      .env.production.local is read too; its keys win.
 //   2. A key with a `_MAIN` part holds the value of the Neon `main` branch (production). For production it
 //      replaces the plain key (DATABASE_URL_MAIN → DATABASE_URL); for preview/development it is left out, so
 //      previews and local dev use the `dev` branch. Production refuses to start without DATABASE_URL_MAIN.
 //   3. Keys only the tooling uses (SKIP below) never go to Vercel. Empty values are never sent (an empty value
 //      would blank a variable set by hand in the dashboard).
 //   4. Each value goes to `vercel env add KEY TARGET --force` on stdin — never on the command line, never
-//      printed. VERCEL_TOKEN from .env.enc logs the CLI in, so no `vercel login` is needed.
+//      printed. VERCEL_TOKEN from .env.local logs the CLI in if set; otherwise your `vercel login` is used.
 //   Exits non-zero on the first failure. Variables apply on the next deploy.
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -28,16 +28,13 @@ export const SKIP = new Set([
   "NEON_API_KEY", // manages every Neon project of the account: never in an app runtime
   "NEON_PROJECT_ID", // tooling (the app has it in lib/branch.ts)
   "VERCEL_TOKEN", // used by this script to log the CLI in
-  "DATABASE_URL_UNPOOLED", // migrations only (scripts/sql-payload.mjs through with-secrets), never at runtime
+  "DATABASE_URL_UNPOOLED", // migrations only (scripts/sql-payload.mjs), never at runtime
   // RESEND_API_KEY + EMAIL_FROM do go: app/api/hooks/neon-auth sends the login email once that webhook is on
 ]);
 
 /** Keys production must take from the main branch — sending the dev value there would be a disaster. */
 export const MUST_COME_FROM_MAIN = ["DATABASE_URL"];
 
-// The project this repo deploys to (the same ids as .vercel/project.json; not secret).
-const VERCEL_ORG_ID = "team_HTPoNl4AIqaUhP5C1qViXPRl";
-const VERCEL_PROJECT_ID = "prj_gUA1v1ZmBbdvuJZQ3B12nqwQrKze";
 
 const MAIN_PART = /_MAIN(?=_|$)/;
 
@@ -79,7 +76,7 @@ export function plan(target, base, overlay = new Map()) {
     chosen.set(key.replace(MAIN_PART, ""), { value, from: key });
   }
   if (target === "production") {
-    for (const [key, value] of overlay) chosen.set(key, { value, from: `${key} (.env.production.enc)` });
+    for (const [key, value] of overlay) chosen.set(key, { value, from: `${key} (.env.production.local)` });
     for (const key of MUST_COME_FROM_MAIN) {
       const c = chosen.get(key);
       if (!c || c.value === "" || c.from === key) {
@@ -97,15 +94,8 @@ export function plan(target, base, overlay = new Map()) {
   return { send, skipped, errors };
 }
 
-function decrypt(file) {
-  const r = spawnSync("sops", ["-d", "--input-type", "dotenv", "--output-type", "dotenv", file], {
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-    maxBuffer: 1 << 20,
-  });
-  if (r.error) fail(`could not run sops (${r.error.code ?? r.error.message}). Install it: brew install sops`);
-  if (r.status !== 0) fail(`sops could not decrypt ${file}:\n${String(r.stderr).trim()}`);
-  return parseDotenv(r.stdout);
+function read(file) {
+  return parseDotenv(readFileSync(file, "utf8"));
 }
 
 /** Hide any secret value that might appear in a CLI error message. */
@@ -127,11 +117,11 @@ export function main(argv = process.argv.slice(2)) {
     fail(`usage: node scripts/env-push.mjs <${TARGETS.join("|")}> [--dry-run]`);
   }
   const root = process.env.ENV_PUSH_ROOT ?? resolve(dirname(fileURLToPath(import.meta.url)), "..");
-  const baseFile = join(root, ".env.enc");
-  if (!existsSync(baseFile)) fail(`${baseFile} not found (run sops-init / sops-edit first)`);
-  const base = decrypt(baseFile);
-  const overlayFile = join(root, ".env.production.enc");
-  const overlay = target === "production" && existsSync(overlayFile) ? decrypt(overlayFile) : new Map();
+  const baseFile = join(root, ".env.local");
+  if (!existsSync(baseFile)) fail(`${baseFile} not found (copy .env.example to .env.local and fill it in)`);
+  const base = read(baseFile);
+  const overlayFile = join(root, ".env.production.local");
+  const overlay = target === "production" && existsSync(overlayFile) ? read(overlayFile) : new Map();
 
   const { send, skipped, errors } = plan(target, base, overlay);
   if (errors.length) fail(errors.join("\n"));
@@ -145,11 +135,15 @@ export function main(argv = process.argv.slice(2)) {
   if (dryRun) return;
   if (send.length === 0) fail("nothing to send");
 
+  // The project comes from .vercel/project.json (`vercel link`), unless VERCEL_ORG_ID/VERCEL_PROJECT_ID are set.
+  const linked = join(root, ".vercel", "project.json");
+  if (!process.env.VERCEL_PROJECT_ID && !existsSync(linked)) fail("not linked to a Vercel project (run: vercel link)");
+  const { orgId, projectId } = existsSync(linked) ? JSON.parse(readFileSync(linked, "utf8")) : {};
   const token = base.get("VERCEL_TOKEN");
   const env = {
     ...process.env,
-    VERCEL_ORG_ID: process.env.VERCEL_ORG_ID ?? VERCEL_ORG_ID,
-    VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID ?? VERCEL_PROJECT_ID,
+    VERCEL_ORG_ID: process.env.VERCEL_ORG_ID ?? orgId,
+    VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID ?? projectId,
     ...(token ? { VERCEL_TOKEN: token } : {}),
   };
   const secrets = [...base.values(), ...overlay.values()];

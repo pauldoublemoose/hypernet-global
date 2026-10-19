@@ -1,5 +1,5 @@
 // API tests against a running app on the DEV branch (never production):
-//   with-secrets --dir . -- ./node_modules/.bin/next dev --port 3210      (one terminal)
+//   scripts/with-env ./node_modules/.bin/next dev --port 3210      (one terminal)
 //   HN_API=http://localhost:3210 npx vitest run tests/api                  (another)
 // Two throwaway people sign up with a password (dev's Neon Auth allows it; the app itself only uses email codes)
 // and walk through every write the app makes, checking privacy at each step. They stay in dev as "Vitest …".

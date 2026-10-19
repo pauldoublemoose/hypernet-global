@@ -6,7 +6,7 @@
 
 export class ConfigError extends Error {
   constructor(public readonly key: string) {
-    super(`${key} is not set. Add it with \`sops-edit\` (see .env.example), then restart.`);
+    super(`${key} is not set. Add it to .env.local (see .env.example), then restart.`);
     this.name = "ConfigError";
   }
 }

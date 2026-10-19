@@ -1083,6 +1083,7 @@ button.fcoe:hover{ background:#2e2e2e; }
 .av.sys{ background:var(--face); color:var(--ink2); box-shadow:var(--out); }
 /* Explore: a line that says what a kind is; on a phone its kinds are tabs */
 .kdesc{ margin:0; padding:8px 16px; border-bottom:1px solid var(--line); background:#fff; font-size:12px; line-height:16px; color:var(--ink2); }
+.tagback{ margin:0; padding:8px 16px; border-bottom:1px solid var(--line); background:var(--face); }
 .nrow.nsubrow{ min-height:32px; padding-left:36px; font-size:12px; }
 .navnote{ margin:16px 20px; color:var(--dim); font-size:var(--fs-s); line-height:1.45; }
 .kinds{ display:flex; gap:6px; min-width:0; overflow-x:auto; scrollbar-width:none; }
@@ -2580,6 +2581,8 @@ function renderList(){
   if (L.phone && viewOf() === 'list' && items.length && items.every(function(it){ return it.type === 'event'; }) && S.folder.kind !== 'search')
     h = '<label class="sortrow">Sort <select data-act="sort" aria-label="Sort">' +
       [['date','Date'],['title','Title'],['host','Host'],['city','City']].map(function(o){ return '<option value="'+o[0]+'"'+(S.sort===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('') + '</select></label>' + h;
+  var backIt = tagSearchBack();
+  if (backIt) h = '<p class="tagback"><button type="button" class="btn" data-act="clearsearch">'+ic('back')+'Back to '+esc(itemName(backIt))+'</button></p>' + h;
   S.rows = rows;
   var lb = $('listbody'), top = lb.scrollTop;
   lb.innerHTML = h;
@@ -4940,7 +4943,8 @@ document.addEventListener('change', function(ev){
 function renderAppbar(){
   var h = '', conv = phoneConv(), back = conv || phoneCanBack();
   /* in a conversation, back is all chats; its name and the profile button open their profile over it */
-  if (back) h += conv ? '<button class="ab-btn" data-act="chatback" aria-label="All chats">'+ic('back',22)+'</button>' : '<button class="ab-btn" data-act="pback" aria-label="Back">'+ic('back',22)+'</button>';
+  var backTo = tagSearchBack(), backLabel = backTo ? 'Back to ' + itemName(backTo) : 'Back';
+  if (back) h += conv ? '<button class="ab-btn" data-act="chatback" aria-label="All chats">'+ic('back',22)+'</button>' : '<button class="ab-btn" data-act="pback" aria-label="'+esc(backLabel)+'" title="'+esc(backLabel)+'">'+ic('back',22)+'</button>';
   if (conv){
     var cc = CHATS[conv], cp = cc.memberIds[0];
     h += '<div class="ab-title ab-tap" data-act="chatprofile" data-id="'+cp+'" role="button">'+esc(cc.name)+'<small>'+esc(chatSub(cc))+'</small></div>' +
@@ -7734,6 +7738,11 @@ function leaveSearch(){
   goFolder(r.folder); S.stack = r.stack;
   var q = $('q'); if (q) q.value = '';
 }
+/* The return target when a tag search had to close the profile so the results could show. */
+function tagSearchBack(){
+  if (!TAGFIND || S.stack.length || !SEARCHRET || !SEARCHRET.stack.length) return null;
+  return SEARCHRET.stack[SEARCHRET.stack.length - 1];
+}
 function doSearch(q){
   if (TAGFIND && fold(q) !== fold(TAGFIND)) TAGFIND = null;
   S.query = q;
@@ -7742,8 +7751,11 @@ function doSearch(q){
     if (S.folder.kind === 'search'){ leaveSearch(); if (L.phone){ S.phoneSearch = true; ROUTE.replace = true; } }
     render(); return;
   }
+  /* goFolder drops the open window. A tag click keeps it when the list still shows beside it. */
+  var keep = TAGFIND && fold(q) === fold(TAGFIND) && !L.phone && L.win === 'over' ? S.stack.slice() : null;
   if (S.folder.kind !== 'search'){ if (!SEARCHRET) rememberPlace(); if (S.phoneSearch) ROUTE.replace = true; goFolder({ kind:'search' }); }
-  else S.stack = [];
+  else if (!keep) S.stack = [];
+  if (keep) S.stack = keep;
   render();
 }
 function stepItem(delta){

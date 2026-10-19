@@ -1902,6 +1902,15 @@ EVENTS['evt-chronicle-supper'] = { id:'evt-chronicle-supper', title:'Midsummer s
 EVENTS['evt-harbour-walk'] = { id:'evt-harbour-walk', title:'Harbour night walk', date:shiftIso(TODAY_ISO, 21),
   description:'Along the quay after the lamps are on.', hostName:'Anna Vale', privacy:'everyone',
   ownerIds:['p-anna'], kind:'seed', city:'Stockholm' };
+/* The profile tag DJ is the event-catalogue label DJ. The closed set is only_me, so a tag search must hide it. */
+EVENTS['evt-dj-night'] = { id:'evt-dj-night', title:'West stage set', date:shiftIso(TODAY_ISO, 12),
+  description:'A public set on the west stage.', hostName:'Yuki Sato', privacy:'everyone',
+  ownerIds:['p-yuki'], kind:'seed', city:'Malmö' };
+EVENTS['evt-dj-closed'] = { id:'evt-dj-closed', title:'Closed booth', date:shiftIso(TODAY_ISO, 13),
+  description:'A set only the host can see.', hostName:'Anna Vale', privacy:'only_me',
+  ownerIds:['p-anna'], kind:'seed', city:'Stockholm' };
+REC['evt-dj-night'] = { kind:'meetup', tags:['dj'] };
+REC['evt-dj-closed'] = { kind:'meetup', tags:['dj'] };
 var DEMOHOST = Object.keys(EVENTS).filter(function(id){ return EVENTS[id].hostName === 'You'; });   /* what the demo account hosts */
 DEMOHOST.forEach(function(id){ EVENTS[id].hostName = 'Michal'; });
 var MYEVENTS = [];
@@ -2362,10 +2371,28 @@ function dateQuery(q){
             'this month':[0, new Date(NOW.getFullYear(), NOW.getMonth() + 1, 0).getDate() - NOW.getDate()] }[q];
   return R || null;
 }
+function searchPeople(q, out){
+  var net = networkPeople();
+  Object.keys(PEOPLE).forEach(function(k){
+    var p = PEOPLE[k];
+    if (k === 'self' ? !S.loggedIn : net.indexOf(k) < 0) return;
+    if (matchAll([p.displayName, p.handle, p.bio, (p.skills||[]).map(skillLabel).join(' '), (p.skills||[]).join(' '), citiesOf(p).join(' ')], q)) out.push({ type:'person', id:k });
+  });
+}
+/* Set by a profile tag click. While the box still holds that label, results are People and Events only. */
+var TAGFIND = null;
 function searchItems(q){
   q = String(q||'').trim();
   if (!q) return [];
-  var out = [], dq = dateQuery(q);
+  var out = [];
+  if (TAGFIND && fold(q) === fold(TAGFIND)){
+    allEvents().filter(canSeeEvent).filter(function(e){ return eventTagHit(e, q); }).forEach(function(e){
+      out.push({ type:'event', id:e.id });
+    });
+    searchPeople(q, out);
+    return out;
+  }
+  var dq = dateQuery(q);
   if (dq) return feedEvents().filter(function(e){ var a = dayDiff(e.date), b = dayDiff(lastDay(e)); return b >= dq[0] && a <= dq[1]; })
     .map(function(e){ return { type:'event', id:e.id }; });
   allEvents().filter(canSeeEvent).sort(function(a,b){
@@ -2379,12 +2406,7 @@ function searchItems(q){
     if ((hz.isPublished || hzOwnedByMe(k)) && matchAll([hz.name, hz.description, hz.ownerName], q)) out.push({ type:'horizon', id:k });
   });
   CALLOUTS.forEach(function(c){ if (matchAll([c.title, c.body, c.hostName], q)) out.push({ type:'callout', id:c.id }); });
-  var net = networkPeople();
-  Object.keys(PEOPLE).forEach(function(k){
-    var p = PEOPLE[k];
-    if (k === 'self' ? !S.loggedIn : net.indexOf(k) < 0) return;
-    if (matchAll([p.displayName, p.handle, p.bio, (p.skills||[]).map(skillLabel).join(' '), (p.skills||[]).join(' '), citiesOf(p).join(' ')], q)) out.push({ type:'person', id:k });
-  });
+  searchPeople(q, out);
   return out;
 }
 
@@ -2619,6 +2641,15 @@ function tagLine(labs){ return labs.join('\u00a0· '); }
 function tagWords(e){
   var ids = eventTagIds(recOf(e.id));
   return ids.map(function(id){ return TAGBYID[id].label + ' ' + id; }).join(' ');
+}
+/* A profile tag matches an event when a catalogue label is the same, ignoring case. Ids stay as stored. */
+function eventTagHit(e, q){
+  var f = fold(String(q || '').trim());
+  if (!f) return false;
+  return eventTagIds(recOf(e.id)).some(function(id){
+    var t = TAGBYID[id];
+    return !!(t && fold(t.label) === f);
+  });
 }
 function rowKindText(e){
   var r = recOf(e.id), labs = tagLabels(r);
@@ -7679,11 +7710,12 @@ var SEARCHRET = null;
 function rememberPlace(){ SEARCHRET = { folder:S.folder, stack:S.stack.slice() }; }
 function leaveSearch(){
   var r = SEARCHRET || { folder:landingFolder(), stack:[] };
-  S.query = ''; SEARCHRET = null;
+  S.query = ''; TAGFIND = null; SEARCHRET = null;
   goFolder(r.folder); S.stack = r.stack;
   var q = $('q'); if (q) q.value = '';
 }
 function doSearch(q){
+  if (TAGFIND && fold(q) !== fold(TAGFIND)) TAGFIND = null;
   S.query = q;
   /* typing refines one search: the trail back is the place you searched from, not every keystroke */
   if (!q.trim()){
@@ -7831,6 +7863,7 @@ document.addEventListener('click', function(ev){
     case 'ptagfind': {
       var box = $('q'); if (box) box.value = id;
       var pq = $('pq'); if (pq) pq.value = id;
+      TAGFIND = id;
       doSearch(id); rememberQuery(id);
       break;
     }

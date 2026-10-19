@@ -1273,6 +1273,12 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .ptagmore[hidden]{ display:none; }
 .prows{ display:flex; flex-direction:column; gap:10px; margin-top:10px; }
 .prow .chips{ align-items:center; }
+.pplace{ min-width:0; color:inherit; }
+.pplacet, .pplacev{ color:inherit; font:14px/20px var(--sys); }
+.pplacet{ font-weight:bold; }
+.pplacev{ margin-top:2px; }
+.pdot{ color:var(--dim); font-weight:normal; }
+.pitem{ white-space:nowrap; }
 .pedithandle{ display:inline-flex; max-width:16em; height:28px; vertical-align:middle; color:#141414; background:#fff; }
 .pedithandle > span, .pedithandle input{ color:#141414; }
 .pedithandle input{ height:28px; }
@@ -5328,11 +5334,25 @@ function profileLine(kind, label, items, editing){
   }
   return '<div class="prow" data-prow="'+kind+'"><h4 class="chh">'+esc(label)+'</h4><div class="chips">'+chips+add+'</div></div>';
 }
+function placeDot(){ return '<span class="pdot"> · </span>'; }
+function placeBits(items){
+  return items.map(function(c, i){
+    return (i ? '<span class="psep">, </span>' : '') + '<span class="pitem">'+esc(c)+'</span>';
+  }).join('');
+}
+function profileViewPlace(locs, langs){
+  var titles = [], groups = [];
+  if (locs.length){ titles.push('Locations'); groups.push(placeBits(locs)); }
+  if (langs.length){ titles.push('Languages'); groups.push(placeBits(langs)); }
+  if (!titles.length) return '';
+  return '<div class="pplace"><div class="pplacet">'+titles.join(placeDot())+'</div><div class="pplacev">'+groups.join(placeDot())+'</div></div>';
+}
 function profileRowsHTML(pid, asOther){
   var editing = profileEditing(pid, asOther), p = person(pid);
   var locs = editing && PF ? (PF.cities || []) : profileLocations(p);
   var langs = editing && PF ? (PF.langs || []) : profileLanguages(p);
-  return profileLine('loc', 'Locations', locs || [], editing) + profileLine('lang', 'Languages', langs || [], editing);
+  if (editing) return profileLine('loc', 'Locations', locs || [], true) + profileLine('lang', 'Languages', langs || [], true);
+  return profileViewPlace(locs || [], langs || []);
 }
 /* Skill, interest and scene, pins first. Locations and languages are not tags. */
 function profileTags(skills){

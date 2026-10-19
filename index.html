@@ -1256,8 +1256,16 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .pnamerow .hl, .pnamerow .peditname{ flex:1; min-width:0; }
 .peditname{ height:auto; margin:0; padding:2px 8px; font:bold 20px/24px var(--sys); }
 .peditbio{ display:block; width:100%; margin:4px 0 0; box-sizing:border-box; font:14px/20px var(--sys); }
-.pheadtags{ margin-top:12px; }
-.banner .pheadtags .chh, .banner .prow .chh{ color:inherit; }
+.banner .prow .chh{ color:inherit; }
+.ptagpre{ padding:24px 24px 0; }
+.ptagclip{ min-width:0; }
+.ptagrow{ display:flex; flex-wrap:wrap; gap:8px; }
+.ptagchip[tabindex]{ cursor:grab; touch-action:none; }
+.ptagchip.dragging{ opacity:.55; }
+.canvas.pg.pg-person span.chip.pin{ box-shadow:inset 0 0 0 1px var(--sel); background:color-mix(in srgb, var(--sel) 18%, transparent); }
+.ptagpin{ width:18px; height:18px; margin-left:4px; }
+.ptagmore{ margin-top:8px; }
+.ptagmore[hidden]{ display:none; }
 .prows{ display:flex; flex-direction:column; gap:10px; margin-top:10px; }
 .prow .chips{ align-items:center; }
 .pedithandle{ display:inline-flex; max-width:16em; height:28px; vertical-align:middle; color:#141414; background:#fff; }
@@ -3221,7 +3229,7 @@ function upcomingSection(pid, asOther){
   var mine = pid === 'self' && S.loggedIn && !asOther, g = upcomingOf(pid);
   var n = g.host.length + g.cocreator.length + g.attendee.length;
   if (!mine && !n) return '';
-  var body = '<p class="chnote">What is still ahead.</p><div class="chcats">' + profileCats([
+  var body = '<div class="chcats">' + profileCats([
     { key:'up-host', attr:'data-up="host"', label:'Hosting', entries:g.host.map(eventEntry) },
     { key:'up-cocreator', attr:'data-up="cocreator"', label:'Co-creating', entries:g.cocreator.map(eventEntry) },
     { key:'up-attendee', attr:'data-up="attendee"', label:'Going', entries:g.attendee.map(eventEntry) }
@@ -3232,7 +3240,7 @@ function chronicleSection(pid, asOther){
   var mine = pid === 'self' && S.loggedIn && !asOther, g = chronicleOf(pid);
   var n = g.host.length + g.cocreator.length + g.attendee.length;
   if (!mine && !n) return '';
-  var body = '<p class="chnote">What already happened, and the part you played.</p><div class="chcats">' + profileCats([
+  var body = '<p class="chnote">Past events</p><div class="chcats">' + profileCats([
     { key:'ch-host', attr:'data-role="host"', label:CHRONICLE_LABEL.host, entries:g.host.map(eventEntry) },
     { key:'ch-cocreator', attr:'data-role="cocreator"', label:CHRONICLE_LABEL.cocreator, entries:g.cocreator.map(eventEntry) },
     { key:'ch-attendee', attr:'data-role="attendee"', label:CHRONICLE_LABEL.attendee, entries:g.attendee.map(eventEntry) }
@@ -3303,9 +3311,8 @@ function hzProfileRow(k){
 function horizonSection(pid, asOther){
   var mine = pid === 'self' && S.loggedIn && !asOther, made = horizonsCreated(pid), followed = horizonsFollowed(pid);
   if (!mine && !made.length && !followed.length) return '';
-  var note = mine ? 'Public Event Horizons you made, and the ones you follow.' : 'Public Event Horizons they made, and the ones they follow.';
-  var body = '<p class="chnote">'+esc(note)+'</p><div class="chcats">' + profileCats([
-    { key:'hz-created', attr:'data-hz="created"', label:'Created', entries:made.map(hzEntry) },
+  var body = '<div class="chcats">' + profileCats([
+    { key:'hz-created', attr:'data-hz="created"', label:'Curating', entries:made.map(hzEntry) },
     { key:'hz-following', attr:'data-hz="following"', label:'Following', entries:followed.map(hzEntry) }
   ], mine) + '</div>';
   return '<section class="sect" data-sect="horizons"><h3>Event Horizons</h3>'+body+'</section>';
@@ -3323,7 +3330,7 @@ function personHeadBits(pid, asOther){
     : (bio ? '<p class="psub2">'+esc(bio)+'</p>' : '');
   var rows = profileRowsHTML(pid, asOther);
   if (rows) under += '<div class="prows">'+rows+'</div>';
-  return { heading:heading, under:under, tail:tagsHeadHTML(pid, asOther) };
+  return { heading:heading, under:under, tail:'' };
 }
 /* `asOther`: your own page as anybody else sees it (Edit profile's preview) */
 function personHTML(pid, asOther){
@@ -3342,9 +3349,10 @@ function personHTML(pid, asOther){
       return '<div class="crow"><span class="r-ic">'+ic('callout')+'</span><div class="cm" data-act="open" data-type="callout" data-id="'+c.id+'"><div class="r-title">'+esc(c.title)+'</div>' +
         '<div class="r-meta">open until '+esc(fmtDate(c.expiresAt))+'</div></div></div>';
     }).join(''));
+  var tags = tagsSection(pid, asOther);
   return pageHTML({ kind:'person', t:personTheme(pid), cover:profileEditing(pid, asOther) && PF ? profilePhotoHTML() : personCover(pid, 96),
     eyebrow:eye, title:p.displayName || 'You',
-    toolbar:bar, facts:facts, body:s, more:personHeadBits(pid, asOther) });
+    toolbar:bar, facts:facts, pre:tags ? '<div class="ptagpre">'+tags+'</div>' : '', body:s, more:personHeadBits(pid, asOther) });
 }
 function isOwnCallout(c){ return !!c && S.loggedIn && !!c.hostAcct && c.hostAcct === S.acct; }
 /* when a call out was posted: the newest posted_callout row for it (0 when there is none) */
@@ -3490,6 +3498,7 @@ function renderDetail(){
     '<button class="x wclose" data-act="closewin" aria-label="Close" title="Close (Esc)">'+ic('close', L.phone ? 20 : 14)+'</button>';
   w.setAttribute('aria-label', (KINDNAME[it.type] || 'Window') + ': ' + name);
   placeWin();
+  if (it.type === 'person') fitProfileTags();
 }
 /* where the window sits: by default over the right of the white, the list's left part in view beside it (layoutCentre);
    where there is no such room, over the centre. Once you drag it, where you put it — always inside the main area */
@@ -5067,16 +5076,18 @@ var CITYCHOICES = ['Stockholm','Gothenburg','Malmö','Copenhagen','Oslo','Berlin
 function skillLabel(v){
   var t = parseProfileTag(v);
   if (t.coded) return t.label;
-  var hit = SKILLCHOICES.filter(function(c){ return c[0] === v; })[0];
+  var src = t.body;
+  var hit = SKILLCHOICES.filter(function(c){ return c[0] === src; })[0];
   if (hit) return hit[1];
-  var b = String(v).split('/');
+  var b = String(src).split('/');
   return titleCase(b[1] || b[0]).replace(/\bPa\b/g,'PA').replace(/\bDj/g,'DJ');
 }
 /* Profile tags are not event tags. A new one is "c:<category>:<label>" in the existing skills list.
    Categories are Skills & Roles, Interest and Scene. New skill tags use the key skill.
    A stored c:role: tag and an older uncategorised skill are read into Skills & Roles. Nothing is rewritten.
    Locations are the cities list. An older c:location: tag is read into that row and, on Done, moved into cities.
-   Languages stay here as c:language:. Only the Languages row reads and writes them. */
+   Languages stay here as c:language:. Only the Languages row reads and writes them.
+   A pinned tag is the same string with a p: prefix (p:c:skill:Host, or p: plus an old skill). No prefix means unpinned. */
 var TAG_CATS = [
   ['skill','Skills & Roles',['Cooking','Sound','Building','First aid','DJ','Host','Photographer','Volunteer']],
   ['interest','Interest',['Sauna','Dawn walks','Workshops','Camping']],
@@ -5084,10 +5095,15 @@ var TAG_CATS = [
 ];
 var TAG_CAT = {}; TAG_CATS.forEach(function(c){ TAG_CAT[c[0]] = c; });
 var TAGFLOW = null;
+function tagPinned(v){ return String(v == null ? '' : v).slice(0, 2) === 'p:'; }
+function tagBody(v){ v = String(v == null ? '' : v); return tagPinned(v) ? v.slice(2) : v; }
+function tagPin(v, on){ var b = tagBody(v); return on ? 'p:' + b : b; }
+function skillsHave(list, raw){ var b = tagBody(raw); return (list || []).some(function(v){ return tagBody(v) === b; }); }
 function parseProfileTag(v){
-  var m = /^c:(location|skill|interest|role|scene|language):(.*)$/.exec(String(v == null ? '' : v));
-  if (m && String(m[2]).trim()) return { cat: m[1] === 'role' ? 'skill' : m[1], label:String(m[2]).trim(), raw:String(v), coded:true };
-  return { cat:'skill', label:'', raw:String(v == null ? '' : v), coded:false };
+  var raw = String(v == null ? '' : v), pin = tagPinned(raw), body = tagBody(raw);
+  var m = /^c:(location|skill|interest|role|scene|language):(.*)$/.exec(body);
+  if (m && String(m[2]).trim()) return { cat: m[1] === 'role' ? 'skill' : m[1], label:String(m[2]).trim(), raw:raw, body:body, coded:true, pin:pin };
+  return { cat:'skill', label:'', raw:raw, body:body, coded:false, pin:pin };
 }
 function encodeProfileTag(cat, label){
   label = String(label || '').trim().replace(/\s+/g, ' ').replace(/:/g, '');
@@ -5177,16 +5193,82 @@ function profileRowsHTML(pid, asOther){
   var langs = editing && PF ? (PF.langs || []) : profileLanguages(p);
   return profileLine('loc', 'Locations', locs || [], editing) + profileLine('lang', 'Languages', langs || [], editing);
 }
-function tagsHeadHTML(pid, asOther){
-  var editing = profileEditing(pid, asOther), groups = profileTagGroups(person(pid).skills);
-  if (!editing && !groups.length) return '';
-  var body = '<div class="ptags">' + groups.map(function(g){
-    return '<div class="ptagcat" data-cat="'+g.cat+'"><h4 class="chh">'+esc(g.label)+'</h4><div class="chips">' + g.tags.map(function(t){
-      return '<span class="chip plain">'+esc(t.label)+(editing ? '<button type="button" class="ib ptagx" data-act="ptagrm" data-id="'+esc(t.raw)+'" aria-label="Remove '+esc(t.label)+'">'+ic('close',12)+'</button>' : '')+'</span>';
-    }).join('') + '</div></div>';
-  }).join('') + '</div>';
-  if (editing) body += '<div class="ptagadd"><button class="btn" data-act="addtag">'+ic('plus')+'Add tag</button></div>';
-  return '<div class="pheadtags">'+body+'</div>';
+/* Skill, interest and scene, pins first. Locations and languages are not tags. */
+function profileTags(skills){
+  var pins = [], rest = [];
+  (skills || []).forEach(function(v){
+    if (v == null || v === '') return;
+    var t = parseProfileTag(v);
+    if (t.coded && (t.cat === 'location' || t.cat === 'language')) return;
+    if (!t.coded) t.label = skillLabel(v);
+    if (!t.label) return;
+    (t.pin ? pins : rest).push(t);
+  });
+  return pins.concat(rest);
+}
+function partitionPins(list){
+  var pins = [], rest = [], other = [];
+  (list || []).forEach(function(v){
+    var t = parseProfileTag(v);
+    if (t.coded && (t.cat === 'location' || t.cat === 'language')){ other.push(v); return; }
+    (t.pin ? pins : rest).push(v);
+  });
+  return pins.concat(rest, other);
+}
+function pinMark(on){
+  return '<svg class="ic" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M6 1.2v5.2M3.5 3.4h5M6 6.4v4.2" fill="none" stroke="currentColor" stroke-width="'+(on ? '2' : '1.4')+'"/></svg>';
+}
+var PTAGOPEN = false;
+function tagsSection(pid, asOther){
+  var editing = profileEditing(pid, asOther);
+  var skills = editing && PF ? (PF.skills || []) : (person(pid).skills || []);
+  var tags = profileTags(skills);
+  if (!editing && !tags.length) return '';
+  var chips = tags.map(function(t){
+    var pin = editing ? '<button type="button" class="ib ptagpin" data-act="ptagpin" data-id="'+esc(t.raw)+'" aria-pressed="'+(t.pin ? 'true' : 'false')+'" aria-label="'+(t.pin ? 'Unpin ' : 'Pin ')+esc(t.label)+'">'+pinMark(t.pin)+'</button>' : '';
+    var rm = editing ? '<button type="button" class="ib ptagx" data-act="ptagrm" data-id="'+esc(t.raw)+'" aria-label="Remove '+esc(t.label)+'">'+ic('close',12)+'</button>' : '';
+    var key = editing ? ' tabindex="0" role="listitem" aria-label="'+esc(t.label)+(t.pin ? ', pinned' : '')+', arrow keys move it"' : '';
+    return '<span class="chip plain ptagchip'+(t.pin ? ' pin' : '')+'" data-id="'+esc(t.raw)+'"'+key+'>'+esc(t.label)+pin+rm+'</span>';
+  }).join('');
+  var add = editing ? '<div class="ptagadd"><button class="btn" data-act="addtag">'+ic('plus')+'Add tag</button></div>' : '';
+  return '<section class="sect" data-sect="tags"><h3>Tags</h3><div class="ptagclip"><div class="chips ptagrow" role="list">'+chips+'</div></div>' +
+    '<button type="button" class="btn ptagmore" data-act="ptagmore" hidden>'+(PTAGOPEN ? 'Show less' : 'Show more')+'</button>'+add+'</section>';
+}
+function fitProfileTags(){
+  var clip = document.querySelector('#win .ptagclip');
+  var row = clip && clip.querySelector('.ptagrow');
+  var btn = document.querySelector('#win .ptagmore');
+  if (!clip || !row || !btn) return;
+  var chips = row.children;
+  if (!chips.length){ btn.hidden = true; clip.style.maxHeight = ''; clip.style.overflow = ''; return; }
+  var top = chips[0].offsetTop, rowH = 0, wraps = false, i;
+  for (i = 0; i < chips.length; i++){
+    if (chips[i].offsetTop > top + 2) wraps = true;
+    else rowH = Math.max(rowH, chips[i].offsetHeight);
+  }
+  if (!wraps){ btn.hidden = true; clip.style.maxHeight = ''; clip.style.overflow = ''; return; }
+  btn.hidden = false;
+  btn.textContent = PTAGOPEN ? 'Show less' : 'Show more';
+  btn.setAttribute('aria-expanded', PTAGOPEN ? 'true' : 'false');
+  clip.style.maxHeight = PTAGOPEN ? '' : (rowH + 'px');
+  clip.style.overflow = PTAGOPEN ? '' : 'hidden';
+}
+function profileTagFocus(raw){
+  var chips = document.querySelectorAll('#win .ptagchip'), i;
+  for (i = 0; i < chips.length; i++) if (chips[i].getAttribute('data-id') === raw){ chips[i].focus(); return; }
+}
+function moveProfileTag(raw, dir){
+  if (!PF || !PEDIT) return;
+  var vis = profileTags(PF.skills).map(function(t){ return t.raw; });
+  var i = vis.indexOf(raw), j = i + dir;
+  if (i < 0 || j < 0 || j >= vis.length) return;
+  var swap = vis[i]; vis[i] = vis[j]; vis[j] = swap;
+  var other = PF.skills.filter(function(v){ var t = parseProfileTag(v); return t.coded && (t.cat === 'location' || t.cat === 'language'); });
+  var byId = {};
+  PF.skills.forEach(function(v){ byId[v] = v; });
+  PF.skills = partitionPins(vis.map(function(id){ return byId[id]; }).filter(Boolean).concat(other));
+  render();
+  profileTagFocus(raw);
 }
 function tagFormOpen(){ var top = DLGS[DLGS.length-1]; return !!(PF && top && top.querySelector('#pfbody')); }
 function paintTagFlow(){
@@ -5201,11 +5283,13 @@ function openTagDialog(){
 }
 function addOwnTag(raw){
   if (!raw) return;
-  var editing = tagFormOpen(), skills = (editing ? PF.skills : (PEOPLE.self.skills || [])).slice();
-  if (skills.indexOf(raw) >= 0){ toast('Already on your profile', skillLabel(raw)); return; }
+  var editing = tagFormOpen(), inline = !editing && PEDIT && PF;
+  var skills = (editing || inline ? PF.skills : (PEOPLE.self.skills || [])).slice();
+  if (skillsHave(skills, raw)){ toast('Already on your profile', skillLabel(raw)); return; }
   if (skills.length >= 30){ toast('That’s 30 tags', ''); return; }
   skills.push(raw);
   if (editing){ PF.skills = skills; PF.adding = false; PF.tagCat = ''; pfRepaint(); return; }
+  if (inline){ PF.skills = partitionPins(skills); render(); return; }
   PEOPLE.self.skills = skills;
   if (PF) PF.skills = skills.slice();
   schedulePersist();
@@ -5447,7 +5531,7 @@ function finishProfileEdit(){
   }
   var cities = PF.cities.slice();
   writeProfile({ displayName:PF.name.trim(), handle:normHandle(PF.handle), bio:String(PF.about || '').trim(),
-    skills:profileSkillsForSave(PEOPLE.self.skills, PF.langs), cities:cities, city:cities.length ? cities[0].toUpperCase() : '' });
+    skills:profileSkillsForSave(PF.skills || PEOPLE.self.skills, PF.langs), cities:cities, city:cities.length ? cities[0].toUpperCase() : '' });
   var prev = (PTHEME.self && PTHEME.self.image) || null;
   if (PF.photo !== prev){
     var lk = asLook(Object.assign({}, PTHEME.self || plainTheme('◉'), { image:PF.photo || null }));
@@ -5477,8 +5561,8 @@ function blankAcct(profile){ return { profile:profile, rsvp:{}, went:{}, role:{}
 function demoAcct(){
   var m = PEOPLE['p-michal'];
   var a = blankAcct({ displayName:m.displayName, handle:m.handle, bio:m.bio, skills:m.skills.slice(), cities:m.cities.slice(), city:m.city });
-  /* the plain skill stays as it was. The rest are categorised tags, so the demo shows more than Skill. */
-  a.profile.skills = a.profile.skills.concat(['c:role:Host','c:scene:Burns','c:location:Berlin','c:language:Swedish','c:language:English','c:interest:Sauna']);
+  /* Three pinned tags lead. The rest wrap the tag row. Location and language stay out of that row. */
+  a.profile.skills = ['p:EVENT PRODUCTION/PRODUCING','p:c:role:Host','p:c:interest:Sauna','c:skill:Cooking','c:skill:Sound','c:skill:Building','c:skill:DJ','c:skill:Photographer','c:scene:Burns','c:scene:Techno','c:scene:Retreats','c:interest:Workshops','c:interest:Camping','c:location:Berlin','c:language:Swedish','c:language:English'];
   a.rsvp = { 'evt-deep-listening':'interested', 'evt-fill-0':'going', 'evt-fill-6':'going', 'evt-harbour-walk':'going' };
   /* Warehouse is only_me and the demo is its host, so the demo can see it. The role files it as co-created.
      Camp kitchen dinner is friends-only and its host does not follow the demo, so it would never appear.
@@ -7629,11 +7713,20 @@ document.addEventListener('click', function(ev){
       break;
     case 'ptagpick':     addOwnTag(id); break;
     case 'ptagcustom':   addCustomTag(); break;
+    case 'ptagmore': PTAGOPEN = !PTAGOPEN; fitProfileTags(); break;
+    case 'ptagpin': {
+      if (!PF || !PEDIT) break;
+      PF.skills = partitionPins(PF.skills.map(function(v){ return v === id ? tagPin(v, !tagPinned(v)) : v; }));
+      render();
+      break;
+    }
     case 'ptagrm': {
-      var editing = tagFormOpen(), list = (editing ? PF.skills : (PEOPLE.self.skills || [])).slice(), at = list.indexOf(id);
+      var editing = tagFormOpen(), inline = !editing && PEDIT && PF;
+      var list = (editing || inline ? PF.skills : (PEOPLE.self.skills || [])).slice(), at = list.indexOf(id);
       if (at < 0) break;
       list.splice(at, 1);
       if (editing){ PF.skills = list; pfRepaint(); break; }
+      if (inline){ PF.skills = list; render(); break; }
       PEOPLE.self.skills = list;
       schedulePersist();
       if (ONLINE){ var pr = PEOPLE.self; HNAPI.saveProfile({ displayName:pr.displayName, handle:pr.handle, bio:pr.bio || '', skills:pr.skills, cities:citiesOf(pr) }); }
@@ -7826,7 +7919,55 @@ document.addEventListener('mousedown', function(ev){
   var panel = document.getElementById('w-tagpanel');
   if (panel && !panel.hidden && !ev.target.closest('.tagfield')) tagSetOpen(false);
 });
-window.addEventListener('resize', function(){ tagFit(); tagPlace(); });
+window.addEventListener('resize', function(){ tagFit(); tagPlace(); fitProfileTags(); });
+var PTAGDRAG = null;
+function ptagUnder(x, y){
+  var chips = document.querySelectorAll('#win .ptagchip'), i, r;
+  for (i = 0; i < chips.length; i++){
+    r = chips[i].getBoundingClientRect();
+    if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return chips[i];
+  }
+  return null;
+}
+document.addEventListener('pointerdown', function(ev){
+  var chip = ev.target.closest && ev.target.closest('#win .ptagchip');
+  if (!chip || !profileEditing('self') || ev.target.closest('button')) return;
+  if (ev.button != null && ev.button !== 0) return;
+  PTAGDRAG = { id:chip.getAttribute('data-id'), el:chip, x:ev.clientX, y:ev.clientY, moved:false };
+  try { chip.setPointerCapture(ev.pointerId); } catch(e){}
+});
+document.addEventListener('pointermove', function(ev){
+  if (!PTAGDRAG) return;
+  if (!PTAGDRAG.moved){
+    if (Math.abs(ev.clientX - PTAGDRAG.x) < 4 && Math.abs(ev.clientY - PTAGDRAG.y) < 4) return;
+    PTAGDRAG.moved = true;
+    PTAGDRAG.el.classList.add('dragging');
+    var clip0 = document.querySelector('#win .ptagclip');
+    if (clip0){ clip0.style.maxHeight = ''; clip0.style.overflow = ''; }
+  }
+  var over = ptagUnder(ev.clientX, ev.clientY);
+  if (!over || over === PTAGDRAG.el) return;
+  var row = PTAGDRAG.el.parentNode;
+  var chips = Array.prototype.slice.call(row.querySelectorAll('.ptagchip'));
+  if (chips.indexOf(PTAGDRAG.el) < chips.indexOf(over)) row.insertBefore(PTAGDRAG.el, over.nextSibling);
+  else row.insertBefore(PTAGDRAG.el, over);
+});
+function ptagDrop(){
+  if (!PTAGDRAG) return;
+  var moved = PTAGDRAG.moved;
+  if (PTAGDRAG.el) PTAGDRAG.el.classList.remove('dragging');
+  if (!moved || !PF){ PTAGDRAG = null; fitProfileTags(); return; }
+  var row = document.querySelector('#win .ptagrow');
+  var ids = row ? Array.prototype.map.call(row.querySelectorAll('.ptagchip'), function(c){ return c.getAttribute('data-id'); }) : [];
+  var byId = {};
+  PF.skills.forEach(function(v){ byId[v] = v; });
+  var other = PF.skills.filter(function(v){ var t = parseProfileTag(v); return t.coded && (t.cat === 'location' || t.cat === 'language'); });
+  PF.skills = partitionPins(ids.map(function(id){ return byId[id]; }).filter(Boolean).concat(other));
+  PTAGDRAG = null;
+  render();
+}
+document.addEventListener('pointerup', ptagDrop);
+document.addEventListener('pointercancel', ptagDrop);
 document.addEventListener('scroll', function(){ tagPlace(); }, true);
 
 /* drag an event row onto one of your horizons */
@@ -7867,6 +8008,11 @@ document.addEventListener('keydown', function(ev){
   if (!tagOn && ae && ae.id === 'w-tagbox' && (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'ArrowDown')){ ev.preventDefault(); tagSetOpen(true); return; }
   if (ev.key === 'Enter' && ae && ae.id === 'lk-u' && !ae.readOnly){ ev.preventDefault(); linkAutofill(); return; }
   if (ev.key === 'Enter' && ae && ae.id === 'ptag-custom'){ ev.preventDefault(); addCustomTag(); return; }
+  if (ae && ae.classList && ae.classList.contains('ptagchip') && (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight')){
+    ev.preventDefault();
+    moveProfileTag(ae.getAttribute('data-id'), ev.key === 'ArrowRight' ? 1 : -1);
+    return;
+  }
   if (ev.key === 'Escape'){
     if (DLGS.length){ dismissDialog(); return; }
     if (POP){ closePopup(); return; }
@@ -8222,6 +8368,7 @@ function render(){
     if (isCal()) renderCalendar(); else renderList();
   }
   renderDetail();
+  fitProfileTags();
   renderChats();
   renderPreview();
   /* the phone's sheet ends above the preview bar, which is always there when logged out (the tabs under it stay) */

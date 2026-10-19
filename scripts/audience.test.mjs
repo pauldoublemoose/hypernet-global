@@ -72,17 +72,19 @@ test("a hostless event is everyone-only for a logged-in viewer", () => {
   assert.equal(canSee(B, null, { include: ["followers"], exclude: [] }, graph), false);
 });
 
-const nameOf = (id) => ({ "list-work": "Work", "list-close": "Close" })[id];
+const WORK = "11111111-1111-4111-8111-111111111111";
+const CLOSE = "22222222-2222-4222-8222-222222222222";
+const nameOf = (id) => ({ [WORK]: "Work", [CLOSE]: "Close" })[id];
 
 test("Everyone clears the other includes, and any other include clears Everyone", () => {
   const start = fromPrivacy("everyone");
   const friends = toggle(start, "friends", "include");
   assert.deepEqual(friends, { include: ["friends"], exclude: [] });
-  const withList = toggle(friends, "list:list-close", "include");
-  const except = toggle(start, "list:list-work", "exclude");
+  const withList = toggle(friends, "list:" + CLOSE, "include");
+  const except = toggle(start, "list:" + WORK, "exclude");
   const kept = toggle(toggle(except, "friends", "include"), "everyone", "include");
-  assert.deepEqual(withList.include, ["friends", "list:list-close"]);
-  assert.deepEqual(kept, { include: ["everyone"], exclude: ["list:list-work"] });
+  assert.deepEqual(withList.include, ["friends", "list:" + CLOSE]);
+  assert.deepEqual(kept, { include: ["everyone"], exclude: ["list:" + WORK] });
 });
 
 test("include and exclude cannot both hold one option, and Everyone cannot be excluded", () => {
@@ -100,22 +102,22 @@ test("include and exclude cannot both hold one option, and Everyone cannot be ex
 test("the summary is plain words, and the saved tokens stay in one order", () => {
   assert.equal(summary({ include: [], exclude: [] }, nameOf), "Only you");
   assert.equal(summary(fromPrivacy("everyone"), nameOf), "Everyone");
-  assert.equal(summary({ include: ["everyone"], exclude: ["list:list-work"] }, nameOf), "Everyone except Work");
-  assert.equal(summary({ include: ["list:list-close", "friends"], exclude: [] }, nameOf), "Friends and Close");
+  assert.equal(summary({ include: ["everyone"], exclude: ["list:" + WORK] }, nameOf), "Everyone except Work");
+  assert.equal(summary({ include: ["list:" + CLOSE, "friends"], exclude: [] }, nameOf), "Friends and Close");
   assert.equal(
     summary({ include: ["followers", "friends", "fof"], exclude: [] }, nameOf),
     "Friends, Friends of friends, and Followers",
   );
   let aud = { include: [], exclude: [] };
-  ["list:list-work", "followers", "list:list-close", "friends"].forEach((tok) => {
+  ["list:" + WORK, "followers", "list:" + CLOSE, "friends"].forEach((tok) => {
     aud = toggle(aud, tok, "include");
   });
-  assert.deepEqual(aud.include, ["friends", "followers", "list:list-close", "list:list-work"]);
+  assert.deepEqual(aud.include, ["friends", "followers", "list:" + WORK, "list:" + CLOSE]);
 });
 
 test("legacy privacy is derived the way the server derives it", () => {
   assert.equal(derivePrivacy({ include: ["everyone"], exclude: [] }), "everyone");
-  assert.equal(derivePrivacy({ include: ["everyone"], exclude: ["list:list-work"] }), "friends");
+  assert.equal(derivePrivacy({ include: ["everyone"], exclude: ["list:" + WORK] }), "friends");
   assert.equal(derivePrivacy({ include: ["friends"], exclude: [] }), "friends");
   assert.equal(derivePrivacy({ include: [], exclude: ["friends"] }), "only_me");
   for (const p of ["everyone", "friends", "only_me"]) assert.equal(derivePrivacy(fromPrivacy(p)), p);
@@ -125,7 +127,7 @@ test("the picker is checkboxes, and Everyone has no hide box", () => {
   const html = pickerHTML(fromPrivacy("everyone"), [
     { token: "everyone", label: "Everyone" },
     { token: "friends", label: "Friends" },
-    { token: "list:list-work", label: "Work" },
+    { token: "list:" + WORK, label: "Work" },
   ]);
   assert.match(html, /id="w-p"/);
   assert.match(html, />Show</);
@@ -138,4 +140,12 @@ test("the picker is checkboxes, and Everyone has no hide box", () => {
   assert.match(html, /aria-label="Hide from Friends"/);
   assert.match(html, /aria-label="Hide from Work"/);
   assert.match(html, /class="audsum">Everyone</);
+  assert.match(html, /Friends[\s\S]*class="auddiv"[\s\S]*Work/);
+  assert.match(html, /Manage lists/);
+  const bare = pickerHTML(fromPrivacy("everyone"), [
+    { token: "everyone", label: "Everyone" },
+    { token: "friends", label: "Friends" },
+  ]);
+  assert.doesNotMatch(bare, /auddiv/);
+  assert.match(bare, /Manage lists/);
 });

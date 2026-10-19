@@ -182,22 +182,29 @@
       ' aria-label="' + escAttr(verb + label) + '">' + eyeSVG(side === "include") + "</label>";
   }
 
+  function rowHTML(a, r) {
+    if (!r || !r.token) return "";
+    var inc = a.include.indexOf(r.token) >= 0;
+    var exc = a.exclude.indexOf(r.token) >= 0;
+    var boxes = audBox("include", r.token, r.label, inc);
+    boxes += r.token === "everyone" ? '<span class="audph" aria-hidden="true"></span>' : audBox("exclude", r.token, r.label, exc);
+    return '<div class="audrow"><span class="audname">' + escAttr(r.label) + '</span><span class="audboxes">' + boxes + "</span></div>";
+  }
+
   function pickerHTML(audience, rows) {
     var a = normalize(audience);
     var names = {};
+    var built = [], lists = [];
     (rows || []).forEach(function (r) {
-      if (r && r.token && r.token.indexOf("list:") === 0) names[r.token.slice(5)] = r.label;
+      if (!r || !r.token) return;
+      if (r.token.indexOf("list:") === 0) { names[r.token.slice(5)] = r.label; lists.push(r); }
+      else built.push(r);
     });
-    var body = (rows || []).map(function (r) {
-      if (!r || !r.token) return "";
-      var inc = a.include.indexOf(r.token) >= 0;
-      var exc = a.exclude.indexOf(r.token) >= 0;
-      var boxes = audBox("include", r.token, r.label, inc);
-      boxes += r.token === "everyone" ? '<span class="audph" aria-hidden="true"></span>' : audBox("exclude", r.token, r.label, exc);
-      return '<div class="audrow"><span class="audname">' + escAttr(r.label) + '</span><span class="audboxes">' + boxes + "</span></div>";
-    }).join("");
     var head = '<div class="audrow audhead" aria-hidden="true"><span class="audname"></span><span class="audboxes"><span class="audh">Show</span><span class="audh">Hide</span></span></div>';
-    return '<div class="audpick" id="w-p" role="group" aria-label="Who can see it">' + head + body +
+    var body = head + built.map(function (r) { return rowHTML(a, r); }).join("");
+    if (lists.length) body += '<div class="auddiv" role="separator"></div>' + lists.map(function (r) { return rowHTML(a, r); }).join("");
+    body += '<button type="button" class="audmanage" data-rel-act="rel-lists-home">Manage lists</button>';
+    return '<div class="audpick" id="w-p" role="group" aria-label="Who can see it">' + body +
       '<p class="audsum">' + escAttr(summary(a, function (id) { return names[id]; })) + "</p></div>";
   }
 

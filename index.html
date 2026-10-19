@@ -1273,6 +1273,9 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .audbox:focus-within{ outline:1px dotted var(--ink); outline-offset:2px; }
 .audbox.on{ background:var(--sel); color:var(--ink); }
 .audbox.ex.on{ background:transparent; color:var(--alert); box-shadow:inset 0 0 0 2px var(--alert); }
+.auddiv{ height:0; margin:6px 0 4px; border:0; border-top:1px solid var(--dim); }
+.audmanage{ align-self:flex-start; margin:2px 0 0; padding:0; border:0; background:transparent; color:var(--ink2); font:inherit; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+.audmanage:focus{ outline:1px dotted var(--ink); outline-offset:2px; }
 .audsum{ margin:8px 0 0; color:var(--ink2); }
 [data-theme="y2fresh"] .audbox .ic{ stroke-width:1.6; }
 @media (pointer:coarse){
@@ -3718,19 +3721,12 @@ function actTime(a){ return a.at || isoMs(a.ts); }
      select * from activity where ts > now() - interval '21 days' order by ts desc
    ------------------------------------------------------------------------- */
 var ACTWINDOW = 21;
-/* who follows whom. Friendships in the fixture are a separate fact and are not copied in here.
-   The pairs that used to be derived from those friendships are follows in their own right, so the demo graph stays.
-   p-michal's are the demo account's (see demoAcct), so his rows agree with what the demo follows. */
+/* who follows whom: the fixture's follow edges. A friendship is not a follow.
+   Online, bootstrap replaces this with that viewer's follow edges. */
 var NETFOLLOWS = (function(){
   var g = {};
-  var add = function(a, b){ if (a === b || !/^p-/.test(a) || !/^p-/.test(b)) return; g[a] = g[a] || []; if (g[a].indexOf(b) < 0) g[a].push(b); };
-  [['p-anna','p-rio'], ['p-rio','p-anna'], ['p-rio','p-kai'], ['p-kai','p-rio'],
-   ['p-mira','p-sasha'], ['p-sasha','p-mira'], ['p-jon','p-anna'], ['p-anna','p-jon'],
-   ['p-anna','p-mira'], ['p-rio','p-mira'], ['p-kai','p-jon'], ['p-sasha','p-kai'], ['p-sasha','p-jon'], ['p-jon','p-kai'],
-   ['p-michal','p-anna'], ['p-michal','p-rio'], ['p-michal','p-kai'], ['p-michal','p-sasha'],
-   /* a few of the newcomers already have a follower or two (never before they joined: see seedActivity) */
-    ['p-anna','p-lena'], ['p-kai','p-priya'], ['p-mira','p-ines'],
-    ['p-lena','p-michal'], ['p-priya','p-michal']].forEach(function(x){ add(x[0], x[1]); });
+  var add = function(a, b){ if (!a || !b || a === b || !/^p-/.test(a) || !/^p-/.test(b)) return; g[a] = g[a] || []; if (g[a].indexOf(b) < 0) g[a].push(b); };
+  ((H && H.follows) || []).forEach(function(x){ add(x[0], x[1]); });
   return g;
 })();
 /* the fixture call outs name no event; these are the ones they are for when no event record lists them */
@@ -4824,6 +4820,14 @@ var NEWITEMS = [
 var DLGS = [];
 /* a dialog owns a history entry, so the phone's back gesture closes it instead of the page under it */
 function closeDialogs(){ DLGS.forEach(function(d){ d.remove(); }); DLGS = []; $('mask').style.display = 'none'; scheduleSync(); }
+/* Lists opened from the audience picker sits on the wizard. Closing it returns to the wizard, with the lists it now has. */
+function popRelDlg(){
+  if (!(DLGS.length > 1 && DLGS[DLGS.length - 1].classList.contains('rel-dlg'))) return false;
+  DLGS.pop().remove();
+  var under = DLGS[DLGS.length - 1];
+  if (under && (under.classList.contains('wizdlg') || under.classList.contains('edlg'))) paintWiz();
+  return true;
+}
 function dialog(title, bodyHTML, footHTML, w, cls){
   closePopup();
   scheduleSync();
@@ -5060,7 +5064,8 @@ function demoAcct(){
   var a = blankAcct({ displayName:m.displayName, handle:m.handle, bio:m.bio, skills:m.skills.slice(), cities:m.cities.slice(), city:m.city });
   a.rsvp = { 'evt-deep-listening':'interested', 'evt-fill-0':'going', 'evt-fill-6':'going' };
   a.hzfollow = { 'horizon-baltic':true, 'horizon-dust':true, 'horizon-quiet':true };
-  a.pfollow = { 'p-anna':true, 'p-rio':true, 'p-kai':true, 'p-sasha':true };
+  a.pfollow = {};
+  (NETFOLLOWS['p-michal'] || []).forEach(function(id){ a.pfollow[id] = true; });
   a.myevents = DEMOHOST.slice(); a.myhorizons = ['horizon-default'];
   a.chats = fixtureChats(); a.unread = { 'c-kai':true };
   a.lists = fixtureLists();
@@ -7210,6 +7215,7 @@ document.addEventListener('click', function(ev){
     case 'pfpreview':    pfPreview(id === 'on'); break;
     case 'logout':       doLogout(); break;
     case 'closedlg': {
+      if (popRelDlg()) break;
       /* the New event wizard has one way out, ×: what you typed is kept, and the toast offers to throw it away */
       var kept = wizDraftOpen();
       closeDialogs(); S.pending = null;
@@ -7415,7 +7421,7 @@ document.addEventListener('keydown', function(ev){
   if (!tagOn && ae && ae.id === 'w-tagbox' && (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'ArrowDown')){ ev.preventDefault(); tagSetOpen(true); return; }
   if (ev.key === 'Enter' && ae && ae.id === 'lk-u' && !ae.readOnly){ ev.preventDefault(); linkAutofill(); return; }
   if (ev.key === 'Escape'){
-    if (DLGS.length){ var kept = wizDraftOpen(); closeDialogs(); S.pending = null; if (kept) draftKeptToast(); return; }
+    if (DLGS.length){ if (popRelDlg()) return; var kept = wizDraftOpen(); closeDialogs(); S.pending = null; if (kept) draftKeptToast(); return; }
     if (POP){ closePopup(); return; }
     if (ae && ae.id === 'q' && S.folder.kind === 'search'){ leaveSearch(); render(); ae.blur(); return; }
     if (inField){ ae.blur(); return; }

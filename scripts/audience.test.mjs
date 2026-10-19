@@ -132,7 +132,9 @@ test("the picker is checkboxes, and Everyone has no hide box", () => {
   assert.match(html, />Hide</);
   assert.match(html, /aria-label="Show to Everyone"/);
   assert.match(html, /data-aud="include" data-tok="everyone" checked/);
+  assert.match(html, /data-tok="everyone" checked aria-label="Show to Everyone">[\s\S]*?<\/label><span class="audph"/);
   assert.doesNotMatch(html, /Hide from Everyone/);
+  assert.doesNotMatch(html, /data-aud="exclude" data-tok="everyone"/);
   assert.match(html, /aria-label="Hide from Friends"/);
   assert.match(html, /aria-label="Hide from Work"/);
   assert.match(html, /class="audsum">Everyone</);

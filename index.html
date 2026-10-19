@@ -1265,8 +1265,9 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .audrow{ display:flex; align-items:center; gap:8px; min-height:36px; }
 .audhead{ min-height:0; }
 .audname{ flex:1 1 auto; min-width:0; overflow-wrap:anywhere; }
-.audboxes{ display:flex; flex:0 0 auto; gap:4px; }
-.audh{ flex:0 0 36px; width:36px; text-align:center; color:var(--dim); font-size:11px; line-height:16px; }
+.audboxes{ display:grid; grid-template-columns:36px 36px; column-gap:4px; flex:0 0 auto; }
+.audh{ width:36px; text-align:center; color:var(--dim); font-size:11px; line-height:16px; }
+.audph{ width:36px; height:36px; }
 .audbox{ position:relative; display:grid; place-items:center; width:36px; height:36px; color:var(--dim); }
 .audbox input{ position:absolute; inset:0; margin:0; opacity:0; cursor:pointer; }
 .audbox:focus-within{ outline:1px dotted var(--ink); outline-offset:2px; }
@@ -1275,8 +1276,10 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .audsum{ margin:8px 0 0; color:var(--ink2); }
 [data-theme="y2fresh"] .audbox .ic{ stroke-width:1.6; }
 @media (pointer:coarse){
+  .audboxes{ grid-template-columns:44px 44px; }
   .audbox{ width:44px; height:44px; }
-  .audh{ flex-basis:44px; width:44px; }
+  .audh{ width:44px; }
+  .audph{ width:44px; height:44px; }
 }
 
 /* ---------- themes ---------------------------------------------------

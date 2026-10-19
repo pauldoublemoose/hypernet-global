@@ -193,7 +193,7 @@
       var inc = a.include.indexOf(r.token) >= 0;
       var exc = a.exclude.indexOf(r.token) >= 0;
       var boxes = audBox("include", r.token, r.label, inc);
-      if (r.token !== "everyone") boxes += audBox("exclude", r.token, r.label, exc);
+      boxes += r.token === "everyone" ? '<span class="audph" aria-hidden="true"></span>' : audBox("exclude", r.token, r.label, exc);
       return '<div class="audrow"><span class="audname">' + escAttr(r.label) + '</span><span class="audboxes">' + boxes + "</span></div>";
     }).join("");
     var head = '<div class="audrow audhead" aria-hidden="true"><span class="audname"></span><span class="audboxes"><span class="audh">Show</span><span class="audh">Hide</span></span></div>';

@@ -308,6 +308,64 @@ describe("friends and contact lists", () => {
     expect((await b.get("/api/bootstrap")).body.lists).toEqual([]);
     expect((await a.get("/api/bootstrap")).body.lists).toEqual([]);
   });
+  it("a hidden event is the same 404 as a missing one, on the list and on a write", async () => {
+    const made = await a.post("/api/events", {
+      title: `Hidden ${RUN}`, startsOn: "2030-09-01", audience: { include: [], exclude: [] },
+    });
+    expect(made.status, JSON.stringify(made.body)).toBe(201);
+    const hiddenId = made.body.event.id as string;
+    const missingId = randomUUID();
+    const hiddenGet = await b.get(`/api/events/${hiddenId}`);
+    const missingGet = await b.get(`/api/events/${missingId}`);
+    expect(hiddenGet.status).toBe(404);
+    expect(hiddenGet).toEqual(missingGet);
+    expect((await a.get(`/api/events/${hiddenId}`)).status).toBe(200);
+    const strangerList = await b.get("/api/events?limit=200");
+    expect(strangerList.status).toBe(200);
+    expect(evIds(strangerList)).not.toContain(hiddenId);
+    expect(evIds(strangerList)).not.toContain(missingId);
+    expect(evIds(await a.get(`/api/events?host=${aId}&limit=200`))).toContain(hiddenId);
+    const boot = await b.get("/api/bootstrap");
+    expect(boot.body.events.map((e: { id: string }) => e.id)).not.toContain(hiddenId);
+    expect(boot.body.rsvps.some((r: { eventId: string }) => r.eventId === hiddenId)).toBe(false);
+    expect(boot.body.promotions.some((p: string[]) => p[1] === hiddenId)).toBe(false);
+    expect(boot.body.callouts.some((c: { eventId: string | null }) => c.eventId === hiddenId)).toBe(false);
+    expect((await anon.get("/api/events?limit=200")).body.events).toEqual([]);
+    const same = async (hidden: Res, missing: Res) => {
+      expect(hidden.status).toBe(404);
+      expect(hidden).toEqual(missing);
+    };
+    await same(
+      await b.put(`/api/events/${hiddenId}/rsvp`, { status: "going" }),
+      await b.put(`/api/events/${missingId}/rsvp`, { status: "going" }),
+    );
+    await same(await b.put(`/api/events/${hiddenId}/promote`), await b.put(`/api/events/${missingId}/promote`));
+    await same(await b.del(`/api/events/${hiddenId}/promote`), await b.del(`/api/events/${missingId}/promote`));
+    await same(
+      await b.post("/api/callouts", { title: "Nope", eventId: hiddenId, expiresOn: "2030-09-02" }),
+      await b.post("/api/callouts", { title: "Nope", eventId: missingId, expiresOn: "2030-09-02" }),
+    );
+    const co = await a.post("/api/callouts", { title: `Hidden call ${RUN}`, eventId: hiddenId, expiresOn: "2030-09-02" });
+    expect(co.status, JSON.stringify(co.body)).toBe(201);
+    await same(
+      await b.post(`/api/callouts/${co.body.callout.id}/replies`, { text: "hi" }),
+      await b.post(`/api/callouts/${randomUUID()}/replies`, { text: "hi" }),
+    );
+    const bOnly = await b.post("/api/events", { title: `B only ${RUN}`, startsOn: "2030-09-03", privacy: "only_me" });
+    expect(bOnly.status).toBe(201);
+    const hz = await a.post("/api/horizons", { name: `Hidden cover ${RUN}`, published: true, coverEventId: hiddenId, eventIds: [hiddenId, bOnly.body.event.id] });
+    expect(hz.status, JSON.stringify(hz.body)).toBe(201);
+    expect(hz.body.horizon.coverEventId).toBe(hiddenId);
+    expect(hz.body.horizon.eventIds).toEqual([hiddenId]);
+    const seen = await b.get(`/api/horizons/${hz.body.horizon.id}`);
+    expect(seen.status).toBe(200);
+    expect(seen.body.horizon.coverEventId).toBeNull();
+    expect(seen.body.horizon.eventIds).toEqual([]);
+    await same(
+      await a.patch(`/api/horizons/${hz.body.horizon.id}`, { coverEventId: bOnly.body.event.id }),
+      await a.patch(`/api/horizons/${hz.body.horizon.id}`, { coverEventId: missingId }),
+    );
+  });
 });
 
 describe("deleting", () => {

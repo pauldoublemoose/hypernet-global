@@ -165,7 +165,7 @@ Provenance: `docs/research/real-event-pictures.md`.
 | Email code sign-in (sign-up open) | on | on |
 | Email + password | **on** (only so `tests/api` can make throwaway logins) | **off** — otherwise anyone could register someone else's email with a password; codes still work (tested) |
 | Localhost allowed | yes | no |
-| Trusted domains | localhost; each preview URL you log in on (Neon API `POST …/branches/<id>/auth/domains`) | the production URL(s) — set when the Vercel project exists |
+| Trusted domains | localhost; each preview URL you log in on (Neon API `POST …/branches/<id>/auth/domains`) | `https://feed.hyperstition.cloud`, `https://hypernet-feed-nine.vercel.app`, `https://hypernet-feed-pauls-projects-d313c243.vercel.app` |
 | Application name (in the email) | Hypernet | Hypernet |
 | Login email | Neon's shared sender (`auth@mail.myneon.app`, "Your Sign-In Code - Hypernet") | same |
 
@@ -189,7 +189,7 @@ emails. To switch on:
    ```bash
    scripts/with-env curl -sS -X PUT --variable %NEON_API_KEY --expand-header 'Authorization: Bearer {{NEON_API_KEY}}' \
      -H 'Content-Type: application/json' \
-     -d '{"enabled":true,"webhook_url":"https://<production domain>/api/hooks/neon-auth","enabled_events":["send.otp"],"timeout_seconds":5}' \
+     -d '{"enabled":true,"webhook_url":"https://feed.hyperstition.cloud/api/hooks/neon-auth","enabled_events":["send.otp"],"timeout_seconds":5}' \
      https://console.neon.tech/api/v2/projects/holy-bonus-89610570/branches/br-young-credit-b9t2vyjm/auth/webhooks
    ```
    Back to Neon's email: the same with `{"enabled":false}`.

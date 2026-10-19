@@ -5,7 +5,7 @@
 //   node scripts/seed.mjs main   → the real events only (data/real-events.json, not the illustrative ones), their
 //                                  announced next editions, and the curated "Season of burns" horizon. No people.
 //   node scripts/seed.mjs dev    → the prototype's mock world on top: the six fixture people and Michal (the demo),
-//                                  their events, horizons, follows, RSVPs, promotions, call outs, replies and chats.
+//                                  their events, horizons, follows, friendships, lists, RSVPs, promotions, call outs, replies and chats.
 //   node scripts/seed.mjs pictures:<dev|main>
 //                                → only the real events' pictures, for a branch that is already seeded: points each
 //                                  real event's look (and its next edition's) at its picture in that branch's storage
@@ -93,6 +93,24 @@ const insert = (table, row, conflict = "do nothing") => {
   return `insert into ${table} (${cols.join(", ")}) values (${cols.map((c) => row[c]).join(", ")}) on conflict ${conflict}`;
 };
 
+/** The audience a fixture event stores. A missing one is the old privacy label. */
+function audienceOf(e) {
+  if (e.audience && Array.isArray(e.audience.include)) {
+    return { include: e.audience.include, exclude: Array.isArray(e.audience.exclude) ? e.audience.exclude : [] };
+  }
+  if (e.privacy === "friends") return { include: ["friends"], exclude: [] };
+  if (e.privacy === "only_me") return { include: [], exclude: [] };
+  return { include: ["everyone"], exclude: [] };
+}
+
+/** The privacy label the audience trigger would write. */
+function privacyOf(e) {
+  const a = audienceOf(e);
+  if (a.include.length === 1 && a.include[0] === "everyone" && a.exclude.length === 0) return "everyone";
+  if (a.include.length === 0) return "only_me";
+  return "friends";
+}
+
 // ---------- the fixtures ----------
 function loadFixtures() {
   const w = {};
@@ -177,7 +195,7 @@ export function buildSeed(target, { now = Date.now(), only = null } = {}) {
     if (!nd || !isPast(last)) continue;
     const nid = id + "--next", ny = nd.slice(0, 4);
     const title = /\b(19|20)\d\d\b/.test(e.title) ? e.title.replace(/\b(19|20)\d\d\b/, ny) : `${e.title} ${ny}`;
-    EVENTS[nid] = { id: nid, title, date: nd, description: e.description, hostName: e.hostName, privacy: e.privacy, ownerIds: [], kind: e.kind, city: e.city, prev: id };
+    EVENTS[nid] = { id: nid, title, date: nd, description: e.description, hostName: e.hostName, privacy: e.privacy, audience: e.audience, ownerIds: [], kind: e.kind, city: e.city, prev: id };
     const nr = JSON.parse(JSON.stringify(r));
     nr.id = nid; nr.date = nd; nr.endDate = isoDate(b.nextEdition.endDate) || undefined;
     nr.theme = b.nextEdition.theme ? (typeof b.nextEdition.theme === "object" ? b.nextEdition.theme : { name: b.nextEdition.theme }) : undefined;
@@ -255,12 +273,8 @@ export function buildSeed(target, { now = Date.now(), only = null } = {}) {
       start_time: q(/^\d\d:\d\d/.test(r.startTime || "") ? r.startTime : null), end_time: q(/^\d\d:\d\d/.test(r.endTime || "") ? r.endTime : null),
       timezone: q(r.timezone || H.meta?.timezone || "Europe/Stockholm"), kind: q(kind),
       tags: tags ? qa(tags) : "null", schedule: schedule && schedule.length ? qj(schedule) : "null",
-      privacy: `${q(["everyone", "friends", "only_me"].includes(e.privacy) ? e.privacy : "only_me")}::privacy`,
-      audience: `${q(
-        e.privacy === "friends" ? '{"include":["friends"],"exclude":[]}'
-        : e.privacy === "everyone" ? '{"include":["everyone"],"exclude":[]}'
-        : '{"include":[],"exclude":[]}',
-      )}::jsonb`,
+      privacy: `${q(privacyOf(e))}::privacy`,
+      audience: `${q(JSON.stringify(audienceOf(e)))}::jsonb`,
       city: q(r.city || cityShort(e.city) || null), region: q(r.region || null), country: q(r.country || null),
       venue: qj(r.venue || null), access: qj(r.access || null),
       what_to_bring: qa(Array.isArray(r.whatToBring) ? r.whatToBring.map(String) : r.whatToBring ? [String(r.whatToBring)] : []),
@@ -304,12 +318,36 @@ export function buildSeed(target, { now = Date.now(), only = null } = {}) {
 
   if (mock) {
     const CREW = ["p-anna", "p-rio", "p-kai", "p-mira", "p-jon", "p-sasha"];
-    // follows: the fixture friendships both ways, a few one-way follows, and the demo's
+    const personFid = (fid) => (fid === "self" ? "p-michal" : fid);
+    // friendships are their own rows (a < b). Pending stays pending. They are not follows.
+    const bondRows = (H.bonds && H.bonds.length) ? H.bonds : (H.friendships || []).map((f) => ({
+      a: f[0], b: f[1], requestedBy: f[0], status: "accepted",
+    }));
+    for (const row of bondRows) {
+      const fa = personFid(row.a), fb = personFid(row.b);
+      if (!PEOPLE[fa] || !PEOPLE[fb] || fa === fb) continue;
+      const ua = pid(fa), ub = pid(fb);
+      const lo = ua < ub ? fa : fb, hi = ua < ub ? fb : fa;
+      const by = personFid(row.requestedBy);
+      const status = row.status === "pending" ? "pending" : "accepted";
+      const ms = now - 12 * DAY;
+      out.push(insert("friendships", {
+        a: q(pid(lo)), b: q(pid(hi)), requested_by: q(pid(by === lo || by === hi ? by : lo)),
+        status: q(status), accepted_at: status === "accepted" ? qts(ms) : "null", created_at: qts(ms - DAY),
+      }));
+    }
+    for (const list of H.lists || []) {
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(list.id)) continue;
+      const ms = now - 10 * DAY;
+      out.push(insert("contact_lists", { id: q(list.id), owner_id: q(pid("p-michal")), name: q(list.name), created_at: qts(ms) }));
+      for (const m of list.memberIds || []) if (PEOPLE[m]) out.push(insert("contact_list_members", {
+        list_id: q(list.id), person_id: q(pid(m)), added_at: qts(ms),
+      }));
+    }
+    // follows are the fixture's own edges, not a copy of each friendship
     const follows = new Set();
     const add = (a, b) => { if (a !== b && PEOPLE[a] && PEOPLE[b]) follows.add(a + ">" + b); };
-    for (const f of H.friendships || []) { add(f[0], f[1]); add(f[1], f[0]); }
-    for (const [a, b] of [["p-anna", "p-mira"], ["p-rio", "p-mira"], ["p-kai", "p-jon"], ["p-sasha", "p-kai"], ["p-sasha", "p-jon"], ["p-jon", "p-kai"],
-      ["p-michal", "p-anna"], ["p-michal", "p-rio"], ["p-michal", "p-kai"], ["p-michal", "p-sasha"]]) add(a, b);
+    for (const f of H.follows || []) add(f[0], f[1]);
     for (const f of follows) {
       const [a, b] = f.split(">");
       const ms = seedU("fp|" + a + "|" + b) < 0.55 ? seedTs("fp|" + a + "|" + b) : now - 40 * DAY;

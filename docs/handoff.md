@@ -5,9 +5,13 @@ For the new maintainer. Read `README.md`, `docs/infra.md` (how it runs, every co
 
 ## The production data
 
-A copy of production (Neon branch `main`, taken 2026-10-19) is attached to the GitHub release
-**`handoff-2026-10-19`** of this repo as `hypernet-handoff-2026-10-19.zip`. It is a release asset, not a commit,
-because it holds people's emails and direct messages: keep it off chat and email in plain text.
+A copy of production (Neon branch `main`, taken 2026-10-19) is **not a file in the repo**. It is attached to the
+GitHub release [`handoff-2026-10-19`](https://github.com/mchlkucera/hypernet-feed/releases/tag/handoff-2026-10-19)
+(repo page → Releases in the right sidebar → Assets) as
+[`hypernet-handoff-2026-10-19.zip`](https://github.com/mchlkucera/hypernet-feed/releases/download/handoff-2026-10-19/hypernet-handoff-2026-10-19.zip),
+or from a terminal: `gh release download handoff-2026-10-19 --repo mchlkucera/hypernet-feed`. It is a release
+asset, not a commit, because it holds people's emails and direct messages: keep it off chat and email in plain
+text.
 
 - `hypernet-main-2026-10-19.sql`: the whole `public` schema, structure and data (22 events, 5 horizons,
   2 people, 3 call outs, 8 messages, 15 image rows), plus the `citext` extension. Plain SQL, pg_dump 17,

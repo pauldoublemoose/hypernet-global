@@ -10,7 +10,8 @@ export function canSeeEventSql(viewerParam: string, alias = "e"): string {
   return "can_see_event(" + viewerParam + "::uuid, " + alias + ")";
 }
 
-/** Audience from the request. `audience` wins when both are sent. List tokens must be lists `hostId` owns. */
+/** Audience from the request. `audience` wins when both are sent. List tokens must be lists `hostId` owns.
+ *  group:<uuid> is accepted here and is not looked up. It matches nobody until is_group_member is replaced. */
 export async function resolveAudience(
   hostId: string,
   input: { audience?: Audience; privacy?: Privacy },

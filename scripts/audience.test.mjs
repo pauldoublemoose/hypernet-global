@@ -2,6 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
+import { audience } from "../lib/validation.ts";
 
 const require = createRequire(import.meta.url);
 const { canSee, normalize, toggle, fromPrivacy, derivePrivacy, summary, pickerHTML } = require("../_shared/hypernet-audience.js");
@@ -56,6 +57,28 @@ test("friends is an accepted pair, fof is that or two hops, and a pending reques
 test("followers is the viewer following the owner, not the other way", () => {
   assert.equal(canSee(B, A, { include: ["followers"], exclude: [] }, graph), true);
   assert.equal(canSee(A, B, { include: ["followers"], exclude: [] }, graph), false);
+});
+
+const GROUP = "33333333-3333-4333-8333-333333333333";
+
+test("group:<uuid> is valid in include and exclude, and a malformed group token is not", () => {
+  assert.equal(audience.safeParse({ include: [`group:${GROUP}`], exclude: [] }).success, true);
+  assert.equal(audience.safeParse({ include: ["everyone"], exclude: [`group:${GROUP}`] }).success, true);
+  assert.equal(audience.safeParse({ include: ["group:not-a-uuid"], exclude: [] }).success, false);
+  assert.equal(audience.safeParse({ include: ["everyone"], exclude: ["group:"] }).success, false);
+});
+
+test("a group token matches nobody, and the summary says a group when no name is known", () => {
+  assert.equal(canSee(B, A, { include: [`group:${GROUP}`], exclude: [] }, graph), false);
+  assert.equal(canSee(B, A, { include: ["everyone"], exclude: [`group:${GROUP}`] }, graph), true);
+  assert.equal(summary({ include: [`group:${GROUP}`], exclude: [] }), "a group");
+  assert.equal(summary({ include: ["everyone"], exclude: [`group:${GROUP}`] }), "Everyone except a group");
+  const html = pickerHTML({ include: ["everyone"], exclude: [`group:${GROUP}`] }, [
+    { token: "everyone", label: "Everyone" },
+    { token: "friends", label: "Friends" },
+  ]);
+  assert.match(html, /class="audsum">Everyone except a group/);
+  assert.doesNotMatch(html, /Groups/);
 });
 
 test("a list matches only when the owner owns it and the viewer is on it", () => {

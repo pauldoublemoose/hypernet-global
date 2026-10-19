@@ -49,6 +49,7 @@
       var list = ((graph && graph.lists) || {})[tok.slice(5)];
       return !!list && list.owner === owner && !!(list.members && list.members[viewer]);
     }
+    if (typeof tok === "string" && tok.indexOf("group:") === 0) return false;
     return false;
   }
 
@@ -148,6 +149,10 @@
     if (tok.indexOf("list:") === 0) {
       var name = nameOf && nameOf(tok.slice(5));
       return name || "a list";
+    }
+    if (tok.indexOf("group:") === 0) {
+      var groupName = nameOf && nameOf(tok.slice(6));
+      return groupName || "a group";
     }
     return tok;
   }

@@ -41,8 +41,8 @@ const json = z.record(z.string(), z.unknown());
 export const PRIVACY = ["everyone", "friends", "only_me"] as const;
 export type Privacy = (typeof PRIVACY)[number];
 
-const AUDIENCE_TOKEN = /^(everyone|friends|fof|followers|list:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
-const audienceList = z.array(z.string().trim().toLowerCase().regex(AUDIENCE_TOKEN, "everyone, friends, fof, followers, or list:<id>"));
+const AUDIENCE_TOKEN = /^(everyone|friends|fof|followers|list:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|group:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+const audienceList = z.array(z.string().trim().toLowerCase().regex(AUDIENCE_TOKEN, "everyone, friends, fof, followers, list:<id>, or group:<id>"));
 
 /** The same rules as audience_ok in db/migrations/0008_friends_privacy.sql. */
 export const audience = z

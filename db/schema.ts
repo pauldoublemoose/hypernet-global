@@ -28,7 +28,7 @@ export type Look = { bg: string; ink: string; accent: string; image?: string | n
 
 export const privacy = pgEnum("privacy", ["everyone", "friends", "only_me"]);
 
-/** Who may see an event. privacy is derived from this. list tokens are list:<uuid>. */
+/** Who may see an event. privacy is derived from this. list tokens are list:<uuid>. group tokens are group:<uuid> and match nobody until is_group_member is replaced. */
 export type Audience = { include: string[]; exclude: string[] };
 export const rsvpStatus = pgEnum("rsvp", ["going", "interested"]);
 

@@ -47,12 +47,12 @@ create function audience_ok(aud jsonb) returns boolean language sql immutable as
       or aud->'include' = '["everyone"]'::jsonb
     )
     and (
-      select coalesce(bool_and(tok ~ '^(everyone|friends|fof|followers|list:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$'), true)
+      select coalesce(bool_and(tok ~ '^(everyone|friends|fof|followers|list:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|group:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$'), true)
         and count(*) = count(distinct tok)
       from jsonb_array_elements_text(aud->'include') tok
     )
     and (
-      select coalesce(bool_and(tok ~ '^(everyone|friends|fof|followers|list:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$'), true)
+      select coalesce(bool_and(tok ~ '^(everyone|friends|fof|followers|list:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|group:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$'), true)
         and count(*) = count(distinct tok)
       from jsonb_array_elements_text(aud->'exclude') tok
     )
@@ -107,6 +107,11 @@ create trigger events_derive_privacy
   before insert or update on events
   for each row execute function events_derive_privacy();
 
+-- placeholder; Groups Contractor owns and replaces this; group:X means members plus admins, not followers
+create or replace function is_group_member(viewer uuid, grp uuid) returns boolean language sql stable as $$
+  select false
+$$;
+
 create function in_audience(viewer uuid, owner uuid, tok text) returns boolean language sql stable as $$
   select case
     when tok = 'everyone' then viewer is not null
@@ -141,6 +146,8 @@ create function in_audience(viewer uuid, owner uuid, tok text) returns boolean l
       join contact_list_members m on m.list_id = l.id and m.person_id = viewer
       where l.id = substr(tok, 6)::uuid and l.owner_id = owner
     )
+    when tok ~ '^group:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+      is_group_member(viewer, substr(tok, 7)::uuid)
     else false
   end
 $$;

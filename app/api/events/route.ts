@@ -1,6 +1,6 @@
 import { currentPerson, requirePerson } from "@/lib/auth";
 import { db, pgCode, schema, sqlx } from "@/lib/db";
-import { resolveAudience } from "@/lib/audience";
+import { canSeeEventSql, resolveAudience } from "@/lib/audience";
 import { EVENT_JSON, presentEvent } from "@/lib/bootstrap";
 import { eventFor, makeSlug } from "@/lib/events";
 import { HttpError, json, readJson, route } from "@/lib/http";
@@ -20,7 +20,7 @@ export const GET = route(async (req: Request) => {
   const rows = (await sqlx().query(
     `select coalesce(json_agg(v order by starts_on, title), '[]') v from (
        select ${EVENT_JSON} v, e.starts_on, e.title from events e
-        where can_see_event($1::uuid, e)
+        where ${canSeeEventSql("$1")}
           and ($2::date is null or coalesce(e.ends_on, e.starts_on) >= $2::date)
           and ($3::date is null or e.starts_on <= $3::date)
           and ($4::uuid is null or e.host_id = $4::uuid)

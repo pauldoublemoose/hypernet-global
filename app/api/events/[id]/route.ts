@@ -2,7 +2,7 @@ import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { currentPerson, requirePerson } from "@/lib/auth";
 import { db, pgCode, schema, sqlx } from "@/lib/db";
 import { resolveAudience } from "@/lib/audience";
-import { eventFor } from "@/lib/events";
+import { EVENT_GONE, eventFor, eventGone } from "@/lib/events";
 import { HttpError, json, readJson, route } from "@/lib/http";
 import { idParam, notFound, type Ctx } from "@/lib/ids";
 import { eventPatch, type Privacy } from "@/lib/validation";
@@ -10,25 +10,24 @@ import { eventPatch, type Privacy } from "@/lib/validation";
 export const dynamic = "force-dynamic";
 
 const e = schema.events;
-const HIDDEN = "This event is private or no longer here.";
 
 /** Yours to change: you host it, or nobody here does and you added it from a link (until a host claims it). */
 const mine = (me: string) => or(eq(e.hostId, me), and(isNull(e.hostId), eq(e.source, "link"), eq(e.addedBy, me)));
 
 /** GET /api/events/:id — one event, if the viewer may see it. Missing and hidden answer the same 404. */
 export const GET = route(async (_req: Request, ctx: Ctx) => {
-  const id = await idParam(ctx.params, "id", HIDDEN);
+  const id = await idParam(ctx.params, "id", EVENT_GONE);
   const { person } = await currentPerson();
-  if (!person) throw notFound(HIDDEN);
+  if (!person) throw eventGone();
   const event = await eventFor(id, person.id);
-  if (!event) throw notFound(HIDDEN);
+  if (!event) throw eventGone();
   return json({ event });
 });
 
 /** PATCH /api/events/:id {any event fields} — the host edits their event (details, look); whoever added a link event
  *  corrects it, its organiser's name included (only a link event's host name changes). */
 export const PATCH = route(async (req: Request, ctx: Ctx) => {
-  const id = await idParam(ctx.params, "id", HIDDEN);
+  const id = await idParam(ctx.params, "id", EVENT_GONE);
   const me = await requirePerson();
   const { hostName, privacy, audience, ...patch } = eventPatch.parse(await readJson(req));
   let audienceUpdate: Awaited<ReturnType<typeof resolveAudience>> | undefined;
@@ -62,7 +61,7 @@ export const PATCH = route(async (req: Request, ctx: Ctx) => {
 /** DELETE /api/events/:id — the host (or, for a link event, whoever added it) deletes it: it leaves every list,
  *  horizon and feed (kept as deleted_at). */
 export const DELETE = route(async (_req: Request, ctx: Ctx) => {
-  const id = await idParam(ctx.params, "id", HIDDEN);
+  const id = await idParam(ctx.params, "id", EVENT_GONE);
   const me = await requirePerson();
   const rows = await db()
     .update(e)

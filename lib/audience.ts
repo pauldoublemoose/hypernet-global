@@ -2,6 +2,14 @@ import { sqlx } from "./db";
 import { HttpError } from "./http";
 import { audienceFromPrivacy, type Audience, type Privacy } from "./validation";
 
+/** `can_see_event($n::uuid, alias)`. The database function is the rule, including a row with no audience. */
+export function canSeeEventSql(viewerParam: string, alias = "e"): string {
+  if (!/^\$([1-9][0-9]*)$/.test(viewerParam) || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(alias)) {
+    throw new Error("canSeeEventSql: viewer must be $n and alias a bare name");
+  }
+  return "can_see_event(" + viewerParam + "::uuid, " + alias + ")";
+}
+
 /** Audience from the request. `audience` wins when both are sent. List tokens must be lists `hostId` owns. */
 export async function resolveAudience(
   hostId: string,

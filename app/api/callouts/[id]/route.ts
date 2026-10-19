@@ -1,8 +1,8 @@
 import { requirePerson } from "@/lib/auth";
 import { sqlx } from "@/lib/db";
 import { CALLOUT_JSON } from "@/lib/bootstrap";
-import { canSeeEvent } from "@/lib/events";
-import { HttpError, json, readJson, route } from "@/lib/http";
+import { canSeeEvent, eventGone } from "@/lib/events";
+import { json, readJson, route } from "@/lib/http";
 import { idParam, notFound, type Ctx } from "@/lib/ids";
 import { calloutPatch } from "@/lib/validation";
 
@@ -13,7 +13,7 @@ export const PATCH = route(async (req: Request, ctx: Ctx) => {
   const id = await idParam(ctx.params);
   const me = await requirePerson();
   const b = calloutPatch.parse(await readJson(req));
-  if (b.eventId && !(await canSeeEvent(b.eventId, me.id))) throw new HttpError(400, "invalid", "That event isn’t one you can see.");
+  if (b.eventId && !(await canSeeEvent(b.eventId, me.id))) throw eventGone();
   const has = (k: string) => k in b;
   const rows = (await sqlx().query(
     `update callouts as c set

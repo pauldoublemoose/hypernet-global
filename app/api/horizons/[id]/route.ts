@@ -1,5 +1,6 @@
 import { requirePerson } from "@/lib/auth";
 import { pgCode, sqlx } from "@/lib/db";
+import { canSeeEvent, eventGone } from "@/lib/events";
 import { horizonFor } from "@/lib/horizons";
 import { HttpError, json, readJson, route } from "@/lib/http";
 import { idParam, j, notFound, type Ctx } from "@/lib/ids";
@@ -22,6 +23,7 @@ export const PATCH = route(async (req: Request, ctx: Ctx) => {
   const id = await idParam(ctx.params);
   const me = await requirePerson();
   const b = horizonPatch.parse(await readJson(req));
+  if (b.coverEventId && !(await canSeeEvent(b.coverEventId, me.id))) throw eventGone();
   const has = (k: string) => k in b;
   try {
     const rows = (await sqlx().query(

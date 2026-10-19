@@ -1,8 +1,8 @@
 import { requirePerson } from "@/lib/auth";
 import { sqlx } from "@/lib/db";
-import { canSeeEvent } from "@/lib/events";
+import { canSeeEvent, EVENT_GONE, eventGone } from "@/lib/events";
 import { json, readJson, route } from "@/lib/http";
-import { idParam, notFound, type Ctx } from "@/lib/ids";
+import { idParam, type Ctx } from "@/lib/ids";
 import { rsvpPut } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
@@ -12,10 +12,10 @@ export const dynamic = "force-dynamic";
  * The activity time moves only when the status changes (un-going removes you from "going" at once).
  */
 export const PUT = route(async (req: Request, ctx: Ctx) => {
-  const id = await idParam(ctx.params);
+  const id = await idParam(ctx.params, "id", EVENT_GONE);
   const me = await requirePerson();
   const b = rsvpPut.parse(await readJson(req));
-  if (!(await canSeeEvent(id, me.id))) throw notFound();
+  if (!(await canSeeEvent(id, me.id))) throw eventGone();
   const rows = (await sqlx().query(
     `insert into rsvps as r (person_id, event_id, status, went, shift_index)
        values ($1, $2, $3::rsvp, coalesce($4, false), $5)

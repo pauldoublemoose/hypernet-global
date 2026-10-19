@@ -1,4 +1,6 @@
+import { canSeeEventSql } from "./audience";
 import { sqlx } from "./db";
+import { horizonJson } from "./horizons";
 
 // Everything the first screen needs, for one viewer, in ONE request to the database (one read-only transaction,
 // so every list agrees with the others). Privacy is decided here, in SQL, with can_see_event: an event the
@@ -36,7 +38,8 @@ export function presentEvent<T extends { hostId?: string | null; audience?: unkn
 export const CALLOUT_JSON = `json_build_object('id', c.id, 'authorId', c.author_id, 'eventId', c.event_id, 'title', c.title, 'body', c.body,
   'skill', c.skill, 'expiresOn', c.expires_on, 'closedAt', c.closed_at, 'createdAt', c.created_at)`;
 
-const VISIBLE_CALLOUT = `(c.event_id is null or exists (select 1 from events ce where ce.id = c.event_id and can_see_event($1::uuid, ce)))`;
+const SEE = canSeeEventSql("$1");
+const VISIBLE_CALLOUT = `(c.event_id is null or exists (select 1 from events ce where ce.id = c.event_id and ${canSeeEventSql("$1", "ce")}))`;
 
 export type Bootstrap = {
   hypernet: 1;
@@ -85,19 +88,13 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
       none(`select coalesce(json_agg(${PERSON_JSON} order by p.created_at), '[]') v from people p`),
       one(`select coalesce(json_agg(json_build_array(f.follower_id, f.followee_id)), '[]') v from person_follows f
              where $1::uuid is not null and (f.follower_id = $1::uuid or f.followee_id = $1::uuid)`),
-      one(`select coalesce(json_agg(${EVENT_JSON} order by e.starts_on), '[]') v from events e where can_see_event($1::uuid, e)`),
+      one(`select coalesce(json_agg(${EVENT_JSON} order by e.starts_on), '[]') v from events e where ${SEE}`),
       one(`select coalesce(json_agg(json_build_object('personId', r.person_id, 'eventId', r.event_id, 'status', r.status, 'went', r.went,
              'shiftIndex', r.shift_index, 'updatedAt', r.updated_at)), '[]') v
-             from rsvps r join events e on e.id = r.event_id where can_see_event($1::uuid, e)`),
+             from rsvps r join events e on e.id = r.event_id where ${SEE}`),
       one(`select coalesce(json_agg(json_build_array(pr.person_id, pr.event_id)), '[]') v
-             from promotions pr join events e on e.id = pr.event_id where can_see_event($1::uuid, e)`),
-      one(`select coalesce(json_agg(json_build_object('id', h.id, 'slug', h.slug, 'ownerId', h.owner_id, 'ownerName', h.owner_name, 'name', h.name,
-             'description', h.description, 'isPersonalDefault', h.is_personal_default, 'publishedAt', h.published_at, 'look', h.look,
-             'coverEventId', h.cover_event_id, 'createdAt', h.created_at,
-             'eventIds', coalesce((select json_agg(he.event_id order by he.position, he.added_at) from horizon_events he join events e on e.id = he.event_id
-                                    where he.horizon_id = h.id and can_see_event($1::uuid, e)), '[]'),
-             'followers', (select count(*) from horizon_follows hf where hf.horizon_id = h.id))
-             order by h.created_at), '[]') v
+             from promotions pr join events e on e.id = pr.event_id where ${SEE}`),
+      one(`select coalesce(json_agg(${horizonJson("$1")} order by h.created_at), '[]') v
              from horizons h where h.published_at is not null or (h.owner_id is not null and h.owner_id = $1::uuid)`),
       one(`select coalesce(json_agg(json_build_array(hf.person_id, hf.horizon_id)), '[]') v
              from horizon_follows hf join horizons h on h.id = hf.horizon_id where h.published_at is not null or h.owner_id = $1::uuid`),
@@ -110,7 +107,7 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
              'ts', a.ts, 'extra', a.extra) order by a.ts desc), '[]') v
              from (select * from activity a where a.ts > now() - interval '21 days' and a.actor is not null
                      and case a.obj_type
-                           when 'event' then exists (select 1 from events e where e.id = a.obj_id and can_see_event($1::uuid, e))
+                           when 'event' then exists (select 1 from events e where e.id = a.obj_id and ${SEE})
                            when 'horizon' then exists (select 1 from horizons h where h.id = a.obj_id and (h.published_at is not null or h.owner_id = $1::uuid))
                            when 'callout' then exists (select 1 from callouts c where c.id = a.obj_id and ${VISIBLE_CALLOUT})
                            else true end

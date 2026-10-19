@@ -1250,7 +1250,11 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .ptags{ display:flex; flex-direction:column; gap:16px; }
 .ptagadd{ margin-top:16px; }
 .ptagflow{ display:flex; flex-direction:column; gap:12px; }
+.ptagflow .ptagq{ width:100%; box-sizing:border-box; color:var(--ink); background:#fff; }
 .ptagopts{ display:flex; flex-wrap:wrap; gap:8px; }
+.ptaghits{ display:flex; flex-direction:column; gap:6px; max-height:240px; overflow:auto; }
+.ptaghit{ width:100%; height:auto; min-height:var(--ctl); justify-content:space-between; padding:6px 10px; white-space:normal; text-align:left; }
+.ptagcount{ color:var(--dim); font:12px/16px var(--sys); white-space:nowrap; }
 .ptagx{ width:18px; height:18px; margin-left:4px; }
 .pnamerow{ display:flex; align-items:center; gap:12px; }
 .pnamerow .hl, .pnamerow .peditname{ flex:1; min-width:0; }
@@ -1261,6 +1265,7 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .ptagclip{ min-width:0; }
 .ptagrow{ display:flex; flex-wrap:wrap; gap:8px; }
 .ptagchip[tabindex]{ cursor:grab; touch-action:none; }
+.ptagchip[data-act="ptagfind"]{ cursor:pointer; }
 .ptagchip.dragging{ opacity:.55; }
 .canvas.pg.pg-person span.chip.pin{ box-shadow:inset 0 0 0 1px var(--sel); background:color-mix(in srgb, var(--sel) 18%, transparent); }
 .ptagpin{ width:18px; height:18px; margin-left:4px; }
@@ -1566,6 +1571,12 @@ H.people.forEach(function(p){ PEOPLE[p.id] = p; });
 PEOPLE['p-michal'] = { id:'p-michal', displayName:'Michal', handle:'mike', bio:H.self.bio,
                        skills:['EVENT PRODUCTION/PRODUCING'], city:'SWEDEN|STOCKHOLM', cities:['Stockholm'] };
 PEOPLE['self'] = { id:'self', displayName:'', handle:'', bio:'', skills:[], city:'', cities:[] };
+/* Offline demo catalogue. Field recording is on 3 profiles (mixed case, one pin). Shade is on one, under the suggestion threshold. */
+[['p-anna','c:scene:Field recording'],['p-rio','p:c:scene:Field recording'],['p-mira','c:scene:field recording'],['p-kai','c:skill:Shade'],['p-anna','c:interest:Sauna']].forEach(function(pair){
+  var p = PEOPLE[pair[0]];
+  if (!p || (p.skills || []).indexOf(pair[1]) >= 0) return;
+  p.skills = (p.skills || []).concat([pair[1]]);
+});
 
 var EVENTS = {};
 H.events.forEach(function(e){ EVENTS[e.id] = e; });
@@ -5094,6 +5105,8 @@ var TAG_CATS = [
   ['scene','Scene',['Burns','Techno','Supper clubs','Retreats']]
 ];
 var TAG_CAT = {}; TAG_CATS.forEach(function(c){ TAG_CAT[c[0]] = c; });
+/* Suggested to other people only once this many visible profiles use it. Examples and your own tags skip this. */
+var TAG_SUGGEST_MIN = 3;
 var TAGFLOW = null;
 function tagPinned(v){ return String(v == null ? '' : v).slice(0, 2) === 'p:'; }
 function tagBody(v){ v = String(v == null ? '' : v); return tagPinned(v) ? v.slice(2) : v; }
@@ -5120,17 +5133,114 @@ function profileTagGroups(skills){
   });
   return TAG_CATS.filter(function(c){ return g[c[0]] && g[c[0]].length; }).map(function(c){ return { cat:c[0], label:c[1], tags:g[c[0]] }; });
 }
-function tagFlowHTML(state){
-  if (!state || !state.cat){
-    return '<div class="ptagflow"><p class="fhelp">Pick a category.</p><div class="ptagopts">' + TAG_CATS.map(function(c){
-      return '<button type="button" class="btn" data-act="ptagcat" data-id="'+c[0]+'">'+esc(c[1])+'</button>';
-    }).join('') + '</div></div>';
+/* Counts come from profiles the viewer can already see, plus your own. The list is labels and counts, never names. */
+function tagProfiles(){
+  var out = [], me = myPid();
+  networkPeople().forEach(function(id){
+    if (id === me) return;
+    out.push((PEOPLE[id] && PEOPLE[id].skills) || []);
+  });
+  if (S.loggedIn || (PF && (PEDIT || tagFormOpen())))
+    out.push((PF && (PEDIT || tagFormOpen())) ? (PF.skills || []) : ((PEOPLE.self && PEOPLE.self.skills) || []));
+  return out;
+}
+function canonicalLabel(cat, label){
+  var def = TAG_CAT[cat], f = fold(label), i;
+  if (!def) return label;
+  for (i = 0; i < def[2].length; i++) if (fold(def[2][i]) === f) return def[2][i];
+  return label;
+}
+function tagCatalogue(){
+  var map = {};
+  tagProfiles().forEach(function(skills){
+    var seen = {};
+    (skills || []).forEach(function(v){
+      var t = parseProfileTag(v);
+      if (t.coded && (t.cat === 'location' || t.cat === 'language')) return;
+      if (!TAG_CAT[t.cat]) return;
+      if (!t.coded) t.label = skillLabel(v);
+      if (!t.label) return;
+      t.label = canonicalLabel(t.cat, t.label);
+      var k = t.cat + '\n' + fold(t.label);
+      if (seen[k]) return;
+      seen[k] = 1;
+      if (!map[k]) map[k] = { cat:t.cat, label:t.label, count:0 };
+      map[k].count++;
+    });
+  });
+  return map;
+}
+function isExampleTag(cat, label){
+  var def = TAG_CAT[cat], f = fold(label), i;
+  if (!def) return false;
+  for (i = 0; i < def[2].length; i++) if (fold(def[2][i]) === f) return true;
+  return false;
+}
+function viewerTagSet(){
+  var skills = (PF && (PEDIT || tagFormOpen())) ? (PF.skills || []) : (S.loggedIn && PEOPLE.self ? PEOPLE.self.skills : []);
+  var set = {};
+  (skills || []).forEach(function(v){
+    var t = parseProfileTag(v);
+    if (t.coded && (t.cat === 'location' || t.cat === 'language')) return;
+    if (!TAG_CAT[t.cat]) return;
+    if (!t.coded) t.label = skillLabel(v);
+    if (!t.label) return;
+    set[t.cat + '\n' + fold(canonicalLabel(t.cat, t.label))] = 1;
+  });
+  return set;
+}
+function tagChoices(state){
+  var map = tagCatalogue(), own = viewerTagSet(), q = fold(state && state.q), cat = state && state.cat, rows = [], seen = {};
+  function add(c, label, count){
+    if (!TAG_CAT[c] || (cat && c !== cat)) return;
+    label = canonicalLabel(c, label);
+    var k = c + '\n' + fold(label);
+    if (seen[k]) return;
+    if (q && fold(label).indexOf(q) < 0) return;
+    if (!isExampleTag(c, label) && !own[k] && (count || 0) < TAG_SUGGEST_MIN) return;
+    seen[k] = 1;
+    rows.push({ cat:c, label:label, count:count || 0, raw:'c:' + c + ':' + label });
   }
-  var cat = TAG_CAT[state.cat];
-  return '<div class="ptagflow"><p class="fhelp">'+esc(cat[1])+'. Pick one, or type your own.</p><div class="ptagopts">' + cat[2].map(function(label){
-    return '<button type="button" class="btn" data-act="ptagpick" data-id="'+esc('c:'+cat[0]+':'+label)+'">'+esc(label)+'</button>';
-  }).join('') + '</div><div class="addcity"><input type="text" id="ptag-custom" maxlength="40" placeholder="Or type your own" aria-label="Your own tag"><button type="button" class="btn" data-act="ptagcustom">Add</button></div>' +
-    '<button type="button" class="btn" data-act="ptagback">All categories</button></div>';
+  Object.keys(map).forEach(function(k){ add(map[k].cat, map[k].label, map[k].count); });
+  TAG_CATS.forEach(function(c){ c[2].forEach(function(label){
+    var hit = map[c[0] + '\n' + fold(label)];
+    add(c[0], label, hit ? hit.count : 0);
+  }); });
+  rows.sort(function(a, b){
+    if (b.count !== a.count) return b.count - a.count;
+    return fold(a.label) < fold(b.label) ? -1 : fold(a.label) > fold(b.label) ? 1 : 0;
+  });
+  return rows;
+}
+function tagFlowState(){
+  if (tagFormOpen()) return { cat: PF.tagCat || '', q: PF.tagQ || '' };
+  return TAGFLOW || { cat:'', q:'' };
+}
+function tagHitHTML(state){
+  state = state || { cat:'', q:'' };
+  var rows = tagChoices(state), q = String(state.q || '').trim();
+  var exact = q && rows.some(function(r){ return fold(r.label) === fold(q); });
+  var html = rows.map(function(r){
+    var cat = state.cat ? '' : ' <small class="ptagcount">'+esc(TAG_CAT[r.cat][1])+'</small>';
+    var n = r.count ? '<span class="ptagcount">'+r.count+' '+(r.count === 1 ? 'person' : 'people')+'</span>' : '';
+    return '<button type="button" class="btn ptaghit" data-act="ptagpick" data-id="'+esc(r.raw)+'"><span>'+esc(r.label)+cat+'</span>'+n+'</button>';
+  }).join('');
+  if (q && !exact) html += '<button type="button" class="btn ptaghit" data-act="ptagcreate">Create "'+esc(q)+'"</button>';
+  return html || '<p class="chempty">No matching tags.</p>';
+}
+function refreshTagHits(){
+  var box = document.getElementById('ptaghits');
+  if (box) box.innerHTML = tagHitHTML(tagFlowState());
+}
+function tagFlowHTML(state){
+  state = state || { cat:'', q:'' };
+  var cats = TAG_CATS.map(function(c){
+    var on = state.cat === c[0];
+    return '<button type="button" class="btn'+(on ? ' on' : '')+'" data-act="ptagcat" data-id="'+c[0]+'" aria-pressed="'+on+'">'+esc(c[1])+'</button>';
+  }).join('');
+  return '<div class="ptagflow"><label class="field" for="ptag-q"><span class="flabel">Search tags</span><input id="ptag-q" class="ptagq" type="search" maxlength="40" placeholder="Search tags or create a new one" autocomplete="off" value="'+esc(state.q || '')+'"></label>' +
+    '<div class="ptagopts" role="group" aria-label="Category">'+cats+'</div>' +
+    '<div class="ptaghits" id="ptaghits">'+tagHitHTML(state)+'</div></div>';
 }
 function profileLocations(p){
   var seen = {}, out = [];
@@ -5228,7 +5338,8 @@ function tagsSection(pid, asOther){
     var pin = editing ? '<button type="button" class="ib ptagpin" data-act="ptagpin" data-id="'+esc(t.raw)+'" aria-pressed="'+(t.pin ? 'true' : 'false')+'" aria-label="'+(t.pin ? 'Unpin ' : 'Pin ')+esc(t.label)+'">'+pinMark(t.pin)+'</button>' : '';
     var rm = editing ? '<button type="button" class="ib ptagx" data-act="ptagrm" data-id="'+esc(t.raw)+'" aria-label="Remove '+esc(t.label)+'">'+ic('close',12)+'</button>' : '';
     var key = editing ? ' tabindex="0" role="listitem" aria-label="'+esc(t.label)+(t.pin ? ', pinned' : '')+', arrow keys move it"' : '';
-    return '<span class="chip plain ptagchip'+(t.pin ? ' pin' : '')+'" data-id="'+esc(t.raw)+'"'+key+'>'+esc(t.label)+pin+rm+'</span>';
+    var idAttr = editing ? ' data-id="'+esc(t.raw)+'"' : ' data-act="ptagfind" data-id="'+esc(t.label)+'" title="Search people tagged '+esc(t.label)+'"';
+    return '<span class="chip plain ptagchip'+(t.pin ? ' pin' : '')+'"'+idAttr+key+'>'+esc(t.label)+pin+rm+'</span>';
   }).join('');
   var add = editing ? '<div class="ptagadd"><button class="btn" data-act="addtag">'+ic('plus')+'Add tag</button></div>' : '';
   return '<section class="sect" data-sect="tags"><h3>Tags</h3><div class="ptagclip"><div class="chips ptagrow" role="list">'+chips+'</div></div>' +
@@ -5276,10 +5387,12 @@ function paintTagFlow(){
   if (!d || !d.classList.contains('ptagdlg') || !TAGFLOW) return;
   d.querySelector('.dbody').innerHTML = tagFlowHTML(TAGFLOW);
   placeDlg(d);
+  focusIn('ptag-q');
 }
 function openTagDialog(){
-  TAGFLOW = { cat:'' };
+  TAGFLOW = { cat:'', q:'' };
   dialog('Add tag', tagFlowHTML(TAGFLOW), '<button class="btn primary" data-act="closedlg">Done</button>', 440, 'ptagdlg');
+  focusIn('ptag-q');
 }
 function addOwnTag(raw){
   if (!raw) return;
@@ -5289,20 +5402,22 @@ function addOwnTag(raw){
   if (skills.length >= 30){ toast('That’s 30 tags', ''); return; }
   skills.push(raw);
   if (editing){ PF.skills = skills; PF.adding = false; PF.tagCat = ''; pfRepaint(); return; }
-  if (inline){ PF.skills = partitionPins(skills); render(); return; }
+  if (inline){ PF.skills = partitionPins(skills); render(); refreshTagHits(); return; }
   PEOPLE.self.skills = skills;
   if (PF) PF.skills = skills.slice();
   schedulePersist();
   if (ONLINE){ var p = PEOPLE.self; HNAPI.saveProfile({ displayName:p.displayName, handle:p.handle, bio:p.bio || '', skills:p.skills, cities:citiesOf(p) }); }
   render();
 }
-function addCustomTag(){
-  var inp = document.getElementById('ptag-custom');
-  var cat = tagFormOpen() ? PF.tagCat : (TAGFLOW && TAGFLOW.cat);
-  var raw = encodeProfileTag(cat, inp ? inp.value : '');
+function addTypedTag(){
+  var state = tagFlowState();
+  var inp = document.getElementById('ptag-q');
+  var text = inp ? inp.value : (state.q || '');
+  if (!state.cat){ toast('Pick a category', ''); return; }
+  var known = tagCatalogue()[state.cat + '\n' + fold(text)];
+  var raw = encodeProfileTag(state.cat, known ? known.label : text);
   if (!raw){ toast('Type a tag', 'Up to 40 characters'); return; }
   addOwnTag(raw);
-  if (inp && (tagFormOpen() ? PF.skills : (PEOPLE.self.skills || [])).indexOf(raw) >= 0) inp.value = '';
 }
 function citiesOf(p){ return p.cities && p.cities.length ? p.cities : (p.city ? [cityShort(p.city)] : []); }
 var PF = null;
@@ -5320,7 +5435,7 @@ function profileForm(){
           return '<span class="chip plain">'+esc(t.label)+'<button type="button" class="ib ptagx" data-act="ptagrm" data-id="'+esc(t.raw)+'" aria-label="Remove '+esc(t.label)+'">'+ic('close',12)+'</button></span>';
         }).join('') + '</div></div>';
       }).join('') || '<p class="chempty">None yet.</p>') +
-      (PF.adding ? tagFlowHTML({ cat:PF.tagCat || '' }) : '<div class="ptagadd"><button type="button" class="btn" data-act="ptagopen">'+ic('plus')+'Add tag</button></div>') +
+      (PF.adding ? tagFlowHTML({ cat:PF.tagCat || '', q:PF.tagQ || '' }) : '<div class="ptagadd"><button type="button" class="btn" data-act="ptagopen">'+ic('plus')+'Add tag</button></div>') +
       '</div></div>' +
     '<div class="field"><span class="flabel" id="pf-ci-l">Where you are</span><div class="pchips" id="pf-cities" role="group" aria-labelledby="pf-ci-l">' +
       cities.map(function(c){ var on = PF.cities.indexOf(c) >= 0;
@@ -7702,7 +7817,7 @@ document.addEventListener('click', function(ev){
       break;
     }
     case 'addtag':       gated(openTagDialog)(); break;
-    case 'ptagopen':     if (PF){ PF.adding = true; PF.tagCat = ''; pfRepaint(); } break;
+    case 'ptagopen':     if (PF){ PF.adding = true; PF.tagCat = ''; PF.tagQ = ''; pfRepaint(); } break;
     case 'ptagcat':
       if (tagFormOpen()){ PF.tagCat = id; pfRepaint(); }
       else if (TAGFLOW){ TAGFLOW.cat = id; paintTagFlow(); }
@@ -7712,7 +7827,13 @@ document.addEventListener('click', function(ev){
       else if (TAGFLOW){ TAGFLOW.cat = ''; paintTagFlow(); }
       break;
     case 'ptagpick':     addOwnTag(id); break;
-    case 'ptagcustom':   addCustomTag(); break;
+    case 'ptagcreate':   addTypedTag(); break;
+    case 'ptagfind': {
+      var box = $('q'); if (box) box.value = id;
+      var pq = $('pq'); if (pq) pq.value = id;
+      doSearch(id); rememberQuery(id);
+      break;
+    }
     case 'ptagmore': PTAGOPEN = !PTAGOPEN; fitProfileTags(); break;
     case 'ptagpin': {
       if (!PF || !PEDIT) break;
@@ -7895,6 +8016,12 @@ document.addEventListener('input', function(ev){
   if (n.id === 'nc-q' && NC){ NC.q = n.value; paintNewChat(); return; }
   if (n.id === 'pf-handle' && PF) PF.handleTouched = true;
   if (n.id === 'pf-name' && PF && PF.mode === 'signup' && !PF.handleTouched){ var hi0 = $('pf-handle'); if (hi0) hi0.value = suggestHandle(n.value); }
+  if (n.id === 'ptag-q'){
+    if (tagFormOpen() && PF) PF.tagQ = n.value;
+    else if (TAGFLOW) TAGFLOW.q = n.value;
+    refreshTagHits();
+    return;
+  }
   if (n.id === 'pedit-name' || n.id === 'pedit-bio' || /^pf-(name|handle|about)$/.test(n.id)){
     pfSync(); if (PF && PF.mode === 'edit' && $('pfbody')) czPreviews(); return;
   }
@@ -8007,7 +8134,14 @@ document.addEventListener('keydown', function(ev){
   if (tagOn && (ev.key === 'Enter' || ev.key === ' ') && ae && ae.classList && ae.classList.contains('tagopt')){ ev.preventDefault(); tagPick(ae.getAttribute('data-id')); return; }
   if (!tagOn && ae && ae.id === 'w-tagbox' && (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'ArrowDown')){ ev.preventDefault(); tagSetOpen(true); return; }
   if (ev.key === 'Enter' && ae && ae.id === 'lk-u' && !ae.readOnly){ ev.preventDefault(); linkAutofill(); return; }
-  if (ev.key === 'Enter' && ae && ae.id === 'ptag-custom'){ ev.preventDefault(); addCustomTag(); return; }
+  if (ev.key === 'Enter' && ae && ae.id === 'ptag-q'){
+    ev.preventDefault();
+    var typed = String(ae.value || '').trim(), hits = tagChoices(tagFlowState());
+    var one = typed && hits.filter(function(h){ return fold(h.label) === fold(typed); });
+    if (one && one.length === 1) addOwnTag(one[0].raw);
+    else addTypedTag();
+    return;
+  }
   if (ae && ae.classList && ae.classList.contains('ptagchip') && (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight')){
     ev.preventDefault();
     moveProfileTag(ae.getAttribute('data-id'), ev.key === 'ArrowRight' ? 1 : -1);

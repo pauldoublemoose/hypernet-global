@@ -7439,12 +7439,23 @@ document.addEventListener('click', function(ev){
 /* =========================================================================
    13. ACTIONS
    ========================================================================= */
-function goFolder(f){
+/* A left-nav page keeps the open window only while the list still shows beside it.
+   The globe, a phone, and a window that covers the list still close it. */
+function paneFollowsPage(prev, next, stack){
+  if (!stack || !stack.length || L.phone || L.win !== 'over') return false;
+  if (sameFolder(prev, next)) return false;
+  if (next && next.kind === 'globe') return false;
+  if (stack.some(function(it){ return it && it.type === 'globe'; })) return false;
+  return true;
+}
+function goFolder(f, keepPane){
   if (L.phone && S.tab === 'you' && f.kind !== 'you'){ /* stays in the You tab */ }
   /* a narrow calendar's open day belongs to the list it was opened in */
+  var prev = S.folder, saved = keepPane ? S.stack.slice() : null;
   if (!sameFolder(S.folder, f)){ S.folder = { kind:f.kind, id:f.id || null }; S.calDay = null; }
   S.stack = [];
   if (f.kind !== 'search'){ S.phoneSearch = false; S.query = ''; SEARCHRET = null; }
+  if (saved && paneFollowsPage(prev, f, saved) && saved.every(validItem)) S.stack = saved;
 }
 function markRead(id){ READ[id] = true; }
 /* open an item in the detail pane: from a list row it replaces what is open, from inside a page it stacks */
@@ -7803,7 +7814,7 @@ document.addEventListener('click', function(ev){
     case 'acctmenu': if (POP){ closePopup(); break; } popup(n, [{ label:'Your profile', cmd:'profile', icon:'user' }, { label:'Edit profile', cmd:'editprofile', icon:'edit' }, '-', { label:'Log out', cmd:'logout', icon:'back' }]); break;
     case 'newsheet': newSheet(); break;
     case 'runcmd':   runCmd(id); break;
-    case 'folder':   goFolder({ kind:n.getAttribute('data-kind'), id:id || null }); render(); $('listbody').scrollTop = 0; break;
+    case 'folder':   goFolder({ kind:n.getAttribute('data-kind'), id:id || null }, true); render(); $('listbody').scrollTop = 0; break;
     case 'shelfall':    goFolder(isExploreKind(id) ? { kind:'explore', id:id } : { kind:'shelf', id:id }); render(); $('listbody').scrollTop = 0; break;
     case 'explorekind': if (L.phone && S.tab !== 'explore') setTab('explore'); else if (L.phone && S.folder.kind === 'explore') ROUTE.replace = true;
                         goFolder({ kind:'explore', id:id || null }); render(); $('listbody').scrollTop = 0; break;

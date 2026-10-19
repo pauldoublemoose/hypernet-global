@@ -30,7 +30,7 @@ test("production: _MAIN values replace the dev ones; tooling keys and empty valu
   assert.equal(db.value, "fake-db-url-main-pooled?sslmode=require&a=b");
   assert.equal(db.from, "DATABASE_URL_MAIN");
   const skipped = Object.fromEntries(p.skipped.map((s) => [s.key, s.reason]));
-  for (const k of ["NEON_API_KEY", "VERCEL_TOKEN", "NEON_PROJECT_ID", "DATABASE_URL_UNPOOLED"]) {
+  for (const k of ["NEON_API_KEY", "VERCEL_TOKEN", "VERCEL_OIDC_TOKEN", "NEON_PROJECT_ID", "DATABASE_URL_UNPOOLED"]) {
     assert.equal(skipped[k], "not for Vercel", k);
   }
   assert.equal(skipped.NEON_STORAGE_SECRET_ACCESS_KEY, "empty");

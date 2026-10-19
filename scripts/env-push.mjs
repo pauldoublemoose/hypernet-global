@@ -28,6 +28,7 @@ export const SKIP = new Set([
   "NEON_API_KEY", // manages every Neon project of the account: never in an app runtime
   "NEON_PROJECT_ID", // tooling (the app has it in lib/branch.ts)
   "VERCEL_TOKEN", // used by this script to log the CLI in
+  "VERCEL_OIDC_TOKEN", // written into .env.local by `vercel link` / `vercel env pull`; Vercel makes its own
   "DATABASE_URL_UNPOOLED", // migrations only (scripts/sql-payload.mjs), never at runtime
   // RESEND_API_KEY + EMAIL_FROM do go: app/api/hooks/neon-auth sends the login email once that webhook is on
 ]);

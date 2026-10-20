@@ -3714,6 +3714,15 @@ function homeSections(){
     return { id:id, title:shelfTitle(id), items:items };
   }).filter(function(sec){ return sec.items.length; });
 }
+/* the row is sized to the list as it is, scrollbar included. cw is the container before that bar. */
+function overviewFit(){
+  var lb = $('listbody'); if (!lb) return null;
+  var cs = getComputedStyle(lb);
+  var inner = lb.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0) - 32;
+  if (inner < 152) return null;
+  var cols = Math.max(1, Math.floor((inner + 16) / (152 + 16)));
+  return { cols:cols, sq:Math.floor((inner - (cols - 1) * 16) / cols) };
+}
 function shelvesHTML(){
   var h = '<div class="shelves">', n = shelfShown(), px = L.phone || !L.fit ? 150 : L.fit.sq;
   homeSections().forEach(function(sec){
@@ -8604,6 +8613,10 @@ function render(){
   if (!L.phone || scr === 'center'){
     renderCHead();
     if (isCal()) renderCalendar(); else renderList();
+  }
+  if (!L.phone && isOverview()){
+    var fit = overviewFit();
+    if (fit && (!L.fit || fit.sq !== L.fit.sq || fit.cols !== L.fit.cols)){ L.fit = fit; renderShelves(); }
   }
   renderDetail();
   fitProfileTags();

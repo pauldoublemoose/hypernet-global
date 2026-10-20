@@ -130,6 +130,7 @@ export const rsvps = pgTable(
     status: rsvpStatus("status"),
     went: boolean("went").notNull().default(false),
     shiftIndex: integer("shift_index"),
+    role: text("role"),
     updatedAt: tstz("updated_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.personId, t.eventId] })],

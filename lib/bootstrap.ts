@@ -90,7 +90,7 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
              where $1::uuid is not null and (f.follower_id = $1::uuid or f.followee_id = $1::uuid)`),
       one(`select coalesce(json_agg(${EVENT_JSON} order by e.starts_on), '[]') v from events e where ${SEE}`),
       one(`select coalesce(json_agg(json_build_object('personId', r.person_id, 'eventId', r.event_id, 'status', r.status, 'went', r.went,
-             'shiftIndex', r.shift_index, 'updatedAt', r.updated_at)), '[]') v
+             'shiftIndex', r.shift_index, 'role', r.role, 'updatedAt', r.updated_at)), '[]') v
              from rsvps r join events e on e.id = r.event_id where ${SEE}`),
       one(`select coalesce(json_agg(json_build_array(pr.person_id, pr.event_id)), '[]') v
              from promotions pr join events e on e.id = pr.event_id where ${SEE}`),

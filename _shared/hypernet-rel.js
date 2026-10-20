@@ -199,11 +199,20 @@
       counts + '<div class="relbtns">' + follow + friend + addTo + "</div></div>";
   }
 
+  function pagePid(el) {
+    var page = el.closest && el.closest(".pg-person");
+    if (!page) return "";
+    if (page.closest(".pvpage")) return "self";
+    var stack = root.S && root.S.stack;
+    var top = stack && stack.length ? stack[stack.length - 1] : null;
+    return top && top.type === "person" ? top.id : "";
+  }
+
   function mount(scope) {
     var rootEl = scope || (typeof document !== "undefined" ? document : null);
     if (!rootEl || !rootEl.querySelectorAll) return;
     rootEl.querySelectorAll(".profile-actions").forEach(function (el) {
-      var pid = el.getAttribute("data-pid");
+      var pid = el.getAttribute("data-pid") || pagePid(el);
       el.innerHTML = relActionsHTML(pid, { density: el.getAttribute("data-rel") || "full" });
     });
   }

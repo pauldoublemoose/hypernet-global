@@ -656,7 +656,7 @@ async function overflowEverywhere(p, label){
         /* the skeleton, ignoring optional pieces (a ribbon, an entry panel, editions, a second art layer) */
         const top = [...pg.children].map(x => x.classList[0]).filter(k => /^(art|banner|actbar|layer|tail)$/.test(k)).filter((k, i, a) => a.indexOf(k) === i).join('>');
         const q = s => !!pg.querySelector(s);
-        return top + '|' + ['header.banner > .bin > .sqwrap', 'header.banner > .bin > .btxt > h1.hl', '.actbar > .verbs', '.layer > .lin > .facts', '.layer > .lin > .sect'].map(q).join(',');
+        return top + '|' + ['header.banner > .bin > .sqwrap', 'header.banner > .bin > .btxt h1.hl', '.actbar > .verbs', '.layer > .lin > .facts', '.layer > .lin > .sect'].map(q).join(',');
       }, type);
     }
     const uniq = new Set(Object.values(sigs));
@@ -677,9 +677,9 @@ async function overflowEverywhere(p, label){
     await c.fill('#nh-n', 'Plain places'); await c.click('#nh-go'); await c.waitForTimeout(500);
     const ph = await ev(c, () => { const k = MYHORIZONS[MYHORIZONS.length - 1]; return { stored:!!HZTHEME[k], page:!!document.querySelector('.pg-horizon.plain') }; });
     ok(!ph.stored && ph.page, kind + ': a new horizon wears the plain default');
-    /* your profile: its colours from Edit profile on your page, kept across reload; nobody else's page offers it */
+    /* your profile: its colours from the Edit profile dialog, kept across reload; nobody else's page offers Edit */
     await c.evaluate(() => { openItem('person', 'self'); }); await c.waitForTimeout(400);
-    await c.click('.pg-person .actbar [data-act="editprofile"]'); await c.waitForTimeout(250);
+    await c.evaluate(() => profileDialog('edit')); await c.waitForTimeout(250);
     await c.click('.dlg [data-czact="start"][data-i="1"]'); await c.waitForTimeout(150);
     await c.click('#pfsave'); await c.waitForTimeout(500);
     await c.reload(); await c.waitForTimeout(800);
@@ -1678,8 +1678,8 @@ async function overflowEverywhere(p, label){
     }
     /* following from the window updates it in place; an event opened from it stacks in the same window, the chat stays */
     await c.click(opener[0]); await c.waitForTimeout(300);
-    await c.click('#dscroll [data-act="followp"]'); await c.waitForTimeout(250);
-    ok(await ev(c, () => !document.getElementById('win').hidden && !PFOLLOW['p-anna'] && /Follow/.test(document.querySelector('#dscroll [data-act="followp"]').textContent)), kind + ': Follow in the window works in place');
+    await c.click('#dscroll .profile-actions [data-act="followp"]'); await c.waitForTimeout(250);
+    ok(await ev(c, () => !document.getElementById('win').hidden && !PFOLLOW['p-anna'] && /Follow/.test(document.querySelector('#dscroll .profile-actions [data-act="followp"]').textContent)), kind + ': Follow in the window works in place');
     await c.evaluate(() => { followP('p-anna'); document.querySelector('#dscroll .crow .cm[data-type="event"]').click(); }); await c.waitForTimeout(350);
     ok(await ev(c, () => S.stack.length === 2 && S.stack[1].type === 'event' && S.stack[0].type === 'person' && S.chatOpen === 'c-anna' && !!document.querySelector('#dbar [data-act="back"]')), kind + ': an event opened from the profile stacks in the window (‹ back to it); the chat stays open');
     await c.click('#dbar [data-act="closewin"]'); await c.waitForTimeout(350);
@@ -2329,7 +2329,7 @@ async function overflowEverywhere(p, label){
     /* your profile: one Edit profile; its colours, and your page as others see it beside it (Preview on a phone) */
     await c.evaluate(() => openItem('person', 'self')); await c.waitForTimeout(350);
     ok(await ev(c, () => [...document.querySelectorAll('#dscroll .pg-person .actbar .btn')].map(b => b.getAttribute('data-act')).join() === 'editprofile'), kind + ': your page has one Edit profile');
-    await c.click('#dscroll [data-act="editprofile"]'); await c.waitForTimeout(300);
+    await c.evaluate(() => profileDialog('edit')); await c.waitForTimeout(300);
     await c.fill('#pf-name', 'Edda Preview'); await c.click('.dlg [data-czact="start"][data-i="5"]'); await c.waitForTimeout(250);
     let pv;
     if (kind === 'phone'){

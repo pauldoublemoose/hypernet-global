@@ -210,12 +210,13 @@ export const profilePatch = z
   .strict()
   .refine((p) => Object.keys(p).length > 0, { message: "nothing to change" });
 
-/** PUT /api/events/:id/rsvp — going / interested / neither, went, the shift taken. */
+/** PUT /api/events/:id/rsvp — going / interested / neither, went, the shift taken, chronicle role. */
 export const rsvpPut = z
   .object({
     status: z.enum(["going", "interested"]).nullable(),
     went: z.boolean().optional(),
     shiftIndex: z.number().int().min(0).max(500).nullable().optional(),
+    role: z.enum(["host", "cocreator", "attendee"]).nullable().optional(),
   })
   .strict();
 

@@ -2675,10 +2675,21 @@ var PHASELAB = { build:'Build', early_entry:'Early entry', gates_open:'Gates ope
 var EXPECTLAB = { none:'Optional', encouraged:'Encouraged', expected:'Expected', required:'Required' };
 var ARTLAB = { honoraria:'Honoraria', grants:'Grants', dreams_cobudget:'Co-budgeted by members' };
 function humanKey(k){ return String(k).replace(/[_-]+/g,' ').replace(/([a-z])([A-Z])/g,'$1 $2').replace(/^./, function(c){ return c.toUpperCase(); }); }
+function safeHref(u){
+  if (u == null) return null;
+  var s = String(u).trim();
+  if (!s) return null;
+  try {
+    var url = new URL(s);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    return url.href;
+  } catch (e) { return null; }
+}
 function linkify(s){
   s = String(s);
-  if (/^https?:\/\/\S+$/.test(s)) return '<a href="'+esc(s)+'" target="_blank" rel="noopener">'+esc(s.replace(/^https?:\/\/(www\.)?/,'').replace(/\/$/,''))+'</a>';
-  return esc(s);
+  var href = safeHref(s);
+  if (!href) return esc(s);
+  return '<a href="'+esc(href)+'" target="_blank" rel="noopener">'+esc(s.replace(/^https?:\/\/(www\.)?/,'').replace(/\/$/,''))+'</a>';
 }
 /* renders whatever shape a field comes in: text, list, list of records, or a record */
 function rv(v){
@@ -2697,7 +2708,8 @@ function itemRow(o){
   var w = pickK(o, ['deadline','date','when']);
   var u = pickK(o, ['url','link','href']);
   var rest = {}; Object.keys(o).forEach(function(k){ if (used.indexOf(k) < 0 && o[k] != null && o[k] !== '') rest[k] = o[k]; });
-  return '<div class="irow">' + (t ? '<div class="it">'+(u ? '<a href="'+esc(u)+'" target="_blank" rel="noopener">'+esc(t)+'</a>' : esc(t))+'</div>' : '') +
+  var href = safeHref(u);
+  return '<div class="irow">' + (t ? '<div class="it">'+(href ? '<a href="'+esc(href)+'" target="_blank" rel="noopener">'+esc(t)+'</a>' : esc(t))+'</div>' : '') +
     (b ? (typeof b === 'object' ? rv(b) : '<div>'+linkify(b)+'</div>') : '') +
     (w ? '<div class="iw">'+esc(fmtMaybeDate(w))+'</div>' : '') + (u && !t ? '<div class="iw">'+linkify(u)+'</div>' : '') +
     (Object.keys(rest).length ? kvHTML(rest) : '') + '</div>';
@@ -2889,7 +2901,8 @@ function principlesHTML(p){
   if (p.base) h += '<p>' + (p.base === 'own' ? 'Their own principles' : 'Built on the ' + esc(p.base)) + (p.additions && p.additions.length ? ', plus:' : '.') + '</p>';
   if (p.additions && p.additions.length) h += chipsHTML(p.additions, 'strong');
   if (p.renamed && p.renamed.length) h += rv(p.renamed);
-  if (p.url) h += '<div class="chips" style="margin-top:12px"><a class="chip plain" href="'+esc(p.url)+'" target="_blank" rel="noopener">Read them</a></div>';
+  var pHref = safeHref(p.url);
+  if (pHref) h += '<div class="chips" style="margin-top:12px"><a class="chip plain" href="'+esc(pHref)+'" target="_blank" rel="noopener">Read them</a></div>';
   return h;
 }
 function nextHTML(n){
@@ -2903,7 +2916,11 @@ function sourcesHTML(r){
   (r.sources || []).forEach(function(s){ var u = typeof s === 'string' ? s : s.url; if (u && !ls.some(function(x){ return x.url === u; })) ls.push({ label: (s.label || u), url:u }); });
   var way = entryLinkOf(r);
   ls.sort(function(a, b){ return (b.url === way) - (a.url === way); });
-  return ls.length ? '<div class="chips">' + ls.map(function(l){ return '<a class="chip plain'+(l.url === way ? ' strong' : '')+'" href="'+esc(l.url)+'" target="_blank" rel="noopener">'+esc(l.label)+'</a>'; }).join('') + '</div>' : '';
+  return ls.length ? '<div class="chips">' + ls.map(function(l){
+    var href = safeHref(l.url);
+    return href ? '<a class="chip plain'+(l.url === way ? ' strong' : '')+'" href="'+esc(href)+'" target="_blank" rel="noopener">'+esc(l.label)+'</a>'
+                : '<span class="chip plain">'+esc(l.label)+'</span>';
+  }).join('') + '</div>' : '';
 }
 function provenance(evId){
   var r = recOf(evId);
@@ -3005,7 +3022,7 @@ function entryLinkOf(r){
 function entryHTML(evId){
   var r = recOf(evId), a = r.access, e = EVENTS[evId];
   if (!a || !a.model || isPast(lastDay(e)) || /^(free|donation|pay_what_you_can|invite)$/.test(a.model)) return '';
-  var url = entryLinkOf(r), m = a.model;
+  var url = safeHref(entryLinkOf(r)), m = a.model;
   var label = /^(ticket|lottery)$/.test(m) ? 'Get tickets' : /member/.test(m) ? 'Become a member' : 'How to get in';
   var sale = (a.sales || []).map(function(sl){ return [sl, saleState(sl)]; }).filter(function(x){ return x[1] && x[1] !== 'Closed'; })[0];
   var sub = [priceSummary(a), sale ? sale[0].name + ': ' + sale[1].toLowerCase() : ''].filter(Boolean).join(' · ');

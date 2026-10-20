@@ -341,7 +341,7 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .canvas.pg:not(.plain) .rpav .av{ box-shadow:0 0 0 2px var(--ebg); }
 /* Controls are system chrome (2026-09-27): the toolbar, buttons, pressable chips, fields, and the call-out card (the
    app's one inverted element) put the app's own tokens back, whatever page they are on */
-.canvas.pg :is(.actbar, .btn, .ib, button.chip:not(.who), a.chip, .seg, input, textarea, select, .fco, .edgo, .ctag, .hzchk, .replybox){
+.canvas.pg :is(.actbar, .btn, .ib, button.chip:not(.who), a.chip, .seg, input, textarea, select, .fco, .edgo, .ctag, .hzchk, .replybox, .pedithandle){
   --ink:#141414; --ink2:#3a3a3a; --dim:#666; --line:#e2dfd8; --rule:#c9c5bc; --gb:#bdb9b0; --hover:#f0eee9; --face-lt:#e8e5df; }
 
 /* The verbs are the window's controls, not the event's: one toolbar in the app's own bevel style. */
@@ -1281,9 +1281,16 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .pplacev{ margin-top:2px; }
 .pdot{ color:var(--dim); font-weight:normal; }
 .pitem{ white-space:nowrap; }
-.pedithandle{ display:inline-flex; max-width:16em; height:28px; vertical-align:middle; color:#141414; background:#fff; }
-.pedithandle > span, .pedithandle input{ color:#141414; }
-.pedithandle input{ height:28px; }
+.pedithandle.handlein{ display:inline-flex; align-items:center; max-width:16em; height:28px; margin:0; padding:0; gap:0;
+  vertical-align:middle; border:0; outline:none; cursor:text; font:inherit; color:var(--ink); background:#fff; box-shadow:var(--in); }
+.pedithandle.handlein > span{ display:flex; align-items:center; margin:0; padding:0 0 0 10px; border:0; outline:none;
+  box-shadow:none; background:transparent; color:var(--dim); }
+.pedithandle.handlein > input[type=text]{ flex:1; min-width:0; width:auto; height:100%; margin:0; padding:0 8px 0 2px;
+  border:0; box-shadow:none; background:transparent; outline:none; color:var(--ink); }
+.pedithandle.handlein:focus-within{ outline:2px solid var(--sel); outline-offset:2px; }
+.pedithandle.handlein > input[type=text]:focus{ outline:none; box-shadow:none; border:0; }
+.pedithandle.handlein:has(input[aria-invalid="true"]){ outline:2px solid var(--alert); outline-offset:2px; }
+.pedithandle.handlein > input[type=text][aria-invalid="true"]{ outline:none; }
 .banner .ferr{ color:var(--alert); }
 .pmore{ margin-top:8px; }
 .peditname, .peditbio, .pfind, .prow .addcity input{ color:var(--ink); background:#fff; }
@@ -1438,7 +1445,7 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 }
 [data-theme="y2fresh"] .canvas.pg:not(.plain) :is(.sect > h3, .facts > .fh){ background:#fff; color:var(--text); }
 [data-theme="y2fresh"] .canvas.pg:not(.plain) :is(.fvlink, .layer a:not(.btn):not(.chip)){ color:var(--ink); }
-[data-theme="y2fresh"] .canvas.pg :is(.actbar, .btn, .ib, button.chip:not(.who), a.chip, .seg, input, textarea, select, .fco, .edgo, .ctag, .hzchk, .replybox){
+[data-theme="y2fresh"] .canvas.pg :is(.actbar, .btn, .ib, button.chip:not(.who), a.chip, .seg, input, textarea, select, .fco, .edgo, .ctag, .hzchk, .replybox, .pedithandle){
   --ink:#0a1a2e; --ink2:#1e3a56; --dim:#4b6480; --line:rgba(157,180,203,.55); --rule:#9db4cb; --gb:#9db4cb;
   --hover:rgba(10,26,46,.07); --face-lt:#e4edf7; --face:#e4eef7; --sel:#5d6a7e;
 }
@@ -3391,7 +3398,7 @@ function personHTML(pid, asOther){
   var bar = me ? (S.loggedIn ? toolbarHTML(vb(PEDIT ? 'profiledone' : 'editprofile', 'self', PEDIT ? 'Done' : 'Edit profile', PEDIT ? 'check' : 'edit', { primary:true })) : '')
                : toolbarHTML(vb('followp', pid, fol ? 'Following' : 'Follow', fol ? 'check' : 'plus', { on:fol, primary:!fol, pressed:!!fol }), vb('dm', pid, 'Message', 'chat'));
   var eye = profileEditing(pid, asOther) && PF
-    ? '<span class="handlein pedithandle"><span>@</span><input type="text" id="pf-handle" value="'+esc(PF.handle)+'" placeholder="yourname" autocomplete="username" autocapitalize="off" spellcheck="false" aria-label="Handle" aria-describedby="pf-herr"></span><span class="ferr" id="pf-herr" hidden></span><p class="ferr" id="pf-imgerr" role="alert"></p>'
+    ? '<label class="handlein pedithandle"><span aria-hidden="true">@</span><input type="text" id="pf-handle" value="'+esc(PF.handle)+'" placeholder="yourname" autocomplete="username" autocapitalize="off" spellcheck="false" aria-label="Handle" aria-describedby="pf-herr"></label><span class="ferr" id="pf-herr" hidden></span><p class="ferr" id="pf-imgerr" role="alert"></p>'
     : '@'+esc(p.handle) + (me ? '' : ' · <span class="pres '+st+'"></span>'+esc(st));
   var up = upcomingOf(pid);
   var facts = factGrid([['Hosting', String(up.host.length)],
@@ -3402,18 +3409,9 @@ function personHTML(pid, asOther){
         '<div class="r-meta">open until '+esc(fmtDate(c.expiresAt))+'</div></div></div>';
     }).join(''));
   var tags = tagsSection(pid, asOther);
-  /* phone Preview is the page as others see it; Back to editing returns to the fields. Nothing is saved until Done. */
-  if (me && PEDIT && PF && PF.previewing && L.phone){
-    return '<article class="canvas pg pg-person" data-page="person"><p class="pvnote">This is your profile as others see it. Nothing is saved yet.</p>' +
-      profilePreviewHTML() +
-      '<div class="actbar"><div class="verbs"><button type="button" class="btn" data-act="pfpreview" data-id="off">'+ic('back')+'Back to editing</button>' +
-      '<button type="button" class="btn primary" data-act="profiledone">'+ic('check')+'Done</button></div></div></article>';
-  }
   /* the look used to live in the Edit profile dialog. It is on the page now, and Done is what stores it. */
   if (profileEditing(pid, asOther) && DRAFT && DRAFT.form === 'profile'){
-    s += '<section class="sect" data-sect="look"><h3>Look</h3>' + czControlsHTML(DRAFT) +
-      (L.phone ? '<div class="ptagadd"><button type="button" class="btn" data-act="pfpreview" data-id="on">'+ic('user')+'Preview</button></div>' : '') +
-      '</section>' + (L.phone ? '' : profilePreviewHTML());
+    s += '<section class="sect" data-sect="look"><h3>Look</h3>' + czControlsHTML(DRAFT) + '</section>';
   }
   return pageHTML({ kind:'person', t:personTheme(pid), cover:profileEditing(pid, asOther) && PF ? profilePhotoHTML() : personCover(pid, 96),
     eyebrow:eye, title:p.displayName || 'You',
@@ -5595,9 +5593,6 @@ function profilePreviewHTML(){
 }
 /* on a phone: Preview shows the page, Back to editing returns to the form as you left it */
 function pfPreview(on){
-  if (PF && PF.mode === 'edit' && PEDIT && !$('pfbody')){
-    captureProfileEdit(); PF.previewing = !!on; render(); return;
-  }
   var d = DLGS[DLGS.length-1]; if (!d || !PF || PF.mode !== 'edit') return;
   if (on){
     pfSync(); PF.previewing = true;
@@ -5710,7 +5705,7 @@ function beginProfileEdit(){
   var p = PEOPLE.self;
   PEDIT = true; PNAME = null; PBIO = null;
   PF = { mode:'edit', name:p.displayName || '', handle:p.handle || '', photo:(PTHEME.self && PTHEME.self.image) || null,
-         about:p.bio || '', skills:(p.skills || []).slice(), cities:profileLocations(p).slice(), langs:profileLanguages(p).slice(), previewing:false };
+         about:p.bio || '', skills:(p.skills || []).slice(), cities:profileLocations(p).slice(), langs:profileLanguages(p).slice() };
   DRAFT = Object.assign({ form:'profile', kind:'person', editing:'self', lookTouched:false }, lookDraft(PTHEME.self ? asLook(PTHEME.self) : plainTheme('◉')));
   var top = S.stack[S.stack.length - 1];
   if (top && top.type === 'person' && top.id === 'self') render();

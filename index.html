@@ -1907,6 +1907,10 @@ var PFOLLOW  = {};
 EVENTS['evt-chronicle-supper'] = { id:'evt-chronicle-supper', title:'Midsummer supper', date:'2026-06-20',
   description:'A long table after the last light, the year the ridge stayed warm.', hostName:'You', privacy:'only_me',
   ownerIds:['self'], kind:'seed', city:'Stockholm' };
+/* A past Going with no stored role. Anna hosts it, so it is Attended, not Hosted. The date is fixed, past the fixture shift. */
+EVENTS['evt-chronicle-going'] = { id:'evt-chronicle-going', title:'Late quay supper', date:'2026-08-02',
+  description:'One long table on the quay after the boats were in.', hostName:'Anna Vale', privacy:'everyone',
+  ownerIds:['p-anna'], kind:'seed', city:'Stockholm' };
 EVENTS['evt-harbour-walk'] = { id:'evt-harbour-walk', title:'Harbour night walk', date:shiftIso(TODAY_ISO, 21),
   description:'Along the quay after the lamps are on.', hostName:'Anna Vale', privacy:'everyone',
   ownerIds:['p-anna'], kind:'seed', city:'Stockholm' };
@@ -3189,7 +3193,8 @@ function goingOf(pid){
   if (pid === 'self') return S.loggedIn ? Object.keys(RSVP).filter(function(k){ return RSVP[k] === 'going' && EVENTS[k]; }).map(function(k){ return EVENTS[k]; }) : [];
   return allEvents().filter(function(e){ return canSeeEvent(e) && attendees(e.id).indexOf(pid) >= 0; });
 }
-/* Chronicle is past events only. An explicit role wins. With none, the creator is host, and Went is attendee. */
+/* Chronicle is past events only. A stored role wins. With none, the creator is host.
+   Went, or Going with no role, is attendee. Interested alone is not. Going is display only. */
 var CHRONICLE_ROLE = { host:1, cocreator:1, attendee:1 };
 var CHRONICLE_LABEL = { host:'Hosted', cocreator:'Co-created', attendee:'Attended' };
 var CHRONICLE_PICK = [['host','Host','You put it on.'], ['cocreator','Co-creator','You helped make it. A DJ, a volunteer, or other crew.'], ['attendee','Attendee','You were there.']];
@@ -3214,6 +3219,7 @@ function chronicleRole(pid, e){
   if (explicit) return explicit;
   if (hostsEvent(pid, e)) return 'host';
   if (wentOf(pid, e.id)) return 'attendee';
+  if (isMe(pid) && RSVP[e.id] === 'going') return 'attendee';
   return null;
 }
 function chronicleOf(pid){
@@ -5763,7 +5769,7 @@ function demoAcct(){
   var a = blankAcct({ displayName:m.displayName, handle:m.handle, bio:m.bio, skills:m.skills.slice(), cities:m.cities.slice(), city:m.city });
   /* Three pinned tags lead. The rest wrap the tag row. Location and language stay out of that row. */
   a.profile.skills = ['p:EVENT PRODUCTION/PRODUCING','p:c:role:Host','p:c:interest:Sauna','c:skill:Cooking','c:skill:Sound','c:skill:Building','c:skill:DJ','c:skill:Photographer','c:scene:Burns','c:scene:Techno','c:scene:Retreats','c:interest:Workshops','c:interest:Camping','c:location:Berlin','c:language:Swedish','c:language:English'];
-  a.rsvp = { 'evt-deep-listening':'interested', 'evt-fill-0':'going', 'evt-fill-6':'going', 'evt-harbour-walk':'going' };
+  a.rsvp = { 'evt-deep-listening':'interested', 'evt-fill-0':'going', 'evt-fill-6':'going', 'evt-harbour-walk':'going', 'evt-chronicle-going':'going' };
   /* Warehouse is only_me and the demo is its host, so the demo can see it. The role files it as co-created.
      Camp kitchen dinner is friends-only and its host does not follow the demo, so it would never appear.
      Deep Listening is still ahead, so the cocreator role fills Upcoming rather than Chronicle. */

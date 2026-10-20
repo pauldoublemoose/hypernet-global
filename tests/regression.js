@@ -2628,6 +2628,34 @@ async function overflowEverywhere(p, label){
     }
   }
 
+  /* A past Going with no stored role is Attended. A stored cocreator role on that same event is only Co-created. */
+  {
+    const places = c => ev(c, () => {
+      const title = 'Late quay supper';
+      const hit = [...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].filter(s => s.textContent.indexOf(title) >= 0).map(s => s.getAttribute('data-role'));
+      return { hit, status: RSVP['evt-chronicle-going'] || null, role: ROLE['evt-chronicle-going'] || null, went: !!WENT['evt-chronicle-going'] };
+    });
+    for (const kind of ['desk', 'phone']){
+      const c = await ctx(kind);
+      await open(c, '', true);
+      await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+      await c.evaluate(() => { openItem('person', 'self'); }); await c.waitForTimeout(400);
+      const going = await places(c);
+      ok(going.status === 'going' && !going.role && !going.went && going.hit.length === 1 && going.hit[0] === 'attendee',
+         kind + ': a past Going event with no role is under Attended, once ' + JSON.stringify(going));
+      await c.evaluate(() => { ROLE['evt-chronicle-going'] = 'cocreator'; render(); }); await c.waitForTimeout(200);
+      const crew = await places(c);
+      ok(crew.role === 'cocreator' && crew.hit.length === 1 && crew.hit[0] === 'cocreator',
+         kind + ': the same event with a stored cocreator role is only under Co-created ' + JSON.stringify(crew));
+      await c.evaluate(() => { delete ROLE['evt-chronicle-going']; RSVP['evt-chronicle-going'] = 'interested'; render(); }); await c.waitForTimeout(200);
+      const keen = await places(c);
+      ok(!keen.role && keen.status === 'interested' && keen.hit.length === 0,
+         kind + ': Interested alone leaves that event out of Chronicle ' + JSON.stringify(keen));
+      ok(!c.errors.length, kind + ': no console errors (chronicle going) ' + c.errors.join(' '));
+      await c.context().close();
+    }
+  }
+
   /* ---------------- tablet ---------------- */
   const t = await ctx('tab');
   await open(t, '', true);

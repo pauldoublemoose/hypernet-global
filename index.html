@@ -1907,6 +1907,10 @@ var PFOLLOW  = {};
 EVENTS['evt-chronicle-supper'] = { id:'evt-chronicle-supper', title:'Midsummer supper', date:'2026-06-20',
   description:'A long table after the last light, the year the ridge stayed warm.', hostName:'You', privacy:'only_me',
   ownerIds:['self'], kind:'seed', city:'Stockholm' };
+/* A past Going with no stored role. Anna hosts it, so it is Attended, not Hosted. The date is fixed, past the fixture shift. */
+EVENTS['evt-chronicle-going'] = { id:'evt-chronicle-going', title:'Late quay supper', date:'2026-08-02',
+  description:'One long table on the quay after the boats were in.', hostName:'Anna Vale', privacy:'everyone',
+  ownerIds:['p-anna'], kind:'seed', city:'Stockholm' };
 EVENTS['evt-harbour-walk'] = { id:'evt-harbour-walk', title:'Harbour night walk', date:shiftIso(TODAY_ISO, 21),
   description:'Along the quay after the lamps are on.', hostName:'Anna Vale', privacy:'everyone',
   ownerIds:['p-anna'], kind:'seed', city:'Stockholm' };
@@ -3206,7 +3210,8 @@ function goingOf(pid){
   if (pid === 'self') return S.loggedIn ? Object.keys(RSVP).filter(function(k){ return RSVP[k] === 'going' && EVENTS[k]; }).map(function(k){ return EVENTS[k]; }) : [];
   return allEvents().filter(function(e){ return canSeeEvent(e) && attendees(e.id).indexOf(pid) >= 0; });
 }
-/* Chronicle is past events only. An explicit role wins. With none, the creator is host, and Went is attendee. */
+/* Chronicle is past events only. A stored role wins. With none, the creator is host.
+   Went, or Going with no role, is attendee. Interested alone is not. Going is display only. */
 var CHRONICLE_ROLE = { host:1, cocreator:1, attendee:1 };
 var CHRONICLE_LABEL = { host:'Hosted', cocreator:'Co-created', attendee:'Attended' };
 var CHRONICLE_PICK = [['host','Host','You put it on.'], ['cocreator','Co-creator','You helped make it. A DJ, a volunteer, or other crew.'], ['attendee','Attendee','You were there.']];
@@ -3231,6 +3236,7 @@ function chronicleRole(pid, e){
   if (explicit) return explicit;
   if (hostsEvent(pid, e)) return 'host';
   if (wentOf(pid, e.id)) return 'attendee';
+  if (isMe(pid) && RSVP[e.id] === 'going') return 'attendee';
   return null;
 }
 function chronicleOf(pid){
@@ -3345,7 +3351,7 @@ function fileChronicle(id, role){
   if (!EVENTS[id] || !knownRole(role)) return;
   ROLE[id] = role;
   WENT[id] = true;
-  if (ONLINE) HNAPI.rsvp(id);
+  if (ONLINE) HNAPI.rsvp(id, { role: role });
   schedulePersist();
 }
 /* the account behind a profile. 'self' is whoever is logged in. */
@@ -3419,6 +3425,19 @@ function personHTML(pid, asOther){
         '<div class="r-meta">open until '+esc(fmtDate(c.expiresAt))+'</div></div></div>';
     }).join(''));
   var tags = tagsSection(pid, asOther);
+  /* phone Preview is the page as others see it; Back to editing returns to the fields. Nothing is saved until Done. */
+  if (me && PEDIT && PF && PF.previewing && L.phone){
+    return '<article class="canvas pg pg-person" data-page="person"><p class="pvnote">This is your profile as others see it. Nothing is saved yet.</p>' +
+      profilePreviewHTML() +
+      '<div class="actbar"><div class="verbs"><button type="button" class="btn" data-act="pfpreview" data-id="off">'+ic('back')+'Back to editing</button>' +
+      '<button type="button" class="btn primary" data-act="profiledone">'+ic('check')+'Done</button></div></div></article>';
+  }
+  /* the look used to live in the Edit profile dialog. It is on the page now, and Done is what stores it. */
+  if (profileEditing(pid, asOther) && DRAFT && DRAFT.form === 'profile'){
+    s += '<section class="sect" data-sect="look"><h3>Look</h3>' + czControlsHTML(DRAFT) +
+      (L.phone ? '<div class="ptagadd"><button type="button" class="btn" data-act="pfpreview" data-id="on">'+ic('user')+'Preview</button></div>' : '') +
+      '</section>' + (L.phone ? '' : profilePreviewHTML());
+  }
   return pageHTML({ kind:'person', t:personTheme(pid), cover:profileEditing(pid, asOther) && PF ? profilePhotoHTML() : personCover(pid, 96),
     eyebrow:eye, title:p.displayName || 'You',
     toolbar:bar, facts:facts, pre:tags ? '<div class="ptagpre">'+tags+'</div>' : '', body:s, more:personHeadBits(pid, asOther) });
@@ -3717,6 +3736,15 @@ function homeSections(){
     });
     return { id:id, title:shelfTitle(id), items:items };
   }).filter(function(sec){ return sec.items.length; });
+}
+/* the row is sized to the list as it is, scrollbar included. cw is the container before that bar. */
+function overviewFit(){
+  var lb = $('listbody'); if (!lb) return null;
+  var cs = getComputedStyle(lb);
+  var inner = lb.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0) - 32;
+  if (inner < 152) return null;
+  var cols = Math.max(1, Math.floor((inner + 16) / (152 + 16)));
+  return { cols:cols, sq:Math.floor((inner - (cols - 1) * 16) / cols) };
 }
 function shelvesHTML(){
   var h = '<div class="shelves">', n = shelfShown(), px = L.phone || !L.fit ? 150 : L.fit.sq;
@@ -4501,9 +4529,15 @@ function calloutCity(c){
   var ev = EVENTS[calloutEventId(c)]; if (ev) return whereOf(ev);
   var h = c.hostId && PEOPLE[c.hostId]; return h ? (citiesOf(h)[0] || '') : '';
 }
+/* a call out's skill is still the old id. A profile tag matches it by that id or by the same label. */
+function profileHasSkill(skills, sk){
+  if (!sk) return false;
+  var want = fold(skillLabel(sk));
+  return (skills || []).some(function(v){ return v === sk || fold(skillLabel(v)) === want; });
+}
 function calloutWhy(c, sc, fof){
   var me = PEOPLE['self'], sk = calloutSkill(c), city = calloutCity(c);
-  if (S.loggedIn && sk && (me.skills || []).indexOf(sk) >= 0) return { k:'skill', t:'Matches your skill: ' + skillLabel(sk) };
+  if (S.loggedIn && profileHasSkill(me.skills, sk)) return { k:'skill', t:'Matches your skill: ' + skillLabel(sk) };
   if (S.loggedIn && c.hostId && PFOLLOW[c.hostId]) return { k:'follow', t:'' };
   if (S.loggedIn && c.hostId && fof[c.hostId]) return { k:'fof', t:'Via ' + fof[c.hostId].map(function(v){ return whoName(v); }).slice(0, 2).join(' and ') };
   if (S.loggedIn && city && citiesOf(me).some(function(x){ return fold(x) === fold(city); })) return { k:'city', t:'In your city: ' + city };
@@ -5584,6 +5618,9 @@ function profilePreviewHTML(){
 }
 /* on a phone: Preview shows the page, Back to editing returns to the form as you left it */
 function pfPreview(on){
+  if (PF && PF.mode === 'edit' && PEDIT && !$('pfbody')){
+    captureProfileEdit(); PF.previewing = !!on; render(); return;
+  }
   var d = DLGS[DLGS.length-1]; if (!d || !PF || PF.mode !== 'edit') return;
   if (on){
     pfSync(); PF.previewing = true;
@@ -5696,7 +5733,8 @@ function beginProfileEdit(){
   var p = PEOPLE.self;
   PEDIT = true; PNAME = null; PBIO = null;
   PF = { mode:'edit', name:p.displayName || '', handle:p.handle || '', photo:(PTHEME.self && PTHEME.self.image) || null,
-         about:p.bio || '', skills:(p.skills || []).slice(), cities:profileLocations(p).slice(), langs:profileLanguages(p).slice() };
+         about:p.bio || '', skills:(p.skills || []).slice(), cities:profileLocations(p).slice(), langs:profileLanguages(p).slice(), previewing:false };
+  DRAFT = Object.assign({ form:'profile', kind:'person', editing:'self', lookTouched:false }, lookDraft(PTHEME.self ? asLook(PTHEME.self) : plainTheme('◉')));
   var top = S.stack[S.stack.length - 1];
   if (top && top.type === 'person' && top.id === 'self') render();
   else openItem('person', 'self');
@@ -5718,14 +5756,13 @@ function finishProfileEdit(){
   var cities = PF.cities.slice();
   writeProfile({ displayName:PF.name.trim(), handle:normHandle(PF.handle), bio:String(PF.about || '').trim(),
     skills:profileSkillsForSave(PF.skills || PEOPLE.self.skills, PF.langs), cities:cities, city:cities.length ? cities[0].toUpperCase() : '' });
-  var prev = (PTHEME.self && PTHEME.self.image) || null;
-  if (PF.photo !== prev){
-    var lk = asLook(Object.assign({}, PTHEME.self || plainTheme('◉'), { image:PF.photo || null }));
-    if (isPlain(lk) && !lk.image) lk = null;
-    if (lk) PTHEME.self = lk; else delete PTHEME.self;
-    if (ONLINE) HNAPI.saveMyLook();
-  }
+  var prev = (PTHEME.self && PTHEME.self.image) || null, photo = PF.photo !== prev;
+  var cz = DRAFT && DRAFT.form === 'profile' && DRAFT.lookTouched, lk = null;
+  if (cz) lk = draftLook(Object.assign({}, DRAFT, { image:PF.photo || null }));
+  else if (photo){ lk = asLook(Object.assign({}, PTHEME.self || plainTheme('◉'), { image:PF.photo || null })); if (isPlain(lk) && !lk.image) lk = null; }
+  if (cz || photo){ if (lk) PTHEME.self = lk; else delete PTHEME.self; if (ONLINE) HNAPI.saveMyLook(); }
   PEDIT = false; PNAME = null; PBIO = null; PF = null;
+  if (DRAFT && DRAFT.form === 'profile') DRAFT = null;
   render();
   toast('Profile saved', '');
 }
@@ -5749,7 +5786,7 @@ function demoAcct(){
   var a = blankAcct({ displayName:m.displayName, handle:m.handle, bio:m.bio, skills:m.skills.slice(), cities:m.cities.slice(), city:m.city });
   /* Three pinned tags lead. The rest wrap the tag row. Location and language stay out of that row. */
   a.profile.skills = ['p:EVENT PRODUCTION/PRODUCING','p:c:role:Host','p:c:interest:Sauna','c:skill:Cooking','c:skill:Sound','c:skill:Building','c:skill:DJ','c:skill:Photographer','c:scene:Burns','c:scene:Techno','c:scene:Retreats','c:interest:Workshops','c:interest:Camping','c:location:Berlin','c:language:Swedish','c:language:English'];
-  a.rsvp = { 'evt-deep-listening':'interested', 'evt-fill-0':'going', 'evt-fill-6':'going', 'evt-harbour-walk':'going' };
+  a.rsvp = { 'evt-deep-listening':'interested', 'evt-fill-0':'going', 'evt-fill-6':'going', 'evt-harbour-walk':'going', 'evt-chronicle-going':'going' };
   /* Warehouse is only_me and the demo is its host, so the demo can see it. The role files it as co-created.
      Camp kitchen dinner is friends-only and its host does not follow the demo, so it would never appear.
      Deep Listening is still ahead, so the cocreator role fills Upcoming rather than Chronicle. */
@@ -5825,6 +5862,7 @@ function logIn(){
 function doLogout(){
   if (ONLINE){ HNAPI.logout(); return; }
   PEDIT = false; PNAME = null; PBIO = null; PF = null;
+  if (DRAFT && DRAFT.form === 'profile') DRAFT = null;
   if (S.acct) ACCTS[S.acct] = captureAcct();
   S.loggedIn = false; S.acct = null; loadAcct(null); syncAcctPeople();
   S.chatOpen = null; S.rightOpen = false;
@@ -6378,6 +6416,7 @@ function czPreviews(dlg){
 /* a colour change repaints only what shows it, so a picker that is open stays open */
 function czRefresh(except){
   var dlg = DLGS[DLGS.length-1];
+  if (!(dlg && dlg.querySelector('[data-czlook]')) && PEDIT && DRAFT && DRAFT.form === 'profile'){ render(); return; }
   if (!dlg || !DRAFT || !dlg.querySelector('[data-czlook]')) return;
   ['c1','c2','c3'].forEach(function(k){ var v = DRAFT[k] || (k === 'c1' ? window.HN_PLAIN.bg : '');
     dlg.querySelectorAll('[data-cz="'+k+'"]').forEach(function(n){ if (n !== except && v && n.value !== v) n.value = v; }); });
@@ -6389,7 +6428,7 @@ function czRefresh(except){
 /* the controls change shape (a colour added or taken away, a starting point, a picture): draw them again in place */
 function czRepaint(){
   var dlg = DLGS[DLGS.length-1], z = dlg && dlg.querySelector('[data-czlook]');
-  if (!z){ paintWiz(); return; }
+  if (!z){ if (PEDIT && DRAFT && DRAFT.form === 'profile'){ render(); return; } paintWiz(); return; }
   z.innerHTML = czControlsInner(DRAFT); czPreviews(dlg); refreshWizFoot(); schedulePersist();
 }
 function czSetColor(k, v, from){
@@ -8597,6 +8636,10 @@ function render(){
   if (!L.phone || scr === 'center'){
     renderCHead();
     if (isCal()) renderCalendar(); else renderList();
+  }
+  if (!L.phone && isOverview()){
+    var fit = overviewFit();
+    if (fit && (!L.fit || fit.sq !== L.fit.sq || fit.cols !== L.fit.cols)){ L.fit = fit; renderShelves(); }
   }
   renderDetail();
   fitProfileTags();

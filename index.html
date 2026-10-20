@@ -3328,7 +3328,7 @@ function fileChronicle(id, role){
   if (!EVENTS[id] || !knownRole(role)) return;
   ROLE[id] = role;
   WENT[id] = true;
-  if (ONLINE) HNAPI.rsvp(id);
+  if (ONLINE) HNAPI.rsvp(id, { role: role });
   schedulePersist();
 }
 /* the account behind a profile. 'self' is whoever is logged in. */

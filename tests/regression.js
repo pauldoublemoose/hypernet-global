@@ -2548,6 +2548,114 @@ async function overflowEverywhere(p, label){
     await c.context().close();
   }
 
+  /* RSVP role: Going, Interested, Went and a shift must not send role, or a stored role is cleared.
+     Add past event still sends Host, Co-creator and Attendee. The new event is yours, so the host check allows it. */
+  {
+    const ME = '00000000-0000-4000-8000-000000000001', EV = '00000000-0000-4000-8000-000000000101';
+    const person = { id:ME, handle:'hana', displayName:'Hana Cerna', bio:'', skills:[], cities:['Brno'], look:null, lastSeenAt:null, createdAt:'2026-09-01T10:00:00Z' };
+    const boot = { hypernet:1, me:person, login:null, people:[person], follows:[], promotions:[], horizons:[], hzFollows:[], callouts:[], replies:[], activity:[], chats:[],
+      events:[{ id:EV, slug:'shift-night', title:'Shift night', startsOn:'2026-10-20', endsOn:null, startTime:null, endTime:null,
+        timezone:'Europe/Prague', hostId:ME, hostName:'Hana Cerna', description:'x', kind:'meetup', privacy:'everyone', city:'Brno', region:null, country:'CZ', venue:null, access:null,
+        whatToBring:[], details:{ blocks:[{ label:'Door', date:'2026-10-20', time:'18:00' }] }, look:null, source:'user', previousEditionId:null }],
+      rsvps:[{ personId:ME, eventId:EV, status:'going', went:false, shiftIndex:null, role:'host', updatedAt:'2026-09-30T10:00:00Z' }] };
+    const filePast = async (c, role, title) => {
+      await c.evaluate(() => { openItem('person', 'self'); beginProfileEdit(); });
+      await c.waitForTimeout(300);
+      await c.evaluate(() => document.querySelector('[data-act="addpastevent"]').click());
+      await c.waitForTimeout(250);
+      await c.check('.dlg input[name="ch-role"][value="' + role + '"]');
+      await c.click('.dlg [data-act="chronicle-go"]');
+      await c.waitForTimeout(300);
+      await c.fill('#w-t', title);
+      await c.fill('#w-c', 'Brno');
+      await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]');
+      await c.waitForTimeout(200);
+      await c.fill('#w-desc', 'A night that already happened.');
+      await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]');
+      await c.waitForTimeout(200);
+      await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]');
+      await c.waitForTimeout(700);
+    };
+    for (const kind of ['desk', 'phone']){
+      const c = await ctx(kind);
+      const puts = [], posts = [];
+      await c.addInitScript(() => { window.HN_BACKEND = { branch:'test' }; });
+      await c.route('**/api/**', route => {
+        const u = new (require('url').URL)(route.request().url()), req = route.request();
+        const j = (code, b) => route.fulfill({ status:code, contentType:'application/json', body:JSON.stringify(b) });
+        if (req.method() === 'PUT' && /\/rsvp$/.test(u.pathname)){
+          const body = req.postDataJSON(); puts.push(body);
+          const role = Object.prototype.hasOwnProperty.call(body, 'role') ? body.role : 'host';
+          return j(200, { rsvp:{ status:body.status, went:!!body.went, shiftIndex:body.shiftIndex == null ? null : body.shiftIndex, role:role } });
+        }
+        if (req.method() === 'POST' && u.pathname === '/api/events'){
+          const body = req.postDataJSON(); posts.push(body);
+          return j(201, { event:{ id:body.id, slug:'past', hostId:ME, title:body.title, startsOn:body.startsOn } });
+        }
+        if (u.pathname === '/api/bootstrap') return j(200, boot);
+        if (/\/api\/chats/.test(u.pathname)) return j(200, { chats:[] });
+        return j(200, {});
+      });
+      await c.goto(URL + '#/home'); await c.waitForTimeout(800);
+      const before = await ev(c, id => ROLE[id], EV);
+      await c.evaluate(id => setRSVP(id, 'going'), EV);
+      await c.evaluate(id => setRSVP(id, 'interested'), EV);
+      await c.evaluate(id => setWent(id), EV);
+      await c.evaluate(id => takeShift(id, 0), EV);
+      await c.waitForTimeout(400);
+      const after = await ev(c, id => ({ role:ROLE[id], status:RSVP[id] || null, went:!!WENT[id], shift:SHIFT[id] }), EV);
+      const toggles = puts.slice();
+      ok(before === 'host' && after.role === 'host' && toggles.length === 4 && toggles.every(b => !Object.prototype.hasOwnProperty.call(b, 'role')) &&
+         after.status === 'going' && after.went && after.shift === 0,
+         kind + ': Going, Interested, Went and a shift keep a stored host role and do not send role ' + JSON.stringify({ before, after, toggles }));
+      const filed = {};
+      for (const [role, title] of [['host', 'Old host night'], ['cocreator', 'Old crew night'], ['attendee', 'Old guest night']]){
+        const n = puts.length, pn = posts.length;
+        await filePast(c, role, title);
+        const got = await ev(c, title => {
+          const id = Object.keys(EVENTS).find(k => EVENTS[k] && EVENTS[k].title === title);
+          const sec = id && [...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].find(s => s.getAttribute('data-role') === ROLE[id] && s.textContent.indexOf(title) >= 0);
+          return { id:id || null, role:id ? ROLE[id] : null, went:!!(id && WENT[id]), mine:!!(id && MYEVENTS.indexOf(id) >= 0), host:!!(id && EVENTS[id].hostAcct === S.acct), shown:!!sec };
+        }, title);
+        filed[role] = { got, put:puts.slice(n), post:posts[pn] || null };
+      }
+      ok(['host', 'cocreator', 'attendee'].every(role => {
+        const f = filed[role];
+        return f.got.role === role && f.got.went && f.got.mine && f.got.host && f.got.shown && f.put.length === 1 && f.put[0].role === role && f.post && !('hostId' in f.post);
+      }), kind + ': Add past event files Host, Co-creator and Attendee on an event you host ' + JSON.stringify(filed));
+      ok(!c.errors.length, kind + ': no console errors (rsvp role) ' + c.errors.join(' '));
+      await c.context().close();
+    }
+  }
+
+  /* A past Going with no stored role is Attended. A stored cocreator role on that same event is only Co-created. */
+  {
+    const places = c => ev(c, () => {
+      const title = 'Late quay supper';
+      const hit = [...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].filter(s => s.textContent.indexOf(title) >= 0).map(s => s.getAttribute('data-role'));
+      return { hit, status: RSVP['evt-chronicle-going'] || null, role: ROLE['evt-chronicle-going'] || null, went: !!WENT['evt-chronicle-going'] };
+    });
+    for (const kind of ['desk', 'phone']){
+      const c = await ctx(kind);
+      await open(c, '', true);
+      await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+      await c.evaluate(() => { openItem('person', 'self'); }); await c.waitForTimeout(400);
+      const going = await places(c);
+      ok(going.status === 'going' && !going.role && !going.went && going.hit.length === 1 && going.hit[0] === 'attendee',
+         kind + ': a past Going event with no role is under Attended, once ' + JSON.stringify(going));
+      await c.evaluate(() => { ROLE['evt-chronicle-going'] = 'cocreator'; render(); }); await c.waitForTimeout(200);
+      const crew = await places(c);
+      ok(crew.role === 'cocreator' && crew.hit.length === 1 && crew.hit[0] === 'cocreator',
+         kind + ': the same event with a stored cocreator role is only under Co-created ' + JSON.stringify(crew));
+      await c.evaluate(() => { delete ROLE['evt-chronicle-going']; RSVP['evt-chronicle-going'] = 'interested'; render(); }); await c.waitForTimeout(200);
+      const keen = await places(c);
+      ok(!keen.role && keen.status === 'interested' && keen.hit.length === 0,
+         kind + ': Interested alone leaves that event out of Chronicle ' + JSON.stringify(keen));
+      ok(!c.errors.length, kind + ': no console errors (chronicle going) ' + c.errors.join(' '));
+      await c.context().close();
+    }
+  }
+
   /* ---------------- tablet ---------------- */
   const t = await ctx('tab');
   await open(t, '', true);

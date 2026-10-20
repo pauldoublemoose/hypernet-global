@@ -6795,10 +6795,10 @@ function wordsHTML(d, miss){
     '<div class="field"><label for="w-b">Bring'+WZOPT+'</label><textarea id="w-b" data-cz="bring" rows="3" placeholder="A towel&#10;Something warm for after">'+esc(d.bring)+'</textarea></div>' +
     schedFieldHTML(d);
 }
-/* the steps, as short tabs that always fit (owner, 2026-10-05: the "1 · Basics / 2 · Words / 3 · Look optional" tabs
+/* the steps, as short tabs that always fit (owner, 2026-10-05: the "1 · Basics / 2 · About / 3 · Look optional" tabs
    overflowed on a phone): back is always open, forward only past steps that have everything they need (2026-10-04) */
 function wizStepsHTML(d){
-  return '<div class="wizsteps" role="tablist" aria-label="Steps">' + ['Basics', 'Words', 'Look'].map(function(l, i){
+  return '<div class="wizsteps" role="tablist" aria-label="Steps">' + ['Basics', 'About', 'Look'].map(function(l, i){
     var on = d.step === i + 1, open = on || wizReach(d, i + 1);
     return '<button type="button" role="tab" class="ws'+(on?' on':'')+'" aria-selected="'+on+'"'+(open ? '' : ' aria-disabled="true"')+' data-act="wizstep" data-id="'+(i+1)+'">' +
       '<span class="wsn" aria-hidden="true">'+(i+1)+'</span>'+l+'</button>'; }).join('') + '</div>';
@@ -6812,7 +6812,7 @@ function wizBodyHTML(){
   var d = DRAFT;
   if (d.form === 'horizon') return editHorizonBodyHTML();
   var miss = d.showErr ? wizMissingNow(d) : {};
-  if (d.mode === 'edit') return edWrap(edSec('Details', basicsHTML(d, miss, false)) + edSec('Words', wordsHTML(d, miss)) +
+  if (d.mode === 'edit') return edWrap(edSec('Details', basicsHTML(d, miss, false)) + edSec('About', wordsHTML(d, miss)) +
                                        edSec('Who can see it', privacyHTML(d)) + edSec('Look', czControlsHTML(d)), customizePreviewHTML());
   var h = wizStepsHTML(d);
   if (d.step === 1) h += basicsHTML(d, miss, true);
@@ -6822,7 +6822,7 @@ function wizBodyHTML(){
 }
 /* ---- what each step needs before you can go on (owner, 2026-10-04: "not possible to go to the next step until you have
    everything filled out"). Basics: a title, a start date (a new event: today or later), an end on or after the start if
-   there is one, and where it is — a place, or Online. Words: a description. Look: nothing, it is optional. ---- */
+   there is one, and where it is — a place, or Online. About: a description. Look: nothing, it is optional. ---- */
 function wizEvent(d){ return !!d && (!d.editing || d.mode === 'edit'); }
 function wizMissing(d, step){
   var m = {};
@@ -6870,7 +6870,7 @@ function wizSyncErrs(){
     if (inp){ if (msg) inp.setAttribute('aria-invalid', 'true'); else inp.removeAttribute('aria-invalid'); }
   });
 }
-/* the footer: one primary action at a time, always in the same place — Next on Basics and Words, Publish event on Look
+/* the footer: one primary action at a time, always in the same place — Next on Basics and About, Publish event on Look
    (owner, 2026-10-05: "Publish event button is not looking nice": four equal buttons in one row on a phone). Back
    beside it; what it is waiting for in a line of its own; no Cancel — × in the title bar closes and keeps the draft */
 function wizFootHTML(){

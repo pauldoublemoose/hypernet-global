@@ -201,7 +201,7 @@ async function join(p, name, handle){
   await p.evaluate(() => loginDialog()); await p.waitForTimeout(150);
   await p.fill('#pf-name', name); await p.fill('#pf-handle', handle); await p.click('#pfsave'); await p.waitForTimeout(300);
 }
-/* the New event wizard filled the way a host has to (2026-10-04): Basics, Next, Words; then Next, Publish unless told not to */
+/* the New event wizard filled the way a host has to (2026-10-04): Basics, Next, About; then Next, Publish unless told not to */
 async function newEvent(c, o){
   await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
   await c.fill('#w-t', o.title); await c.fill('#w-d', o.date);
@@ -1416,7 +1416,7 @@ async function overflowEverywhere(p, label){
       invalid:[...document.querySelectorAll('.dlg [aria-invalid="true"]')].map(x => x.id), tabs:[...document.querySelectorAll('.dlg .wizsteps .ws')].map(t => t.getAttribute('aria-disabled') === 'true' ? 'off' : 'on'),
       focus:document.activeElement && document.activeElement.id, toast:(document.getElementById('toasts') || {}).textContent || '' }));
     const f0 = await foot();
-    /* 2026-10-05: one primary at a time — Next on Basics and Words, Publish event on Look; no Cancel (× keeps the draft) */
+    /* 2026-10-05: one primary at a time — Next on Basics and About, Publish event on Look; no Cancel (× keeps the draft) */
     ok(f0.step === 1 && f0.btns.join('|') === 'Next:off' && /title.*start date.*where/.test(f0.need) && !f0.errs.length && f0.tabs.join() === 'on,off,off',
        kind + ': an empty Basics step — Next is off, no Publish yet, it says what is still needed, no errors before you try ' + JSON.stringify(f0));
     /* trying anyway shows what is missing inline, at the fields, and stays */
@@ -1438,9 +1438,9 @@ async function overflowEverywhere(p, label){
     const f3 = await foot();
     ok(!f3.errs.length && f3.btns.indexOf('Next') >= 0 && !f3.need && await ev(c, () => document.getElementById('w-c').disabled), kind + ': Online counts as where it is — Next is on, nothing missing ' + JSON.stringify(f3));
     await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(250);
-    /* Words needs a description; Publish waits for it; Bring stays optional */
+    /* About needs a description; Publish waits for it; Bring stays optional */
     const f4 = await foot();
-    ok(f4.step === 2 && f4.btns.join('|') === 'Back|Next:off' && /description/.test(f4.need) && !f4.errs.length && f4.tabs.join() === 'on,on,off', kind + ': Words — Next waits for a description, Back beside it ' + JSON.stringify(f4));
+    ok(f4.step === 2 && f4.btns.join('|') === 'Back|Next:off' && /description/.test(f4.need) && !f4.errs.length && f4.tabs.join() === 'on,on,off', kind + ': About — Next waits for a description, Back beside it ' + JSON.stringify(f4));
     await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]', { force:true }); await c.waitForTimeout(250);
     const f5 = await foot();
     ok(f5.step === 2 && f5.errs.join() === 'desc' && f5.focus === 'w-desc' && await ev(c, () => !MYEVENTS.some(id => EVENTS[id] && EVENTS[id].title === 'Moth night')), kind + ': Next with no description says so inline and publishes nothing');
@@ -2318,7 +2318,7 @@ async function overflowEverywhere(p, label){
        (kind === 'desk' || host.acts.join() === 'editevent,newcalloutfor,evmore'), kind + ': an event you host has one Edit, no Customize ' + JSON.stringify(host));
     await c.evaluate(() => editEventDialog(S.stack[0].id)); await c.waitForTimeout(300);
     const ee = await ev(c, () => ({ secs:[...document.querySelectorAll('.dlg .edsec > h3')].map(h => h.textContent).join(), priv:!!document.querySelector('.dlg .edsec #w-p'), look:!!document.querySelector('.dlg [data-czlook] #cz-c1'), tabs:!!document.querySelector('.dlg .wizsteps') }));
-    ok(ee.secs === 'Details,Words,Who can see it,Look' && ee.priv && ee.look && !ee.tabs, kind + ': Edit event is one form of sections — details, words, who can see it, look ' + JSON.stringify(ee));
+    ok(ee.secs === 'Details,About,Who can see it,Look' && ee.priv && ee.look && !ee.tabs, kind + ': Edit event is one form of sections — details, about, who can see it, look ' + JSON.stringify(ee));
     if (kind === 'phone') await shot(c, 'editlook-edit-event-phone');
     await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
     /* your profile: one Edit profile; its colours, and your page as others see it beside it (Preview on a phone) */
@@ -2392,7 +2392,7 @@ async function overflowEverywhere(p, label){
     await c.click('.dlg [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(250);
     const w3 = await fit();
     await shot(c, 'editlook-wizard-footer-phone');
-    ok(w1.prim === 'Next' && w2.prim === 'Next' && w3.prim === 'Publish event' && [w1, w2, w3].every(w => w.rows === 1 && w.fit && w.inside) && w1.tabs === '1Basics,2Words,3Look' && w1.dis === 'none',
+    ok(w1.prim === 'Next' && w2.prim === 'Next' && w3.prim === 'Publish event' && [w1, w2, w3].every(w => w.rows === 1 && w.fit && w.inside) && w1.tabs === '1Basics,2About,3Look' && w1.dis === 'none',
        'phone: the wizard has one primary at a time (Next, Next, Publish event) on one row, tabs and buttons never overflow, waiting buttons not embossed ' + JSON.stringify([w1, w2, w3]));
     await c.click('.dlg .dbar [data-act="closedlg"]'); await c.waitForTimeout(250);
     const kept = await ev(c, () => ({ draft:!!FORMDRAFTS.event, toast:document.getElementById('toasts').textContent, discard:!!document.querySelector('#toasts [data-act="toastundo"]'), dbtn:document.querySelectorAll('.dbar .dbtn').length }));

@@ -4497,9 +4497,15 @@ function calloutCity(c){
   var ev = EVENTS[calloutEventId(c)]; if (ev) return whereOf(ev);
   var h = c.hostId && PEOPLE[c.hostId]; return h ? (citiesOf(h)[0] || '') : '';
 }
+/* a call out's skill is still the old id. A profile tag matches it by that id or by the same label. */
+function profileHasSkill(skills, sk){
+  if (!sk) return false;
+  var want = fold(skillLabel(sk));
+  return (skills || []).some(function(v){ return v === sk || fold(skillLabel(v)) === want; });
+}
 function calloutWhy(c, sc, fof){
   var me = PEOPLE['self'], sk = calloutSkill(c), city = calloutCity(c);
-  if (S.loggedIn && sk && (me.skills || []).indexOf(sk) >= 0) return { k:'skill', t:'Matches your skill: ' + skillLabel(sk) };
+  if (S.loggedIn && profileHasSkill(me.skills, sk)) return { k:'skill', t:'Matches your skill: ' + skillLabel(sk) };
   if (S.loggedIn && c.hostId && PFOLLOW[c.hostId]) return { k:'follow', t:'' };
   if (S.loggedIn && c.hostId && fof[c.hostId]) return { k:'fof', t:'Via ' + fof[c.hostId].map(function(v){ return whoName(v); }).slice(0, 2).join(' and ') };
   if (S.loggedIn && city && citiesOf(me).some(function(x){ return fold(x) === fold(city); })) return { k:'city', t:'In your city: ' + city };

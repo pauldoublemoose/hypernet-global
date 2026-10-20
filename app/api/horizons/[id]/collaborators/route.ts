@@ -1,5 +1,6 @@
 import { requirePerson } from "@/lib/auth";
 import { sqlx } from "@/lib/db";
+import { inviteBody } from "@/lib/horizon-invites";
 import { horizonAccess, horizonAfterEdit, horizonFor } from "@/lib/horizons";
 import { HttpError, json, readJson, route } from "@/lib/http";
 import { forbidden, idParam, notFound, type Ctx } from "@/lib/ids";
@@ -7,11 +8,11 @@ import { horizonCollaborator } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
-/** POST /api/horizons/:id/collaborators {personId}. The owner invites someone. A pending invite grants nothing. */
+/** POST /api/horizons/:id/collaborators {personId, role?}. The owner invites a collaborator or a follower. A pending invite grants nothing. */
 export const POST = route(async (req: Request, ctx: Ctx) => {
   const id = await idParam(ctx.params);
   const me = await requirePerson();
-  const { personId } = horizonCollaborator.parse(await readJson(req));
+  const { personId, role } = horizonCollaborator.parse(await readJson(req));
   const access = await horizonAccess(id, me.id);
   if (!access || access.role === "stranger") throw notFound("No horizon of yours with that id.");
   if (access.role === "collaborator") throw forbidden();
@@ -20,10 +21,13 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
   const person = (await sqlx().query(`select 1 from people where id = $1`, [personId])) as unknown[];
   if (!person.length) throw new HttpError(400, "invalid", "No person with that id.");
   const [a, z] = [me.id, personId].sort();
+  const stored = role === "follower" ? "follower" : null;
   await sqlx().query(
     `with ins as (
-       insert into horizon_collaborators (horizon_id, person_id, added_by)
-       values ($1, $2, $3)
+       insert into horizon_collaborators (horizon_id, person_id, added_by, role)
+       select $1::uuid, $2::uuid, $3::uuid, $6::text
+       where $6::text is distinct from 'follower'
+          or not exists (select 1 from horizon_follows hf where hf.horizon_id = $1 and hf.person_id = $2)
        on conflict (horizon_id, person_id) do nothing
        returning person_id
      ),
@@ -40,12 +44,12 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
                 (select id from new_thread),
                 (select t.id from dm_threads t where t.a = $4 and t.b = $5)
               ),
-              $3, 'pending', 'horizon_invite', $1
+              $3, $7, 'horizon_invite', $1
        where exists (select 1 from ins)
        returning id
      )
      select i.person_id from ins i left join lateral (select id from msg limit 1) m on true`,
-    [id, personId, me.id, a, z],
+    [id, personId, me.id, a, z, stored, inviteBody("pending", role)],
   );
   return json({ horizon: await horizonFor(id, me.id) });
 });
@@ -62,6 +66,8 @@ export const DELETE = route(async (req: Request, ctx: Ctx) => {
   if (access.role === "collaborator" && target !== me.id) throw forbidden();
   if (access.isPersonalDefault) throw new HttpError(400, "invalid", "A personal list cannot have collaborators.");
   const [a, z] = [me.id, target].sort();
+  const pending = inviteBody("pending", "collaborator");
+  const pendingFollower = inviteBody("pending", "follower");
   await sqlx().query(
     `with del as (
        delete from horizon_collaborators
@@ -70,18 +76,18 @@ export const DELETE = route(async (req: Request, ctx: Ctx) => {
      ),
      msg as (
        update messages m
-       set body = 'cancelled'
+       set body = case when m.body = $6 then $8 else $7 end
        from dm_threads t
        where exists (select 1 from del d where d.accepted_at is null)
          and m.thread_id = t.id
          and t.a = $3 and t.b = $4
-         and m.body = 'pending'
+         and m.body in ($5, $6)
          and m.card_type = 'horizon_invite'
          and m.card_id = $1
        returning m.id
      )
      select d.accepted_at from del d left join lateral (select id from msg limit 1) m on true`,
-    [id, target, a, z],
+    [id, target, a, z, pending, pendingFollower, inviteBody("cancelled", "collaborator"), inviteBody("cancelled", "follower")],
   );
   return json({ horizon: await horizonAfterEdit(id, me.id) });
 });

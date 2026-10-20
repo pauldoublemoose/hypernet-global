@@ -12,7 +12,9 @@ export const HORIZON_JSON = `json_build_object('id', h.id, 'slug', h.slug, 'owne
   'followers', (select count(*) from horizon_follows hf where hf.horizon_id = h.id),
   'collaboratorIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc where hc.horizon_id = h.id and hc.accepted_at is not null), '[]'),
   'pendingCollaboratorIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc
-                         where hc.horizon_id = h.id and hc.accepted_at is null and (h.owner_id = $2::uuid or hc.person_id = $2::uuid)), '[]'))`;
+                         where hc.horizon_id = h.id and hc.accepted_at is null and (hc.role is null or hc.role = 'collaborator') and (h.owner_id = $2::uuid or hc.person_id = $2::uuid)), '[]'),
+  'pendingFollowerIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc
+                         where hc.horizon_id = h.id and hc.accepted_at is null and hc.role = 'follower' and (h.owner_id = $2::uuid or hc.person_id = $2::uuid)), '[]'))`;
 
 export function horizonVisible(viewer: "$1" | "$2"): string {
   return `(h.published_at is not null or h.owner_id = ${viewer}::uuid or exists (select 1 from horizon_collaborators hc where hc.horizon_id = h.id and hc.person_id = ${viewer}::uuid and hc.accepted_at is not null))`;
@@ -48,6 +50,14 @@ export async function horizonAccess(horizonId: string, personId: string): Promis
   const row = rows[0];
   if (!row) return null;
   return { ownerId: row.owner_id, isPersonalDefault: row.is_personal_default, role: row.role };
+}
+
+export async function horizonFollowed(horizonId: string, personId: string): Promise<boolean> {
+  const rows = (await sqlx().query(
+    `select 1 from horizon_follows where horizon_id = $1 and person_id = $2`,
+    [horizonId, personId],
+  )) as unknown[];
+  return rows.length > 0;
 }
 
 /** "Autumn builds" → "autumn-builds-3fa9c1" (horizon slugs are unique). */

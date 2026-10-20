@@ -1,7 +1,7 @@
 import { requirePerson } from "@/lib/auth";
 import { currentPerson } from "@/lib/auth";
 import { pgCode, sqlx } from "@/lib/db";
-import { horizonAccess, horizonFor } from "@/lib/horizons";
+import { horizonAccess, horizonFollowed, horizonFor } from "@/lib/horizons";
 import { HttpError, json, readJson, route } from "@/lib/http";
 import { forbidden, idParam, j, notFound, type Ctx } from "@/lib/ids";
 import { horizonPatch } from "@/lib/validation";
@@ -17,13 +17,16 @@ export const GET = route(async (_req: Request, ctx: Ctx) => {
   return json({ horizon });
 });
 
-/** PATCH /api/horizons/:id {name?, description?, published?, look?, coverEventId?}. The owner edits all of it. A collaborator edits the name and the description. */
+/** PATCH /api/horizons/:id {name?, description?, published?, look?, coverEventId?}. The owner edits all of it. A collaborator edits the name and the description. A follower cannot. */
 export const PATCH = route(async (req: Request, ctx: Ctx) => {
   const id = await idParam(ctx.params);
   const me = await requirePerson();
   const b = horizonPatch.parse(await readJson(req));
   const access = await horizonAccess(id, me.id);
-  if (!access || access.role === "stranger") throw notFound("No horizon of yours with that id.");
+  if (!access || access.role === "stranger") {
+    if (access?.role === "stranger" && (await horizonFollowed(id, me.id))) throw forbidden();
+    throw notFound("No horizon of yours with that id.");
+  }
   const has = (k: string) => k in b;
   if (access.role === "collaborator" && (has("published") || has("look") || has("coverEventId"))) {
     throw forbidden("Only the owner can change who can see this, its look, or its cover.");

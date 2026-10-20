@@ -73,24 +73,26 @@ beforeEach(() => {
 });
 
 describe("PUT /api/events/:id/rsvp role", () => {
-  it("rejects host and cocreator from someone who is not the event host", async () => {
-    for (const role of ["host", "cocreator"] as const) {
-      h.state.inserts = 0;
-      const res = await put({ status: "going", role });
-      expect(res.status, role).toBe(403);
-      expect(await res.json()).toEqual({ error: "forbidden", message: "Only the event host can set that role." });
-      expect(h.state.inserts, role).toBe(0);
-      expect(h.state.storedRole, role).toBe("cocreator");
-    }
+  it("lets a guest set cocreator", async () => {
+    const res = await put({ status: "going", role: "cocreator" });
+    expect(res.status).toBe(200);
+    expect((await res.json()).rsvp.role).toBe("cocreator");
+    expect(h.state.inserts).toBe(1);
   });
 
-  it("lets the event host set host and cocreator", async () => {
+  it("rejects host from someone who is not the event host", async () => {
+    const res = await put({ status: "going", role: "host" });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "forbidden", message: "Only the event host can set that role." });
+    expect(h.state.inserts).toBe(0);
+    expect(h.state.storedRole).toBe("cocreator");
+  });
+
+  it("lets the event host set host", async () => {
     h.state.viewer = HOST;
-    for (const role of ["host", "cocreator"] as const) {
-      const res = await put({ status: "going", role });
-      expect(res.status, role).toBe(200);
-      expect((await res.json()).rsvp.role).toBe(role);
-    }
+    const res = await put({ status: "going", role: "host" });
+    expect(res.status).toBe(200);
+    expect((await res.json()).rsvp.role).toBe("host");
   });
 
   it("lets anyone who can RSVP set attendee or null", async () => {

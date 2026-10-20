@@ -11,8 +11,8 @@ export const dynamic = "force-dynamic";
  * PUT /api/events/:id/rsvp {status: "going"|"interested"|null, went?, shiftIndex?, role?} — what you are to this event.
  * The activity time moves only when the status changes (un-going removes you from "going" at once).
  * role is host, cocreator or attendee. Omit it to leave the stored role alone.
- * A self-RSVP may set attendee or null. host and cocreator only when the viewer is the event's host_id.
- * Nothing else in the code grants cocreator, so that role uses the same host check.
+ * Anyone who can see the event may set their own role to cocreator, attendee or null.
+ * host only when the viewer is the event's host_id.
  */
 export const PUT = route(async (req: Request, ctx: Ctx) => {
   const id = await idParam(ctx.params);
@@ -35,10 +35,10 @@ export const PUT = route(async (req: Request, ctx: Ctx) => {
   return json({ rsvp: rows[0].v });
 });
 
-/** Omit role to leave the stored one. attendee and null are anyone's. host and cocreator are the event host's. */
+/** Omit role to leave the stored one. cocreator, attendee and null are anyone's. host is the event host's. */
 async function rsvpRoleWrite(viewerId: string, eventId: string, role: "host" | "cocreator" | "attendee" | null | undefined): Promise<{ write: boolean; value: "host" | "cocreator" | "attendee" | null }> {
   if (role === undefined) return { write: false, value: null };
-  if (role === null || role === "attendee") return { write: true, value: role };
+  if (role === null || role === "attendee" || role === "cocreator") return { write: true, value: role };
   const rows = (await sqlx().query(`select host_id from events where id = $1`, [eventId])) as { host_id: string | null }[];
   if (rows[0]?.host_id && rows[0].host_id === viewerId) return { write: true, value: role };
   throw forbidden("Only the event host can set that role.");

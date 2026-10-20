@@ -1083,6 +1083,7 @@ button.fcoe:hover{ background:#2e2e2e; }
 .av.sys{ background:var(--face); color:var(--ink2); box-shadow:var(--out); }
 /* Explore: a line that says what a kind is; on a phone its kinds are tabs */
 .kdesc{ margin:0; padding:8px 16px; border-bottom:1px solid var(--line); background:#fff; font-size:12px; line-height:16px; color:var(--ink2); }
+.tagback{ margin:0; padding:8px 16px; border-bottom:1px solid var(--line); background:var(--face); }
 .nrow.nsubrow{ min-height:32px; padding-left:36px; font-size:12px; }
 .navnote{ margin:16px 20px; color:var(--dim); font-size:var(--fs-s); line-height:1.45; }
 .kinds{ display:flex; gap:6px; min-width:0; overflow-x:auto; scrollbar-width:none; }
@@ -1238,6 +1239,57 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .ttwhen{ flex:0 0 auto; }
 .ttwhat{ min-width:0; }
 @media (pointer:coarse){ .schedend{ min-height:44px; } }
+
+/* PROFILE — Chronicle, Event Horizons and tags on a person's page. Uses the theme tokens only.
+   Horizons and tag categories reuse the category layout below. */
+.chcats{ display:flex; flex-direction:column; gap:16px; }
+.chcat{ min-width:0; }
+.chnote{ margin:0 0 16px; max-width:66ch; font:12px/16px var(--sys); color:var(--ink2); }
+.chh{ margin:0 0 8px; font:bold 14px/20px var(--sys); color:var(--ink); }
+.chempty{ margin:0; font:12px/16px var(--sys); color:var(--dim); }
+.chadd{ margin-top:16px; }
+.ptags{ display:flex; flex-direction:column; gap:16px; }
+.ptagadd{ margin-top:16px; }
+.ptagflow{ display:flex; flex-direction:column; gap:12px; }
+.ptagflow .ptagq{ width:100%; box-sizing:border-box; color:var(--ink); background:#fff; }
+.ptagopts{ display:flex; flex-wrap:wrap; gap:8px; }
+.ptaghits{ display:flex; flex-direction:column; gap:6px; max-height:240px; overflow:auto; }
+.ptaghit{ width:100%; height:auto; min-height:var(--ctl); justify-content:space-between; padding:6px 10px; white-space:normal; text-align:left; }
+.ptagcount{ color:var(--dim); font:12px/16px var(--sys); white-space:nowrap; }
+.ptagx{ width:18px; height:18px; margin-left:4px; }
+.pnamerow{ display:flex; align-items:center; gap:12px; }
+.pnamerow .hl, .pnamerow .peditname{ flex:1; min-width:0; }
+.peditname{ height:auto; margin:0; padding:2px 8px; font:bold 20px/24px var(--sys); }
+.peditbio{ display:block; width:100%; margin:4px 0 0; box-sizing:border-box; font:14px/20px var(--sys); }
+.banner .prow .chh{ color:inherit; }
+.ptagpre{ padding:24px 24px 0; }
+.ptagclip{ min-width:0; }
+.ptagrow{ display:flex; flex-wrap:wrap; gap:8px; }
+.ptagchip[tabindex]{ cursor:grab; touch-action:none; -webkit-user-select:none; user-select:none; }
+.ptagchip[data-act="ptagfind"]{ cursor:pointer; }
+.ptagchip.dragging{ opacity:.55; }
+.ptagchip.pin{ font-weight:bold; }
+.ptagpin[aria-pressed="true"] .fillable{ fill:currentColor; }
+.ptagpin{ width:18px; height:18px; margin-left:4px; }
+.ptagmore{ margin-top:8px; }
+.ptagmore[hidden]{ display:none; }
+.prows{ display:flex; flex-direction:column; gap:10px; margin-top:10px; }
+.prow .chips{ align-items:center; }
+.pplace{ min-width:0; color:inherit; }
+.pplacet, .pplacev{ color:inherit; font:14px/20px var(--sys); }
+.pplacet{ font-weight:bold; }
+.pplacev{ margin-top:2px; }
+.pdot{ color:var(--dim); font-weight:normal; }
+.pitem{ white-space:nowrap; }
+.pedithandle{ display:inline-flex; max-width:16em; height:28px; vertical-align:middle; color:#141414; background:#fff; }
+.pedithandle > span, .pedithandle input{ color:#141414; }
+.pedithandle input{ height:28px; }
+.banner .ferr{ color:var(--alert); }
+.pmore{ margin-top:8px; }
+.peditname, .peditbio, .pfind, .prow .addcity input{ color:var(--ink); background:#fff; }
+.pfind{ display:block; width:100%; max-width:280px; margin:0 0 8px; box-sizing:border-box; height:auto; padding:4px 8px; font:12px/16px var(--sys); }
+/* The slot stays empty until Friends & Privacy mounts there. The Follow bar is not a sibling of the slot, so :has watches it. */
+.pg-person:has(.profile-actions:not(:empty)) > .actbar:has([data-act="followp"]){ display:none; }
 
 /* ---------- themes ---------------------------------------------------
    Windows (data-theme="win2k") is :root above, unchanged.
@@ -1527,6 +1579,12 @@ H.people.forEach(function(p){ PEOPLE[p.id] = p; });
 PEOPLE['p-michal'] = { id:'p-michal', displayName:'Michal', handle:'mike', bio:H.self.bio,
                        skills:['EVENT PRODUCTION/PRODUCING'], city:'SWEDEN|STOCKHOLM', cities:['Stockholm'] };
 PEOPLE['self'] = { id:'self', displayName:'', handle:'', bio:'', skills:[], city:'', cities:[] };
+/* Offline demo catalogue. Field recording is on 3 profiles (mixed case, one pin). Shade is on one, under the suggestion threshold. */
+[['p-anna','c:scene:Field recording'],['p-rio','p:c:scene:Field recording'],['p-mira','c:scene:field recording'],['p-kai','c:skill:Shade'],['p-anna','c:interest:Sauna']].forEach(function(pair){
+  var p = PEOPLE[pair[0]];
+  if (!p || (p.skills || []).indexOf(pair[1]) >= 0) return;
+  p.skills = (p.skills || []).concat([pair[1]]);
+});
 
 var EVENTS = {};
 H.events.forEach(function(e){ EVENTS[e.id] = e; });
@@ -1542,6 +1600,21 @@ HORIZONS['horizon-surface'] = { id:'horizon-surface', name:'Surfaces & Projectio
   description:'Anything you can throw light at after dark.',
   isPersonalDefault:false, isPublished:true, ownerName:'Mira Chen', ownerId:'p-mira',
   eventIds:['evt-fill-3','evt-fill-9','evt-world-hyperstition-2026'] };
+/* the demo's public Horizon. My Horizon stays private, so Created would be empty without this. */
+HORIZONS['horizon-ridge'] = { id:'horizon-ridge', name:'Ridge season',
+  description:'The builds and the nights on the ridge this year.',
+  isPersonalDefault:false, isPublished:true, ownerName:'Michal', ownerId:'p-michal',
+  eventIds:['evt-fill-0','evt-fill-6','evt-deep-listening'] };
+/* Enough public Horizons that the demo's Following list folds and can be filtered. */
+[
+  ['horizon-north','North Shore','p-anna'], ['horizon-market','Night Market','p-kai'], ['horizon-river','River Lights','p-rio'],
+  ['horizon-glass','Glasshouse','p-mira'], ['horizon-choir','Winter Choir','p-sasha'], ['horizon-dock','Dock Radio','p-jon'],
+  ['horizon-cedar','Cedar Sauna','p-anna'], ['horizon-paper','Paper City','p-kai'], ['horizon-tide','Low Tide','p-rio']
+].forEach(function(h){
+  var who = PEOPLE[h[2]];
+  HORIZONS[h[0]] = { id:h[0], name:h[1], description:'', isPersonalDefault:false, isPublished:true,
+    ownerName: who ? who.displayName : '', ownerId:h[2], eventIds:[] };
+});
 
 var GROUPS = {};  H.groups.forEach(function(g){ GROUPS[g.id] = g; });
 var CALLOUTS = H.callouts.map(function(c){
@@ -1810,6 +1883,10 @@ function ic(n, sz){
    ========================================================================= */
 var RSVP = {};                 /* eventId -> 'going' | 'interested' */
 var WENT = {};                 /* past events you were at */
+var ROLE = {};                 /* eventId -> 'host' | 'cocreator' | 'attendee'. Absent means no explicit role. */
+var CHRON = {};                /* other people: pid -> { eventId: role } */
+var WENTBY = {};               /* other people: pid -> { eventId: true } when they went and named no role */
+var CHRONICLE_ADD = null;      /* role chosen in Add past event, until the new-event panel finishes or closes */
 var PROMOTED = {};
 var PROMOCOUNT = {}; Object.keys(EVENTS).forEach(function(id){ PROMOCOUNT[id] = hashId(id) % 17; });
 var READ = {};
@@ -1817,11 +1894,31 @@ var READ = {};
 /* Relations belong to the account that is logged in; logged out there are none.
    Each account's set is swapped in on log-in (see ACCOUNTS). */
 var HZFOLLOW = {};
+/* who follows which public Horizon, for profiles that are not the account logged in.
+   The demo's own follows live on the account and match this row. */
+var HZFOLLOWBY = { 'p-michal': {} };
+['horizon-baltic','horizon-dust','horizon-quiet','horizon-north','horizon-market','horizon-river','horizon-glass','horizon-choir','horizon-dock','horizon-cedar','horizon-paper','horizon-tide'].forEach(function(k){ HZFOLLOWBY['p-michal'][k] = true; });
 var HZCOUNT  = { 'horizon-baltic':41, 'horizon-dust':128, 'horizon-quiet':86, 'horizon-feed':52, 'horizon-surface':37, 'horizon-default':0 };
 /* counts are everyone else plus you, so a reload never loses or doubles your own */
 function hzFollowers(k){ return (HZCOUNT[k] || 0) + (S.loggedIn && HZFOLLOW[k] ? 1 : 0); }
 function promoCount(id){ return (PROMOCOUNT[id] || 0) + (S.loggedIn && PROMOTED[id] ? 1 : 0); }
 var PFOLLOW  = {};
+/* a past supper the demo hosted. only_me, so it stays off everyone else's lists. No role is stored: the creator is host. */
+EVENTS['evt-chronicle-supper'] = { id:'evt-chronicle-supper', title:'Midsummer supper', date:'2026-06-20',
+  description:'A long table after the last light, the year the ridge stayed warm.', hostName:'You', privacy:'only_me',
+  ownerIds:['self'], kind:'seed', city:'Stockholm' };
+EVENTS['evt-harbour-walk'] = { id:'evt-harbour-walk', title:'Harbour night walk', date:shiftIso(TODAY_ISO, 21),
+  description:'Along the quay after the lamps are on.', hostName:'Anna Vale', privacy:'everyone',
+  ownerIds:['p-anna'], kind:'seed', city:'Stockholm' };
+/* The profile tag DJ is the event-catalogue label DJ. The closed set is only_me, so a tag search must hide it. */
+EVENTS['evt-dj-night'] = { id:'evt-dj-night', title:'West stage set', date:shiftIso(TODAY_ISO, 12),
+  description:'A public set on the west stage.', hostName:'Yuki Sato', privacy:'everyone',
+  ownerIds:['p-yuki'], kind:'seed', city:'Malmö' };
+EVENTS['evt-dj-closed'] = { id:'evt-dj-closed', title:'Closed booth', date:shiftIso(TODAY_ISO, 13),
+  description:'A set only the host can see.', hostName:'Anna Vale', privacy:'only_me',
+  ownerIds:['p-anna'], kind:'seed', city:'Stockholm' };
+REC['evt-dj-night'] = { kind:'meetup', tags:['dj'] };
+REC['evt-dj-closed'] = { kind:'meetup', tags:['dj'] };
 var DEMOHOST = Object.keys(EVENTS).filter(function(id){ return EVENTS[id].hostName === 'You'; });   /* what the demo account hosts */
 DEMOHOST.forEach(function(id){ EVENTS[id].hostName = 'Michal'; });
 var MYEVENTS = [];
@@ -2282,10 +2379,28 @@ function dateQuery(q){
             'this month':[0, new Date(NOW.getFullYear(), NOW.getMonth() + 1, 0).getDate() - NOW.getDate()] }[q];
   return R || null;
 }
+function searchPeople(q, out){
+  var net = networkPeople();
+  Object.keys(PEOPLE).forEach(function(k){
+    var p = PEOPLE[k];
+    if (k === 'self' ? !S.loggedIn : net.indexOf(k) < 0) return;
+    if (matchAll([p.displayName, p.handle, p.bio, (p.skills||[]).map(skillLabel).join(' '), (p.skills||[]).join(' '), citiesOf(p).join(' ')], q)) out.push({ type:'person', id:k });
+  });
+}
+/* Set by a profile tag click. While the box still holds that label, results are People and Events only. */
+var TAGFIND = null;
 function searchItems(q){
   q = String(q||'').trim();
   if (!q) return [];
-  var out = [], dq = dateQuery(q);
+  var out = [];
+  if (TAGFIND && fold(q) === fold(TAGFIND)){
+    allEvents().filter(canSeeEvent).filter(function(e){ return eventTagHit(e, q); }).forEach(function(e){
+      out.push({ type:'event', id:e.id });
+    });
+    searchPeople(q, out);
+    return out;
+  }
+  var dq = dateQuery(q);
   if (dq) return feedEvents().filter(function(e){ var a = dayDiff(e.date), b = dayDiff(lastDay(e)); return b >= dq[0] && a <= dq[1]; })
     .map(function(e){ return { type:'event', id:e.id }; });
   allEvents().filter(canSeeEvent).sort(function(a,b){
@@ -2299,12 +2414,7 @@ function searchItems(q){
     if ((hz.isPublished || hzOwnedByMe(k)) && matchAll([hz.name, hz.description, hz.ownerName], q)) out.push({ type:'horizon', id:k });
   });
   CALLOUTS.forEach(function(c){ if (matchAll([c.title, c.body, c.hostName], q)) out.push({ type:'callout', id:c.id }); });
-  var net = networkPeople();
-  Object.keys(PEOPLE).forEach(function(k){
-    var p = PEOPLE[k];
-    if (k === 'self' ? !S.loggedIn : net.indexOf(k) < 0) return;
-    if (matchAll([p.displayName, p.handle, p.bio, (p.skills||[]).map(skillLabel).join(' '), (p.skills||[]).join(' '), citiesOf(p).join(' ')], q)) out.push({ type:'person', id:k });
-  });
+  searchPeople(q, out);
   return out;
 }
 
@@ -2472,6 +2582,8 @@ function renderList(){
   if (L.phone && viewOf() === 'list' && items.length && items.every(function(it){ return it.type === 'event'; }) && S.folder.kind !== 'search')
     h = '<label class="sortrow">Sort <select data-act="sort" aria-label="Sort">' +
       [['date','Date'],['title','Title'],['host','Host'],['city','City']].map(function(o){ return '<option value="'+o[0]+'"'+(S.sort===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('') + '</select></label>' + h;
+  var backIt = tagSearchBack();
+  if (backIt) h = '<p class="tagback"><button type="button" class="btn" data-act="clearsearch">'+ic('back')+'Back to '+esc(itemName(backIt))+'</button></p>' + h;
   S.rows = rows;
   var lb = $('listbody'), top = lb.scrollTop;
   lb.innerHTML = h;
@@ -2539,6 +2651,15 @@ function tagLine(labs){ return labs.join('\u00a0· '); }
 function tagWords(e){
   var ids = eventTagIds(recOf(e.id));
   return ids.map(function(id){ return TAGBYID[id].label + ' ' + id; }).join(' ');
+}
+/* A profile tag matches an event when a catalogue label is the same, ignoring case. Ids stay as stored. */
+function eventTagHit(e, q){
+  var f = fold(String(q || '').trim());
+  if (!f) return false;
+  return eventTagIds(recOf(e.id)).some(function(id){
+    var t = TAGBYID[id];
+    return !!(t && fold(t.label) === f);
+  });
 }
 function rowKindText(e){
   var r = recOf(e.id), labs = tagLabels(r);
@@ -2901,15 +3022,18 @@ function entryHTML(evId){
 /* ONE PAGE TEMPLATE. An event, an Event Horizon and a person are the same page with different contents:
    the title block (square or avatar, title, subtitle) → the window's grey toolbar → anything that must sit right
    under it → the facts grid → the sections. A look only changes the colours and the square. Only the spec differs. */
-function titleBlockHTML(cover, eyebrow, title, sub, note){
+function titleBlockHTML(cover, eyebrow, title, sub, note, more){
+  more = more || {};
+  var heading = more.heading || ('<h1 class="hl">'+esc(title)+'</h1>');
+  var under = more.under != null ? more.under : (sub ? '<p class="psub2">'+sub+'</p>' : '');
   return '<header class="banner"><div class="bin"><div class="sqwrap">' + cover + '</div>' +
          '<div class="btxt">' + (eyebrow ? '<div class="eyebrow">'+eyebrow+'</div>' : '') +
-         '<h1 class="hl">'+esc(title)+'</h1>' + (sub ? '<p class="psub2">'+sub+'</p>' : '') + (note ? '<p class="pgnote">'+esc(note)+'</p>' : '') + '</div></div></header>';
+         heading + under + (note ? '<p class="pgnote">'+esc(note)+'</p>' : '') + (more.tail || '') + '</div></div></header>';
 }
 function pageHTML(o){
   var t = o.t;
   var h = '<article class="canvas pg pg-'+o.kind+(isPlain(t) ? ' plain' : '')+'" data-page="'+o.kind+'" style="'+themeVars(t)+'">';
-  h += titleBlockHTML(o.cover, o.eyebrow, o.title, o.sub, o.note);
+  h += titleBlockHTML(o.cover, o.eyebrow, o.title, o.sub, o.note, o.more);
   if (o.toolbar) h += '<div class="actbar">' + o.toolbar + '</div>';
   h += o.pre || '';
   h += '<div class="layer"><div class="lin">' + (o.facts || '') + (o.body || '') + '</div></div></article>';
@@ -3040,10 +3164,16 @@ function horizonHTML(hzId, withContents){
   if (!hz) return '<div class="empty">This horizon no longer exists.</div>';
   return playlistHTML(hzId, withContents);
 }
+/* 'self' is this page, not an owner id. A public Horizon you own still counts. A private one does not. */
 function publishedHorizonsOf(pid){
+  var who = pid === 'self' && myPid() ? myPid() : pid;
   return Object.keys(HORIZONS).filter(function(k){
     var h = HORIZONS[k];
-    return h.isPublished && (h.ownerId === pid || (h.ownerGroupId && GROUPS[h.ownerGroupId] && GROUPS[h.ownerGroupId].adminIds.indexOf(pid) >= 0));
+    if (!h.isPublished) return false;
+    var owner = h.ownerId === 'self' && who === myPid() ? who : h.ownerId;
+    if (owner === who) return true;
+    var g = h.ownerGroupId && GROUPS[h.ownerGroupId];
+    return !!(g && g.adminIds.indexOf(who) >= 0);
   });
 }
 /* ---- person ---- */
@@ -3059,34 +3189,222 @@ function goingOf(pid){
   if (pid === 'self') return S.loggedIn ? Object.keys(RSVP).filter(function(k){ return RSVP[k] === 'going' && EVENTS[k]; }).map(function(k){ return EVENTS[k]; }) : [];
   return allEvents().filter(function(e){ return canSeeEvent(e) && attendees(e.id).indexOf(pid) >= 0; });
 }
+/* Chronicle is past events only. An explicit role wins. With none, the creator is host, and Went is attendee. */
+var CHRONICLE_ROLE = { host:1, cocreator:1, attendee:1 };
+var CHRONICLE_LABEL = { host:'Hosted', cocreator:'Co-created', attendee:'Attended' };
+var CHRONICLE_PICK = [['host','Host','You put it on.'], ['cocreator','Co-creator','You helped make it. A DJ, a volunteer, or other crew.'], ['attendee','Attendee','You were there.']];
+function isMe(pid){ return pid === 'self' || (S.loggedIn && pid === myActor()); }
+function knownRole(r){ return CHRONICLE_ROLE[r] ? r : null; }
+function explicitRole(pid, evId){
+  if (isMe(pid)) return knownRole(ROLE[evId]);
+  var m = CHRON[pid]; return m ? knownRole(m[evId]) : null;
+}
+function wentOf(pid, evId){
+  if (isMe(pid)) return !!WENT[evId];
+  return !!(WENTBY[pid] && WENTBY[pid][evId]);
+}
+function hostsEvent(pid, e){
+  if (!e) return false;
+  if (isMe(pid)) return ownEvent(e) || eventHostPid(e) === myPid();
+  var hp = hostPersonOf(e);
+  return !!(hp && hp.id === pid);
+}
+function chronicleRole(pid, e){
+  var explicit = explicitRole(pid, e.id);
+  if (explicit) return explicit;
+  if (hostsEvent(pid, e)) return 'host';
+  if (wentOf(pid, e.id)) return 'attendee';
+  return null;
+}
+function chronicleOf(pid){
+  var out = { host:[], cocreator:[], attendee:[] };
+  allEvents().forEach(function(e){
+    if (!canSeeEvent(e) || !isPast(lastDay(e))) return;
+    var role = chronicleRole(pid, e);
+    if (role) out[role].push(e);
+  });
+  ['host','cocreator','attendee'].forEach(function(role){ out[role].sort(function(a, b){ return byDate(b, a); }); });
+  return out;
+}
+var PEDIT = false;
+var PNAME = null, PBIO = null;
+var PEXP = {}, PFILT = {};
+function captureProfileEdit(){
+  if (!PEDIT) return;
+  var n = $('pedit-name'), b = $('pedit-bio'), h = $('pf-handle');
+  if (n) PNAME = n.value;
+  if (b) PBIO = b.value;
+  if (!PF) return;
+  if (n) PF.name = n.value;
+  if (b) PF.about = b.value;
+  if (h) PF.handle = h.value.replace(/^@/, '');
+}
+function profileEditing(pid, asOther){ return !!(PEDIT && pid === 'self' && S.loggedIn && !asOther); }
+function eventEntry(e){ return { name:e.title, html:eventCRow(e, false) }; }
+function hzEntry(k){ return { name:HORIZONS[k].name, html:hzProfileRow(k) }; }
+/* More than three rows fold. More than ten, once open, can be filtered by name. */
+function profileClip(key, entries){
+  var n = entries.length, open = !!PEXP[key], shown = entries, find = '';
+  if (n > 3 && !open) shown = entries.slice(0, 3);
+  if (open && n > 10){
+    var q = String(PFILT[key] || ''), needle = q.trim().toLowerCase();
+    find = '<input type="search" class="pfind" id="pfind-'+key+'" data-id="'+key+'" value="'+esc(q)+'" placeholder="Filter by name" aria-label="Filter by name">';
+    if (needle) shown = entries.filter(function(e){ return e.name.toLowerCase().indexOf(needle) >= 0; });
+  }
+  var more = n > 3 ? '<button type="button" class="btn pmore" data-act="pmore" data-id="'+key+'" aria-expanded="'+(open ? 'true' : 'false')+'">'+(open ? 'Show less' : 'Show all ('+n+')')+'</button>' : '';
+  return find + shown.map(function(e){ return e.html; }).join('') + more;
+}
+function profileCats(groups, emptyLine){
+  return groups.map(function(g){
+    if (!g.entries.length && !emptyLine) return '';
+    var body = g.entries.length ? profileClip(g.key, g.entries) : '<p class="chempty">None yet.</p>';
+    return '<div class="chcat" '+g.attr+'><h4 class="chh">'+esc(g.label)+'</h4>'+body+'</div>';
+  }).join('');
+}
+function goingEvent(pid, evId){
+  if (isMe(pid)) return RSVP[evId] === 'going';
+  return attendees(evId).indexOf(pid) >= 0;
+}
+/* Upcoming uses Chronicle's order: an explicit role, then the creator as host, then going. One event, one group. */
+function upcomingOf(pid){
+  var out = { host:[], cocreator:[], attendee:[] };
+  allEvents().forEach(function(e){
+    if (!canSeeEvent(e) || isPast(lastDay(e))) return;
+    var explicit = explicitRole(pid, e.id);
+    var role = explicit || (hostsEvent(pid, e) ? 'host' : (goingEvent(pid, e.id) ? 'attendee' : null));
+    if (role && out[role]) out[role].push(e);
+  });
+  ['host','cocreator','attendee'].forEach(function(role){ out[role].sort(byDate); });
+  return out;
+}
+function upcomingSection(pid, asOther){
+  var mine = pid === 'self' && S.loggedIn && !asOther, g = upcomingOf(pid);
+  var n = g.host.length + g.cocreator.length + g.attendee.length;
+  if (!mine && !n) return '';
+  var body = '<div class="chcats">' + profileCats([
+    { key:'up-host', attr:'data-up="host"', label:'Hosting', entries:g.host.map(eventEntry) },
+    { key:'up-cocreator', attr:'data-up="cocreator"', label:'Co-creating', entries:g.cocreator.map(eventEntry) },
+    { key:'up-attendee', attr:'data-up="attendee"', label:'Going', entries:g.attendee.map(eventEntry) }
+  ], mine) + '</div>';
+  return '<section class="sect" data-sect="upcoming"><h3>Upcoming</h3>'+body+'</section>';
+}
+function chronicleSection(pid, asOther){
+  var mine = pid === 'self' && S.loggedIn && !asOther, g = chronicleOf(pid);
+  var n = g.host.length + g.cocreator.length + g.attendee.length;
+  if (!mine && !n) return '';
+  var body = '<p class="chnote">Past events</p><div class="chcats">' + profileCats([
+    { key:'ch-host', attr:'data-role="host"', label:CHRONICLE_LABEL.host, entries:g.host.map(eventEntry) },
+    { key:'ch-cocreator', attr:'data-role="cocreator"', label:CHRONICLE_LABEL.cocreator, entries:g.cocreator.map(eventEntry) },
+    { key:'ch-attendee', attr:'data-role="attendee"', label:CHRONICLE_LABEL.attendee, entries:g.attendee.map(eventEntry) }
+  ], mine) + '</div>';
+  if (profileEditing(pid, asOther)) body += '<div class="chadd"><button class="btn" data-act="addpastevent">'+ic('plus')+'Add past event</button></div>';
+  return '<section class="sect" data-sect="chronicle"><h3>Chronicle</h3>'+body+'</section>';
+}
+function addPastEventDialog(){
+  var h = '<p class="fhelp">An event that already happened. Pick the part you played, then fill it in.</p>' +
+    '<div class="visopts" role="radiogroup" aria-label="Your role">' + CHRONICLE_PICK.map(function(o){
+      return '<label class="visopt"><input type="radio" name="ch-role" value="'+o[0]+'"><span><b>'+esc(o[1])+'</b><small>'+esc(o[2])+'</small></span></label>';
+    }).join('') + '</div>';
+  dialog('Add past event', h, '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="chronicle-go">Continue</button>', 480);
+}
+function chronicleUnblockDate(){
+  if (!CHRONICLE_ADD) return;
+  var el = $('w-d'); if (!el) return;
+  el.removeAttribute('min');
+  if (DRAFT && DRAFT.date && el.value !== DRAFT.date) el.value = DRAFT.date;
+}
+function openPastEvent(role){
+  CHRONICLE_ADD = role;
+  var d = FORMDRAFTS.event;
+  if (!d || !eventDraftDirty(d)){
+    d = blankEventDraft();
+    d.date = shiftIso(TODAY_ISO, -7);
+    FORMDRAFTS.event = d;
+  }
+  newEventDialog();
+  chronicleUnblockDate();
+}
+function fileChronicle(id, role){
+  if (!EVENTS[id] || !knownRole(role)) return;
+  ROLE[id] = role;
+  WENT[id] = true;
+  if (ONLINE) HNAPI.rsvp(id);
+  schedulePersist();
+}
+/* the account behind a profile. 'self' is whoever is logged in. */
+function horizonActor(pid){ return pid === 'self' ? myPid() : pid; }
+function horizonMine(pid){ var a = horizonActor(pid); return pid === 'self' || (!!a && S.loggedIn && a === myPid()); }
+function horizonsCreated(pid){
+  var keys = {};
+  publishedHorizonsOf(pid).forEach(function(k){ keys[k] = 1; });
+  var actor = horizonActor(pid);
+  if (actor && actor !== pid) publishedHorizonsOf(actor).forEach(function(k){ keys[k] = 1; });
+  if (horizonMine(pid)) MYHORIZONS.forEach(function(k){ if (HORIZONS[k]) keys[k] = 1; });
+  return Object.keys(keys).filter(function(k){
+    var h = HORIZONS[k];
+    return h && h.isPublished && !h.isPersonalDefault;
+  }).sort(function(a, b){ return HORIZONS[a].name < HORIZONS[b].name ? -1 : 1; });
+}
+/* public Horizons they follow, except ones already listed as created. Private ones never appear. */
+function horizonsFollowed(pid){
+  var created = {};
+  horizonsCreated(pid).forEach(function(k){ created[k] = 1; });
+  var src = horizonMine(pid) ? HZFOLLOW : (HZFOLLOWBY[horizonActor(pid)] || {});
+  return Object.keys(src).filter(function(k){
+    var h = HORIZONS[k];
+    return src[k] && h && h.isPublished && !h.isPersonalDefault && !created[k];
+  }).sort(function(a, b){ return HORIZONS[a].name < HORIZONS[b].name ? -1 : 1; });
+}
+function hzProfileRow(k){
+  return '<div class="crow">'+(hzOwnSquare(k) || hzCover(k) ? hzArt(k, 40) : '<span class="r-ic">'+ic('horizon')+'</span>')+
+    '<div class="cm" data-act="open" data-type="horizon" data-id="'+k+'"><div class="r-title">'+esc(HORIZONS[k].name)+'</div>' +
+    '<div class="r-meta">'+hzEventIds(k).length+' events · '+hzFollowers(k)+' followers</div></div></div>';
+}
+function horizonSection(pid, asOther){
+  var mine = pid === 'self' && S.loggedIn && !asOther, made = horizonsCreated(pid), followed = horizonsFollowed(pid);
+  if (!mine && !made.length && !followed.length) return '';
+  var body = '<div class="chcats">' + profileCats([
+    { key:'hz-created', attr:'data-hz="created"', label:'Curating', entries:made.map(hzEntry) },
+    { key:'hz-following', attr:'data-hz="following"', label:'Following', entries:followed.map(hzEntry) }
+  ], mine) + '</div>';
+  return '<section class="sect" data-sect="horizons"><h3>Event Horizons</h3>'+body+'</section>';
+}
+function personHeadBits(pid, asOther){
+  var p = person(pid), editing = profileEditing(pid, asOther);
+  var name = editing && PNAME != null ? PNAME : (p.displayName || '');
+  var bio = editing && PBIO != null ? PBIO : (p.bio || '');
+  var heading = '<div class="pnamerow">' + (editing
+    ? '<input id="pedit-name" class="peditname" value="'+esc(name)+'" aria-label="Name" autocomplete="name">'
+    : '<h1 class="hl">'+esc(name || 'You')+'</h1>') +
+    '<!-- Follow, Add friend, and counts land here. --><div class="profile-actions"></div></div>';
+  var under = editing
+    ? '<textarea id="pedit-bio" class="peditbio" rows="2" maxlength="120" aria-label="About you">'+esc(bio)+'</textarea>'
+    : (bio ? '<p class="psub2">'+esc(bio)+'</p>' : '');
+  var rows = profileRowsHTML(pid, asOther);
+  if (rows) under += '<div class="prows">'+rows+'</div>';
+  return { heading:heading, under:under, tail:'' };
+}
 /* `asOther`: your own page as anybody else sees it (Edit profile's preview) */
 function personHTML(pid, asOther){
-  var p = person(pid), hz = publishedHorizonsOf(pid), st = PRESENCE[pid] || (asOther ? 'online' : 'offline'), fol = S.loggedIn && PFOLLOW[pid], me = pid === 'self' && !asOther;
-  var hosts = allEvents().filter(function(e){ return canSeeEvent(e) && hostPersonOf(e) === PEOPLE[pid]; }).sort(byDate);
-  var going = goingOf(pid).filter(function(e){ return !isPast(lastDay(e)); }).sort(byDate);
+  var p = person(pid), st = PRESENCE[pid] || (asOther ? 'online' : 'offline'), fol = S.loggedIn && PFOLLOW[pid], me = pid === 'self' && !asOther;
   var calls = CALLOUTS.filter(function(c){ return c.hostId === pid && calloutOpen(c); });
-  /* your page: one Edit profile (name, photo, colours and the rest) — 2026-10-05, Customize is part of it */
-  var bar = me ? (S.loggedIn ? toolbarHTML(vb('editprofile', 'self', 'Edit profile', 'edit', { primary:true })) : '')
+  var bar = me ? (S.loggedIn ? toolbarHTML(vb(PEDIT ? 'profiledone' : 'editprofile', 'self', PEDIT ? 'Done' : 'Edit profile', PEDIT ? 'check' : 'edit', { primary:true })) : '')
                : toolbarHTML(vb('followp', pid, fol ? 'Following' : 'Follow', fol ? 'check' : 'plus', { on:fol, primary:!fol, pressed:!!fol }), vb('dm', pid, 'Message', 'chat'));
-  var facts = factGrid([['Based in', citiesOf(p).join(', ') || '—'], ['Hosting', String(hosts.filter(function(e){ return !isPast(lastDay(e)); }).length)],
-                        ['Going', String(going.length)], ['Horizons', String(hz.length)]]);
-  var s = sect('About', p.bio ? '<p class="evdesc">'+esc(p.bio)+'</p>' : '');
-  s += sect('Skills', (p.skills || []).length ? '<div class="chips">' + p.skills.map(function(x){ return '<span class="chip plain">'+esc(skillLabel(x))+'</span>'; }).join('') + '</div>' : '');
-  if (citiesOf(p).length > 1) s += sect('Cities', chipsHTML(citiesOf(p)));
-  s += sect('Hosting', hosts.map(function(e){ return eventCRow(e, false); }).join(''));
-  s += sect('Going', going.map(function(e){ return eventCRow(e, false); }).join(''));
-  s += sect('Event Horizons', hz.map(function(k){
-      return '<div class="crow">'+(hzOwnSquare(k) || hzCover(k) ? hzArt(k, 40) : '<span class="r-ic">'+ic('horizon')+'</span>')+
-        '<div class="cm" data-act="open" data-type="horizon" data-id="'+k+'"><div class="r-title">'+esc(HORIZONS[k].name)+'</div>' +
-        '<div class="r-meta">'+hzEventIds(k).length+' events · '+hzFollowers(k)+' followers</div></div></div>';
-    }).join(''));
+  var eye = profileEditing(pid, asOther) && PF
+    ? '<span class="handlein pedithandle"><span>@</span><input type="text" id="pf-handle" value="'+esc(PF.handle)+'" placeholder="yourname" autocomplete="username" autocapitalize="off" spellcheck="false" aria-label="Handle" aria-describedby="pf-herr"></span><span class="ferr" id="pf-herr" hidden></span><p class="ferr" id="pf-imgerr" role="alert"></p>'
+    : '@'+esc(p.handle) + (me ? '' : ' · <span class="pres '+st+'"></span>'+esc(st));
+  var up = upcomingOf(pid);
+  var facts = factGrid([['Hosting', String(up.host.length)],
+                        ['Going', String(up.attendee.length)], ['Horizons', String(horizonsCreated(pid).length + horizonsFollowed(pid).length)]]);
+  var s = upcomingSection(pid, asOther) + horizonSection(pid, asOther) + chronicleSection(pid, asOther);
   s += sect('Call outs', calls.map(function(c){
       return '<div class="crow"><span class="r-ic">'+ic('callout')+'</span><div class="cm" data-act="open" data-type="callout" data-id="'+c.id+'"><div class="r-title">'+esc(c.title)+'</div>' +
         '<div class="r-meta">open until '+esc(fmtDate(c.expiresAt))+'</div></div></div>';
     }).join(''));
-  return pageHTML({ kind:'person', t:personTheme(pid), cover:personCover(pid, 96),
-    eyebrow:'@'+esc(p.handle) + (me ? '' : ' · <span class="pres '+st+'"></span>'+esc(st)), title:p.displayName || 'You',
-    toolbar:bar, facts:facts, body:s });
+  var tags = tagsSection(pid, asOther);
+  return pageHTML({ kind:'person', t:personTheme(pid), cover:profileEditing(pid, asOther) && PF ? profilePhotoHTML() : personCover(pid, 96),
+    eyebrow:eye, title:p.displayName || 'You',
+    toolbar:bar, facts:facts, pre:tags ? '<div class="ptagpre">'+tags+'</div>' : '', body:s, more:personHeadBits(pid, asOther) });
 }
 function isOwnCallout(c){ return !!c && S.loggedIn && !!c.hostAcct && c.hostAcct === S.acct; }
 /* when a call out was posted: the newest posted_callout row for it (0 when there is none) */
@@ -3232,6 +3550,7 @@ function renderDetail(){
     '<button class="x wclose" data-act="closewin" aria-label="Close" title="Close (Esc)">'+ic('close', L.phone ? 20 : 14)+'</button>';
   w.setAttribute('aria-label', (KINDNAME[it.type] || 'Window') + ': ' + name);
   placeWin();
+  if (it.type === 'person') fitProfileTags();
 }
 /* where the window sits: by default over the right of the white, the list's left part in view beside it (layoutCentre);
    where there is no such room, over the centre. Once you drag it, where you put it — always inside the main area */
@@ -4625,7 +4944,8 @@ document.addEventListener('change', function(ev){
 function renderAppbar(){
   var h = '', conv = phoneConv(), back = conv || phoneCanBack();
   /* in a conversation, back is all chats; its name and the profile button open their profile over it */
-  if (back) h += conv ? '<button class="ab-btn" data-act="chatback" aria-label="All chats">'+ic('back',22)+'</button>' : '<button class="ab-btn" data-act="pback" aria-label="Back">'+ic('back',22)+'</button>';
+  var backTo = tagSearchBack(), backLabel = backTo ? 'Back to ' + itemName(backTo) : 'Back';
+  if (back) h += conv ? '<button class="ab-btn" data-act="chatback" aria-label="All chats">'+ic('back',22)+'</button>' : '<button class="ab-btn" data-act="pback" aria-label="'+esc(backLabel)+'" title="'+esc(backLabel)+'">'+ic('back',22)+'</button>';
   if (conv){
     var cc = CHATS[conv], cp = cc.memberIds[0];
     h += '<div class="ab-title ab-tap" data-act="chatprofile" data-id="'+cp+'" role="button">'+esc(cc.name)+'<small>'+esc(chatSub(cc))+'</small></div>' +
@@ -4807,10 +5127,351 @@ var SKILLCHOICES = [
 ];
 var CITYCHOICES = ['Stockholm','Gothenburg','Malmö','Copenhagen','Oslo','Berlin','Amsterdam','Prague','Brno'];
 function skillLabel(v){
-  var hit = SKILLCHOICES.filter(function(c){ return c[0] === v; })[0];
+  var t = parseProfileTag(v);
+  if (t.coded) return t.label;
+  var src = t.body;
+  var hit = SKILLCHOICES.filter(function(c){ return c[0] === src; })[0];
   if (hit) return hit[1];
-  var b = String(v).split('/');
+  var b = String(src).split('/');
   return titleCase(b[1] || b[0]).replace(/\bPa\b/g,'PA').replace(/\bDj/g,'DJ');
+}
+/* Profile tags are not event tags. A new one is "c:<category>:<label>" in the existing skills list.
+   Categories are Skills & Roles, Interest and Scene. New skill tags use the key skill.
+   A stored c:role: tag and an older uncategorised skill are read into Skills & Roles. Nothing is rewritten.
+   Locations are the cities list. An older c:location: tag is read into that row and, on Done, moved into cities.
+   Languages stay here as c:language:. Only the Languages row reads and writes them.
+   A pinned tag is the same string with a p: prefix (p:c:skill:Host, or p: plus an old skill). No prefix means unpinned. */
+var TAG_CATS = [
+  ['skill','Skills & Roles',['Cooking','Sound','Building','First aid','DJ','Host','Photographer','Volunteer']],
+  ['interest','Interest',['Sauna','Dawn walks','Workshops','Camping']],
+  ['scene','Scene',['Burns','Techno','Supper clubs','Retreats']]
+];
+var TAG_CAT = {}; TAG_CATS.forEach(function(c){ TAG_CAT[c[0]] = c; });
+/* Suggested to other people only once this many visible profiles use it. Examples and your own tags skip this. */
+var TAG_SUGGEST_MIN = 3;
+var TAGFLOW = null;
+function tagPinned(v){ return String(v == null ? '' : v).slice(0, 2) === 'p:'; }
+function tagBody(v){ v = String(v == null ? '' : v); return tagPinned(v) ? v.slice(2) : v; }
+function tagPin(v, on){ var b = tagBody(v); return on ? 'p:' + b : b; }
+function skillsHave(list, raw){ var b = tagBody(raw); return (list || []).some(function(v){ return tagBody(v) === b; }); }
+function parseProfileTag(v){
+  var raw = String(v == null ? '' : v), pin = tagPinned(raw), body = tagBody(raw);
+  var m = /^c:(location|skill|interest|role|scene|language):(.*)$/.exec(body);
+  if (m && String(m[2]).trim()) return { cat: m[1] === 'role' ? 'skill' : m[1], label:String(m[2]).trim(), raw:raw, body:body, coded:true, pin:pin };
+  return { cat:'skill', label:'', raw:raw, body:body, coded:false, pin:pin };
+}
+function encodeProfileTag(cat, label){
+  label = String(label || '').trim().replace(/\s+/g, ' ').replace(/:/g, '');
+  if (!TAG_CAT[cat] || !label || label.length > 40) return null;
+  return 'c:' + cat + ':' + label;
+}
+function profileTagGroups(skills){
+  var g = {};
+  (skills || []).forEach(function(v){
+    if (v == null || v === '') return;
+    var t = parseProfileTag(v);
+    if (!t.coded) t.label = skillLabel(v);
+    (g[t.cat] = g[t.cat] || []).push(t);
+  });
+  return TAG_CATS.filter(function(c){ return g[c[0]] && g[c[0]].length; }).map(function(c){ return { cat:c[0], label:c[1], tags:g[c[0]] }; });
+}
+/* Counts come from profiles the viewer can already see, plus your own. The list is labels and counts, never names. */
+function tagProfiles(){
+  var out = [], me = myPid();
+  networkPeople().forEach(function(id){
+    if (id === me) return;
+    out.push((PEOPLE[id] && PEOPLE[id].skills) || []);
+  });
+  if (S.loggedIn || (PF && (PEDIT || tagFormOpen())))
+    out.push((PF && (PEDIT || tagFormOpen())) ? (PF.skills || []) : ((PEOPLE.self && PEOPLE.self.skills) || []));
+  return out;
+}
+function canonicalLabel(cat, label){
+  var def = TAG_CAT[cat], f = fold(label), i;
+  if (!def) return label;
+  for (i = 0; i < def[2].length; i++) if (fold(def[2][i]) === f) return def[2][i];
+  return label;
+}
+function tagCatalogue(){
+  var map = {};
+  tagProfiles().forEach(function(skills){
+    var seen = {};
+    (skills || []).forEach(function(v){
+      var t = parseProfileTag(v);
+      if (t.coded && (t.cat === 'location' || t.cat === 'language')) return;
+      if (!TAG_CAT[t.cat]) return;
+      if (!t.coded) t.label = skillLabel(v);
+      if (!t.label) return;
+      t.label = canonicalLabel(t.cat, t.label);
+      var k = t.cat + '\n' + fold(t.label);
+      if (seen[k]) return;
+      seen[k] = 1;
+      if (!map[k]) map[k] = { cat:t.cat, label:t.label, count:0 };
+      map[k].count++;
+    });
+  });
+  return map;
+}
+function isExampleTag(cat, label){
+  var def = TAG_CAT[cat], f = fold(label), i;
+  if (!def) return false;
+  for (i = 0; i < def[2].length; i++) if (fold(def[2][i]) === f) return true;
+  return false;
+}
+function viewerTagSet(){
+  var skills = (PF && (PEDIT || tagFormOpen())) ? (PF.skills || []) : (S.loggedIn && PEOPLE.self ? PEOPLE.self.skills : []);
+  var set = {};
+  (skills || []).forEach(function(v){
+    var t = parseProfileTag(v);
+    if (t.coded && (t.cat === 'location' || t.cat === 'language')) return;
+    if (!TAG_CAT[t.cat]) return;
+    if (!t.coded) t.label = skillLabel(v);
+    if (!t.label) return;
+    set[t.cat + '\n' + fold(canonicalLabel(t.cat, t.label))] = 1;
+  });
+  return set;
+}
+function tagChoices(state){
+  var map = tagCatalogue(), own = viewerTagSet(), q = fold(state && state.q), cat = state && state.cat, rows = [], seen = {};
+  function add(c, label, count){
+    if (!TAG_CAT[c] || (cat && c !== cat)) return;
+    label = canonicalLabel(c, label);
+    var k = c + '\n' + fold(label);
+    if (seen[k]) return;
+    if (q && fold(label).indexOf(q) < 0) return;
+    if (!isExampleTag(c, label) && !own[k] && (count || 0) < TAG_SUGGEST_MIN) return;
+    seen[k] = 1;
+    rows.push({ cat:c, label:label, count:count || 0, raw:'c:' + c + ':' + label });
+  }
+  Object.keys(map).forEach(function(k){ add(map[k].cat, map[k].label, map[k].count); });
+  TAG_CATS.forEach(function(c){ c[2].forEach(function(label){
+    var hit = map[c[0] + '\n' + fold(label)];
+    add(c[0], label, hit ? hit.count : 0);
+  }); });
+  rows.sort(function(a, b){
+    if (b.count !== a.count) return b.count - a.count;
+    return fold(a.label) < fold(b.label) ? -1 : fold(a.label) > fold(b.label) ? 1 : 0;
+  });
+  return rows;
+}
+function tagFlowState(){
+  if (tagFormOpen()) return { cat: PF.tagCat || '', q: PF.tagQ || '' };
+  return TAGFLOW || { cat:'', q:'' };
+}
+function tagHitHTML(state){
+  state = state || { cat:'', q:'' };
+  var rows = tagChoices(state), q = String(state.q || '').trim();
+  var exact = q && rows.some(function(r){ return fold(r.label) === fold(q); });
+  var html = rows.map(function(r){
+    var cat = state.cat ? '' : ' <small class="ptagcount">'+esc(TAG_CAT[r.cat][1])+'</small>';
+    var n = r.count ? '<span class="ptagcount">'+r.count+' '+(r.count === 1 ? 'person' : 'people')+'</span>' : '';
+    return '<button type="button" class="btn ptaghit" data-act="ptagpick" data-id="'+esc(r.raw)+'"><span>'+esc(r.label)+cat+'</span>'+n+'</button>';
+  }).join('');
+  if (q && !exact) html += '<button type="button" class="btn ptaghit" data-act="ptagcreate">Create "'+esc(q)+'"</button>';
+  return html || '<p class="chempty">No matching tags.</p>';
+}
+function refreshTagHits(){
+  var box = document.getElementById('ptaghits');
+  if (box) box.innerHTML = tagHitHTML(tagFlowState());
+}
+function tagFlowHTML(state){
+  state = state || { cat:'', q:'' };
+  var cats = TAG_CATS.map(function(c){
+    var on = state.cat === c[0];
+    return '<button type="button" class="btn'+(on ? ' on' : '')+'" data-act="ptagcat" data-id="'+c[0]+'" aria-pressed="'+on+'">'+esc(c[1])+'</button>';
+  }).join('');
+  return '<div class="ptagflow"><label class="field" for="ptag-q"><span class="flabel">Search tags</span><input id="ptag-q" class="ptagq" type="search" maxlength="40" placeholder="Search tags or create a new one" autocomplete="off" value="'+esc(state.q || '')+'"></label>' +
+    '<div class="ptagopts" role="group" aria-label="Category">'+cats+'</div>' +
+    '<div class="ptaghits" id="ptaghits">'+tagHitHTML(state)+'</div></div>';
+}
+function profileLocations(p){
+  var seen = {}, out = [];
+  function add(c){
+    c = String(c || '').trim();
+    if (!c) return;
+    var k = c.toLowerCase();
+    if (seen[k]) return;
+    seen[k] = 1; out.push(c);
+  }
+  citiesOf(p).forEach(add);
+  (p.skills || []).forEach(function(v){
+    var t = parseProfileTag(v);
+    if (t.coded && t.cat === 'location') add(t.label);
+  });
+  return out;
+}
+function profileLanguages(p){
+  var seen = {}, out = [];
+  (p.skills || []).forEach(function(v){
+    var t = parseProfileTag(v);
+    if (!(t.coded && t.cat === 'language') || !t.label) return;
+    var k = t.label.toLowerCase();
+    if (seen[k]) return;
+    seen[k] = 1; out.push(t.label);
+  });
+  return out;
+}
+/* Done writes languages back as c:language: and drops c:location:, which now lives in cities. */
+function profileSkillsForSave(skills, langs){
+  var out = [];
+  (skills || []).forEach(function(v){
+    var t = parseProfileTag(v);
+    if (t.coded && (t.cat === 'location' || t.cat === 'language')) return;
+    out.push(v);
+  });
+  (langs || []).forEach(function(label){
+    var raw = 'c:language:' + label;
+    if (out.indexOf(raw) < 0) out.push(raw);
+  });
+  return out;
+}
+function profileLine(kind, label, items, editing){
+  if (!editing && !items.length) return '';
+  var chips = items.map(function(c){
+    var x = editing ? '<button type="button" class="ib ptagx" data-act="'+(kind === 'loc' ? 'pfcity' : 'pflangrm')+'" data-id="'+esc(c)+'" aria-label="Remove '+esc(c)+'">'+ic('close',12)+'</button>' : '';
+    return '<span class="chip plain">'+esc(c)+x+'</span>';
+  }).join('');
+  var add = '';
+  if (editing){
+    var fid = kind === 'loc' ? 'pf-city' : 'pf-lang', act = kind === 'loc' ? 'pfaddcity' : 'pfaddlang';
+    var ph = kind === 'loc' ? 'Add a location' : 'Add a language';
+    add = '<span class="addcity"><input type="text" id="'+fid+'" placeholder="'+ph+'" aria-label="'+ph+'"><button type="button" class="btn" data-act="'+act+'">Add</button></span>';
+  }
+  return '<div class="prow" data-prow="'+kind+'"><h4 class="chh">'+esc(label)+'</h4><div class="chips">'+chips+add+'</div></div>';
+}
+function placeDot(){ return '<span class="pdot"> · </span>'; }
+function placeBits(items){
+  return items.map(function(c, i){
+    return (i ? '<span class="psep">, </span>' : '') + '<span class="pitem">'+esc(c)+'</span>';
+  }).join('');
+}
+function profileViewPlace(locs, langs){
+  var titles = [], groups = [];
+  if (locs.length){ titles.push('Locations'); groups.push(placeBits(locs)); }
+  if (langs.length){ titles.push('Languages'); groups.push(placeBits(langs)); }
+  if (!titles.length) return '';
+  return '<div class="pplace"><div class="pplacet">'+titles.join(placeDot())+'</div><div class="pplacev">'+groups.join(placeDot())+'</div></div>';
+}
+function profileRowsHTML(pid, asOther){
+  var editing = profileEditing(pid, asOther), p = person(pid);
+  var locs = editing && PF ? (PF.cities || []) : profileLocations(p);
+  var langs = editing && PF ? (PF.langs || []) : profileLanguages(p);
+  if (editing) return profileLine('loc', 'Locations', locs || [], true) + profileLine('lang', 'Languages', langs || [], true);
+  return profileViewPlace(locs || [], langs || []);
+}
+/* Skill, interest and scene, pins first. Locations and languages are not tags. */
+function profileTags(skills){
+  var pins = [], rest = [];
+  (skills || []).forEach(function(v){
+    if (v == null || v === '') return;
+    var t = parseProfileTag(v);
+    if (t.coded && (t.cat === 'location' || t.cat === 'language')) return;
+    if (!t.coded) t.label = skillLabel(v);
+    if (!t.label) return;
+    (t.pin ? pins : rest).push(t);
+  });
+  return pins.concat(rest);
+}
+function partitionPins(list){
+  var pins = [], rest = [], other = [];
+  (list || []).forEach(function(v){
+    var t = parseProfileTag(v);
+    if (t.coded && (t.cat === 'location' || t.cat === 'language')){ other.push(v); return; }
+    (t.pin ? pins : rest).push(v);
+  });
+  return pins.concat(rest, other);
+}
+var PTAGOPEN = false;
+function tagsSection(pid, asOther){
+  var editing = profileEditing(pid, asOther);
+  var skills = editing && PF ? (PF.skills || []) : (person(pid).skills || []);
+  var tags = profileTags(skills);
+  if (!editing && !tags.length) return '';
+  var chips = tags.map(function(t){
+    var pinLabel = t.pin ? 'Unpin tag' : 'Pin tag';
+    var pin = editing ? '<button type="button" class="ib ptagpin" data-act="ptagpin" data-id="'+esc(t.raw)+'" aria-pressed="'+(t.pin ? 'true' : 'false')+'" aria-label="'+pinLabel+'" title="'+pinLabel+'">'+ic('star', 12)+'</button>' : '';
+    var rm = editing ? '<button type="button" class="ib ptagx" data-act="ptagrm" data-id="'+esc(t.raw)+'" aria-label="Remove '+esc(t.label)+'">'+ic('close',12)+'</button>' : '';
+    var key = editing ? ' tabindex="0" role="listitem" aria-label="'+esc(t.label)+(t.pin ? ', pinned' : '')+', arrow keys move it"' : '';
+    var idAttr = editing ? ' data-id="'+esc(t.raw)+'"' : ' data-act="ptagfind" data-id="'+esc(t.label)+'" title="Search people tagged '+esc(t.label)+'"';
+    return '<span class="chip plain ptagchip'+(t.pin ? ' pin' : '')+'"'+idAttr+key+'>'+esc(t.label)+pin+rm+'</span>';
+  }).join('');
+  var add = editing ? '<div class="ptagadd"><button class="btn" data-act="addtag">'+ic('plus')+'Add tag</button></div>' : '';
+  return '<section class="sect" data-sect="tags"><h3>Tags</h3><div class="ptagclip"><div class="chips ptagrow" role="list">'+chips+'</div></div>' +
+    '<button type="button" class="btn ptagmore" data-act="ptagmore" hidden>'+(PTAGOPEN ? 'Show less' : 'Show more')+'</button>'+add+'</section>';
+}
+function fitProfileTags(){
+  var clip = document.querySelector('#win .ptagclip');
+  var row = clip && clip.querySelector('.ptagrow');
+  var btn = document.querySelector('#win .ptagmore');
+  if (!clip || !row || !btn) return;
+  var chips = row.children;
+  if (!chips.length){ btn.hidden = true; clip.style.maxHeight = ''; clip.style.overflow = ''; return; }
+  var top = chips[0].offsetTop, rowH = 0, wraps = false, i;
+  for (i = 0; i < chips.length; i++){
+    if (chips[i].offsetTop > top + 2) wraps = true;
+    else rowH = Math.max(rowH, chips[i].offsetHeight);
+  }
+  if (!wraps){ btn.hidden = true; clip.style.maxHeight = ''; clip.style.overflow = ''; return; }
+  btn.hidden = false;
+  btn.textContent = PTAGOPEN ? 'Show less' : 'Show more';
+  btn.setAttribute('aria-expanded', PTAGOPEN ? 'true' : 'false');
+  clip.style.maxHeight = PTAGOPEN ? '' : (rowH + 'px');
+  clip.style.overflow = PTAGOPEN ? '' : 'hidden';
+}
+function profileTagFocus(raw){
+  var chips = document.querySelectorAll('#win .ptagchip'), i;
+  for (i = 0; i < chips.length; i++) if (chips[i].getAttribute('data-id') === raw){ chips[i].focus(); return; }
+}
+function moveProfileTag(raw, dir){
+  if (!PF || !PEDIT) return;
+  var vis = profileTags(PF.skills).map(function(t){ return t.raw; });
+  var i = vis.indexOf(raw), j = i + dir;
+  if (i < 0 || j < 0 || j >= vis.length) return;
+  var swap = vis[i]; vis[i] = vis[j]; vis[j] = swap;
+  var other = PF.skills.filter(function(v){ var t = parseProfileTag(v); return t.coded && (t.cat === 'location' || t.cat === 'language'); });
+  var byId = {};
+  PF.skills.forEach(function(v){ byId[v] = v; });
+  PF.skills = partitionPins(vis.map(function(id){ return byId[id]; }).filter(Boolean).concat(other));
+  render();
+  profileTagFocus(raw);
+}
+function tagFormOpen(){ var top = DLGS[DLGS.length-1]; return !!(PF && top && top.querySelector('#pfbody')); }
+function paintTagFlow(){
+  var d = DLGS[DLGS.length-1];
+  if (!d || !d.classList.contains('ptagdlg') || !TAGFLOW) return;
+  d.querySelector('.dbody').innerHTML = tagFlowHTML(TAGFLOW);
+  placeDlg(d);
+  focusIn('ptag-q');
+}
+function openTagDialog(){
+  TAGFLOW = { cat:'', q:'' };
+  dialog('Add tag', tagFlowHTML(TAGFLOW), '<button class="btn primary" data-act="closedlg">Done</button>', 440, 'ptagdlg');
+  focusIn('ptag-q');
+}
+function addOwnTag(raw){
+  if (!raw) return;
+  var editing = tagFormOpen(), inline = !editing && PEDIT && PF;
+  var skills = (editing || inline ? PF.skills : (PEOPLE.self.skills || [])).slice();
+  if (skillsHave(skills, raw)){ toast('Already on your profile', skillLabel(raw)); return; }
+  if (skills.length >= 30){ toast('That’s 30 tags', ''); return; }
+  skills.push(raw);
+  if (editing){ PF.skills = skills; PF.adding = false; PF.tagCat = ''; pfRepaint(); return; }
+  if (inline){ PF.skills = partitionPins(skills); render(); refreshTagHits(); return; }
+  PEOPLE.self.skills = skills;
+  if (PF) PF.skills = skills.slice();
+  schedulePersist();
+  if (ONLINE){ var p = PEOPLE.self; HNAPI.saveProfile({ displayName:p.displayName, handle:p.handle, bio:p.bio || '', skills:p.skills, cities:citiesOf(p) }); }
+  render();
+}
+function addTypedTag(){
+  var state = tagFlowState();
+  var inp = document.getElementById('ptag-q');
+  var text = inp ? inp.value : (state.q || '');
+  if (!state.cat){ toast('Pick a category', ''); return; }
+  var known = tagCatalogue()[state.cat + '\n' + fold(text)];
+  var raw = encodeProfileTag(state.cat, known ? known.label : text);
+  if (!raw){ toast('Type a tag', 'Up to 40 characters'); return; }
+  addOwnTag(raw);
 }
 function citiesOf(p){ return p.cities && p.cities.length ? p.cities : (p.city ? [cityShort(p.city)] : []); }
 var PF = null;
@@ -4822,9 +5483,14 @@ function profileForm(){
       '<span class="ferr" id="pf-herr"'+(taken?'':' hidden')+'>'+(taken ? '@'+esc(PF.handle)+' is taken' : '')+'</span></div>' +
     (PF.mode === 'edit' ? pfPhotoHTML() : '') +
     '<div class="field"><label for="pf-about">About you</label><input type="text" id="pf-about" maxlength="120" value="'+esc(PF.about)+'" placeholder="Builds shade, cooks for eighty, always on strike crew"></div>' +
-    '<div class="field"><span class="flabel" id="pf-sk-l">What you can do</span><div class="pchips" role="group" aria-labelledby="pf-sk-l">' +
-      SKILLCHOICES.map(function(c){ var on = PF.skills.indexOf(c[0]) >= 0;
-        return '<button type="button" class="pchip'+(on?' on':'')+'" data-act="pfskill" data-id="'+esc(c[0])+'" aria-pressed="'+on+'">'+esc(c[1])+'</button>'; }).join('') + '</div></div>' +
+    '<div class="field"><span class="flabel" id="pf-sk-l">Tags</span><div class="ptags" aria-labelledby="pf-sk-l">' +
+      (profileTagGroups(PF.skills).map(function(g){
+        return '<div class="ptagcat" data-cat="'+g.cat+'"><h4 class="chh">'+esc(g.label)+'</h4><div class="chips">' + g.tags.map(function(t){
+          return '<span class="chip plain">'+esc(t.label)+'<button type="button" class="ib ptagx" data-act="ptagrm" data-id="'+esc(t.raw)+'" aria-label="Remove '+esc(t.label)+'">'+ic('close',12)+'</button></span>';
+        }).join('') + '</div></div>';
+      }).join('') || '<p class="chempty">None yet.</p>') +
+      (PF.adding ? tagFlowHTML({ cat:PF.tagCat || '', q:PF.tagQ || '' }) : '<div class="ptagadd"><button type="button" class="btn" data-act="ptagopen">'+ic('plus')+'Add tag</button></div>') +
+      '</div></div>' +
     '<div class="field"><span class="flabel" id="pf-ci-l">Where you are</span><div class="pchips" id="pf-cities" role="group" aria-labelledby="pf-ci-l">' +
       cities.map(function(c){ var on = PF.cities.indexOf(c) >= 0;
         return '<button type="button" class="pchip'+(on?' on':'')+'" data-act="pfcity" data-id="'+esc(c)+'" aria-pressed="'+on+'">'+esc(c)+'</button>'; }).join('') +
@@ -4838,10 +5504,16 @@ function demoRowHTML(){
 }
 /* your photo is your profile look's picture: the face on your page and on every avatar of you */
 /* the face the photo field shows: the photo, or your initials in the colours picked so far */
-function pfFaceHTML(){
+function pfFaceHTML(px){
+  px = px || 80;
   var me = person('self'), lk = DRAFT && DRAFT.form === 'profile' ? draftLook(DRAFT) : PTHEME.self, pl = lk && !isPlain(lk) ? lookPal(lk) : null;
-  return PF.photo ? sqT(Object.assign({}, lk || plainTheme('◉'), { image:PF.photo }), 80)
-    : '<span class="av'+(pl ? ' lk' : '')+'" style="width:80px;height:80px;flex-basis:80px;font-size:28px;background:'+(pl ? pl.sq+';color:'+pl.accentInk : (AVCOLOR.self||'#5a5a5a'))+'">'+esc(initials(PF.name || me.displayName || 'You'))+'</span>';
+  var face = pl ? pl.sq+';color:'+pl.accentInk : (AVCOLOR.self||'#5a5a5a');
+  return PF.photo ? sqT(Object.assign({}, lk || plainTheme('◉'), { image:PF.photo }), px)
+    : '<span class="av'+(pl ? ' lk' : '')+'" style="width:'+px+'px;height:'+px+'px;flex-basis:'+px+'px;font-size:'+Math.round(px*.35)+'px;background:'+face+'">'+esc(initials(PF.name || me.displayName || 'You'))+'</span>';
+}
+function profilePhotoHTML(){
+  return '<button type="button" class="czdrop pphoto" data-pfact="pick" data-czdrop="photo" aria-label="'+(PF && PF.photo ? 'Replace your photo' : 'Choose a photo')+'">' + pfFaceHTML(96) + '</button>' +
+    '<input type="file" id="pf-photo" class="czfile" accept="image/*" data-czfile="photo" tabindex="-1" aria-hidden="true">';
 }
 function pfPhotoHTML(){
   return '<div class="field"><span class="flabel" id="pf-ph-l">Photo</span><div class="czimg" role="group" aria-labelledby="pf-ph-l">' +
@@ -4852,7 +5524,12 @@ function pfPhotoHTML(){
       '<p class="fhelp">Square, cropped from the centre, up to 10 MB. Without one, your initials stand in, in your colours.</p>' +
       '<p class="ferr" id="pf-imgerr" role="alert"></p></div></div></div>';
 }
-function pfRepaint(){ pfSync(); var b = $('pfbody'); if (b) b.innerHTML = profileForm(); pfSync(); czPreviews(); }
+function pfRepaint(){
+  pfSync();
+  var b = $('pfbody');
+  if (b){ b.innerHTML = profileForm(); pfSync(); czPreviews(); return; }
+  if (PEDIT) render();
+}
 function pfTakePhoto(file){
   var err = $('pf-imgerr'), bad = imageProblem(file), pf = PF;
   if (err) err.textContent = bad;
@@ -4929,29 +5606,49 @@ function handleTaken(h){
   var mine = S.loggedIn && S.acct ? acctPid(S.acct) : null;
   return !!h && Object.keys(PEOPLE).some(function(k){ return k !== 'self' && k !== mine && normHandle(PEOPLE[k].handle) === h; });
 }
+function pfNameEl(){ return $('pf-name') || (PEDIT ? $('pedit-name') : null); }
+function pfAboutEl(){ return $('pf-about') || (PEDIT ? $('pedit-bio') : null); }
 function pfValid(){
-  var n = (($('pf-name')||{}).value || '').trim(), hd = normHandle(($('pf-handle')||{}).value);
+  if (!PF) return false;
+  var nameEl = pfNameEl(), handleEl = $('pf-handle');
+  var n = String(nameEl ? nameEl.value : PF.name || '').trim();
+  var hd = normHandle(handleEl ? handleEl.value : PF.handle);
   return !!n && !!hd && /^[a-z0-9._-]+$/.test(hd) && !handleTaken(hd);
 }
 function pfSync(){
-  if (!$('pf-name')) return;            /* the form isn't on screen (the phone's Preview): PF already holds it */
-  PF.name = ($('pf-name')||{}).value || ''; PF.handle = (($('pf-handle')||{}).value || '').replace(/^@/, '');
-  PF.about = ($('pf-about')||{}).value || '';
+  if (!PF) return;
+  var nameEl = pfNameEl(), aboutEl = pfAboutEl(), handleEl = $('pf-handle');
+  if (!nameEl && !aboutEl && !handleEl) return;   /* phone Preview: PF already holds it */
+  if (nameEl) PF.name = nameEl.value || '';
+  if (handleEl) PF.handle = (handleEl.value || '').replace(/^@/, '');
+  if (aboutEl) PF.about = aboutEl.value || '';
   var b = $('pfsave'); if (b) b.disabled = !pfValid();
   var hd = normHandle(PF.handle), err = $('pf-herr'), bad = hd && !/^[a-z0-9._-]+$/.test(hd);
-  var msg = handleTaken(hd) ? '@' + hd + ' is taken' : bad ? 'Letters, numbers, dots and dashes' : '';
+  var msg = !hd ? '' : handleTaken(hd) ? '@' + hd + ' is taken' : bad ? 'Letters, numbers, dots and dashes' : '';
   if (err){ err.textContent = msg; err.hidden = !msg; }
-  var hi = $('pf-handle'); if (hi){ if (msg) hi.setAttribute('aria-invalid', 'true'); else hi.removeAttribute('aria-invalid'); }
+  if (handleEl){ if (msg) handleEl.setAttribute('aria-invalid', 'true'); else handleEl.removeAttribute('aria-invalid'); }
 }
 function pfAddCity(){
   var inp = $('pf-city'), v = inp ? inp.value.trim() : '';
-  if (!v) return;
+  if (!v || !PF) return;
   v = v.charAt(0).toUpperCase() + v.slice(1);
   if (PF.cities.indexOf(v) < 0) PF.cities.push(v);
-  pfSync();
-  $('pfbody').innerHTML = profileForm();
-  if (PF.mode === 'edit') czPreviews();
+  var body = $('pfbody');
+  if (body){
+    pfSync();
+    body.innerHTML = profileForm();
+    if (PF.mode === 'edit') czPreviews();
+  } else if (PEDIT) render();
   var ni = $('pf-city'); if (ni) ni.focus();
+}
+function pfAddLang(){
+  var inp = $('pf-lang'), v = inp ? inp.value.trim().replace(/\s+/g, ' ').replace(/:/g, '') : '';
+  if (!v || !PF) return;
+  v = v.charAt(0).toUpperCase() + v.slice(1);
+  if (v.length > 40){ toast('Up to 40 characters', ''); return; }
+  if (!PF.langs.some(function(x){ return x.toLowerCase() === v.toLowerCase(); })) PF.langs.push(v);
+  render();
+  var ni = $('pf-lang'); if (ni) ni.focus();
 }
 function pfSave(){
   pfSync(); if (!pfValid()) return;
@@ -4965,14 +5662,55 @@ function pfSave(){
     useAcct('me');
     return;
   }
-  Object.keys(prof).forEach(function(k){ PEOPLE['self'][k] = prof[k]; });
+  writeProfile(prof);
   /* the look: the colours picked here and the photo, which is the look's picture */
   var photo = PF.photo !== ((PTHEME.self && PTHEME.self.image) || null), cz = DRAFT && DRAFT.form === 'profile' && DRAFT.lookTouched, lk = null;
   if (cz) lk = draftLook(Object.assign({}, DRAFT, { image:PF.photo || null }));
   else if (photo){ lk = asLook(Object.assign({}, PTHEME.self || plainTheme('◉'), { image:PF.photo || null })); if (isPlain(lk) && !lk.image) lk = null; }
   if (cz || photo){ if (lk) PTHEME.self = lk; else delete PTHEME.self; if (ONLINE) HNAPI.saveMyLook(); }
+  closeDialogs(); render(); toast('Profile saved', '');
+}
+function writeProfile(prof){
+  Object.keys(prof).forEach(function(k){ PEOPLE.self[k] = prof[k]; });
   if (ONLINE) HNAPI.saveProfile(prof);
-  S.me = { name:prof.displayName, handle:prof.handle }; closeDialogs(); render(); toast('Profile saved', '');
+  S.me = { name:prof.displayName, handle:prof.handle };
+}
+function beginProfileEdit(){
+  var p = PEOPLE.self;
+  PEDIT = true; PNAME = null; PBIO = null;
+  PF = { mode:'edit', name:p.displayName || '', handle:p.handle || '', photo:(PTHEME.self && PTHEME.self.image) || null,
+         about:p.bio || '', skills:(p.skills || []).slice(), cities:profileLocations(p).slice(), langs:profileLanguages(p).slice() };
+  var top = S.stack[S.stack.length - 1];
+  if (top && top.type === 'person' && top.id === 'self') render();
+  else openItem('person', 'self');
+  focusIn('pedit-name');
+}
+function finishProfileEdit(){
+  captureProfileEdit();
+  pfSync();
+  if (!PF){ PEDIT = false; PNAME = null; PBIO = null; render(); return; }
+  if (!pfValid()){
+    if (!String(PF.name || '').trim()) toast('Add your name', '');
+    else {
+      var err = $('pf-herr');
+      if (err && err.hidden){ err.textContent = 'Add a handle'; err.hidden = false; }
+      toast('Check your handle', '');
+    }
+    return;
+  }
+  var cities = PF.cities.slice();
+  writeProfile({ displayName:PF.name.trim(), handle:normHandle(PF.handle), bio:String(PF.about || '').trim(),
+    skills:profileSkillsForSave(PF.skills || PEOPLE.self.skills, PF.langs), cities:cities, city:cities.length ? cities[0].toUpperCase() : '' });
+  var prev = (PTHEME.self && PTHEME.self.image) || null;
+  if (PF.photo !== prev){
+    var lk = asLook(Object.assign({}, PTHEME.self || plainTheme('◉'), { image:PF.photo || null }));
+    if (isPlain(lk) && !lk.image) lk = null;
+    if (lk) PTHEME.self = lk; else delete PTHEME.self;
+    if (ONLINE) HNAPI.saveMyLook();
+  }
+  PEDIT = false; PNAME = null; PBIO = null; PF = null;
+  render();
+  toast('Profile saved', '');
 }
 function loginDialog(){
   if (ONLINE){ HNAPI.loginDialog(); return; }
@@ -4988,21 +5726,28 @@ function loginDialog(){
    What an account keeps is swapped in when it logs in and put away when it logs out. */
 var ACCTS = {};
 function acctPid(k){ if (ONLINE && k === 'me' && HNAPI.me) return HNAPI.me.id; return k === 'demo' ? 'p-michal' : 'u-' + k; }
-function blankAcct(profile){ return { profile:profile, rsvp:{}, went:{}, promoted:{}, hzfollow:{}, pfollow:{}, myevents:[], myhorizons:[], chats:{ byId:{}, order:[] }, unread:{}, drafts:{ forms:{}, chat:{} }, shift:{} }; }
+function blankAcct(profile){ return { profile:profile, rsvp:{}, went:{}, role:{}, promoted:{}, hzfollow:{}, pfollow:{}, myevents:[], myhorizons:[], chats:{ byId:{}, order:[] }, unread:{}, drafts:{ forms:{}, chat:{} }, shift:{} }; }
 function demoAcct(){
   var m = PEOPLE['p-michal'];
   var a = blankAcct({ displayName:m.displayName, handle:m.handle, bio:m.bio, skills:m.skills.slice(), cities:m.cities.slice(), city:m.city });
-  a.rsvp = { 'evt-deep-listening':'interested', 'evt-fill-0':'going', 'evt-fill-6':'going' };
-  a.hzfollow = { 'horizon-baltic':true, 'horizon-dust':true, 'horizon-quiet':true };
+  /* Three pinned tags lead. The rest wrap the tag row. Location and language stay out of that row. */
+  a.profile.skills = ['p:EVENT PRODUCTION/PRODUCING','p:c:role:Host','p:c:interest:Sauna','c:skill:Cooking','c:skill:Sound','c:skill:Building','c:skill:DJ','c:skill:Photographer','c:scene:Burns','c:scene:Techno','c:scene:Retreats','c:interest:Workshops','c:interest:Camping','c:location:Berlin','c:language:Swedish','c:language:English'];
+  a.rsvp = { 'evt-deep-listening':'interested', 'evt-fill-0':'going', 'evt-fill-6':'going', 'evt-harbour-walk':'going' };
+  /* Warehouse is only_me and the demo is its host, so the demo can see it. The role files it as co-created.
+     Camp kitchen dinner is friends-only and its host does not follow the demo, so it would never appear.
+     Deep Listening is still ahead, so the cocreator role fills Upcoming rather than Chronicle. */
+  a.role = { 'evt-world-hyperstition-2026':'cocreator', 'evt-world-warehouse':'cocreator', 'evt-world-borderland-2026':'attendee', 'evt-world-burning-man-2026':'attendee', 'evt-deep-listening':'cocreator' };
+  a.went = { 'evt-world-hyperstition-2026':true, 'evt-world-warehouse':true, 'evt-world-borderland-2026':true, 'evt-world-burning-man-2026':true, 'evt-chronicle-supper':true };
+  a.hzfollow = Object.assign({}, HZFOLLOWBY['p-michal']);
   a.pfollow = { 'p-anna':true, 'p-rio':true, 'p-kai':true, 'p-sasha':true };
-  a.myevents = DEMOHOST.slice(); a.myhorizons = ['horizon-default'];
+  a.myevents = DEMOHOST.slice(); a.myhorizons = ['horizon-default', 'horizon-ridge'];
   a.chats = fixtureChats(); a.unread = { 'c-kai':true };
   return a;
 }
 function captureAcct(){
   var p = PEOPLE['self'];
   return { profile:{ displayName:p.displayName, handle:p.handle, bio:p.bio, skills:p.skills, cities:p.cities, city:p.city },
-           rsvp:RSVP, went:WENT, promoted:PROMOTED, hzfollow:HZFOLLOW, pfollow:PFOLLOW, myevents:MYEVENTS, addedbyme:ADDEDBYME, myhorizons:MYHORIZONS,
+           rsvp:RSVP, went:WENT, role:ROLE, promoted:PROMOTED, hzfollow:HZFOLLOW, pfollow:PFOLLOW, myevents:MYEVENTS, addedbyme:ADDEDBYME, myhorizons:MYHORIZONS,
            chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT, drafts:{ forms:FORMDRAFTS, chat:CHATDRAFT }, shift:SHIFT, read:READ,
            look:PTHEME['self'] || null, joinedAt:(ACCTS[S.acct] || {}).joinedAt || 0 };
 }
@@ -5011,7 +5756,7 @@ function loadAcct(a){
   var p = PEOPLE['self'], pr = a.profile || {};
   ['displayName','handle','bio','city'].forEach(function(k){ p[k] = pr[k] || ''; });
   p.skills = (pr.skills || []).slice(); p.cities = (pr.cities || []).slice();
-  RSVP = a.rsvp || {}; WENT = a.went || {}; PROMOTED = a.promoted || {}; HZFOLLOW = a.hzfollow || {}; PFOLLOW = a.pfollow || {};
+  RSVP = a.rsvp || {}; WENT = a.went || {}; ROLE = a.role || {}; PROMOTED = a.promoted || {}; HZFOLLOW = a.hzfollow || {}; PFOLLOW = a.pfollow || {};
   MYEVENTS = (a.myevents || []).filter(function(id){ return EVENTS[id]; });
   ADDEDBYME = (a.addedbyme || []).filter(function(id){ return EVENTS[id]; });
   MYHORIZONS = (a.myhorizons || []).filter(function(k){ return HORIZONS[k]; });
@@ -5062,6 +5807,7 @@ function logIn(){
 }
 function doLogout(){
   if (ONLINE){ HNAPI.logout(); return; }
+  PEDIT = false; PNAME = null; PBIO = null; PF = null;
   if (S.acct) ACCTS[S.acct] = captureAcct();
   S.loggedIn = false; S.acct = null; loadAcct(null); syncAcctPeople();
   S.chatOpen = null; S.rightOpen = false;
@@ -6257,7 +7003,7 @@ function saveHorizonEdit(){
 /* Customize is part of Edit now; the old entry points open Edit */
 var customizeDialog = function(evId){ editEventDialog(evId); };
 var customizeHorizonDialog = function(hzId){ editHorizonDialog(hzId); };
-var customizePersonDialog = function(){ gated(function(){ profileDialog('edit'); })(); };
+var customizePersonDialog = function(){ gated(beginProfileEdit)(); };
 /* store a look for an event: a look, or null for plain (undefined = the look was not touched) */
 function setEventLook(id, t){
   if (t === undefined) return;
@@ -6333,6 +7079,36 @@ function wizAct(which){
   render();
   toast('Published', EVENTS[id].title);
 }
+/* Add past event calls the new-event panel as it is. These wraps only relax the
+   "today or later" rule, and file the role after publish. The panel body stays. */
+(function(){
+  var miss = wizMissing, paint = paintWiz, act = wizAct;
+  wizMissing = function(d, step){
+    var m = miss(d, step);
+    if (!CHRONICLE_ADD || !d || step !== 1) return m;
+    if (m.date === 'Pick today or a later day') delete m.date;
+    var st = isoDate(d.date), en = String(d.end || '').trim() ? isoDate(d.end) : '', last = en || st;
+    if (st && last && !isPast(last)){
+      if (en && !isPast(en)) m.end = 'Pick a day that has already passed';
+      else m.date = 'Pick a day that has already passed';
+    }
+    return m;
+  };
+  paintWiz = function(){ paint(); chronicleUnblockDate(); };
+  wizAct = function(which){
+    var adding = !!(CHRONICLE_ADD && which === 'finish' && DRAFT && !DRAFT.editing && DRAFT.form !== 'horizon' && DRAFT.form !== 'link');
+    var before = adding ? Object.keys(EVENTS) : null;
+    act(which);
+    if (!before) return;
+    var id = Object.keys(EVENTS).filter(function(k){ return before.indexOf(k) < 0; })[0];
+    if (!id) return;
+    var role = CHRONICLE_ADD;
+    CHRONICLE_ADD = null;
+    fileChronicle(id, role);
+    openItem('person', 'self');
+    toast('Added to your chronicle', EVENTS[id].title);
+  };
+})();
 </script>
 <script>
 /* =========================================================================
@@ -6662,12 +7438,23 @@ document.addEventListener('click', function(ev){
 /* =========================================================================
    13. ACTIONS
    ========================================================================= */
-function goFolder(f){
+/* A left-nav page keeps the open window only while the list still shows beside it.
+   The globe, a phone, and a window that covers the list still close it. */
+function paneFollowsPage(prev, next, stack){
+  if (!stack || !stack.length || L.phone || L.win !== 'over') return false;
+  if (sameFolder(prev, next)) return false;
+  if (next && next.kind === 'globe') return false;
+  if (stack.some(function(it){ return it && it.type === 'globe'; })) return false;
+  return true;
+}
+function goFolder(f, keepPane){
   if (L.phone && S.tab === 'you' && f.kind !== 'you'){ /* stays in the You tab */ }
   /* a narrow calendar's open day belongs to the list it was opened in */
+  var prev = S.folder, saved = keepPane ? S.stack.slice() : null;
   if (!sameFolder(S.folder, f)){ S.folder = { kind:f.kind, id:f.id || null }; S.calDay = null; }
   S.stack = [];
   if (f.kind !== 'search'){ S.phoneSearch = false; S.query = ''; SEARCHRET = null; }
+  if (saved && paneFollowsPage(prev, f, saved) && saved.every(validItem)) S.stack = saved;
 }
 function markRead(id){ READ[id] = true; }
 /* open an item in the detail pane: from a list row it replaces what is open, from inside a page it stacks */
@@ -6957,19 +7744,28 @@ var SEARCHRET = null;
 function rememberPlace(){ SEARCHRET = { folder:S.folder, stack:S.stack.slice() }; }
 function leaveSearch(){
   var r = SEARCHRET || { folder:landingFolder(), stack:[] };
-  S.query = ''; SEARCHRET = null;
+  S.query = ''; TAGFIND = null; SEARCHRET = null;
   goFolder(r.folder); S.stack = r.stack;
   var q = $('q'); if (q) q.value = '';
 }
+/* The return target when a tag search had to close the profile so the results could show. */
+function tagSearchBack(){
+  if (!TAGFIND || S.stack.length || !SEARCHRET || !SEARCHRET.stack.length) return null;
+  return SEARCHRET.stack[SEARCHRET.stack.length - 1];
+}
 function doSearch(q){
+  if (TAGFIND && fold(q) !== fold(TAGFIND)) TAGFIND = null;
   S.query = q;
   /* typing refines one search: the trail back is the place you searched from, not every keystroke */
   if (!q.trim()){
     if (S.folder.kind === 'search'){ leaveSearch(); if (L.phone){ S.phoneSearch = true; ROUTE.replace = true; } }
     render(); return;
   }
+  /* goFolder drops the open window. A tag click keeps it when the list still shows beside it. */
+  var keep = TAGFIND && fold(q) === fold(TAGFIND) && !L.phone && L.win === 'over' ? S.stack.slice() : null;
   if (S.folder.kind !== 'search'){ if (!SEARCHRET) rememberPlace(); if (S.phoneSearch) ROUTE.replace = true; goFolder({ kind:'search' }); }
-  else S.stack = [];
+  else if (!keep) S.stack = [];
+  if (keep) S.stack = keep;
   render();
 }
 function stepItem(delta){
@@ -6984,12 +7780,12 @@ function stepItem(delta){
 function runCmd(cmd, arg){
   closePopup();
   switch (cmd){
-    case 'new-event':   closeDialogs(); newEventDialog(); break;
+    case 'new-event':   CHRONICLE_ADD = null; closeDialogs(); newEventDialog(); break;
     case 'new-horizon': closeDialogs(); gated(function(){ newHorizonDialog(arg); })(); break;
     case 'newchat':     closeDialogs(); gated(function(){ newChatDialog(); })(); break;
     case 'new-callout': closeDialogs(); gated(newCalloutDialog)(arg ? { eventId:arg } : null); break;
     case 'profile':     openItem('person', 'self'); break;
-    case 'editprofile': profileDialog('edit'); break;
+    case 'editprofile': beginProfileEdit(); break;
     case 'logout':      doLogout(); break;
   }
 }
@@ -7017,7 +7813,7 @@ document.addEventListener('click', function(ev){
     case 'acctmenu': if (POP){ closePopup(); break; } popup(n, [{ label:'Your profile', cmd:'profile', icon:'user' }, { label:'Edit profile', cmd:'editprofile', icon:'edit' }, '-', { label:'Log out', cmd:'logout', icon:'back' }]); break;
     case 'newsheet': newSheet(); break;
     case 'runcmd':   runCmd(id); break;
-    case 'folder':   goFolder({ kind:n.getAttribute('data-kind'), id:id || null }); render(); $('listbody').scrollTop = 0; break;
+    case 'folder':   goFolder({ kind:n.getAttribute('data-kind'), id:id || null }, true); render(); $('listbody').scrollTop = 0; break;
     case 'shelfall':    goFolder(isExploreKind(id) ? { kind:'explore', id:id } : { kind:'shelf', id:id }); render(); $('listbody').scrollTop = 0; break;
     case 'explorekind': if (L.phone && S.tab !== 'explore') setTab('explore'); else if (L.phone && S.folder.kind === 'explore') ROUTE.replace = true;
                         goFolder({ kind:'explore', id:id || null }); render(); $('listbody').scrollTop = 0; break;
@@ -7068,30 +7864,84 @@ document.addEventListener('click', function(ev){
     case 'newchat':      runCmd('newchat'); break;
     case 'ncdm':         closeDialogs(); NC = null; messagePerson(id); break;
     case 'new-event':    runCmd('new-event'); break;
+    case 'addpastevent': gated(addPastEventDialog)(); break;
+    case 'chronicle-go': {
+      var picked = document.querySelector('.dlg input[name="ch-role"]:checked');
+      if (!picked){ toast('Pick a role', 'Host, co-creator or attendee'); break; }
+      var pastRole = picked.value;
+      closeDialogs();
+      openPastEvent(pastRole);
+      break;
+    }
     case 'new-horizon':  runCmd('new-horizon', id); break;
     case 'login':        loginDialog(); break;
     case 'join':         closeDialogs(); if (ACCTS.me) loginDialog(); else profileDialog('signup'); break;
     case 'loginpick':    loginPicker(); break;
     case 'useacct':      useAcct(id); break;
     case 'pfsave':       pfSave(); break;
-    case 'editprofile':  gated(function(){ profileDialog('edit'); })(); break;
+    case 'editprofile':  gated(beginProfileEdit)(); break;
+    case 'profiledone':  finishProfileEdit(); break;
+    case 'pmore':        PEXP[id] = !PEXP[id]; render(); break;
     case 'pfaddcity':    pfAddCity(); break;
+    case 'pfaddlang':    pfAddLang(); break;
+    case 'pflangrm': {
+      if (!PF || !PF.langs) break;
+      PF.langs = PF.langs.filter(function(x){ return x.toLowerCase() !== String(id || '').toLowerCase(); });
+      render();
+      break;
+    }
+    case 'addtag':       gated(openTagDialog)(); break;
+    case 'ptagopen':     if (PF){ PF.adding = true; PF.tagCat = ''; PF.tagQ = ''; pfRepaint(); } break;
+    case 'ptagcat':
+      if (tagFormOpen()){ PF.tagCat = id; pfRepaint(); }
+      else if (TAGFLOW){ TAGFLOW.cat = id; paintTagFlow(); }
+      break;
+    case 'ptagback':
+      if (tagFormOpen()){ PF.tagCat = ''; pfRepaint(); }
+      else if (TAGFLOW){ TAGFLOW.cat = ''; paintTagFlow(); }
+      break;
+    case 'ptagpick':     addOwnTag(id); break;
+    case 'ptagcreate':   addTypedTag(); break;
+    case 'ptagfind': {
+      var box = $('q'); if (box) box.value = id;
+      var pq = $('pq'); if (pq) pq.value = id;
+      TAGFIND = id;
+      doSearch(id); rememberQuery(id);
+      break;
+    }
+    case 'ptagmore': PTAGOPEN = !PTAGOPEN; fitProfileTags(); break;
+    case 'ptagpin': {
+      if (!PF || !PEDIT) break;
+      PF.skills = partitionPins(PF.skills.map(function(v){ return v === id ? tagPin(v, !tagPinned(v)) : v; }));
+      render();
+      break;
+    }
+    case 'ptagrm': {
+      var editing = tagFormOpen(), inline = !editing && PEDIT && PF;
+      var list = (editing || inline ? PF.skills : (PEOPLE.self.skills || [])).slice(), at = list.indexOf(id);
+      if (at < 0) break;
+      list.splice(at, 1);
+      if (editing){ PF.skills = list; pfRepaint(); break; }
+      if (inline){ PF.skills = list; render(); break; }
+      PEOPLE.self.skills = list;
+      schedulePersist();
+      if (ONLINE){ var pr = PEOPLE.self; HNAPI.saveProfile({ displayName:pr.displayName, handle:pr.handle, bio:pr.bio || '', skills:pr.skills, cities:citiesOf(pr) }); }
+      render();
+      break;
+    }
     case 'pfskill': case 'pfcity': {
+      if (!PF) break;
       var arr = act === 'pfskill' ? PF.skills : PF.cities, ix = arr.indexOf(id);
       if (ix < 0) arr.push(id); else arr.splice(ix, 1);
-      n.classList.toggle('on', ix < 0); n.setAttribute('aria-pressed', ix < 0);
-      if (PF.mode === 'edit') czPreviews();
+      if ($('pfbody')){
+        n.classList.toggle('on', ix < 0); n.setAttribute('aria-pressed', ix < 0);
+        if (PF.mode === 'edit') czPreviews();
+      } else if (PEDIT) render();
       break;
     }
     case 'pfpreview':    pfPreview(id === 'on'); break;
     case 'logout':       doLogout(); break;
-    case 'closedlg': {
-      /* the New event wizard has one way out, ×: what you typed is kept, and the toast offers to throw it away */
-      var kept = wizDraftOpen();
-      closeDialogs(); S.pending = null;
-      if (kept) draftKeptToast();
-      break;
-    }
+    case 'closedlg': dismissDialog(); break;
     case 'donewhorizon': {
       var nm = (($('nh-n')||{}).value || '').trim();
       if (!nm) break;
@@ -7202,6 +8052,13 @@ document.addEventListener('click', function(ev){
 });
 document.addEventListener('change', function(ev){
   var n = ev.target;
+  if (n.name === 'ch-role'){
+    document.querySelectorAll('.dlg .visopt').forEach(function(l){
+      var inp = l.querySelector('input[name="ch-role"]');
+      if (inp) l.classList.toggle('on', inp.checked);
+    });
+    return;
+  }
   if (n.getAttribute && n.getAttribute('data-sched')){ schedTouch(n); return; }
   if (n.getAttribute('data-czfile')){ var fl = n.files && n.files[0]; n.value = ''; if (n.getAttribute('data-czfile') === 'photo') pfTakePhoto(fl); else czTakeFile(fl); return; }
   if (n.closest('[data-cz]') && DRAFT){
@@ -7228,10 +8085,21 @@ document.addEventListener('change', function(ev){
 document.addEventListener('input', function(ev){
   var n = ev.target;
   if (n.id === 'q' || n.id === 'pq'){ doSearch(n.value); return; }
+  if (n.classList && n.classList.contains('pfind')){
+    PFILT[n.getAttribute('data-id')] = n.value; render(); return;
+  }
   if (n.id === 'nc-q' && NC){ NC.q = n.value; paintNewChat(); return; }
   if (n.id === 'pf-handle' && PF) PF.handleTouched = true;
   if (n.id === 'pf-name' && PF && PF.mode === 'signup' && !PF.handleTouched){ var hi0 = $('pf-handle'); if (hi0) hi0.value = suggestHandle(n.value); }
-  if (/^pf-(name|handle|about)$/.test(n.id)){ pfSync(); if (PF && PF.mode === 'edit') czPreviews(); return; }
+  if (n.id === 'ptag-q'){
+    if (tagFormOpen() && PF) PF.tagQ = n.value;
+    else if (TAGFLOW) TAGFLOW.q = n.value;
+    refreshTagHits();
+    return;
+  }
+  if (n.id === 'pedit-name' || n.id === 'pedit-bio' || /^pf-(name|handle|about)$/.test(n.id)){
+    pfSync(); if (PF && PF.mode === 'edit' && $('pfbody')) czPreviews(); return;
+  }
   if (n.id === 'chatbox'){ growBox(n); var ac = activeChat(); if (ac){ if (n.value) CHATDRAFT[ac] = n.value; else delete CHATDRAFT[ac]; schedulePersist(); } return; }
   if (n.id === 'coreply'){ growBox(n); if (n.value) REPLYDRAFT[n.getAttribute('data-id')] = n.value; else delete REPLYDRAFT[n.getAttribute('data-id')]; return; }
   if (/^co-[tbx]$/.test(n.id)){ saveForm('callout'); return; }
@@ -7253,7 +8121,60 @@ document.addEventListener('mousedown', function(ev){
   var panel = document.getElementById('w-tagpanel');
   if (panel && !panel.hidden && !ev.target.closest('.tagfield')) tagSetOpen(false);
 });
-window.addEventListener('resize', function(){ tagFit(); tagPlace(); });
+window.addEventListener('resize', function(){ tagFit(); tagPlace(); fitProfileTags(); });
+var PTAGDRAG = null;
+function ptagUnder(x, y){
+  var chips = document.querySelectorAll('#win .ptagchip'), i, r;
+  for (i = 0; i < chips.length; i++){
+    r = chips[i].getBoundingClientRect();
+    if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return chips[i];
+  }
+  return null;
+}
+document.addEventListener('pointerdown', function(ev){
+  var chip = ev.target.closest && ev.target.closest('#win .ptagchip');
+  if (!chip || !profileEditing('self') || ev.target.closest('button')) return;
+  if (ev.button != null && ev.button !== 0) return;
+  ev.preventDefault();
+  var sel = window.getSelection();
+  if (sel && sel.removeAllRanges) sel.removeAllRanges();
+  PTAGDRAG = { id:chip.getAttribute('data-id'), el:chip, x:ev.clientX, y:ev.clientY, moved:false };
+  try { chip.setPointerCapture(ev.pointerId); } catch(e){}
+});
+document.addEventListener('pointermove', function(ev){
+  if (!PTAGDRAG) return;
+  if (!PTAGDRAG.moved){
+    if (Math.abs(ev.clientX - PTAGDRAG.x) < 4 && Math.abs(ev.clientY - PTAGDRAG.y) < 4) return;
+    PTAGDRAG.moved = true;
+    PTAGDRAG.el.classList.add('dragging');
+    var dragSel = window.getSelection();
+    if (dragSel && dragSel.removeAllRanges) dragSel.removeAllRanges();
+    var clip0 = document.querySelector('#win .ptagclip');
+    if (clip0){ clip0.style.maxHeight = ''; clip0.style.overflow = ''; }
+  }
+  var over = ptagUnder(ev.clientX, ev.clientY);
+  if (!over || over === PTAGDRAG.el) return;
+  var row = PTAGDRAG.el.parentNode;
+  var chips = Array.prototype.slice.call(row.querySelectorAll('.ptagchip'));
+  if (chips.indexOf(PTAGDRAG.el) < chips.indexOf(over)) row.insertBefore(PTAGDRAG.el, over.nextSibling);
+  else row.insertBefore(PTAGDRAG.el, over);
+});
+function ptagDrop(){
+  if (!PTAGDRAG) return;
+  var moved = PTAGDRAG.moved;
+  if (PTAGDRAG.el) PTAGDRAG.el.classList.remove('dragging');
+  if (!moved || !PF){ PTAGDRAG = null; fitProfileTags(); return; }
+  var row = document.querySelector('#win .ptagrow');
+  var ids = row ? Array.prototype.map.call(row.querySelectorAll('.ptagchip'), function(c){ return c.getAttribute('data-id'); }) : [];
+  var byId = {};
+  PF.skills.forEach(function(v){ byId[v] = v; });
+  var other = PF.skills.filter(function(v){ var t = parseProfileTag(v); return t.coded && (t.cat === 'location' || t.cat === 'language'); });
+  PF.skills = partitionPins(ids.map(function(id){ return byId[id]; }).filter(Boolean).concat(other));
+  PTAGDRAG = null;
+  render();
+}
+document.addEventListener('pointerup', ptagDrop);
+document.addEventListener('pointercancel', ptagDrop);
 document.addEventListener('scroll', function(){ tagPlace(); }, true);
 
 /* drag an event row onto one of your horizons */
@@ -7276,6 +8197,14 @@ document.addEventListener('drop', function(ev){
   if (f && DRAGID){ ev.preventDefault(); addToHorizonDrop(DRAGID, f.getAttribute('data-drop')); DRAGID = null; }
 });
 
+/* × and Escape close a dialog. A past-event draft with nothing typed is dropped, so the next New event is not stuck on a past date. */
+function dismissDialog(){
+  if (CHRONICLE_ADD && DRAFT && FORMDRAFTS.event === DRAFT && !String(DRAFT.title || '').trim() && !String(DRAFT.desc || '').trim()) FORMDRAFTS.event = null;
+  CHRONICLE_ADD = null;
+  var kept = wizDraftOpen();
+  closeDialogs(); S.pending = null;
+  if (kept) draftKeptToast();
+}
 /* keyboard: the list follows the arrows; Escape steps back out */
 document.addEventListener('keydown', function(ev){
   var ae = document.activeElement, inField = ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
@@ -7285,8 +8214,21 @@ document.addEventListener('keydown', function(ev){
   if (tagOn && (ev.key === 'Enter' || ev.key === ' ') && ae && ae.classList && ae.classList.contains('tagopt')){ ev.preventDefault(); tagPick(ae.getAttribute('data-id')); return; }
   if (!tagOn && ae && ae.id === 'w-tagbox' && (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'ArrowDown')){ ev.preventDefault(); tagSetOpen(true); return; }
   if (ev.key === 'Enter' && ae && ae.id === 'lk-u' && !ae.readOnly){ ev.preventDefault(); linkAutofill(); return; }
+  if (ev.key === 'Enter' && ae && ae.id === 'ptag-q'){
+    ev.preventDefault();
+    var typed = String(ae.value || '').trim(), hits = tagChoices(tagFlowState());
+    var one = typed && hits.filter(function(h){ return fold(h.label) === fold(typed); });
+    if (one && one.length === 1) addOwnTag(one[0].raw);
+    else addTypedTag();
+    return;
+  }
+  if (ae && ae.classList && ae.classList.contains('ptagchip') && (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight')){
+    ev.preventDefault();
+    moveProfileTag(ae.getAttribute('data-id'), ev.key === 'ArrowRight' ? 1 : -1);
+    return;
+  }
   if (ev.key === 'Escape'){
-    if (DLGS.length){ var kept = wizDraftOpen(); closeDialogs(); S.pending = null; if (kept) draftKeptToast(); return; }
+    if (DLGS.length){ dismissDialog(); return; }
     if (POP){ closePopup(); return; }
     if (ae && ae.id === 'q' && S.folder.kind === 'search'){ leaveSearch(); render(); ae.blur(); return; }
     if (inField){ ae.blur(); return; }
@@ -7300,7 +8242,11 @@ document.addEventListener('keydown', function(ev){
     if (ae.id === 'coreply'){ if (ev.shiftKey || ev.isComposing) return; postReply(ae.getAttribute('data-id')); ev.preventDefault(); return; }
     if (ae.id === 'q' || ae.id === 'pq'){ rememberQuery(ae.value); if (L.phone) ae.blur(); ev.preventDefault(); return; }
     if (ae.id === 'pf-city'){ pfAddCity(); ev.preventDefault(); return; }
-    if (/^pf-(name|handle|about)$/.test(ae.id)){ pfSave(); ev.preventDefault(); return; }
+    if (ae.id === 'pf-lang'){ pfAddLang(); ev.preventDefault(); return; }
+    if (/^pf-(name|handle|about)$/.test(ae.id)){
+      if (!(PEDIT && !$('pfbody'))) pfSave();
+      ev.preventDefault(); return;
+    }
     if (ae.id === 'nc-q'){ var nf = document.querySelector('#nc-list [data-act="ncdm"]'); if (nf) nf.click(); ev.preventDefault(); return; }
     if (ae.id === 'nh-n'){ var go = $('nh-go'); if (go && !go.disabled) go.click(); ev.preventDefault(); return; }
     if (ae.classList.contains('pi')){ ae.click(); ev.preventDefault(); return; }
@@ -7588,6 +8534,7 @@ function startRoutes(){
    15. RENDER + BOOT
    ========================================================================= */
 function render(){
+  captureProfileEdit();
   /* logged out there is no Home: whatever asked for it (a link, a tab, an old history entry) lands on Explore. Nor is
      there anything of an account's (2026-10-05, "doesn't make sense to be able to click on the profile and see nothing
      there"): You, Chats and your lists land on Explore too, and a phone has no tabs — Explore is a visitor's one place */
@@ -7635,6 +8582,7 @@ function render(){
     if (isCal()) renderCalendar(); else renderList();
   }
   renderDetail();
+  fitProfileTags();
   renderChats();
   renderPreview();
   /* the phone's sheet ends above the preview bar, which is always there when logged out (the tabs under it stay) */

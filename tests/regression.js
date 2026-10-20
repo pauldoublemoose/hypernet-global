@@ -652,7 +652,8 @@ async function overflowEverywhere(p, label){
         /* the skeleton, ignoring optional pieces (a ribbon, an entry panel, editions, a second art layer) */
         const top = [...pg.children].map(x => x.classList[0]).filter(k => /^(art|banner|actbar|layer|tail)$/.test(k)).filter((k, i, a) => a.indexOf(k) === i).join('>');
         const q = s => !!pg.querySelector(s);
-        return top + '|' + ['header.banner > .bin > .sqwrap', 'header.banner > .bin > .btxt > h1.hl', '.actbar > .verbs', '.layer > .lin > .facts', '.layer > .lin > .sect'].map(q).join(',');
+        /* a profile name sits in .pnamerow; an event or horizon heading is still the direct child of .btxt */
+        return top + '|' + ['header.banner > .bin > .sqwrap', 'header.banner > .bin > .btxt > h1.hl, header.banner > .bin > .btxt > .pnamerow > h1.hl', '.actbar > .verbs', '.layer > .lin > .facts', '.layer > .lin > .sect'].map(q).join(',');
       }, type);
     }
     const uniq = new Set(Object.values(sigs));
@@ -676,8 +677,8 @@ async function overflowEverywhere(p, label){
     /* your profile: its colours from Edit profile on your page, kept across reload; nobody else's page offers it */
     await c.evaluate(() => { openItem('person', 'self'); }); await c.waitForTimeout(400);
     await c.click('.pg-person .actbar [data-act="editprofile"]'); await c.waitForTimeout(250);
-    await c.click('.dlg [data-czact="start"][data-i="1"]'); await c.waitForTimeout(150);
-    await c.click('#pfsave'); await c.waitForTimeout(500);
+    await c.click('#dscroll [data-czact="start"][data-i="1"]'); await c.waitForTimeout(150);
+    await c.click('#dscroll [data-act="profiledone"]'); await c.waitForTimeout(500);
     await c.reload(); await c.waitForTimeout(800);
     const pp = await ev(c, () => ({ look:!!PTHEME.self, page:!!document.querySelector('.pg-person:not(.plain)') }));
     ok(pp.look && pp.page, kind + ': a customised profile persists across reload');
@@ -1012,9 +1013,9 @@ async function overflowEverywhere(p, label){
          kind + ': the New event Look step is the same look editor (one colour to start, Add accent, one picture)');
       await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
       /* your photo: from Edit profile, it is your avatar and your profile's square */
-      await c.evaluate(() => profileDialog('edit')); await c.waitForTimeout(200);
+      await c.evaluate(() => beginProfileEdit()); await c.waitForTimeout(200);
       await c.setInputFiles('#pf-photo', { name:'me.png', mimeType:'image/png', buffer:png }); await c.waitForTimeout(700);
-      await c.click('#pfsave'); await c.waitForTimeout(400);
+      await c.click('#dscroll [data-act="profiledone"]'); await c.waitForTimeout(400);
       await c.evaluate(() => openItem('person', 'self')); await c.waitForTimeout(400);
       const ph = await ev(c, () => ({ look:/^data:image/.test((PTHEME.self || {}).image || ''), page:!!document.querySelector('.pg-person .sqwrap img'),
         av:document.querySelectorAll('.av.img img').length, plain:!!document.querySelector('.pg-person.plain') }));
@@ -2325,22 +2326,22 @@ async function overflowEverywhere(p, label){
     await c.evaluate(() => openItem('person', 'self')); await c.waitForTimeout(350);
     ok(await ev(c, () => [...document.querySelectorAll('#dscroll .pg-person .actbar .btn')].map(b => b.getAttribute('data-act')).join() === 'editprofile'), kind + ': your page has one Edit profile');
     await c.click('#dscroll [data-act="editprofile"]'); await c.waitForTimeout(300);
-    await c.fill('#pf-name', 'Edda Preview'); await c.click('.dlg [data-czact="start"][data-i="5"]'); await c.waitForTimeout(250);
+    await c.fill('#pedit-name', 'Edda Preview'); await c.click('#dscroll [data-czact="start"][data-i="5"]'); await c.waitForTimeout(250);
     let pv;
     if (kind === 'phone'){
-      ok(await ev(c, () => !document.querySelector('.dlg .custprev') && !!document.querySelector('.dlg .dfoot [data-act="pfpreview"]')), 'phone: Edit profile has Preview instead of a squeezed side preview');
-      await c.click('.dlg [data-act="pfpreview"]'); await c.waitForTimeout(300);
+      ok(await ev(c, () => !document.querySelector('#dscroll .custprev') && !!document.querySelector('#dscroll [data-act="pfpreview"]')), 'phone: Edit profile has Preview instead of a squeezed side preview');
+      await c.click('#dscroll [data-act="pfpreview"]'); await c.waitForTimeout(300);
       await shot(c, 'editlook-profile-preview-phone');
     }
-    pv = await ev(c, () => { const pg = document.querySelector('.dlg .pvpage .pg-person'); return pg && { name:pg.querySelector('.hl').textContent, plain:pg.classList.contains('plain'),
+    pv = await ev(c, () => { const pg = document.querySelector('#dscroll .pvpage .pg-person'); return pg && { name:pg.querySelector('.hl').textContent, plain:pg.classList.contains('plain'),
       bg:getComputedStyle(pg).backgroundColor, other:!!pg.querySelector('[data-act="followp"]') && !pg.querySelector('[data-act="editprofile"]'), inert:pg.closest('[inert]') !== null, saved:PEOPLE.self.displayName }; });
     ok(pv && pv.name === 'Edda Preview' && !pv.plain && pv.bg === 'rgb(0, 0, 0)' && pv.other && pv.inert && pv.saved === 'Edda Lund',
        kind + ': the preview is your page as others see it, with the unsaved name and colours ' + JSON.stringify(pv));
     if (kind === 'phone'){
-      await c.click('.dlg [data-act="pfpreview"][data-id="off"]'); await c.waitForTimeout(250);
-      ok(await ev(c, () => document.getElementById('pf-name').value === 'Edda Preview' && DRAFT.c1 === '#000000'), 'phone: Back to editing keeps what you typed and picked');
+      await c.click('#dscroll [data-act="pfpreview"][data-id="off"]'); await c.waitForTimeout(250);
+      ok(await ev(c, () => document.getElementById('pedit-name').value === 'Edda Preview' && DRAFT.c1 === '#000000'), 'phone: Back to editing keeps what you typed and picked');
     } else await shot(c, 'editlook-edit-profile-desk');
-    await c.click('#pfsave'); await c.waitForTimeout(400);
+    await c.click('#dscroll [data-act="profiledone"]'); await c.waitForTimeout(400);
     /* the profile look shows wherever you are: your page, your avatar (toolbar or You tab), and under your account's id */
     if (kind === 'phone'){ await c.evaluate(() => { S.stack = []; setTab('you'); }); await c.waitForTimeout(300); }
     const face = await ev(c, () => { const av = document.querySelector(L.phone ? '.acctcard .av' : '#acct .av'); return { lk:av.classList.contains('lk'), bg:getComputedStyle(av).backgroundColor,

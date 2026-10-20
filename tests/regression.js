@@ -851,7 +851,7 @@ async function overflowEverywhere(p, label){
     await c.evaluate(() => { closeDialogs(); S.tab = 'home'; goFolder({ kind:'home' }); S.stack = []; doLogout(); }); await c.waitForTimeout(200);
     await c.evaluate(() => loginDialog()); await c.waitForTimeout(150);
     await c.fill('#pf-name', 'Cora Pan'); await c.fill('#pf-handle', 'cora' + kind);
-    await c.evaluate(() => document.querySelector('.pchip[data-id="CAMP OPERATIONS/KITCHEN & COOKING"]').click()); await c.waitForTimeout(100);
+    await c.evaluate(() => { PF.skills = (PF.skills || []).concat(['CAMP OPERATIONS/KITCHEN & COOKING']); });
     await c.click('#pfsave'); await c.waitForTimeout(300);
     /* following one person: Home still shows the network around them */
     await c.evaluate(() => followP('p-mira')); await c.waitForTimeout(300);

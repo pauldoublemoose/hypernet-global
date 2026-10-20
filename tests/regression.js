@@ -1467,6 +1467,36 @@ async function overflowEverywhere(p, label){
     ok(!c.errors.length, kind + ': no console errors (New event) ' + c.errors.join(' '));
   }
 
+  /* a saved ticket or source link of javascript: is text, never a link that runs */
+  {
+    const c = await ctx('desk');
+    await open(c, '', true);
+    const bad = await ev(c, () => {
+      const id = 'evt-js-ticket';
+      EVENTS[id] = { id:id, title:'Script ticket', date:'2026-11-08', kind:'meetup', privacy:'everyone', hostName:'Host', description:'A night.' };
+      REC[id] = { kind:'meetup', city:'Brno', description:'A night.', access:{ model:'ticket', url:'javascript:alert(1)' }, externalUrl:'javascript:alert(2)' };
+      openItem('event', id);
+      return new Promise(function(r){ setTimeout(function(){
+        var root = document.getElementById('dscroll');
+        r([...root.querySelectorAll('a[href]')].map(function(a){ return a.getAttribute('href'); }).filter(function(h){ return /^javascript:/i.test(h || ''); }));
+      }, 400); });
+    });
+    ok(Array.isArray(bad) && !bad.length, 'a javascript: ticket or source link renders no clickable javascript: href ' + JSON.stringify(bad));
+    const good = await ev(c, () => {
+      const id = 'evt-https-ticket';
+      EVENTS[id] = { id:id, title:'Real tickets', date:'2026-11-09', kind:'meetup', privacy:'everyone', hostName:'Host', description:'A night.' };
+      REC[id] = { kind:'meetup', city:'Brno', description:'A night.', access:{ model:'ticket', url:'https://tickets.example/e' }, externalUrl:'https://source.example/event' };
+      openItem('event', id);
+      return new Promise(function(r){ setTimeout(function(){
+        var root = document.getElementById('dscroll');
+        r([...root.querySelectorAll('a[href]')].map(function(a){ return a.getAttribute('href'); }));
+      }, 400); });
+    });
+    ok(good.some(function(h){ return /^https:\/\/tickets\.example\/e\/?$/.test(h); }) && good.some(function(h){ return /^https:\/\/source\.example\/event\/?$/.test(h); }),
+       'an https ticket link and source link still open ' + JSON.stringify(good));
+    await c.context().close();
+  }
+
   /* ---------------- 2026-10-04: replies under call outs; the event's New call out; chats keep their place; Share copies the link ---------------- */
   for (const kind of ['desk', 'phone']){
     const c = await ctx(kind);

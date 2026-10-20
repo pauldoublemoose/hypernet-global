@@ -1793,15 +1793,19 @@ async function overflowEverywhere(p, label){
 
   /* ---------------- 2026-10-04 (layout): the white spans the centre; each view sits in its container ----------------
      2026-10-05 (v5-shell): every container starts at the white's left, the heading on the white's own edge; the window lies
-     over the list, which never moves for it (was: the containers centred, the heading 16 in, the list stepping aside) */
+     over the list, which never moves for it (was: the containers centred, the heading 16 in, the list stepping aside).
+     2026-10-20: the default height is the main area under the toolbar — 8 below it, 8 above #main's bottom — beside the
+     list and in cover. Width, the kept 320 and the right inset are unchanged. */
   const listGeo = p => p.evaluate(() => { const lb = document.getElementById('listbody'), cs = getComputedStyle(lb);
     return { pad:cs.padding, fit:JSON.stringify(L.fit), st:lb.scrollTop, rects:[...lb.querySelectorAll('.card2, .cart, .row, .fitem, .fuprow, .band, .shh')].slice(0, 80).map(e => { const r = e.getBoundingClientRect(); return [r.left, r.top, r.width, r.height].map(Math.round).join(','); }).join(';') }; });
   const winOver = p => p.evaluate(() => { const w = document.getElementById('win'), wr = w.getBoundingClientRect(), lb = document.getElementById('listbody'), r = lb.getBoundingClientRect(),
-      ce = document.getElementById('center').getBoundingClientRect(), white = document.getElementById('listcol').getBoundingClientRect(), fr = lb.clientLeft, sb = lb.offsetWidth - lb.clientWidth - 2 * fr;
+      ce = document.getElementById('center').getBoundingClientRect(), fr = lb.clientLeft, sb = lb.offsetWidth - lb.clientWidth - 2 * fr,
+      main = document.getElementById('main').getBoundingClientRect(), bar = document.getElementById('toolbar').getBoundingClientRect();
     /* under the first 320 of every entry in view is the list, never the window */
     const hits = [...lb.querySelectorAll('.fitem, .fuprow, .band, .card2, .row')].filter(x => { const q = x.getBoundingClientRect(); return q.top > r.top + 8 && q.bottom < r.bottom - 8 && q.left < r.left + 300; })
       .map(x => { const q = x.getBoundingClientRect(), el = document.elementFromPoint(Math.min(q.right - 4, r.left + 310), (q.top + q.bottom) / 2); return !!el && !!el.closest('#listbody'); });
-    return { open:!w.hidden, mode:L.win, ww:Math.round(wr.width), keep:Math.round(wr.left - r.left), rgap:Math.round(ce.right - wr.right), sb, fr, tgap:Math.round(wr.top - white.top), bgap:Math.round(ce.bottom - wr.bottom),
+    return { open:!w.hidden, mode:L.win, ww:Math.round(wr.width), keep:Math.round(wr.left - r.left), rgap:Math.round(ce.right - wr.right), sb, fr,
+             belowBar:Math.round(wr.top - bar.bottom), aboveMain:Math.round(main.bottom - wr.bottom),
              hits:hits.length, under:hits.filter(x => !x).length, cover:Math.round(wr.left) === Math.round(ce.left) && Math.round(wr.right) === Math.round(ce.right) }; });
   for (const [w, h] of [[1440, 900], [1920, 1080], [1280, 800]]){
     const c = await ctx('desk', { viewport:{ width:w, height:h } });
@@ -1837,9 +1841,9 @@ async function overflowEverywhere(p, label){
       const still = [g1, g2, g3].every(g => g.rects === g0.rects && g.pad === g0.pad && g.fit === g0.fit && g.st === g0.st);
       ok(still && g0.rects.length > 20, tag + ': opening, replacing and closing the window moves nothing in the list (place, padding, squares)');
       if (wg.mode === 'over'){
-        ok(wg.open && wg.ww >= 440 && wg.ww <= 720 && wg.keep >= 320 && wg.rgap === wg.sb + wg.fr + 8 && wg.tgap === 8 && wg.bgap === 8 && wg.hits >= 2 && !wg.under && wg2.keep === wg.keep && wg2.ww === wg.ww,
-           tag + ': the window lies over the right of the white (inset 8, the scrollbar and the frame clear), the list\'s first 320 in view and clickable ' + JSON.stringify(wg));
-      } else ok(w === 1280 && dock && wg.open && wg.cover, tag + ': with no room for both, the window takes the centre ' + JSON.stringify(wg));
+        ok(wg.open && wg.ww >= 440 && wg.ww <= 720 && wg.keep >= 320 && wg.rgap === wg.sb + wg.fr + 8 && wg.belowBar === 8 && wg.aboveMain === 8 && wg.hits >= 2 && !wg.under && wg2.keep === wg.keep && wg2.ww === wg.ww,
+           tag + ': the window lies over the right of the white (scrollbar and frame clear), 8 below the toolbar and 8 above the main area, the list\'s first 320 in view and clickable ' + JSON.stringify(wg));
+      } else ok(w === 1280 && dock && wg.open && wg.cover && wg.belowBar === 8 && wg.aboveMain === 8, tag + ': with no room for both, the window takes the centre at the main area\'s height ' + JSON.stringify(wg));
       if (w === 1440 && dock && hh === '#/home'){ await pick(c, sel + ' >> nth=0'); await c.waitForTimeout(350); await shot(c, 'layout-1440-home-window-dock'); await c.click('#dbar [data-act="closewin"]'); await c.waitForTimeout(250); }
     }
     ok(!c.errors.length && (await overflow(c)) <= 0, w + ': no console errors, no overflow (layout) ' + c.errors.join(' '));
@@ -1854,7 +1858,9 @@ async function overflowEverywhere(p, label){
     const ex = await geoOf(c), cols = await ev(c, () => L.fit && L.fit.cols);
     await shot(c, 'layout-768-explore');
     await c.click('#listbody .srow .card2 >> nth=0'); await c.waitForTimeout(350);
-    const wv = await ev(c, () => { const wr = document.getElementById('win').getBoundingClientRect(), ce = document.getElementById('center').getBoundingClientRect(); return Math.round(wr.left) === Math.round(ce.left) && Math.round(wr.width) === Math.round(ce.width); });
+    const wv = await ev(c, () => { const wr = document.getElementById('win').getBoundingClientRect(), ce = document.getElementById('center').getBoundingClientRect(),
+      main = document.getElementById('main').getBoundingClientRect(), bar = document.getElementById('toolbar').getBoundingClientRect();
+      return Math.round(wr.left) === Math.round(ce.left) && Math.round(wr.width) === Math.round(ce.width) && Math.round(wr.top - bar.bottom) === 8 && Math.round(main.bottom - wr.bottom) === 8; });
     ok(hm.cl === 0 && hm.cw === hm.panelW - hm.sb && hm.head === 0 && ex.cw === ex.panelW - ex.sb && cols === 3 && wv,
        '768: Home and Explore fill the white, the overview is three squares wide, an opened event takes the centre ' + JSON.stringify([hm, ex, cols, wv]));
     ok(!c.errors.length && (await overflow(c)) <= 0, '768: no console errors, no overflow (layout)');

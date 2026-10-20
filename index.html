@@ -4996,10 +4996,12 @@ function computeLayout(){
    every container starts at the white's left (2026-10-05, "make everything left aligned like the Explore page").
    Opening something never moves the page (2026-10-05, "the new window should just overlay what's behind it and the
    content underneath should not shift"): the container keeps its place, width, padding and squares whether a window
-   is open, closed or replaced. The window lies over the right of the white, inset 8 from its edges and clear of the
+   is open, closed or replaced. The window lies over the right of the white, clear of the
    list's scrollbar, as wide as it can be (440 to 720) while the list's first LKEEP stay in view — avatars, who did
-   what, titles, the call out's Answer. Where the centre has no room for both (a tablet, 1280 with the chat dock open)
-   the window is the centre: one thing at a time. */
+   what, titles, the call out's Answer. Its default height is the main area under the toolbar: #main starts at the
+   toolbar's bottom, and the same WEDGE insets the top and the bottom (a maximised window uses that inset too), so the
+   pane rises with the heading instead of starting under it. Where the centre has no room for both (a tablet, 1280 with
+   the chat dock open) the window is the centre, at that same height: one thing at a time. */
 var CW = { read:640, list:720, wide:1120 };
 var WINW = { min:440, max:720 }, WEDGE = 8, LKEEP = 320;
 function centreKind(){
@@ -5025,16 +5027,17 @@ function layoutCentre(){
     /* a tablet's chat dock floats over the centre's right: the window keeps clear of it */
     var over = L.dockOver && L.right, CE = C - (over ? $('chats').offsetWidth + WEDGE : 0);
     var right = over ? CE : C - fr - sb - WEDGE, ww = Math.min(WINW.max, right - WEDGE - LKEEP);
-    /* offsets in #main, the window's own frame (#cbody's is already there: #center isn't positioned) */
-    var top = $('cbody').offsetTop, bottom = c.offsetTop + c.offsetHeight;
+    /* vertical extent in #main, whose top is the toolbar's bottom: WEDGE under that, WEDGE above #main's bottom.
+       x stays on the centre (#center isn't positioned, so its offsetLeft is already in #main) */
+    var y0 = WEDGE, h0 = $('main').clientHeight - 2 * WEDGE;
     if (ww >= WINW.min){
       L.win = 'over';
-      L.wg = { x:c.offsetLeft + right - ww, y:top + WEDGE, w:ww, h:bottom - top - 2 * WEDGE };
+      L.wg = { x:c.offsetLeft + right - ww, y:y0, w:ww, h:h0 };
     } else {
       /* no room for both: the window is the centre (the sidebar, and a docked chat, stay beside it); beside a floating
-         dock it keeps clear of it, or — too narrow for that — leaves its edge to be touched */
+         dock it keeps clear of it, or — too narrow for that — leaves its edge to be touched. Same height as beside the list */
       L.win = 'cover';
-      L.wg = { x:c.offsetLeft, y:c.offsetTop, w:CE === C ? C : CE >= WINW.min ? CE : Math.min(C, Math.max(WINW.min, C - 64)), h:c.offsetHeight };
+      L.wg = { x:c.offsetLeft, y:y0, w:CE === C ? C : CE >= WINW.min ? CE : Math.min(C, Math.max(WINW.min, C - 64)), h:h0 };
     }
   }
   /* the container is measured inside the frame: Home's 640 is 640 of white */

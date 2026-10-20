@@ -10,7 +10,9 @@ create table horizon_collaborators (
   added_by    uuid not null references people,
   created_at  timestamptz not null default now(),
   accepted_at timestamptz,
-  primary key (horizon_id, person_id)
+  role        text,
+  primary key (horizon_id, person_id),
+  constraint horizon_collaborators_role_check check (role is null or role in ('collaborator', 'follower'))
 );
 create index horizon_collaborators_person on horizon_collaborators (person_id);
 

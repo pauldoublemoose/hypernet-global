@@ -107,7 +107,13 @@
     });
     var me = typeof root.myPid === "function" ? root.myPid() : null;
     var pf = root.PFOLLOW || {};
-    if (me) Object.keys(pf).forEach(function (b) { if (pf[b]) follows[low(me) + "|" + low(b)] = true; });
+    /* The viewer's own follows are the account's, which start as a copy of their fixture edges.
+       Unfollow has to drop a fixture edge, or the profile slot stays on Unfollow. */
+    if (me) {
+      var prefix = low(me) + "|";
+      Object.keys(follows).forEach(function (k) { if (k.slice(0, prefix.length) === prefix) delete follows[k]; });
+      Object.keys(pf).forEach(function (b) { if (pf[b]) follows[prefix + low(b)] = true; });
+    }
     return { follows: follows, friends: FRIENDGRAPH };
   }
 

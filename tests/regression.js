@@ -1679,7 +1679,9 @@ async function overflowEverywhere(p, label){
     /* following from the window updates it in place; an event opened from it stacks in the same window, the chat stays */
     await c.click(opener[0]); await c.waitForTimeout(300);
     await c.click('#dscroll .profile-actions [data-act="followp"]'); await c.waitForTimeout(250);
-    ok(await ev(c, () => !document.getElementById('win').hidden && !PFOLLOW['p-anna'] && /Follow/.test(document.querySelector('#dscroll .profile-actions [data-act="followp"]').textContent)), kind + ': Follow in the window works in place');
+    const fol = await ev(c, () => { const b = document.querySelector('#dscroll .profile-actions [data-act="followp"]');
+      return { open:!document.getElementById('win').hidden, pf:!!PFOLLOW['p-anna'], text:b ? b.textContent.replace(/\s+/g, ' ').trim() : '' }; });
+    ok(fol.open && !fol.pf && fol.text === 'Follow', kind + ': Follow in the window works in place ' + JSON.stringify(fol));
     await c.evaluate(() => { followP('p-anna'); document.querySelector('#dscroll .crow .cm[data-type="event"]').click(); }); await c.waitForTimeout(350);
     ok(await ev(c, () => S.stack.length === 2 && S.stack[1].type === 'event' && S.stack[0].type === 'person' && S.chatOpen === 'c-anna' && !!document.querySelector('#dbar [data-act="back"]')), kind + ': an event opened from the profile stacks in the window (‹ back to it); the chat stays open');
     await c.click('#dbar [data-act="closewin"]'); await c.waitForTimeout(350);

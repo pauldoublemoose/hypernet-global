@@ -3402,6 +3402,19 @@ function personHTML(pid, asOther){
         '<div class="r-meta">open until '+esc(fmtDate(c.expiresAt))+'</div></div></div>';
     }).join(''));
   var tags = tagsSection(pid, asOther);
+  /* phone Preview is the page as others see it; Back to editing returns to the fields. Nothing is saved until Done. */
+  if (me && PEDIT && PF && PF.previewing && L.phone){
+    return '<article class="canvas pg pg-person" data-page="person"><p class="pvnote">This is your profile as others see it. Nothing is saved yet.</p>' +
+      profilePreviewHTML() +
+      '<div class="actbar"><div class="verbs"><button type="button" class="btn" data-act="pfpreview" data-id="off">'+ic('back')+'Back to editing</button>' +
+      '<button type="button" class="btn primary" data-act="profiledone">'+ic('check')+'Done</button></div></div></article>';
+  }
+  /* the look used to live in the Edit profile dialog. It is on the page now, and Done is what stores it. */
+  if (profileEditing(pid, asOther) && DRAFT && DRAFT.form === 'profile'){
+    s += '<section class="sect" data-sect="look"><h3>Look</h3>' + czControlsHTML(DRAFT) +
+      (L.phone ? '<div class="ptagadd"><button type="button" class="btn" data-act="pfpreview" data-id="on">'+ic('user')+'Preview</button></div>' : '') +
+      '</section>' + (L.phone ? '' : profilePreviewHTML());
+  }
   return pageHTML({ kind:'person', t:personTheme(pid), cover:profileEditing(pid, asOther) && PF ? profilePhotoHTML() : personCover(pid, 96),
     eyebrow:eye, title:p.displayName || 'You',
     toolbar:bar, facts:facts, pre:tags ? '<div class="ptagpre">'+tags+'</div>' : '', body:s, more:personHeadBits(pid, asOther) });
@@ -5567,6 +5580,9 @@ function profilePreviewHTML(){
 }
 /* on a phone: Preview shows the page, Back to editing returns to the form as you left it */
 function pfPreview(on){
+  if (PF && PF.mode === 'edit' && PEDIT && !$('pfbody')){
+    captureProfileEdit(); PF.previewing = !!on; render(); return;
+  }
   var d = DLGS[DLGS.length-1]; if (!d || !PF || PF.mode !== 'edit') return;
   if (on){
     pfSync(); PF.previewing = true;
@@ -5679,7 +5695,8 @@ function beginProfileEdit(){
   var p = PEOPLE.self;
   PEDIT = true; PNAME = null; PBIO = null;
   PF = { mode:'edit', name:p.displayName || '', handle:p.handle || '', photo:(PTHEME.self && PTHEME.self.image) || null,
-         about:p.bio || '', skills:(p.skills || []).slice(), cities:profileLocations(p).slice(), langs:profileLanguages(p).slice() };
+         about:p.bio || '', skills:(p.skills || []).slice(), cities:profileLocations(p).slice(), langs:profileLanguages(p).slice(), previewing:false };
+  DRAFT = Object.assign({ form:'profile', kind:'person', editing:'self', lookTouched:false }, lookDraft(PTHEME.self ? asLook(PTHEME.self) : plainTheme('◉')));
   var top = S.stack[S.stack.length - 1];
   if (top && top.type === 'person' && top.id === 'self') render();
   else openItem('person', 'self');
@@ -5701,14 +5718,13 @@ function finishProfileEdit(){
   var cities = PF.cities.slice();
   writeProfile({ displayName:PF.name.trim(), handle:normHandle(PF.handle), bio:String(PF.about || '').trim(),
     skills:profileSkillsForSave(PF.skills || PEOPLE.self.skills, PF.langs), cities:cities, city:cities.length ? cities[0].toUpperCase() : '' });
-  var prev = (PTHEME.self && PTHEME.self.image) || null;
-  if (PF.photo !== prev){
-    var lk = asLook(Object.assign({}, PTHEME.self || plainTheme('◉'), { image:PF.photo || null }));
-    if (isPlain(lk) && !lk.image) lk = null;
-    if (lk) PTHEME.self = lk; else delete PTHEME.self;
-    if (ONLINE) HNAPI.saveMyLook();
-  }
+  var prev = (PTHEME.self && PTHEME.self.image) || null, photo = PF.photo !== prev;
+  var cz = DRAFT && DRAFT.form === 'profile' && DRAFT.lookTouched, lk = null;
+  if (cz) lk = draftLook(Object.assign({}, DRAFT, { image:PF.photo || null }));
+  else if (photo){ lk = asLook(Object.assign({}, PTHEME.self || plainTheme('◉'), { image:PF.photo || null })); if (isPlain(lk) && !lk.image) lk = null; }
+  if (cz || photo){ if (lk) PTHEME.self = lk; else delete PTHEME.self; if (ONLINE) HNAPI.saveMyLook(); }
   PEDIT = false; PNAME = null; PBIO = null; PF = null;
+  if (DRAFT && DRAFT.form === 'profile') DRAFT = null;
   render();
   toast('Profile saved', '');
 }
@@ -5808,6 +5824,7 @@ function logIn(){
 function doLogout(){
   if (ONLINE){ HNAPI.logout(); return; }
   PEDIT = false; PNAME = null; PBIO = null; PF = null;
+  if (DRAFT && DRAFT.form === 'profile') DRAFT = null;
   if (S.acct) ACCTS[S.acct] = captureAcct();
   S.loggedIn = false; S.acct = null; loadAcct(null); syncAcctPeople();
   S.chatOpen = null; S.rightOpen = false;
@@ -6361,6 +6378,7 @@ function czPreviews(dlg){
 /* a colour change repaints only what shows it, so a picker that is open stays open */
 function czRefresh(except){
   var dlg = DLGS[DLGS.length-1];
+  if (!(dlg && dlg.querySelector('[data-czlook]')) && PEDIT && DRAFT && DRAFT.form === 'profile'){ render(); return; }
   if (!dlg || !DRAFT || !dlg.querySelector('[data-czlook]')) return;
   ['c1','c2','c3'].forEach(function(k){ var v = DRAFT[k] || (k === 'c1' ? window.HN_PLAIN.bg : '');
     dlg.querySelectorAll('[data-cz="'+k+'"]').forEach(function(n){ if (n !== except && v && n.value !== v) n.value = v; }); });
@@ -6372,7 +6390,7 @@ function czRefresh(except){
 /* the controls change shape (a colour added or taken away, a starting point, a picture): draw them again in place */
 function czRepaint(){
   var dlg = DLGS[DLGS.length-1], z = dlg && dlg.querySelector('[data-czlook]');
-  if (!z){ paintWiz(); return; }
+  if (!z){ if (PEDIT && DRAFT && DRAFT.form === 'profile'){ render(); return; } paintWiz(); return; }
   z.innerHTML = czControlsInner(DRAFT); czPreviews(dlg); refreshWizFoot(); schedulePersist();
 }
 function czSetColor(k, v, from){

@@ -113,7 +113,7 @@
       byId[cid] = { id:cid, name:PEOPLE[c.personId].displayName, kind:'dm', memberIds:[c.personId],
         messages: c.messages.map(function(m){
           var row = { id:m.id, from: m.senderId === me ? 'self' : m.senderId, t:clock(m.createdAt), ts:m.createdAt, text:m.body, cardType:m.cardType, cardId:m.cardId, cardName:m.cardName };
-          if (m.cardType === 'horizon_invite'){ row.invite = m.body; row.text = m.body === 'pending' ? (m.cardName || m.body) : m.body; }
+          if (m.cardType === 'horizon_invite'){ row.invite = m.body; row.text = (m.body === 'pending' || m.body === 'pending follower') ? (m.cardName || m.body) : m.body; }
           return row;
         }) };
       order.push(cid);
@@ -191,7 +191,7 @@
       HZ[h.id] = { id:h.id, slug:h.slug, name:h.name, description:h.description || '', isPersonalDefault:!!h.isPersonalDefault, isPublished:!!h.publishedAt,
         ownerName: own ? d.me.displayName : (h.ownerName || (h.ownerId && P[h.ownerId] ? P[h.ownerId].displayName : 'Hypernet')),
         ownerId:h.ownerId, ownerAcct: own ? 'me' : undefined, eventIds:(h.eventIds || []).slice(), collaboratorIds:(h.collaboratorIds || []).slice(),
-        pendingCollaboratorIds:(h.pendingCollaboratorIds || []).slice() };
+        pendingCollaboratorIds:(h.pendingCollaboratorIds || []).slice(), pendingFollowerIds:(h.pendingFollowerIds || []).slice() };
       HC[h.id] = Math.max(0, (h.followers || 0) - (HF[h.id] ? 1 : 0));
       if (h.look) HT[h.id] = asLook(h.look);
       if (own) mine.push(h.id);
@@ -529,8 +529,8 @@
       return body;
     }, (HORIZONS[hzId] || {}).name);
   };
-  HN.addCollaborator = function(hzId, personId){
-    return write('hz:' + hzId, 'POST', '/api/horizons/' + hzId + '/collaborators', { personId:personId }, (HORIZONS[hzId] || {}).name);
+  HN.addCollaborator = function(hzId, personId, role){
+    return write('hz:' + hzId, 'POST', '/api/horizons/' + hzId + '/collaborators', { personId:personId, role: role === 'follower' ? 'follower' : 'collaborator' }, (HORIZONS[hzId] || {}).name);
   };
   HN.acceptInvite = function(hzId){
     return write('hz:' + hzId, 'POST', '/api/horizons/' + hzId + '/invites', {}, (HORIZONS[hzId] || {}).name).then(function(r){
@@ -538,6 +538,7 @@
       if (!r || !r.horizon || !h) return;
       h.collaboratorIds = (r.horizon.collaboratorIds || []).slice();
       h.pendingCollaboratorIds = (r.horizon.pendingCollaboratorIds || []).slice();
+      h.pendingFollowerIds = (r.horizon.pendingFollowerIds || []).slice();
       if (ROUTE.ready) render();
     });
   };

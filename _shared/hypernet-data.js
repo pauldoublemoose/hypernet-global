@@ -1083,6 +1083,15 @@ window.HYPERNET = {
           "cardId": "horizon-quiet",
           "cardName": "Quiet Rooms",
           "invite": "pending"
+        },
+        {
+          "from": "p-anna",
+          "t": "09:50",
+          "text": "Surfaces & Projections",
+          "cardType": "horizon_invite",
+          "cardId": "horizon-surface",
+          "cardName": "Surfaces & Projections",
+          "invite": "pending follower"
         }
       ]
     }

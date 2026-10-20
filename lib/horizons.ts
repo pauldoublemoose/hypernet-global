@@ -1,4 +1,5 @@
 import { sqlx } from "./db";
+import { mergeHorizonEventIds } from "./horizon-events";
 
 export type HorizonRole = "owner" | "collaborator" | "stranger";
 export type HorizonAccess = { ownerId: string | null; isPersonalDefault: boolean; role: HorizonRole };
@@ -56,19 +57,42 @@ export function hzSlug(name: string, id: string): string {
 }
 
 /**
- * Sets a horizon's events to exactly `eventIds`, in that order: new ones are added by `by`, missing ones removed.
- * Only events `by` may see can be put on it. Returns the queries, to run inside the caller's transaction.
+ * Writes `eventIds` as the horizon's order. `eventIds` is the full order, including events `by` cannot see.
+ * A delete removes only an event `by` can see. A new row is inserted only when `by` can see it.
+ * A row already on the horizon is moved to its new position either way.
+ * Returns the queries, to run inside the caller's transaction.
  */
 export function setHorizonEvents(sql: ReturnType<typeof sqlx>, horizonId: string, eventIds: string[], by: string) {
   const ids = [...new Set(eventIds)];
   return [
-    sql.query(`delete from horizon_events where horizon_id = $1 and not (event_id = any($2::uuid[]))`, [horizonId, ids]),
+    sql.query(
+      `delete from horizon_events
+       where horizon_id = $1
+         and not (event_id = any($2::uuid[]))
+         and exists (select 1 from events e where e.id = horizon_events.event_id and can_see_event($3::uuid, e))`,
+      [horizonId, ids, by],
+    ),
     sql.query(
       `insert into horizon_events (horizon_id, event_id, position, added_by)
          select $1, x.id, x.ord::int - 1, $3 from unnest($2::uuid[]) with ordinality as x(id, ord)
-           join events e on e.id = x.id where can_see_event($3::uuid, e)
+           join events e on e.id = x.id
+           where can_see_event($3::uuid, e)
+              or exists (select 1 from horizon_events he where he.horizon_id = $1 and he.event_id = x.id)
        on conflict (horizon_id, event_id) do update set position = excluded.position`,
       [horizonId, ids, by],
     ),
   ];
+}
+
+/** The order to write: events `by` cannot see stay where they are in the current list. */
+export async function horizonEventOrder(horizonId: string, submitted: string[], by: string): Promise<string[]> {
+  const rows = (await sqlx().query(
+    `select he.event_id as id, can_see_event($2::uuid, e) as visible
+     from horizon_events he join events e on e.id = he.event_id
+     where he.horizon_id = $1
+     order by he.position, he.added_at`,
+    [horizonId, by],
+  )) as { id: string; visible: boolean }[];
+  const hidden = new Set(rows.filter((r) => !r.visible).map((r) => r.id));
+  return mergeHorizonEventIds(rows.map((r) => r.id), hidden, submitted);
 }

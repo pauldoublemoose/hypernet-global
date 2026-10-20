@@ -318,6 +318,24 @@ describe("horizon collaborators", () => {
     expect(r.body.horizon.eventIds).toEqual([other, eventId]);
   });
 
+  it("a collaborator save keeps an event they cannot see", async () => {
+    const secret = randomUUID();
+    const pub = randomUUID();
+    const id = randomUUID();
+    const hidden = await a.post("/api/events", { id: secret, title: `Vitest secret ${RUN}`, startsOn: "2030-08-03", privacy: "only_me" });
+    expect(hidden.status, JSON.stringify(hidden.body)).toBe(201);
+    const shown = await a.post("/api/events", { id: pub, title: `Vitest shown ${RUN}`, startsOn: "2030-08-04", privacy: "everyone" });
+    expect(shown.status, JSON.stringify(shown.body)).toBe(201);
+    const created = await a.post("/api/horizons", { id, name: `Vitest keep ${RUN}`, eventIds: [pub, secret] });
+    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    expect((await a.post(`/api/horizons/${id}/collaborators`, { personId: bId })).status).toBe(200);
+    expect((await b.post(`/api/horizons/${id}/invites`)).status).toBe(200);
+    const saved = await b.put(`/api/horizons/${id}/events`, { eventIds: [pub] });
+    expect(saved.status, JSON.stringify(saved.body)).toBe(200);
+    expect(saved.body.horizon.eventIds).toEqual([pub]);
+    expect((await a.get(`/api/horizons/${id}`)).body.horizon.eventIds).toEqual([pub, secret]);
+  });
+
   it("a collaborator cannot delete the horizon", async () => {
     const r = await b.del(`/api/horizons/${hzP}`);
     expect(r.status, JSON.stringify(r.body)).toBe(403);

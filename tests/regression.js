@@ -848,7 +848,11 @@ async function overflowEverywhere(p, label){
     await c.evaluate(() => { closeDialogs(); S.tab = 'home'; goFolder({ kind:'home' }); S.stack = []; doLogout(); }); await c.waitForTimeout(200);
     await c.evaluate(() => loginDialog()); await c.waitForTimeout(150);
     await c.fill('#pf-name', 'Cora Pan'); await c.fill('#pf-handle', 'cora' + kind);
-    await c.evaluate(() => document.querySelector('.pchip[data-id="CAMP OPERATIONS/KITCHEN & COOKING"]').click()); await c.waitForTimeout(100);
+    /* Join's tags replaced the old skill chips. Kitchen is the same label the call out matches. */
+    await c.click('.dlg [data-act="ptagopen"]'); await c.waitForTimeout(150);
+    await c.click('.dlg [data-act="ptagcat"][data-id="skill"]'); await c.waitForTimeout(100);
+    await c.fill('#ptag-q', 'Kitchen'); await c.waitForTimeout(150);
+    await c.evaluate(() => { const b = document.querySelector('.dlg [data-act="ptagpick"][data-id="c:skill:Kitchen"]') || document.querySelector('.dlg [data-act="ptagcreate"]'); b.click(); }); await c.waitForTimeout(150);
     await c.click('#pfsave'); await c.waitForTimeout(300);
     /* following one person: Home still shows the network around them */
     await c.evaluate(() => followP('p-mira')); await c.waitForTimeout(300);

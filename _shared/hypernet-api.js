@@ -164,15 +164,28 @@
     /* RSVPs and promotions */
     var RS = {}, WT = {}, SH = {}, PM = {}, PC = {};
     EVP = {}; HAS = {};
+    var RO = {}, CH = {}, WB = {};
     d.rsvps.forEach(function(r){
-      if (r.personId === me){ if (r.status) RS[r.eventId] = r.status; if (r.went) WT[r.eventId] = true; if (r.shiftIndex != null) SH[r.eventId] = r.shiftIndex; }
-      else if (r.status) (EVP[r.eventId] = EVP[r.eventId] || []).push({ pid:r.personId, verb:r.status, ms:ms(r.updatedAt) });
+      if (r.personId === me){
+        if (r.status) RS[r.eventId] = r.status;
+        if (r.went) WT[r.eventId] = true;
+        if (r.shiftIndex != null) SH[r.eventId] = r.shiftIndex;
+        if (r.role) RO[r.eventId] = r.role;
+      } else {
+        if (r.status) (EVP[r.eventId] = EVP[r.eventId] || []).push({ pid:r.personId, verb:r.status, ms:ms(r.updatedAt) });
+        if (r.role) (CH[r.personId] = CH[r.personId] || {})[r.eventId] = r.role;
+        else if (r.went) (WB[r.personId] = WB[r.personId] || {})[r.eventId] = true;
+      }
     });
+    window.ROLE = RO; window.CHRON = CH; window.WENTBY = WB;
     d.promotions.forEach(function(p){ if (p[0] === me) PM[p[1]] = true; else PC[p[1]] = (PC[p[1]] || 0) + 1; });
     window.RSVP = RS; window.WENT = WT; window.SHIFT = SH; window.PROMOTED = PM; window.PROMOCOUNT = PC;
     /* horizons */
-    var HZ = {}, HC = {}, HT = {}, HV = {}, HF = {}, mine = [];
-    d.hzFollows.forEach(function(f){ if (f[0] === me) HF[f[1]] = true; });
+    var HZ = {}, HC = {}, HT = {}, HV = {}, HF = {}, HB = {}, mine = [];
+    d.hzFollows.forEach(function(f){
+      if (f[0] === me) HF[f[1]] = true;
+      else if (f[0]) (HB[f[0]] = HB[f[0]] || {})[f[1]] = true;
+    });
     d.horizons.forEach(function(h){
       var own = !!me && h.ownerId === me;
       HZ[h.id] = { id:h.id, slug:h.slug, name:h.name, description:h.description || '', isPersonalDefault:!!h.isPersonalDefault, isPublished:!!h.publishedAt,
@@ -186,7 +199,7 @@
     fill(HORIZONS, HZ); fill(HZCOUNT, HC); fill(HZTHEME, HT);
     d.horizons.forEach(function(h){ if (h.coverEventId && E[h.coverEventId]) HV[h.id] = h.coverEventId; else if (HT[h.id] && hzOwnsSquare(h.id, HT[h.id])) HV[h.id] = 'own'; });
     fill(HZCOVER, HV);
-    window.HZFOLLOW = HF; window.MYHORIZONS = mine;
+    window.HZFOLLOW = HF; window.HZFOLLOWBY = HB; window.MYHORIZONS = mine;
     /* call outs and their replies */
     window.CALLOUTS = d.callouts.map(function(c){
       var own = !!me && c.authorId === me;
@@ -486,8 +499,10 @@
   HN.saveEventLook = function(id){ return write('ev:' + id, 'PATCH', '/api/events/' + id, function(){ return { look: lookOut(window.HYPERNET_THEMES.themes[id] || null) }; }, title(id)); };
   HN.deleteEvent = function(id){ return write('ev:' + id, 'DELETE', '/api/events/' + id, undefined, 'the event'); };
   HN.rsvp = function(id){
+    var ev = QUEUE['ev:' + id];
+    if (ev) QUEUE['rsvp:' + id] = Promise.all([QUEUE['rsvp:' + id] || Promise.resolve(), ev]).catch(function(){});
     return write('rsvp:' + id, 'PUT', '/api/events/' + id + '/rsvp', function(){
-      return { status: RSVP[id] || null, went: !!WENT[id], shiftIndex: SHIFT[id] == null ? null : SHIFT[id] };
+      return { status: RSVP[id] || null, went: !!WENT[id], shiftIndex: SHIFT[id] == null ? null : SHIFT[id], role: (typeof ROLE !== 'undefined' && ROLE[id]) || null };
     }, title(id));
   };
   HN.promote = function(id){ return write('promo:' + id, PROMOTED[id] ? 'PUT' : 'DELETE', '/api/events/' + id + '/promote', undefined, title(id)); };

@@ -1492,6 +1492,10 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .ccrole{ display:flex; flex-wrap:wrap; gap:8px 16px; margin:0 0 16px; color:var(--ink); }
 .ccrole label{ display:inline-flex; align-items:center; gap:6px; color:var(--ink); }
 .ccrole input{ accent-color:var(--sel); }
+.msg:has(.hzacts){ width:86%; }
+.mbody:has(.hzacts){ display:flex; flex-direction:column; align-items:stretch; gap:8px; width:100%; color:var(--ink); }
+.hzacts{ display:flex; flex-wrap:nowrap; gap:8px; min-width:0; }
+.hzacts .btn{ flex:1 1 0; width:0; min-width:0; white-space:nowrap; color:var(--ink); }
 </style>
 </head>
 <body>
@@ -3962,7 +3966,7 @@ function invitePhrase(m){
     if (state === 'cancelled') return 'Cancelled' + tail;
     return raw;
   }
-  if (state === 'pending' && m.from !== 'self') return name;
+  if (state === 'pending' && m.from !== 'self') return 'Collaborate on ' + name;
   if (state === 'pending') return 'Invite sent' + tail;
   var said = { accepted:'Accepted', declined:'Declined', cancelled:'Cancelled' }[state] || state;
   return said + tail;
@@ -4011,9 +4015,10 @@ function convHTML(cid){
     var head = '<div class="mfrom">'+(me ? '' : '<button type="button" class="mwho" data-act="chatprofile" data-id="'+esc(m.from)+'">'+esc(person(m.from).displayName)+'</button>')+'<span class="mt">'+esc(/^\d{1,2}:\d{2}$/.test(m.t || '') ? m.t : '')+'</span></div>';
     if (m.cardType === 'horizon_invite'){
       var pending = String(m.invite || 'pending').split(' ')[0] === 'pending';
-      var body = esc(invitePhrase(m)) + (pending && !me
-        ? ' <button type="button" class="btn" data-act="hzaccept" data-id="'+esc(m.cardId)+'" data-chat="'+esc(cid)+'">Accept</button> <button type="button" class="btn" data-act="hzdecline" data-id="'+esc(m.cardId)+'" data-chat="'+esc(cid)+'">Decline</button>'
-        : '');
+      var phrase = esc(invitePhrase(m));
+      var body = pending && !me
+        ? '<span class="hzinv">'+phrase+'</span><span class="hzacts"><button type="button" class="btn" data-act="hzaccept" data-id="'+esc(m.cardId)+'" data-chat="'+esc(cid)+'">Accept</button><button type="button" class="btn" data-act="hzdecline" data-id="'+esc(m.cardId)+'" data-chat="'+esc(cid)+'">Decline</button></span>'
+        : phrase;
       return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+body+'</div></div>';
     }
     return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+'</div></div>';

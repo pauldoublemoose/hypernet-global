@@ -2683,6 +2683,41 @@ async function overflowEverywhere(p, label){
     }
   }
 
+  /* a demo chat saved before the invite fixtures (then a message sent in it) reloads without those cards */
+  {
+    const c = await ctx('desk');
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right');
+    await c.click('.chrow[data-id="c-anna"]'); await c.waitForTimeout(250);
+    const lines = () => ev(c, () => [...document.querySelectorAll('#msgs .mbody')].map(b => b.innerText.replace(/\s+/g, ' ').trim()));
+    const fresh = await lines();
+    await c.fill('#chatbox', 'hi'); await c.click('[data-act="sendchat"]'); await c.waitForTimeout(300);
+    const sent = await lines();
+    await c.evaluate(() => { CHATS['c-anna'].messages = CHATS['c-anna'].messages.filter(m => m.cardType !== 'horizon_invite'); persist(); });
+    await c.reload(); await c.waitForTimeout(600);
+    if (!(await ev(c, () => document.querySelector('#msgs')))){
+      if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right');
+      await c.click('.chrow[data-id="c-anna"]'); await c.waitForTimeout(250);
+    }
+    const back = await lines();
+    await c.evaluate(() => { acceptHzInvite('c-anna', 'horizon-quiet'); declineHzInvite('c-anna', 'horizon-surface'); });
+    await c.waitForTimeout(250);
+    await c.reload(); await c.waitForTimeout(600);
+    if (!(await ev(c, () => document.querySelector('#msgs')))){
+      if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right');
+      await c.click('.chrow[data-id="c-anna"]'); await c.waitForTimeout(250);
+    }
+    const decided = await lines();
+    const has = (list, s) => list.some(t => t.indexOf(s) >= 0);
+    const pending = list => has(list, 'Collaborate on Quiet Rooms') && has(list, 'Follow Surfaces & Projections') && list.filter(t => /\bAccept\b/.test(t)).length === 2;
+    ok(pending(fresh) && pending(sent) && has(sent, 'hi') && pending(back) && has(back, 'hi')
+      && has(decided, 'Accepted Quiet Rooms') && has(decided, 'Declined to follow Surfaces & Projections') && has(decided, 'hi')
+      && !decided.some(t => /\bAccept\b/.test(t)),
+      'desk: a saved demo chat that predates the invites shows both pending cards again, and an answer sticks ' + JSON.stringify({ fresh, sent, back, decided }));
+    await c.context().close();
+  }
+
   /* ---------------- tablet ---------------- */
   const t = await ctx('tab');
   await open(t, '', true);

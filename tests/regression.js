@@ -1645,6 +1645,24 @@ async function overflowEverywhere(p, label){
     if (kind === 'phone'){ await c.tap('#tabbar [data-id="chats"]'); await c.waitForTimeout(300); await c.tap('.chrow[data-id="c-anna"]'); }
     else { if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right'); await c.waitForTimeout(200); await c.click('.chrow[data-id="c-anna"]'); }
     await c.waitForTimeout(300);
+    const inviteCards = await ev(c, () => [...document.querySelectorAll('#msgs .mbody')].filter(b => b.querySelector('[data-act="hzaccept"]')).map(body => {
+      const accept = body.querySelector('[data-act="hzaccept"]'), decline = body.querySelector('[data-act="hzdecline"]');
+      const ar = accept.getBoundingClientRect(), dr = decline.getBoundingClientRect(), br = body.getBoundingClientRect();
+      const nodes = [...body.childNodes].filter(n => n.nodeType === 3 ? n.textContent.trim() : n.nodeType === 1 && n.tagName !== 'BUTTON' && !n.querySelector('button'));
+      const range = document.createRange();
+      range.setStartBefore(nodes[0]); range.setEndAfter(nodes[nodes.length - 1]);
+      const tr = range.getBoundingClientRect();
+      return {
+        text: nodes.map(n => n.textContent).join('').replace(/\s+/g, ' ').trim(),
+        sameRow: Math.abs(ar.top - dr.top) < 2,
+        sameSize: Math.abs(ar.width - dr.width) < 2 && Math.abs(ar.height - dr.height) < 2,
+        textAbove: tr.height > 0 && tr.bottom <= ar.top + 1 && tr.bottom <= dr.top + 1,
+        sideBySide: ar.right <= dr.left + 1 && dr.right <= br.right + 1 && ar.left >= br.left - 1,
+        fits: accept.scrollWidth <= accept.clientWidth + 1 && decline.scrollWidth <= decline.clientWidth + 1
+      };
+    }));
+    ok(inviteCards.length === 2 && inviteCards[0].text === 'Collaborate on Quiet Rooms' && inviteCards[1].text === 'Follow Surfaces & Projections' && inviteCards.every(x => x.sameRow && x.sameSize && x.textAbove && x.sideBySide && x.fits),
+      kind + ': a horizon invite puts the role and the name above Accept and Decline, equal and on one row ' + JSON.stringify(inviteCards));
     await c.evaluate(() => { for (let i = 0; i < 24; i++) CHATS['c-anna'].messages.push({ from:i % 3 ? 'p-anna' : 'self', t:'09:' + String(10 + i), text:'Line ' + i + ' about the basement and the long tones' }); render(); });
     await c.waitForTimeout(200);
     await c.fill('#chatbox', 'see you there'); await c.waitForTimeout(100);

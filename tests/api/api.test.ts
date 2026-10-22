@@ -240,7 +240,7 @@ describe("horizon collaborators", () => {
     expect(hz.pendingFollowerIds).toEqual([]);
   });
 
-  it("the owner invites someone, who still cannot see or follow the private horizon", async () => {
+  it("the owner invites someone, who can read the private horizon and still cannot follow or edit it", async () => {
     const r = await a.post(`/api/horizons/${hzP}/collaborators`, { personId: bId });
     expect(r.status, JSON.stringify(r.body)).toBe(200);
     expect(r.body.horizon.collaboratorIds).toEqual([]);
@@ -254,10 +254,16 @@ describe("horizon collaborators", () => {
     expect(mine.collaboratorIds).toEqual(got.collaboratorIds);
     expect(mine.pendingCollaboratorIds).toEqual(got.pendingCollaboratorIds);
     expect(mine.pendingFollowerIds).toEqual(got.pendingFollowerIds);
-    expect((await b.get(`/api/horizons/${hzP}`)).status).toBe(404);
-    expect(idsOf((await b.get("/api/bootstrap")).body)).not.toContain(hzP);
+    const seen = await b.get(`/api/horizons/${hzP}`);
+    expect(seen.status).toBe(200);
+    expect(seen.body.horizon.collaboratorIds).toEqual([]);
+    expect(seen.body.horizon.pendingCollaboratorIds).toEqual([bId]);
+    expect(idsOf((await b.get("/api/bootstrap")).body)).toContain(hzP);
+    expect((await s.get(`/api/horizons/${hzP}`)).status).toBe(404);
     expect((await s.put(`/api/horizons/${hzP}/follow`)).status).toBe(404);
     expect((await b.put(`/api/horizons/${hzP}/follow`)).status).toBe(404);
+    expect((await b.patch(`/api/horizons/${hzP}`, { name: "nope" })).status).not.toBe(200);
+    expect((await b.put(`/api/horizons/${hzP}/events`, { eventIds: [] })).status).not.toBe(200);
   });
 
   it("inviting the same person again stays pending and sends one message", async () => {

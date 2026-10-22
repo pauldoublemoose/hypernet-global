@@ -16,8 +16,14 @@ export const HORIZON_JSON = `json_build_object('id', h.id, 'slug', h.slug, 'owne
   'pendingFollowerIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc
                          where hc.horizon_id = h.id and hc.accepted_at is null and hc.role = 'follower' and (h.owner_id = $2::uuid or hc.person_id = $2::uuid)), '[]'))`;
 
-export function horizonVisible(viewer: "$1" | "$2"): string {
+/** A horizon the viewer may follow: published, theirs, or one they have accepted as a collaborator. A pending invite is not enough. */
+export function horizonFollowable(viewer: "$1" | "$2"): string {
   return `(h.published_at is not null or h.owner_id = ${viewer}::uuid or exists (select 1 from horizon_collaborators hc where hc.horizon_id = h.id and hc.person_id = ${viewer}::uuid and hc.accepted_at is not null))`;
+}
+
+/** A horizon the viewer may read. A pending invite, collaborator or follower, is enough. The row's accepted_at stays null, so it still grants no edit. */
+export function horizonVisible(viewer: "$1" | "$2"): string {
+  return `(h.published_at is not null or h.owner_id = ${viewer}::uuid or exists (select 1 from horizon_collaborators hc where hc.horizon_id = h.id and hc.person_id = ${viewer}::uuid))`;
 }
 
 async function selectHorizon(id: string, viewer: string | null, visibleOnly: boolean): Promise<unknown | null> {

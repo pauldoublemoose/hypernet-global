@@ -1648,12 +1648,10 @@ async function overflowEverywhere(p, label){
     const inviteCards = await ev(c, () => [...document.querySelectorAll('#msgs .mbody')].filter(b => b.querySelector('[data-act="hzaccept"]')).map(body => {
       const accept = body.querySelector('[data-act="hzaccept"]'), decline = body.querySelector('[data-act="hzdecline"]');
       const ar = accept.getBoundingClientRect(), dr = decline.getBoundingClientRect(), br = body.getBoundingClientRect();
-      const nodes = [...body.childNodes].filter(n => n.nodeType === 3 ? n.textContent.trim() : n.nodeType === 1 && n.tagName !== 'BUTTON' && !n.querySelector('button'));
-      const range = document.createRange();
-      range.setStartBefore(nodes[0]); range.setEndAfter(nodes[nodes.length - 1]);
-      const tr = range.getBoundingClientRect();
+      const textEl = body.querySelector('.hzinv');
+      const tr = textEl.getBoundingClientRect();
       return {
-        text: nodes.map(n => n.textContent).join('').replace(/\s+/g, ' ').trim(),
+        text: textEl.textContent.replace(/\s+/g, ' ').trim(),
         sameRow: Math.abs(ar.top - dr.top) < 2,
         sameSize: Math.abs(ar.width - dr.width) < 2 && Math.abs(ar.height - dr.height) < 2,
         textAbove: tr.height > 0 && tr.bottom <= ar.top + 1 && tr.bottom <= dr.top + 1,

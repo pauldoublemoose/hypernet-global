@@ -1496,6 +1496,9 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .mbody:has(.hzacts){ display:flex; flex-direction:column; align-items:stretch; gap:8px; width:100%; color:var(--ink); }
 .hzacts{ display:flex; flex-wrap:nowrap; gap:8px; min-width:0; }
 .hzacts .btn{ flex:1 1 0; width:0; min-width:0; white-space:nowrap; color:var(--ink); }
+.hzname{ display:inline; margin:0; padding:0; border:0; background:transparent; color:var(--ink); font:inherit; line-height:inherit; text-align:inherit; text-decoration:underline; text-underline-offset:2px; cursor:pointer; min-height:0; vertical-align:baseline; }
+.msg.me .hzname{ color:var(--white); }
+.hzname:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
 </style>
 </head>
 <body>
@@ -2108,6 +2111,18 @@ function hzOwnedByMe(hzId){ return S.loggedIn && MYHORIZONS.indexOf(hzId) >= 0; 
 function hzCanEdit(hzId){
   var ids = (HORIZONS[hzId] && HORIZONS[hzId].collaboratorIds) || [];
   return S.loggedIn && (hzOwnedByMe(hzId) || ids.indexOf(myPid()) >= 0);
+}
+/* a pending invite opens the horizon and grants no edit */
+function hzPendingInvite(hzId){
+  if (!S.loggedIn || !hzId) return false;
+  var me = myPid(), hz = HORIZONS[hzId];
+  var ids = hz ? (hz.pendingCollaboratorIds || []).concat(hz.pendingFollowerIds || []) : [];
+  if (me && ids.indexOf(me) >= 0) return true;
+  return Object.keys(CHATS).some(function(cid){
+    return ((CHATS[cid] && CHATS[cid].messages) || []).some(function(m){
+      return m.cardType === 'horizon_invite' && m.cardId === hzId && m.from !== 'self' && String(m.invite || 'pending').split(' ')[0] === 'pending';
+    });
+  });
 }
 /* PRIVACY — who can see an event. One rule, used by every list, search, calendar, horizon and activity row:
      everyone  anyone, logged out too
@@ -3996,6 +4011,13 @@ function invitePhrase(m){
   var said = { accepted:'Accepted', declined:'Declined', cancelled:'Cancelled' }[state] || state;
   return said + tail;
 }
+function invitePhraseHTML(m){
+  var phrase = invitePhrase(m);
+  var name = (m && (m.cardName || (m.cardId && HORIZONS[m.cardId] && HORIZONS[m.cardId].name))) || '';
+  var at = name ? phrase.lastIndexOf(name) : -1;
+  if (!m || !m.cardId || at < 0) return esc(phrase);
+  return esc(phrase.slice(0, at)) + '<button type="button" class="hzname" data-act="open" data-type="horizon" data-id="'+esc(m.cardId)+'">'+esc(name)+'</button>' + esc(phrase.slice(at + name.length));
+}
 function msgPreview(m, c){
   if (!m) return 'No messages yet';
   if (m.cardType === 'horizon_invite') return invitePhrase(m);
@@ -4040,7 +4062,7 @@ function convHTML(cid){
     var head = '<div class="mfrom">'+(me ? '' : '<button type="button" class="mwho" data-act="chatprofile" data-id="'+esc(m.from)+'">'+esc(person(m.from).displayName)+'</button>')+'<span class="mt">'+esc(/^\d{1,2}:\d{2}$/.test(m.t || '') ? m.t : '')+'</span></div>';
     if (m.cardType === 'horizon_invite'){
       var pending = String(m.invite || 'pending').split(' ')[0] === 'pending';
-      var phrase = esc(invitePhrase(m));
+      var phrase = invitePhraseHTML(m);
       var body = pending && !me
         ? '<span class="hzinv">'+phrase+'</span><span class="hzacts"><button type="button" class="btn" data-act="hzaccept" data-id="'+esc(m.cardId)+'" data-chat="'+esc(cid)+'">Accept</button><button type="button" class="btn" data-act="hzdecline" data-id="'+esc(m.cardId)+'" data-chat="'+esc(cid)+'">Decline</button></span>'
         : phrase;
@@ -8663,7 +8685,7 @@ function validItem(it){
   if (!it) return false;
   if (it.type === 'missing') return true;
   if (it.type === 'event') return canSee(it.id);
-  if (it.type === 'horizon') return !!HORIZONS[it.id] && (HORIZONS[it.id].isPublished || hzCanEdit(it.id));
+  if (it.type === 'horizon') return !!HORIZONS[it.id] && (HORIZONS[it.id].isPublished || hzCanEdit(it.id) || hzPendingInvite(it.id));
   if (it.type === 'person') return !!PEOPLE[it.id];
   if (it.type === 'callout') return !!calloutOf(it.id);
   if (it.type === 'chat') return S.loggedIn && !!CHATS[it.id];

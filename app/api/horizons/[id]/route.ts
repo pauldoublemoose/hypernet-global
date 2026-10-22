@@ -8,7 +8,7 @@ import { horizonPatch } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
-/** GET /api/horizons/:id, when it is published or the viewer owns or collaborates on it. */
+/** GET /api/horizons/:id, when it is published, or the viewer owns it, has accepted as a collaborator, or has a pending invite. A pending invite is read only. */
 export const GET = route(async (_req: Request, ctx: Ctx) => {
   const id = await idParam(ctx.params);
   const { person } = await currentPerson();

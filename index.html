@@ -1967,6 +1967,31 @@ function fixtureChats(){
   });
   return { byId:byId, order:order };
 }
+/* the account keeps its own copy of a chat, so a fixture invite added later is copied in once */
+function seedDemoInvites(){
+  var fresh = fixtureChats();
+  fresh.order.forEach(function(id){
+    var src = fresh.byId[id];
+    if (!src) return;
+    if (!CHATS[id]){
+      CHATS[id] = src;
+      if (CHATORDER.indexOf(id) < 0) CHATORDER.push(id);
+      return;
+    }
+    var chat = CHATS[id];
+    if (!chat.messages) chat.messages = [];
+    src.messages.forEach(function(m, i){
+      if (m.cardType !== 'horizon_invite' || !m.cardId) return;
+      if (chat.messages.some(function(x){ return x.cardType === 'horizon_invite' && x.cardId === m.cardId; })) return;
+      var prev = src.messages[i - 1], at = -1;
+      if (prev) at = chat.messages.findIndex(function(x){
+        return x.from === prev.from && x.t === prev.t && (prev.cardId ? x.cardId === prev.cardId : x.text === prev.text);
+      });
+      if (at >= 0) chat.messages.splice(at + 1, 0, m);
+      else chat.messages.push(m);
+    });
+  });
+}
 
 var HZPAST = {};               /* horizons whose past events you unfolded */
 var HZCOVER = {};              /* hzId -> 'own' (its own square) | an event id (an import's cover); nothing = mosaic of its events */
@@ -5899,6 +5924,7 @@ function useAcct(k){
   if (!ACCTS[k]){ ACCTS[k] = k === 'demo' ? demoAcct() : blankAcct({ displayName:'', handle:'' }); if (k !== 'demo') ACCTS[k].joinedAt = Date.now(); }
   S.acct = k;
   loadAcct(ACCTS[k]);
+  if (k === 'demo') seedDemoInvites();
   S.loggedIn = true;
   syncAcctPeople();
   if (!WELCOME) WELCOME = k === 'demo' ? 'Demo account' : 'Welcome back, ' + PEOPLE['self'].displayName.split(' ')[0];
@@ -8923,7 +8949,7 @@ function restore(){
   if (d.ui){ S.rightOpen = !!d.ui.rightOpen; S.chatOpen = d.ui.chatOpen || null; RECENTQ = d.ui.recent || []; }
   ACCTS = d.accounts || {};
   var k = d.session && d.session.acct;
-  if (k && ACCTS[k]){ S.acct = k; S.loggedIn = true; loadAcct(ACCTS[k]); }
+  if (k && ACCTS[k]){ S.acct = k; S.loggedIn = true; loadAcct(ACCTS[k]); if (k === 'demo') seedDemoInvites(); }
   syncAcctPeople();
 }
 var PERSISTT = null;

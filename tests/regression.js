@@ -2718,6 +2718,68 @@ async function overflowEverywhere(p, label){
     await c.context().close();
   }
 
+  /* the horizon's name on a pending invite opens that horizon, and a private one stays readable */
+  {
+    const c = await ctx('desk');
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right');
+    await c.click('.chrow[data-id="c-anna"]'); await c.waitForTimeout(250);
+    const links = await ev(c, () => [...document.querySelectorAll('#msgs .hzname')].map(b => ({ name:b.textContent, act:b.getAttribute('data-act'), type:b.getAttribute('data-type'), id:b.getAttribute('data-id') })));
+    const row = await ev(c, () => [...document.querySelectorAll('#msgs .mbody')].filter(b => b.querySelector('[data-act="hzaccept"]')).map(body => {
+      const name = body.querySelector('.hzname'), accept = body.querySelector('[data-act="hzaccept"]'), decline = body.querySelector('[data-act="hzdecline"]');
+      if (!name || !accept || !decline) return null;
+      const nr = name.getBoundingClientRect(), ar = accept.getBoundingClientRect(), dr = decline.getBoundingClientRect();
+      return { above:nr.bottom <= ar.top + 1 && nr.bottom <= dr.top + 1, sameRow:Math.abs(ar.top - dr.top) < 2, sameSize:Math.abs(ar.width - dr.width) < 2 };
+    }));
+    ok(links.length === 2 && links[0].name === 'Quiet Rooms' && links[0].act === 'open' && links[0].type === 'horizon' && links[0].id === 'horizon-quiet'
+      && links[1].name === 'Surfaces & Projections' && links[1].id === 'horizon-surface'
+      && row.length === 2 && row.every(r => r && r.above && r.sameRow && r.sameSize),
+      'desk: the horizon name on a pending invite is a link above the button row ' + JSON.stringify({ links, row }));
+    const tone = theme => ev(c, theme => {
+      document.documentElement.setAttribute('data-theme', theme);
+      const b = document.querySelector('#msgs .hzname');
+      if (!b) return { missing:true };
+      const s = getComputedStyle(b), bubble = getComputedStyle(b.closest('.mbody'));
+      const sum = rgb => (rgb.match(/\d+/g) || []).slice(0, 3).map(Number).reduce((a, n) => a + n, 0);
+      return { color:s.color, bg:bubble.backgroundColor, deco:s.textDecorationLine, dark:sum(s.color) < 180, light:sum(bubble.backgroundColor) > 500 };
+    }, theme);
+    const win = await tone('win2k'), fresh = await tone('y2fresh');
+    ok(win.dark && win.light && win.deco === 'underline' && fresh.dark && fresh.light && fresh.deco === 'underline',
+      'desk: the horizon name stays an underlined link in win2k and y2fresh ' + JSON.stringify({ win, fresh }));
+    await c.evaluate(() => document.documentElement.setAttribute('data-theme', 'win2k'));
+    const gate = await ev(c, () => {
+      HORIZONS['horizon-quiet'].isPublished = false;
+      HORIZONS['horizon-surface'].isPublished = false;
+      HORIZONS['horizon-quiet'].pendingCollaboratorIds = [];
+      HORIZONS['horizon-quiet'].pendingFollowerIds = [];
+      return { quiet:validItem({ type:'horizon', id:'horizon-quiet' }), surface:validItem({ type:'horizon', id:'horizon-surface' }), editQuiet:hzCanEdit('horizon-quiet'), editSurface:hzCanEdit('horizon-surface') };
+    });
+    ok(gate.quiet && gate.surface && !gate.editQuiet && !gate.editSurface,
+      'desk: a pending invitee can open a private horizon and still cannot edit it ' + JSON.stringify(gate));
+    if (links.length === 2){
+      await c.click('#msgs .hzname[data-id="horizon-quiet"]'); await c.waitForTimeout(350);
+      const opened = await winState(c);
+      const page = await ev(c, () => ({ h1:(document.querySelector('#dscroll h1') || {}).textContent, missing:!!document.querySelector('#dscroll .missing'), edit:!!document.querySelector('#dscroll [data-act="edithz"], #dscroll [data-act="addevents"]'), invite:(CHATS['c-anna'].messages.find(m => m.cardId === 'horizon-quiet') || {}).invite }));
+      ok(opened.open && opened.top === 'horizon:horizon-quiet' && opened.title.indexOf('Quiet Rooms') === 0 && page.h1 === 'Quiet Rooms' && !page.missing && !page.edit && page.invite === 'pending',
+        'desk: Quiet Rooms on the invite opens that horizon read-only ' + JSON.stringify({ opened, page }));
+      await c.evaluate(() => { applySnap(history.state); render(); }); await c.waitForTimeout(200);
+      const kept = await ev(c, () => { const it = S.stack[S.stack.length - 1]; return { type:it && it.type, id:it && it.id, missing:!!document.querySelector('#dscroll .missing') }; });
+      ok(kept.type === 'horizon' && kept.id === 'horizon-quiet' && !kept.missing, 'desk: reopening the private horizon from the address keeps it ' + JSON.stringify(kept));
+      await c.click('#dbar [data-act="closewin"]'); await c.waitForTimeout(200);
+      await c.click('#msgs .hzname[data-id="horizon-surface"]'); await c.waitForTimeout(350);
+      const surface = await ev(c, () => ({ top:S.stack.map(t => t.type + ':' + t.id).join('>'), h1:(document.querySelector('#dscroll h1') || {}).textContent, edit:hzCanEdit('horizon-surface'), editBtn:!!document.querySelector('#dscroll [data-act="edithz"]'), invite:(CHATS['c-anna'].messages.find(m => m.cardId === 'horizon-surface') || {}).invite }));
+      ok(surface.top === 'horizon:horizon-surface' && surface.h1 === 'Surfaces & Projections' && !surface.edit && !surface.editBtn && surface.invite === 'pending follower',
+        'desk: Surfaces & Projections on the invite opens that horizon read-only ' + JSON.stringify(surface));
+    } else {
+      ok(false, 'desk: Quiet Rooms on the invite opens that horizon read-only');
+      ok(false, 'desk: reopening the private horizon from the address keeps it');
+      ok(false, 'desk: Surfaces & Projections on the invite opens that horizon read-only');
+    }
+    ok(!c.errors.length, 'desk: no console errors (invite horizon link) ' + c.errors.join(' '));
+    await c.context().close();
+  }
+
   /* ---------------- tablet ---------------- */
   const t = await ctx('tab');
   await open(t, '', true);

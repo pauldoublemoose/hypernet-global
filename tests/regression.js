@@ -2345,17 +2345,42 @@ async function overflowEverywhere(p, label){
                chrome:cs(btn).backgroundColor === 'rgb(212, 208, 200)' && cs(btn).color === 'rgb(20, 20, 20)' }; });
     ok(Object.values(pg).every(Boolean), kind + ': the whole page wears the look (ground, band, hairlines, labels AA, the accent), the toolbar stays chrome ' + JSON.stringify(pg));
     if (kind === 'phone') await shot(c, 'editlook-horizon-themed-phone');
-    /* an event you host: one Edit (Customize is part of it); the phone's bar is Edit · Call out · ⋯ */
+    /* an event you host: one Edit (Customize is part of it); the phone's bar is Edit · Call out · Invite · Event controls · ⋯ */
     await newEvent(c, { title:'Sauna on the ridge', date:'2026-11-08', city:'Brno' }); await c.waitForTimeout(200);
     const host = await ev(c, () => ({ acts:[...document.querySelectorAll(L.phone ? '#evbar .btn' : '#dscroll .pg-event .actbar .btn')].map(b => b.getAttribute('data-act')),
       menu:ctxItems({ type:'event', id:S.stack[0].id }).filter(i => i !== '-').map(i => i.code) }));
     ok(host.acts.indexOf('editevent') >= 0 && host.acts.indexOf('customize') < 0 && host.menu.indexOf('customize') < 0 && host.menu.indexOf('edit') >= 0 &&
-       (kind === 'desk' || host.acts.join() === 'editevent,newcalloutfor,evmore'), kind + ': an event you host has one Edit, no Customize ' + JSON.stringify(host));
+       (kind === 'desk' || host.acts.join() === 'editevent,newcalloutfor,evinvite,evadmins,evmore'), kind + ': an event you host has one Edit, no Customize ' + JSON.stringify(host));
     await c.evaluate(() => editEventDialog(S.stack[0].id)); await c.waitForTimeout(300);
     const ee = await ev(c, () => ({ secs:[...document.querySelectorAll('.dlg .edsec > h3')].map(h => h.textContent).join(), priv:!!document.querySelector('.dlg .edsec #w-p'), look:!!document.querySelector('.dlg [data-czlook] #cz-c1'), tabs:!!document.querySelector('.dlg .wizsteps') }));
     ok(ee.secs === 'Details,About,Who can see it,Look' && ee.priv && ee.look && !ee.tabs, kind + ': Edit event is one form of sections — details, about, who can see it, look ' + JSON.stringify(ee));
     if (kind === 'phone') await shot(c, 'editlook-edit-event-phone');
     await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+    const barSel = kind === 'phone' ? '#evbar ' : '#dscroll ';
+    await c.click(barSel + '[data-act="evadmins"]'); await c.waitForTimeout(250);
+    const controls = await ev(c, () => (document.querySelector('.dlg.ev-controls, .dlg .ev-controls') || {}).innerText || '');
+    ok(/Who can see it/.test(controls) && /Invite/.test(controls) && /Only admins can add co-creators/.test(controls) && /Guests can invite friends/.test(controls),
+       kind + ': Event controls lists Who can see it, Invite, and both toggles ' + controls);
+    await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+    await c.evaluate(() => openItem('event', 'evt-deep-listening')); await c.waitForTimeout(350);
+    const guest0 = await ev(c, () => ({ admins:document.querySelectorAll('[data-act="evadmins"]').length, invite:document.querySelectorAll('[data-act="evinvite"]').length }));
+    ok(guest0.admins === 0 && guest0.invite === 0, kind + ': a non-admin who has not RSVP’d does not see Event controls or Invite ' + JSON.stringify(guest0));
+    await c.click(barSel + '[data-act="v-going"]'); await c.waitForTimeout(300);
+    const guest1 = await ev(c, (sel) => ({ admins:document.querySelectorAll(sel + '[data-act="evadmins"]').length, invite:document.querySelectorAll(sel + '[data-act="evinvite"]').length }), barSel);
+    ok(guest1.admins === 0 && guest1.invite === 1, kind + ': Going, with guests can invite, shows Invite and hides Event controls ' + JSON.stringify(guest1));
+    await c.evaluate(() => { EVENTS['evt-deep-listening'].guestsCanInvite = false; render(); }); await c.waitForTimeout(200);
+    ok(await ev(c, () => document.querySelectorAll('[data-act="evinvite"]').length === 0 && document.querySelectorAll('[data-act="evadmins"]').length === 0),
+       kind + ': Guests can invite friends off hides Invite for a non-admin');
+    const hidden = await ev(c, () => {
+      var e = EVENTS['evt-dj-closed'];
+      EVENT_INVITES[e.id] = [{ inviteeId: myActor(), invitedBy: 'p-anna' }];
+      return e.privacy === 'only_me' && !canSeeEvent(e);
+    });
+    ok(hidden, kind + ': an invite does not open a private event yet in this build');
+    await c.evaluate(() => { EVENT_ADMINS['evt-deep-listening'] = [{ userId: myActor(), invitedBy: 'p-anna', status: 'pending' }]; render(); });
+    await c.waitForTimeout(200);
+    ok(await ev(c, () => !!document.querySelector('[data-act="evadmin-accept"]') && !!document.querySelector('[data-act="evadmin-decline"]')),
+       kind + ': a pending admin invite shows Accept and Decline');
     /* your profile: one Edit profile; its colours, and your page as others see it beside it (Preview on a phone) */
     await c.evaluate(() => openItem('person', 'self')); await c.waitForTimeout(350);
     ok(await ev(c, () => [...document.querySelectorAll('#dscroll .pg-person .actbar .btn')].map(b => b.getAttribute('data-act')).join() === 'editprofile'), kind + ': your page has one Edit profile');

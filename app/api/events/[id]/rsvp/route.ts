@@ -1,5 +1,7 @@
 import { requirePerson } from "@/lib/auth";
 import { sqlx } from "@/lib/db";
+import { rsvpRoleDecision, seatOf } from "@/lib/event-access";
+import { roleGate } from "@/lib/event-gate";
 import { canSeeEvent } from "@/lib/events";
 import { json, readJson, route } from "@/lib/http";
 import { forbidden, idParam, notFound, type Ctx } from "@/lib/ids";
@@ -13,6 +15,7 @@ export const dynamic = "force-dynamic";
  * role is host, cocreator or attendee. Omit it to leave the stored role alone.
  * Anyone who can see the event may set their own role to cocreator, attendee or null.
  * host only when the viewer is the event's host_id.
+ * When only_admins_add_cocreators is on, a non-admin cannot claim cocreator. Leaving stays allowed.
  */
 export const PUT = route(async (req: Request, ctx: Ctx) => {
   const id = await idParam(ctx.params);
@@ -35,11 +38,19 @@ export const PUT = route(async (req: Request, ctx: Ctx) => {
   return json({ rsvp: rows[0].v });
 });
 
-/** Omit role to leave the stored one. cocreator, attendee and null are anyone's. host is the event host's. */
+/** Omit role to leave the stored one. cocreator, attendee and null are anyone's, unless only admins may add co-creators.
+ *  host is the event host's. A co-creator can still leave while that toggle is on. */
 async function rsvpRoleWrite(viewerId: string, eventId: string, role: "host" | "cocreator" | "attendee" | null | undefined): Promise<{ write: boolean; value: "host" | "cocreator" | "attendee" | null }> {
   if (role === undefined) return { write: false, value: null };
-  if (role === null || role === "attendee" || role === "cocreator") return { write: true, value: role };
-  const rows = (await sqlx().query(`select host_id from events where id = $1`, [eventId])) as { host_id: string | null }[];
-  if (rows[0]?.host_id && rows[0].host_id === viewerId) return { write: true, value: role };
-  throw forbidden("Only the event host can set that role.");
+  const gate = await roleGate(eventId, viewerId);
+  const seat = seatOf({
+    viewerId,
+    hostId: gate.hostId,
+    acceptedAdmin: gate.acceptedAdmin,
+    linkAdder: false,
+    rsvpRole: null,
+  });
+  const decision = rsvpRoleDecision(seat, role, gate.onlyAdminsAddCocreators);
+  if (decision.error) throw forbidden(decision.error);
+  return { write: decision.write, value: decision.value };
 }

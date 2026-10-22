@@ -185,9 +185,15 @@ export const eventLink = z
   .superRefine(rejectEventUrls);
 
 /** PATCH: any subset of the same fields. Ids, host, slug and timestamps are not editable here — except the host's
- *  name of an event added from a link (nobody here hosts it; whoever added it corrects what the page said). */
+ *  name of an event added from a link (nobody here hosts it; whoever added it corrects what the page said).
+ *  The two booleans are admin-only. The route rejects them for anyone else. */
 export const eventPatch = z
-  .object({ ...eventFields, hostName: z.string().trim().min(1).max(80) })
+  .object({
+    ...eventFields,
+    hostName: z.string().trim().min(1).max(80),
+    onlyAdminsAddCocreators: z.boolean(),
+    guestsCanInvite: z.boolean(),
+  })
   .partial()
   .strict()
   .refine((p) => Object.keys(p).length > 0, { message: "nothing to change" })
@@ -271,6 +277,15 @@ export const calloutPatch = z
   .partial()
   .strict()
   .refine((p) => Object.keys(p).length > 0, { message: "nothing to change" });
+
+/** POST /api/events/:id/admins — invite someone to administer the page. */
+export const adminInvite = z.object({ userId: z.uuid() }).strict();
+/** POST /api/events/:id/admins/:userId — the invitee accepts or declines. Decline deletes the row. */
+export const adminReply = z.object({ status: z.enum(["accepted", "declined"]) }).strict();
+/** POST /api/events/:id/demote — an admin sets someone else's co-creator role back to attendee. */
+export const demoteBody = z.object({ userId: z.uuid() }).strict();
+/** POST /api/events/:id/invites — a guest invite. Writes event_invites and a DM card. Does not change visibility. */
+export const guestInvite = z.object({ personId: z.uuid() }).strict();
 
 export const replyCreate = z.object({ id: z.uuid().optional(), text: z.string().trim().min(1).max(2000) }).strict();
 export const messageCreate = z.object({ id: z.uuid().optional(), body: z.string().trim().min(1).max(4000) }).strict();

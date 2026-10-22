@@ -1480,6 +1480,28 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
   [data-theme="y2fresh"]{ --dur:0ms; }
   [data-theme="y2fresh"] :is(.btn, .ib, .row, .nrow){ transition:none; }
 }
+/* EVENT CONTROLS */
+.ev-constel:empty{ display:none; }
+.ev-invite-banner{
+  margin:12px 16px 0; padding:12px; border:1px solid var(--rule); color:var(--ink); background:transparent;
+}
+.ev-invite-banner p{ margin:0 0 8px; color:var(--ink); }
+.ev-invite-banner .btn{ margin-right:8px; }
+.ev-controls{ display:flex; flex-direction:column; gap:8px; color:var(--ink); }
+.ev-controls h3{ margin:8px 0 0; font-size:13px; color:var(--ink2); }
+.ev-admin-row{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  color:var(--ink); border-bottom:1px solid var(--rule); padding:6px 0;
+}
+.ev-toggle{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  color:var(--ink); border:1px solid var(--rule); padding:8px; background:transparent; text-align:left;
+}
+.dlg .btn.alert{ color:var(--alert); }
+.msg .evcard{
+  display:block; margin-top:6px; padding:8px; border:1px solid var(--rule); color:var(--ink); text-decoration:none;
+}
+.msg .evcard:focus{ outline:1px solid var(--sel); outline-offset:2px; }
 </style>
 </head>
 <body>
@@ -2088,6 +2110,8 @@ function followsOf(pid){
 }
 /* the person you are on the network while logged in (null logged out) */
 function myPid(){ return S.loggedIn && S.acct && typeof acctPid === 'function' ? acctPid(S.acct) : null; }
+/* Invitees are not included yet. Friends & Privacy will add an event_invites clause in a later migration.
+   An invite does not open a private event in this build. */
 function canSeeEvent(e){
   if (!e) return false;
   var pv = e.privacy || 'everyone';
@@ -2132,7 +2156,60 @@ function isMine(evId){ return S.loggedIn && ownEvent(EVENTS[evId]); }
    correct it (Edit, Delete) — they are not its host, so none of the host's verbs */
 function isLinkEvent(evId){ return !!EVENTS[evId] && EVENTS[evId].kind === 'link'; }
 function addedByMe(evId){ return S.loggedIn && isLinkEvent(evId) && ADDEDBYME.indexOf(evId) >= 0; }
-function canFix(evId){ return isMine(evId) || addedByMe(evId); }
+var EVENT_PERMS = {
+  manage: ['host', 'admin'],
+  edit: ['host', 'admin', 'link_adder'],
+  privacy: ['host', 'admin'],
+  inviteAdmin: ['host', 'admin'],
+  removeAdmin: ['host'],
+  demoteCocreator: ['host', 'admin'],
+  setCocreatorRule: ['host', 'admin'],
+  setGuestInvite: ['host', 'admin']
+};
+var EVENT_ADMINS = {};
+var EVENT_INVITES = {};
+function adminRows(evId){ return EVENT_ADMINS[evId] || []; }
+function adminStatus(evId, pid){
+  if (!pid) return '';
+  var row = adminRows(evId).filter(function(a){ return a.userId === pid; })[0];
+  return row ? row.status : '';
+}
+function eventSeat(evId){
+  var e = EVENTS[evId];
+  if (!S.loggedIn || !e) return 'guest';
+  if (isMine(evId)) return 'host';
+  if (adminStatus(evId, myActor()) === 'accepted') return 'admin';
+  if (addedByMe(evId)) return 'link_adder';
+  var role = ROLE[evId];
+  if (role === 'cocreator') return 'cocreator';
+  if (role === 'attendee') return 'attendee';
+  return 'guest';
+}
+function allowsPerm(action, seat){
+  var list = EVENT_PERMS[action] || [];
+  return list.indexOf(seat) >= 0;
+}
+function canManageEvent(evId){ return allowsPerm('manage', eventSeat(evId)); }
+function canFix(evId){ return allowsPerm('edit', eventSeat(evId)); }
+function guestsCanInviteOf(evId){
+  var e = EVENTS[evId];
+  return !e || e.guestsCanInvite !== false;
+}
+function onlyAdminsAddCocreators(evId){
+  var e = EVENTS[evId];
+  return !!(e && e.onlyAdminsAddCocreators);
+}
+function canInviteToEvent(evId){
+  var e = EVENTS[evId];
+  if (!e || !S.loggedIn) return false;
+  var seat = eventSeat(evId);
+  if (seat === 'host' || seat === 'admin') return true;
+  if (!guestsCanInviteOf(evId) || !canSeeEvent(e)) return false;
+  var role = ROLE[evId];
+  if (role === 'attendee' || role === 'cocreator') return true;
+  if (RSVP[evId] === 'going' && !role) return true;
+  return false;
+}
 function linkSite(u){ return String(u || '').replace(/^https?:\/\/(www\.)?/i, '').replace(/[\/?#].*$/, ''); }
 /* the entry point for someone without an account says so */
 function joinLabel(){ return ACCTS.me ? 'Log in' : 'Join / Log in'; }
@@ -2983,16 +3060,25 @@ function stateGroupHTML(evId){
 function hostGroupHTML(evId){
   return '<div class="vgroup" role="group" aria-label="Your event">' + vb('editevent', evId, 'Edit', 'edit', { primary:true }) + '</div>';
 }
+function paneControls(evId){
+  var h = '<span class="ev-constel" data-slot="constellation"></span>';
+  if (canInviteToEvent(evId)) h += vb('evinvite', evId, 'Invite', 'user');
+  if (canManageEvent(evId)) h += vb('evadmins', evId, '', 'dots', { aria:'Event controls', attrs:' aria-haspopup="dialog"' });
+  return h;
+}
 function verbsHTML(evId){
   var h = '<div class="verbs">';
+  var more = vb('evmore', evId, '', 'dots', { aria:'More', attrs:' data-more="delete" aria-haspopup="menu"' });
+  var controls = paneControls(evId);
   if (isMine(evId)){
     /* the host's page leads with the host's verbs; Interested / Going are for guests */
     h += hostGroupHTML(evId) + vb('newcalloutfor', evId, 'New call out', 'callout') + promoBtnHTML(evId) + '<span class="vsec">' + addtoBtnHTML(evId) + vb('share', evId, 'Share', 'share') +
-         vb('evmore', evId, '', 'dots', { aria:'More', attrs:' data-more="delete" aria-haspopup="menu"' });
+         controls + more;
     return h + '</span></div>';
   }
   h += stateGroupHTML(evId) + promoBtnHTML(evId) + '<span class="vsec">' + addtoBtnHTML(evId) + vb('share', evId, 'Share', 'share');
-  if (addedByMe(evId)) h += vb('editevent', evId, 'Edit', 'edit') + vb('evmore', evId, '', 'dots', { aria:'More', attrs:' data-more="delete" aria-haspopup="menu"' });
+  if (addedByMe(evId)) h += vb('editevent', evId, 'Edit', 'edit') + controls + more;
+  else h += controls;
   return h + '</span></div>';
 }
 /* the phone's bottom bar: the two verbs that matter here, and ⋯ for the rest (the same menu as a long-press) */
@@ -3011,7 +3097,7 @@ function evbarHTML(evId){
     more = 'addto,share';
   }
   if (!mine && addedByMe(evId)) more += ',edit,delete';
-  return h + vb('evmore', evId, '', 'dots', { aria:'More', attrs:' data-more="'+more+'" aria-haspopup="menu"' }) + '</div>';
+  return h + paneControls(evId) + vb('evmore', evId, '', 'dots', { aria:'More', attrs:' data-more="'+more+'" aria-haspopup="menu"' }) + '</div>';
 }
 /* where the official way in lives: the organiser's ticket or membership page */
 function entryLinkOf(r){
@@ -3094,9 +3180,9 @@ function canvasHTML(evId){
   var e = EVENTS[evId], t = TH(evId), r = recOf(evId), b = r.burn || {};
   var big = r.scale === 'burn' || !!r.burn;
   var past = isPast(lastDay(e));
-  var bar = !past ? verbsHTML(evId) : S.loggedIn ? toolbarHTML(vb('v-went', evId, 'Went', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] }), vb('share', evId, 'Share', 'share')) : '';
+  var bar = !past ? verbsHTML(evId) : S.loggedIn ? toolbarHTML(vb('v-went', evId, 'Went', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] }), paneControls(evId) + vb('share', evId, 'Share', 'share')) : '';
   /* Details (the facts grid) → About → Call outs → Who's going → the plan → the rest, only what there is */
-  var s = sect('About', descOf(e) ? '<p class="evdesc">'+esc(descOf(e))+'</p>' : '');
+  var s = adminInviteBanner(evId) + sect('About', descOf(e) ? '<p class="evdesc">'+esc(descOf(e))+'</p>' : '');
   s += scheduleHTML(evId);
   if (r.theme) s += sect('Theme', '<div class="themeline">'+esc(typeof r.theme === 'object' ? (r.theme.name || '') : r.theme)+'</div>' +
                                    (r.theme.blurb ? '<p>'+esc(r.theme.blurb)+'</p>' : ''));
@@ -3964,7 +4050,8 @@ function convHTML(cid){
     if (m.from === 'sys') return day + '<div class="msg sys">'+esc(m.text)+'</div>';
     var me = m.from === 'self';
     var head = '<div class="mfrom">'+(me ? '' : '<button type="button" class="mwho" data-act="chatprofile" data-id="'+esc(m.from)+'">'+esc(person(m.from).displayName)+'</button>')+'<span class="mt">'+esc(/^\d{1,2}:\d{2}$/.test(m.t || '') ? m.t : '')+'</span></div>';
-    return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+'</div></div>';
+    var card = m.eventId && EVENTS[m.eventId] ? '<a class="evcard" href="#/event/'+esc(m.eventId)+'">'+esc(EVENTS[m.eventId].title)+'</a>' : '';
+    return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+card+'</div></div>';
   }).join('') : '<div class="msg sys">No messages yet</div>') + '</div>';
   /* the box grows with what you write: Enter sends, Shift+Enter starts a new line */
   h += '<div class="composer"><textarea id="chatbox" rows="1" placeholder="Message '+esc(c.name.split(' ')[0])+'" autocomplete="off" aria-label="Message" aria-describedby="chathint">'+esc(CHATDRAFT[cid] || '')+'</textarea>' +
@@ -6995,6 +7082,146 @@ var newEventDialog = gated(function(into){
   dialog(DRAFT.into ? 'New event for ' + HORIZONS[DRAFT.into].name : 'New event', wizBodyHTML(), wizFootHTML(), 900, 'wizdlg');
   if (DRAFT.step === 1) focusIn('w-t');
 });
+function adminInviteBanner(evId){
+  if (!S.loggedIn || adminStatus(evId, myActor()) !== 'pending') return '';
+  return '<div class="ev-invite-banner" role="status"><p>You are invited to be an admin of this event.</p>' +
+    '<button class="btn primary" data-act="evadmin-accept" data-id="'+evId+'">Accept</button>' +
+    '<button class="btn" data-act="evadmin-decline" data-id="'+evId+'">Decline</button></div>';
+}
+function cocreatorIds(evId){
+  var me = myActor(), ids = [];
+  Object.keys(CHRON).forEach(function(pid){
+    if (pid !== me && pid !== 'self' && CHRON[pid] && CHRON[pid][evId] === 'cocreator') ids.push(pid);
+  });
+  return ids;
+}
+function eventControlsDialog(evId){
+  var e = EVENTS[evId];
+  if (!e || !canManageEvent(evId)) return;
+  var host = isMine(evId);
+  var list = adminRows(evId).map(function(a){
+    var name = a.userId === myActor() || a.userId === 'self' ? 'You' : person(a.userId).displayName;
+    var rm = host ? '<button class="btn alert" data-act="evadmin-remove" data-id="'+evId+'" data-user="'+esc(a.userId)+'">Remove</button>' : '';
+    return '<div class="ev-admin-row"><span>'+esc(name)+' · '+esc(a.status)+'</span>'+rm+'</div>';
+  }).join('') || '<p class="fhelp">No other admins yet.</p>';
+  var crew = cocreatorIds(evId).map(function(pid){
+    return '<div class="ev-admin-row"><span>'+esc(person(pid).displayName)+'</span>' +
+      '<button class="btn" data-act="evdemote" data-id="'+evId+'" data-user="'+esc(pid)+'">Demote</button></div>';
+  }).join('');
+  dialog('Event controls', '<div class="ev-controls">' +
+    '<button class="btn" data-act="editevent" data-id="'+evId+'">Edit</button>' +
+    '<button class="btn" data-act="evprivacy" data-id="'+evId+'">Who can see it</button>' +
+    '<button class="btn" data-act="evinvite" data-id="'+evId+'">Invite</button>' +
+    '<button class="btn" data-act="evadmin-invite" data-id="'+evId+'">Invite admin</button>' +
+    '<h3>Admins</h3>' + list +
+    (crew ? '<h3>Co-creators</h3>' + crew : '') +
+    '<button class="btn ev-toggle" data-act="evtoggle" data-id="'+evId+'" data-key="onlyAdminsAddCocreators" aria-pressed="'+(onlyAdminsAddCocreators(evId)?'true':'false')+'">Only admins can add co-creators</button>' +
+    '<button class="btn ev-toggle" data-act="evtoggle" data-id="'+evId+'" data-key="guestsCanInvite" aria-pressed="'+(guestsCanInviteOf(evId)?'true':'false')+'">Guests can invite friends</button>' +
+    '</div>', '<button class="btn" data-act="closedlg">Close</button>', 440);
+}
+function eventPrivacyDialog(evId){
+  var e = EVENTS[evId];
+  if (!e || !canManageEvent(evId) || isLinkEvent(evId)) return;
+  DRAFT = { form:'privacy', editing:evId, privacy:e.privacy || 'everyone' };
+  dialog('Who can see it', privacyHTML(DRAFT),
+    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="evprivacy-save" data-id="'+evId+'">Save</button>', 440);
+}
+function saveEventPrivacy(evId){
+  var e = EVENTS[evId], sel = $('w-p');
+  if (!e || !canManageEvent(evId) || !sel) return;
+  e.privacy = sel.value;
+  if (ONLINE) HNAPI.patchEvent(evId, { privacy:e.privacy });
+  closeDialogs(); render();
+  toast('Saved', PRIVACY[e.privacy] || '');
+}
+function setEventToggle(evId, key){
+  var e = EVENTS[evId];
+  if (!e || !canManageEvent(evId)) return;
+  if (key === 'onlyAdminsAddCocreators') e.onlyAdminsAddCocreators = !e.onlyAdminsAddCocreators;
+  else if (key === 'guestsCanInvite') e.guestsCanInvite = !guestsCanInviteOf(evId);
+  else return;
+  if (ONLINE) HNAPI.patchEvent(evId, key === 'onlyAdminsAddCocreators'
+    ? { onlyAdminsAddCocreators:!!e.onlyAdminsAddCocreators }
+    : { guestsCanInvite:e.guestsCanInvite !== false });
+  closeDialogs();
+  eventControlsDialog(evId);
+}
+var INVITE = null;
+function inviteDialog(evId, kind){
+  if (kind === 'admin'){ if (!canManageEvent(evId)) return; }
+  else if (!canInviteToEvent(evId)) return;
+  INVITE = { evId:evId, kind:kind, q:'' };
+  dialog(kind === 'admin' ? 'Invite admin' : 'Invite',
+    '<div class="field"><label for="iv-q">To</label><input type="search" id="iv-q" placeholder="Search people" autocomplete="off"></div>' +
+    '<div class="picklist" id="iv-list"></div>',
+    '<button class="btn" data-act="closedlg">Cancel</button>', 480);
+  paintInvite();
+  focusIn('iv-q');
+}
+function paintInvite(){
+  var el = $('iv-list'); if (!INVITE || !el) return;
+  var q = INVITE.q.toLowerCase().trim(), host = eventHostPid(EVENTS[INVITE.evId]);
+  var ids = ncPeopleAll().filter(function(k){
+    if (INVITE.kind === 'admin' && (k === host || k === myActor())) return false;
+    var p = person(k);
+    return !q || matches(p.displayName, q) || matches(p.handle, q);
+  });
+  el.innerHTML = ids.map(function(k){
+    var p = person(k);
+    return '<div class="linkrow" data-act="ivpick" data-id="'+INVITE.evId+'" data-user="'+esc(k)+'" role="button">'+avHTML(k,'a40')+
+      '<div class="lr">'+esc(p.displayName)+'<div class="fhelp">@'+esc(p.handle)+'</div></div></div>';
+  }).join('') || '<div class="empty">Nobody matches.</div>';
+  placeDlg();
+}
+function sendEventInvite(evId, pid){
+  if (!pid || pid === myActor() || !canInviteToEvent(evId)) return;
+  var rows = EVENT_INVITES[evId] || (EVENT_INVITES[evId] = []);
+  if (!rows.some(function(r){ return r.inviteeId === pid; })) rows.push({ inviteeId:pid, invitedBy:myActor() });
+  var dm = openDM(pid), st = stamp(), title = EVENTS[evId] ? EVENTS[evId].title : 'an event';
+  CHATS[dm].messages.push({ from:'self', t:st.t, ts:st.ts, text:"You're invited to " + title + '.', eventId:evId });
+  if (ONLINE) HNAPI.inviteGuest(evId, pid);
+  closeDialogs(); INVITE = null; render();
+  toast('Invited', person(pid).displayName);
+}
+function sendAdminInvite(evId, pid){
+  if (!pid || !canManageEvent(evId)) return;
+  var e = EVENTS[evId];
+  if (e && eventHostPid(e) === pid){ toast('Already the host', person(pid).displayName); return; }
+  var rows = EVENT_ADMINS[evId] || (EVENT_ADMINS[evId] = []);
+  if (rows.some(function(a){ return a.userId === pid; })){ toast('Already invited', person(pid).displayName); return; }
+  rows.push({ userId:pid, invitedBy:myActor(), status:'pending' });
+  if (ONLINE) HNAPI.inviteAdmin(evId, pid);
+  closeDialogs(); INVITE = null;
+  eventControlsDialog(evId);
+  toast('Admin invited', person(pid).displayName);
+}
+function answerAdminInvite(evId, accept){
+  var pid = myActor(), rows = adminRows(evId), row = rows.filter(function(a){ return a.userId === pid && a.status === 'pending'; })[0];
+  if (!row) return;
+  if (accept){ row.status = 'accepted'; if (ONLINE) HNAPI.answerAdmin(evId, 'accepted'); }
+  else {
+    EVENT_ADMINS[evId] = rows.filter(function(a){ return a !== row; });
+    if (ONLINE) HNAPI.answerAdmin(evId, 'declined');
+  }
+  render();
+  toast(accept ? 'You are an admin' : 'Invite declined', EVENTS[evId] ? EVENTS[evId].title : '');
+}
+function removeAdmin(evId, pid){
+  if (!isMine(evId) || !pid) return;
+  EVENT_ADMINS[evId] = adminRows(evId).filter(function(a){ return a.userId !== pid; });
+  if (ONLINE) HNAPI.removeAdmin(evId, pid);
+  closeDialogs();
+  eventControlsDialog(evId);
+}
+function demoteCocreator(evId, pid){
+  if (!canManageEvent(evId) || !pid || pid === myActor()) return;
+  if (!CHRON[pid] || CHRON[pid][evId] !== 'cocreator') return;
+  CHRON[pid][evId] = 'attendee';
+  if (ONLINE) HNAPI.demote(evId, pid);
+  closeDialogs();
+  eventControlsDialog(evId);
+  toast('Demoted', person(pid).displayName);
+}
 /* ---- Edit an event you host: its facts, its words, who can see it and its look, in one dialog ---- */
 var editEventDialog = gated(function(evId){
   var e = EVENTS[evId], r = recOf(evId);
@@ -8073,6 +8300,17 @@ document.addEventListener('click', function(ev){
       break;
     }
     case 'evmore':       openMoreMenu(n, 'event', id, (n.getAttribute('data-more') || 'delete').split(',')); break;
+    case 'evadmins':     eventControlsDialog(id); break;
+    case 'evinvite':     inviteDialog(id, 'guest'); break;
+    case 'evadmin-invite': inviteDialog(id, 'admin'); break;
+    case 'evprivacy':    eventPrivacyDialog(id); break;
+    case 'evprivacy-save': saveEventPrivacy(id); break;
+    case 'evtoggle':     setEventToggle(id, n.getAttribute('data-key')); break;
+    case 'ivpick':       if (INVITE && INVITE.kind === 'admin') sendAdminInvite(id, n.getAttribute('data-user')); else sendEventInvite(id, n.getAttribute('data-user')); break;
+    case 'evadmin-accept': answerAdminInvite(id, true); break;
+    case 'evadmin-decline': answerAdminInvite(id, false); break;
+    case 'evadmin-remove': removeAdmin(id, n.getAttribute('data-user')); break;
+    case 'evdemote':     demoteCocreator(id, n.getAttribute('data-user')); break;
     case 'toentry':      { var es = document.querySelector('#dscroll [data-sect="entry"]'); if (es) es.scrollIntoView({ block:'start', behavior:'smooth' }); break; }
     case 'hzmore':       openMoreMenu(n, 'horizon', id, (n.getAttribute('data-more') || 'share,delete').split(',')); break;
     case 'confirmok':    { var cf = CONFIRMFN; CONFIRMFN = null; if (cf) cf(); break; }
@@ -8145,6 +8383,7 @@ document.addEventListener('input', function(ev){
     PFILT[n.getAttribute('data-id')] = n.value; render(); return;
   }
   if (n.id === 'nc-q' && NC){ NC.q = n.value; paintNewChat(); return; }
+  if (n.id === 'iv-q' && INVITE){ INVITE.q = n.value; paintInvite(); return; }
   if (n.id === 'pf-handle' && PF) PF.handleTouched = true;
   if (n.id === 'pf-name' && PF && PF.mode === 'signup' && !PF.handleTouched){ var hi0 = $('pf-handle'); if (hi0) hi0.value = suggestHandle(n.value); }
   if (n.id === 'ptag-q'){

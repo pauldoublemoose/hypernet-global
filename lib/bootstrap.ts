@@ -79,7 +79,8 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
                    order by a.ts desc limit 600) a`),
       one(`select coalesce(json_agg(json_build_object('threadId', t.id, 'personId', case when t.a = $1::uuid then t.b else t.a end,
              'lastReadAt', (select tr.last_read_at from thread_reads tr where tr.thread_id = t.id and tr.person_id = $1::uuid),
-             'messages', coalesce((select json_agg(json_build_object('id', m.id, 'senderId', m.sender_id, 'body', m.body, 'createdAt', m.created_at)
+             'messages', coalesce((select json_agg(json_build_object('id', m.id, 'senderId', m.sender_id, 'body', m.body,
+                                   'cardType', m.card_type, 'cardId', m.card_id, 'createdAt', m.created_at)
                                    order by m.created_at) from messages m where m.thread_id = t.id), '[]'))), '[]') v
              from dm_threads t where $1::uuid is not null and (t.a = $1::uuid or t.b = $1::uuid)`),
     ],
@@ -114,7 +115,8 @@ export async function loadChats(viewer: string): Promise<unknown[]> {
   const rows = (await sqlx().query(
     `select coalesce(json_agg(json_build_object('threadId', t.id, 'personId', case when t.a = $1::uuid then t.b else t.a end,
        'lastReadAt', (select tr.last_read_at from thread_reads tr where tr.thread_id = t.id and tr.person_id = $1::uuid),
-       'messages', coalesce((select json_agg(json_build_object('id', m.id, 'senderId', m.sender_id, 'body', m.body, 'createdAt', m.created_at)
+       'messages', coalesce((select json_agg(json_build_object('id', m.id, 'senderId', m.sender_id, 'body', m.body,
+                             'cardType', m.card_type, 'cardId', m.card_id, 'createdAt', m.created_at)
                              order by m.created_at) from messages m where m.thread_id = t.id), '[]'))), '[]') v
        from dm_threads t where t.a = $1::uuid or t.b = $1::uuid`,
     [viewer],

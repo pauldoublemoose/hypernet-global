@@ -14,7 +14,8 @@ export async function eventByLink(url: string, viewer: string | null): Promise<u
   return rows[0]?.v ?? null;
 }
 
-/** Is this event visible to the viewer? (the one privacy rule, can_see_event) */
+/** Is this event visible to the viewer? (the one privacy rule, can_see_event).
+ *  Invitees are not included yet. Friends & Privacy will add an event_invites clause in a later migration. */
 export async function canSeeEvent(id: string, viewer: string | null): Promise<boolean> {
   const rows = (await sqlx().query(`select 1 from events e where e.id = $1 and can_see_event($2::uuid, e)`, [id, viewer])) as unknown[];
   return rows.length > 0;

@@ -111,7 +111,11 @@
       if (!PEOPLE[c.personId]) return;
       var cid = 'c-dm-' + c.personId, last = c.messages[c.messages.length - 1];
       byId[cid] = { id:cid, name:PEOPLE[c.personId].displayName, kind:'dm', memberIds:[c.personId],
-        messages: c.messages.map(function(m){ return { id:m.id, from: m.senderId === me ? 'self' : m.senderId, t:clock(m.createdAt), ts:m.createdAt, text:m.body }; }) };
+        messages: c.messages.map(function(m){
+          var msg = { id:m.id, from: m.senderId === me ? 'self' : m.senderId, t:clock(m.createdAt), ts:m.createdAt, text:m.body };
+          if (m.cardType === 'event' && m.cardId) msg.eventId = m.cardId;
+          return msg;
+        }) };
       order.push(cid);
       if (last && last.senderId !== me && (!c.lastReadAt || ms(last.createdAt) > ms(c.lastReadAt))) unread[cid] = true;
     });
@@ -544,6 +548,27 @@
   HN.replyBack = function(id){
     var r = allReplies().filter(function(x){ return x.id === id; })[0]; if (!r) return Promise.resolve();
     return write('re:' + id, 'POST', '/api/callouts/' + r.calloutId + '/replies', { id:id, text:r.text }, 'the reply');
+  };
+  HN.patchEvent = function(id, body){ return write('ev:' + id, 'PATCH', '/api/events/' + id, body, title(id)); };
+  HN.inviteGuest = function(evId, pid){
+    if (!HN.isId(evId) || !HN.isId(pid)) return Promise.resolve();
+    return write('inv:' + evId + ':' + pid, 'POST', '/api/events/' + evId + '/invites', { personId: pid }, 'the invite');
+  };
+  HN.inviteAdmin = function(evId, pid){
+    if (!HN.isId(evId) || !HN.isId(pid)) return Promise.resolve();
+    return write('adm:' + evId + ':' + pid, 'POST', '/api/events/' + evId + '/admins', { userId: pid }, 'the admin invite');
+  };
+  HN.answerAdmin = function(evId, status){
+    var me = meId(); if (!HN.isId(evId) || !HN.isId(me)) return Promise.resolve();
+    return write('adm:' + evId + ':' + me, 'POST', '/api/events/' + evId + '/admins/' + me, { status: status }, 'the admin invite');
+  };
+  HN.removeAdmin = function(evId, pid){
+    if (!HN.isId(evId) || !HN.isId(pid)) return Promise.resolve();
+    return write('adm:' + evId + ':' + pid, 'DELETE', '/api/events/' + evId + '/admins/' + pid, undefined, 'the admin');
+  };
+  HN.demote = function(evId, pid){
+    if (!HN.isId(evId) || !HN.isId(pid)) return Promise.resolve();
+    return write('dem:' + evId + ':' + pid, 'POST', '/api/events/' + evId + '/demote', { userId: pid }, 'the role');
   };
   HN.sendMessage = function(cid, m){
     var pid = CHATS[cid] && CHATS[cid].memberIds[0]; if (!HN.isId(pid)) return Promise.resolve();

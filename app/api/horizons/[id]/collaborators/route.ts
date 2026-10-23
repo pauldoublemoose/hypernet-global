@@ -1,5 +1,6 @@
 import { requirePerson } from "@/lib/auth";
 import { sqlx } from "@/lib/db";
+import { requireChatCard } from "@/lib/chat-cards";
 import { inviteBody } from "@/lib/horizon-invites";
 import { horizonAccess, horizonAfterEdit, horizonFor } from "@/lib/horizons";
 import { HttpError, json, readJson, route } from "@/lib/http";
@@ -44,12 +45,12 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
                 (select id from new_thread),
                 (select t.id from dm_threads t where t.a = $4 and t.b = $5)
               ),
-              $3, $7, 'horizon_invite', $1
+              $3, $7, $8, $1
        where exists (select 1 from ins)
        returning id
      )
      select i.person_id from ins i left join lateral (select id from msg limit 1) m on true`,
-    [id, personId, me.id, a, z, stored, inviteBody("pending", role)],
+    [id, personId, me.id, a, z, stored, inviteBody("pending", role), requireChatCard("horizon_invite").type],
   );
   return json({ horizon: await horizonFor(id, me.id) });
 });
@@ -82,12 +83,12 @@ export const DELETE = route(async (req: Request, ctx: Ctx) => {
          and m.thread_id = t.id
          and t.a = $3 and t.b = $4
          and m.body in ($5, $6)
-         and m.card_type = 'horizon_invite'
+         and m.card_type = $9
          and m.card_id = $1
        returning m.id
      )
      select d.accepted_at from del d left join lateral (select id from msg limit 1) m on true`,
-    [id, target, a, z, pending, pendingFollower, inviteBody("cancelled", "collaborator"), inviteBody("cancelled", "follower")],
+    [id, target, a, z, pending, pendingFollower, inviteBody("cancelled", "collaborator"), inviteBody("cancelled", "follower"), requireChatCard("horizon_invite").type],
   );
   return json({ horizon: await horizonAfterEdit(id, me.id) });
 });

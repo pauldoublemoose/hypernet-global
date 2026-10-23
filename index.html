@@ -1548,6 +1548,7 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 <script src="_shared/hypernet-palette.js"></script>
 <script src="_shared/hypernet-themes.js"></script>
 <script src="_shared/hypernet-event-details.js"></script>
+<script src="_shared/chat-cards.js"></script>
 <script src="_shared/hypernet-api.js"></script>
 <script>
 /* =========================================================================
@@ -3992,35 +3993,10 @@ function chatList(){
   return CHATORDER.filter(function(k){ return CHATS[k] && (CHATS[k].messages.length || CHATDRAFT[k]); })
     .sort(function(a, b){ return ts(b) - ts(a); });
 }
-function invitePhrase(m){
-  var raw = (m && m.invite) || 'pending';
-  var follower = raw.indexOf('follower') >= 0;
-  var state = String(raw).split(' ')[0];
-  var name = m.cardName || (m.cardId && HORIZONS[m.cardId] && HORIZONS[m.cardId].name) || '';
-  var tail = name ? ' ' + name : '';
-  if (follower){
-    if (state === 'pending' && m.from !== 'self') return 'Follow ' + name;
-    if (state === 'pending') return 'Invite sent to follow' + tail;
-    if (state === 'accepted') return 'Following' + tail;
-    if (state === 'declined') return 'Declined to follow' + tail;
-    if (state === 'cancelled') return 'Cancelled' + tail;
-    return raw;
-  }
-  if (state === 'pending' && m.from !== 'self') return 'Collaborate on ' + name;
-  if (state === 'pending') return 'Invite sent' + tail;
-  var said = { accepted:'Accepted', declined:'Declined', cancelled:'Cancelled' }[state] || state;
-  return said + tail;
-}
-function invitePhraseHTML(m){
-  var phrase = invitePhrase(m);
-  var name = (m && (m.cardName || (m.cardId && HORIZONS[m.cardId] && HORIZONS[m.cardId].name))) || '';
-  var at = name ? phrase.lastIndexOf(name) : -1;
-  if (!m || !m.cardId || at < 0) return esc(phrase);
-  return esc(phrase.slice(0, at)) + '<button type="button" class="hzname" data-act="open" data-type="horizon" data-id="'+esc(m.cardId)+'">'+esc(name)+'</button>' + esc(phrase.slice(at + name.length));
-}
 function msgPreview(m, c){
   if (!m) return 'No messages yet';
-  if (m.cardType === 'horizon_invite') return invitePhrase(m);
+  var phrase = ChatCards.phrase(m);
+  if (phrase != null) return phrase;
   var who = m.from === 'self' ? 'You: ' : '';
   if (m.from === 'sys') return m.text;
   return who + m.text;
@@ -4060,15 +4036,7 @@ function convHTML(cid){
     if (m.from === 'sys') return day + '<div class="msg sys">'+esc(m.text)+'</div>';
     var me = m.from === 'self';
     var head = '<div class="mfrom">'+(me ? '' : '<button type="button" class="mwho" data-act="chatprofile" data-id="'+esc(m.from)+'">'+esc(person(m.from).displayName)+'</button>')+'<span class="mt">'+esc(/^\d{1,2}:\d{2}$/.test(m.t || '') ? m.t : '')+'</span></div>';
-    if (m.cardType === 'horizon_invite'){
-      var pending = String(m.invite || 'pending').split(' ')[0] === 'pending';
-      var phrase = invitePhraseHTML(m);
-      var body = pending && !me
-        ? '<span class="hzinv">'+phrase+'</span><span class="hzacts"><button type="button" class="btn" data-act="hzaccept" data-id="'+esc(m.cardId)+'" data-chat="'+esc(cid)+'">Accept</button><button type="button" class="btn" data-act="hzdecline" data-id="'+esc(m.cardId)+'" data-chat="'+esc(cid)+'">Decline</button></span>'
-        : phrase;
-      return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+body+'</div></div>';
-    }
-    return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+'</div></div>';
+    return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+ChatCards.body(m, me, cid)+'</div></div>';
   }).join('') : '<div class="msg sys">No messages yet</div>') + '</div>';
   /* the box grows with what you write: Enter sends, Shift+Enter starts a new line */
   h += '<div class="composer"><textarea id="chatbox" rows="1" placeholder="Message '+esc(c.name.split(' ')[0])+'" autocomplete="off" aria-label="Message" aria-describedby="chathint">'+esc(CHATDRAFT[cid] || '')+'</textarea>' +
@@ -8161,8 +8129,12 @@ document.addEventListener('click', function(ev){
     case 'addcollab':    addCollabDialog(id); break;
     case 'ccpick':       pickCollab(id); break;
     case 'rmcollab':     removeCollab(n.getAttribute('data-hz'), id); break;
-    case 'hzaccept':     acceptHzInvite(n.getAttribute('data-chat'), id); break;
-    case 'hzdecline':    declineHzInvite(n.getAttribute('data-chat'), id); break;
+    case 'hzaccept':
+    case 'hzdecline': {
+      var card = ChatCards.get(n.getAttribute('data-card'));
+      if (card) (act === 'hzaccept' ? card.accept : card.decline)(n.getAttribute('data-chat'), id);
+      break;
+    }
     case 'leavecollab':  leaveCollab(id); break;
     case 'new-event':    runCmd('new-event'); break;
     case 'addpastevent': gated(addPastEventDialog)(); break;

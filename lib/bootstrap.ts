@@ -1,4 +1,5 @@
 import { sqlx } from "./db";
+import { requireChatCard } from "./chat-cards";
 import { horizonVisible } from "./horizons";
 
 // Everything the first screen needs, for one viewer, in ONE request to the database (one read-only transaction,
@@ -26,7 +27,7 @@ const VISIBLE_CALLOUT = `(c.event_id is null or exists (select 1 from events ce 
 
 const CHAT_MESSAGE_JSON = `json_build_object('id', m.id, 'senderId', m.sender_id, 'body', m.body, 'createdAt', m.created_at,
   'cardType', m.card_type, 'cardId', m.card_id,
-  'cardName', (select h.name from horizons h where m.card_type = 'horizon_invite' and h.id = m.card_id))`;
+  'cardName', (select h.name from horizons h where m.card_type = '${requireChatCard("horizon_invite").type}' and h.id = m.card_id))`;
 
 export type Bootstrap = {
   hypernet: 1;

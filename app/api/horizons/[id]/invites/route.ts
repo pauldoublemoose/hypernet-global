@@ -1,5 +1,6 @@
 import { requirePerson } from "@/lib/auth";
 import { sqlx } from "@/lib/db";
+import { requireChatCard } from "@/lib/chat-cards";
 import { inviteBody } from "@/lib/horizon-invites";
 import { horizonFor } from "@/lib/horizons";
 import { HttpError, json, route } from "@/lib/http";
@@ -51,14 +52,14 @@ export const POST = route(async (_req: Request, ctx: Ctx) => {
          and m.thread_id = t.id
          and t.a = $3 and t.b = $4
          and m.body = $6
-         and m.card_type = 'horizon_invite'
+         and m.card_type = $7
          and m.card_id = $1
        returning m.id
      )
      select d.person_id from del d
      left join lateral (select person_id from fol limit 1) f on true
      left join lateral (select id from msg limit 1) m on true`,
-    [id, me.id, a, z, inviteBody("accepted", "follower"), pendingFollower],
+    [id, me.id, a, z, inviteBody("accepted", "follower"), pendingFollower, requireChatCard("horizon_invite").type],
   )) as { person_id: string }[];
   if (!followed.length) {
     const updated = (await sqlx().query(
@@ -77,12 +78,12 @@ export const POST = route(async (_req: Request, ctx: Ctx) => {
            and m.thread_id = t.id
            and t.a = $3 and t.b = $4
            and m.body = $6
-           and m.card_type = 'horizon_invite'
+           and m.card_type = $7
            and m.card_id = $1
          returning m.id
        )
        select u.person_id from upd u left join lateral (select id from msg limit 1) m on true`,
-      [id, me.id, a, z, inviteBody("accepted", "collaborator"), pending],
+      [id, me.id, a, z, inviteBody("accepted", "collaborator"), pending, requireChatCard("horizon_invite").type],
     )) as { person_id: string }[];
     if (!updated.length) {
       const already = (await sqlx().query(
@@ -117,12 +118,12 @@ export const DELETE = route(async (_req: Request, ctx: Ctx) => {
          and m.thread_id = t.id
          and t.a = $3 and t.b = $4
          and m.body in ($5, $6)
-         and m.card_type = 'horizon_invite'
+         and m.card_type = $9
          and m.card_id = $1
        returning m.id
      )
      select d.person_id from del d left join lateral (select id from msg limit 1) m on true`,
-    [id, me.id, a, z, pending, pendingFollower, inviteBody("declined", "collaborator"), inviteBody("declined", "follower")],
+    [id, me.id, a, z, pending, pendingFollower, inviteBody("declined", "collaborator"), inviteBody("declined", "follower"), requireChatCard("horizon_invite").type],
   )) as { person_id: string }[];
   if (!removed.length) throw notFound("No invite to answer.");
   const horizon = await horizonFor(id, me.id);

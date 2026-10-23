@@ -16,8 +16,17 @@ create table horizon_collaborators (
 );
 create index horizon_collaborators_person on horizon_collaborators (person_id);
 
+-- Allowed card_type values. NULL stays a normal text message.
+-- event, horizon, callout are links on a message (0001). horizon_invite is the chat card.
+-- Add a new chat card to this list, to lib/chat-cards.ts, and to _shared/chat-cards.js.
+-- A friend request is never a card_type.
 alter table messages drop constraint messages_card_type_check;
 alter table messages add constraint messages_card_type_check
-  check (card_type is null or card_type in ('event', 'horizon', 'callout', 'horizon_invite'));
+  check (card_type is null or card_type in (
+    'event',
+    'horizon',
+    'callout',
+    'horizon_invite'
+  ));
 
 insert into _migrations (name) values ('0007_horizon_collaborators');

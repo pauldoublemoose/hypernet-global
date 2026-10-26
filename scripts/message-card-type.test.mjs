@@ -59,10 +59,13 @@ test("the message card check allows chronicle and every earlier value", () => {
   }
   assert.ok(constraint, "a migration drops and re-adds messages_card_type_check");
   assert.ok(required.has("event") && required.has("horizon") && required.has("callout"), "0001 values are the baseline");
+  required.add("horizon_invite");
   required.add("chronicle");
   for (const value of required) {
     assert.ok(constraint.allowed.includes(value), `${constraint.name} omits ${value}`);
   }
+  assert.deepEqual(constraint.allowed, ["event", "horizon", "callout", "horizon_invite", "chronicle"]);
+  assert.match(constraint.sql, /check \(card_type is null or card_type in \(/);
   const written = writtenCardTypes();
   assert.ok(written.has("chronicle"));
   assert.ok(written.has("event"));

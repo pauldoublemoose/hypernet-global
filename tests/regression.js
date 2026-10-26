@@ -1587,9 +1587,15 @@ async function overflowEverywhere(p, label){
     await c.evaluate(() => { closeDialogs(); PEDIT = true; if (L.phone){ S.tab = 'you'; goFolder({ kind:'you' }); } S.stack = [{ type:'person', id:'self' }]; render(); });
     await c.waitForTimeout(300);
     await c.click('[data-act="addpastevent"]'); await c.waitForTimeout(200);
-    await c.click('.dlg input[name="ch-role"]'); await c.click('.dlg [data-act="chronicle-go"]'); await c.waitForTimeout(250);
-    const past = await asked();
-    ok(!past.q && past.wiz && !past.role, kind + ': Add past event still skips the question ' + JSON.stringify(past));
+    const past = await ev(c, () => ({
+      q:(document.querySelector('.hostask-q') || {}).textContent || '',
+      wiz:!!document.querySelector('#w-t'),
+      role:!!document.querySelector('input[name="ch-role"]'),
+      search:!!document.querySelector('#ch-q'),
+      yes:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).textContent || ''
+    }));
+    ok(!past.q && !past.wiz && past.role && past.search && past.yes === 'Add to Chronicle',
+       kind + ': Add past event searches past events and does not open the wizard ' + JSON.stringify(past));
     await c.evaluate(() => { closeDialogs(); CHRONICLE_ADD = null; });
     await c.keyboard.press('n'); await c.waitForTimeout(100);
     ok(!(await c.$('.dlg')), kind + ': no keyboard shortcut starts a new event');
@@ -3059,32 +3065,32 @@ async function overflowEverywhere(p, label){
   }
 
   /* RSVP role: Going, Interested, Went and a shift must not send role, or a stored role is cleared.
-     Add past event still sends Host, Co-creator and Attendee. The new event is yours, so the host check allows it. */
+     Add past event searches past events, then files attendee through the chronicle claim and host or co-creator through the role write. */
   {
     const ME = '00000000-0000-4000-8000-000000000001', EV = '00000000-0000-4000-8000-000000000101';
+    const OLD = '00000000-0000-4000-8000-000000000102', OTHER = '00000000-0000-4000-8000-000000000103';
+    const HOST2 = '00000000-0000-4000-8000-000000000099';
     const person = { id:ME, handle:'hana', displayName:'Hana Cerna', bio:'', skills:[], cities:['Brno'], look:null, lastSeenAt:null, createdAt:'2026-09-01T10:00:00Z' };
+    const row = (id, title, startsOn, hostId, policy) => ({ id:id, slug:id.slice(0, 8), title:title, startsOn:startsOn, endsOn:null, startTime:null, endTime:null,
+      timezone:'Europe/Prague', hostId:hostId, hostName:hostId === ME ? 'Hana Cerna' : 'Anna Vale', description:'x', kind:'meetup', privacy:'everyone', city:'Brno', region:null, country:'CZ', venue:null, access:null,
+      whatToBring:[], details:{}, look:null, source:'user', previousEditionId:null, cocreatorPolicy:policy });
+    const upcoming = row(EV, 'Shift night', '2026-10-20', ME, 'open');
+    upcoming.details = { blocks:[{ label:'Door', date:'2026-10-20', time:'18:00' }] };
+    const old = row(OLD, 'Old host night', '2026-08-01', ME, 'open');
+    const guest = row(OTHER, 'Old guest night', '2026-07-01', HOST2, 'request');
     const boot = { hypernet:1, me:person, login:null, people:[person], follows:[], promotions:[], horizons:[], hzFollows:[], callouts:[], replies:[], activity:[], chats:[],
-      events:[{ id:EV, slug:'shift-night', title:'Shift night', startsOn:'2026-10-20', endsOn:null, startTime:null, endTime:null,
-        timezone:'Europe/Prague', hostId:ME, hostName:'Hana Cerna', description:'x', kind:'meetup', privacy:'everyone', city:'Brno', region:null, country:'CZ', venue:null, access:null,
-        whatToBring:[], details:{ blocks:[{ label:'Door', date:'2026-10-20', time:'18:00' }] }, look:null, source:'user', previousEditionId:null }],
+      events:[upcoming, old, guest],
       rsvps:[{ personId:ME, eventId:EV, status:'going', went:false, shiftIndex:null, role:'host', updatedAt:'2026-09-30T10:00:00Z' }] };
-    const filePast = async (c, role, title) => {
+    const filePick = async (c, role, title) => {
       await c.evaluate(() => { openItem('person', 'self'); beginProfileEdit(); });
       await c.waitForTimeout(300);
       await c.evaluate(() => document.querySelector('[data-act="addpastevent"]').click());
-      await c.waitForTimeout(250);
+      await c.waitForTimeout(500);
+      await c.fill('#ch-q', title);
+      await c.click('.dlg [data-act="chpick"]');
       await c.check('.dlg input[name="ch-role"][value="' + role + '"]');
-      await c.click('.dlg [data-act="chronicle-go"]');
-      await c.waitForTimeout(300);
-      await c.fill('#w-t', title);
-      await c.fill('#w-c', 'Brno');
-      await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]');
-      await c.waitForTimeout(200);
-      await c.fill('#w-desc', 'A night that already happened.');
-      await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]');
-      await c.waitForTimeout(200);
-      await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]');
-      await c.waitForTimeout(700);
+      await c.click('.dlg [data-act="chronicle-add"]');
+      await c.waitForTimeout(400);
     };
     for (const kind of ['desk', 'phone']){
       const c = await ctx(kind);
@@ -3097,6 +3103,13 @@ async function overflowEverywhere(p, label){
           const body = req.postDataJSON(); puts.push(body);
           const role = Object.prototype.hasOwnProperty.call(body, 'role') ? body.role : 'host';
           return j(200, { rsvp:{ status:body.status, went:!!body.went, shiftIndex:body.shiftIndex == null ? null : body.shiftIndex, role:role } });
+        }
+        if (req.method() === 'GET' && u.pathname === '/api/events'){
+          return j(200, { events: u.searchParams.get('past') === 'only' ? [old, guest] : [] });
+        }
+        if (req.method() === 'POST' && /\/chronicle$/.test(u.pathname)){
+          posts.push({ chronicle:u.pathname });
+          return j(200, { chronicle:{ went:true, role:'attendee', status:null } });
         }
         if (req.method() === 'POST' && u.pathname === '/api/events'){
           const body = req.postDataJSON(); posts.push(body);
@@ -3118,21 +3131,53 @@ async function overflowEverywhere(p, label){
       ok(before === 'host' && after.role === 'host' && toggles.length === 4 && toggles.every(b => !Object.prototype.hasOwnProperty.call(b, 'role')) &&
          after.status === 'going' && after.went && after.shift === 0,
          kind + ': Going, Interested, Went and a shift keep a stored host role and do not send role ' + JSON.stringify({ before, after, toggles }));
+      await c.evaluate(() => { openItem('person', 'self'); beginProfileEdit(); });
+      await c.waitForTimeout(200);
+      await c.evaluate(() => document.querySelector('[data-act="addpastevent"]').click());
+      await c.waitForTimeout(500);
+      const offered = await ev(c, () => ({
+        pool:CHRONICLE_POOL || [],
+        shift:[...document.querySelectorAll('.dlg [data-act="chpick"]')].some(b => /Shift night/.test(b.textContent))
+      }));
+      await c.fill('#ch-q', 'Shift');
+      const shift = await ev(c, () => [...document.querySelectorAll('.dlg [data-act="chpick"]')].map(b => b.textContent));
+      ok(offered.pool.indexOf(EV) < 0 && offered.pool.indexOf(OLD) >= 0 && !offered.shift && !shift.length,
+         kind + ': Add past event search offers past events and not an upcoming one ' + JSON.stringify({ offered, shift }));
+      await c.evaluate(id => { CHRONICLE_PICK_ID = id; }, EV);
+      await c.check('.dlg input[name="ch-role"][value="attendee"]');
+      await c.click('.dlg [data-act="chronicle-add"]');
+      await c.waitForTimeout(200);
+      const blocked = await ev(c, () => ({ err:(document.querySelector('#ch-err') || {}).textContent || '', toast:(document.querySelector('.toast') || {}).textContent || '' }));
+      ok(/Only a past event can be added to a chronicle/.test(blocked.err) && /Only a past event can be added to a chronicle/.test(blocked.toast),
+         kind + ': an upcoming event shows the not-past message ' + JSON.stringify(blocked));
+      await c.evaluate(() => closeDialogs());
       const filed = {};
-      for (const [role, title] of [['host', 'Old host night'], ['cocreator', 'Old crew night'], ['attendee', 'Old guest night']]){
-        const n = puts.length, pn = posts.length;
-        await filePast(c, role, title);
-        const got = await ev(c, title => {
-          const id = Object.keys(EVENTS).find(k => EVENTS[k] && EVENTS[k].title === title);
-          const sec = id && [...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].find(s => s.getAttribute('data-role') === ROLE[id] && s.textContent.indexOf(title) >= 0);
-          return { id:id || null, role:id ? ROLE[id] : null, went:!!(id && WENT[id]), mine:!!(id && MYEVENTS.indexOf(id) >= 0), host:!!(id && EVENTS[id].hostAcct === S.acct), shown:!!sec };
-        }, title);
-        filed[role] = { got, put:puts.slice(n), post:posts[pn] || null };
+      for (const [role, title, id] of [['host', 'Old host night', OLD], ['cocreator', 'Old host night', OLD]]){
+        const n = puts.length;
+        await filePick(c, role, title);
+        const got = await ev(c, spec => {
+          const sec = [...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].find(s => s.getAttribute('data-role') === ROLE[spec.id] && s.textContent.indexOf(spec.title) >= 0);
+          return { role:ROLE[spec.id] || null, went:!!WENT[spec.id], shown:!!sec };
+        }, { title, id });
+        filed[role] = { got, put:puts.slice(n) };
       }
-      ok(['host', 'cocreator', 'attendee'].every(role => {
-        const f = filed[role];
-        return f.got.role === role && f.got.went && f.got.mine && f.got.host && f.got.shown && f.put.length === 1 && f.put[0].role === role && f.post && !('hostId' in f.post);
-      }), kind + ': Add past event files Host, Co-creator and Attendee on an event you host ' + JSON.stringify(filed));
+      const nAtt = posts.length;
+      await filePick(c, 'attendee', 'Old guest night');
+      const attended = await ev(c, id => {
+        const sec = [...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role="attendee"]')].find(s => s.textContent.indexOf('Old guest night') >= 0);
+        return { role:ROLE[id] || null, went:!!WENT[id], shown:!!sec };
+      }, OTHER);
+      const nReq = puts.length;
+      await filePick(c, 'cocreator', 'Old guest night');
+      const asked = await ev(c, id => {
+        const co = [...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role="cocreator"]')].some(s => s.textContent.indexOf('Old guest night') >= 0);
+        return { role:ROLE[id] || null, pending:!!(COREQUESTS[id] && COREQUESTS[id][meKey()]), co, toast:(document.querySelector('.toast') || {}).textContent || '' };
+      }, OTHER);
+      ok(filed.host.put.length === 1 && filed.host.put[0].role === 'host' && filed.host.got.role === 'host' && filed.host.got.shown &&
+         filed.cocreator.put.length === 1 && filed.cocreator.put[0].role === 'cocreator' && filed.cocreator.got.role === 'cocreator' && filed.cocreator.got.shown &&
+         posts.length === nAtt + 1 && attended.role === 'attendee' && attended.went && attended.shown &&
+         puts.length === nReq + 1 && puts[nReq].role === 'cocreator' && asked.pending && asked.role !== 'cocreator' && !asked.co && /Co-creator requested/.test(asked.toast),
+         kind + ': Add past event files host and co-creator through the role write, attendee through the claim, and a request stays unfiled ' + JSON.stringify({ filed, attended, asked, posts:posts.slice(nAtt), puts:puts.slice(nReq) }));
       ok(!c.errors.length, kind + ': no console errors (rsvp role) ' + c.errors.join(' '));
       await c.context().close();
     }
@@ -3162,6 +3207,55 @@ async function overflowEverywhere(p, label){
       ok(!keen.role && keen.status === 'interested' && keen.hit.length === 0,
          kind + ': Interested alone leaves that event out of Chronicle ' + JSON.stringify(keen));
       ok(!c.errors.length, kind + ': no console errors (chronicle going) ' + c.errors.join(' '));
+      await c.context().close();
+    }
+  }
+
+  /* Add past event searches the demo's past events offline, files one under Attended, and does not offer an upcoming event. */
+  {
+    for (const kind of ['desk', 'phone', 'tab']){
+      const c = await ctx(kind);
+      const api = [];
+      c.on('request', r => { if (/\/api\//.test(r.url())) api.push(r.url()); });
+      await open(c, '', true);
+      await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+      await c.evaluate(() => {
+        delete ROLE['evt-world-borderland-2026'];
+        delete WENT['evt-world-borderland-2026'];
+        openItem('person', 'self');
+        beginProfileEdit();
+      });
+      await c.waitForTimeout(400);
+      const before = await ev(c, () => [...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].filter(s => s.textContent.indexOf('Borderland 2026') >= 0).map(s => s.getAttribute('data-role')));
+      await c.evaluate(() => document.querySelector('[data-act="addpastevent"]').click());
+      await c.waitForTimeout(300);
+      await c.fill('#ch-q', 'Harbour');
+      const harbour = await ev(c, () => [...document.querySelectorAll('.dlg [data-act="chpick"]')].map(b => b.getAttribute('data-id')));
+      await c.fill('#ch-q', 'zzzz-not-an-event');
+      const miss = await ev(c, () => ({
+        hits:document.querySelectorAll('.dlg [data-act="chpick"]').length,
+        line:(document.querySelector('#ch-hits') || {}).textContent || '',
+        wiz:!!document.querySelector('#w-t'),
+        add:CHRONICLE_ADD,
+        create:!!document.querySelector('.dlg [data-act="new-event"], .dlg [data-act="chronicle-go"]')
+      }));
+      await c.fill('#ch-q', 'Borderland');
+      const found = await ev(c, () => [...document.querySelectorAll('.dlg [data-act="chpick"]')].map(b => ({ id:b.getAttribute('data-id'), past:isPast(lastDay(EVENTS[b.getAttribute('data-id')])) })));
+      await c.click('.dlg [data-act="chpick"]');
+      await c.check('.dlg input[name="ch-role"][value="attendee"]');
+      await c.click('.dlg [data-act="chronicle-add"]');
+      await c.waitForTimeout(400);
+      const after = await ev(c, () => ({
+        hit:[...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].filter(s => s.textContent.indexOf('Borderland 2026') >= 0).map(s => s.getAttribute('data-role')),
+        role:ROLE['evt-world-borderland-2026'] || null,
+        went:!!WENT['evt-world-borderland-2026']
+      }));
+      ok(!before.length && !harbour.length && !miss.hits && !miss.wiz && !miss.add && !miss.create &&
+         /New event/.test(miss.line) && /Already happened/.test(miss.line) &&
+         found.length === 1 && found[0].id === 'evt-world-borderland-2026' && found[0].past &&
+         after.hit.length === 1 && after.hit[0] === 'attendee' && after.role === 'attendee' && after.went && !api.length,
+         kind + ': Add past event search returns a past demo event, files it under Attended, and hides an upcoming event ' + JSON.stringify({ before, harbour, miss, found, after, api }));
+      ok(!c.errors.length, kind + ': no console errors (chronicle search) ' + c.errors.join(' '));
       await c.context().close();
     }
   }

@@ -1249,6 +1249,10 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .chh{ margin:0 0 8px; font:bold 14px/20px var(--sys); color:var(--ink); }
 .chempty{ margin:0; font:12px/16px var(--sys); color:var(--dim); }
 .chadd{ margin-top:16px; }
+.chhits{ display:flex; flex-direction:column; gap:4px; max-height:220px; overflow:auto; margin:8px 0 12px; }
+.chhit{ width:100%; height:auto; min-height:var(--ctl); justify-content:flex-start; text-align:left; white-space:normal; }
+.chhit.on{ background:var(--hover); }
+.chhit small{ color:var(--dim); font-weight:normal; }
 .ptags{ display:flex; flex-direction:column; gap:16px; }
 .ptagadd{ margin-top:16px; }
 .ptagflow{ display:flex; flex-direction:column; gap:12px; }
@@ -2012,7 +2016,7 @@ var ROLE = {};                 /* eventId -> 'host' | 'cocreator' | 'attendee'. 
 var COREQUESTS = {};           /* eventId -> { personId: 1 } pending co-creator requests */
 var CHRON = {};                /* other people: pid -> { eventId: role } */
 var WENTBY = {};               /* other people: pid -> { eventId: true } when they went and named no role */
-var CHRONICLE_ADD = null;      /* role chosen in Add past event, until the new-event panel finishes or closes */
+var CHRONICLE_ADD = null;      /* set by openPastEvent, from New event's Already happened, until that panel finishes or closes */
 var PROMOTED = {};
 var PROMOCOUNT = {}; Object.keys(EVENTS).forEach(function(id){ PROMOCOUNT[id] = hashId(id) % 17; });
 var READ = {};
@@ -3547,12 +3551,92 @@ function chronicleSection(pid, asOther){
   if (profileEditing(pid, asOther)) body += '<div class="chadd"><button class="btn" data-act="addpastevent">'+ic('plus')+'Add past event</button></div>';
   return '<section class="sect" data-sect="chronicle"><h3>Chronicle</h3>'+body+'</section>';
 }
+var CHRONICLE_PICK_ID = null;
+var CHRONICLE_POOL = null;
+function chroniclePastMessage(){ return 'Only a past event can be added to a chronicle.'; }
+function chronicleCandidates(){
+  return allEvents().filter(function(e){ return canSeeEvent(e) && isPast(lastDay(e)); });
+}
 function addPastEventDialog(){
-  var h = '<p class="fhelp">An event that already happened. Pick the part you played, then fill it in.</p>' +
+  CHRONICLE_PICK_ID = null;
+  CHRONICLE_POOL = null;
+  var h = '<p class="fhelp">Search for a past event, pick the part you played, then add it to your Chronicle.</p>' +
+    '<div class="field"><label for="ch-q">Search past events</label><input id="ch-q" type="search" autocomplete="off"></div>' +
+    '<div id="ch-hits" class="chhits"></div><p id="ch-err" class="ferr" hidden></p>' +
     '<div class="visopts" role="radiogroup" aria-label="Your role">' + CHRONICLE_PICK.map(function(o){
       return '<label class="visopt"><input type="radio" name="ch-role" value="'+o[0]+'"><span><b>'+esc(o[1])+'</b><small>'+esc(o[2])+'</small></span></label>';
     }).join('') + '</div>';
-  dialog('Add past event', h, '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="chronicle-go">Continue</button>', 480);
+  dialog('Add past event', h, '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="chronicle-add">Add to Chronicle</button>', 480);
+  if (ONLINE && window.HNAPI && HNAPI.pastEvents){
+    var box = $('ch-hits'); if (box) box.innerHTML = '<p class="chempty">Looking…</p>';
+    HNAPI.pastEvents().then(function(list){
+      CHRONICLE_POOL = (list || []).map(function(e){ return e.id; }).filter(function(id){ return EVENTS[id] && isPast(lastDay(EVENTS[id])); });
+      paintChronicleHits();
+    }, function(err){
+      var hit = $('ch-hits'); if (hit) hit.innerHTML = '<p class="ferr">'+esc(err && err.message || 'Could not load past events.')+'</p>';
+    });
+  } else {
+    CHRONICLE_POOL = chronicleCandidates().map(function(e){ return e.id; });
+    paintChronicleHits();
+  }
+  focusIn('ch-q');
+}
+function paintChronicleHits(){
+  var box = $('ch-hits'); if (!box || !CHRONICLE_POOL) return;
+  var q = ($('ch-q') && $('ch-q').value || '').trim();
+  var rows = CHRONICLE_POOL.map(function(id){ return EVENTS[id]; }).filter(function(e){
+    return e && isPast(lastDay(e)) && (!q || matchAll([e.title, e.hostName, e.city, descOf(e)], q));
+  }).sort(function(a, b){ return -byDate(a, b); });
+  box.innerHTML = rows.length ? rows.map(function(e){
+    var on = CHRONICLE_PICK_ID === e.id;
+    return '<button type="button" class="btn chhit'+(on ? ' on' : '')+'" data-act="chpick" data-id="'+e.id+'" aria-pressed="'+(on ? 'true' : 'false')+'">'+esc(e.title)+'<small> · '+esc(e.date)+'</small></button>';
+  }).join('') : '<p class="chempty">Past events you hosted can be added from New event, under Already happened.</p>';
+}
+function viewerIsHost(id){
+  var e = EVENTS[id];
+  if (!e || !S.loggedIn) return false;
+  if (e.hostId) return e.hostId === ((window.HNAPI && HNAPI.me && HNAPI.me.id) || myPid());
+  return isMine(id);
+}
+function chroniclePickError(msg){
+  var el = $('ch-err');
+  if (el){ el.hidden = false; el.textContent = msg; }
+  toast(msg);
+}
+/* Attendee is the chronicle claim. Host and co-creator still go through the RSVP role write. */
+function filePickedChronicle(){
+  var id = CHRONICLE_PICK_ID, e = id && EVENTS[id];
+  var picked = document.querySelector('.dlg input[name="ch-role"]:checked');
+  if (!e){ chroniclePickError('Pick a past event'); return; }
+  if (!picked){ toast('Pick a role', 'Host, co-creator or attendee'); return; }
+  if (!isPast(lastDay(e))){ chroniclePickError(chroniclePastMessage()); return; }
+  var role = picked.value, seat = eventSeat(id), host = viewerIsHost(id), policy = cocreatorPolicyOf(id);
+  closeDialogs();
+  if (role === 'host' || role === 'cocreator'){
+    if (role === 'cocreator' && !host && seat !== 'admin' && policy !== 'open'){
+      var bag = COREQUESTS[id] || (COREQUESTS[id] = {});
+      bag[meKey()] = 1;
+      if (ONLINE) HNAPI.rsvp(id, { role:'cocreator' });
+      schedulePersist();
+      render();
+      toast('Co-creator requested', e.title);
+      return;
+    }
+    if (role === 'host' && !host){
+      toast('Only the event host can set that role.');
+      return;
+    }
+    fileChronicle(id, role);
+    render();
+    toast('Added to your chronicle', e.title);
+    return;
+  }
+  WENT[id] = true;
+  if (!explicitRole('self', id) && !host) ROLE[id] = 'attendee';
+  if (ONLINE && window.HNAPI && HNAPI.addChronicle) HNAPI.addChronicle(id);
+  schedulePersist();
+  render();
+  toast('Added to your chronicle', e.title);
 }
 function chronicleUnblockDate(){
   if (!CHRONICLE_ADD) return;
@@ -7494,8 +7578,8 @@ function startOtherHost(past){
   focusIn('lk-u');
 }
 /* A kept draft does not skip this question. It resumes after I'm hosting.
-   Add past event sets CHRONICLE_ADD first, and that is the only caller that skips it.
-   Horizon > From a link never comes through here. */
+   Already happened calls openPastEvent, which sets CHRONICLE_ADD, and that skips it.
+   Horizon > From a link never comes through here. The profile's Add past event does not. */
 var newEventDialog = gated(function(into){
   if (CHRONICLE_ADD){ openHostedWizard(into); return; }
   HOSTINTO = into && HORIZONS[into] ? into : null;
@@ -8788,14 +8872,8 @@ document.addEventListener('click', function(ev){
     case 'ncdm':         closeDialogs(); NC = null; messagePerson(id); break;
     case 'new-event':    runCmd('new-event'); break;
     case 'addpastevent': gated(addPastEventDialog)(); break;
-    case 'chronicle-go': {
-      var picked = document.querySelector('.dlg input[name="ch-role"]:checked');
-      if (!picked){ toast('Pick a role', 'Host, co-creator or attendee'); break; }
-      var pastRole = picked.value;
-      closeDialogs();
-      openPastEvent(pastRole);
-      break;
-    }
+    case 'chpick':       CHRONICLE_PICK_ID = id; paintChronicleHits(); break;
+    case 'chronicle-add': filePickedChronicle(); break;
     case 'new-horizon':  runCmd('new-horizon', id); break;
     case 'login':        loginDialog(); break;
     case 'join':         closeDialogs(); if (ACCTS.me) loginDialog(); else profileDialog('signup'); break;
@@ -9036,6 +9114,7 @@ document.addEventListener('change', function(ev){
 document.addEventListener('input', function(ev){
   var n = ev.target;
   if (n.id === 'q' || n.id === 'pq'){ doSearch(n.value); return; }
+  if (n.id === 'ch-q'){ paintChronicleHits(); return; }
   if (n.classList && n.classList.contains('pfind')){
     PFILT[n.getAttribute('data-id')] = n.value; render(); return;
   }

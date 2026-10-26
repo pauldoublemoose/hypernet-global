@@ -1525,6 +1525,149 @@ async function overflowEverywhere(p, label){
     await c.context().close();
   }
 
+  /* A kept draft, even one restored from this browser, does not skip the host question.
+     Toolbar New, the phone New sheet, Hosting's empty New event, and Horizon > New event ask it.
+     Add past event and Horizon > From a link still skip. No key starts a new event. */
+  for (const kind of ['desk', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '', true);
+    await join(c, 'Draft Ask', 'draftask' + kind);
+    const asked = () => ev(c, () => ({
+      q:(document.querySelector('.hostask-q') || {}).textContent || '',
+      when:(document.querySelector('#host-when-q') || {}).textContent || '',
+      wiz:!!document.querySelector('#w-t'), link:!!document.querySelector('#lk-u'),
+      role:!!document.querySelector('input[name="ch-role"]'),
+      title:(document.querySelector('#w-t') || {}).value || ''
+    }));
+    const shows = s => s.q === 'Are you the host?' && s.when === 'Is this a new event or did it already happen?' && !s.wiz && !s.link;
+    await c.evaluate(() => { var d = blankEventDraft(); d.title = 'Kept ridge night'; FORMDRAFTS.event = d; persist(); });
+    await c.reload(); await c.waitForTimeout(900);
+    const stored = await ev(c, () => { var raw = localStorage.getItem('hypernet-feed:v2') || ''; return { title:raw.indexOf('Kept ridge night') >= 0, chronicle:raw.indexOf('CHRONICLE_ADD') >= 0 }; });
+    ok(stored.title && !stored.chronicle, kind + ': the kept draft is in localStorage and CHRONICLE_ADD is not ' + JSON.stringify(stored));
+    if (kind === 'desk'){
+      await c.click('#newbtn'); await c.waitForTimeout(150);
+      await c.click('.popmenu [data-pop="new-event"]'); await c.waitForTimeout(250);
+    } else {
+      await c.click('[data-act="newsheet"]'); await c.waitForTimeout(200);
+      await c.click('.dlg [data-act="runcmd"][data-id="new-event"]'); await c.waitForTimeout(250);
+    }
+    ok(shows(await asked()), kind + ': ' + (kind === 'desk' ? 'toolbar New > Event' : 'New sheet > Event') + ' asks who hosts it even with a kept draft');
+    await answerHost(c, 'mine', 'upcoming');
+    ok((await asked()).title === 'Kept ridge night', kind + ': I\'m hosting still resumes the kept draft');
+    await c.keyboard.press('Escape'); await c.waitForTimeout(150);
+    await c.evaluate(() => { CHRONICLE_ADD = 'host'; goFolder({ kind:'hosting' }); if (L.phone) S.tab = 'you'; MYEVENTS = []; S.stack = []; render(); });
+    await c.waitForTimeout(250);
+    await c.click('#listbody [data-act="new-event"]'); await c.waitForTimeout(250);
+    ok(shows(await asked()), kind + ': Hosting\'s empty New event asks, and a leftover chronicle role does not skip it');
+    await c.keyboard.press('Escape'); await c.waitForTimeout(150);
+    await c.evaluate(() => {
+      CHRONICLE_ADD = 'host';
+      var hid = 'horizon-draftask';
+      HORIZONS[hid] = { id:hid, name:'Draft list', description:'', isPersonalDefault:false, isPublished:false, ownerName:S.me.name, ownerId:'self', ownerAcct:S.acct, eventIds:[] };
+      if (MYHORIZONS.indexOf(hid) < 0) MYHORIZONS.push(hid);
+      closeDialogs(); goFolder({ kind:'explore', id:'horizons' }); if (L.phone) S.tab = 'explore';
+      S.stack = [{ type:'horizon', id:hid }]; render();
+    });
+    await c.waitForTimeout(300);
+    await c.click('#dscroll [data-act="addevents"]'); await c.waitForTimeout(250);
+    await c.click('.dlg [data-act="pknewev"]'); await c.waitForTimeout(250);
+    ok(shows(await asked()), kind + ': Horizon > New event asks, even if a chronicle add was still set');
+    await c.keyboard.press('Escape'); await c.waitForTimeout(150);
+    await c.click('#dscroll [data-act="addevents"]'); await c.waitForTimeout(250);
+    await c.click('.dlg [data-act="pklink"]'); await c.waitForTimeout(250);
+    const link = await asked();
+    ok(link.link && !link.q && !link.wiz, kind + ': Horizon > From a link skips the question ' + JSON.stringify(link));
+    await c.evaluate(() => { closeDialogs(); PEDIT = true; if (L.phone){ S.tab = 'you'; goFolder({ kind:'you' }); } S.stack = [{ type:'person', id:'self' }]; render(); });
+    await c.waitForTimeout(300);
+    await c.click('[data-act="addpastevent"]'); await c.waitForTimeout(200);
+    await c.click('.dlg input[name="ch-role"]'); await c.click('.dlg [data-act="chronicle-go"]'); await c.waitForTimeout(250);
+    const past = await asked();
+    ok(!past.q && past.wiz && !past.role, kind + ': Add past event still skips the question ' + JSON.stringify(past));
+    await c.evaluate(() => { closeDialogs(); CHRONICLE_ADD = null; });
+    await c.keyboard.press('n'); await c.waitForTimeout(100);
+    ok(!(await c.$('.dlg')), kind + ': no keyboard shortcut starts a new event');
+    await c.evaluate(() => { closeDialogs(); CHRONICLE_ADD = null; FORMDRAFTS.event = null; });
+    await newEvent(c, { title:'Ridge gathering', date:'2026-11-08', city:'Stockholm' });
+    const bar = kind === 'phone' ? '#evbar ' : '#dscroll ';
+    await c.evaluate(() => { EVENT_INVITES[S.stack[0].id] = [{ inviteeId:'p-anna', invitedBy:myActor() }]; });
+    await c.click(bar + '[data-act="evinvite"]'); await c.waitForTimeout(300);
+    const openInvite = await ev(c, () => {
+      const anna = document.querySelector('.dlg [data-act="ivsend"][data-user="p-anna"]');
+      const rows = [...document.querySelectorAll('.dlg .linkrow')];
+      return { title:(document.querySelector('.dlg .dtitle') || {}).textContent,
+        done:(document.querySelector('.dlg .dfoot .btn') || {}).textContent,
+        rowAct:rows.some(r => r.getAttribute('data-act')),
+        anna:anna && anna.textContent, annaOff:!!(anna && anna.disabled),
+        fresh:[...document.querySelectorAll('.dlg [data-act="ivsend"]:not([disabled])')].slice(0, 2).map(b => b.getAttribute('data-user')) };
+    });
+    ok(openInvite.title === 'Invite' && openInvite.done === 'Done' && !openInvite.rowAct && openInvite.anna === 'Invited' && openInvite.annaOff && openInvite.fresh.length === 2,
+       kind + ': the picker opens with a button per person, Done, and someone already invited ' + JSON.stringify(openInvite));
+    const before = await ev(c, () => Object.keys(CHATS).reduce((n, k) => n + CHATS[k].messages.length, 0));
+    await c.click('.dlg .linkrow.static .lr'); await c.waitForTimeout(150);
+    const afterRow = await ev(c, () => Object.keys(CHATS).reduce((n, k) => n + CHATS[k].messages.length, 0));
+    ok(afterRow === before && !!(await c.$('.dlg [data-act="ivsend"]')), kind + ': clicking the row sends nothing and leaves the window open');
+    for (const id of openInvite.fresh){ await c.click('.dlg [data-act="ivsend"][data-user="' + id + '"]'); await c.waitForTimeout(200); }
+    const sent = await ev(c, ids => ids.map(id => { const b = document.querySelector('.dlg [data-act="ivsend"][data-user="' + id + '"]'); return b ? b.textContent + (b.disabled ? '*' : '') : 'missing'; }), openInvite.fresh);
+    const msgs = await ev(c, () => Object.keys(CHATS).reduce((n, k) => n + CHATS[k].messages.length, 0));
+    ok(sent.join() === 'Invited*,Invited*' && !!(await c.$('.dlg')) && msgs === before + 2, kind + ': two invites in one sitting, the window stays open ' + JSON.stringify(sent));
+    if (kind === 'desk') await shot(c, 'invite-picker-two');
+    if (kind === 'phone') await shot(c, 'invite-picker-phone');
+    await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+    await c.click(bar + '[data-act="evinvite"]'); await c.waitForTimeout(250);
+    ok(await ev(c, ids => ids.every(id => { const b = document.querySelector('.dlg [data-act="ivsend"][data-user="' + id + '"]'); return b && b.disabled && b.textContent === 'Invited'; }), ['p-anna'].concat(openInvite.fresh)),
+       kind + ': reopening the picker still shows who was invited');
+    await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+    await c.click(bar + '[data-act="evadmins"]'); await c.waitForTimeout(300);
+    await c.click('.dlg .helprow .helptip-btn'); await c.waitForTimeout(150);
+    const co = await ev(c, () => {
+      const btn = document.querySelector('.dlg .helprow .helptip-btn'), note = document.querySelector('.dlg .helprow .helptip-note');
+      const q = document.getElementById('co-pol-q');
+      const hex = el => { const m = getComputedStyle(el).color.match(/\d+/g); return '#' + m.slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join(''); };
+      const ground = el => { var n = el; while (n){ var m = getComputedStyle(n).backgroundColor.match(/\d+/g); if (m && (m.length < 4 || +m[3] !== 0)) return '#' + m.slice(0, 3).map(function(x){ return (+x).toString(16).padStart(2, '0'); }).join(''); n = n.parentElement; } return '#ffffff'; };
+      const themes = ['y2fresh', 'win2k'].map(t => { document.documentElement.setAttribute('data-theme', t); return { t:t, ink:contrast(hex(note), ground(note)), mark:contrast(hex(btn), ground(btn)) }; });
+      document.documentElement.setAttribute('data-theme', 'win2k');
+      const br = btn.getBoundingClientRect(), main = document.querySelector('.dlg [data-act="editevent"]').getBoundingClientRect();
+      const acts = [...document.querySelectorAll('#dscroll .actbar .btn, #evbar .btn')].map(b => b.getAttribute('data-act'));
+      return { text:note.textContent, open:btn.getAttribute('aria-expanded'), beside:q && q.parentElement.classList.contains('helprow') && !btn.classList.contains('btn'),
+        smaller:br.width < main.width && br.height < main.height, counted:acts.indexOf('helptip') >= 0, themes:themes };
+    });
+    ok(co.text === "A co-creator is someone who may have contributed to the event. They don't own the event page and have no admin access to it." && co.open === 'true' && co.beside && co.smaller && !co.counted && co.themes.every(t => t.ink >= 4.5 && t.mark >= 4.5),
+       kind + ': co-creator policy has a small help tip, readable in both themes ' + JSON.stringify(co));
+    if (kind === 'desk') await shot(c, 'cocreator-help');
+    await c.keyboard.press('Escape'); await c.waitForTimeout(100);
+    ok(await ev(c, () => !document.querySelector('.helptip.on') && !!document.querySelector('.dlg [data-act="evpolicy"]')), kind + ': Escape closes the help tip and leaves Event controls open');
+    await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+    await c.evaluate(() => { var id = S.stack[0].id; EVENTS[id].date = '2026-09-01'; if (REC[id]) REC[id].endDate = ''; render(); });
+    await c.waitForTimeout(250);
+    const claim = await ev(c, () => {
+      const root = document.querySelector(L.phone ? '#evbar' : '#dscroll .actbar');
+      const btn = root && root.querySelector('.helptip-btn');
+      const main = root && root.querySelector('[data-act="v-went"]');
+      if (!btn || !main) return null;
+      const br = btn.getBoundingClientRect(), mr = main.getBoundingClientRect();
+      const acts = [...root.querySelectorAll('.btn')].map(b => b.getAttribute('data-act'));
+      return { h:Math.round(br.height), mh:Math.round(mr.height), btn:btn.classList.contains('btn'), acts:acts.indexOf('helptip') >= 0, note:!!btn.closest('.chclaim') };
+    });
+    ok(claim && claim.h <= 28 && claim.h < claim.mh && !claim.btn && !claim.acts && claim.note, kind + ': the chronicle ? sits beside Add to Chronicle and is not a toolbar button ' + JSON.stringify(claim));
+    await c.click((kind === 'phone' ? '#evbar' : '#dscroll .actbar') + ' .helptip-btn'); await c.waitForTimeout(150);
+    ok(await ev(c, () => { const n = document.querySelector((L.phone ? '#evbar' : '#dscroll') + ' .helptip-note'); return n && n.textContent === 'Your Chronicle is your list of past events, shown on your profile page. You choose who can see each event there.'; }),
+       kind + ': the chronicle tip uses the same helpTip');
+    if (kind === 'desk') await shot(c, 'chronicle-help');
+    await c.keyboard.press('Escape'); await c.waitForTimeout(100);
+    await c.click(bar + '[data-act="evinvite"]'); await c.waitForTimeout(250);
+    const pastInv = await ev(c, ids => {
+      const anna = document.querySelector('.dlg [data-act="ivsend"][data-user="p-anna"]');
+      const nxt = document.querySelector('.dlg [data-act="ivsend"]:not([disabled])');
+      return { title:(document.querySelector('.dlg .dtitle') || {}).textContent, anna:anna && anna.textContent, add:nxt && nxt.textContent, id:nxt && nxt.getAttribute('data-user') };
+    });
+    ok(pastInv.title === 'Add people who were there' && pastInv.anna === 'Added' && pastInv.add === 'Add', kind + ': a past picker says Add and Added ' + JSON.stringify(pastInv));
+    await c.click('.dlg [data-act="ivsend"][data-user="' + pastInv.id + '"]'); await c.waitForTimeout(200);
+    ok(await ev(c, id => { const b = document.querySelector('.dlg [data-act="ivsend"][data-user="' + id + '"]'); return !!document.querySelector('.dlg') && b && b.disabled && b.textContent === 'Added'; }, pastInv.id),
+       kind + ': Add keeps the past picker open and switches that row to Added');
+    ok(!c.errors.length, kind + ': no console errors (draft ask, invites, help) ' + c.errors.join(' '));
+    await c.context().close();
+  }
+
   /* A place can be a maps link. Fill from link on I'm hosting prefills the wizard and still publishes as yours. */
   {
     const c = await ctx('desk');

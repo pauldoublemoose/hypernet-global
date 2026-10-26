@@ -1534,28 +1534,37 @@ a.maplink{ color:var(--ink); }
 a.maplink:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
 .fillfrom{ margin-bottom:12px; }
 .fillfrom .lkrow{ align-items:center; }
-/* CHRONICLE HELP */
-.chclaim{ display:inline-flex; align-items:center; gap:4px; flex:0 1 auto; min-width:0; }
-.chhelpwrap{ position:relative; display:inline-flex; align-items:center; }
-.chhelp{
-  width:var(--ctl); height:var(--ctl); min-width:var(--ctl); min-height:var(--ctl); padding:0;
-  border:1px solid var(--ink2); background:var(--rule); color:var(--ink);
-  font:inherit; font-weight:bold; cursor:pointer;
+/* HELP TIP
+   helpTip(text) in the page script. A small "?" and its note, set beside a label.
+   It is not an action button: no class "btn", so a toolbar that counts .btn leaves it out.
+   Click, tap, and keyboard open the note. Escape, or a click outside, closes it. */
+.chclaim{ display:inline-flex; align-items:center; gap:6px; flex:0 1 auto; min-width:0; }
+.helprow{ display:flex; align-items:center; gap:6px; }
+.helprow .hostask-q{ margin:0; }
+.hostask .helprow{ margin:0 0 8px; }
+.helptip{ position:relative; display:inline-flex; align-items:center; flex:0 0 auto; vertical-align:middle; }
+.helptip-btn{
+  width:22px; height:22px; min-width:22px; min-height:22px; padding:0;
+  border:1px solid var(--ink2); background:transparent; color:var(--ink2);
+  font:normal 12px/1 var(--sys); cursor:pointer;
 }
-.chhelp:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
-.chhelpnote{
-  display:none; position:absolute; z-index:8; top:calc(100% + 4px); right:0;
+.helptip-btn:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
+.helptip-note{
+  display:none; position:absolute; z-index:8; top:calc(100% + 4px); left:0;
   width:min(280px, 70vw); padding:8px 10px; text-align:left; white-space:normal;
   background:var(--rule); color:var(--ink); border:1px solid var(--ink2);
   font-size:13px; line-height:1.35; font-weight:normal;
 }
-.chhelpwrap:hover .chhelpnote,
-.chhelpwrap:focus-within .chhelpnote,
-.chhelpwrap.on .chhelpnote{ display:block; }
-#evbar .chhelpnote{ top:auto; bottom:calc(100% + 4px); }
+.helptip:hover .helptip-note,
+.helptip:focus-within .helptip-note,
+.helptip.on .helptip-note{ display:block; }
+#evbar .helptip-note, .dlg .helptip-note{ top:auto; bottom:calc(100% + 4px); left:auto; right:0; }
 .msg .chclaim{ margin-top:8px; flex-wrap:wrap; }
-.msg .chhelpnote{ position:static; width:auto; margin-top:6px; }
+.msg .helptip-note{ position:static; width:auto; margin-top:6px; }
 #evbar .verbs:has(.chclaim){ flex-wrap:wrap; }
+/* INVITE ROW — one button per person. The sent state stays readable on both themes. */
+.linkrow .ivbtn{ flex:0 0 auto; }
+.linkrow .ivbtn[disabled], .linkrow .ivbtn[aria-disabled="true"]{ color:var(--ink2); text-shadow:none; }
 </style>
 </head>
 <body>
@@ -3131,14 +3140,19 @@ function stateGroupHTML(evId){
 function hostGroupHTML(evId){
   return '<div class="vgroup" role="group" aria-label="Your event">' + vb('editevent', evId, 'Edit', 'edit', { primary:true }) + '</div>';
 }
-var CHHELPSEQ = 0;
-function chronicleHelpHTML(key){
-  var id = 'chhelp-' + String(key || 'n').replace(/[^a-z0-9_-]/gi, '') + '-' + (++CHHELPSEQ);
-  return '<span class="chhelpwrap"><button type="button" class="chhelp" data-act="chhelp" aria-expanded="false" aria-controls="'+id+'" aria-describedby="'+id+'" aria-label="About your Chronicle">?</button>' +
-    '<span class="chhelpnote" id="'+id+'" role="tooltip">Your Chronicle is your list of past events, shown on your profile page. You choose who can see each event there.</span></span>';
+/* helpTip(text) — a small "?" beside a label that needs one sentence.
+   Not an action button (no class "btn"): a toolbar that counts .btn leaves it out.
+   Click, tap, and keyboard open the note. Escape, or a click outside, closes it.
+   helpTip('A co-creator is someone who may have contributed to the event.') */
+var HELPTIPSEQ = 0;
+var CHRONICLE_HELP_TEXT = 'Your Chronicle is your list of past events, shown on your profile page. You choose who can see each event there.';
+function helpTip(text){
+  var id = 'helptip-' + (++HELPTIPSEQ);
+  return '<span class="helptip"><button type="button" class="helptip-btn" data-act="helptip" aria-expanded="false" aria-controls="'+id+'" aria-describedby="'+id+'" aria-label="Help">?</button>' +
+    '<span class="helptip-note" id="'+id+'" role="tooltip">'+esc(text)+'</span></span>';
 }
 function chronicleClaimHTML(evId){
-  return '<span class="chclaim">' + vb('v-went', evId, 'Add to Chronicle', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] }) + chronicleHelpHTML(evId) + '</span>';
+  return '<span class="chclaim">' + vb('v-went', evId, 'Add to Chronicle', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] }) + helpTip(CHRONICLE_HELP_TEXT) + '</span>';
 }
 function paneControls(evId){
   var h = '<span class="ev-constel" data-slot="constellation"></span>';
@@ -4141,7 +4155,7 @@ function convHTML(cid){
     var me = m.from === 'self';
     var head = '<div class="mfrom">'+(me ? '' : '<button type="button" class="mwho" data-act="chatprofile" data-id="'+esc(m.from)+'">'+esc(person(m.from).displayName)+'</button>')+'<span class="mt">'+esc(/^\d{1,2}:\d{2}$/.test(m.t || '') ? m.t : '')+'</span></div>';
     var card = m.eventId && EVENTS[m.eventId] ? '<a class="evcard" href="#/event/'+esc(m.eventId)+'">'+esc(EVENTS[m.eventId].title)+'</a>' : '';
-    var accept = m.chronicle && !me && m.eventId ? '<span class="chclaim">' + vb('chaccept', m.eventId, 'Add to Chronicle', 'check') + chronicleHelpHTML(m.eventId) + '</span>' : '';
+    var accept = m.chronicle && !me && m.eventId ? '<span class="chclaim">' + vb('chaccept', m.eventId, 'Add to Chronicle', 'check') + helpTip(CHRONICLE_HELP_TEXT) + '</span>' : '';
     return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+card+accept+'</div></div>';
   }).join('') : '<div class="msg sys">No messages yet</div>') + '</div>';
   /* the box grows with what you write: Enter sends, Shift+Enter starts a new line */
@@ -7409,7 +7423,7 @@ function wizFill(){
     paintWiz(); focusIn('w-t');
   });
 }
-/* the wizard, as it was: a kept draft resumes, and Add past event skips the question (the role was already chosen) */
+/* the wizard, as it was: a kept draft resumes once I'm hosting. Add past event skips the question (the role was already chosen) */
 function openHostedWizard(into){
   DRAFT = FORMDRAFTS.event || blankEventDraft();
   DRAFT.into = into && HORIZONS[into] ? into : (DRAFT.into && HORIZONS[DRAFT.into] ? DRAFT.into : null);
@@ -7450,9 +7464,11 @@ function startOtherHost(past){
   paintLink();
   focusIn('lk-u');
 }
+/* A kept draft does not skip this question. It resumes after I'm hosting.
+   Add past event sets CHRONICLE_ADD first, and that is the only caller that skips it.
+   Horizon > From a link never comes through here. */
 var newEventDialog = gated(function(into){
-  var kept = FORMDRAFTS.event;
-  if (CHRONICLE_ADD || (kept && eventDraftDirty(kept))){ openHostedWizard(into); return; }
+  if (CHRONICLE_ADD){ openHostedWizard(into); return; }
   HOSTINTO = into && HORIZONS[into] ? into : null;
   HOSTPICK = { who:'', when:'' };
   dialog(hostAskTitle(), hostAskHTML(), hostAskFoot(), 480, 'hostask');
@@ -7473,7 +7489,9 @@ function cocreatorIds(evId){
 function cocreatorPolicyHTML(evId){
   var cur = cocreatorPolicyOf(evId);
   var opts = [['open','Open','Anyone who can see it can add themselves.'], ['request','On request','A request waits for an admin.'], ['admins','Admins only','Only an admin can add a co-creator.']];
-  return '<div class="hostask"><p class="hostask-q" id="co-pol-q">Who can add themselves as co-creator</p><div class="hostask-choices" role="group" aria-labelledby="co-pol-q">' +
+  return '<div class="hostask"><div class="helprow"><p class="hostask-q" id="co-pol-q">Who can add themselves as co-creator</p>' +
+    helpTip("A co-creator is someone who may have contributed to the event. They don't own the event page and have no admin access to it.") +
+    '</div><div class="hostask-choices" role="group" aria-labelledby="co-pol-q">' +
     opts.map(function(o){
       var on = cur === o[0];
       return '<button type="button" class="hostask-opt'+(on ? ' on' : '')+'" data-act="evpolicy" data-id="'+evId+'" data-key="'+o[0]+'" aria-pressed="'+(on ? 'true' : 'false')+'"><b>'+esc(o[1])+'</b><small>'+esc(o[2])+'</small></button>';
@@ -7612,16 +7630,23 @@ function inviteDialog(evId, kind){
   else if (!canInviteToEvent(evId)) return;
   INVITE = { evId:evId, kind:kind, q:'' };
   var pastInvite = kind !== 'admin' && EVENTS[evId] && isPast(lastDay(EVENTS[evId]));
+  var foot = kind === 'admin'
+    ? '<button class="btn" data-act="closedlg">Cancel</button>'
+    : '<button class="btn" data-act="closedlg">Done</button>';
   dialog(kind === 'admin' ? 'Invite admin' : (pastInvite ? 'Add people who were there' : 'Invite'),
     '<div class="field"><label for="iv-q">To</label><input type="search" id="iv-q" placeholder="Search people" autocomplete="off"></div>' +
     '<div class="picklist" id="iv-list"></div>',
-    '<button class="btn" data-act="closedlg">Cancel</button>', 480);
+    foot, 480);
   paintInvite();
   focusIn('iv-q');
+}
+function guestInvited(evId, pid){
+  return (EVENT_INVITES[evId] || []).some(function(r){ return r.inviteeId === pid; });
 }
 function paintInvite(){
   var el = $('iv-list'); if (!INVITE || !el) return;
   var q = INVITE.q.toLowerCase().trim(), host = eventHostPid(EVENTS[INVITE.evId]);
+  var past = INVITE.kind !== 'admin' && EVENTS[INVITE.evId] && isPast(lastDay(EVENTS[INVITE.evId]));
   var ids = ncPeopleAll().filter(function(k){
     if (INVITE.kind === 'admin' && (k === host || k === myActor())) return false;
     var p = person(k);
@@ -7629,15 +7654,22 @@ function paintInvite(){
   });
   el.innerHTML = ids.map(function(k){
     var p = person(k);
-    return '<div class="linkrow" data-act="ivpick" data-id="'+INVITE.evId+'" data-user="'+esc(k)+'" role="button">'+avHTML(k,'a40')+
-      '<div class="lr">'+esc(p.displayName)+'<div class="fhelp">@'+esc(p.handle)+'</div></div></div>';
+    var who = '<div class="lr">'+esc(p.displayName)+'<div class="fhelp">@'+esc(p.handle)+'</div></div>';
+    if (INVITE.kind === 'admin'){
+      return '<div class="linkrow" data-act="ivpick" data-id="'+INVITE.evId+'" data-user="'+esc(k)+'" role="button">'+avHTML(k,'a40')+who+'</div>';
+    }
+    var sent = guestInvited(INVITE.evId, k);
+    var label = sent ? (past ? 'Added' : 'Invited') : (past ? 'Add' : 'Invite');
+    return '<div class="linkrow static">'+avHTML(k,'a40')+who+
+      '<button type="button" class="btn ivbtn" data-act="ivsend" data-id="'+INVITE.evId+'" data-user="'+esc(k)+'"'+(sent ? ' disabled' : '')+'>'+esc(label)+'</button></div>';
   }).join('') || '<div class="empty">Nobody matches.</div>';
   placeDlg();
 }
 function sendEventInvite(evId, pid){
   if (!pid || pid === myActor() || !canInviteToEvent(evId)) return;
+  if (guestInvited(evId, pid)){ paintInvite(); return; }
   var rows = EVENT_INVITES[evId] || (EVENT_INVITES[evId] = []);
-  if (!rows.some(function(r){ return r.inviteeId === pid; })) rows.push({ inviteeId:pid, invitedBy:myActor() });
+  rows.push({ inviteeId:pid, invitedBy:myActor() });
   var dm = openDM(pid), st = stamp(), e = EVENTS[evId], title = e ? e.title : 'an event';
   var past = !!(e && isPast(lastDay(e)));
   var who = person(myActor() || 'self').displayName || 'Someone';
@@ -7646,8 +7678,9 @@ function sendEventInvite(evId, pid){
     : "You're invited to " + title + '.';
   CHATS[dm].messages.push({ from:'self', t:st.t, ts:st.ts, text:text, eventId:evId, chronicle:past });
   if (ONLINE) HNAPI.inviteGuest(evId, pid);
-  closeDialogs(); INVITE = null; render();
-  toast('Invited', person(pid).displayName);
+  render();
+  if (INVITE && INVITE.evId === evId) paintInvite();
+  toast(past ? 'Added' : 'Invited', person(pid).displayName);
 }
 function sendAdminInvite(evId, pid){
   if (!pid || !canManageEvent(evId)) return;
@@ -8292,19 +8325,19 @@ function acceptChronicle(evId){
   render();
   toast('Added to your chronicle', EVENTS[evId].title);
 }
-function closeChronicleHelp(except){
-  document.querySelectorAll('.chhelpwrap.on').forEach(function(w){
+function closeHelpTips(except){
+  document.querySelectorAll('.helptip.on').forEach(function(w){
     if (except && (w === except || w.contains(except))) return;
     w.classList.remove('on');
-    var b = w.querySelector('.chhelp');
+    var b = w.querySelector('.helptip-btn');
     if (b) b.setAttribute('aria-expanded', 'false');
   });
 }
-function toggleChronicleHelp(btn){
-  var wrap = btn && btn.closest ? btn.closest('.chhelpwrap') : null;
+function toggleHelpTip(btn){
+  var wrap = btn && btn.closest ? btn.closest('.helptip') : null;
   if (!wrap) return;
   var open = !wrap.classList.contains('on');
-  closeChronicleHelp(open ? wrap : null);
+  closeHelpTips(open ? wrap : null);
   wrap.classList.toggle('on', open);
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
@@ -8583,14 +8616,14 @@ document.addEventListener('click', function(ev){
   if (pop && !pop.classList.contains('sepi')){ runCmd(pop.getAttribute('data-pop'), pop.getAttribute('data-arg')); return; }
   var n = ev.target.closest('[data-act]');
   if (!n){
-    if (!(ev.target.closest && ev.target.closest('.chhelpwrap'))) closeChronicleHelp();
+    if (!(ev.target.closest && ev.target.closest('.helptip'))) closeHelpTips();
     closePopup();
     return;
   }
   if (n.tagName === 'SELECT' || (n.tagName === 'INPUT' && n.type !== 'checkbox')) return;
   var act = n.getAttribute('data-act'), id = n.getAttribute('data-id');
   if (act !== 'newmenu' && act !== 'acctmenu') closePopup();
-  if (act !== 'chhelp' && !(ev.target.closest && ev.target.closest('.chhelpwrap'))) closeChronicleHelp();
+  if (act !== 'helptip' && !(ev.target.closest && ev.target.closest('.helptip'))) closeHelpTips();
   if (n.tagName === 'A') ev.preventDefault();
   switch (act){
     case 'tagtoggle': tagToggle(); break;
@@ -8628,7 +8661,7 @@ document.addEventListener('click', function(ev){
     case 'v-going':      if (EVENTS[id] && isPast(lastDay(EVENTS[id]))) break; setRSVP(id, 'going'); break;
     case 'v-promote':    if (EVENTS[id] && isPast(lastDay(EVENTS[id]))) break; doPromote(id); break;
     case 'v-went':       setWent(id); break;
-    case 'chhelp':       toggleChronicleHelp(n); break;
+    case 'helptip':      toggleHelpTip(n); break;
     case 'chaccept':     acceptChronicle(id); break;
     case 'addto':        gated(addToDialog)(id); break;
     case 'dofile':       toggleInHorizon(id, n.getAttribute('data-hz')); break;
@@ -8771,6 +8804,7 @@ document.addEventListener('click', function(ev){
       /* keep what you ticked, then make the new event for this horizon */
       var nhz = PK.hz, changed = PK.sel.join() !== HORIZONS[nhz].eventIds.join();
       if (changed) pickerDone(); else closeDialogs();
+      CHRONICLE_ADD = null;
       newEventDialog(nhz);
       break;
     }
@@ -8824,7 +8858,8 @@ document.addEventListener('click', function(ev){
     case 'cocancel':     cancelCocreatorRequest(id); break;
     case 'coleave':      leaveCocreator(id); break;
     case 'evcoreview':   reviewCocreator(id, n.getAttribute('data-user'), n.getAttribute('data-key')); break;
-    case 'ivpick':       if (INVITE && INVITE.kind === 'admin') sendAdminInvite(id, n.getAttribute('data-user')); else sendEventInvite(id, n.getAttribute('data-user')); break;
+    case 'ivpick':       if (INVITE && INVITE.kind === 'admin') sendAdminInvite(id, n.getAttribute('data-user')); break;
+    case 'ivsend':       sendEventInvite(id, n.getAttribute('data-user')); break;
     case 'evadmin-accept': answerAdminInvite(id, true); break;
     case 'evadmin-decline': answerAdminInvite(id, false); break;
     case 'evadmin-remove': removeAdmin(id, n.getAttribute('data-user')); break;
@@ -9049,9 +9084,9 @@ document.addEventListener('keydown', function(ev){
     return;
   }
   if (ev.key === 'Escape'){
-    if (document.querySelector('.chhelpwrap.on') || (ae && ae.classList && ae.classList.contains('chhelp'))){
-      closeChronicleHelp();
-      if (ae && ae.classList && ae.classList.contains('chhelp')) ae.blur();
+    if (document.querySelector('.helptip.on') || (ae && ae.classList && ae.classList.contains('helptip-btn'))){
+      closeHelpTips();
+      if (ae && ae.classList && ae.classList.contains('helptip-btn')) ae.blur();
       ev.preventDefault();
       return;
     }

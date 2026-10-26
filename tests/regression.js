@@ -3150,7 +3150,9 @@ async function overflowEverywhere(p, label){
       const blocked = await ev(c, () => ({ err:(document.querySelector('#ch-err') || {}).textContent || '', toast:(document.querySelector('.toast') || {}).textContent || '' }));
       ok(/Only a past event can be added to a chronicle/.test(blocked.err) && /Only a past event can be added to a chronicle/.test(blocked.toast),
          kind + ': an upcoming event shows the not-past message ' + JSON.stringify(blocked));
+      /* closing the dialog steps back in history; the next evaluate has to wait until that step lands */
       await c.evaluate(() => closeDialogs());
+      await c.waitForTimeout(300);
       const filed = {};
       for (const [role, title, id] of [['host', 'Old host night', OLD], ['cocreator', 'Old host night', OLD]]){
         const n = puts.length;

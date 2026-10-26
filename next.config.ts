@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
         { source: "/index.html", destination: "/proto/index.html" },
         { source: "/_shared/:file", destination: "/proto/_shared/:file" },
         { source: "/data/:file", destination: "/proto/data/:file" },
+        { source: "/review-markers.js", destination: "/proto/review-markers.js" },
       ],
       afterFiles: [],
       fallback: [],
@@ -16,7 +17,7 @@ const nextConfig: NextConfig = {
   },
   // …and the prototype files must ship with that function on Vercel.
   outputFileTracingIncludes: {
-    "/proto/**": ["./index.html", "./_shared/*.js", "./data/*.json"],
+    "/proto/**": ["./index.html", "./review-markers.js", "./_shared/*.js", "./data/*.json"],
     "/api/maps/resolve": ["./_shared/map-link.js"],
   },
   async headers() {

@@ -1495,10 +1495,11 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
    The empty constellation slot stays for a later button. */
 /* EVENT COG — the settings menu. Danger text is the alert colour on the menu face, and the alert fill with white text when it is the focus. */
 .ctxmenu .cico{ flex:0 0 16px; display:grid; place-items:center; margin-right:6px; }
-.ctxmenu .ci.danger{ color:var(--alert); }
+.ctxmenu .ci.danger,
+.ctxsheet .sheetrow.danger,
+.dlg .dfoot .btn.alert{ background:var(--alert); color:var(--white); }
 .ctxmenu .ci.danger:focus,
 .ctxmenu .ci.danger.open{ background:var(--alert); color:var(--white); }
-.ctxsheet .sheetrow.danger{ color:var(--alert); }
 .pg-event > .actbar .verbs,
 #evbar .verbs{ flex-wrap:wrap; justify-content:flex-start; align-items:center; gap:4px; }
 .pg-event > .actbar .verbs > .vb,

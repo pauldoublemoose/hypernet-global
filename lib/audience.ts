@@ -3,7 +3,7 @@ import { HttpError } from "./http";
 import { audienceFromPrivacy, type Audience, type Privacy } from "./validation";
 
 /** `can_see_event($n::uuid, alias)` or an invite row for that viewer.
- *  0013 puts the same exists clause inside the function. OR is idempotent.
+ *  0014 puts the same exists clause inside the function. OR is idempotent.
  *  The wrapper names event_invites, which 0010 creates. */
 export function canSeeEventSql(viewerParam: string, alias = "e"): string {
   if (!/^\$([1-9][0-9]*)$/.test(viewerParam) || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(alias)) {

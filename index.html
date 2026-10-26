@@ -2268,7 +2268,7 @@ function followsOf(pid){
 }
 /* the person you are on the network while logged in (null logged out) */
 function myPid(){ return S.loggedIn && S.acct && typeof acctPid === 'function' ? acctPid(S.acct) : null; }
-/* An invite lets that person see the event, including a private one. Same exists check as can_see_event in 0013. */
+/* An invite lets that person see the event, including a private one. Same exists check as can_see_event in 0014. */
 function canSeeEvent(e){
   if (!e) return false;
   var me = myPid();

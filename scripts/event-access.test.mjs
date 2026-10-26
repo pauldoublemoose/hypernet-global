@@ -246,8 +246,11 @@ test("an invite lets that person see a private event", () => {
   const sql = readFileSync(new URL("../db/migrations/0010_event_admins.sql", import.meta.url), "utf8");
   assert.match(sql, /create table event_invites \([\s\S]*unique \(event_id, invitee_id\)/);
   assert.equal(sql.includes("can_see_event"), false);
-  const next = readFileSync(new URL("../db/migrations/0013_event_invites_visibility.sql", import.meta.url), "utf8");
+  const next = readFileSync(new URL("../db/migrations/0014_event_invites_visibility.sql", import.meta.url), "utf8");
   assert.match(next, /or exists \(select 1 from event_invites where event_id = e\.id and invitee_id = viewer\)/);
+  assert.match(next, /'0014_event_invites_visibility'/);
+  assert.equal(/drop\s+constraint\s+if\s+exists\s+messages_card_type_check/i.test(next), false);
+  assert.equal(/add\s+constraint\s+messages_card_type_check/i.test(next), false);
   const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   const start = html.indexOf("function canSeeEvent");
   const end = html.indexOf("function canSee(");

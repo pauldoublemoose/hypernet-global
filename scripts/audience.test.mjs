@@ -2,10 +2,29 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
 import { audience } from "../lib/validation.ts";
 
 const require = createRequire(import.meta.url);
-const { canSee, normalize, toggle, fromPrivacy, derivePrivacy, summary, pickerHTML } = require("../_shared/hypernet-audience.js");
+const { canSee, normalize, toggle, fromPrivacy, derivePrivacy, summary, pickerHTML, isPublicAudience } = require("../_shared/hypernet-audience.js");
+
+function loadIsPublicAudience() {
+  const src = readFileSync(new URL("../lib/audience.ts", import.meta.url), "utf8");
+  const start = src.indexOf("export function isPublicAudience");
+  let depth = 0;
+  let end = -1;
+  for (let i = src.indexOf("{", start); i < src.length; i++) {
+    if (src[i] === "{") depth++;
+    else if (src[i] === "}") {
+      depth--;
+      if (depth === 0) { end = i + 1; break; }
+    }
+  }
+  const js = src.slice(start, end).replace(/^export /, "").replace("(event: AudienceEvent): boolean", "(event)");
+  return new Function(`${js}\nreturn isPublicAudience;`)();
+}
+
+const isPublicAudienceSql = loadIsPublicAudience();
 
 const A = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const B = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
@@ -171,4 +190,17 @@ test("the picker is checkboxes, and Everyone has no hide box", () => {
   ]);
   assert.doesNotMatch(bare, /auddiv/);
   assert.match(bare, /Manage lists/);
+});
+
+test("isPublicAudience is everyone in include, or the legacy privacy value when there is no audience", () => {
+  for (const pub of [isPublicAudience, isPublicAudienceSql]) {
+    assert.equal(pub(null), false);
+    assert.equal(pub({ audience: { include: ["everyone"], exclude: ["friends"] } }), true);
+    assert.equal(pub({ audience: { include: ["friends"], exclude: [] }, privacy: "everyone" }), false);
+    assert.equal(pub({ audience: { include: [], exclude: [] }, privacy: "everyone" }), false);
+    assert.equal(pub({ privacy: "everyone" }), true);
+    assert.equal(pub({}), true);
+    assert.equal(pub({ privacy: "only_me" }), false);
+    assert.equal(pub({ privacy: "friends" }), false);
+  }
 });

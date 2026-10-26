@@ -213,10 +213,19 @@
       '<p class="audsum">' + escAttr(summary(a, function (id) { return names[id]; })) + "</p></div>";
   }
 
+  function isPublicAudience(event) {
+    if (!event) return false;
+    if (event.audience && typeof event.audience === "object") {
+      var include = event.audience.include;
+      return Array.isArray(include) && include.indexOf("everyone") >= 0;
+    }
+    return (event.privacy || "everyone") === "everyone";
+  }
+
   var api = {
     canSee: canSee, inAudience: inAudience, pairKey: pairKey,
     normalize: normalize, toggle: toggle, fromPrivacy: fromPrivacy, derivePrivacy: derivePrivacy,
-    summary: summary, pickerHTML: pickerHTML
+    summary: summary, pickerHTML: pickerHTML, isPublicAudience: isPublicAudience
   };
   root.HNAudience = api;
   if (typeof module === "object" && module.exports) module.exports = api;

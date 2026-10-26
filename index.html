@@ -2084,7 +2084,8 @@ var PFOLLOW  = {};
 EVENTS['evt-chronicle-supper'] = { id:'evt-chronicle-supper', title:'Midsummer supper', date:'2026-06-20',
   description:'A long table after the last light, the year the ridge stayed warm.', hostName:'You', privacy:'only_me',
   ownerIds:['self'], kind:'seed', city:'Stockholm' };
-/* A past Going with no stored role. Anna hosts it, so it is Attended, not Hosted. The date is fixed, past the fixture shift. */
+/* A past Going with no stored role. Anna hosts it, so it is Attended, not Hosted. The date is fixed, past the fixture shift.
+   Requests uses this row for Did you go. The demo RSVP is going and a.went does not list it. */
 EVENTS['evt-chronicle-going'] = { id:'evt-chronicle-going', title:'Late quay supper', date:'2026-08-02',
   description:'One long table on the quay after the boats were in.', hostName:'Anna Vale', privacy:'everyone',
   ownerIds:['p-anna'], kind:'seed', city:'Stockholm' };
@@ -2267,16 +2268,17 @@ function followsOf(pid){
 }
 /* the person you are on the network while logged in (null logged out) */
 function myPid(){ return S.loggedIn && S.acct && typeof acctPid === 'function' ? acctPid(S.acct) : null; }
-/* Invitees are not included yet. Friends & Privacy will add an event_invites clause in a later migration.
-   An invite does not open a private event in this build. */
+/* An invite lets that person see the event, including a private one. Same exists check as can_see_event in 0013. */
 function canSeeEvent(e){
   if (!e) return false;
-  if (ONLINE) return !!myPid();
-  if (e.audience && window.HNAudience && window.HNRel) return HNAudience.canSee(myPid(), eventHostPid(e), e.audience, HNRel.audienceGraph());
+  var me = myPid();
+  if (me && typeof EVENT_INVITES !== 'undefined' && EVENT_INVITES[e.id] && EVENT_INVITES[e.id].some(function(r){ return r && r.inviteeId === me; })) return true;
+  if (ONLINE) return !!me;
+  if (e.audience && window.HNAudience && window.HNRel) return HNAudience.canSee(me, eventHostPid(e), e.audience, HNRel.audienceGraph());
   var pv = e.privacy || 'everyone';
   if (pv === 'everyone') return true;
   if (ownEvent(e)) return true;
-  var me = myPid(), host = eventHostPid(e);
+  var host = eventHostPid(e);
   if (!me || !host) return false;
   if (host === me) return true;
   return pv === 'friends' && followsOf(host).indexOf(me) >= 0;
@@ -7675,8 +7677,8 @@ function cocreatorRequestRows(evId){
       '<button class="btn" data-act="evcoreview" data-id="'+evId+'" data-user="'+esc(pid)+'" data-key="decline">Decline</button></div>';
   }).join('');
 }
-// F&P will swap this for isPublicAudience() from lib/audience.ts once 0008 merges (public there means include has 'everyone', even with excludes).
-function isEventPublic(ev){ return !!(ev && (ev.privacy || 'everyone') === 'everyone'); }
+// Public is HNAudience.isPublicAudience. Include contains everyone, even with excludes. No audience uses the legacy privacy value.
+function isEventPublic(ev){ return !!(ev && window.HNAudience && HNAudience.isPublicAudience(ev)); }
 function eventControlsBody(evId){
   var host = isMine(evId);
   var e = EVENTS[evId];
@@ -7775,17 +7777,18 @@ function setCocreatorPolicy(evId, policy){
 function eventPrivacyDialog(evId){
   var e = EVENTS[evId];
   if (!e || !canManageEvent(evId) || isLinkEvent(evId)) return;
-  DRAFT = { form:'privacy', editing:evId, privacy:e.privacy || 'everyone' };
+  var aud = e.audience || (window.HNAudience ? HNAudience.fromPrivacy(e.privacy || 'everyone') : { include:['everyone'], exclude:[] });
+  DRAFT = { form:'privacy', editing:evId, privacy: e.audience && window.HNAudience ? HNAudience.derivePrivacy(aud) : (e.privacy || 'everyone'), audience:aud };
   dialog('Who can see it', privacyHTML(DRAFT),
     '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="evprivacy-save" data-id="'+evId+'">Save</button>', 440);
 }
 function saveEventPrivacy(evId){
-  var e = EVENTS[evId], sel = $('w-p');
-  if (!e || !canManageEvent(evId) || !sel) return;
-  e.privacy = sel.value;
-  if (ONLINE) HNAPI.patchEvent(evId, { privacy:e.privacy });
+  var e = EVENTS[evId];
+  if (!e || !canManageEvent(evId) || !DRAFT || DRAFT.form !== 'privacy' || DRAFT.editing !== evId) return;
+  applyDraftAudience(e);
+  if (ONLINE) HNAPI.patchEvent(evId, { audience:e.audience, privacy:e.privacy });
   closeDialogs(); render();
-  toast('Saved', PRIVACY[e.privacy] || '');
+  toast('Saved', audienceWords(e));
 }
 function setInvitePolicy(evId, policy){
   var e = EVENTS[evId];

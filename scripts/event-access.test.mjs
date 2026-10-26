@@ -201,11 +201,11 @@ test("0010 stores invite_policy and the Permissions window uses two dropdowns", 
   assert.match(body, /Who can invite guests\?/);
   assert.match(body, /This event is public, so anyone can already see it\./);
   assert.match(body, /isEventPublic\(e\)/);
-  const pubAt = html.indexOf("// F&P will swap this for isPublicAudience() from lib/audience.ts once 0008 merges");
+  const pubAt = html.indexOf("// Public is HNAudience.isPublicAudience.");
   const pub = html.slice(pubAt, html.indexOf("function eventControlsBody"));
   assert.ok(pubAt >= 0 && pubAt < html.indexOf("function isEventPublic"));
-  assert.match(pub, /include has 'everyone', even with excludes/);
-  assert.match(pub, /function isEventPublic\(ev\)\{ return !!\(ev && \(ev\.privacy \|\| 'everyone'\) === 'everyone'\); \}/);
+  assert.match(pub, /even with excludes/);
+  assert.match(pub, /function isEventPublic\(ev\)\{ return !!\(ev && window\.HNAudience && HNAudience\.isPublicAudience\(ev\)\); \}/);
   assert.equal(html.split("function isEventPublic").length, 2);
   const setInvite = html.slice(html.indexOf("function setInvitePolicy"), html.indexOf("var INVITE"));
   assert.match(setInvite, /isEventPublic\(e\)/);
@@ -225,19 +225,35 @@ test("0010 stores invite_policy and the Permissions window uses two dropdowns", 
   assert.match(css, /\.ev-policy-why\{[^}]*color:var\(--ink2\)/);
 });
 
-test("an invite does not open a private event yet in this build", () => {
+test("the Visibility dialog saves the audience picker", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const open = html.slice(html.indexOf("function eventPrivacyDialog"), html.indexOf("function saveEventPrivacy"));
+  const save = html.slice(html.indexOf("function saveEventPrivacy"), html.indexOf("function setInvitePolicy"));
+  assert.match(open, /audience:aud/);
+  assert.match(save, /applyDraftAudience\(e\)/);
+  assert.match(save, /audience:e\.audience/);
+  assert.equal(save.includes("sel.value"), false);
+});
+
+test("an invite lets that person see a private event", () => {
   const init = readFileSync(new URL("../db/migrations/0001_init.sql", import.meta.url), "utf8");
   const fn = init.slice(init.indexOf("create function can_see_event"), init.indexOf("create function visible_events"));
   assert.equal(fn.includes("event_invites"), false);
   assert.match(fn, /e\.privacy = 'everyone'/);
-  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-  const start = html.indexOf("function canSeeEvent");
-  const end = html.indexOf("function canSee(");
-  assert.equal(html.slice(start, end).includes("event_invites"), false);
-  assert.match(html.slice(Math.max(0, start - 500), start), /later migration/);
+  const older = readFileSync(new URL("../db/migrations/0008_friends_privacy.sql", import.meta.url), "utf8");
+  const oldFn = older.slice(older.indexOf("create or replace function can_see_event"), older.indexOf("insert into _migrations"));
+  assert.equal(oldFn.includes("event_invites"), false);
   const sql = readFileSync(new URL("../db/migrations/0010_event_admins.sql", import.meta.url), "utf8");
   assert.match(sql, /create table event_invites \([\s\S]*unique \(event_id, invitee_id\)/);
   assert.equal(sql.includes("can_see_event"), false);
+  const next = readFileSync(new URL("../db/migrations/0013_event_invites_visibility.sql", import.meta.url), "utf8");
+  assert.match(next, /or exists \(select 1 from event_invites where event_id = e\.id and invitee_id = viewer\)/);
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const start = html.indexOf("function canSeeEvent");
+  const end = html.indexOf("function canSee(");
+  const body = html.slice(start, end);
+  assert.match(body, /EVENT_INVITES\[e\.id\]/);
+  assert.match(body, /r\.inviteeId === me/);
 });
 
 test("a logged event refuses every invite", () => {

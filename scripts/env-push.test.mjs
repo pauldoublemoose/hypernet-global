@@ -110,7 +110,7 @@ test("a real run sends each value on stdin, with --force, to the right target", 
 
 test("a failing vercel call stops the run with a non-zero exit", () => {
   const s = sandbox();
-  writeFileSync(join(s.dir, "bin", "vercel"), "#!/bin/sh\necho 'boom fake-db-url-dev-pooled' >&2\nexit 3\n");
+  writeFileSync(join(s.dir, "bin", "vercel"), "#!/bin/sh\ncat >/dev/null\necho 'boom fake-db-url-dev-pooled' >&2\nexit 3\n");
   const r = s.run("development");
   assert.notEqual(r.status, 0);
   assert.match(r.stderr, /vercel refused AUTH_SECRET/);

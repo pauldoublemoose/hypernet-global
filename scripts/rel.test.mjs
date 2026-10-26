@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
 const { pairKey } = require("../_shared/hypernet-audience.js");
-const { relOf, kind, controlOf, openContacts, ingest, ingestLists } = require("../_shared/hypernet-rel.js");
+const { relOf, kind, controlOf, openContacts, ingest, ingestLists, chronicleAskIds, requestsHTML, answerWent } = require("../_shared/hypernet-rel.js");
 
 const me = "p-michal";
 const anna = "p-anna";
@@ -118,4 +118,39 @@ test("the relationship control is one menu for the state", () => {
   assert.deepEqual(controlOf({ friend: "requested-out", following: false }), { label: "Requested", tone: "", items: ["Cancel request", "Add to list"] });
   assert.deepEqual(controlOf({ friend: "requested-in", following: true }), { label: "Respond", tone: "primary", items: ["Accept", "Decline", "Add to list"] });
   assert.deepEqual(controlOf({ friend: "friends", following: true }), { label: "Friends", tone: "on", items: ["Unfriend", "Add to list"] });
+});
+
+test("Did you go lists a past Going with no chronicle, and No makes no request", () => {
+  global.EVENTS = {
+    past: { id: "past", title: "Late quay supper", date: "2026-08-02" },
+    later: { id: "later", title: "Later", date: "2099-01-01" },
+    filed: { id: "filed", title: "Filed", date: "2026-01-01" },
+  };
+  global.RSVP = { past: "going", later: "going", filed: "going" };
+  global.WENT = { filed: true };
+  global.isPast = (iso) => iso < "2026-10-26";
+  global.lastDay = (e) => e.date;
+  global.myPid = () => "p-michal";
+  global.esc = (s) => String(s);
+  global.person = (id) => ({ displayName: id, handle: id });
+  global.S = { loggedIn: true };
+  global.ONLINE = false;
+  let posts = 0;
+  global.HNAPI = { addChronicle() { posts += 1; return Promise.resolve({ chronicle: { went: true } }); } };
+  assert.deepEqual(chronicleAskIds(), ["past"]);
+  assert.match(requestsHTML(), /Did you go\? Late quay supper/);
+  answerWent("past", false);
+  assert.equal(posts, 0);
+  assert.deepEqual(chronicleAskIds(), []);
+  global.RSVP.again = "going";
+  global.EVENTS.again = { id: "again", title: "Again", date: "2026-07-01" };
+  answerWent("again", true);
+  assert.equal(posts, 0);
+  assert.equal(global.WENT.again, true);
+  global.ONLINE = true;
+  global.RSVP.live = "going";
+  global.EVENTS.live = { id: "live", title: "Live", date: "2026-06-01" };
+  answerWent("live", true);
+  assert.equal(posts, 1);
+  assert.equal(global.WENT.live, undefined);
 });

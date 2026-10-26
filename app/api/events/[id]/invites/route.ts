@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * POST /api/events/:id/invites {personId} — record an invite and send a DM card.
- * The row does not make a private event visible. can_see_event is unchanged.
+ * 0013's can_see_event lets the invitee see the event, including a private one.
  */
 export const POST = route(async (req: Request, ctx: Ctx) => {
   const id = await idParam(ctx.params);

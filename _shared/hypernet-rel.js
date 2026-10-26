@@ -360,6 +360,59 @@
     return low(row.a) === low(me) ? row.b : row.a;
   }
 
+  var WENT_HIDE = {};
+  function wentDismissMap() {
+    try {
+      if (typeof localStorage !== "undefined" && localStorage && typeof localStorage.getItem === "function") {
+        var raw = localStorage.getItem("hn-went-dismiss");
+        if (raw) return JSON.parse(raw) || {};
+      }
+    } catch (e) {}
+    return WENT_HIDE;
+  }
+  function chronicleAskIds() {
+    var events = root.EVENTS || {};
+    var rsvp = root.RSVP || {};
+    var went = root.WENT || {};
+    var hidden = wentDismissMap();
+    if (typeof root.isPast !== "function" || typeof root.lastDay !== "function") return [];
+    return Object.keys(events).filter(function (id) {
+      var e = events[id];
+      if (!e || rsvp[id] !== "going" || went[id] || hidden[id]) return false;
+      return root.isPast(root.lastDay(e));
+    }).sort(function (a, b) {
+      var da = String(events[a].date || ""), db = String(events[b].date || "");
+      return da < db ? -1 : da > db ? 1 : 0;
+    });
+  }
+  function dismissWent(id) {
+    var m = wentDismissMap();
+    m[id] = 1;
+    WENT_HIDE = m;
+    try {
+      if (typeof localStorage !== "undefined" && localStorage && typeof localStorage.setItem === "function") {
+        localStorage.setItem("hn-went-dismiss", JSON.stringify(m));
+      }
+    } catch (e) {}
+    refreshDlg();
+  }
+  function answerWent(id, yes) {
+    if (!id) return;
+    if (!yes) { dismissWent(id); return; }
+    var finish = function () {
+      if (root.WENT) root.WENT[id] = true;
+      refreshDlg();
+      if (typeof root.render === "function") root.render();
+    };
+    if (root.ONLINE && root.HNAPI && typeof root.HNAPI.addChronicle === "function") {
+      var p = root.HNAPI.addChronicle(id);
+      if (p && typeof p.then === "function") p.then(finish, function () {});
+      else finish();
+      return;
+    }
+    finish();
+  }
+
   function requestsHTML() {
     var me = root.myPid();
     var inn = [], out = [];
@@ -385,6 +438,16 @@
     h += out.length ? out.map(function (pid) {
       return line(pid, '<button type="button" class="btn" data-rel-act="rel-cancel" data-id="' + pid + '">Cancel</button>');
     }).join("") : '<p class="relempty">No outgoing requests.</p>';
+    var asks = chronicleAskIds();
+    if (asks.length) {
+      h += asks.map(function (id) {
+        var e = (root.EVENTS || {})[id] || {};
+        return '<div class="relrow" data-went="' + id + '"><span>Did you go? ' + root.esc(e.title || "Event") + "</span>" +
+          '<span class="relbtns"><button type="button" class="btn primary" data-rel-act="rel-went-yes" data-id="' + id + '">Yes</button>' +
+          '<button type="button" class="btn" data-rel-act="rel-went-no" data-id="' + id + '">No</button>' +
+          '<button type="button" class="btn" data-rel-act="rel-went-dismiss" data-id="' + id + '">Dismiss</button></span></div>';
+      }).join("");
+    }
     return h;
   }
 
@@ -993,6 +1056,8 @@
     var pid = b.getAttribute("data-id");
     var go = function (fn) { (root.gated ? root.gated(fn) : fn)(pid); };
     if (act === "rel-requests") openRequests();
+    else if (act === "rel-went-yes") answerWent(pid, true);
+    else if (act === "rel-went-no" || act === "rel-went-dismiss") answerWent(pid, false);
     else if (act === "rel-list") openList(pid, b.getAttribute("data-list"));
     else if (act === "rel-menu") {
       var me = typeof root.myPid === "function" ? root.myPid() : null;
@@ -1073,7 +1138,8 @@
     relOf: relOf, kind: kind, rowMark: rowMark, graph: graph, audienceGraph: audienceGraph, friendIds: friendIds, countsOf: countsOf,
     relActionsHTML: relActionsHTML, controlOf: controlOf, listPageHTML: listPageHTML, mount: mount, toggleFollow: toggleFollow,
     requestFriend: requestFriend, acceptFriend: acceptFriend, deleteFriend: deleteFriend,
-    incomingCount: incomingCount, requestsButton: requestsButton, openRequests: openRequests, openList: openList,
+    incomingCount: incomingCount, requestsButton: requestsButton, openRequests: openRequests, requestsHTML: requestsHTML,
+    chronicleAskIds: chronicleAskIds, answerWent: answerWent, openList: openList,
     openLists: openLists, openContacts: openContacts, contactsHTML: contactsHTML,
     ingest: ingest, ingestFixtures: ingestFixtures, ingestLists: ingestLists, lists: listsSnapshot,
     nameProblem: nameProblem, planDelete: planDelete, memberToggle: memberToggle, knownIds: knownIds

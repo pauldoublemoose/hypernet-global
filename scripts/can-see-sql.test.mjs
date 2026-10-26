@@ -28,10 +28,12 @@ function loadCanSeeEventSql() {
 
 const canSeeEventSql = loadCanSeeEventSql();
 
-test("the predicate is can_see_event for the viewer parameter and the events alias", () => {
-  assert.equal(canSeeEventSql("$1"), "can_see_event($1::uuid, e)");
-  assert.equal(canSeeEventSql("$2", "ce"), "can_see_event($2::uuid, ce)");
-  assert.equal(canSeeEventSql("$12", "e2"), "can_see_event($12::uuid, e2)");
+const INVITE = " or exists (select 1 from event_invites where event_id = ALIAS.id and invitee_id = VIEWER::uuid)";
+
+test("the predicate is can_see_event or an invite row for the viewer parameter and the events alias", () => {
+  assert.equal(canSeeEventSql("$1"), "can_see_event($1::uuid, e)" + INVITE.replace("ALIAS", "e").replace("VIEWER", "$1"));
+  assert.equal(canSeeEventSql("$2", "ce"), "can_see_event($2::uuid, ce)" + INVITE.replace("ALIAS", "ce").replace("VIEWER", "$2"));
+  assert.equal(canSeeEventSql("$12", "e2"), "can_see_event($12::uuid, e2)" + INVITE.replace("ALIAS", "e2").replace("VIEWER", "$12"));
 });
 
 test("a viewer parameter or alias that is not a placeholder is refused", () => {

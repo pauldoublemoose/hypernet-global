@@ -80,15 +80,89 @@ export function rsvpRoleDecision(seat: Seat, role: RsvpRole | null | undefined, 
   return { write: false, value: null, pending: null, error: "Only the event host can set that role." };
 }
 
-/** Admins can always invite. Otherwise the guest toggle, visibility, and an attendee-shaped RSVP all have to hold.
- *  Going with no stored role counts as attendee. Interested with no role does not. */
+export const CHRONICLE_ACT = "Add to Chronicle";
+export const PAST_INVITE_ACT = "Add people who were there";
+export const CHRONICLE_HELP =
+  "Your Chronicle is your list of past events, shown on your profile page. You choose who can see each event there.";
+
+const WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** The short day the page uses in a past invite. */
+export function eventDayLabel(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return iso;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return `${WEEK[d.getDay()]} ${d.getDate()} ${MONTH[d.getMonth()]}`;
+}
+
+/** What the invitee reads when someone adds them to a past event. */
+export function pastInviteNotice(name: string, date: string, title: string): string {
+  return `${name} added you to a past event (${date}): ${title}. Add it to your chronicle?`;
+}
+
+/** Which events a list returns. Omitted means current and upcoming. `only` is the chronicle picker. */
+export function eventListWindow(past: string | undefined): "current" | "past" {
+  return past === "only" ? "past" : "current";
+}
+
+export type EventChrome = {
+  inviteLabel: string;
+  inviteAdmin: boolean;
+  guestInviteToggle: boolean;
+  cocreatorPolicy: boolean;
+  demote: boolean;
+  removeAdmin: boolean;
+  tickets: boolean;
+  newCallout: boolean;
+  promote: boolean;
+  rsvp: boolean;
+  chronicle: boolean;
+  edit: boolean;
+  privacy: boolean;
+  eventControls: boolean;
+};
+
+/** What the event page shows. A logged event has no host here. A past event is a chronicle entry. */
+export function eventChrome(input: { past: boolean; logged: boolean; seat: Seat; loggedIn: boolean }): EventChrome {
+  const manager = input.seat === "host" || input.seat === "admin";
+  const past = input.past;
+  const logged = input.logged;
+  return {
+    inviteLabel: past ? PAST_INVITE_ACT : "Invite",
+    inviteAdmin: !past && !logged && manager,
+    guestInviteToggle: !past && !logged && manager,
+    cocreatorPolicy: !past && !logged && manager,
+    demote: !past && !logged && manager,
+    removeAdmin: !past && !logged && input.seat === "host",
+    tickets: !past,
+    newCallout: !past && !logged && input.seat === "host",
+    promote: !past,
+    rsvp: !past,
+    chronicle: past && input.loggedIn,
+    edit: logged ? input.seat === "link_adder" : input.seat === "host" || input.seat === "admin",
+    privacy: !logged && manager,
+    eventControls: !logged && manager,
+  };
+}
+
+/** Admins can always invite to an upcoming hosted event. Otherwise the guest toggle, visibility, and an
+ *  attendee-shaped RSVP all have to hold. Going with no stored role counts as attendee. Interested with no role does not.
+ *  A logged event (no host here) is never invitable. A past event is a chronicle add: the host, a co-creator, or an attendee. */
 export function canInviteGuest(input: {
   seat: Seat;
   guestsCanInvite: boolean;
   canSee: boolean;
   rsvpRole: string | null;
   going: boolean;
+  logged?: boolean;
+  past?: boolean;
 }): boolean {
+  if (input.logged) return false;
+  if (input.past) {
+    if (input.seat === "host") return true;
+    return input.rsvpRole === "attendee" || input.rsvpRole === "cocreator";
+  }
   if (input.seat === "host" || input.seat === "admin") return true;
   if (!input.guestsCanInvite || !input.canSee) return false;
   if (input.rsvpRole === "attendee" || input.rsvpRole === "cocreator") return true;

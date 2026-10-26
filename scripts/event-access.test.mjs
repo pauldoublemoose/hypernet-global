@@ -3,12 +3,19 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
+  CHRONICLE_ACT,
+  CHRONICLE_HELP,
   EVENT_PERMS,
+  PAST_INVITE_ACT,
   allows,
   canEditEvent,
   canInviteGuest,
   canManageEvent,
   cocreatorPolicyOf,
+  eventChrome,
+  eventDayLabel,
+  eventListWindow,
+  pastInviteNotice,
   rsvpRoleDecision,
   seatOf,
 } from "../lib/event-access.ts";
@@ -178,6 +185,97 @@ test("an invite does not open a private event yet in this build", () => {
   const sql = readFileSync(new URL("../db/migrations/0010_event_admins.sql", import.meta.url), "utf8");
   assert.match(sql, /create table event_invites \([\s\S]*unique \(event_id, invitee_id\)/);
   assert.equal(sql.includes("can_see_event"), false);
+});
+
+test("a logged event refuses every invite", () => {
+  const logged = { guestsCanInvite: true, canSee: true, going: true, logged: true, past: false };
+  assert.equal(canInviteGuest({ ...logged, seat: "host", rsvpRole: null }), false);
+  assert.equal(canInviteGuest({ ...logged, seat: "admin", rsvpRole: null }), false);
+  assert.equal(canInviteGuest({ ...logged, seat: "guest", rsvpRole: null }), false);
+  assert.equal(canInviteGuest({ ...logged, seat: "link_adder", rsvpRole: null, going: true }), false);
+});
+
+test("a past event lets the host, a co-creator, or an attendee add people", () => {
+  const past = { guestsCanInvite: true, canSee: true, going: false, past: true, logged: false };
+  assert.equal(canInviteGuest({ ...past, seat: "host", rsvpRole: null }), true);
+  assert.equal(canInviteGuest({ ...past, seat: "cocreator", rsvpRole: "cocreator" }), true);
+  assert.equal(canInviteGuest({ ...past, seat: "attendee", rsvpRole: "attendee" }), true);
+  assert.equal(canInviteGuest({ ...past, seat: "admin", rsvpRole: null }), false);
+  assert.equal(canInviteGuest({ ...past, seat: "guest", rsvpRole: null, going: true }), false);
+});
+
+test("past and logged pages hide the upcoming admin chrome", () => {
+  const past = eventChrome({ past: true, logged: false, seat: "host", loggedIn: true });
+  assert.equal(past.inviteLabel, "Add people who were there");
+  assert.equal(past.chronicle, true);
+  assert.equal(past.edit, true);
+  assert.equal(past.privacy, true);
+  assert.equal(past.eventControls, true);
+  for (const key of ["inviteAdmin", "guestInviteToggle", "cocreatorPolicy", "demote", "removeAdmin", "tickets", "newCallout", "promote", "rsvp"]) {
+    assert.equal(past[key], false, key);
+  }
+  const guest = eventChrome({ past: true, logged: false, seat: "guest", loggedIn: true });
+  assert.equal(guest.chronicle, true);
+  assert.equal(guest.edit, false);
+  assert.equal(guest.eventControls, false);
+  const logged = eventChrome({ past: false, logged: true, seat: "link_adder", loggedIn: true });
+  assert.equal(logged.edit, true);
+  assert.equal(logged.privacy, false);
+  assert.equal(logged.eventControls, false);
+  assert.equal(logged.inviteAdmin, false);
+  assert.equal(logged.chronicle, false);
+  const loggedGuest = eventChrome({ past: false, logged: true, seat: "guest", loggedIn: true });
+  assert.equal(loggedGuest.edit, false);
+});
+
+test("the chronicle list is an opt-in and the past invite says so", () => {
+  assert.equal(eventListWindow(undefined), "current");
+  assert.equal(eventListWindow("only"), "past");
+  assert.equal(eventDayLabel("2026-10-01"), "Thu 1 Oct");
+  assert.equal(
+    pastInviteNotice("Ada", "Thu 1 Oct", "Supper"),
+    "Ada added you to a past event (Thu 1 Oct): Supper. Add it to your chronicle?",
+  );
+  assert.equal(CHRONICLE_ACT, "Add to Chronicle");
+  assert.equal(PAST_INVITE_ACT, "Add people who were there");
+  assert.equal(
+    CHRONICLE_HELP,
+    "Your Chronicle is your list of past events, shown on your profile page. You choose who can see each event there.",
+  );
+});
+
+test("the page shows Add to Chronicle with a help button, and search leaves past events out", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const search = html.slice(html.indexOf("function searchItems"), html.indexOf("function sortItems"));
+  assert.match(search, /!isPast\(lastDay\(e\)\)/);
+  assert.match(html, /Add to Chronicle/);
+  assert.match(html, /Add people who were there/);
+  assert.match(html, /added you to a past event/);
+  assert.match(html, /class="chhelp"/);
+  assert.match(html, /aria-expanded="false"/);
+  assert.match(html, /data-act="chhelp"/);
+  assert.match(html, /'chaccept'/);
+  const claim = html.slice(html.indexOf("function chronicleClaimHTML"), html.indexOf("function paneControls"));
+  assert.match(claim, /Add to Chronicle/);
+  assert.match(claim, /chronicleHelpHTML/);
+  assert.match(html, /Your Chronicle is your list of past events, shown on your profile page\. You choose who can see each event there\./);
+  assert.equal(html.includes("I was there"), false);
+  assert.match(html, /function openPastEvent\(role, into\)/);
+  assert.match(html, /openPastEvent\(pastRole\)/);
+  const profile = html.slice(html.indexOf("/* PROFILE — Chronicle"), html.indexOf("/* The slot stays empty"));
+  assert.equal(profile.includes("past=only"), false);
+  assert.equal(profile.includes("chhelp"), false);
+  const list = readFileSync(new URL("../app/api/events/route.ts", import.meta.url), "utf8");
+  assert.match(list, /past=only/);
+  assert.match(list, /\$6/);
+  assert.match(list, /coalesce\(e\.ends_on, e\.starts_on\)/);
+  const invites = readFileSync(new URL("../app/api/events/[id]/invites/route.ts", import.meta.url), "utf8");
+  assert.match(invites, /pastInviteNotice/);
+  assert.match(invites, /Only events hosted here can take an invite/);
+  assert.match(invites, /chronicle/);
+  const client = html.slice(html.indexOf("function canInviteToEvent"), html.indexOf("function linkSite"));
+  assert.match(client, /isLinkEvent/);
+  assert.match(client, /isPast\(lastDay\(e\)\)/);
 });
 
 test("the event page copy of EVENT_PERMS matches the server table", () => {

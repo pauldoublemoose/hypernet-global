@@ -233,6 +233,8 @@ export const eventQuery = z.object({
   to: day.optional(),
   host: z.uuid().optional(),
   limit: z.coerce.number().int().min(1).max(200).default(100),
+  /** `only` returns past events for the chronicle picker. Omit it and past events stay out. */
+  past: z.enum(["only"]).optional(),
 });
 
 const handle = z.string().trim().toLowerCase().regex(/^[a-z0-9._-]{1,30}$/, "1–30 of a-z 0-9 . _ -");

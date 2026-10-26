@@ -1534,6 +1534,28 @@ a.maplink{ color:var(--ink); }
 a.maplink:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
 .fillfrom{ margin-bottom:12px; }
 .fillfrom .lkrow{ align-items:center; }
+/* CHRONICLE HELP */
+.chclaim{ display:inline-flex; align-items:center; gap:4px; flex:0 1 auto; min-width:0; }
+.chhelpwrap{ position:relative; display:inline-flex; align-items:center; }
+.chhelp{
+  width:var(--ctl); height:var(--ctl); min-width:var(--ctl); min-height:var(--ctl); padding:0;
+  border:1px solid var(--ink2); background:var(--rule); color:var(--ink);
+  font:inherit; font-weight:bold; cursor:pointer;
+}
+.chhelp:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
+.chhelpnote{
+  display:none; position:absolute; z-index:8; top:calc(100% + 4px); right:0;
+  width:min(280px, 70vw); padding:8px 10px; text-align:left; white-space:normal;
+  background:var(--rule); color:var(--ink); border:1px solid var(--ink2);
+  font-size:13px; line-height:1.35; font-weight:normal;
+}
+.chhelpwrap:hover .chhelpnote,
+.chhelpwrap:focus-within .chhelpnote,
+.chhelpwrap.on .chhelpnote{ display:block; }
+#evbar .chhelpnote{ top:auto; bottom:calc(100% + 4px); }
+.msg .chclaim{ margin-top:8px; flex-wrap:wrap; }
+.msg .chhelpnote{ position:static; width:auto; margin-top:6px; }
+#evbar .verbs:has(.chclaim){ flex-wrap:wrap; }
 </style>
 </head>
 <body>
@@ -2242,8 +2264,13 @@ function cocreatorPendingMine(evId){
 }
 function canInviteToEvent(evId){
   var e = EVENTS[evId];
-  if (!e || !S.loggedIn) return false;
+  if (!e || !S.loggedIn || isLinkEvent(evId)) return false;
   var seat = eventSeat(evId);
+  if (isPast(lastDay(e))){
+    if (seat === 'host') return true;
+    var pastRole = ROLE[evId];
+    return pastRole === 'attendee' || pastRole === 'cocreator';
+  }
   if (seat === 'host' || seat === 'admin') return true;
   if (!guestsCanInviteOf(evId) || !canSeeEvent(e)) return false;
   var role = ROLE[evId];
@@ -2515,17 +2542,18 @@ function searchItems(q){
   q = String(q||'').trim();
   if (!q) return [];
   var out = [];
+  var current = function(e){ return !isPast(lastDay(e)); };
   if (TAGFIND && fold(q) === fold(TAGFIND)){
-    allEvents().filter(canSeeEvent).filter(function(e){ return eventTagHit(e, q); }).forEach(function(e){
+    allEvents().filter(canSeeEvent).filter(current).filter(function(e){ return eventTagHit(e, q); }).forEach(function(e){
       out.push({ type:'event', id:e.id });
     });
     searchPeople(q, out);
     return out;
   }
   var dq = dateQuery(q);
-  if (dq) return feedEvents().filter(function(e){ var a = dayDiff(e.date), b = dayDiff(lastDay(e)); return b >= dq[0] && a <= dq[1]; })
+  if (dq) return feedEvents().filter(current).filter(function(e){ var a = dayDiff(e.date), b = dayDiff(lastDay(e)); return b >= dq[0] && a <= dq[1]; })
     .map(function(e){ return { type:'event', id:e.id }; });
-  allEvents().filter(canSeeEvent).sort(function(a,b){
+  allEvents().filter(canSeeEvent).filter(current).sort(function(a,b){
     var pa = isPast(lastDay(a)) ? 1 : 0, pb = isPast(lastDay(b)) ? 1 : 0;
     return pa !== pb ? pa - pb : (pa ? -byDate(a,b) : byDate(a,b));
   }).forEach(function(e){
@@ -3103,10 +3131,20 @@ function stateGroupHTML(evId){
 function hostGroupHTML(evId){
   return '<div class="vgroup" role="group" aria-label="Your event">' + vb('editevent', evId, 'Edit', 'edit', { primary:true }) + '</div>';
 }
+var CHHELPSEQ = 0;
+function chronicleHelpHTML(key){
+  var id = 'chhelp-' + String(key || 'n').replace(/[^a-z0-9_-]/gi, '') + '-' + (++CHHELPSEQ);
+  return '<span class="chhelpwrap"><button type="button" class="chhelp" data-act="chhelp" aria-expanded="false" aria-controls="'+id+'" aria-describedby="'+id+'" aria-label="About your Chronicle">?</button>' +
+    '<span class="chhelpnote" id="'+id+'" role="tooltip">Your Chronicle is your list of past events, shown on your profile page. You choose who can see each event there.</span></span>';
+}
+function chronicleClaimHTML(evId){
+  return '<span class="chclaim">' + vb('v-went', evId, 'Add to Chronicle', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] }) + chronicleHelpHTML(evId) + '</span>';
+}
 function paneControls(evId){
   var h = '<span class="ev-constel" data-slot="constellation"></span>';
-  if (canInviteToEvent(evId)) h += vb('evinvite', evId, 'Invite', 'user');
-  if (canManageEvent(evId)) h += vb('evadmins', evId, '', 'dots', { aria:'Event controls', attrs:' aria-haspopup="dialog"' });
+  var e = EVENTS[evId];
+  if (canInviteToEvent(evId)) h += vb('evinvite', evId, e && isPast(lastDay(e)) ? 'Add people who were there' : 'Invite', 'user');
+  if (canManageEvent(evId) && !(e && isLinkEvent(evId))) h += vb('evadmins', evId, '', 'dots', { aria:'Event controls', attrs:' aria-haspopup="dialog"' });
   return h;
 }
 function verbsHTML(evId){
@@ -3128,10 +3166,10 @@ function verbsHTML(evId){
 function evbarHTML(evId){
   var e = EVENTS[evId], past = isPast(lastDay(e)), mine = isMine(evId), more, h = '<div class="verbs">';
   if (mine){
-    h += hostGroupHTML(evId) + (past ? '' : vb('newcalloutfor', evId, 'Call out', 'callout', { attrs:' aria-label="New call out"' }));
+    h += hostGroupHTML(evId) + (past ? chronicleClaimHTML(evId) : vb('newcalloutfor', evId, 'Call out', 'callout', { attrs:' aria-label="New call out"' }));
     more = past ? 'addto,share,delete' : 'promote,addto,share,delete';
   } else if (past){
-    if (S.loggedIn) h += vb('v-went', evId, 'Went', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] });
+    if (S.loggedIn) h += chronicleClaimHTML(evId);
     else h += vb('share', evId, 'Share', 'share');
     more = S.loggedIn ? 'addto,share' : 'addto';
   } else {
@@ -3234,7 +3272,7 @@ function canvasHTML(evId){
   var e = EVENTS[evId], t = TH(evId), r = recOf(evId), b = r.burn || {};
   var big = r.scale === 'burn' || !!r.burn;
   var past = isPast(lastDay(e));
-  var bar = !past ? verbsHTML(evId) : S.loggedIn ? toolbarHTML(vb('v-went', evId, 'Went', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] }), paneControls(evId) + vb('share', evId, 'Share', 'share')) : '';
+  var bar = past ? pastBarHTML(evId) : verbsHTML(evId);
   /* Details (the facts grid) → About → Call outs → Who's going → the plan → the rest, only what there is */
   var s = adminInviteBanner(evId) + cocreatorMineHTML(evId) + sect('About', descOf(e) ? '<p class="evdesc">'+esc(descOf(e))+'</p>' : '');
   s += scheduleHTML(evId);
@@ -3265,9 +3303,15 @@ function canvasHTML(evId){
     toolbar:bar, pre:entryHTML(evId) + editionsHTML(evId), facts:factsHTML(evId), body:s });
 }
 
+function pastBarHTML(evId){
+  if (!S.loggedIn) return '';
+  var primary = isMine(evId) ? hostGroupHTML(evId) : (addedByMe(evId) ? vb('editevent', evId, 'Edit', 'edit') : '');
+  primary += chronicleClaimHTML(evId);
+  return toolbarHTML(primary, paneControls(evId) + vb('share', evId, 'Share', 'share'));
+}
 function compactVerbs(evId){
   var st = S.loggedIn ? RSVP[evId] : '';
-  if (isPast(lastDay(EVENTS[evId]))) return S.loggedIn ? '<div class="cverbs"><button class="ib'+(WENT[evId]?' on':'')+'" data-act="v-went" data-id="'+evId+'" aria-label="Went" aria-pressed="'+!!WENT[evId]+'">'+ic('check')+'</button></div>' : '';
+  if (isPast(lastDay(EVENTS[evId]))) return S.loggedIn ? '<div class="cverbs">'+chronicleClaimHTML(evId)+'</div>' : '';
   return '<div class="cverbs">' +
     '<button class="ib'+(st==='interested'?' on':'')+'" data-act="v-interested" data-id="'+evId+'" aria-label="Interested" aria-pressed="'+(st==='interested')+'">'+ic('heart')+'</button>' +
     '<button class="ib'+(st==='going'?' on':'')+'" data-act="v-going" data-id="'+evId+'" aria-label="Going" aria-pressed="'+(st==='going')+'">'+ic('check')+'</button>' +
@@ -4097,7 +4141,8 @@ function convHTML(cid){
     var me = m.from === 'self';
     var head = '<div class="mfrom">'+(me ? '' : '<button type="button" class="mwho" data-act="chatprofile" data-id="'+esc(m.from)+'">'+esc(person(m.from).displayName)+'</button>')+'<span class="mt">'+esc(/^\d{1,2}:\d{2}$/.test(m.t || '') ? m.t : '')+'</span></div>';
     var card = m.eventId && EVENTS[m.eventId] ? '<a class="evcard" href="#/event/'+esc(m.eventId)+'">'+esc(EVENTS[m.eventId].title)+'</a>' : '';
-    return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+card+'</div></div>';
+    var accept = m.chronicle && !me && m.eventId ? '<span class="chclaim">' + vb('chaccept', m.eventId, 'Add to Chronicle', 'check') + chronicleHelpHTML(m.eventId) + '</span>' : '';
+    return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+card+accept+'</div></div>';
   }).join('') : '<div class="msg sys">No messages yet</div>') + '</div>';
   /* the box grows with what you write: Enter sends, Shift+Enter starts a new line */
   h += '<div class="composer"><textarea id="chatbox" rows="1" placeholder="Message '+esc(c.name.split(' ')[0])+'" autocomplete="off" aria-label="Message" aria-describedby="chathint">'+esc(CHATDRAFT[cid] || '')+'</textarea>' +
@@ -7446,25 +7491,28 @@ function cocreatorRequestRows(evId){
 }
 function eventControlsBody(evId){
   var host = isMine(evId);
+  var e = EVENTS[evId];
+  var past = !!(e && isPast(lastDay(e)));
+  var logged = isLinkEvent(evId);
   var list = adminRows(evId).map(function(a){
     var name = a.userId === myActor() || a.userId === 'self' ? 'You' : person(a.userId).displayName;
-    var rm = host ? '<button class="btn alert" data-act="evadmin-remove" data-id="'+evId+'" data-user="'+esc(a.userId)+'">Remove</button>' : '';
+    var rm = host && !past && !logged ? '<button class="btn alert" data-act="evadmin-remove" data-id="'+evId+'" data-user="'+esc(a.userId)+'">Remove</button>' : '';
     return '<div class="ev-admin-row"><span>'+esc(name)+' · '+esc(a.status)+'</span>'+rm+'</div>';
   }).join('') || '<p class="fhelp">No other admins yet.</p>';
-  var crew = cocreatorIds(evId).map(function(pid){
+  var crew = past || logged ? '' : cocreatorIds(evId).map(function(pid){
     return '<div class="ev-admin-row"><span>'+esc(person(pid).displayName)+'</span>' +
       '<button class="btn" data-act="evdemote" data-id="'+evId+'" data-user="'+esc(pid)+'">Demote</button></div>';
   }).join('');
+  var invite = canInviteToEvent(evId) ? '<button class="btn" data-act="evinvite" data-id="'+evId+'">'+(past ? 'Add people who were there' : 'Invite')+'</button>' : '';
   return '<div class="ev-controls">' +
     '<button class="btn" data-act="editevent" data-id="'+evId+'">Edit</button>' +
-    '<button class="btn" data-act="evprivacy" data-id="'+evId+'">Who can see it</button>' +
-    '<button class="btn" data-act="evinvite" data-id="'+evId+'">Invite</button>' +
-    '<button class="btn" data-act="evadmin-invite" data-id="'+evId+'">Invite admin</button>' +
+    (logged ? '' : '<button class="btn" data-act="evprivacy" data-id="'+evId+'">Who can see it</button>') +
+    invite +
+    (past || logged ? '' : '<button class="btn" data-act="evadmin-invite" data-id="'+evId+'">Invite admin</button>') +
     '<h3>Admins</h3>' + list +
     (crew ? '<h3>Co-creators</h3>' + crew : '') +
-    cocreatorRequestRows(evId) +
-    cocreatorPolicyHTML(evId) +
-    '<button class="btn ev-toggle" data-act="evtoggle" data-id="'+evId+'" data-key="guestsCanInvite" aria-pressed="'+(guestsCanInviteOf(evId)?'true':'false')+'">Guests can invite friends</button>' +
+    (past || logged ? '' : cocreatorRequestRows(evId) + cocreatorPolicyHTML(evId) +
+      '<button class="btn ev-toggle" data-act="evtoggle" data-id="'+evId+'" data-key="guestsCanInvite" aria-pressed="'+(guestsCanInviteOf(evId)?'true':'false')+'">Guests can invite friends</button>') +
     '</div>';
 }
 function eventControlsDialog(evId){
@@ -7563,7 +7611,8 @@ function inviteDialog(evId, kind){
   if (kind === 'admin'){ if (!canManageEvent(evId)) return; }
   else if (!canInviteToEvent(evId)) return;
   INVITE = { evId:evId, kind:kind, q:'' };
-  dialog(kind === 'admin' ? 'Invite admin' : 'Invite',
+  var pastInvite = kind !== 'admin' && EVENTS[evId] && isPast(lastDay(EVENTS[evId]));
+  dialog(kind === 'admin' ? 'Invite admin' : (pastInvite ? 'Add people who were there' : 'Invite'),
     '<div class="field"><label for="iv-q">To</label><input type="search" id="iv-q" placeholder="Search people" autocomplete="off"></div>' +
     '<div class="picklist" id="iv-list"></div>',
     '<button class="btn" data-act="closedlg">Cancel</button>', 480);
@@ -7589,8 +7638,13 @@ function sendEventInvite(evId, pid){
   if (!pid || pid === myActor() || !canInviteToEvent(evId)) return;
   var rows = EVENT_INVITES[evId] || (EVENT_INVITES[evId] = []);
   if (!rows.some(function(r){ return r.inviteeId === pid; })) rows.push({ inviteeId:pid, invitedBy:myActor() });
-  var dm = openDM(pid), st = stamp(), title = EVENTS[evId] ? EVENTS[evId].title : 'an event';
-  CHATS[dm].messages.push({ from:'self', t:st.t, ts:st.ts, text:"You're invited to " + title + '.', eventId:evId });
+  var dm = openDM(pid), st = stamp(), e = EVENTS[evId], title = e ? e.title : 'an event';
+  var past = !!(e && isPast(lastDay(e)));
+  var who = person(myActor() || 'self').displayName || 'Someone';
+  var text = past
+    ? who + ' added you to a past event (' + fmtDay(e.date) + '): ' + title + '. Add it to your chronicle?'
+    : "You're invited to " + title + '.';
+  CHATS[dm].messages.push({ from:'self', t:st.t, ts:st.ts, text:text, eventId:evId, chronicle:past });
   if (ONLINE) HNAPI.inviteGuest(evId, pid);
   closeDialogs(); INVITE = null; render();
   toast('Invited', person(pid).displayName);
@@ -7867,8 +7921,8 @@ function ctxItems(t, only){
     var st = S.loggedIn ? RSVP[id] : '', mine = isMine(id), past = isPast(lastDay(EVENTS[id]));
     /* the host's menu leads with the host's verbs, like the host's page */
     if (mine) out.push({ code:'edit', label:'Edit…', icon:'edit', run:function(){ editEventDialog(id); } });
-    else if (past) out.push({ code:'went', label:'Went', icon:'check', check: S.loggedIn && !!WENT[id],
-      run: ctxVerb(function(){ setWent(id); }, function(){ return !!WENT[id]; }, 'Marked as went', EVENTS[id].title) });
+    else if (past) out.push({ code:'went', label:'Add to Chronicle', icon:'check', check: S.loggedIn && !!WENT[id],
+      run: ctxVerb(function(){ setWent(id); }, function(){ return !!WENT[id]; }, 'Added to your chronicle', EVENTS[id].title) });
     else out.push(
       { code:'interested', label:'Interested', icon:'heart', check: st === 'interested',
         run: ctxVerb(function(){ setRSVP(id, 'interested'); }, function(){ return RSVP[id] === 'interested'; }, 'Interested', EVENTS[id].title) },
@@ -8223,8 +8277,33 @@ var setWent = gated(function(evId){
   if (!(RESUMING && WENT[evId])) WENT[evId] = !WENT[evId];
   if (ONLINE) HNAPI.rsvp(evId);
   markRead(evId); render();
-  toast(WENT[evId] ? 'Marked as went' : 'Removed', EVENTS[evId].title);
+  toast(WENT[evId] ? 'Added to your chronicle' : 'Removed from your chronicle', EVENTS[evId].title);
 });
+function acceptChronicle(evId){
+  if (!S.loggedIn || !EVENTS[evId]) return;
+  WENT[evId] = true;
+  if (!ROLE[evId]) ROLE[evId] = 'attendee';
+  if (ONLINE && window.HNAPI) HNAPI.rsvp(evId, { role:ROLE[evId] });
+  markRead(evId);
+  render();
+  toast('Added to your chronicle', EVENTS[evId].title);
+}
+function closeChronicleHelp(except){
+  document.querySelectorAll('.chhelpwrap.on').forEach(function(w){
+    if (except && (w === except || w.contains(except))) return;
+    w.classList.remove('on');
+    var b = w.querySelector('.chhelp');
+    if (b) b.setAttribute('aria-expanded', 'false');
+  });
+}
+function toggleChronicleHelp(btn){
+  var wrap = btn && btn.closest ? btn.closest('.chhelpwrap') : null;
+  if (!wrap) return;
+  var open = !wrap.classList.contains('on');
+  closeChronicleHelp(open ? wrap : null);
+  wrap.classList.toggle('on', open);
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
 var doPromote = gated(function(evId){
   if (RESUMING && PROMOTED[evId]){ render(); toast('Promoted', EVENTS[evId].title); return; }
   PROMOTED[evId] = !PROMOTED[evId];
@@ -8499,10 +8578,15 @@ document.addEventListener('click', function(ev){
   var pop = ev.target.closest('.popmenu .pi');
   if (pop && !pop.classList.contains('sepi')){ runCmd(pop.getAttribute('data-pop'), pop.getAttribute('data-arg')); return; }
   var n = ev.target.closest('[data-act]');
-  if (!n){ closePopup(); return; }
+  if (!n){
+    if (!(ev.target.closest && ev.target.closest('.chhelpwrap'))) closeChronicleHelp();
+    closePopup();
+    return;
+  }
   if (n.tagName === 'SELECT' || (n.tagName === 'INPUT' && n.type !== 'checkbox')) return;
   var act = n.getAttribute('data-act'), id = n.getAttribute('data-id');
   if (act !== 'newmenu' && act !== 'acctmenu') closePopup();
+  if (act !== 'chhelp' && !(ev.target.closest && ev.target.closest('.chhelpwrap'))) closeChronicleHelp();
   if (n.tagName === 'A') ev.preventDefault();
   switch (act){
     case 'tagtoggle': tagToggle(); break;
@@ -8536,10 +8620,12 @@ document.addEventListener('click', function(ev){
     case 'clearsearch': leaveSearch(); render(); break;
     case 'tab':      setTab(id); break;
     case 'toggle-right': S.rightOpen = !L.right; if (S.rightOpen) S.lastOpened = 'right'; render(); break;
-    case 'v-interested': setRSVP(id, 'interested'); break;
-    case 'v-going':      setRSVP(id, 'going'); break;
-    case 'v-promote':    doPromote(id); break;
+    case 'v-interested': if (EVENTS[id] && isPast(lastDay(EVENTS[id]))) break; setRSVP(id, 'interested'); break;
+    case 'v-going':      if (EVENTS[id] && isPast(lastDay(EVENTS[id]))) break; setRSVP(id, 'going'); break;
+    case 'v-promote':    if (EVENTS[id] && isPast(lastDay(EVENTS[id]))) break; doPromote(id); break;
     case 'v-went':       setWent(id); break;
+    case 'chhelp':       toggleChronicleHelp(n); break;
+    case 'chaccept':     acceptChronicle(id); break;
     case 'addto':        gated(addToDialog)(id); break;
     case 'dofile':       toggleInHorizon(id, n.getAttribute('data-hz')); break;
     case 'share':        if (n.getAttribute('data-type') === 'horizon') shareHorizon(id); else shareLink(n.getAttribute('data-type') || 'event', id); break;
@@ -8715,7 +8801,7 @@ document.addEventListener('click', function(ev){
     case 'wiz':          wizAct(id); break;
     case 'editcallout':  newCalloutDialog({ edit:id }); break;
     case 'closecallout': closeCallout(id); break;
-    case 'newcalloutfor': gated(newCalloutDialog)({ eventId:id }); break;
+    case 'newcalloutfor': if (EVENTS[id] && isPast(lastDay(EVENTS[id]))) break; gated(newCalloutDialog)({ eventId:id }); break;
     case 'editevent':    editEventDialog(id); break;
     case 'wizstep': {
       var ws = +id, wb = ws > DRAFT.step ? wizFirstBad(DRAFT, ws) : 0;
@@ -8959,6 +9045,12 @@ document.addEventListener('keydown', function(ev){
     return;
   }
   if (ev.key === 'Escape'){
+    if (document.querySelector('.chhelpwrap.on') || (ae && ae.classList && ae.classList.contains('chhelp'))){
+      closeChronicleHelp();
+      if (ae && ae.classList && ae.classList.contains('chhelp')) ae.blur();
+      ev.preventDefault();
+      return;
+    }
     if (DLGS.length){ dismissDialog(); return; }
     if (POP){ closePopup(); return; }
     if (ae && ae.id === 'q' && S.folder.kind === 'search'){ leaveSearch(); render(); ae.blur(); return; }

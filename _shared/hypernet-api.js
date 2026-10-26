@@ -114,7 +114,10 @@
       byId[cid] = { id:cid, name:PEOPLE[c.personId].displayName, kind:'dm', memberIds:[c.personId],
         messages: c.messages.map(function(m){
           var msg = { id:m.id, from: m.senderId === me ? 'self' : m.senderId, t:clock(m.createdAt), ts:m.createdAt, text:m.body };
-          if (m.cardType === 'event' && m.cardId) msg.eventId = m.cardId;
+          if ((m.cardType === 'event' || m.cardType === 'chronicle') && m.cardId) {
+            msg.eventId = m.cardId;
+            if (m.cardType === 'chronicle') msg.chronicle = true;
+          }
           return msg;
         }) };
       order.push(cid);

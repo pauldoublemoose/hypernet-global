@@ -12,6 +12,7 @@ import {
   canInviteGuest,
   canManageEvent,
   cocreatorPolicyOf,
+  invitePolicyOf,
   eventChrome,
   eventDayLabel,
   eventListWindow,
@@ -69,16 +70,12 @@ test("an admin can demote a co-creator", () => {
   assert.equal(allows("demoteCocreator", "attendee"), false);
 });
 
-test("open lets anyone claim co-creator, and admins refuses a self-claim", () => {
-  assert.deepEqual(rsvpRoleDecision("guest", "cocreator", "open"), { write: true, value: "cocreator", pending: false });
+test("open lets anyone claim co-creator, and a host or admin can set one under request", () => {
   for (const seat of ["guest", "attendee", "cocreator", "link_adder"]) {
-    const d = rsvpRoleDecision(seat, "cocreator", "admins");
-    assert.equal(d.write, false);
-    assert.equal(d.pending, null);
-    assert.match(d.error, /admins/);
+    assert.deepEqual(rsvpRoleDecision(seat, "cocreator", "open"), { write: true, value: "cocreator", pending: false });
   }
-  assert.deepEqual(rsvpRoleDecision("host", "cocreator", "admins"), { write: true, value: "cocreator", pending: false });
-  assert.deepEqual(rsvpRoleDecision("admin", "cocreator", "admins"), { write: true, value: "cocreator", pending: false });
+  assert.deepEqual(rsvpRoleDecision("host", "cocreator", "request"), { write: true, value: "cocreator", pending: false });
+  assert.deepEqual(rsvpRoleDecision("admin", "cocreator", "request"), { write: true, value: "cocreator", pending: false });
 });
 
 test("on request stores a pending flag and shows attendee until an admin approves", () => {
@@ -91,7 +88,8 @@ test("approve writes cocreator and decline only clears the request", () => {
   const route = readFileSync(new URL("../app/api/events/[id]/cocreators/route.ts", import.meta.url), "utf8");
   const validation = readFileSync(new URL("../lib/validation.ts", import.meta.url), "utf8");
   const rsvp = readFileSync(new URL("../app/api/events/[id]/rsvp/route.ts", import.meta.url), "utf8");
-  assert.match(validation, /cocreatorPolicy: z\.enum\(\["open", "request", "admins"\]\)/);
+  assert.match(validation, /cocreatorPolicy: z\.enum\(\["open", "request"\]\)/);
+  assert.match(validation, /invitePolicy: z\.enum\(\["admins", "cocreators", "invited"\]\)/);
   assert.match(validation, /action: z\.enum\(\["approve", "decline"\]\)/);
   assert.equal(allows("reviewCocreator", "guest"), false);
   assert.equal(allows("reviewCocreator", "attendee"), false);
@@ -111,7 +109,7 @@ test("approve writes cocreator and decline only clears the request", () => {
 });
 
 test("a requester can cancel or leave, and a co-creator can leave under every policy", () => {
-  for (const policy of ["open", "request", "admins"]) {
+  for (const policy of ["open", "request"]) {
     assert.deepEqual(rsvpRoleDecision("attendee", null, policy), { write: true, value: null, pending: false });
     assert.deepEqual(rsvpRoleDecision("attendee", "attendee", policy), { write: true, value: "attendee", pending: false });
     assert.deepEqual(rsvpRoleDecision("cocreator", null, policy), { write: true, value: null, pending: false });
@@ -119,58 +117,104 @@ test("a requester can cancel or leave, and a co-creator can leave under every po
   }
 });
 
-test("a missing policy column reads the old boolean, otherwise open", () => {
-  assert.equal(cocreatorPolicyOf(null, true), "admins");
+test("a missing policy column reads the old boolean as request, otherwise open", () => {
+  assert.equal(cocreatorPolicyOf(null, true), "request");
   assert.equal(cocreatorPolicyOf(undefined, false), "open");
   assert.equal(cocreatorPolicyOf("request", true), "request");
+  assert.equal(cocreatorPolicyOf("admins", false), "open");
 });
 
 test("0011 adds cocreator_policy and a pending flag, and does not edit 0010", () => {
   const sql = readFileSync(new URL("../db/migrations/0011_cocreator_policy.sql", import.meta.url), "utf8");
   const old = readFileSync(new URL("../db/migrations/0010_event_admins.sql", import.meta.url), "utf8");
   assert.match(sql, /cocreator_policy text not null default 'open'/);
-  assert.match(sql, /check \(cocreator_policy in \('open', 'request', 'admins'\)\)/);
-  assert.match(sql, /set cocreator_policy = 'admins' where only_admins_add_cocreators/);
+  assert.match(sql, /check \(cocreator_policy in \('open', 'request'\)\)/);
+  assert.equal(sql.includes("'admins'"), false);
   assert.match(sql, /cocreator_pending boolean not null default false/);
   assert.equal(sql.includes("can_see_event"), false);
   assert.equal(old.includes("cocreator_policy"), false);
   const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /Are you the host\?/);
   assert.match(html, /Is this a new event or did it already happen\?/);
-  assert.match(html, /Who can add themselves as co-creator/);
+  assert.match(html, /Who can be listed as a co-creator\?/);
   assert.equal(html.includes("Only admins can add co-creators"), false);
 });
 
 test("omitted role is not written and host is only the event host", () => {
   assert.deepEqual(rsvpRoleDecision("guest", undefined, "open"), { write: false, value: null, pending: null });
-  assert.deepEqual(rsvpRoleDecision("host", "host", "admins"), { write: true, value: "host", pending: false });
+  assert.deepEqual(rsvpRoleDecision("host", "host", "request"), { write: true, value: "host", pending: false });
   const denied = rsvpRoleDecision("admin", "host", "open");
   assert.equal(denied.write, false);
   assert.match(denied.error, /host/);
 });
 
-test("guests_can_invite lets an attendee, a co-creator, and someone going invite", () => {
-  const base = { guestsCanInvite: true, canSee: true, going: false };
+test("invite_policy invited lets an attendee, a co-creator, and someone going invite", () => {
+  const base = { invitePolicy: "invited", canSee: true, going: false };
   assert.equal(canInviteGuest({ ...base, seat: "attendee", rsvpRole: "attendee" }), true);
   assert.equal(canInviteGuest({ ...base, seat: "cocreator", rsvpRole: "cocreator", going: true }), true);
   assert.equal(canInviteGuest({ ...base, seat: "guest", rsvpRole: null, going: true }), true);
   assert.equal(canInviteGuest({ ...base, seat: "host", rsvpRole: null }), true);
   assert.equal(canInviteGuest({ ...base, seat: "admin", rsvpRole: null }), true);
+  assert.equal(canInviteGuest({ ...base, seat: "guest", rsvpRole: null, going: false }), false);
+  assert.equal(canInviteGuest({ ...base, seat: "attendee", rsvpRole: "attendee", canSee: false }), false);
+  assert.equal(invitePolicyOf(null), "invited");
+  assert.equal(invitePolicyOf("nope"), "invited");
+  assert.equal(canInviteGuest({ canSee: true, going: true, seat: "guest", rsvpRole: null }), true);
 });
 
-test("guests_can_invite off is admins only and interested-only cannot invite", () => {
-  const closed = { guestsCanInvite: false, canSee: true, going: true, rsvpRole: "attendee", seat: "attendee" };
+test("invite_policy admins is admins only", () => {
+  const closed = { invitePolicy: "admins", canSee: true, going: true, rsvpRole: "attendee", seat: "attendee" };
   assert.equal(canInviteGuest(closed), false);
   assert.equal(canInviteGuest({ ...closed, seat: "cocreator", rsvpRole: "cocreator" }), false);
   assert.equal(canInviteGuest({ ...closed, seat: "guest", rsvpRole: null }), false);
   assert.equal(canInviteGuest({ ...closed, seat: "host", rsvpRole: "host" }), true);
   assert.equal(canInviteGuest({ ...closed, seat: "admin", rsvpRole: null, going: false }), true);
-  assert.equal(canInviteGuest({
-    guestsCanInvite: true, canSee: true, seat: "guest", rsvpRole: null, going: false,
-  }), false);
-  assert.equal(canInviteGuest({
-    guestsCanInvite: true, canSee: false, seat: "attendee", rsvpRole: "attendee", going: true,
-  }), false);
+});
+
+test("invite_policy cocreators lets a co-creator invite and not an attendee", () => {
+  const base = { invitePolicy: "cocreators", canSee: true, going: true };
+  assert.equal(canInviteGuest({ ...base, seat: "cocreator", rsvpRole: "cocreator" }), true);
+  assert.equal(canInviteGuest({ ...base, seat: "attendee", rsvpRole: "attendee" }), false);
+  assert.equal(canInviteGuest({ ...base, seat: "guest", rsvpRole: null }), false);
+  assert.equal(canInviteGuest({ ...base, seat: "host", rsvpRole: null, going: false }), true);
+  assert.equal(canInviteGuest({ ...base, seat: "admin", rsvpRole: null, going: false }), true);
+  assert.equal(canInviteGuest({ ...base, seat: "cocreator", rsvpRole: "cocreator", canSee: false }), false);
+});
+
+test("0010 stores invite_policy and the Permissions window uses two dropdowns", () => {
+  const sql = readFileSync(new URL("../db/migrations/0010_event_admins.sql", import.meta.url), "utf8");
+  assert.match(sql, /invite_policy text not null default 'invited'/);
+  assert.match(sql, /check \(invite_policy in \('admins', 'cocreators', 'invited'\)\)/);
+  assert.equal(sql.includes("guests_can_invite"), false);
+  assert.equal(sql.includes("cocreator_policy"), false);
+  const gate = readFileSync(new URL("../lib/event-gate.ts", import.meta.url), "utf8");
+  assert.match(gate, /invite_policy/);
+  assert.equal(gate.includes("guests_can_invite"), false);
+  const schema = readFileSync(new URL("../db/schema.ts", import.meta.url), "utf8");
+  assert.match(schema, /invitePolicy: text\("invite_policy"\)\.notNull\(\)\.default\("invited"\)/);
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const body = html.slice(html.indexOf("function eventControlsBody"), html.indexOf("function settleEventControl"));
+  const ret = body.slice(body.indexOf("return '<div class=\"ev-controls\">'"));
+  assert.ok(ret.indexOf("inviteBtn") < ret.indexOf("<h3>Admins</h3>"));
+  assert.ok(ret.indexOf("<h3>Admins</h3>") < ret.indexOf("cocreatorPolicyHTML"));
+  assert.ok(ret.indexOf("cocreatorPolicyHTML") < ret.indexOf("invitePolicy"));
+  assert.match(body, /Who can invite guests\?/);
+  assert.match(body, /This event is public, so anyone can already see it\./);
+  assert.match(body, /\(e\.privacy \|\| 'everyone'\) === 'everyone'/);
+  const policy = html.slice(html.indexOf("function cocreatorPolicyHTML"), html.indexOf("function cocreatorRequestRows"));
+  const select = html.slice(html.indexOf("function policySelect"), html.indexOf("function cocreatorPolicyHTML"));
+  assert.match(select, /<select/);
+  assert.match(policy, /policySelect\(evId, 'evpolicy'/);
+  assert.match(policy, /Who can be listed as a co-creator\?/);
+  assert.match(policy, /Open – anyone can list themselves as a co-creator/);
+  assert.match(policy, /On request – admins must approve requests/);
+  assert.equal(policy.includes("'admins'"), false);
+  assert.equal(policy.includes("hostask-opt"), false);
+  assert.equal(html.includes("guestsCanInvite"), false);
+  assert.equal(html.includes("ev-switch"), false);
+  const css = html.slice(html.indexOf("/* EVENT CONTROLS */"), html.indexOf("/* HOST ASK */"));
+  assert.match(css, /select:disabled\{[^}]*color:var\(--dim\)/);
+  assert.match(css, /\.ev-policy-why\{[^}]*color:var\(--ink2\)/);
 });
 
 test("an invite does not open a private event yet in this build", () => {
@@ -189,7 +233,7 @@ test("an invite does not open a private event yet in this build", () => {
 });
 
 test("a logged event refuses every invite", () => {
-  const logged = { guestsCanInvite: true, canSee: true, going: true, logged: true, past: false };
+  const logged = { invitePolicy: "invited", canSee: true, going: true, logged: true, past: false };
   assert.equal(canInviteGuest({ ...logged, seat: "host", rsvpRole: null }), false);
   assert.equal(canInviteGuest({ ...logged, seat: "admin", rsvpRole: null }), false);
   assert.equal(canInviteGuest({ ...logged, seat: "guest", rsvpRole: null }), false);
@@ -197,7 +241,7 @@ test("a logged event refuses every invite", () => {
 });
 
 test("a past event lets the host, a co-creator, or an attendee add people", () => {
-  const past = { guestsCanInvite: true, canSee: true, going: false, past: true, logged: false };
+  const past = { invitePolicy: "admins", canSee: true, going: false, past: true, logged: false };
   assert.equal(canInviteGuest({ ...past, seat: "host", rsvpRole: null }), true);
   assert.equal(canInviteGuest({ ...past, seat: "cocreator", rsvpRole: "cocreator" }), true);
   assert.equal(canInviteGuest({ ...past, seat: "attendee", rsvpRole: "attendee" }), true);
@@ -317,9 +361,13 @@ test("the boost action is labeled Boost", () => {
   const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /aria-label="Boost"/);
   assert.match(html, /label:'Boost'/);
-  assert.match(html, /it\.check \? 'Boosted' : 'Boost'/);
+  assert.match(html, /on \? 'Boosted' : 'Boost'/);
   assert.match(html, /data-act="v-promote"/);
   assert.match(html, /code:'promote'/);
+  const plan = html.slice(html.indexOf("function eventBarPlan"), html.indexOf("function eventBarHTML"));
+  assert.match(plan, /if \(!past\) show\.push\('boost'\)/);
+  assert.equal(html.includes("data-sharemenu"), false);
+  assert.equal(html.includes("openShareMenu"), false);
   assert.equal(html.includes("'Promote'"), false);
   assert.equal(html.includes('"Promote"'), false);
   assert.equal(html.includes("'Promoted'"), false);
@@ -334,17 +382,20 @@ test("the event bar is Add to, Share, and a cog for admins", () => {
   assert.match(plan, /show\.push\('invite'\)/);
   assert.match(plan, /show\.push\('addto'\)/);
   assert.match(plan, /show\.push\('share'\)/);
+  assert.match(plan, /if \(!past\) show\.push\('boost'\)/);
   assert.match(plan, /show\.push\('cog'\)/);
   assert.equal(plan.includes("show.push('edit')"), false);
   assert.equal(plan.includes("show.push('chronicle')"), false);
-  assert.equal(plan.includes("promote"), false);
+  assert.equal(plan.indexOf("show.push('boost')") < plan.indexOf("show.push('cog')"), true);
   const bar = html.slice(html.indexOf("function eventBarHTML"), html.indexOf("function entryLinkOf"));
   assert.match(bar, /'evaddto'/);
   assert.match(bar, /'Add people'/);
-  assert.match(bar, /data-sharemenu="1"/);
+  assert.match(bar, /boostLabel\(evId\)/);
+  assert.equal(bar.includes("data-sharemenu"), false);
   assert.match(bar, /'evcog'/);
   assert.match(bar, /paneControls\(evId\)/);
-  assert.match(html, /label:'Chronicle'/);
+  assert.match(html, /label:'Chronicle', icon:'scroll'/);
+  assert.match(html, /Add to Chronicle', 'scroll'/);
   assert.match(html, /label:'Horizon'/);
   assert.match(html, /label:'Visibility'/);
   assert.match(html, /icon:'eye'/);
@@ -352,7 +403,7 @@ test("the event bar is Add to, Share, and a cog for admins", () => {
   assert.match(gear, /<circle /);
   assert.match(gear, /Z"/);
   assert.equal(gear.includes("M10 2.5v2"), false);
-  const cog = html.slice(html.indexOf("function eventCogItems"), html.indexOf("function shareMenuItems"));
+  const cog = html.slice(html.indexOf("function eventCogItems"), html.indexOf("function openItemMenu"));
   assert.match(cog, /heading:'Admin controls'/);
   assert.match(cog, /label:'Edit'/);
   assert.match(cog, /label:'Visibility'/);
@@ -373,7 +424,7 @@ test("the event bar is Add to, Share, and a cog for admins", () => {
 
 test("the admin block is labeled Admin controls", () => {
   const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-  const cog = html.slice(html.indexOf("function eventCogItems"), html.indexOf("function shareMenuItems"));
+  const cog = html.slice(html.indexOf("function eventCogItems"), html.indexOf("function openItemMenu"));
   assert.match(cog, /heading:'Admin controls'/);
   assert.match(html, /dialog\('Permissions'/);
   assert.match(html, /data-act="closedlg">Done/);

@@ -13,6 +13,7 @@ export const EVENT_JSON = `json_build_object(
   'timezone', e.timezone, 'kind', e.kind, 'tags', e.tags, 'schedule', e.schedule, 'privacy', e.privacy, 'city', e.city, 'region', e.region, 'country', e.country,
   'venue', e.venue, 'access', e.access, 'whatToBring', e.what_to_bring, 'details', e.details, 'look', e.look, 'source', e.source,
   'sourceUrl', e.source_url, 'addedBy', e.added_by, 'cocreatorPolicy', to_jsonb(e)->>'cocreator_policy',
+  'invitePolicy', to_jsonb(e)->>'invite_policy',
   'previousEditionId', e.previous_edition_id, 'createdAt', e.created_at, 'updatedAt', e.updated_at)`;
 
 export const PERSON_JSON = `json_build_object('id', p.id, 'handle', p.handle, 'displayName', p.display_name, 'bio', p.bio,

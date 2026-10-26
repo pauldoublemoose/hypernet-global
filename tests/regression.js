@@ -1520,10 +1520,13 @@ async function overflowEverywhere(p, label){
         var id = 'evt-deep-listening';
         if (MYEVENTS.indexOf(id) < 0) MYEVENTS.push(id);
         eventControlsDialog(id);
-        var keys = [...document.querySelectorAll('[data-act="evpolicy"]')].map(b => b.getAttribute('data-key') + ':' + b.getAttribute('aria-pressed'));
-        return { keys:keys, old:/Only admins can add co-creators/.test(document.body.textContent) };
+        var sel = document.querySelector('[data-act="evpolicy"]');
+        var invite = document.querySelector('[data-act="evinvitepolicy"]');
+        return { value:sel && sel.value, options:sel ? [...sel.options].map(o => o.value).join(',') : '',
+          old:/Only admins can add co-creators/.test(document.body.textContent),
+          inviteOff:!!(invite && invite.disabled), why:!!document.querySelector('.ev-policy-why') };
       });
-      ok(pol.keys.join(',') === 'open:true,request:false,admins:false' && !pol.old, 'desk: Admin controls has the three co-creator settings ' + JSON.stringify(pol));
+      ok(pol.value === 'open' && pol.options === 'open,request' && !pol.old && pol.inviteOff && pol.why, 'desk: the co-creator rule is a dropdown, and a public event disables invites ' + JSON.stringify(pol));
     }
     ok(!c.errors.length, kind + ': no console errors (host ask) ' + c.errors.join(' '));
     await c.context().close();
@@ -1651,10 +1654,10 @@ async function overflowEverywhere(p, label){
       const d = document.querySelector('.dlg.permissions');
       if (!d) return null;
       return { title:(d.querySelector('.dtitle') || {}).textContent, done:(d.querySelector('.dfoot [data-act="closedlg"]') || {}).textContent,
-        admin:!!d.querySelector('[data-act="evadmin-invite"]'), guests:/Guests can invite friends/.test(d.innerText),
-        rule:/Who can add themselves as co-creator/.test(d.innerText), edit:!!d.querySelector('[data-act="editevent"]') };
+        admin:!!d.querySelector('[data-act="evadmin-invite"]'), invites:/Who can invite guests\?/.test(d.innerText),
+        rule:/Who can be listed as a co-creator\?/.test(d.innerText), edit:!!d.querySelector('[data-act="editevent"]') };
     });
-    ok(perm && perm.title === 'Permissions' && perm.done === 'Done' && perm.admin && perm.guests && perm.rule && !perm.edit,
+    ok(perm && perm.title === 'Permissions' && perm.done === 'Done' && perm.admin && perm.invites && perm.rule && !perm.edit,
        kind + ': Permissions opens the admin settings, and Done closes it ' + JSON.stringify(perm));
     await c.click('.dlg.permissions [data-act="closedlg"]'); await c.waitForTimeout(150);
     await c.click(bar + '[data-act="evcog"]'); await c.waitForTimeout(250);
@@ -1685,12 +1688,13 @@ async function overflowEverywhere(p, label){
       const acts = [...root.querySelectorAll('.btn')].map(b => (b.getAttribute('data-act') || '') + ':' + b.textContent.trim());
       return { acts:acts.join('|'), tip:!!root.querySelector('.helptip-btn'), went:!!root.querySelector('[data-act="v-went"]') };
     });
-    ok(claim && !claim.tip && !claim.went && /evinvite:Add people/.test(claim.acts) && /evaddto:Add to/.test(claim.acts) && /share:Share/.test(claim.acts) && /evcog:/.test(claim.acts),
-       kind + ': a past host bar is Add people, Add to, Share, and a cog, with no question mark ' + JSON.stringify(claim));
+    ok(claim && !claim.tip && !claim.went && /evinvite:Add people/.test(claim.acts) && /evaddto:Add to/.test(claim.acts) && /share:Share/.test(claim.acts) && /evcog:/.test(claim.acts) && !/v-promote/.test(claim.acts),
+       kind + ': a past host bar is Add people, Add to, Share, and a cog, with no Boost and no question mark ' + JSON.stringify(claim));
     await c.click(bar + '[data-act="evaddto"]'); await c.waitForTimeout(250);
-    const added = await ev(c, () => [...document.querySelectorAll('.ctxmenu .ci .clab, .ctxsheet .sheetrow .clab')].map(n => n.textContent.trim()));
-    ok(added.indexOf('Chronicle') >= 0 && added.indexOf('Horizon') >= 0 && added.indexOf('Add to horizon') < 0,
-       kind + ': Add to lists Chronicle and Horizon ' + JSON.stringify(added));
+    const added = await ev(c, () => [...document.querySelectorAll('.ctxmenu .ci, .ctxsheet .sheetrow')].map(n => ({ t:(n.querySelector('.clab') || n).textContent.trim(), icon:n.getAttribute('data-icon') })));
+    const chronicle = added.filter(r => r.t === 'Chronicle')[0];
+    ok(!!chronicle && chronicle.icon === 'scroll' && added.some(r => r.t === 'Horizon') && !added.some(r => r.t === 'Add to horizon'),
+       kind + ': Add to lists Chronicle with a scroll and Horizon ' + JSON.stringify(added));
     await c.keyboard.press('Escape'); await c.waitForTimeout(100);
     await c.evaluate(() => { var id = S.stack[0].id; WENT[id] = true; var k = MYHORIZONS[0]; if (k && HORIZONS[k] && HORIZONS[k].eventIds.indexOf(id) < 0) HORIZONS[k].eventIds.push(id); });
     await c.click(bar + '[data-act="evaddto"]'); await c.waitForTimeout(250);
@@ -2760,8 +2764,8 @@ async function overflowEverywhere(p, label){
     const host = await ev(c, () => ({ acts:[...document.querySelectorAll(L.phone ? '#evbar .btn' : '#dscroll .pg-event .actbar .btn')].map(b => b.getAttribute('data-act')),
       menu:ctxItems({ type:'event', id:S.stack[0].id }).filter(i => i !== '-').map(i => i.code) }));
     ok(host.acts.indexOf('editevent') < 0 && host.acts.indexOf('customize') < 0 && host.acts.indexOf('evadmins') < 0 && host.acts.filter(a => a === 'evcog').length === 1 &&
-       host.menu.indexOf('customize') < 0 && host.menu.indexOf('edit') >= 0 && host.acts.join() === 'evinvite,evaddto,share,evcog',
-       kind + ': an event you host has Invite, Add to, Share and a cog ' + JSON.stringify(host));
+       host.menu.indexOf('customize') < 0 && host.menu.indexOf('edit') >= 0 && host.acts.join() === 'evinvite,evaddto,share,v-promote,evcog',
+       kind + ': an event you host has Invite, Add to, Share, Boost and a cog ' + JSON.stringify(host));
     await c.evaluate(() => editEventDialog(S.stack[0].id)); await c.waitForTimeout(300);
     const ee = await ev(c, () => ({ secs:[...document.querySelectorAll('.dlg .edsec > h3')].map(h => h.textContent).join(), priv:!!document.querySelector('.dlg .edsec #w-p'), look:!!document.querySelector('.dlg [data-czlook] #cz-c1'), tabs:!!document.querySelector('.dlg .wizsteps') }));
     ok(ee.secs === 'Details,About,Who can see it,Look' && ee.priv && ee.look && !ee.tabs, kind + ': Edit event is one form of sections — details, about, who can see it, look ' + JSON.stringify(ee));
@@ -2773,23 +2777,63 @@ async function overflowEverywhere(p, label){
     ok(/New call out/.test(controls) && !/Boost/.test(controls) && !/Add to horizon/.test(controls) && /Admin controls/.test(controls) && /Visibility/.test(controls) && /Permissions/.test(controls) && !/Invite admin/.test(controls) && !/Guests can invite friends/.test(controls) && /Delete/.test(controls),
        kind + ': the cog holds Edit, Visibility, Permissions, New call out, and Delete ' + controls);
     await c.click(kind === 'phone' ? '.ctxsheet [data-icon="key"]' : '.ctxmenu [data-icon="key"]'); await c.waitForTimeout(250);
-    ok(await ev(c, () => { const d = document.querySelector('.dlg.permissions'); return !!d && d.querySelector('.dtitle').textContent === 'Permissions' && /Invite admin/.test(d.innerText) && /Guests can invite friends/.test(d.innerText) && /Who can add themselves as co-creator/.test(d.innerText) && d.querySelector('.dfoot').textContent.trim() === 'Done'; }),
-       kind + ': Permissions holds invite admin, guests can invite, and the co-creator rule');
+    const permBox = await ev(c, () => {
+      const d = document.querySelector('.dlg.permissions'); if (!d) return null;
+      const kids = [...d.querySelector('.ev-controls').children];
+      const invite = d.querySelector('[data-act="evinvitepolicy"]');
+      const rule = d.querySelector('[data-act="evpolicy"]');
+      const why = d.querySelector('.ev-policy-why');
+      const swatch = prop => { const s = document.createElement('span'); s.style.color = prop; document.body.appendChild(s); const col = getComputedStyle(s).color; s.remove(); return col; };
+      const rgb = s => '#' + String(s).match(/\d+/g).slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join('');
+      const ground = el => { var n = el; while (n){ var m = getComputedStyle(n).backgroundColor.match(/\d+/g); if (m && (m.length < 4 || +m[3] !== 0)) return '#' + m.slice(0, 3).map(x => (+x).toString(16).padStart(2, '0')).join(''); n = n.parentElement; } return '#ffffff'; };
+      const was = document.documentElement.getAttribute('data-theme');
+      const themes = ['y2fresh', 'win2k'].map(t => {
+        document.documentElement.setAttribute('data-theme', t);
+        const cs = getComputedStyle(invite);
+        const fill = cs.webkitTextFillColor && cs.webkitTextFillColor !== 'rgba(0, 0, 0, 0)' ? cs.webkitTextFillColor : cs.color;
+        return { t:t, dim:fill === swatch('var(--dim)'), why:contrast(rgb(getComputedStyle(why).color), ground(why)) >= 4.5 };
+      });
+      document.documentElement.setAttribute('data-theme', was || 'win2k');
+      const text = d.innerText;
+      const ia = text.indexOf('Invite admin'), ad = text.indexOf('Admins'), co = text.indexOf('Who can be listed as a co-creator?'), iv = text.indexOf('Who can invite guests?');
+      return { title:d.querySelector('.dtitle').textContent, done:d.querySelector('.dfoot').textContent.trim(),
+        first:kids[0] && kids[0].textContent.trim(), order:ia >= 0 && ia < ad && ad < co && co < iv,
+        coOpts:rule ? [...rule.options].map(o => o.textContent).join('|') : '', coValue:rule && rule.value,
+        opts:invite ? [...invite.options].map(o => o.textContent).join('|') : '', value:invite && invite.value,
+        disabled:!!(invite && invite.disabled), why:why && why.textContent, themes:themes };
+    });
+    ok(permBox && permBox.title === 'Permissions' && permBox.done === 'Done' && permBox.first === 'Invite admin' && permBox.order && permBox.coValue === 'open' && permBox.coOpts === 'Open – anyone can list themselves as a co-creator|On request – admins must approve requests' && permBox.opts === 'Admins only|Admins and co-creators|Anyone with an invite' && permBox.value === 'invited' && permBox.disabled && permBox.why === 'This event is public, so anyone can already see it.' && permBox.themes.every(t => t.dim && t.why),
+       kind + ': Permissions is Invite admin, the admin list, the co-creator dropdown, then Who can invite guests, disabled on a public event ' + JSON.stringify(permBox));
+    await c.selectOption('.dlg.permissions [data-act="evpolicy"]', 'request'); await c.waitForTimeout(250);
+    const coSaved = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evpolicy"]'); const id = sel && sel.getAttribute('data-id'); return { value:sel && sel.value, saved:id && cocreatorPolicyOf(id) }; });
+    ok(coSaved.value === 'request' && coSaved.saved === 'request', kind + ': the co-creator dropdown saves ' + JSON.stringify(coSaved));
+    await c.evaluate(() => { var sel = document.querySelector('[data-act="evinvitepolicy"]'); var id = sel.getAttribute('data-id'); EVENTS[id].privacy = 'only_me'; settleEventControl(id); });
+    await c.waitForTimeout(250);
+    const opened = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { disabled:!!(sel && sel.disabled), why:!!document.querySelector('.ev-policy-why'), value:sel && sel.value }; });
+    ok(opened && !opened.disabled && !opened.why && opened.value === 'invited', kind + ': a private event enables Who can invite guests ' + JSON.stringify(opened));
+    await c.selectOption('.dlg.permissions [data-act="evinvitepolicy"]', 'admins'); await c.waitForTimeout(250);
+    const asAdmins = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { value:sel && sel.value, saved:invitePolicyOf(sel.getAttribute('data-id')) }; });
+    ok(asAdmins.value === 'admins' && asAdmins.saved === 'admins', kind + ': Admins only saves ' + JSON.stringify(asAdmins));
+    await c.selectOption('.dlg.permissions [data-act="evinvitepolicy"]', 'cocreators'); await c.waitForTimeout(250);
+    const asCo = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { value:sel && sel.value, saved:invitePolicyOf(sel.getAttribute('data-id')) }; });
+    ok(asCo.value === 'cocreators' && asCo.saved === 'cocreators', kind + ': Admins and co-creators saves ' + JSON.stringify(asCo));
+    await c.selectOption('.dlg.permissions [data-act="evinvitepolicy"]', 'invited'); await c.waitForTimeout(250);
+    const asInvited = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { value:sel && sel.value, saved:invitePolicyOf(sel.getAttribute('data-id')) }; });
+    ok(asInvited.value === 'invited' && asInvited.saved === 'invited', kind + ': Anyone with an invite saves ' + JSON.stringify(asInvited));
     await c.keyboard.press('Escape'); await c.waitForTimeout(150);
     await c.evaluate(() => { window.__copied = []; Object.defineProperty(navigator, 'clipboard', { configurable:true, value:{ writeText:t => { window.__copied.push(t); return Promise.resolve(); } } }); });
     await c.click(barSel + '[data-act="share"]'); await c.waitForTimeout(250);
-    const shared = await ev(c, () => ({ menu:(document.querySelector('.ctxmenu') || {}).innerText || '', copied:/Link copied/.test(document.getElementById('toasts').textContent) }));
-    ok(/Share link/.test(shared.menu) && /Boost/.test(shared.menu) && shared.copied, kind + ': Share copies the link and lists Boost ' + JSON.stringify(shared));
-    await c.keyboard.press('Escape'); await c.waitForTimeout(150);
+    const shared = await ev(c, (sel) => ({ menu:!!document.querySelector('.ctxmenu, .ctxsheet'), copied:/Link copied/.test(document.getElementById('toasts').textContent), boost:!!document.querySelector(sel + '[data-act="v-promote"]') }), barSel);
+    ok(!shared.menu && shared.copied && shared.boost, kind + ': Share copies the link, and Boost is its own bar button ' + JSON.stringify(shared));
     await c.evaluate(() => openItem('event', 'evt-deep-listening')); await c.waitForTimeout(350);
     const guest0 = await ev(c, (sel) => ({ admins:document.querySelectorAll(sel + '[data-act="evadmins"]').length, invite:document.querySelectorAll(sel + '[data-act="evinvite"]').length, cog:document.querySelectorAll(sel + '[data-act="evcog"]').length, add:document.querySelectorAll(sel + '[data-act="evaddto"]').length }), barSel);
     ok(guest0.admins === 0 && guest0.invite === 0 && guest0.cog === 0 && guest0.add === 1, kind + ': a non-admin who has not RSVP’d has Add to and no cog or Invite ' + JSON.stringify(guest0));
     await c.click(barSel + '[data-act="v-going"]'); await c.waitForTimeout(300);
     const guest1 = await ev(c, (sel) => ({ admins:document.querySelectorAll(sel + '[data-act="evadmins"]').length, invite:document.querySelectorAll(sel + '[data-act="evinvite"]').length }), barSel);
     ok(guest1.admins === 0 && guest1.invite === 1, kind + ': Going, with guests can invite, shows Invite and hides Admin controls ' + JSON.stringify(guest1));
-    await c.evaluate(() => { EVENTS['evt-deep-listening'].guestsCanInvite = false; render(); }); await c.waitForTimeout(200);
+    await c.evaluate(() => { EVENTS['evt-deep-listening'].invitePolicy = 'admins'; render(); }); await c.waitForTimeout(200);
     ok(await ev(c, () => document.querySelectorAll('[data-act="evinvite"]').length === 0 && document.querySelectorAll('[data-act="evadmins"]').length === 0),
-       kind + ': Guests can invite friends off hides Invite for a non-admin');
+       kind + ': Admins only hides Invite for a non-admin');
     const hidden = await ev(c, () => {
       var e = EVENTS['evt-dj-closed'];
       EVENT_INVITES[e.id] = [{ inviteeId: myActor(), invitedBy: 'p-anna' }];

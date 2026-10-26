@@ -103,7 +103,8 @@
     var ev = { id:e.id, slug:e.slug, title:e.title, date:e.startsOn, description:e.description, hostName:e.hostName, hostId:e.hostId,
                privacy:e.privacy, city:e.city || '', kind: det._kind || (e.source === 'import' ? 'real' : e.source === 'link' ? 'link' : 'own'), ownerIds:[], source:e.source,
                sourceUrl:e.sourceUrl || undefined, addedBy:e.addedBy || undefined };
-    if (e.cocreatorPolicy === 'open' || e.cocreatorPolicy === 'request' || e.cocreatorPolicy === 'admins') ev.cocreatorPolicy = e.cocreatorPolicy;
+    if (e.cocreatorPolicy === 'open' || e.cocreatorPolicy === 'request') ev.cocreatorPolicy = e.cocreatorPolicy;
+    if (e.invitePolicy === 'admins' || e.invitePolicy === 'cocreators' || e.invitePolicy === 'invited') ev.invitePolicy = e.invitePolicy;
     return { ev:ev, rec:r };
   }
   function chatRows(list, me){

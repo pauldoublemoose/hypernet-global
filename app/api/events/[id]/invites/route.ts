@@ -34,7 +34,7 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
   const rsvp = await viewerRsvp(id, me.id);
   const allowed = canInviteGuest({
     seat: gate.seat,
-    guestsCanInvite: gate.guestsCanInvite,
+    invitePolicy: gate.invitePolicy,
     canSee: seen,
     rsvpRole: rsvp.role,
     going: rsvp.status === "going",
@@ -44,7 +44,7 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
   if (!allowed) {
     throw forbidden(logged
       ? "Only events hosted here can take an invite."
-      : "Only an admin, or a guest who is going, can invite friends.");
+      : "You can’t send an invite to this event.");
   }
   await sqlx().query(
     `insert into event_invites (event_id, invitee_id, invited_by) values ($1, $2, $3) on conflict (event_id, invitee_id) do nothing`,

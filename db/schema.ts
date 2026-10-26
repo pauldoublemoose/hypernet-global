@@ -90,7 +90,7 @@ export const events = pgTable(
     deletedAt: tstz("deleted_at"),
     onlyAdminsAddCocreators: boolean("only_admins_add_cocreators").notNull().default(false),
     cocreatorPolicy: text("cocreator_policy").notNull().default("open"),
-    guestsCanInvite: boolean("guests_can_invite").notNull().default(true),
+    invitePolicy: text("invite_policy").notNull().default("invited"),
   },
   (t) => [index().on(t.hostId)],
 );

@@ -14,7 +14,10 @@ create table event_admins (
 create index event_admins_user on event_admins (user_id);
 
 alter table events add column only_admins_add_cocreators boolean not null default false;
-alter table events add column guests_can_invite boolean not null default true;
+-- Who may send an invite. admins: host and accepted admins. cocreators: those plus a co-creator.
+-- invited: an attendee, a co-creator, or someone going. That is today's default.
+alter table events add column invite_policy text not null default 'invited'
+  check (invite_policy in ('admins', 'cocreators', 'invited'));
 
 create table event_invites (
   event_id   uuid not null references events on delete cascade,

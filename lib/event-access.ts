@@ -15,7 +15,8 @@ export const EVENT_PERMS = {
 
 export type Seat = "host" | "admin" | "cocreator" | "attendee" | "link_adder" | "guest";
 export type RsvpRole = "host" | "cocreator" | "attendee";
-export type CocreatorPolicy = "open" | "request" | "admins";
+export type CocreatorPolicy = "open" | "request";
+export type InvitePolicy = "admins" | "cocreators" | "invited";
 export type Perm = keyof typeof EVENT_PERMS;
 
 export type AccessInput = {
@@ -56,15 +57,21 @@ export function canEditEvent(a: AccessInput): boolean {
   return allows("edit", seatOf(a));
 }
 
-/** Read path when 0011 is not applied yet. The old boolean meant admins, and everything else was open. */
+/** Read path when 0011 is not applied yet. The old boolean was a restriction, so it reads as request. */
 export function cocreatorPolicyOf(raw: string | null | undefined, onlyAdmins?: boolean | null): CocreatorPolicy {
-  if (raw === "open" || raw === "request" || raw === "admins") return raw;
-  return onlyAdmins ? "admins" : "open";
+  if (raw === "open" || raw === "request") return raw;
+  return onlyAdmins ? "request" : "open";
+}
+
+/** Read path when 0010 is not applied yet. Guests could invite, so a missing value is invited. */
+export function invitePolicyOf(raw: string | null | undefined): InvitePolicy {
+  if (raw === "admins" || raw === "cocreators" || raw === "invited") return raw;
+  return "invited";
 }
 
 /** Omit role to leave it. host is the event host only.
  *  open writes cocreator. request stores a pending flag and shows attendee until an admin approves.
- *  admins refuses a self-claim. attendee and null always write and clear a pending request, so someone can cancel or leave. */
+ *  attendee and null always write and clear a pending request, so someone can cancel or leave. */
 export function rsvpRoleDecision(seat: Seat, role: RsvpRole | null | undefined, policy: CocreatorPolicy): RoleDecision {
   if (role === undefined) return { write: false, value: null, pending: null };
   if (role === "host") {
@@ -74,7 +81,6 @@ export function rsvpRoleDecision(seat: Seat, role: RsvpRole | null | undefined, 
   if (role === null || role === "attendee") return { write: true, value: role, pending: false };
   if (role === "cocreator") {
     if (seat === "host" || seat === "admin" || policy === "open") return { write: true, value: "cocreator", pending: false };
-    if (policy === "admins") return { write: false, value: null, pending: null, error: "Only admins can add co-creators." };
     return { write: true, value: "attendee", pending: true };
   }
   return { write: false, value: null, pending: null, error: "Only the event host can set that role." };
@@ -153,12 +159,13 @@ export function eventChrome(input: { past: boolean; logged: boolean; seat: Seat;
   };
 }
 
-/** Admins can always invite to an upcoming hosted event. Otherwise the guest toggle, visibility, and an
- *  attendee-shaped RSVP all have to hold. Going with no stored role counts as attendee. Interested with no role does not.
+/** Admins can always invite to an upcoming hosted event. Otherwise invite_policy, visibility, and an
+ *  attendee-shaped RSVP all have to hold. admins is the host and accepted admins. cocreators adds a co-creator.
+ *  invited (the default) is an attendee, a co-creator, or someone going with no stored role. Interested with no role does not.
  *  A logged event (no host here) is never invitable. A past event is a chronicle add: the host, a co-creator, or an attendee. */
 export function canInviteGuest(input: {
   seat: Seat;
-  guestsCanInvite: boolean;
+  invitePolicy?: InvitePolicy | null;
   canSee: boolean;
   rsvpRole: string | null;
   going: boolean;
@@ -171,7 +178,10 @@ export function canInviteGuest(input: {
     return input.rsvpRole === "attendee" || input.rsvpRole === "cocreator";
   }
   if (input.seat === "host" || input.seat === "admin") return true;
-  if (!input.guestsCanInvite || !input.canSee) return false;
+  if (!input.canSee) return false;
+  const policy = invitePolicyOf(input.invitePolicy);
+  if (policy === "admins") return false;
+  if (policy === "cocreators") return input.rsvpRole === "cocreator" || input.seat === "cocreator";
   if (input.rsvpRole === "attendee" || input.rsvpRole === "cocreator") return true;
   return input.going && !input.rsvpRole;
 }

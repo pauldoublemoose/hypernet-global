@@ -1529,10 +1529,13 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
   display:flex; align-items:center; justify-content:space-between; gap:8px;
   color:var(--ink); border-bottom:1px solid var(--rule); padding:6px 0;
 }
-.ev-toggle{
-  display:flex; align-items:center; justify-content:space-between; gap:8px;
-  color:var(--ink); border:1px solid var(--rule); padding:8px; background:transparent; text-align:left;
+.ev-policy{ display:flex; flex-direction:column; align-items:stretch; gap:4px; margin:0; color:var(--ink); }
+.ev-policy-q{ font-weight:bold; font-size:14px; line-height:20px; color:var(--ink); }
+.ev-policy select{ width:100%; color:var(--ink); background:var(--white); box-shadow:var(--in); }
+.ev-policy select:disabled{
+  color:var(--dim); -webkit-text-fill-color:var(--dim); opacity:1; cursor:default;
 }
+.ev-policy-why{ margin:0; font-size:12px; line-height:16px; color:var(--ink2); }
 .dlg .btn.alert{ color:var(--alert); }
 .msg .evcard{
   display:block; margin-top:6px; padding:8px; border:1px solid var(--rule); color:var(--ink); text-decoration:none;
@@ -1987,6 +1990,8 @@ var IC = {
   dots:'<path d="M4 10h.01M10 10h.01M16 10h.01" stroke-width="3"/>',
   /* Friends & Privacy does not ship an icon in this page, so Visibility uses this eye. */
   eye:'<path d="M1.8 10S4.8 5.2 10 5.2 18.2 10 18.2 10 15.2 14.8 10 14.8 1.8 10 1.8 10z"/><circle cx="10" cy="10" r="2.1"/>',
+  /* a rolled parchment: a curl at each end, the Chronicle mark */
+  scroll:'<path d="M7.2 4.4h7c1.3 0 2.2.9 2.2 2.1M7.2 4.4C5.6 4.4 4.4 5.5 4.4 7s1.2 2.6 2.8 2.6h7.2M7.2 9.6V15c0 1.4 1.1 2.5 2.6 2.5h6.4M16.2 4.4v10.8c0 1.3 1 2.3 2.2 2.3"/>',
   /* a toothed ring and a centre hole, so the bar button reads as a gear */
   cog:'<path d="M7.94 4.47 7.66 1.62 12.34 1.62 12.06 4.47 13.76 5.45 16.09 3.78 18.43 7.84 15.82 9.02 15.82 10.98 18.43 12.16 16.09 16.22 13.76 14.55 12.06 15.53 12.34 18.38 7.66 18.38 7.94 15.53 6.24 14.55 3.91 16.22 1.57 12.16 4.18 10.98 4.18 9.02 1.57 7.84 3.91 3.78 6.24 5.45Z"/><circle cx="10" cy="10" r="2.35"/>',
   key:'<circle cx="6.6" cy="7.4" r="3.2"/><path d="M9.2 9.6 17 17.2M13.6 13.8l2.2 2.2M15.2 15.4l1.8 1.8"/>',
@@ -2291,14 +2296,15 @@ function allowsPerm(action, seat){
 }
 function canManageEvent(evId){ return allowsPerm('manage', eventSeat(evId)); }
 function canFix(evId){ return allowsPerm('edit', eventSeat(evId)); }
-function guestsCanInviteOf(evId){
-  var e = EVENTS[evId];
-  return !e || e.guestsCanInvite !== false;
+function invitePolicyOf(evId){
+  var e = EVENTS[evId], p = e && e.invitePolicy;
+  if (p === 'admins' || p === 'cocreators' || p === 'invited') return p;
+  return 'invited';
 }
 function cocreatorPolicyOf(evId){
   var e = EVENTS[evId], p = e && e.cocreatorPolicy;
-  if (p === 'open' || p === 'request' || p === 'admins') return p;
-  return e && e.onlyAdminsAddCocreators ? 'admins' : 'open';
+  if (p === 'open' || p === 'request') return p;
+  return e && e.onlyAdminsAddCocreators ? 'request' : 'open';
 }
 function meKey(){ return myActor() || 'self'; }
 function cocreatorPendingMine(evId){
@@ -2315,8 +2321,10 @@ function canInviteToEvent(evId){
     return pastRole === 'attendee' || pastRole === 'cocreator';
   }
   if (seat === 'host' || seat === 'admin') return true;
-  if (!guestsCanInviteOf(evId) || !canSeeEvent(e)) return false;
-  var role = ROLE[evId];
+  if (!canSeeEvent(e)) return false;
+  var policy = invitePolicyOf(evId), role = ROLE[evId];
+  if (policy === 'admins') return false;
+  if (policy === 'cocreators') return role === 'cocreator' || seat === 'cocreator';
   if (role === 'attendee' || role === 'cocreator') return true;
   if (RSVP[evId] === 'going' && !role) return true;
   return false;
@@ -3178,7 +3186,12 @@ function helpTip(text){
     '<span class="helptip-note" id="'+id+'" role="tooltip">'+esc(text)+'</span></span>';
 }
 function chronicleClaimHTML(evId){
-  return '<span class="chclaim">' + vb('v-went', evId, 'Add to Chronicle', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] }) + '</span>';
+  return '<span class="chclaim">' + vb('v-went', evId, 'Add to Chronicle', 'scroll', { on:!!WENT[evId], pressed:!!WENT[evId] }) + '</span>';
+}
+function boostLabel(evId){
+  var on = S.loggedIn && !!PROMOTED[evId];
+  var n = promoCount(evId);
+  return (on ? 'Boosted' : 'Boost') + (n ? ' ' + n : '');
 }
 function paneControls(evId){
   return '<span class="ev-constel" data-slot="constellation" data-id="'+evId+'"></span>';
@@ -3196,6 +3209,7 @@ function eventBarPlan(evId){
   if (canInviteToEvent(evId)) show.push('invite');
   show.push('addto');
   show.push('share');
+  if (!past) show.push('boost');
   if (cog) show.push('cog');
   return { show:show };
 }
@@ -3206,7 +3220,8 @@ function eventBarHTML(evId){
     if (k === 'rsvp') h += stateGroupHTML(evId);
     else if (k === 'invite') h += vb('evinvite', evId, past ? 'Add people' : 'Invite', 'user');
     else if (k === 'addto') h += vb('evaddto', evId, 'Add to', 'plus', { attrs:' aria-haspopup="menu"' });
-    else if (k === 'share') h += vb('share', evId, 'Share', 'share', past ? {} : { attrs:' data-sharemenu="1" aria-haspopup="menu"' });
+    else if (k === 'share') h += vb('share', evId, 'Share', 'share');
+    else if (k === 'boost') h += vb('v-promote', evId, boostLabel(evId), 'promote', { on:S.loggedIn && !!PROMOTED[evId], pressed:S.loggedIn && !!PROMOTED[evId] });
     else if (k === 'cog') h += vb('evcog', evId, '', 'cog', { aria:'Settings', attrs:' aria-haspopup="menu"' });
   });
   return h + '</div>';
@@ -4166,7 +4181,7 @@ function convHTML(cid){
     var me = m.from === 'self';
     var head = '<div class="mfrom">'+(me ? '' : '<button type="button" class="mwho" data-act="chatprofile" data-id="'+esc(m.from)+'">'+esc(person(m.from).displayName)+'</button>')+'<span class="mt">'+esc(/^\d{1,2}:\d{2}$/.test(m.t || '') ? m.t : '')+'</span></div>';
     var card = m.eventId && EVENTS[m.eventId] ? '<a class="evcard" href="#/event/'+esc(m.eventId)+'">'+esc(EVENTS[m.eventId].title)+'</a>' : '';
-    var accept = m.chronicle && !me && m.eventId ? '<span class="chclaim">' + vb('chaccept', m.eventId, 'Add to Chronicle', 'check') + '</span>' : '';
+    var accept = m.chronicle && !me && m.eventId ? '<span class="chclaim">' + vb('chaccept', m.eventId, 'Add to Chronicle', 'scroll') + '</span>' : '';
     return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+card+accept+'</div></div>';
   }).join('') : '<div class="msg sys">No messages yet</div>') + '</div>';
   /* the box grows with what you write: Enter sends, Shift+Enter starts a new line */
@@ -7500,15 +7515,19 @@ function cocreatorIds(evId){
   });
   return ids;
 }
+function policySelect(evId, act, question, value, options, extra){
+  extra = extra || {};
+  var sid = act + '-' + evId;
+  return '<label class="ev-policy"><span class="ev-policy-q" id="'+sid+'-q">'+esc(question)+'</span>' +
+    '<select id="'+sid+'" data-act="'+act+'" data-id="'+evId+'" aria-labelledby="'+sid+'-q"'+(extra.disabled ? ' disabled' : '')+'>' +
+    options.map(function(o){
+      return '<option value="'+o[0]+'"'+(value === o[0] ? ' selected' : '')+'>'+esc(o[1])+'</option>';
+    }).join('') + '</select>' +
+    (extra.why ? '<span class="ev-policy-why">'+esc(extra.why)+'</span>' : '') + '</label>';
+}
 function cocreatorPolicyHTML(evId){
-  var cur = cocreatorPolicyOf(evId);
-  var opts = [['open','Open','Anyone who can see it can add themselves.'], ['request','On request','A request waits for an admin.'], ['admins','Admins only','Only an admin can add a co-creator.']];
-  return '<div class="hostask"><p class="hostask-q" id="co-pol-q">Who can add themselves as co-creator</p>' +
-    '<div class="hostask-choices" role="group" aria-labelledby="co-pol-q">' +
-    opts.map(function(o){
-      var on = cur === o[0];
-      return '<button type="button" class="hostask-opt'+(on ? ' on' : '')+'" data-act="evpolicy" data-id="'+evId+'" data-key="'+o[0]+'" aria-pressed="'+(on ? 'true' : 'false')+'"><b>'+esc(o[1])+'</b><small>'+esc(o[2])+'</small></button>';
-    }).join('') + '</div></div>';
+  return policySelect(evId, 'evpolicy', 'Who can be listed as a co-creator?', cocreatorPolicyOf(evId),
+    [['open','Open – anyone can list themselves as a co-creator'], ['request','On request – admins must approve requests']]);
 }
 function cocreatorRequestRows(evId){
   var m = COREQUESTS[evId] || {}, ids = Object.keys(m).filter(function(pid){ return m[pid]; });
@@ -7534,12 +7553,17 @@ function eventControlsBody(evId){
     return '<div class="ev-admin-row"><span>'+esc(person(pid).displayName)+'</span>' +
       '<button class="btn" data-act="evdemote" data-id="'+evId+'" data-user="'+esc(pid)+'">Demote</button></div>';
   }).join('');
-  return '<div class="ev-controls">' +
-    (past || logged ? '' : '<button class="btn" data-act="evadmin-invite" data-id="'+evId+'">Invite admin</button>') +
+  var pub = !!(e && (e.privacy || 'everyone') === 'everyone');
+  var inviteBtn = past || logged ? '' :
+    '<button class="btn" data-act="evadmin-invite" data-id="'+evId+'">Invite admin</button>';
+  var invitePolicy = past || logged ? '' :
+    policySelect(evId, 'evinvitepolicy', 'Who can invite guests?', invitePolicyOf(evId),
+      [['admins','Admins only'], ['cocreators','Admins and co-creators'], ['invited','Anyone with an invite']],
+      { disabled:pub, why: pub ? 'This event is public, so anyone can already see it.' : '' });
+  return '<div class="ev-controls">' + inviteBtn +
     '<h3>Admins</h3>' + list +
     (crew ? '<h3>Co-creators</h3>' + crew : '') +
-    (past || logged ? '' : cocreatorRequestRows(evId) + cocreatorPolicyHTML(evId) +
-      '<button class="btn ev-toggle" data-act="evtoggle" data-id="'+evId+'" data-key="guestsCanInvite" aria-pressed="'+(guestsCanInviteOf(evId)?'true':'false')+'">Guests can invite friends</button>') +
+    (past || logged ? '' : cocreatorRequestRows(evId) + cocreatorPolicyHTML(evId) + invitePolicy) +
     '</div>';
 }
 function settleEventControl(evId){
@@ -7565,12 +7589,11 @@ function cocreatorMineHTML(evId){
   var policy = cocreatorPolicyOf(evId), role = ROLE[evId], pending = cocreatorPendingMine(evId);
   if (role === 'cocreator') return '<p class="co-mine">You are a co-creator. <button class="btn" data-act="coleave" data-id="'+evId+'">Leave</button></p>';
   if (pending) return '<p class="co-mine">Co-creator requested. <button class="btn" data-act="cocancel" data-id="'+evId+'">Cancel request</button></p>';
-  if (policy === 'admins') return '';
   return '<p class="co-mine"><button class="btn" data-act="coclaim" data-id="'+evId+'">'+(policy === 'request' ? 'Request co-creator' : 'Co-creator')+'</button></p>';
 }
 function claimCocreator(evId){
   var policy = cocreatorPolicyOf(evId);
-  if (!S.loggedIn || isMine(evId) || isLinkEvent(evId) || policy === 'admins') return;
+  if (!S.loggedIn || isMine(evId) || isLinkEvent(evId)) return;
   if (!COREQUESTS[evId]) COREQUESTS[evId] = {};
   if (policy === 'request'){
     ROLE[evId] = 'attendee';
@@ -7606,7 +7629,7 @@ function reviewCocreator(evId, pid, action){
 }
 function setCocreatorPolicy(evId, policy){
   var e = EVENTS[evId];
-  if (!e || !canManageEvent(evId) || (policy !== 'open' && policy !== 'request' && policy !== 'admins')) return;
+  if (!e || !canManageEvent(evId) || (policy !== 'open' && policy !== 'request')) return;
   e.cocreatorPolicy = policy;
   if (ONLINE) HNAPI.patchEvent(evId, { cocreatorPolicy: policy });
   settleEventControl(evId);
@@ -7626,12 +7649,13 @@ function saveEventPrivacy(evId){
   closeDialogs(); render();
   toast('Saved', PRIVACY[e.privacy] || '');
 }
-function setEventToggle(evId, key){
+function setInvitePolicy(evId, policy){
   var e = EVENTS[evId];
   if (!e || !canManageEvent(evId)) return;
-  if (key === 'guestsCanInvite') e.guestsCanInvite = !guestsCanInviteOf(evId);
-  else return;
-  if (ONLINE) HNAPI.patchEvent(evId, { guestsCanInvite:e.guestsCanInvite !== false });
+  if (policy !== 'admins' && policy !== 'cocreators' && policy !== 'invited') return;
+  if ((e.privacy || 'everyone') === 'everyone') return;
+  e.invitePolicy = policy;
+  if (ONLINE) HNAPI.patchEvent(evId, { invitePolicy:policy });
   settleEventControl(evId);
 }
 var INVITE = null;
@@ -7962,7 +7986,7 @@ function ctxItems(t, only){
     var st = S.loggedIn ? RSVP[id] : '', mine = isMine(id), past = isPast(lastDay(EVENTS[id]));
     /* the host's menu leads with the host's verbs, like the host's page */
     if (mine) out.push({ code:'edit', label:'Edit…', icon:'edit', run:function(){ editEventDialog(id); } });
-    else if (past) out.push({ code:'went', label:'Add to Chronicle', icon:'check', check: S.loggedIn && !!WENT[id],
+    else if (past) out.push({ code:'went', label:'Add to Chronicle', icon:'scroll', check: S.loggedIn && !!WENT[id],
       run: ctxVerb(function(){ setWent(id); }, function(){ return !!WENT[id]; }, 'Added to your chronicle', EVENTS[id].title) });
     else out.push(
       { code:'interested', label:'Interested', icon:'heart', check: st === 'interested',
@@ -8028,7 +8052,7 @@ function onMyHorizon(evId){
 }
 function addToMenuItems(evId){
   var e = EVENTS[evId], past = !!(e && isPast(lastDay(e))), items = [];
-  if (past && S.loggedIn) items.push({ label:'Chronicle', icon:'check', check:!!WENT[evId], run:function(){ setWent(evId); } });
+  if (past && S.loggedIn) items.push({ label:'Chronicle', icon:'scroll', check:!!WENT[evId], run:function(){ setWent(evId); } });
   if (S.loggedIn) items.push({ label:'Horizon', icon:'addhorizon', check:onMyHorizon(evId), sub:ctxHorizonItems(evId) });
   else items.push({ label:'Horizon', icon:'addhorizon', run:function(){ gated(addToDialog)(evId); } });
   return items;
@@ -8043,20 +8067,6 @@ function eventCogItems(evId){
   if (!past && !logged && (seat === 'host' || seat === 'admin')) items.push({ label:'Permissions', icon:'key', run:function(){ eventControlsDialog(evId); } });
   if (seat === 'host' && !past && !logged) items.push({ label:'New call out', icon:'callout', run:function(){ runCmd('new-callout', evId); } });
   if (seat === 'host' || seat === 'link_adder') items.push('-', { label:'Delete', icon:'trash', run:function(){ deleteEventDialog(evId); } });
-  return items;
-}
-function shareMenuItems(evId){
-  var on = S.loggedIn && !!PROMOTED[evId];
-  var items = [
-    { label:'Share link', icon:'share', run:function(){ shareLink('event', evId); } },
-    { code:'promote', icon:'promote', check:on, run:function(){ doPromote(evId); } }
-  ];
-  items.forEach(function(it){
-    if (it && it.code === 'promote'){
-      var n = promoCount(evId);
-      it.label = (it.check ? 'Boosted' : 'Boost') + (n ? ' ' + n : '');
-    }
-  });
   return items;
 }
 function openItemMenu(btn, id, items, opts){
@@ -8079,8 +8089,6 @@ function openItemMenu(btn, id, items, opts){
 }
 function openAddToMenu(btn, id){ openItemMenu(btn, id, addToMenuItems(id), { title:'Add to' }); }
 function openEventCog(btn, id){ openItemMenu(btn, id, eventCogItems(id), { title:'Admin controls' }); }
-function openShareMenu(btn, id){ openItemMenu(btn, id, shareMenuItems(id), { title:'Share', float:true }); }
-
 /* ---- the desktop menu ---- */
 var CTX = null;                /* { root, sub, subOf, target, back, tOpen, tClose } */
 function ctxMenuEl(items, level){
@@ -8751,7 +8759,7 @@ document.addEventListener('click', function(ev){
     case 'dofile':       toggleInHorizon(id, n.getAttribute('data-hz')); break;
     case 'share':        if (n.getAttribute('data-type') === 'horizon') shareHorizon(id);
                          else if (n.getAttribute('data-type') && n.getAttribute('data-type') !== 'event') shareLink(n.getAttribute('data-type'), id);
-                         else { if (n.getAttribute('data-sharemenu') === '1') openShareMenu(n, id); shareLink('event', id); } break;
+                         else shareLink('event', id); break;
     case 'evaddto':      openAddToMenu(n, id); break;
     case 'evcog':        openEventCog(n, id); break;
     case 'ctxrun':       ctxSheetRun(+id); break;
@@ -8940,8 +8948,6 @@ document.addEventListener('click', function(ev){
     case 'evadmin-invite': inviteDialog(id, 'admin'); break;
     case 'evprivacy':    eventPrivacyDialog(id); break;
     case 'evprivacy-save': saveEventPrivacy(id); break;
-    case 'evtoggle':     setEventToggle(id, n.getAttribute('data-key')); break;
-    case 'evpolicy':     setCocreatorPolicy(id, n.getAttribute('data-key')); break;
     case 'coclaim':      claimCocreator(id); break;
     case 'cocancel':     cancelCocreatorRequest(id); break;
     case 'coleave':      leaveCocreator(id); break;
@@ -9022,6 +9028,8 @@ document.addEventListener('change', function(ev){
   var act = n.getAttribute('data-act');
   if (act === 'calmine'){ S.calMine = n.checked; render(); }
   if (act === 'sort'){ S.sort = n.value; render(); }
+  if (act === 'evinvitepolicy'){ setInvitePolicy(n.getAttribute('data-id'), n.value); return; }
+  if (act === 'evpolicy'){ setCocreatorPolicy(n.getAttribute('data-id'), n.value); return; }
 });
 document.addEventListener('input', function(ev){
   var n = ev.target;

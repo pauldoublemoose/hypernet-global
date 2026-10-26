@@ -38,6 +38,6 @@ Offline landing (Explore):
 A text target and a selector:
 `?check=t:Add%20to%20Chronicle~Try%20Add%20to%20Chronicle|%23newEventBtn~New%20event%20asks%20host%20question`
 
-Event page. Open the cog and the Permissions window to attach the ones that are not on the first screen.
+Event page. Open the cog, Add to on a past event, and Permissions on a public event to attach the ones that are not on the first screen.
 
-`?offline=1&check=%5Bdata-act%3Devcog%5D~Gear%20on%20the%20event%20bar|.chead~Admin%20controls%20titles%20the%20cog|%5Bdata-icon%3Dtrash%5D~Plain%20Delete%20last%20in%20the%20cog|%5Bdata-icon%3Dkey%5D~Permissions%20in%20the%20cog|.dlg.permissions~Permissions%20window`
+`?offline=1&check=%5Bdata-act%3Dv-promote%5D~Boost%20button%20on%20the%20upcoming%20event%20bar|t:Add%20people~Past%20event%20bar%20has%20no%20Boost%20button|%5Bdata-icon%3Dscroll%5D~Scroll%20icon%20on%20Chronicle%20in%20Add%20to|%5Bdata-act%3Devpolicy%5D~Who%20can%20be%20listed%20as%20a%20co-creator%20dropdown%20in%20the%20Permissions%20window|%5Bdata-act%3Devinvitepolicy%5D~Who%20can%20invite%20guests%20dropdown%20in%20the%20Permissions%20window|%5Bdata-act%3Devinvitepolicy%5D%5Bdisabled%5D~Who%20can%20invite%20guests%20disabled%20on%20a%20public%20event|.ev-policy-why~Public%20event%20line%20under%20Who%20can%20invite%20guests`

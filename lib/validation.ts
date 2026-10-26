@@ -214,13 +214,13 @@ export const eventLink = z
 
 /** PATCH: any subset of the same fields. Ids, host, slug and timestamps are not editable here — except the host's
  *  name of an event added from a link (nobody here hosts it; whoever added it corrects what the page said).
- *  Privacy, guest invites and co-creator policy are admin-only. The route rejects them for anyone else. */
+ *  Privacy, who can send invites, and co-creator policy are admin-only. The route rejects them for anyone else. */
 export const eventPatch = z
   .object({
     ...eventFields,
     hostName: z.string().trim().min(1).max(80),
-    cocreatorPolicy: z.enum(["open", "request", "admins"]),
-    guestsCanInvite: z.boolean(),
+    cocreatorPolicy: z.enum(["open", "request"]),
+    invitePolicy: z.enum(["admins", "cocreators", "invited"]),
   })
   .partial()
   .strict()

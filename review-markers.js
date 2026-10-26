@@ -27,20 +27,29 @@
       '.rvm-flip .rvm-cap{bottom:auto;top:100%;margin:2px 0 0}',
       '.rvm-badge{flex:0 0 auto;min-width:18px;height:18px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:' + RED + ';color:#fff;font:700 11px/18px system-ui,sans-serif;text-align:center}',
       '.rvm-tag{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:' + RED + ';color:#fff;font:600 12px/1.3 system-ui,sans-serif;padding:2px 6px;border-radius:2px}',
-      '.rvm-panel{position:fixed;z-index:2147483002;right:12px;bottom:12px;width:280px;max-height:min(70vh,440px);display:flex;flex-direction:column;background:#fff;color:#1a1a1a;border:2px solid ' + RED + ';border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);font:13px/1.35 system-ui,sans-serif;overflow:auto}',
+      '.rvm-panel{position:fixed;z-index:2147483002;right:12px;bottom:12px;width:280px;height:320px;min-width:220px;min-height:140px;max-height:min(70vh,440px);box-sizing:border-box;display:flex;flex-direction:column;background:#fff;color:#1a1a1a;border:2px solid ' + RED + ';border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);font:13px/1.35 system-ui,sans-serif;overflow:hidden}',
+      '.rvm-panel.rvm-sized{max-height:none}',
       '.rvm-panel[hidden],.rvm-pill[hidden]{display:none !important}',
-      '.rvm-head{display:flex;align-items:center;gap:6px;background:' + RED + ';color:#fff;padding:6px 8px;cursor:grab;user-select:none;touch-action:none;position:sticky;top:0}',
+      '.rvm-head{flex:0 0 auto;display:flex;align-items:center;gap:6px;background:' + RED + ';color:#fff;padding:6px 8px;cursor:grab;user-select:none;touch-action:none}',
       '.rvm-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}',
       '.rvm-head button{margin:0;min-height:0;height:auto;padding:2px 4px;border:0;background:transparent;box-shadow:none;color:#fff;font:600 12px/1.2 system-ui,sans-serif;cursor:pointer}',
-      '.rvm-list,.rvm-notes{display:block;width:100%;box-sizing:border-box;margin:0;border:0;border-top:1px solid #f3c1bf;border-radius:0;box-shadow:none;background:#fff;color:#1a1a1a;resize:none;font:13px/1.4 ui-monospace,ui-monospace,monospace;padding:8px}',
-      '.rvm-list{flex:1 1 auto;min-height:88px}',
-      '.rvm-notes{flex:0 0 auto;min-height:56px}',
-      '.rvm-foot{padding:4px 8px 6px}',
+      '.rvm-list,.rvm-notes{display:block;width:100%;min-height:0;height:auto;box-sizing:border-box;margin:0;border:0;border-top:1px solid #f3c1bf;border-radius:0;box-shadow:none;background:#fff;color:#1a1a1a;resize:none;overflow:auto;font:13px/1.4 ui-monospace,ui-monospace,monospace;padding:8px}',
+      '.rvm-list{flex:2 1 auto}',
+      '.rvm-notes{flex:1 1 auto}',
+      '.rvm-foot{flex:0 0 auto;padding:4px 8px 6px}',
       '.rvm-clear{margin:0;min-height:0;height:auto;padding:0;border:0;background:none;box-shadow:none;color:' + RED + ';font:12px/1.2 system-ui,sans-serif;text-decoration:underline;cursor:pointer}',
+      '.rvm-edge{position:absolute;z-index:3;touch-action:none;user-select:none}',
+      '.rvm-edge-w{left:0;top:0;bottom:0;width:8px;cursor:ew-resize}',
+      '.rvm-edge-n{left:0;right:0;top:0;height:8px;cursor:ns-resize}',
+      '.rvm-grip{position:absolute;z-index:4;right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize;touch-action:none;user-select:none}',
+      '.rvm-grip:before{content:"";position:absolute;right:4px;bottom:4px;width:8px;height:8px;border-right:2px solid ' + RED + ';border-bottom:2px solid ' + RED + '}',
       '.rvm-pill{position:fixed;z-index:2147483002;right:12px;bottom:12px;border:0;border-radius:999px;background:' + RED + ';color:#fff;padding:8px 12px;font:700 12px/1 system-ui,sans-serif;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.2)}',
       '@media (max-width:760px){',
-      '.rvm-panel{left:0 !important;right:0 !important;top:auto !important;bottom:0 !important;width:auto !important;max-height:46vh;border-radius:12px 12px 0 0;border-width:2px 0 0}',
+      '.rvm-panel{left:0 !important;right:0 !important;top:auto !important;bottom:0 !important;width:auto !important;height:auto;min-width:0;max-height:46vh;border-radius:12px 12px 0 0;border-width:2px 0 0}',
+      '.rvm-panel.rvm-sized{max-height:100vh}',
       '.rvm-list,.rvm-notes{font-size:16px}',
+      '.rvm-grip,.rvm-edge-w{display:none}',
+      '.rvm-edge-n{height:12px}',
       '.rvm-pill{right:10px;bottom:calc(10px + env(safe-area-inset-bottom))}',
       '.rvm-head{cursor:default}',
       '}'
@@ -71,7 +80,19 @@
     var foot = el('div', 'rvm-foot');
     var clearBtn = button('rvm-clear', 'clear all');
     foot.appendChild(clearBtn);
+    var edgeN = el('div', 'rvm-edge rvm-edge-n');
+    edgeN.setAttribute('role', 'separator');
+    edgeN.setAttribute('aria-orientation', 'horizontal');
+    edgeN.setAttribute('aria-label', 'Resize height');
+    var edgeW = el('div', 'rvm-edge rvm-edge-w');
+    edgeW.setAttribute('role', 'separator');
+    edgeW.setAttribute('aria-orientation', 'vertical');
+    edgeW.setAttribute('aria-label', 'Resize width');
+    var grip = el('div', 'rvm-grip');
+    grip.setAttribute('role', 'separator');
+    grip.setAttribute('aria-label', 'Resize');
     panel.appendChild(head); panel.appendChild(listEl); panel.appendChild(notesEl); panel.appendChild(foot);
+    panel.appendChild(edgeN); panel.appendChild(edgeW); panel.appendChild(grip);
     var pill = button('rvm-pill', 'Review 0/0');
     pill.hidden = true;
     root.appendChild(panel); root.appendChild(pill);
@@ -95,6 +116,9 @@
       items.forEach(dismiss);
     });
     drag(head);
+    resize(grip, 'se');
+    resize(edgeW, 'w');
+    resize(edgeN, 'n');
 
     var frame = 0;
     window.addEventListener('scroll', function () {
@@ -391,38 +415,134 @@
       saveUi();
     }
 
-    function drag(handle) {
+    var MIN_W = 220, MIN_H = 140;
+
+    function trackPointer(handle, begin) {
       var pointer = typeof PointerEvent === 'function';
       handle.addEventListener(pointer ? 'pointerdown' : 'mousedown', function (e) {
         if (e.button && e.button !== 0) return;
-        if (e.target && e.target.closest && e.target.closest('button')) return;
-        if (narrow()) return;
+        var session = begin(e);
+        if (!session) return;
         if (e.preventDefault) e.preventDefault();
+        if (pointer && e.pointerId != null && handle.setPointerCapture) {
+          try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+        }
+        var moveName = pointer ? 'pointermove' : 'mousemove';
+        var upName = pointer ? 'pointerup' : 'mouseup';
+        function mv(ev) { session.move(ev); }
+        function up() {
+          window.removeEventListener(moveName, mv);
+          window.removeEventListener(upName, up);
+          if (pointer) window.removeEventListener('pointercancel', up);
+          session.end();
+        }
+        window.addEventListener(moveName, mv);
+        window.addEventListener(upName, up);
+        if (pointer) window.addEventListener('pointercancel', up);
+      });
+    }
+
+    function drag(handle) {
+      trackPointer(handle, function (e) {
+        if (e.target && e.target.closest && e.target.closest('button')) return null;
+        if (narrow()) return null;
         var r = panel.getBoundingClientRect();
         var dx = e.clientX - r.left, dy = e.clientY - r.top;
         panel.style.right = 'auto';
         panel.style.bottom = 'auto';
-        var moveName = pointer ? 'pointermove' : 'mousemove';
-        var upName = pointer ? 'pointerup' : 'mouseup';
-        function mv(ev) {
-          var x = ev.clientX - dx, y = ev.clientY - dy;
-          var maxX = Math.max(0, (window.innerWidth || 0) - 80);
-          var maxY = Math.max(0, (window.innerHeight || 0) - 40);
-          if (x < 0) x = 0;
-          if (y < 0) y = 0;
-          if (x > maxX) x = maxX;
-          if (y > maxY) y = maxY;
-          panel.style.left = x + 'px';
-          panel.style.top = y + 'px';
-        }
-        function up() {
-          window.removeEventListener(moveName, mv);
-          window.removeEventListener(upName, up);
-          saveUi();
-        }
-        window.addEventListener(moveName, mv);
-        window.addEventListener(upName, up);
+        return {
+          move: function (ev) {
+            var x = ev.clientX - dx, y = ev.clientY - dy;
+            var maxX = Math.max(0, (window.innerWidth || 0) - 80);
+            var maxY = Math.max(0, (window.innerHeight || 0) - 40);
+            if (x < 0) x = 0;
+            if (y < 0) y = 0;
+            if (x > maxX) x = maxX;
+            if (y > maxY) y = maxY;
+            panel.style.left = x + 'px';
+            panel.style.top = y + 'px';
+          },
+          end: saveUi
+        };
       });
+    }
+
+    /* se follows the bottom-right corner. w and n move the left and top edges,
+       which is how a bottom-right panel grows into the page. A phone dock only
+       changes height from the top edge. */
+    function resize(handle, mode) {
+      trackPointer(handle, function (e) {
+        if (narrow() && mode !== 'n') return null;
+        var r = panel.getBoundingClientRect();
+        var start = { x: e.clientX, y: e.clientY, left: r.left, top: r.top, width: r.width, height: r.height };
+        var phone = narrow();
+        return {
+          move: function (ev) { resizeMove(mode, start, ev, phone); },
+          end: saveUi
+        };
+      });
+    }
+
+    function resizeMove(mode, start, ev, phone) {
+      var dx = ev.clientX - start.x, dy = ev.clientY - start.y;
+      if (phone) {
+        panel.style.height = clamp(start.height - dy, MIN_H, window.innerHeight || 0) + 'px';
+        panel.classList.add('rvm-sized');
+        return;
+      }
+      var left = start.left, top = start.top, right = start.left + start.width, bottom = start.top + start.height;
+      if (mode === 'se' || mode === 'w') {
+        if (mode === 'w') left = start.left + dx;
+        else right = start.left + start.width + dx;
+      }
+      if (mode === 'se' || mode === 'n') {
+        if (mode === 'n') top = start.top + dy;
+        else bottom = start.top + start.height + dy;
+      }
+      var box = fitBox(left, top, right, bottom, mode);
+      panel.style.left = box.left + 'px';
+      panel.style.top = box.top + 'px';
+      panel.style.right = 'auto';
+      panel.style.bottom = 'auto';
+      panel.style.width = box.width + 'px';
+      panel.style.height = box.height + 'px';
+      panel.classList.add('rvm-sized');
+    }
+
+    function fitBox(left, top, right, bottom, mode) {
+      var vw = window.innerWidth || 0, vh = window.innerHeight || 0;
+      var minW = vw > 0 ? Math.min(MIN_W, vw) : MIN_W;
+      var minH = vh > 0 ? Math.min(MIN_H, vh) : MIN_H;
+      if (vw > 0) {
+        if (left < 0) left = 0;
+        if (right > vw) right = vw;
+        if (right < left) right = left;
+      }
+      if (vh > 0) {
+        if (top < 0) top = 0;
+        if (bottom > vh) bottom = vh;
+        if (bottom < top) bottom = top;
+      }
+      if (right - left < minW) {
+        if (mode === 'w') left = right - minW;
+        else right = left + minW;
+        if (vw > 0 && left < 0) { left = 0; right = Math.min(vw, minW); }
+        if (vw > 0 && right > vw) { right = vw; left = Math.max(0, right - minW); }
+      }
+      if (bottom - top < minH) {
+        if (mode === 'n') top = bottom - minH;
+        else bottom = top + minH;
+        if (vh > 0 && top < 0) { top = 0; bottom = Math.min(vh, minH); }
+        if (vh > 0 && bottom > vh) { bottom = vh; top = Math.max(0, bottom - minH); }
+      }
+      return { left: left, top: top, width: right - left, height: bottom - top };
+    }
+
+    function clamp(n, min, max) {
+      var lo = max > 0 ? Math.min(min, max) : min;
+      if (n < lo) n = lo;
+      if (max > 0 && n > max) n = max;
+      return n;
     }
 
     function narrow() {
@@ -440,6 +560,9 @@
         panel.style.right = 'auto';
         panel.style.bottom = 'auto';
       }
+      if (typeof ui.w === 'number') panel.style.width = ui.w + 'px';
+      if (typeof ui.h === 'number') panel.style.height = ui.h + 'px';
+      if (typeof ui.w === 'number' || typeof ui.h === 'number') panel.classList.add('rvm-sized');
       if (ui.min) { panel.hidden = true; pill.hidden = false; }
     }
 
@@ -449,6 +572,8 @@
         ui.x = parseFloat(panel.style.left);
         ui.y = parseFloat(panel.style.top);
       }
+      if (panel.style.width) ui.w = parseFloat(panel.style.width);
+      if (panel.style.height) ui.h = parseFloat(panel.style.height);
       lsSet(uiKey(), JSON.stringify(ui));
     }
 

@@ -66,8 +66,8 @@
    2026-10-05 (v5-editlook): One Edit — your Event Horizon's toolbar is Add events · Edit · Share · ⋯ (Delete only; no
    Publish that turns into Share, no Published ✓), Share on a private one explains and offers to make it public, Edit
    holds name, description, Private / Public, picture and colours in one save; an event you host has one Edit (no
-   Customize; the phone's bar Edit · Call out · ⋯) of sections; your page has one Edit profile whose preview is your page
-   as others see it with the unsaved changes (Preview and Back to editing on a phone); the whole page wears its look
+   Customize; the phone's bar Edit · Call out · ⋯) of sections; your page has one Edit profile whose look controls save
+   with Done; the whole page wears its look
    (ground, band, hairlines, labels, accent) while its toolbar stays chrome; one to three colours (Add accent, Add header
    colour, each removable) and the text is never picked — AA on light, dark, neon, mid-grey and 2–3 colour pages, a
    mid-tone moves off the middle and says so, looks saved before picks still render; your own avatar wears your look
@@ -652,7 +652,8 @@ async function overflowEverywhere(p, label){
         /* the skeleton, ignoring optional pieces (a ribbon, an entry panel, editions, a second art layer) */
         const top = [...pg.children].map(x => x.classList[0]).filter(k => /^(art|banner|actbar|layer|tail)$/.test(k)).filter((k, i, a) => a.indexOf(k) === i).join('>');
         const q = s => !!pg.querySelector(s);
-        return top + '|' + ['header.banner > .bin > .sqwrap', 'header.banner > .bin > .btxt > h1.hl', '.actbar > .verbs', '.layer > .lin > .facts', '.layer > .lin > .sect'].map(q).join(',');
+        /* a profile name sits in .pnamerow; an event or horizon heading is still the direct child of .btxt */
+        return top + '|' + ['header.banner > .bin > .sqwrap', 'header.banner > .bin > .btxt > h1.hl, header.banner > .bin > .btxt > .pnamerow > h1.hl', '.actbar > .verbs', '.layer > .lin > .facts', '.layer > .lin > .sect'].map(q).join(',');
       }, type);
     }
     const uniq = new Set(Object.values(sigs));
@@ -676,8 +677,8 @@ async function overflowEverywhere(p, label){
     /* your profile: its colours from Edit profile on your page, kept across reload; nobody else's page offers it */
     await c.evaluate(() => { openItem('person', 'self'); }); await c.waitForTimeout(400);
     await c.click('.pg-person .actbar [data-act="editprofile"]'); await c.waitForTimeout(250);
-    await c.click('.dlg [data-czact="start"][data-i="1"]'); await c.waitForTimeout(150);
-    await c.click('#pfsave'); await c.waitForTimeout(500);
+    await c.click('#dscroll [data-czact="start"][data-i="1"]'); await c.waitForTimeout(150);
+    await c.click('#dscroll [data-act="profiledone"]'); await c.waitForTimeout(500);
     await c.reload(); await c.waitForTimeout(800);
     const pp = await ev(c, () => ({ look:!!PTHEME.self, page:!!document.querySelector('.pg-person:not(.plain)') }));
     ok(pp.look && pp.page, kind + ': a customised profile persists across reload');
@@ -847,7 +848,11 @@ async function overflowEverywhere(p, label){
     await c.evaluate(() => { closeDialogs(); S.tab = 'home'; goFolder({ kind:'home' }); S.stack = []; doLogout(); }); await c.waitForTimeout(200);
     await c.evaluate(() => loginDialog()); await c.waitForTimeout(150);
     await c.fill('#pf-name', 'Cora Pan'); await c.fill('#pf-handle', 'cora' + kind);
-    await c.evaluate(() => document.querySelector('.pchip[data-id="CAMP OPERATIONS/KITCHEN & COOKING"]').click()); await c.waitForTimeout(100);
+    /* Join's tags replaced the old skill chips. Kitchen is the same label the call out matches. */
+    await c.click('.dlg [data-act="ptagopen"]'); await c.waitForTimeout(150);
+    await c.click('.dlg [data-act="ptagcat"][data-id="skill"]'); await c.waitForTimeout(100);
+    await c.fill('#ptag-q', 'Kitchen'); await c.waitForTimeout(150);
+    await c.evaluate(() => { const b = document.querySelector('.dlg [data-act="ptagpick"][data-id="c:skill:Kitchen"]') || document.querySelector('.dlg [data-act="ptagcreate"]'); b.click(); }); await c.waitForTimeout(150);
     await c.click('#pfsave'); await c.waitForTimeout(300);
     /* following one person: Home still shows the network around them */
     await c.evaluate(() => followP('p-mira')); await c.waitForTimeout(300);
@@ -1012,9 +1017,9 @@ async function overflowEverywhere(p, label){
          kind + ': the New event Look step is the same look editor (one colour to start, Add accent, one picture)');
       await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
       /* your photo: from Edit profile, it is your avatar and your profile's square */
-      await c.evaluate(() => profileDialog('edit')); await c.waitForTimeout(200);
+      await c.evaluate(() => beginProfileEdit()); await c.waitForTimeout(200);
       await c.setInputFiles('#pf-photo', { name:'me.png', mimeType:'image/png', buffer:png }); await c.waitForTimeout(700);
-      await c.click('#pfsave'); await c.waitForTimeout(400);
+      await c.click('#dscroll [data-act="profiledone"]'); await c.waitForTimeout(400);
       await c.evaluate(() => openItem('person', 'self')); await c.waitForTimeout(400);
       const ph = await ev(c, () => ({ look:/^data:image/.test((PTHEME.self || {}).image || ''), page:!!document.querySelector('.pg-person .sqwrap img'),
         av:document.querySelectorAll('.av.img img').length, plain:!!document.querySelector('.pg-person.plain') }));
@@ -2268,8 +2273,8 @@ async function overflowEverywhere(p, label){
 
   /* 2026-10-05 (v5-editlook): One Edit — an Event Horizon, an event you host and your profile each have one Edit
      (facts, who can see it, picture, colours); Share is always Share; the whole page wears its look (one to three
-     colours, text chosen for contrast, controls stay chrome); your face wears your look everywhere; Edit profile
-     previews your page as others see it (Preview on a phone); the New event wizard shows one primary at a time */
+     colours, text chosen for contrast, controls stay chrome); your face wears your look everywhere; Edit profile's
+     look controls save with Done; the New event wizard shows one primary at a time */
   for (const kind of ['desk', 'phone']){
     const c = await ctx(kind);
     await open(c, '', true);
@@ -2327,26 +2332,17 @@ async function overflowEverywhere(p, label){
     ok(ee.secs === 'Details,Words,Who can see it,Look' && ee.priv && ee.look && !ee.tabs, kind + ': Edit event is one form of sections — details, words, who can see it, look ' + JSON.stringify(ee));
     if (kind === 'phone') await shot(c, 'editlook-edit-event-phone');
     await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
-    /* your profile: one Edit profile; its colours, and your page as others see it beside it (Preview on a phone) */
+    /* your profile: one Edit profile; its look controls save with Done, and the picks survive a reload */
     await c.evaluate(() => openItem('person', 'self')); await c.waitForTimeout(350);
     ok(await ev(c, () => [...document.querySelectorAll('#dscroll .pg-person .actbar .btn')].map(b => b.getAttribute('data-act')).join() === 'editprofile'), kind + ': your page has one Edit profile');
     await c.click('#dscroll [data-act="editprofile"]'); await c.waitForTimeout(300);
-    await c.fill('#pf-name', 'Edda Preview'); await c.click('.dlg [data-czact="start"][data-i="5"]'); await c.waitForTimeout(250);
-    let pv;
-    if (kind === 'phone'){
-      ok(await ev(c, () => !document.querySelector('.dlg .custprev') && !!document.querySelector('.dlg .dfoot [data-act="pfpreview"]')), 'phone: Edit profile has Preview instead of a squeezed side preview');
-      await c.click('.dlg [data-act="pfpreview"]'); await c.waitForTimeout(300);
-      await shot(c, 'editlook-profile-preview-phone');
-    }
-    pv = await ev(c, () => { const pg = document.querySelector('.dlg .pvpage .pg-person'); return pg && { name:pg.querySelector('.hl').textContent, plain:pg.classList.contains('plain'),
-      bg:getComputedStyle(pg).backgroundColor, other:!!pg.querySelector('[data-act="followp"]') && !pg.querySelector('[data-act="editprofile"]'), inert:pg.closest('[inert]') !== null, saved:PEOPLE.self.displayName }; });
-    ok(pv && pv.name === 'Edda Preview' && !pv.plain && pv.bg === 'rgb(0, 0, 0)' && pv.other && pv.inert && pv.saved === 'Edda Lund',
-       kind + ': the preview is your page as others see it, with the unsaved name and colours ' + JSON.stringify(pv));
-    if (kind === 'phone'){
-      await c.click('.dlg [data-act="pfpreview"][data-id="off"]'); await c.waitForTimeout(250);
-      ok(await ev(c, () => document.getElementById('pf-name').value === 'Edda Preview' && DRAFT.c1 === '#000000'), 'phone: Back to editing keeps what you typed and picked');
-    } else await shot(c, 'editlook-edit-profile-desk');
-    await c.click('#pfsave'); await c.waitForTimeout(400);
+    await c.fill('#pedit-name', 'Edda Preview'); await c.click('#dscroll [data-czact="start"][data-i="5"]'); await c.waitForTimeout(250);
+    const editing = await ev(c, () => ({ preview:!!document.querySelector('#dscroll [data-act="pfpreview"], #dscroll .pvpage'),
+      look:!!document.querySelector('#dscroll [data-czlook]'), name:document.getElementById('pedit-name').value, c1:DRAFT.c1 }));
+    ok(!editing.preview && editing.look && editing.name === 'Edda Preview' && editing.c1 === '#000000',
+       kind + ': Edit profile keeps the look controls and what you typed, with no preview ' + JSON.stringify(editing));
+    if (kind === 'desk') await shot(c, 'editlook-edit-profile-desk');
+    await c.click('#dscroll [data-act="profiledone"]'); await c.waitForTimeout(400);
     /* the profile look shows wherever you are: your page, your avatar (toolbar or You tab), and under your account's id */
     if (kind === 'phone'){ await c.evaluate(() => { S.stack = []; setTab('you'); }); await c.waitForTimeout(300); }
     const face = await ev(c, () => { const av = document.querySelector(L.phone ? '.acctcard .av' : '#acct .av'); return { lk:av.classList.contains('lk'), bg:getComputedStyle(av).backgroundColor,
@@ -2547,6 +2543,114 @@ async function overflowEverywhere(p, label){
        'phone: native overlay scrollbars, no frame; the first band at the top; bands are lines; your rows unfilled (v5-retro) ' + JSON.stringify([ph, pl, pg]));
     ok(!c.errors.length && (await overflow(c)) <= 0, 'phone: no console errors, no overflow (v5-retro) ' + c.errors.join(' '));
     await c.context().close();
+  }
+
+  /* RSVP role: Going, Interested, Went and a shift must not send role, or a stored role is cleared.
+     Add past event still sends Host, Co-creator and Attendee. The new event is yours, so the host check allows it. */
+  {
+    const ME = '00000000-0000-4000-8000-000000000001', EV = '00000000-0000-4000-8000-000000000101';
+    const person = { id:ME, handle:'hana', displayName:'Hana Cerna', bio:'', skills:[], cities:['Brno'], look:null, lastSeenAt:null, createdAt:'2026-09-01T10:00:00Z' };
+    const boot = { hypernet:1, me:person, login:null, people:[person], follows:[], promotions:[], horizons:[], hzFollows:[], callouts:[], replies:[], activity:[], chats:[],
+      events:[{ id:EV, slug:'shift-night', title:'Shift night', startsOn:'2026-10-20', endsOn:null, startTime:null, endTime:null,
+        timezone:'Europe/Prague', hostId:ME, hostName:'Hana Cerna', description:'x', kind:'meetup', privacy:'everyone', city:'Brno', region:null, country:'CZ', venue:null, access:null,
+        whatToBring:[], details:{ blocks:[{ label:'Door', date:'2026-10-20', time:'18:00' }] }, look:null, source:'user', previousEditionId:null }],
+      rsvps:[{ personId:ME, eventId:EV, status:'going', went:false, shiftIndex:null, role:'host', updatedAt:'2026-09-30T10:00:00Z' }] };
+    const filePast = async (c, role, title) => {
+      await c.evaluate(() => { openItem('person', 'self'); beginProfileEdit(); });
+      await c.waitForTimeout(300);
+      await c.evaluate(() => document.querySelector('[data-act="addpastevent"]').click());
+      await c.waitForTimeout(250);
+      await c.check('.dlg input[name="ch-role"][value="' + role + '"]');
+      await c.click('.dlg [data-act="chronicle-go"]');
+      await c.waitForTimeout(300);
+      await c.fill('#w-t', title);
+      await c.fill('#w-c', 'Brno');
+      await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]');
+      await c.waitForTimeout(200);
+      await c.fill('#w-desc', 'A night that already happened.');
+      await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]');
+      await c.waitForTimeout(200);
+      await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]');
+      await c.waitForTimeout(700);
+    };
+    for (const kind of ['desk', 'phone']){
+      const c = await ctx(kind);
+      const puts = [], posts = [];
+      await c.addInitScript(() => { window.HN_BACKEND = { branch:'test' }; });
+      await c.route('**/api/**', route => {
+        const u = new (require('url').URL)(route.request().url()), req = route.request();
+        const j = (code, b) => route.fulfill({ status:code, contentType:'application/json', body:JSON.stringify(b) });
+        if (req.method() === 'PUT' && /\/rsvp$/.test(u.pathname)){
+          const body = req.postDataJSON(); puts.push(body);
+          const role = Object.prototype.hasOwnProperty.call(body, 'role') ? body.role : 'host';
+          return j(200, { rsvp:{ status:body.status, went:!!body.went, shiftIndex:body.shiftIndex == null ? null : body.shiftIndex, role:role } });
+        }
+        if (req.method() === 'POST' && u.pathname === '/api/events'){
+          const body = req.postDataJSON(); posts.push(body);
+          return j(201, { event:{ id:body.id, slug:'past', hostId:ME, title:body.title, startsOn:body.startsOn } });
+        }
+        if (u.pathname === '/api/bootstrap') return j(200, boot);
+        if (/\/api\/chats/.test(u.pathname)) return j(200, { chats:[] });
+        return j(200, {});
+      });
+      await c.goto(URL + '#/home'); await c.waitForTimeout(800);
+      const before = await ev(c, id => ROLE[id], EV);
+      await c.evaluate(id => setRSVP(id, 'going'), EV);
+      await c.evaluate(id => setRSVP(id, 'interested'), EV);
+      await c.evaluate(id => setWent(id), EV);
+      await c.evaluate(id => takeShift(id, 0), EV);
+      await c.waitForTimeout(400);
+      const after = await ev(c, id => ({ role:ROLE[id], status:RSVP[id] || null, went:!!WENT[id], shift:SHIFT[id] }), EV);
+      const toggles = puts.slice();
+      ok(before === 'host' && after.role === 'host' && toggles.length === 4 && toggles.every(b => !Object.prototype.hasOwnProperty.call(b, 'role')) &&
+         after.status === 'going' && after.went && after.shift === 0,
+         kind + ': Going, Interested, Went and a shift keep a stored host role and do not send role ' + JSON.stringify({ before, after, toggles }));
+      const filed = {};
+      for (const [role, title] of [['host', 'Old host night'], ['cocreator', 'Old crew night'], ['attendee', 'Old guest night']]){
+        const n = puts.length, pn = posts.length;
+        await filePast(c, role, title);
+        const got = await ev(c, title => {
+          const id = Object.keys(EVENTS).find(k => EVENTS[k] && EVENTS[k].title === title);
+          const sec = id && [...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].find(s => s.getAttribute('data-role') === ROLE[id] && s.textContent.indexOf(title) >= 0);
+          return { id:id || null, role:id ? ROLE[id] : null, went:!!(id && WENT[id]), mine:!!(id && MYEVENTS.indexOf(id) >= 0), host:!!(id && EVENTS[id].hostAcct === S.acct), shown:!!sec };
+        }, title);
+        filed[role] = { got, put:puts.slice(n), post:posts[pn] || null };
+      }
+      ok(['host', 'cocreator', 'attendee'].every(role => {
+        const f = filed[role];
+        return f.got.role === role && f.got.went && f.got.mine && f.got.host && f.got.shown && f.put.length === 1 && f.put[0].role === role && f.post && !('hostId' in f.post);
+      }), kind + ': Add past event files Host, Co-creator and Attendee on an event you host ' + JSON.stringify(filed));
+      ok(!c.errors.length, kind + ': no console errors (rsvp role) ' + c.errors.join(' '));
+      await c.context().close();
+    }
+  }
+
+  /* A past Going with no stored role is Attended. A stored cocreator role on that same event is only Co-created. */
+  {
+    const places = c => ev(c, () => {
+      const title = 'Late quay supper';
+      const hit = [...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].filter(s => s.textContent.indexOf(title) >= 0).map(s => s.getAttribute('data-role'));
+      return { hit, status: RSVP['evt-chronicle-going'] || null, role: ROLE['evt-chronicle-going'] || null, went: !!WENT['evt-chronicle-going'] };
+    });
+    for (const kind of ['desk', 'phone']){
+      const c = await ctx(kind);
+      await open(c, '', true);
+      await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+      await c.evaluate(() => { openItem('person', 'self'); }); await c.waitForTimeout(400);
+      const going = await places(c);
+      ok(going.status === 'going' && !going.role && !going.went && going.hit.length === 1 && going.hit[0] === 'attendee',
+         kind + ': a past Going event with no role is under Attended, once ' + JSON.stringify(going));
+      await c.evaluate(() => { ROLE['evt-chronicle-going'] = 'cocreator'; render(); }); await c.waitForTimeout(200);
+      const crew = await places(c);
+      ok(crew.role === 'cocreator' && crew.hit.length === 1 && crew.hit[0] === 'cocreator',
+         kind + ': the same event with a stored cocreator role is only under Co-created ' + JSON.stringify(crew));
+      await c.evaluate(() => { delete ROLE['evt-chronicle-going']; RSVP['evt-chronicle-going'] = 'interested'; render(); }); await c.waitForTimeout(200);
+      const keen = await places(c);
+      ok(!keen.role && keen.status === 'interested' && keen.hit.length === 0,
+         kind + ': Interested alone leaves that event out of Chronicle ' + JSON.stringify(keen));
+      ok(!c.errors.length, kind + ': no console errors (chronicle going) ' + c.errors.join(' '));
+      await c.context().close();
+    }
   }
 
   /* ---------------- tablet ---------------- */

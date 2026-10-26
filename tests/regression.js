@@ -66,8 +66,8 @@
    2026-10-05 (v5-editlook): One Edit — your Event Horizon's toolbar is Add events · Edit · Share · ⋯ (Delete only; no
    Publish that turns into Share, no Published ✓), Share on a private one explains and offers to make it public, Edit
    holds name, description, Private / Public, picture and colours in one save; an event you host has one Edit (no
-   Customize; the phone's bar Edit · Call out · ⋯) of sections; your page has one Edit profile whose preview is your page
-   as others see it with the unsaved changes (Preview and Back to editing on a phone); the whole page wears its look
+   Customize; the phone's bar Edit · Call out · ⋯) of sections; your page has one Edit profile whose look controls save
+   with Done; the whole page wears its look
    (ground, band, hairlines, labels, accent) while its toolbar stays chrome; one to three colours (Add accent, Add header
    colour, each removable) and the text is never picked — AA on light, dark, neon, mid-grey and 2–3 colour pages, a
    mid-tone moves off the middle and says so, looks saved before picks still render; your own avatar wears your look
@@ -2267,8 +2267,8 @@ async function overflowEverywhere(p, label){
 
   /* 2026-10-05 (v5-editlook): One Edit — an Event Horizon, an event you host and your profile each have one Edit
      (facts, who can see it, picture, colours); Share is always Share; the whole page wears its look (one to three
-     colours, text chosen for contrast, controls stay chrome); your face wears your look everywhere; Edit profile
-     previews your page as others see it (Preview on a phone); the New event wizard shows one primary at a time */
+     colours, text chosen for contrast, controls stay chrome); your face wears your look everywhere; Edit profile's
+     look controls save with Done; the New event wizard shows one primary at a time */
   for (const kind of ['desk', 'phone']){
     const c = await ctx(kind);
     await open(c, '', true);
@@ -2326,25 +2326,16 @@ async function overflowEverywhere(p, label){
     ok(ee.secs === 'Details,Words,Who can see it,Look' && ee.priv && ee.look && !ee.tabs, kind + ': Edit event is one form of sections — details, words, who can see it, look ' + JSON.stringify(ee));
     if (kind === 'phone') await shot(c, 'editlook-edit-event-phone');
     await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
-    /* your profile: one Edit profile; its colours, and your page as others see it beside it (Preview on a phone) */
+    /* your profile: one Edit profile; its look controls save with Done, and the picks survive a reload */
     await c.evaluate(() => openItem('person', 'self')); await c.waitForTimeout(350);
     ok(await ev(c, () => [...document.querySelectorAll('#dscroll .pg-person .actbar .btn')].map(b => b.getAttribute('data-act')).join() === 'editprofile'), kind + ': your page has one Edit profile');
     await c.click('#dscroll [data-act="editprofile"]'); await c.waitForTimeout(300);
     await c.fill('#pedit-name', 'Edda Preview'); await c.click('#dscroll [data-czact="start"][data-i="5"]'); await c.waitForTimeout(250);
-    let pv;
-    if (kind === 'phone'){
-      ok(await ev(c, () => !document.querySelector('#dscroll .custprev') && !!document.querySelector('#dscroll [data-act="pfpreview"]')), 'phone: Edit profile has Preview instead of a squeezed side preview');
-      await c.click('#dscroll [data-act="pfpreview"]'); await c.waitForTimeout(300);
-      await shot(c, 'editlook-profile-preview-phone');
-    }
-    pv = await ev(c, () => { const pg = document.querySelector('#dscroll .pvpage .pg-person'); return pg && { name:pg.querySelector('.hl').textContent, plain:pg.classList.contains('plain'),
-      bg:getComputedStyle(pg).backgroundColor, other:!!pg.querySelector('[data-act="followp"]') && !pg.querySelector('[data-act="editprofile"]'), inert:pg.closest('[inert]') !== null, saved:PEOPLE.self.displayName }; });
-    ok(pv && pv.name === 'Edda Preview' && !pv.plain && pv.bg === 'rgb(0, 0, 0)' && pv.other && pv.inert && pv.saved === 'Edda Lund',
-       kind + ': the preview is your page as others see it, with the unsaved name and colours ' + JSON.stringify(pv));
-    if (kind === 'phone'){
-      await c.click('#dscroll [data-act="pfpreview"][data-id="off"]'); await c.waitForTimeout(250);
-      ok(await ev(c, () => document.getElementById('pedit-name').value === 'Edda Preview' && DRAFT.c1 === '#000000'), 'phone: Back to editing keeps what you typed and picked');
-    } else await shot(c, 'editlook-edit-profile-desk');
+    const editing = await ev(c, () => ({ preview:!!document.querySelector('#dscroll [data-act="pfpreview"], #dscroll .pvpage'),
+      look:!!document.querySelector('#dscroll [data-czlook]'), name:document.getElementById('pedit-name').value, c1:DRAFT.c1 }));
+    ok(!editing.preview && editing.look && editing.name === 'Edda Preview' && editing.c1 === '#000000',
+       kind + ': Edit profile keeps the look controls and what you typed, with no preview ' + JSON.stringify(editing));
+    if (kind === 'desk') await shot(c, 'editlook-edit-profile-desk');
     await c.click('#dscroll [data-act="profiledone"]'); await c.waitForTimeout(400);
     /* the profile look shows wherever you are: your page, your avatar (toolbar or You tab), and under your account's id */
     if (kind === 'phone'){ await c.evaluate(() => { S.stack = []; setTab('you'); }); await c.waitForTimeout(300); }

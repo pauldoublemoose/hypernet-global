@@ -1616,42 +1616,55 @@ async function overflowEverywhere(p, label){
     ok(await ev(c, ids => ids.every(id => { const b = document.querySelector('.dlg [data-act="ivsend"][data-user="' + id + '"]'); return b && b.disabled && b.textContent === 'Invited'; }), ['p-anna'].concat(openInvite.fresh)),
        kind + ': reopening the picker still shows who was invited');
     await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
-    await c.click(bar + '[data-act="evmore"]'); await c.waitForTimeout(300);
-    await c.click('.ctxmenu .helptip-btn, .ctxsheet .helptip-btn'); await c.waitForTimeout(150);
+    await c.click(bar + '[data-act="evcog"]'); await c.waitForTimeout(300);
     const co = await ev(c, () => {
-      const btn = document.querySelector('.ctxmenu .helptip-btn, .ctxsheet .helptip-btn'), note = document.querySelector('.ctxmenu .helptip-note, .ctxsheet .helptip-note');
-      const head = btn && btn.closest('.chead');
+      const menu = document.querySelector('.ctxmenu, .ctxsheet');
+      const rows = [...menu.querySelectorAll('.ci, .sheetrow')].map(r => ({ t:(r.querySelector('.clab') || r).textContent.trim(), danger:r.classList.contains('danger'), icon:r.getAttribute('data-icon') }));
+      const labels = rows.map(r => r.t);
+      const del = rows[rows.length - 1];
+      const vis = rows.filter(r => r.t === 'Visibility')[0];
       const hex = el => { const m = getComputedStyle(el).color.match(/\d+/g); return '#' + m.slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join(''); };
       const ground = el => { var n = el; while (n){ var m = getComputedStyle(n).backgroundColor.match(/\d+/g); if (m && (m.length < 4 || +m[3] !== 0)) return '#' + m.slice(0, 3).map(function(x){ return (+x).toString(16).padStart(2, '0'); }).join(''); n = n.parentElement; } return '#ffffff'; };
-      const themes = ['y2fresh', 'win2k'].map(t => { document.documentElement.setAttribute('data-theme', t); return { t:t, ink:contrast(hex(note), ground(note)), mark:contrast(hex(btn), ground(btn)) }; });
+      const mark = menu.querySelector('[data-icon="eye"]');
+      const themes = ['y2fresh', 'win2k'].map(t => { document.documentElement.setAttribute('data-theme', t); return { t:t, ink:contrast(hex(mark), ground(mark)) }; });
       document.documentElement.setAttribute('data-theme', 'win2k');
-      const br = btn.getBoundingClientRect(), main = document.querySelector((L.phone ? '#evbar' : '#dscroll .actbar') + ' [data-act="editevent"]').getBoundingClientRect();
-      const acts = [...document.querySelectorAll('#dscroll .actbar .btn, #evbar .btn')].map(b => b.getAttribute('data-act'));
-      return { text:note.textContent, open:btn.getAttribute('aria-expanded'), beside:!!(head && head.querySelector('.helptip-btn')) && !btn.classList.contains('btn'),
-        smaller:br.width < main.width && br.height < main.height, counted:acts.indexOf('helptip') >= 0, themes:themes };
+      return { q:document.querySelectorAll('.helptip-btn').length, eye:!!(vis && vis.icon === 'eye'), head:/Admin controls/.test(menu.innerText),
+        last:!!(del && del.t === 'Delete' && del.danger), edit:labels.indexOf('Edit') === 0, boost:labels.some(t => /Boost/.test(t)),
+        horizon:labels.some(t => /Horizon|horizon/.test(t)), themes:themes };
     });
-    ok(co.text === "A co-creator is someone who may have contributed to the event. They don't own the event page and have no admin access to it." && co.open === 'true' && co.beside && co.smaller && !co.counted && co.themes.every(t => t.ink >= 4.5 && t.mark >= 4.5),
-       kind + ': co-creator policy has a small help tip, readable in both themes ' + JSON.stringify(co));
-    if (kind === 'desk') await shot(c, 'cocreator-help');
-    await c.keyboard.press('Escape'); await c.waitForTimeout(100);
-    ok(await ev(c, () => !document.querySelector('.helptip.on') && !!document.querySelector('.ctxmenu .chead, .ctxsheet .chead')), kind + ': Escape closes the help tip and leaves the menu open');
+    ok(co.q === 0 && co.eye && co.head && co.last && co.edit && !co.boost && !co.horizon && co.themes.every(t => t.ink >= 4.5),
+       kind + ': the cog has Edit, an eye on Visibility, admin settings, and Delete last, with no help tip ' + JSON.stringify(co));
+    await c.click(kind === 'phone' ? '.ctxsheet [data-icon="eye"]' : '.ctxmenu [data-icon="eye"]'); await c.waitForTimeout(250);
+    ok(await ev(c, () => (document.querySelector('.dlg .dtitle') || {}).textContent === 'Who can see it'), kind + ': Visibility opens Who can see it');
+    await c.keyboard.press('Escape'); await c.waitForTimeout(150);
+    await c.click(bar + '[data-act="evcog"]'); await c.waitForTimeout(250);
+    await c.click(kind === 'phone' ? '.ctxsheet .sheetrow.danger' : '.ctxmenu .ci.danger'); await c.waitForTimeout(250);
+    const doomed = await ev(c, () => S.stack[0].id);
+    const ask = await ev(c, id => ({ title:(document.querySelector('.dlg .cmsg') || {}).textContent, cancel:!!document.querySelector('.dlg [data-act="closedlg"]'), danger:!!document.querySelector('.dlg [data-act="confirmok"].alert'), still:!!EVENTS[id] }), doomed);
+    ok(ask.title === 'Delete ' + (await ev(c, id => EVENTS[id].title, doomed)) + '? This can\'t be undone.' && ask.cancel && ask.danger && ask.still,
+       kind + ': Delete asks before it removes the event ' + JSON.stringify(ask));
+    await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+    ok(await ev(c, id => !!EVENTS[id] && !document.querySelector('.dlg'), doomed), kind + ': Cancel leaves the event in place');
     await c.evaluate(() => { closeCtx(); closeDialogs(); }); await c.waitForTimeout(150);
     await c.evaluate(() => { var id = S.stack[0].id; EVENTS[id].date = '2026-09-01'; if (REC[id]) REC[id].endDate = ''; render(); });
     await c.waitForTimeout(250);
     const claim = await ev(c, () => {
       const root = document.querySelector(L.phone ? '#evbar' : '#dscroll .actbar');
-      const btn = root && root.querySelector('.helptip-btn');
-      const main = root && root.querySelector('[data-act="v-went"]');
-      if (!btn || !main) return null;
-      const br = btn.getBoundingClientRect(), mr = main.getBoundingClientRect();
-      const acts = [...root.querySelectorAll('.btn')].map(b => b.getAttribute('data-act'));
-      return { h:Math.round(br.height), mh:Math.round(mr.height), btn:btn.classList.contains('btn'), acts:acts.indexOf('helptip') >= 0, note:!!btn.closest('.chclaim') };
+      const acts = [...root.querySelectorAll('.btn')].map(b => (b.getAttribute('data-act') || '') + ':' + b.textContent.trim());
+      return { acts:acts.join('|'), tip:!!root.querySelector('.helptip-btn'), went:!!root.querySelector('[data-act="v-went"]') };
     });
-    ok(claim && claim.h <= 28 && claim.h < claim.mh && !claim.btn && !claim.acts && claim.note, kind + ': the chronicle ? sits beside Add to Chronicle and is not a toolbar button ' + JSON.stringify(claim));
-    await c.click((kind === 'phone' ? '#evbar' : '#dscroll .actbar') + ' .helptip-btn'); await c.waitForTimeout(150);
-    ok(await ev(c, () => { const n = document.querySelector((L.phone ? '#evbar' : '#dscroll') + ' .helptip-note'); return n && n.textContent === 'Your Chronicle is your list of past events, shown on your profile page. You choose who can see each event there.'; }),
-       kind + ': the chronicle tip uses the same helpTip');
-    if (kind === 'desk') await shot(c, 'chronicle-help');
+    ok(claim && !claim.tip && !claim.went && /evinvite:Add people/.test(claim.acts) && /evaddto:Add to/.test(claim.acts) && /share:Share/.test(claim.acts) && /evcog:/.test(claim.acts),
+       kind + ': a past host bar is Add people, Add to, Share, and a cog, with no question mark ' + JSON.stringify(claim));
+    await c.click(bar + '[data-act="evaddto"]'); await c.waitForTimeout(250);
+    const added = await ev(c, () => [...document.querySelectorAll('.ctxmenu .ci .clab, .ctxsheet .sheetrow .clab')].map(n => n.textContent.trim()));
+    ok(added.indexOf('Chronicle') >= 0 && added.indexOf('Horizon') >= 0 && added.indexOf('Add to horizon') < 0,
+       kind + ': Add to lists Chronicle and Horizon ' + JSON.stringify(added));
+    await c.keyboard.press('Escape'); await c.waitForTimeout(100);
+    await c.evaluate(() => { var id = S.stack[0].id; WENT[id] = true; var k = MYHORIZONS[0]; if (k && HORIZONS[k] && HORIZONS[k].eventIds.indexOf(id) < 0) HORIZONS[k].eventIds.push(id); });
+    await c.click(bar + '[data-act="evaddto"]'); await c.waitForTimeout(250);
+    ok(await ev(c, () => { const rows = [...document.querySelectorAll('.ctxmenu .ci, .ctxsheet .sheetrow')];
+      const on = name => rows.some(r => (r.querySelector('.clab') || {}).textContent === name && r.getAttribute('aria-checked') === 'true');
+      return on('Chronicle') && on('Horizon'); }), kind + ': Chronicle and Horizon show a check once the event is added');
     await c.keyboard.press('Escape'); await c.waitForTimeout(100);
     await c.click(bar + '[data-act="evinvite"]'); await c.waitForTimeout(250);
     const pastInv = await ev(c, ids => {
@@ -1659,7 +1672,7 @@ async function overflowEverywhere(p, label){
       const nxt = document.querySelector('.dlg [data-act="ivsend"]:not([disabled])');
       return { title:(document.querySelector('.dlg .dtitle') || {}).textContent, anna:anna && anna.textContent, add:nxt && nxt.textContent, id:nxt && nxt.getAttribute('data-user') };
     });
-    ok(pastInv.title === 'Add people who were there' && pastInv.anna === 'Added' && pastInv.add === 'Add', kind + ': a past picker says Add and Added ' + JSON.stringify(pastInv));
+    ok(pastInv.title === 'Add people' && pastInv.anna === 'Added' && pastInv.add === 'Add', kind + ': a past picker says Add and Added ' + JSON.stringify(pastInv));
     await c.click('.dlg [data-act="ivsend"][data-user="' + pastInv.id + '"]'); await c.waitForTimeout(200);
     ok(await ev(c, id => { const b = document.querySelector('.dlg [data-act="ivsend"][data-user="' + id + '"]'); return !!document.querySelector('.dlg') && b && b.disabled && b.textContent === 'Added'; }, pastInv.id),
        kind + ': Add keeps the past picker open and switches that row to Added');
@@ -1905,8 +1918,8 @@ async function overflowEverywhere(p, label){
     const bar = kind === 'phone' ? '#evbar' : '#dscroll .actbar';
     const host = await ev(c, b => ({ heads:[...document.querySelectorAll('#dscroll .sect h3')].map(h => h.textContent), btn:!!document.querySelector(b + ' [data-act="newcalloutfor"]') }), bar);
     ok(host.heads.length > 1 && host.heads.indexOf('Call outs') < 0 && !host.btn, kind + ': the host’s event without call outs has no Call outs heading, and New call out is not a bar button ' + JSON.stringify(host));
-    await c.click(bar + ' [data-act="evmore"]'); await c.waitForTimeout(250);
-    ok(await ev(c, () => /New call out/.test((document.querySelector('.ctxmenu, .ctxsheet') || {}).innerText || '')), kind + ': New call out is in the one … menu');
+    await c.click(bar + ' [data-act="evcog"]'); await c.waitForTimeout(250);
+    ok(await ev(c, () => /New call out/.test((document.querySelector('.ctxmenu, .ctxsheet') || {}).innerText || '')), kind + ': New call out is in the cog');
     if (kind === 'desk') await shot(c, 'event-toolbar-new-callout');
     await c.click(kind === 'phone' ? '.ctxsheet .sheetrow:has-text("New call out")' : '.ctxmenu .ci:has-text("New call out")'); await c.waitForTimeout(300);
     ok(await ev(c, id => document.getElementById('co-e').value === id && /call out/i.test(document.querySelector('.dlg .dtitle').textContent), own), kind + ': New call out opens the form with this event chosen');
@@ -2710,27 +2723,32 @@ async function overflowEverywhere(p, label){
                chrome:cs(btn).backgroundColor === 'rgb(212, 208, 200)' && cs(btn).color === 'rgb(20, 20, 20)' }; });
     ok(Object.values(pg).every(Boolean), kind + ': the whole page wears the look (ground, band, hairlines, labels AA, the accent), the toolbar stays chrome ' + JSON.stringify(pg));
     if (kind === 'phone') await shot(c, 'editlook-horizon-themed-phone');
-    /* an event you host: one Edit (Customize is part of it); the phone's bar is Edit · Invite · Share · ⋯ */
+    /* an event you host: Edit is in the cog; the bar is Invite · Add to · Share · cog */
     await newEvent(c, { title:'Sauna on the ridge', date:'2026-11-08', city:'Brno' }); await c.waitForTimeout(200);
     const host = await ev(c, () => ({ acts:[...document.querySelectorAll(L.phone ? '#evbar .btn' : '#dscroll .pg-event .actbar .btn')].map(b => b.getAttribute('data-act')),
       menu:ctxItems({ type:'event', id:S.stack[0].id }).filter(i => i !== '-').map(i => i.code) }));
-    ok(host.acts.indexOf('editevent') >= 0 && host.acts.indexOf('customize') < 0 && host.acts.indexOf('evadmins') < 0 && host.acts.filter(a => a === 'evmore').length === 1 &&
-       host.menu.indexOf('customize') < 0 && host.menu.indexOf('edit') >= 0 && host.acts.join() === 'editevent,evinvite,share,evmore',
-       kind + ': an event you host has Edit, Invite, Share and one … ' + JSON.stringify(host));
+    ok(host.acts.indexOf('editevent') < 0 && host.acts.indexOf('customize') < 0 && host.acts.indexOf('evadmins') < 0 && host.acts.filter(a => a === 'evcog').length === 1 &&
+       host.menu.indexOf('customize') < 0 && host.menu.indexOf('edit') >= 0 && host.acts.join() === 'evinvite,evaddto,share,evcog',
+       kind + ': an event you host has Invite, Add to, Share and a cog ' + JSON.stringify(host));
     await c.evaluate(() => editEventDialog(S.stack[0].id)); await c.waitForTimeout(300);
     const ee = await ev(c, () => ({ secs:[...document.querySelectorAll('.dlg .edsec > h3')].map(h => h.textContent).join(), priv:!!document.querySelector('.dlg .edsec #w-p'), look:!!document.querySelector('.dlg [data-czlook] #cz-c1'), tabs:!!document.querySelector('.dlg .wizsteps') }));
     ok(ee.secs === 'Details,About,Who can see it,Look' && ee.priv && ee.look && !ee.tabs, kind + ': Edit event is one form of sections — details, about, who can see it, look ' + JSON.stringify(ee));
     if (kind === 'phone') await shot(c, 'editlook-edit-event-phone');
     await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
     const barSel = kind === 'phone' ? '#evbar ' : '#dscroll ';
-    await c.click(barSel + '[data-act="evmore"]'); await c.waitForTimeout(250);
+    await c.click(barSel + '[data-act="evcog"]'); await c.waitForTimeout(250);
     const controls = await ev(c, () => (document.querySelector('.ctxmenu, .ctxsheet') || {}).innerText || '');
-    ok(/New call out/.test(controls) && /Boost/.test(controls) && /Add to horizon/.test(controls) && /Admin controls/.test(controls) && /Who can see it/.test(controls) && /Invite admin/.test(controls) && /Who can add themselves as co-creator/.test(controls) && /Guests can invite friends/.test(controls) && /Delete/.test(controls),
-       kind + ': the one … holds New call out, Boost, and Admin controls ' + controls);
+    ok(/New call out/.test(controls) && !/Boost/.test(controls) && !/Add to horizon/.test(controls) && /Admin controls/.test(controls) && /Visibility/.test(controls) && /Invite admin/.test(controls) && /Who can add themselves as co-creator/.test(controls) && /Guests can invite friends/.test(controls) && /Delete/.test(controls),
+       kind + ': the cog holds Edit, Visibility, Admin controls, New call out, and Delete ' + controls);
+    await c.keyboard.press('Escape'); await c.waitForTimeout(150);
+    await c.evaluate(() => { window.__copied = []; Object.defineProperty(navigator, 'clipboard', { configurable:true, value:{ writeText:t => { window.__copied.push(t); return Promise.resolve(); } } }); });
+    await c.click(barSel + '[data-act="share"]'); await c.waitForTimeout(250);
+    const shared = await ev(c, () => ({ menu:(document.querySelector('.ctxmenu') || {}).innerText || '', copied:/Link copied/.test(document.getElementById('toasts').textContent) }));
+    ok(/Share link/.test(shared.menu) && /Boost/.test(shared.menu) && shared.copied, kind + ': Share copies the link and lists Boost ' + JSON.stringify(shared));
     await c.keyboard.press('Escape'); await c.waitForTimeout(150);
     await c.evaluate(() => openItem('event', 'evt-deep-listening')); await c.waitForTimeout(350);
-    const guest0 = await ev(c, () => ({ admins:document.querySelectorAll('[data-act="evadmins"]').length, invite:document.querySelectorAll('[data-act="evinvite"]').length }));
-    ok(guest0.admins === 0 && guest0.invite === 0, kind + ': a non-admin who has not RSVP’d does not see Admin controls or Invite ' + JSON.stringify(guest0));
+    const guest0 = await ev(c, () => ({ admins:document.querySelectorAll('[data-act="evadmins"]').length, invite:document.querySelectorAll('[data-act="evinvite"]').length, cog:document.querySelectorAll('[data-act="evcog"]').length, add:document.querySelectorAll('[data-act="evaddto"]').length }));
+    ok(guest0.admins === 0 && guest0.invite === 0 && guest0.cog === 0 && guest0.add === 1, kind + ': a non-admin who has not RSVP’d has Add to and no cog or Invite ' + JSON.stringify(guest0));
     await c.click(barSel + '[data-act="v-going"]'); await c.waitForTimeout(300);
     const guest1 = await ev(c, (sel) => ({ admins:document.querySelectorAll(sel + '[data-act="evadmins"]').length, invite:document.querySelectorAll(sel + '[data-act="evinvite"]').length }), barSel);
     ok(guest1.admins === 0 && guest1.invite === 1, kind + ': Going, with guests can invite, shows Invite and hides Admin controls ' + JSON.stringify(guest1));

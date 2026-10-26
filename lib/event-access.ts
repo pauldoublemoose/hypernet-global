@@ -81,7 +81,7 @@ export function rsvpRoleDecision(seat: Seat, role: RsvpRole | null | undefined, 
 }
 
 export const CHRONICLE_ACT = "Add to Chronicle";
-export const PAST_INVITE_ACT = "Add people who were there";
+export const PAST_INVITE_ACT = "Add people";
 export const CHRONICLE_HELP =
   "Your Chronicle is your list of past events, shown on your profile page. You choose who can see each event there.";
 

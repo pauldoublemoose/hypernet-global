@@ -207,7 +207,7 @@ test("a past event lets the host, a co-creator, or an attendee add people", () =
 
 test("past and logged pages hide the upcoming admin chrome", () => {
   const past = eventChrome({ past: true, logged: false, seat: "host", loggedIn: true });
-  assert.equal(past.inviteLabel, "Add people who were there");
+  assert.equal(past.inviteLabel, "Add people");
   assert.equal(past.chronicle, true);
   assert.equal(past.edit, true);
   assert.equal(past.privacy, true);
@@ -238,7 +238,7 @@ test("the chronicle list is an opt-in and the past invite says so", () => {
     "Ada added you to a past event (Thu 1 Oct): Supper. Add it to your chronicle?",
   );
   assert.equal(CHRONICLE_ACT, "Add to Chronicle");
-  assert.equal(PAST_INVITE_ACT, "Add people who were there");
+  assert.equal(PAST_INVITE_ACT, "Add people");
   assert.equal(
     CHRONICLE_HELP,
     "Your Chronicle is your list of past events, shown on your profile page. You choose who can see each event there.",
@@ -249,12 +249,13 @@ test("the chronicle list is an opt-in and the past invite says so", () => {
   assert.equal(chronicleAddRole({ host: true, role: "host" }), "host");
 });
 
-test("the page shows Add to Chronicle with a help button, and search leaves past events out", () => {
+test("the page shows Add to Chronicle without a help button, and search leaves past events out", () => {
   const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   const search = html.slice(html.indexOf("function searchItems"), html.indexOf("function sortItems"));
   assert.match(search, /!isPast\(lastDay\(e\)\)/);
   assert.match(html, /Add to Chronicle/);
-  assert.match(html, /Add people who were there/);
+  assert.match(html, /'Add people'/);
+  assert.equal(html.includes("Add people who were there"), false);
   assert.match(html, /added you to a past event/);
   assert.match(html, /function helpTip\(text\)/);
   assert.match(html, /class="helptip-btn"/);
@@ -265,12 +266,16 @@ test("the page shows Add to Chronicle with a help button, and search leaves past
   assert.match(html, /'chaccept'/);
   const claim = html.slice(html.indexOf("function chronicleClaimHTML"), html.indexOf("function paneControls"));
   assert.match(claim, /Add to Chronicle/);
-  assert.match(claim, /helpTip\(CHRONICLE_HELP_TEXT\)/);
+  assert.equal(claim.includes("helpTip("), false);
   assert.match(html, /Your Chronicle is your list of past events, shown on your profile page\. You choose who can see each event there\./);
   const policy = html.slice(html.indexOf("function cocreatorPolicyHTML"), html.indexOf("function cocreatorRequestRows"));
-  assert.match(policy, /helpTip\(/);
-  assert.match(policy, /A co-creator is someone who may have contributed to the event\. They don't own the event page and have no admin access to it\./);
-  assert.match(policy, /class="helprow"/);
+  assert.equal(policy.includes("helpTip("), false);
+  assert.match(html, /var COCREATOR_HELP_TEXT = /);
+  assert.match(html, /A co-creator is someone who may have contributed to the event\. They don't own the event page and have no admin access to it\./);
+  const menu = html.slice(html.indexOf("function ctxMenuEl"), html.indexOf("function ctxPlace"));
+  const sheet = html.slice(html.indexOf("function ctxSheetBody"), html.indexOf("function ctxSheetPaint"));
+  assert.equal(menu.includes("helpTip("), false);
+  assert.equal(sheet.includes("helpTip("), false);
   assert.equal(html.includes("I was there"), false);
   assert.match(html, /function openPastEvent\(role, into\)/);
   assert.match(html, /openPastEvent\(pastRole\)/);
@@ -320,6 +325,36 @@ test("the boost action is labeled Boost", () => {
   assert.equal(html.includes("'Promoted'"), false);
   assert.equal(html.includes('"Promoted"'), false);
   assert.equal(html.includes("Not promoted"), false);
+});
+
+test("the event bar is Add to, Share, and a cog for admins", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const plan = html.slice(html.indexOf("function eventBarPlan"), html.indexOf("function eventBarHTML"));
+  assert.match(plan, /show\.push\('rsvp'\)/);
+  assert.match(plan, /show\.push\('invite'\)/);
+  assert.match(plan, /show\.push\('addto'\)/);
+  assert.match(plan, /show\.push\('share'\)/);
+  assert.match(plan, /show\.push\('cog'\)/);
+  assert.equal(plan.includes("show.push('edit')"), false);
+  assert.equal(plan.includes("show.push('chronicle')"), false);
+  assert.equal(plan.includes("promote"), false);
+  const bar = html.slice(html.indexOf("function eventBarHTML"), html.indexOf("function entryLinkOf"));
+  assert.match(bar, /'evaddto'/);
+  assert.match(bar, /'Add people'/);
+  assert.match(bar, /data-sharemenu="1"/);
+  assert.match(bar, /'evcog'/);
+  assert.match(bar, /paneControls\(evId\)/);
+  assert.match(html, /label:'Chronicle'/);
+  assert.match(html, /label:'Horizon'/);
+  assert.match(html, /label:'Visibility'/);
+  assert.match(html, /icon:'eye'/);
+  assert.match(html, /cog:'/);
+  assert.match(html, /danger:true/);
+  assert.match(html, /This can't be undone\./);
+  assert.match(html, /data-slot="constellation"/);
+  assert.match(html, /WEDGE = 8/);
+  assert.match(html, /y0 = WEDGE/);
+  assert.match(html, /review-markers\.js/);
 });
 
 test("the admin block is labeled Admin controls", () => {

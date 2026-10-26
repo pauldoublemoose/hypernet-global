@@ -38,6 +38,6 @@ Offline landing (Explore):
 A text target and a selector:
 `?check=t:Add%20to%20Chronicle~Try%20Add%20to%20Chronicle|%23newEventBtn~New%20event%20asks%20host%20question`
 
-Event page. Boost is the last item, and it attaches when the more menu is open:
+Event page. Open the cog, the Add to menu, Share, and a past event to attach the ones that are not on the first screen. The question-mark item stays off every screen.
 
-`?offline=1&check=.hostask~Host|%23iv-list%20.ivbtn~Invite|.verbs:has([data-act=evmore])~Event%20bar|[data-act=evmore]~More|.chclaim%20.helptip-btn~Chronicle|.chead%20.helptip-btn~Co-creator|t:Boost~Boost`
+`?offline=1&check=[data-act=evaddto]~Add%20to%20on%20the%20event%20bar|[data-act=evcog]~Cog%2C%20host%20and%20admins|[data-icon=eye]~Eye%20on%20Visibility|.ci.danger~Delete%20last%20in%20the%20cog|[data-act=confirmok]~Delete%20confirm|[data-sharemenu]~Share%20menu%20then%20Boost|t:Add%20people~Add%20people%20on%20a%20past%20event|.helptip-btn~Question%20mark%20should%20be%20off%20this%20screen`

@@ -501,11 +501,15 @@
   };
   HN.saveEventLook = function(id){ return write('ev:' + id, 'PATCH', '/api/events/' + id, function(){ return { look: lookOut(window.HYPERNET_THEMES.themes[id] || null) }; }, title(id)); };
   HN.deleteEvent = function(id){ return write('ev:' + id, 'DELETE', '/api/events/' + id, undefined, 'the event'); };
-  HN.rsvp = function(id){
+  /* role is sent only when the caller passes it (Chronicle filing). A Going, Interested, Went or shift toggle leaves it out, so the server keeps the stored role. */
+  HN.rsvp = function(id, fields){
     var ev = QUEUE['ev:' + id];
     if (ev) QUEUE['rsvp:' + id] = Promise.all([QUEUE['rsvp:' + id] || Promise.resolve(), ev]).catch(function(){});
+    var sendRole = !!(fields && Object.prototype.hasOwnProperty.call(fields, 'role'));
     return write('rsvp:' + id, 'PUT', '/api/events/' + id + '/rsvp', function(){
-      return { status: RSVP[id] || null, went: !!WENT[id], shiftIndex: SHIFT[id] == null ? null : SHIFT[id], role: (typeof ROLE !== 'undefined' && ROLE[id]) || null };
+      var body = { status: RSVP[id] || null, went: !!WENT[id], shiftIndex: SHIFT[id] == null ? null : SHIFT[id] };
+      if (sendRole) body.role = fields.role;
+      return body;
     }, title(id));
   };
   HN.promote = function(id){ return write('promo:' + id, PROMOTED[id] ? 'PUT' : 'DELETE', '/api/events/' + id + '/promote', undefined, title(id)); };

@@ -348,8 +348,22 @@ test("the event bar is Add to, Share, and a cog for admins", () => {
   assert.match(html, /label:'Horizon'/);
   assert.match(html, /label:'Visibility'/);
   assert.match(html, /icon:'eye'/);
-  assert.match(html, /cog:'/);
-  assert.match(html, /danger:true/);
+  const gear = html.slice(html.indexOf("cog:'"), html.indexOf("key:'"));
+  assert.match(gear, /<circle /);
+  assert.match(gear, /Z"/);
+  assert.equal(gear.includes("M10 2.5v2"), false);
+  const cog = html.slice(html.indexOf("function eventCogItems"), html.indexOf("function shareMenuItems"));
+  assert.match(cog, /heading:'Admin controls'/);
+  assert.match(cog, /label:'Edit'/);
+  assert.match(cog, /label:'Visibility'/);
+  assert.match(cog, /label:'Permissions', icon:'key'/);
+  assert.match(cog, /label:'New call out'/);
+  assert.match(cog, /label:'Delete', icon:'trash'/);
+  assert.match(cog, /!past && !logged && \(seat === 'host' \|\| seat === 'admin'\)/);
+  assert.match(cog, /seat === 'host' \|\| seat === 'link_adder'/);
+  assert.equal(cog.includes("danger"), false);
+  assert.match(html, /class="btn alert" data-act="confirmok">Delete/);
+  assert.match(html, /\.dlg \.dfoot \.btn\.alert\{ background:var\(--alert\); color:var\(--white\); \}/);
   assert.match(html, /This can't be undone\./);
   assert.match(html, /data-slot="constellation"/);
   assert.match(html, /WEDGE = 8/);
@@ -359,9 +373,12 @@ test("the event bar is Add to, Share, and a cog for admins", () => {
 
 test("the admin block is labeled Admin controls", () => {
   const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-  assert.match(html, /heading:'Admin controls'/);
-  assert.match(html, /dialog\('Admin controls'/);
+  const cog = html.slice(html.indexOf("function eventCogItems"), html.indexOf("function shareMenuItems"));
+  assert.match(cog, /heading:'Admin controls'/);
+  assert.match(html, /dialog\('Permissions'/);
+  assert.match(html, /data-act="closedlg">Done/);
   assert.equal(html.includes("Event controls"), false);
+  assert.equal(html.includes("dialog('Admin controls'"), false);
 });
 
 test("the event page copy of EVENT_PERMS matches the server table", () => {

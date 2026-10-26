@@ -1628,26 +1628,53 @@ async function overflowEverywhere(p, label){
       const labels = rows.map(r => r.t);
       const del = rows[rows.length - 1];
       const vis = rows.filter(r => r.t === 'Visibility')[0];
+      const perm = rows.filter(r => r.t === 'Permissions')[0];
+      const visEl = menu.querySelector('[data-icon="eye"]');
+      const delEl = menu.querySelector('[data-icon="trash"]');
       const hex = el => { const m = getComputedStyle(el).color.match(/\d+/g); return '#' + m.slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join(''); };
       const ground = el => { var n = el; while (n){ var m = getComputedStyle(n).backgroundColor.match(/\d+/g); if (m && (m.length < 4 || +m[3] !== 0)) return '#' + m.slice(0, 3).map(function(x){ return (+x).toString(16).padStart(2, '0'); }).join(''); n = n.parentElement; } return '#ffffff'; };
       const mark = menu.querySelector('[data-icon="eye"]');
       const themes = ['y2fresh', 'win2k'].map(t => { document.documentElement.setAttribute('data-theme', t); return { t:t, ink:contrast(hex(mark), ground(mark)) }; });
       document.documentElement.setAttribute('data-theme', 'win2k');
-      return { q:document.querySelectorAll('.helptip-btn').length, eye:!!(vis && vis.icon === 'eye'), head:/Admin controls/.test(menu.innerText),
-        last:!!(del && del.t === 'Delete' && del.danger), edit:labels.indexOf('Edit') === 0, boost:labels.some(t => /Boost/.test(t)),
+      const head = (menu.querySelector('.chead') || {}).textContent || '';
+      return { q:document.querySelectorAll('.helptip-btn').length, eye:!!(vis && vis.icon === 'eye'), head:head.trim() === 'Admin controls',
+        order:labels.join(','), last:!!(del && del.t === 'Delete' && !del.danger && del.icon === 'trash'),
+        perm:!!(perm && perm.icon === 'key'),
+        plain:!!(delEl && visEl) && getComputedStyle(delEl).color === getComputedStyle(visEl).color && getComputedStyle(delEl).backgroundColor === getComputedStyle(visEl).backgroundColor,
+        edit:labels.indexOf('Edit') === 0, boost:labels.some(t => /Boost/.test(t)),
         horizon:labels.some(t => /Horizon|horizon/.test(t)), themes:themes };
     });
-    ok(co.q === 0 && co.eye && co.head && co.last && co.edit && !co.boost && !co.horizon && co.themes.every(t => t.ink >= 4.5),
-       kind + ': the cog has Edit, an eye on Visibility, admin settings, and Delete last, with no help tip ' + JSON.stringify(co));
+    ok(co.q === 0 && co.eye && co.head && co.last && co.plain && co.perm && co.edit && !co.boost && !co.horizon && co.order === 'Edit,Visibility,Permissions,New call out,Delete' && co.themes.every(t => t.ink >= 4.5),
+       kind + ': the cog is titled Admin controls, then Edit, Visibility, Permissions, New call out, and a plain Delete ' + JSON.stringify(co));
+    await c.click(kind === 'phone' ? '.ctxsheet [data-icon="key"]' : '.ctxmenu [data-icon="key"]'); await c.waitForTimeout(250);
+    const perm = await ev(c, () => {
+      const d = document.querySelector('.dlg.permissions');
+      if (!d) return null;
+      return { title:(d.querySelector('.dtitle') || {}).textContent, done:(d.querySelector('.dfoot [data-act="closedlg"]') || {}).textContent,
+        admin:!!d.querySelector('[data-act="evadmin-invite"]'), guests:/Guests can invite friends/.test(d.innerText),
+        rule:/Who can add themselves as co-creator/.test(d.innerText), edit:!!d.querySelector('[data-act="editevent"]') };
+    });
+    ok(perm && perm.title === 'Permissions' && perm.done === 'Done' && perm.admin && perm.guests && perm.rule && !perm.edit,
+       kind + ': Permissions opens the admin settings, and Done closes it ' + JSON.stringify(perm));
+    await c.click('.dlg.permissions [data-act="closedlg"]'); await c.waitForTimeout(150);
+    await c.click(bar + '[data-act="evcog"]'); await c.waitForTimeout(250);
     await c.click(kind === 'phone' ? '.ctxsheet [data-icon="eye"]' : '.ctxmenu [data-icon="eye"]'); await c.waitForTimeout(250);
     ok(await ev(c, () => (document.querySelector('.dlg .dtitle') || {}).textContent === 'Who can see it'), kind + ': Visibility opens Who can see it');
     await c.keyboard.press('Escape'); await c.waitForTimeout(150);
     await c.click(bar + '[data-act="evcog"]'); await c.waitForTimeout(250);
-    await c.click(kind === 'phone' ? '.ctxsheet .sheetrow.danger' : '.ctxmenu .ci.danger'); await c.waitForTimeout(250);
+    await c.click(kind === 'phone' ? '.ctxsheet [data-icon="trash"]' : '.ctxmenu [data-icon="trash"]'); await c.waitForTimeout(250);
     const doomed = await ev(c, () => S.stack[0].id);
-    const ask = await ev(c, id => ({ title:(document.querySelector('.dlg .cmsg') || {}).textContent, cancel:!!document.querySelector('.dlg [data-act="closedlg"]'), danger:!!document.querySelector('.dlg [data-act="confirmok"].alert'), still:!!EVENTS[id] }), doomed);
-    ok(ask.title === 'Delete ' + (await ev(c, id => EVENTS[id].title, doomed)) + '? This can\'t be undone.' && ask.cancel && ask.danger && ask.still,
-       kind + ': Delete asks before it removes the event ' + JSON.stringify(ask));
+    const ask = await ev(c, id => {
+      const btn = document.querySelector('.dlg [data-act="confirmok"]');
+      const swatch = prop => { const s = document.createElement('span'); s.style.color = prop; document.body.appendChild(s); const c = getComputedStyle(s).color; s.remove(); return c; };
+      const cs = btn ? getComputedStyle(btn) : null;
+      return { title:(document.querySelector('.dlg .cmsg') || {}).textContent, cancel:!!document.querySelector('.dlg [data-act="closedlg"]'),
+        danger:!!(btn && btn.classList.contains('alert')),
+        fill:!!(cs && cs.backgroundColor === swatch('var(--alert)') && cs.color === swatch('var(--white)')),
+        still:!!EVENTS[id] };
+    }, doomed);
+    ok(ask.title === 'Delete ' + (await ev(c, id => EVENTS[id].title, doomed)) + '? This can\'t be undone.' && ask.cancel && ask.danger && ask.fill && ask.still,
+       kind + ': Delete asks before it removes the event, and the confirm button stays red ' + JSON.stringify(ask));
     await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
     ok(await ev(c, id => !!EVENTS[id] && !document.querySelector('.dlg'), doomed), kind + ': Cancel leaves the event in place');
     await c.evaluate(() => { closeCtx(); closeDialogs(); }); await c.waitForTimeout(150);
@@ -2743,8 +2770,12 @@ async function overflowEverywhere(p, label){
     const barSel = kind === 'phone' ? '#evbar ' : '#dscroll ';
     await c.click(barSel + '[data-act="evcog"]'); await c.waitForTimeout(250);
     const controls = await ev(c, () => (document.querySelector('.ctxmenu, .ctxsheet') || {}).innerText || '');
-    ok(/New call out/.test(controls) && !/Boost/.test(controls) && !/Add to horizon/.test(controls) && /Admin controls/.test(controls) && /Visibility/.test(controls) && /Invite admin/.test(controls) && /Who can add themselves as co-creator/.test(controls) && /Guests can invite friends/.test(controls) && /Delete/.test(controls),
-       kind + ': the cog holds Edit, Visibility, Admin controls, New call out, and Delete ' + controls);
+    ok(/New call out/.test(controls) && !/Boost/.test(controls) && !/Add to horizon/.test(controls) && /Admin controls/.test(controls) && /Visibility/.test(controls) && /Permissions/.test(controls) && !/Invite admin/.test(controls) && !/Guests can invite friends/.test(controls) && /Delete/.test(controls),
+       kind + ': the cog holds Edit, Visibility, Permissions, New call out, and Delete ' + controls);
+    await c.click(kind === 'phone' ? '.ctxsheet [data-icon="key"]' : '.ctxmenu [data-icon="key"]'); await c.waitForTimeout(250);
+    ok(await ev(c, () => { const d = document.querySelector('.dlg.permissions'); return !!d && d.querySelector('.dtitle').textContent === 'Permissions' && /Invite admin/.test(d.innerText) && /Guests can invite friends/.test(d.innerText) && /Who can add themselves as co-creator/.test(d.innerText) && d.querySelector('.dfoot').textContent.trim() === 'Done'; }),
+       kind + ': Permissions holds invite admin, guests can invite, and the co-creator rule');
+    await c.keyboard.press('Escape'); await c.waitForTimeout(150);
     await c.keyboard.press('Escape'); await c.waitForTimeout(150);
     await c.evaluate(() => { window.__copied = []; Object.defineProperty(navigator, 'clipboard', { configurable:true, value:{ writeText:t => { window.__copied.push(t); return Promise.resolve(); } } }); });
     await c.click(barSel + '[data-act="share"]'); await c.waitForTimeout(250);

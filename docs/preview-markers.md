@@ -38,6 +38,6 @@ Offline landing (Explore):
 A text target and a selector:
 `?check=t:Add%20to%20Chronicle~Try%20Add%20to%20Chronicle|%23newEventBtn~New%20event%20asks%20host%20question`
 
-Event page. Open the cog, the Add to menu, Share, and a past event to attach the ones that are not on the first screen. The question-mark item stays off every screen.
+Event page. Open the cog and the Permissions window to attach the ones that are not on the first screen.
 
-`?offline=1&check=[data-act=evaddto]~Add%20to%20on%20the%20event%20bar|[data-act=evcog]~Cog%2C%20host%20and%20admins|[data-icon=eye]~Eye%20on%20Visibility|.ci.danger~Delete%20last%20in%20the%20cog|[data-act=confirmok]~Delete%20confirm|[data-sharemenu]~Share%20menu%20then%20Boost|t:Add%20people~Add%20people%20on%20a%20past%20event|.helptip-btn~Question%20mark%20should%20be%20off%20this%20screen`
+`?offline=1&check=%5Bdata-act%3Devcog%5D~Gear%20on%20the%20event%20bar|.chead~Admin%20controls%20titles%20the%20cog|%5Bdata-icon%3Dtrash%5D~Plain%20Delete%20last%20in%20the%20cog|%5Bdata-icon%3Dkey%5D~Permissions%20in%20the%20cog|.dlg.permissions~Permissions%20window`

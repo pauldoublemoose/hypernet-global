@@ -716,7 +716,7 @@ window.HYPERNET = {
       "id": "evt-aud-fof",
       "title": "Lane second ring",
       "date": "2026-01-12",
-      "description": "Friends, and their friends.",
+      "description": "Friends of friends. A direct friend is not in this set.",
       "hostName": "You",
       "privacy": "friends",
       "audience": { "include": ["fof"], "exclude": [] },

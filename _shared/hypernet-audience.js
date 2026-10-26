@@ -35,8 +35,7 @@
     if (viewer == null || owner == null) return false;
     if (tok === "friends") return accepted(viewer, owner, graph);
     if (tok === "fof") {
-      if (viewer === owner) return false;
-      if (accepted(viewer, owner, graph)) return true;
+      if (viewer === owner || accepted(viewer, owner, graph)) return false;
       return friendsOf(viewer, graph).some(function (m) {
         return m !== owner && m !== viewer && friendsOf(m, graph).indexOf(String(owner).toLowerCase()) >= 0;
       });
@@ -116,6 +115,7 @@
       a.include = a.include.filter(function (t) { return t !== "everyone" && t !== token; });
       a.include.push(token);
       a.exclude = a.exclude.filter(function (t) { return t !== token; });
+      if (token === "fof" && a.exclude.indexOf("friends") < 0 && a.include.indexOf("friends") < 0) a.include.push("friends");
     } else {
       a.exclude = a.exclude.filter(function (t) { return t !== token; });
       a.exclude.push(token);

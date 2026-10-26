@@ -95,6 +95,10 @@ test("fixture audiences cover the mixed cases, and one event stays hidden from p
   });
   assert.equal(hidden.length, 1);
   assert.equal(hostOf(hidden[0], people), "p-sasha");
+  const friends = new Set(H.bonds.filter((row) => row.status === "accepted" && (row.a === ME || row.b === ME)).map((row) => (row.a === ME ? row.b : row.a)));
+  const second = H.people.map((p) => p.id).filter((id) => id !== ME && !friends.has(id) && canSee(id, ME, { include: ["fof"], exclude: [] }, graph));
+  assert.ok(second.length >= 1, "a pure two-hop person");
+  for (const id of second) assert.equal(canSee(id, ME, { include: ["friends"], exclude: [] }, graph), false);
 });
 
 test("seed.mjs checks, and its friendship, list, and audience statements match the fixture", () => {

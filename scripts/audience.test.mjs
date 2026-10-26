@@ -65,12 +65,56 @@ test("the owner always sees, including when excluded and when include is empty",
   assert.equal(canSee(A, A, { include: ["friends"], exclude: ["friends"] }, graph), true);
 });
 
-test("friends is an accepted pair, fof is that or two hops, and a pending request is neither", () => {
+test("a direct friend is not in fof", () => {
   assert.equal(canSee(B, A, { include: ["friends"], exclude: [] }, graph), true);
+  assert.equal(canSee(B, A, { include: ["fof"], exclude: [] }, graph), false);
   assert.equal(canSee(C, A, { include: ["friends"], exclude: [] }, graph), false);
   assert.equal(canSee(C, A, { include: ["fof"], exclude: [] }, graph), true);
   assert.equal(canSee(D, A, { include: ["fof"], exclude: [] }, graph), false);
   assert.equal(canSee(D, A, { include: ["friends"], exclude: [] }, graph), false);
+  const alsoFriend = { ...graph, friends: { ...graph.friends, [`${A}|${C}`]: "accepted" } };
+  assert.equal(canSee(C, A, { include: ["fof"], exclude: [] }, alsoFriend), false);
+});
+
+test("Friends except fof shows a friend and hides a two-hop person", () => {
+  const aud = { include: ["friends"], exclude: ["fof"] };
+  assert.equal(canSee(B, A, aud, graph), true);
+  assert.equal(canSee(C, A, aud, graph), false);
+  const wide = { include: ["everyone"], exclude: ["fof"] };
+  assert.equal(canSee(B, A, wide, graph), true);
+  assert.equal(canSee(C, A, wide, graph), false);
+});
+
+test("including fof auto-ticks friends", () => {
+  const both = toggle(fromPrivacy("everyone"), "fof", "include");
+  assert.deepEqual(both, { include: ["friends", "fof"], exclude: [] });
+  assert.deepEqual(toggle(both, "friends", "include"), { include: ["fof"], exclude: [] });
+  assert.deepEqual(toggle(both, "fof", "include"), { include: ["friends"], exclude: [] });
+  assert.deepEqual(toggle({ include: ["friends"], exclude: [] }, "fof", "exclude"), { include: ["friends"], exclude: ["fof"] });
+});
+
+test("including fof while friends is excluded keeps friends excluded", () => {
+  assert.deepEqual(
+    toggle({ include: ["everyone"], exclude: ["friends"] }, "fof", "include"),
+    { include: ["fof"], exclude: ["friends"] },
+  );
+});
+
+test("a person who is both a friend and on an excluded list is hidden", () => {
+  const aud = { include: ["friends", "fof"], exclude: [`list:${LIST}`] };
+  assert.equal(canSee(B, A, aud, graph), false);
+  assert.equal(canSee(C, A, aud, graph), true);
+});
+
+test("fof in 0008 is the second ring only, and 0014 does not redefine in_audience", () => {
+  const sql = readFileSync(new URL("../db/migrations/0008_friends_privacy.sql", import.meta.url), "utf8");
+  const fof = sql.slice(sql.indexOf("when tok = 'fof'"), sql.indexOf("when tok = 'followers'"));
+  assert.match(fof, /viewer <> owner/);
+  assert.match(fof, /not exists \(/);
+  assert.equal(fof.includes(" or exists"), false);
+  const later = readFileSync(new URL("../db/migrations/0014_event_invites_visibility.sql", import.meta.url), "utf8");
+  assert.equal(later.includes("in_audience"), false);
+  assert.equal(later.includes("create or replace function can_see_event"), true);
 });
 
 test("followers is the viewer following the owner, not the other way", () => {

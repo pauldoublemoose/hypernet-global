@@ -121,12 +121,12 @@ create function in_audience(viewer uuid, owner uuid, tok text) returns boolean l
       select 1 from friendships f
       where f.status = 'accepted' and f.a = least(viewer, owner) and f.b = greatest(viewer, owner)
     )
-    when tok = 'fof' then viewer <> owner and (
-      exists (
+    when tok = 'fof' then viewer <> owner
+      and not exists (
         select 1 from friendships f
         where f.status = 'accepted' and f.a = least(viewer, owner) and f.b = greatest(viewer, owner)
       )
-      or exists (
+      and exists (
         select 1
         from friendships f1
         join friendships f2 on f2.status = 'accepted'
@@ -137,7 +137,6 @@ create function in_audience(viewer uuid, owner uuid, tok text) returns boolean l
             = (case when f2.a = owner then f2.b else f2.a end)
           and (case when f1.a = viewer then f1.b else f1.a end) not in (viewer, owner)
       )
-    )
     when tok = 'followers' then exists (
       select 1 from person_follows p
       where p.follower_id = viewer and p.followee_id = owner

@@ -352,8 +352,7 @@ async function overflowEverywhere(p, label){
   ok(await ev(r, () => document.querySelector('#toasts .toast').getBoundingClientRect().bottom <= document.getElementById('evbar').getBoundingClientRect().top), 'R2: toast sits above the phone verb bar');
   /* Share in the ⋯ sheet copies the link (no clipboard API on this origin: the hidden-field fallback) */
   await r.evaluate(() => { window.__exec = []; Object.defineProperty(navigator, 'clipboard', { value:undefined, configurable:true }); document.execCommand = function(cmd){ window.__exec.push([cmd, (document.activeElement || {}).value]); return true; }; });
-  await r.tap('#evbar [data-act="evmore"]'); await r.waitForTimeout(200);
-  await r.tap('.ctxsheet .sheetrow:has-text("Share")'); await r.waitForTimeout(250);
+  await r.tap('#evbar [data-act="share"]'); await r.waitForTimeout(250);
   ok(await ev(r, () => window.__exec.length === 1 && window.__exec[0][0] === 'copy' && window.__exec[0][1] === linkOf('event', 'evt-fill-3') && /Link copied/.test(document.getElementById('toasts').textContent) && !DLGS.length),
      'R2: phone ⋯ → Share copies the event\'s link, without a clipboard API (fallback)');
   /* a toast with a button (Undo), then a late tap where its button was */
@@ -444,12 +443,12 @@ async function overflowEverywhere(p, label){
     const sigs = {};
     for (const sl of ['burning-man-2027', 'ridge-dawn-stretch', 'led-forest-walk', 'night-kitchen-line', 'zurich-decompression-2026']){
       await c.goto(URL + '#/event/' + sl); await c.waitForTimeout(400);
-      for (const act of ['v-interested', 'v-going', 'v-promote']){
+      for (const act of ['v-interested', 'v-going', 'share']){
         const sig = await ev(c, ([a, K, ph]) => { const b = document.querySelector((ph ? '#evbar' : '#dscroll .actbar') + ' [data-act="'+a+'"]'); if (!b) return 'missing'; const st = getComputedStyle(b); return K.map(k => st[k]).join('|'); }, [act, KEYS, kind === 'phone']);
         (sigs[act] = sigs[act] || new Set()).add(sig);
       }
     }
-    ok(Object.keys(sigs).every(a => sigs[a].size === 1 && !sigs[a].has('missing')), kind + ': Interested / Going / Promote have identical computed styles on 5 event pages');
+    ok(Object.keys(sigs).every(a => sigs[a].size === 1 && !sigs[a].has('missing')), kind + ': Interested, Going and Share have identical computed styles on 5 event pages');
     ok(new Set(Object.keys(sigs).map(a => [...sigs[a]][0])).size === 1, kind + ': and the three verbs share one style');
     ok(!c.errors.length, kind + ': no console errors (controls)');
   }
@@ -1617,26 +1616,26 @@ async function overflowEverywhere(p, label){
     ok(await ev(c, ids => ids.every(id => { const b = document.querySelector('.dlg [data-act="ivsend"][data-user="' + id + '"]'); return b && b.disabled && b.textContent === 'Invited'; }), ['p-anna'].concat(openInvite.fresh)),
        kind + ': reopening the picker still shows who was invited');
     await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
-    await c.click(bar + '[data-act="evadmins"]'); await c.waitForTimeout(300);
-    await c.click('.dlg .helprow .helptip-btn'); await c.waitForTimeout(150);
+    await c.click(bar + '[data-act="evmore"]'); await c.waitForTimeout(300);
+    await c.click('.ctxmenu .helptip-btn, .ctxsheet .helptip-btn'); await c.waitForTimeout(150);
     const co = await ev(c, () => {
-      const btn = document.querySelector('.dlg .helprow .helptip-btn'), note = document.querySelector('.dlg .helprow .helptip-note');
-      const q = document.getElementById('co-pol-q');
+      const btn = document.querySelector('.ctxmenu .helptip-btn, .ctxsheet .helptip-btn'), note = document.querySelector('.ctxmenu .helptip-note, .ctxsheet .helptip-note');
+      const head = btn && btn.closest('.chead');
       const hex = el => { const m = getComputedStyle(el).color.match(/\d+/g); return '#' + m.slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join(''); };
       const ground = el => { var n = el; while (n){ var m = getComputedStyle(n).backgroundColor.match(/\d+/g); if (m && (m.length < 4 || +m[3] !== 0)) return '#' + m.slice(0, 3).map(function(x){ return (+x).toString(16).padStart(2, '0'); }).join(''); n = n.parentElement; } return '#ffffff'; };
       const themes = ['y2fresh', 'win2k'].map(t => { document.documentElement.setAttribute('data-theme', t); return { t:t, ink:contrast(hex(note), ground(note)), mark:contrast(hex(btn), ground(btn)) }; });
       document.documentElement.setAttribute('data-theme', 'win2k');
-      const br = btn.getBoundingClientRect(), main = document.querySelector('.dlg [data-act="editevent"]').getBoundingClientRect();
+      const br = btn.getBoundingClientRect(), main = document.querySelector((L.phone ? '#evbar' : '#dscroll .actbar') + ' [data-act="editevent"]').getBoundingClientRect();
       const acts = [...document.querySelectorAll('#dscroll .actbar .btn, #evbar .btn')].map(b => b.getAttribute('data-act'));
-      return { text:note.textContent, open:btn.getAttribute('aria-expanded'), beside:q && q.parentElement.classList.contains('helprow') && !btn.classList.contains('btn'),
+      return { text:note.textContent, open:btn.getAttribute('aria-expanded'), beside:!!(head && head.querySelector('.helptip-btn')) && !btn.classList.contains('btn'),
         smaller:br.width < main.width && br.height < main.height, counted:acts.indexOf('helptip') >= 0, themes:themes };
     });
     ok(co.text === "A co-creator is someone who may have contributed to the event. They don't own the event page and have no admin access to it." && co.open === 'true' && co.beside && co.smaller && !co.counted && co.themes.every(t => t.ink >= 4.5 && t.mark >= 4.5),
        kind + ': co-creator policy has a small help tip, readable in both themes ' + JSON.stringify(co));
     if (kind === 'desk') await shot(c, 'cocreator-help');
     await c.keyboard.press('Escape'); await c.waitForTimeout(100);
-    ok(await ev(c, () => !document.querySelector('.helptip.on') && !!document.querySelector('.dlg [data-act="evpolicy"]')), kind + ': Escape closes the help tip and leaves Event controls open');
-    await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+    ok(await ev(c, () => !document.querySelector('.helptip.on') && !!document.querySelector('.ctxmenu .chead, .ctxsheet .chead')), kind + ': Escape closes the help tip and leaves the menu open');
+    await c.evaluate(() => { closeCtx(); closeDialogs(); }); await c.waitForTimeout(150);
     await c.evaluate(() => { var id = S.stack[0].id; EVENTS[id].date = '2026-09-01'; if (REC[id]) REC[id].endDate = ''; render(); });
     await c.waitForTimeout(250);
     const claim = await ev(c, () => {
@@ -1905,9 +1904,11 @@ async function overflowEverywhere(p, label){
     await c.evaluate(id => openItem('event', id), own); await c.waitForTimeout(350);
     const bar = kind === 'phone' ? '#evbar' : '#dscroll .actbar';
     const host = await ev(c, b => ({ heads:[...document.querySelectorAll('#dscroll .sect h3')].map(h => h.textContent), btn:!!document.querySelector(b + ' [data-act="newcalloutfor"]') }), bar);
-    ok(host.heads.length > 1 && host.heads.indexOf('Call outs') < 0 && host.btn, kind + ': the host’s event without call outs has no Call outs heading, and New call out in its toolbar ' + JSON.stringify(host));
+    ok(host.heads.length > 1 && host.heads.indexOf('Call outs') < 0 && !host.btn, kind + ': the host’s event without call outs has no Call outs heading, and New call out is not a bar button ' + JSON.stringify(host));
+    await c.click(bar + ' [data-act="evmore"]'); await c.waitForTimeout(250);
+    ok(await ev(c, () => /New call out/.test((document.querySelector('.ctxmenu, .ctxsheet') || {}).innerText || '')), kind + ': New call out is in the one … menu');
     if (kind === 'desk') await shot(c, 'event-toolbar-new-callout');
-    await c.click(bar + ' [data-act="newcalloutfor"]'); await c.waitForTimeout(300);
+    await c.click(kind === 'phone' ? '.ctxsheet .sheetrow:has-text("New call out")' : '.ctxmenu .ci:has-text("New call out")'); await c.waitForTimeout(300);
     ok(await ev(c, id => document.getElementById('co-e').value === id && /call out/i.test(document.querySelector('.dlg .dtitle').textContent), own), kind + ': New call out opens the form with this event chosen');
     await c.evaluate(() => { closeDialogs(); FORMDRAFTS.callout = null; }); await c.waitForTimeout(150);
     for (const [id, has] of [[await ev(c, () => calloutEventId(calloutOf('co-sound'))), true], ['evt-fill-3', false]]){
@@ -2713,19 +2714,20 @@ async function overflowEverywhere(p, label){
     await newEvent(c, { title:'Sauna on the ridge', date:'2026-11-08', city:'Brno' }); await c.waitForTimeout(200);
     const host = await ev(c, () => ({ acts:[...document.querySelectorAll(L.phone ? '#evbar .btn' : '#dscroll .pg-event .actbar .btn')].map(b => b.getAttribute('data-act')),
       menu:ctxItems({ type:'event', id:S.stack[0].id }).filter(i => i !== '-').map(i => i.code) }));
-    ok(host.acts.indexOf('editevent') >= 0 && host.acts.indexOf('customize') < 0 && host.menu.indexOf('customize') < 0 && host.menu.indexOf('edit') >= 0 &&
-       (kind === 'desk' || host.acts.join() === 'editevent,newcalloutfor,evinvite,evadmins,evmore'), kind + ': an event you host has one Edit, no Customize ' + JSON.stringify(host));
+    ok(host.acts.indexOf('editevent') >= 0 && host.acts.indexOf('customize') < 0 && host.acts.indexOf('evadmins') < 0 && host.acts.filter(a => a === 'evmore').length === 1 &&
+       host.menu.indexOf('customize') < 0 && host.menu.indexOf('edit') >= 0 && host.acts.join() === 'editevent,evinvite,share,evmore',
+       kind + ': an event you host has Edit, Invite, Share and one … ' + JSON.stringify(host));
     await c.evaluate(() => editEventDialog(S.stack[0].id)); await c.waitForTimeout(300);
     const ee = await ev(c, () => ({ secs:[...document.querySelectorAll('.dlg .edsec > h3')].map(h => h.textContent).join(), priv:!!document.querySelector('.dlg .edsec #w-p'), look:!!document.querySelector('.dlg [data-czlook] #cz-c1'), tabs:!!document.querySelector('.dlg .wizsteps') }));
     ok(ee.secs === 'Details,About,Who can see it,Look' && ee.priv && ee.look && !ee.tabs, kind + ': Edit event is one form of sections — details, about, who can see it, look ' + JSON.stringify(ee));
     if (kind === 'phone') await shot(c, 'editlook-edit-event-phone');
     await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
     const barSel = kind === 'phone' ? '#evbar ' : '#dscroll ';
-    await c.click(barSel + '[data-act="evadmins"]'); await c.waitForTimeout(250);
-    const controls = await ev(c, () => (document.querySelector('.dlg.ev-controls, .dlg .ev-controls') || {}).innerText || '');
-    ok(/Who can see it/.test(controls) && /Invite/.test(controls) && /Who can add themselves as co-creator/.test(controls) && /Guests can invite friends/.test(controls),
-       kind + ': Event controls lists Who can see it, Invite, co-creator policy, and guests can invite ' + controls);
-    await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+    await c.click(barSel + '[data-act="evmore"]'); await c.waitForTimeout(250);
+    const controls = await ev(c, () => (document.querySelector('.ctxmenu, .ctxsheet') || {}).innerText || '');
+    ok(/New call out/.test(controls) && /Promote/.test(controls) && /Add to horizon/.test(controls) && /Event controls/.test(controls) && /Who can see it/.test(controls) && /Invite admin/.test(controls) && /Who can add themselves as co-creator/.test(controls) && /Guests can invite friends/.test(controls) && /Delete/.test(controls),
+       kind + ': the one … holds New call out, Promote, and Event controls ' + controls);
+    await c.keyboard.press('Escape'); await c.waitForTimeout(150);
     await c.evaluate(() => openItem('event', 'evt-deep-listening')); await c.waitForTimeout(350);
     const guest0 = await ev(c, () => ({ admins:document.querySelectorAll('[data-act="evadmins"]').length, invite:document.querySelectorAll('[data-act="evinvite"]').length }));
     ok(guest0.admins === 0 && guest0.invite === 0, kind + ': a non-admin who has not RSVP’d does not see Event controls or Invite ' + JSON.stringify(guest0));

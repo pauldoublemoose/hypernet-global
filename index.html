@@ -791,7 +791,8 @@ body:not(.is-phone) .edlg .custprev .previewbox, body:not(.is-phone) .edlg .pvpa
 #toasts{ position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:90; display:flex; flex-direction:column; align-items:center; pointer-events:none; }
 .toast{ min-width:220px; max-width:320px; padding:10px 14px; background:#ffffe1; border:1px solid #6d6a5e; box-shadow:2px 2px 6px rgba(0,0,0,.3); font-size:var(--fs-s); }
 .toast b{ display:block; font-size:var(--fs); }
-.toast.act{ display:flex; align-items:center; gap:12px; pointer-events:auto; }
+.toast.act{ display:flex; align-items:center; gap:12px; pointer-events:none; }
+.toast.act .btn{ pointer-events:auto; }
 .toast .tt2{ flex:1; min-width:0; }
 #sh-url{ width:100%; color:var(--ink2); }
 .ab-tap{ cursor:pointer; align-self:stretch; display:flex; flex-direction:column; justify-content:center; }
@@ -1489,6 +1490,31 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 }
 /* EVENT CONTROLS */
 .ev-constel:empty{ display:none; }
+/* EVENT BAR
+   One left-aligned row on the event page. It wraps when the pane is narrow.
+   The "?" from helpTip is not a .btn. The empty constellation slot stays for a later button. */
+.pg-event > .actbar .verbs,
+#evbar .verbs{ flex-wrap:wrap; justify-content:flex-start; align-items:center; gap:4px; }
+.pg-event > .actbar .verbs > .vb,
+.pg-event > .actbar .verbs > .vgroup,
+#evbar .verbs > .vb,
+#evbar .verbs > .vgroup,
+#evbar .vb,
+#evbar .vgroup{ flex:0 0 auto; margin-left:0; }
+#evbar .vb{ width:auto; min-width:var(--act); padding:0 10px; font-size:13px; }
+#evbar .vb.icononly{ width:var(--act); padding:0; flex-basis:var(--act); }
+.pg-event > .actbar .vgroup .vb,
+#evbar .vgroup .vb{ flex:0 0 auto; }
+@container detail (max-width:560px){
+  .pg-event > .actbar .vgroup,
+  .pg-event > .actbar .vgroup .vb,
+  .pg-event > .actbar .verbs > .vb{ flex:0 0 auto; }
+}
+.ctxmenu .chead, .ctxsheet .chead{
+  display:flex; align-items:center; gap:6px;
+  padding:8px 8px 2px; font-size:12px; font-weight:bold; color:var(--ink2);
+}
+.ctxsheet .chead{ min-height:36px; padding:8px 18px 0; background:var(--face); cursor:default; }
 .ev-invite-banner{
   margin:12px 16px 0; padding:12px; border:1px solid var(--rule); color:var(--ink); background:transparent;
 }
@@ -2309,7 +2335,7 @@ function toast(title, body, undo){
   placeToasts();
   TOASTT = setTimeout(function(){
     /* a tap aimed at a toast's button that arrives just after it went is swallowed, not passed to what was under it */
-    var b = box.querySelector('.toast.act'); if (b){ TOASTGHOST = { r:b.getBoundingClientRect(), until:Date.now() + 700 }; }
+    var b = box.querySelector('.toast.act [data-act="toastundo"]'); if (b){ TOASTGHOST = { r:b.getBoundingClientRect(), until:Date.now() + 700 }; }
     box.innerHTML = ''; TOASTACT = null;
   }, undo ? 6000 : 2400);
 }
@@ -3121,15 +3147,6 @@ function vb(act, id, label, icon, opts){
   return '<button class="'+cls+'" data-act="'+act+'" data-id="'+id+'"' + (opts.pressed != null ? ' aria-pressed="'+!!opts.pressed+'"' : '') +
     (opts.attrs || '') + (label ? '' : ' aria-label="'+esc(opts.aria || '')+'"') + '>' + (icon ? ic(icon, 16) : '') + (label ? esc(label) : '') + (opts.after || '') + '</button>';
 }
-function addtoBtnHTML(evId){
-  var n = S.loggedIn ? MYHORIZONS.filter(function(k){ return HORIZONS[k] && HORIZONS[k].eventIds.indexOf(evId) >= 0; }).length : 0;
-  return vb('addto', evId, n ? 'On ' + plural(n, 'horizon') : 'Add to horizon', n ? 'check' : 'addhorizon', { on:!!n });
-}
-function promoBtnHTML(evId, bare){
-  var pro = S.loggedIn && PROMOTED[evId];
-  return vb('v-promote', evId, pro ? 'Promoted' : 'Promote', 'promote', { on:pro, pressed:pro,
-    after: !bare && promoCount(evId) ? ' <span class="n">'+promoCount(evId)+'</span>' : '' });
-}
 function stateGroupHTML(evId){
   var st = S.loggedIn ? RSVP[evId] : undefined;
   return '<div class="vgroup" role="group" aria-label="Your state">' +
@@ -3155,44 +3172,41 @@ function chronicleClaimHTML(evId){
   return '<span class="chclaim">' + vb('v-went', evId, 'Add to Chronicle', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] }) + helpTip(CHRONICLE_HELP_TEXT) + '</span>';
 }
 function paneControls(evId){
-  var h = '<span class="ev-constel" data-slot="constellation"></span>';
+  return '<span class="ev-constel" data-slot="constellation" data-id="'+evId+'"></span>';
+}
+/* One plan for the desktop bar and the phone bar. show is the row, left to right.
+   more is what the single … holds. controls adds the admin block to that same menu. */
+function eventBarPlan(evId){
   var e = EVENTS[evId];
-  if (canInviteToEvent(evId)) h += vb('evinvite', evId, e && isPast(lastDay(e)) ? 'Add people who were there' : 'Invite', 'user');
-  if (canManageEvent(evId) && !(e && isLinkEvent(evId))) h += vb('evadmins', evId, '', 'dots', { aria:'Event controls', attrs:' aria-haspopup="dialog"' });
-  return h;
+  var past = !!(e && isPast(lastDay(e)));
+  var logged = !!(e && isLinkEvent(evId));
+  var seat = eventSeat(evId);
+  var manager = seat === 'host' || seat === 'admin';
+  var edit = logged ? seat === 'link_adder' : manager;
+  var show = [];
+  if (edit) show.push('edit');
+  if (past){ if (S.loggedIn) show.push('chronicle'); }
+  else if (!edit) show.push('rsvp');
+  if (canInviteToEvent(evId)) show.push('invite');
+  show.push('share');
+  var more = [];
+  if (!past) more.push('promote');
+  more.push('addto');
+  if (seat === 'host' && !past && !logged) more.push('callout');
+  if (seat === 'host' || seat === 'link_adder') more.push('delete');
+  return { show:show, more:more, controls:manager && !logged };
 }
-function verbsHTML(evId){
-  var h = '<div class="verbs">';
-  var more = vb('evmore', evId, '', 'dots', { aria:'More', attrs:' data-more="delete" aria-haspopup="menu"' });
-  var controls = paneControls(evId);
-  if (isMine(evId)){
-    /* the host's page leads with the host's verbs; Interested / Going are for guests */
-    h += hostGroupHTML(evId) + vb('newcalloutfor', evId, 'New call out', 'callout') + promoBtnHTML(evId) + '<span class="vsec">' + addtoBtnHTML(evId) + vb('share', evId, 'Share', 'share') +
-         controls + more;
-    return h + '</span></div>';
-  }
-  h += stateGroupHTML(evId) + promoBtnHTML(evId) + '<span class="vsec">' + addtoBtnHTML(evId) + vb('share', evId, 'Share', 'share');
-  if (addedByMe(evId)) h += vb('editevent', evId, 'Edit', 'edit') + controls + more;
-  else h += controls;
-  return h + '</span></div>';
-}
-/* the phone's bottom bar: the two verbs that matter here, and ⋯ for the rest (the same menu as a long-press) */
-function evbarHTML(evId){
-  var e = EVENTS[evId], past = isPast(lastDay(e)), mine = isMine(evId), more, h = '<div class="verbs">';
-  if (mine){
-    h += hostGroupHTML(evId) + (past ? chronicleClaimHTML(evId) : vb('newcalloutfor', evId, 'Call out', 'callout', { attrs:' aria-label="New call out"' }));
-    more = past ? 'addto,share,delete' : 'promote,addto,share,delete';
-  } else if (past){
-    if (S.loggedIn) h += chronicleClaimHTML(evId);
-    else h += vb('share', evId, 'Share', 'share');
-    more = S.loggedIn ? 'addto,share' : 'addto';
-  } else {
-    /* the three event verbs stay together, as on a desktop */
-    h += stateGroupHTML(evId) + promoBtnHTML(evId, true);
-    more = 'addto,share';
-  }
-  if (!mine && addedByMe(evId)) more += ',edit,delete';
-  return h + paneControls(evId) + vb('evmore', evId, '', 'dots', { aria:'More', attrs:' data-more="'+more+'" aria-haspopup="menu"' }) + '</div>';
+function eventBarHTML(evId){
+  var plan = eventBarPlan(evId), e = EVENTS[evId], past = !!(e && isPast(lastDay(e)));
+  var h = '<div class="verbs">' + paneControls(evId);
+  plan.show.forEach(function(k){
+    if (k === 'edit') h += eventSeat(evId) === 'link_adder' ? vb('editevent', evId, 'Edit', 'edit') : hostGroupHTML(evId);
+    else if (k === 'chronicle') h += chronicleClaimHTML(evId);
+    else if (k === 'rsvp') h += stateGroupHTML(evId);
+    else if (k === 'invite') h += vb('evinvite', evId, past ? 'Add people who were there' : 'Invite', 'user');
+    else if (k === 'share') h += vb('share', evId, 'Share', 'share');
+  });
+  return h + vb('evmore', evId, '', 'dots', { aria:'More', attrs:' data-more="'+plan.more.join(',')+'"'+(plan.controls ? ' data-controls="1"' : '')+' aria-haspopup="menu"' }) + '</div>';
 }
 /* where the official way in lives: the organiser's ticket or membership page */
 function entryLinkOf(r){
@@ -3286,7 +3300,7 @@ function canvasHTML(evId){
   var e = EVENTS[evId], t = TH(evId), r = recOf(evId), b = r.burn || {};
   var big = r.scale === 'burn' || !!r.burn;
   var past = isPast(lastDay(e));
-  var bar = past ? pastBarHTML(evId) : verbsHTML(evId);
+  var bar = eventBarHTML(evId);
   /* Details (the facts grid) → About → Call outs → Who's going → the plan → the rest, only what there is */
   var s = adminInviteBanner(evId) + cocreatorMineHTML(evId) + sect('About', descOf(e) ? '<p class="evdesc">'+esc(descOf(e))+'</p>' : '');
   s += scheduleHTML(evId);
@@ -3317,12 +3331,6 @@ function canvasHTML(evId){
     toolbar:bar, pre:entryHTML(evId) + editionsHTML(evId), facts:factsHTML(evId), body:s });
 }
 
-function pastBarHTML(evId){
-  if (!S.loggedIn) return '';
-  var primary = isMine(evId) ? hostGroupHTML(evId) : (addedByMe(evId) ? vb('editevent', evId, 'Edit', 'edit') : '');
-  primary += chronicleClaimHTML(evId);
-  return toolbarHTML(primary, paneControls(evId) + vb('share', evId, 'Share', 'share'));
-}
 function compactVerbs(evId){
   var st = S.loggedIn ? RSVP[evId] : '';
   if (isPast(lastDay(EVENTS[evId]))) return S.loggedIn ? '<div class="cverbs">'+chronicleClaimHTML(evId)+'</div>' : '';
@@ -3763,7 +3771,7 @@ function renderDetail(){
   LASTDETAIL = key;
   var bar = $('evbar'), onEv = L.phone && it.type === 'event' && EVENTS[it.id];
   $('app').classList.toggle('has-evbar', !!onEv);
-  if (onEv){ bar.className = ''; bar.innerHTML = evbarHTML(it.id); }
+  if (onEv){ bar.className = ''; bar.innerHTML = eventBarHTML(it.id); }
   else bar.innerHTML = '';
   /* the title bar: ‹ when there is something to step back to inside the window, what it is, and the window's buttons */
   var prev = S.stack.length > 1 ? S.stack[S.stack.length-2] : null, name = itemName(it);
@@ -7536,6 +7544,10 @@ function eventControlsBody(evId){
       '<button class="btn ev-toggle" data-act="evtoggle" data-id="'+evId+'" data-key="guestsCanInvite" aria-pressed="'+(guestsCanInviteOf(evId)?'true':'false')+'">Guests can invite friends</button>') +
     '</div>';
 }
+function settleEventControl(evId){
+  if (document.querySelector('.dlg .ev-controls')){ closeDialogs(); eventControlsDialog(evId); }
+  else render();
+}
 function eventControlsDialog(evId){
   var e = EVENTS[evId];
   if (!e || !canManageEvent(evId)) return;
@@ -7592,16 +7604,14 @@ function reviewCocreator(evId, pid, action){
     else (CHRON[pid] = CHRON[pid] || {})[evId] = 'cocreator';
   }
   if (ONLINE && window.HNAPI && HNAPI.reviewCocreator) HNAPI.reviewCocreator(evId, pid, action === 'approve' ? 'approve' : 'decline');
-  closeDialogs();
-  eventControlsDialog(evId);
+  settleEventControl(evId);
 }
 function setCocreatorPolicy(evId, policy){
   var e = EVENTS[evId];
   if (!e || !canManageEvent(evId) || (policy !== 'open' && policy !== 'request' && policy !== 'admins')) return;
   e.cocreatorPolicy = policy;
   if (ONLINE) HNAPI.patchEvent(evId, { cocreatorPolicy: policy });
-  closeDialogs();
-  eventControlsDialog(evId);
+  settleEventControl(evId);
 }
 function eventPrivacyDialog(evId){
   var e = EVENTS[evId];
@@ -7624,8 +7634,7 @@ function setEventToggle(evId, key){
   if (key === 'guestsCanInvite') e.guestsCanInvite = !guestsCanInviteOf(evId);
   else return;
   if (ONLINE) HNAPI.patchEvent(evId, { guestsCanInvite:e.guestsCanInvite !== false });
-  closeDialogs();
-  eventControlsDialog(evId);
+  settleEventControl(evId);
 }
 var INVITE = null;
 function inviteDialog(evId, kind){
@@ -7712,16 +7721,14 @@ function removeAdmin(evId, pid){
   if (!isMine(evId) || !pid) return;
   EVENT_ADMINS[evId] = adminRows(evId).filter(function(a){ return a.userId !== pid; });
   if (ONLINE) HNAPI.removeAdmin(evId, pid);
-  closeDialogs();
-  eventControlsDialog(evId);
+  settleEventControl(evId);
 }
 function demoteCocreator(evId, pid){
   if (!canManageEvent(evId) || !pid || pid === myActor()) return;
   if (!CHRON[pid] || CHRON[pid][evId] !== 'cocreator') return;
   CHRON[pid][evId] = 'attendee';
   if (ONLINE) HNAPI.demote(evId, pid);
-  closeDialogs();
-  eventControlsDialog(evId);
+  settleEventControl(evId);
   toast('Demoted', person(pid).displayName);
 }
 /* ---- Edit an event you host: its facts, its words, who can see it and its look, in one dialog ---- */
@@ -8018,6 +8025,63 @@ function openMoreMenu(btn, type, id, only){
   var r = btn.getBoundingClientRect();
   openCtxMenu(t, r.left, r.bottom + 2, false, only);
 }
+function personLabel(pid){
+  return pid === meKey() || pid === 'self' || pid === myActor() ? 'You' : person(pid).displayName;
+}
+function eventControlsItems(evId){
+  var e = EVENTS[evId], past = !!(e && isPast(lastDay(e))), host = isMine(evId);
+  var items = [{ heading:'Event controls' },
+    { label:'Who can see it', run:function(){ eventPrivacyDialog(evId); } }];
+  if (past) return items;
+  items.push({ label:'Invite admin', run:function(){ inviteDialog(evId, 'admin'); } });
+  items.push({ label:'Guests can invite friends', check:guestsCanInviteOf(evId), run:function(){ setEventToggle(evId, 'guestsCanInvite'); } });
+  items.push({ heading:'Who can add themselves as co-creator', tip:"A co-creator is someone who may have contributed to the event. They don't own the event page and have no admin access to it." });
+  [['open','Open'], ['request','On request'], ['admins','Admins only']].forEach(function(o){
+    items.push({ label:o[1], check:cocreatorPolicyOf(evId) === o[0], run:function(){ setCocreatorPolicy(evId, o[0]); } });
+  });
+  var req = COREQUESTS[evId] || {};
+  Object.keys(req).filter(function(pid){ return req[pid]; }).forEach(function(pid){
+    var name = personLabel(pid);
+    items.push({ label:'Approve ' + name, run:function(){ reviewCocreator(evId, pid, 'approve'); } });
+    items.push({ label:'Decline ' + name, run:function(){ reviewCocreator(evId, pid, 'decline'); } });
+  });
+  adminRows(evId).forEach(function(a){
+    var name = personLabel(a.userId);
+    if (host) items.push({ label:'Remove ' + name, run:function(){ removeAdmin(evId, a.userId); } });
+  });
+  cocreatorIds(evId).forEach(function(pid){
+    items.push({ label:'Demote ' + personLabel(pid), run:function(){ demoteCocreator(evId, pid); } });
+  });
+  return items;
+}
+function openEventMore(btn, id){
+  var only = (btn.getAttribute('data-more') || '').split(',').filter(Boolean);
+  var t = { el:btn, act:null, type:'event', id:id };
+  var items = ctxItems(t, only);
+  items.forEach(function(it){
+    if (it && it.code === 'promote'){
+      var n = promoCount(id);
+      it.label = (it.check ? 'Promoted' : 'Promote') + (n ? ' ' + n : '');
+    }
+  });
+  if (btn.getAttribute('data-controls') === '1'){
+    if (items.length && items[items.length - 1] !== '-') items.push('-');
+    items = items.concat(eventControlsItems(id));
+  }
+  if (L.phone){
+    closeCtx(); closePopup(); closeDialogs();
+    CTXS = { target:t, stack:[{ title:itemName(t), items:items }] };
+    dialog(itemName(t), '', '', 420, 'sheet ctxsheet');
+    ctxSheetPaint();
+    return;
+  }
+  closeCtx(); closePopup();
+  var root = ctxMenuEl(items, 0), r = btn.getBoundingClientRect();
+  CTX = { root:root, sub:null, subOf:null, target:t, back:document.activeElement };
+  btn.classList.add('ctx-on');
+  ctxPlace(root, r.left, r.bottom + 2);
+  ctxFocus(root.querySelector('.ci'));
+}
 
 /* ---- the desktop menu ---- */
 var CTX = null;                /* { root, sub, subOf, target, back, tOpen, tClose } */
@@ -8026,6 +8090,7 @@ function ctxMenuEl(items, level){
   m.className = 'ctxmenu'; m.setAttribute('role', 'menu'); m.tabIndex = -1; m._items = items; m._level = level;
   m.innerHTML = items.map(function(it, i){
     if (it === '-') return '<div class="csep" role="separator"></div>';
+    if (it.heading) return '<div class="chead" role="presentation">'+esc(it.heading)+(it.tip ? helpTip(it.tip) : '')+'</div>';
     var role = it.check != null ? 'menuitemcheckbox' : 'menuitem';
     return '<div class="ci'+(it.def?' def':'')+'" role="'+role+'" tabindex="-1" data-ci="'+i+'"' +
       (it.check != null ? ' aria-checked="'+!!it.check+'"' : '') + (it.sub ? ' aria-haspopup="menu" aria-expanded="false"' : '') + '>' +
@@ -8087,6 +8152,7 @@ function ctxActivate(item){
 function ctxMenuOf(node){ return node && node.closest ? node.closest('.ctxmenu') : null; }
 document.addEventListener('click', function(ev){
   var m = ctxMenuOf(ev.target); if (!m) return;
+  if (ev.target.closest && ev.target.closest('.helptip')) return;
   ev.stopPropagation();
   var item = ev.target.closest('.ci'); if (item) ctxActivate(item);
 }, true);
@@ -8113,6 +8179,16 @@ window.addEventListener('keydown', function(ev){
   var k = ev.key, ae = document.activeElement, inSub = CTX.sub && CTX.sub.contains(ae);
   var menu = inSub ? CTX.sub : CTX.root, items = Array.prototype.slice.call(menu.querySelectorAll('.ci')), ix = items.indexOf(ae);
   ev.stopPropagation();
+  /* a "?" inside this menu closes on Escape and leaves the menu up */
+  if (k === 'Escape' && document.querySelector('.ctxmenu .helptip.on')){
+    closeHelpTips();
+    if (ae && ae.classList && ae.classList.contains('helptip-btn')) ae.blur();
+    ev.preventDefault();
+    return;
+  }
+  if ((k === 'Enter' || k === ' ') && ae && ae.classList && ae.classList.contains('helptip-btn')){
+    toggleHelpTip(ae); ev.preventDefault(); return;
+  }
   if (k === 'ArrowDown' || k === 'ArrowUp'){
     var n = items.length, next = ix < 0 ? (k === 'ArrowDown' ? 0 : n - 1) : (ix + (k === 'ArrowDown' ? 1 : n - 1)) % n;
     ctxFocus(items[next]); ev.preventDefault(); return;
@@ -8131,6 +8207,7 @@ function ctxSheetBody(items, back){
   var h = back ? '<div class="sheetrow" data-act="ctxback" role="button">'+'<span class="cico">'+ic('back', 22)+'</span><span class="clab">Back</span></div>' : '';
   return h + items.map(function(it, i){
     if (it === '-') return '<div class="csep" role="separator"></div>';
+    if (it.heading) return '<div class="chead" role="presentation">'+esc(it.heading)+(it.tip ? helpTip(it.tip) : '')+'</div>';
     var lead = it.lead || (it.art ? hzIconHTML(it.art, 32) : ic(it.icon || 'horizon', 22));
     var tail = it.sub ? ic('back', 18).replace('class="ic"', 'class="ic" style="transform:scaleX(-1)"')
              : it.check != null ? '<span class="lstate hzchk'+(it.check?' on':'')+'" aria-hidden="true">'+ic('check')+'</span>' : '';
@@ -8849,7 +8926,7 @@ document.addEventListener('click', function(ev){
       if (wb) wizShowMissing(wb); else { DRAFT.step = ws; DRAFT.showErr = false; paintWiz(); }
       break;
     }
-    case 'evmore':       openMoreMenu(n, 'event', id, (n.getAttribute('data-more') || 'delete').split(',')); break;
+    case 'evmore':       openEventMore(n, id); break;
     case 'evadmins':     eventControlsDialog(id); break;
     case 'evinvite':     inviteDialog(id, 'guest'); break;
     case 'evadmin-invite': inviteDialog(id, 'admin'); break;
@@ -9091,6 +9168,7 @@ document.addEventListener('keydown', function(ev){
       closeHelpTips();
       if (ae && ae.classList && ae.classList.contains('helptip-btn')) ae.blur();
       ev.preventDefault();
+      ev.stopPropagation();
       return;
     }
     if (DLGS.length){ dismissDialog(); return; }

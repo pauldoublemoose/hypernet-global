@@ -1515,6 +1515,14 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .hostask-opt b{ font-size:14px; line-height:20px; color:var(--ink); }
 .hostask-opt small{ display:block; font-size:12px; line-height:16px; font-weight:normal; color:var(--dim); }
 .hostask-opt:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
+/* MAP LINK */
+.maphint, .mapnote, .fillfrom .fhelp{ color:var(--ink2); }
+.maphint{ margin:4px 0 0; }
+.mapnote{ margin:4px 0 0; font-size:12px; line-height:16px; }
+a.maplink{ color:var(--ink); }
+a.maplink:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
+.fillfrom{ margin-bottom:12px; }
+.fillfrom .lkrow{ align-items:center; }
 </style>
 </head>
 <body>
@@ -1565,6 +1573,7 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 <script src="_shared/hypernet-themes.js"></script>
 <script src="_shared/hypernet-event-details.js"></script>
 <script src="_shared/hypernet-api.js"></script>
+<script src="_shared/map-link.js"></script>
 <script>
 /* =========================================================================
    0. DATA ADAPTERS — same fixtures as every other concept
@@ -2854,7 +2863,9 @@ function factsHTML(evId){
     var v = r.venue || {}, place = v.name || r.city || whereOf(e);
     var sub = [v.name && r.city !== v.name ? r.city : '', r.region, COUNTRY[r.country] || r.country].filter(Boolean).join(', ');
     var vis = { on_rsvp:'Address on RSVP', ticket_holders:'Address for ticket holders', secret:'Secret location' }[v.addressVisibility];
-    f.push(['Where', place, [sub, vis].filter(Boolean).join(' · ')]);
+    var extra = [sub, vis].filter(Boolean).join(' · ');
+    var mapHref = safeHref(v.url);
+    f.push(['Where', place, mapHref ? { text:extra, href:mapHref, link:'Open in Maps' } : extra]);
   }
   if (r.access && r.access.model && !entryHTML(evId)) f.push(['Entry', ACCESSLAB[r.access.model] || titleCase(r.access.model), past ? '' : priceSummary(r.access)]);
   var pop = r.burn && r.burn.population;
@@ -3159,11 +3170,22 @@ function pageHTML(o){
   h += '<div class="layer"><div class="lin">' + (o.facts || '') + (o.body || '') + '</div></div></article>';
   return h;
 }
-/* a facts grid: [label, value, small print, {type,id} to open] */
+/* a facts grid: [label, value, small print, {type,id} to open]. Small print is a string, or {text, href, link}
+   when the href was already checked (a map link the person pasted). */
+function factSmall(s){
+  if (!s) return '';
+  if (typeof s === 'object'){
+    var href = safeHref(s.href);
+    var bits = esc(s.text || '');
+    if (href && s.link) bits += (bits ? ' · ' : '') + '<a class="maplink" href="'+esc(href)+'" target="_blank" rel="noopener">'+esc(s.link)+'</a>';
+    return bits ? '<div class="fs">'+bits+'</div>' : '';
+  }
+  return '<div class="fs">'+esc(s)+'</div>';
+}
 function factGrid(f){
   return f.length ? '<div class="facts" role="group" aria-label="Details"><h3 class="fh">Details</h3>' + f.map(function(x){
     var v = x[3] ? '<button class="fvlink" data-act="open" data-type="'+x[3].type+'" data-id="'+x[3].id+'">'+esc(x[1])+'</button>' : esc(x[1]);
-    return '<div class="fact"><div class="fk">'+esc(x[0])+'</div><div class="fv">'+v+'</div>'+(x[2]?'<div class="fs">'+esc(x[2])+'</div>':'')+'</div>';
+    return '<div class="fact"><div class="fk">'+esc(x[0])+'</div><div class="fv">'+v+'</div>'+factSmall(x[2])+'</div>';
   }).join('') + '</div>' : '';
 }
 /* the toolbar's shape: one primary group, then the secondary actions pushed to the right */
@@ -6340,7 +6362,7 @@ function linkAdd(){
   REC[id] = { kind:tk.kind, tags:tk.tags, startTime:d.startTime || undefined, endTime:d.endTime || undefined, endDate: end && end > start ? end : undefined,
               timezone:x.timezone || undefined, region:x.region || undefined, country:x.country || undefined, scale: end && end > start ? 'gathering' : 'meetup',
               venueKind: d.online ? 'virtual' : 'physical', city:city,
-              venue: d.online ? undefined : (x.venue && x.venue.name ? x.venue : { name:city, addressVisibility:'public' }),
+              venue: d.online ? undefined : linkVenue(x.venue, city),
               description:d.desc, access:Object.assign({}, x.access || {}, { model:d.entry, url:url }), whatToBring:[],
               externalUrl:url, sourceSite:linkSite(url), organizerUrl:x.organizerUrl || undefined };
   ADDEDBYME.push(id); READ[id] = true; PROMOCOUNT[id] = 0;
@@ -6371,13 +6393,19 @@ function linkEditOpen(evId){
   DRAFT = Object.assign(blankLinkDraft(), { ctx:'edit', editing:evId, filled:true, url:e.sourceUrl || r.externalUrl || '', host:e.hostName || '',
     title:e.title, date:e.date, end:r.endDate || '', startTime:r.startTime || '', endTime:r.endTime || '', kind:r.kind || 'other', baseKind:r.kind || 'other', tags:eventTagIds(r),
     online:r.venueKind === 'virtual', city: r.venueKind === 'virtual' ? '' : (r.city || e.city || ''), entry:(r.access && r.access.model) || 'free', desc:descOf(e) });
+  if (!DRAFT.online) DRAFT.placePin = pinFromVenue(r.venue, DRAFT.city);
   dialog('Edit event', linkFormHTML(DRAFT), linkFootHTML(DRAFT), 520, 'lkdlg');
   focusIn('lk-h');
 }
 function linkSaveEdit(d){
   var id = d.editing, e = EVENTS[id], r = REC[id] = REC[id] || {};
   var start = isoDate(d.date), end = isoDate(d.end), city = d.online ? '' : String(d.city || '').trim();
-  if (!d.online && (!r.venue || !r.venue.name || r.venue.name === r.city)) r.venue = Object.assign({}, r.venue || { addressVisibility:'public' }, { name:city });
+  if (!d.online){
+    var oldCity = r.city;
+    if (!r.venue) r.venue = { addressVisibility:'public', name:city };
+    else if (!r.venue.name || r.venue.name === oldCity || d.placeEdited) r.venue.name = city;
+    applyPlacePin(r.venue, city);
+  }
   if (d.online) r.venue = undefined;
   e.title = d.title.trim(); e.date = start; e.description = d.desc; e.hostName = d.host.trim(); e.city = city;
   r.endDate = end && end > start ? end : undefined; r.startTime = d.startTime || undefined; r.endTime = d.endTime || undefined;
@@ -6804,6 +6832,102 @@ function setDraftTags(tags){
 function wzErr(miss, k){ return '<span class="ferr" id="err-'+k+'" data-err="'+k+'" role="alert"'+(miss[k] ? '' : ' hidden')+'>'+esc(miss[k] || '')+'</span>'; }
 function wzBad(miss, k){ return miss[k] ? ' aria-invalid="true"' : ''; }
 var WZOPT = ' <span class="opt">optional</span>';
+/* a map link in Where: the place name and coordinates go on the venue the form already saves.
+   The pasted link is venue.url, which Open in Maps uses. A plain sentence stays a plain sentence. */
+function placeLabel(pin){
+  if (!pin) return '';
+  if (pin.name) return String(pin.name).slice(0, 120);
+  var label = window.HN_MAP ? HN_MAP.coordLabel(pin) : '';
+  return String(label || '').slice(0, 120);
+}
+function pinFromVenue(v, city){
+  if (!v) return null;
+  var href = safeHref(v.url);
+  var lat = Number(v.lat), lng = Number(v.lng), hasLl = Number.isFinite(lat) && Number.isFinite(lng);
+  if (!href && !hasLl) return null;
+  return { name: city || v.name || '', lat: hasLl ? lat : null, lng: hasLl ? lng : null, url: href || '', provider: null };
+}
+function applyPlacePin(venue, city){
+  if (!venue) return venue;
+  var p = DRAFT && DRAFT.placePin;
+  if (p && p.name === city){
+    if (p.lat != null && p.lng != null){ venue.lat = p.lat; venue.lng = p.lng; }
+    else { delete venue.lat; delete venue.lng; }
+    var href = safeHref(p.url);
+    if (href) venue.url = href; else delete venue.url;
+    return venue;
+  }
+  if (DRAFT && DRAFT.placeEdited){ delete venue.lat; delete venue.lng; delete venue.url; }
+  return venue;
+}
+function placeVenue(city){
+  var v = { name:city, addressVisibility:'public' };
+  applyPlacePin(v, city);
+  return v;
+}
+function linkVenue(base, city){
+  var v = Object.assign({ addressVisibility:'public' }, base || {});
+  if (!v.name) v.name = city;
+  if (DRAFT && (DRAFT.placeEdited || (DRAFT.placePin && DRAFT.placePin.name === city))){
+    if (city) v.name = city;
+    applyPlacePin(v, city);
+  }
+  return v;
+}
+function placeNote(msg){
+  var n = $('where-note');
+  if (!n) return;
+  n.textContent = msg || '';
+  n.hidden = !msg;
+}
+var MAPWAIT = null;
+function placeTouch(raw){
+  if (!DRAFT) return;
+  DRAFT.placeEdited = true;
+  if (MAPWAIT){ clearTimeout(MAPWAIT); MAPWAIT = null; }
+  var c = window.HN_MAP ? HN_MAP.classifyMapInput(raw) : { kind: String(raw || '').trim() ? 'text' : 'empty' };
+  DRAFT.mapReject = false;
+  if (c.kind === 'empty'){ DRAFT.city = ''; DRAFT.placePin = null; DRAFT.placeNote = ''; placeNote(''); return; }
+  if (c.kind === 'unsafe'){ DRAFT.city = ''; DRAFT.placePin = null; DRAFT.mapReject = true; DRAFT.placeNote = ''; placeNote(''); return; }
+  if (c.kind === 'text'){
+    DRAFT.city = String(raw);
+    if (!(DRAFT.placePin && DRAFT.placePin.name === String(raw).trim())) DRAFT.placePin = null;
+    DRAFT.placeNote = ''; placeNote(''); return;
+  }
+  if (c.kind === 'pin'){
+    var label = placeLabel(c.pin);
+    DRAFT.placePin = { name:label, lat:c.pin.lat, lng:c.pin.lng, url:c.url, provider:c.pin.provider };
+    DRAFT.city = label; DRAFT.placeNote = '';
+    var field = $('w-c');
+    if (field && label && field.value !== label) field.value = label;
+    placeNote(''); return;
+  }
+  DRAFT.placePin = null; DRAFT.city = '';
+  if (!ONLINE || !window.HNAPI || !HNAPI.resolveMap){ DRAFT.placeNote = 'Paste the full link.'; placeNote(DRAFT.placeNote); return; }
+  DRAFT.placeNote = 'Reading the map link…'; placeNote(DRAFT.placeNote);
+  var token = String(raw).trim();
+  MAPWAIT = setTimeout(function(){
+    MAPWAIT = null;
+    if (!DRAFT || DRAFT.online) return;
+    var cur = $('w-c');
+    if (cur && cur.value.trim() !== token) return;
+    HNAPI.resolveMap(token).then(function(r){
+      if (!DRAFT) return;
+      var now = $('w-c');
+      if (now && now.value.trim() !== token) return;
+      var pin = r && r.url && window.HN_MAP ? HN_MAP.parseMapLink(r.url) : null;
+      if (!pin){ DRAFT.placeNote = 'Paste the full link.'; placeNote(DRAFT.placeNote); refreshWizFoot(); return; }
+      var name = placeLabel(pin);
+      DRAFT.placePin = { name:name, lat:pin.lat, lng:pin.lng, url:token, provider:pin.provider };
+      DRAFT.city = name; DRAFT.placeNote = ''; DRAFT.mapReject = false;
+      if (now) now.value = name;
+      placeNote(''); refreshWizFoot(); schedulePersist();
+    }, function(){
+      if (!DRAFT) return;
+      DRAFT.placeNote = 'Paste the full link.'; placeNote(DRAFT.placeNote);
+    });
+  }, 300);
+}
 function basicsHTML(d, miss, withPrivacy){
   var newEv = d.mode !== 'edit' && d.form !== 'link', bad = function(k){ return wzBad(miss, k); }, err = function(k){ return wzErr(miss, k); }, opt = WZOPT;
   return '<div class="field"><label for="w-t">Title</label><input type="text" id="w-t" data-cz="title" value="'+esc(d.title)+'" placeholder="Ridge sauna, midnight" autocomplete="off" aria-required="true" aria-describedby="err-title"'+bad('title')+'>' + err('title') + '</div>' +
@@ -6812,9 +6936,11 @@ function basicsHTML(d, miss, withPrivacy){
     '<div class="frow"><div class="field"><label for="w-st">From'+opt+'</label><input type="time" id="w-st" data-cz="startTime" value="'+esc(d.startTime||'')+'"></div>' +
     '<div class="field"><label for="w-et">Until'+opt+'</label><input type="time" id="w-et" data-cz="endTime" value="'+esc(d.endTime||'')+'"></div></div>' +
     tagsFieldHTML(d) +
-    /* a place, or Online */
-    '<div class="field"><label for="w-c">Where</label><div class="wherein"><input type="text" id="w-c" data-cz="city" value="'+esc(d.online ? '' : d.city)+'" placeholder="'+(d.online ? 'Online' : 'Stockholm')+'"'+(d.online ? ' disabled' : '')+' aria-required="true" aria-describedby="err-city"'+bad('city')+'>' +
-      '<label class="wzon"><input type="checkbox" id="w-on" data-cz="online"'+(d.online ? ' checked' : '')+'>Online</label></div>' + err('city') + '</div>' +
+    /* a place name, or a map link. The hint stays generic; parsing is in _shared/map-link.js */
+    '<div class="field"><label for="w-c">Where</label><div class="wherein"><input type="text" id="w-c" data-cz="city" value="'+esc(d.online ? '' : d.city)+'" placeholder="'+(d.online ? 'Online' : 'Place or maps link')+'"'+(d.online ? ' disabled' : '')+' aria-required="true" aria-describedby="where-hint where-note err-city"'+bad('city')+'>' +
+      '<label class="wzon"><input type="checkbox" id="w-on" data-cz="online"'+(d.online ? ' checked' : '')+'>Online</label></div>' +
+      '<p class="fhelp maphint" id="where-hint"'+(d.online ? ' hidden' : '')+'>Place or maps link</p>' +
+      '<p class="mapnote" id="where-note" role="status"'+(d.placeNote && !d.online ? '' : ' hidden')+'>'+esc(d.placeNote || '')+'</p>' + err('city') + '</div>' +
     (withPrivacy ? privacyHTML(d) : '') +
     '<div class="field"><label for="w-k">Entry</label><select id="w-k" data-cz="entry">' +
       ['free','donation','pay_what_you_can','ticket','membership','invite'].concat(ACCESSLAB[d.entry] && ['free','donation','pay_what_you_can','ticket','membership','invite'].indexOf(d.entry) < 0 ? [d.entry] : []).map(function(p){ return '<option value="'+p+'"'+(p===d.entry?' selected':'')+'>'+ACCESSLAB[p]+'</option>'; }).join('') +
@@ -7002,7 +7128,7 @@ function wizBodyHTML(){
   if (d.mode === 'edit') return edWrap(edSec('Details', basicsHTML(d, miss, false)) + edSec('About', wordsHTML(d, miss)) +
                                        edSec('Who can see it', privacyHTML(d)) + edSec('Look', czControlsHTML(d)), customizePreviewHTML());
   var h = wizStepsHTML(d);
-  if (d.step === 1) h += basicsHTML(d, miss, true);
+  if (d.step === 1) h += fillFromHTML(d) + basicsHTML(d, miss, true);
   else if (d.step === 2) h += wordsHTML(d, miss);
   else h += customizeHTML();
   return h;
@@ -7020,7 +7146,8 @@ function wizMissing(d, step){
     if (!st) m.date = 'Add the day it starts';
     else if (d.mode !== 'edit' && d.form !== 'link' && st < TODAY_ISO) m.date = 'Pick today or a later day';
     if (en === null || (en && st && en < st)) m.end = 'It ends before it starts';
-    if (!d.online && !String(d.city || '').trim()) m.city = 'Add where it is, or tick Online';
+    if (!d.online && d.mapReject) m.city = "That link isn't allowed.";
+    else if (!d.online && !String(d.city || '').trim()) m.city = 'Add where it is, or tick Online';
   }
   if (step === 2 && !String(d.desc || '').trim()) m.desc = 'Add a line or two about it';
   return m;
@@ -7085,7 +7212,7 @@ var FORMDRAFTS = {};
 var EVENTKINDS = ['meetup','build','workshop','volunteer_day','fundraiser','camp_meeting','burn_night','town_hall','decompression','burn','sale','other'];
 function blankEventDraft(){
   return Object.assign({ step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', baseKind:'meetup', tags:[], schedule:[], city:'', online:false, privacy:'everyone', entry:'free', desc:'', bring:'',
-           lookTouched:false }, lookDraft(plainTheme('◉')));
+           fillUrl:'', lookTouched:false }, lookDraft(plainTheme('◉')));
 }
 function eventDraftDirty(d){
   var b = blankEventDraft();
@@ -7133,6 +7260,63 @@ function hostAskShow(){
   dl.querySelector('.dbody').innerHTML = hostAskHTML();
   var foot = dl.querySelector('.dfoot'); if (foot) foot.remove();
   placeDlg(dl);
+}
+/* Optional, on Basics only: paste the event's own page and reuse Autofill. The event stays yours (create, host_id). */
+function fillFromHTML(d){
+  return '<div class="field fillfrom"><label for="w-fill">Fill from link'+WZOPT+'</label><div class="lkrow">' +
+    '<input type="url" id="w-fill" data-cz="fillUrl" value="'+esc(d.fillUrl || '')+'" placeholder="https://" autocomplete="off" inputmode="url" aria-describedby="fill-note">' +
+    '<button type="button" class="btn" data-act="wizfill"'+(d.fillBusy ? ' aria-disabled="true"' : '')+'>'+(d.fillBusy ? 'Reading…' : 'Fill')+'</button></div>' +
+    '<p class="fhelp" id="fill-note" role="status">'+esc(d.fillNote || 'Optional. Paste a page, then Fill.')+'</p></div>';
+}
+function wizTakeFill(d, x){
+  if (!d || !x) return;
+  if (x.title) d.title = x.title;
+  if (x.startsOn) d.date = x.startsOn;
+  if (x.endsOn) d.end = x.endsOn;
+  if (x.startTime) d.startTime = x.startTime;
+  if (x.endTime) d.endTime = x.endTime;
+  if (x.description) d.desc = x.description;
+  if (x.online){ d.online = true; d.city = ''; d.placePin = null; d.mapReject = false; }
+  else {
+    var place = x.city || (x.venue && x.venue.name) || '';
+    if (place){ d.online = false; d.city = String(place).slice(0, 120); d.mapReject = false; }
+    var v = x.venue || {}, lat = Number(v.lat), lng = Number(v.lng);
+    if (d.city && Number.isFinite(lat) && Number.isFinite(lng)) d.placePin = { name:d.city, lat:lat, lng:lng, url:'', provider:null };
+  }
+  var img = x.imageUrl && window.HN_IMAGE && window.HN_IMAGE(x.imageUrl);
+  if (img){ d.image = img; d.lookTouched = true; }
+  var site = x.site || (d.fillUrl ? linkSite(d.fillUrl) : 'the page');
+  d.fillNote = 'Filled in from ' + site + '.' + (img || !x.imageUrl ? '' : ' Its picture stays on that page.') + ' Change anything, then publish. You stay the host.';
+}
+function wizFill(){
+  var d = DRAFT;
+  if (!d || d.form === 'link' || d.mode === 'edit' || d.form === 'horizon' || d.fillBusy) return;
+  var field = $('w-fill');
+  var u = String((field && field.value) || d.fillUrl || '').trim();
+  if (u && !/^https?:\/\//i.test(u) && /\./.test(u)) u = 'https://' + u;
+  d.fillUrl = u;
+  if (!/^https?:\/\/[^\s\/]+\.[^\s]+$/i.test(u)){
+    d.fillNote = 'Paste a link to the event’s page.';
+    paintWiz(); focusIn('w-fill'); return;
+  }
+  if (!ONLINE || !window.HNAPI || !HNAPI.autofill){
+    d.fillNote = 'Fill from link reads pages on the live site only. Here, fill in the fields yourself.';
+    paintWiz(); focusIn('w-t'); return;
+  }
+  d.fillBusy = true; d.fillNote = 'Reading ' + linkSite(u) + '…'; paintWiz();
+  HNAPI.autofill(u).then(function(r){
+    if (DRAFT !== d) return;
+    d.fillBusy = false;
+    if (r && r.draft) wizTakeFill(d, r.draft);
+    else d.fillNote = (r && r.existing ? 'This page is already an event here. You’re still making your own, and you stay the host.' : 'Couldn’t read that page. Fill in the fields yourself.');
+    paintWiz();
+    if (d.title) focusIn('w-t');
+  }, function(err){
+    if (DRAFT !== d) return;
+    d.fillBusy = false;
+    d.fillNote = (err && err.message ? err.message.replace(/\.?$/, '.') : 'Couldn’t read that page.') + ' Fill in the fields yourself.';
+    paintWiz(); focusIn('w-t');
+  });
 }
 /* the wizard, as it was: a kept draft resumes, and Add past event skips the question (the role was already chosen) */
 function openHostedWizard(into){
@@ -7330,6 +7514,7 @@ var editEventDialog = gated(function(evId){
             bring: Array.isArray(r.whatToBring) ? r.whatToBring.join('\n') : (r.whatToBring || ''),
             schedule: (Array.isArray(r.schedule) ? r.schedule : []).map(function(b){ var o = { title:b.title || '', start:b.start || '' }; if (b.end) o.end = b.end; return o; }),
             lookTouched:false }, lookDraft(TH(evId)));
+  if (!DRAFT.online) DRAFT.placePin = pinFromVenue(r.venue, DRAFT.city);
   dialog('Edit ' + e.title, wizBodyHTML(), wizFootHTML(), 900, 'edlg');
   focusIn('w-t');
 });
@@ -7392,12 +7577,18 @@ function setEventLook(id, t){
 }
 function saveEventEdit(t){
   var id = DRAFT.editing, e = EVENTS[id], r = REC[id] || (REC[id] = {});
-  var start = isoDate(DRAFT.date), end = isoDate(DRAFT.end), city = String(DRAFT.city || '').trim();
+  var start = isoDate(DRAFT.date), end = isoDate(DRAFT.end), city = String(DRAFT.city || '').trim(), oldCity = r.city;
   if (!e.slug) e.slug = evSlug(id);          /* the link people already have keeps working */
   e.title = DRAFT.title.trim(); e.date = start; e.privacy = DRAFT.privacy; e.description = DRAFT.desc;
   if (DRAFT.online) r.venueKind = 'virtual';
   else { if (r.venueKind === 'virtual') r.venueKind = 'physical';
-         if (city){ e.city = city; if (r.venue && (!r.venue.name || r.venue.name === r.city)) r.venue.name = city; r.city = city; } }
+         if (city){
+           e.city = city;
+           if (!r.venue) r.venue = { name:city, addressVisibility:'public' };
+           else if (!r.venue.name || r.venue.name === oldCity || DRAFT.placeEdited) r.venue.name = city;
+           applyPlacePin(r.venue, city);
+           r.city = city;
+         } }
   r.endDate = end && end > start ? end : undefined;
   var tk = tagsForSave(DRAFT);
   r.description = DRAFT.desc; r.kind = tk.kind; r.tags = tk.tags;
@@ -7435,7 +7626,7 @@ function wizAct(which){
                  hostName:S.me.name, hostAcct:S.acct, privacy:DRAFT.privacy, ownerIds:['self'], kind:'own', city:city };
   var tk = tagsForSave(DRAFT);
   REC[id] = { kind:tk.kind, tags:tk.tags, startTime:DRAFT.startTime || undefined, endTime:DRAFT.endTime || undefined, scale: end && end > start ? 'gathering' : 'meetup', endDate: end && end > start ? end : undefined,
-              venueKind:DRAFT.online ? 'virtual' : 'physical', city:city, venue:DRAFT.online ? undefined : { name:city, addressVisibility:'public' }, description:DRAFT.desc,
+              venueKind:DRAFT.online ? 'virtual' : 'physical', city:city, venue:DRAFT.online ? undefined : placeVenue(city), description:DRAFT.desc,
               access:{ model:DRAFT.entry }, whatToBring: String(DRAFT.bring||'').split('\n').map(function(s){ return s.trim(); }).filter(Boolean) };
   var schN = scheduleForSave(DRAFT); if (schN) REC[id].schedule = schN;
   if (t){ t.glyph = PLAINGLYPH[REC[id].kind] || '◆'; window.HYPERNET_THEMES.themes[id] = t; }
@@ -8361,6 +8552,7 @@ document.addEventListener('click', function(ev){
       break;
     }
     case 'lkfill':       linkAutofill(); break;
+    case 'wizfill':      wizFill(); break;
     case 'lkmanual':     DRAFT.filled = true; DRAFT.note = ''; paintLink(); focusIn('lk-h'); break;
     case 'lkadd':        linkAdd(); break;
     case 'lkback':       if (DRAFT && DRAFT.ctx === 'new') hostAskShow(); else pickerShow(); break;
@@ -8460,7 +8652,13 @@ document.addEventListener('change', function(ev){
     if (k === 'vis'){ DRAFT.published = n.value === 'public';
       document.querySelectorAll('.dlg .visopt').forEach(function(l){ l.classList.toggle('on', l.querySelector('input').checked); }); czPreviews(); return; }
     DRAFT[k] = n.type === 'checkbox' ? n.checked : n.value;
-    if (k === 'online'){ var wc = $('w-c'); if (wc){ wc.disabled = n.checked; wc.placeholder = n.checked ? 'Online' : 'Stockholm'; wc.value = n.checked ? '' : DRAFT.city || ''; } }
+    if (k === 'online'){
+      var wc = $('w-c');
+      if (wc){ wc.disabled = n.checked; wc.placeholder = n.checked ? 'Online' : 'Place or maps link'; wc.value = n.checked ? '' : DRAFT.city || ''; }
+      var wh = $('where-hint'); if (wh) wh.hidden = !!n.checked;
+      if (n.checked){ DRAFT.placePin = null; DRAFT.mapReject = false; DRAFT.placeNote = ''; var wn = $('where-note'); if (wn){ wn.textContent = ''; wn.hidden = true; } }
+    }
+    if (k === 'city') placeTouch(n.value);
     if (LOOKKEYS.test(k)) DRAFT.lookTouched = true;
     /* text fields already updated the preview as you typed; repainting the form here would swallow the click that blurred them */
     refreshWizFoot();
@@ -8503,6 +8701,7 @@ document.addEventListener('input', function(ev){
   if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT' || n.type === 'checkbox' || n.type === 'radio') return;
   var kz = n.getAttribute('data-cz');
   if (/^c[123]$/.test(kz)){ czSetColor(kz, n.value, n); return; }
+  if (kz === 'city'){ placeTouch(n.value); refreshWizFoot(); schedulePersist(); if (document.querySelector('.dlg [data-czlook]')) czPreviews(); return; }
   DRAFT[kz] = n.value;
   if (kz === 'name' && n.value.trim()){ var en = $('err-name'); if (en) en.hidden = true; n.removeAttribute('aria-invalid'); }
   if (LOOKKEYS.test(kz)) DRAFT.lookTouched = true;
@@ -8607,6 +8806,7 @@ document.addEventListener('keydown', function(ev){
   if (tagOn && (ev.key === 'Enter' || ev.key === ' ') && ae && ae.classList && ae.classList.contains('tagopt')){ ev.preventDefault(); tagPick(ae.getAttribute('data-id')); return; }
   if (!tagOn && ae && ae.id === 'w-tagbox' && (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'ArrowDown')){ ev.preventDefault(); tagSetOpen(true); return; }
   if (ev.key === 'Enter' && ae && ae.id === 'lk-u' && !ae.readOnly){ ev.preventDefault(); linkAutofill(); return; }
+  if (ev.key === 'Enter' && ae && ae.id === 'w-fill'){ ev.preventDefault(); wizFill(); return; }
   if (ev.key === 'Enter' && ae && ae.id === 'ptag-q'){
     ev.preventDefault();
     var typed = String(ae.value || '').trim(), hits = tagChoices(tagFlowState());

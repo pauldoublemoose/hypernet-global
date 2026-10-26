@@ -473,6 +473,8 @@
   };
   /* Autofill: what the page says (nothing is saved), or the event this link already is */
   HN.autofill = function(url){ return req('POST', '/api/events/autofill', { url:url }); };
+  /* a short map link: the server follows it and returns the address it opened. The page parses that. */
+  HN.resolveMap = function(url){ return req('POST', '/api/maps/resolve', { url:url }); };
   /* add an event from a link; the server copies its picture. The same link added a moment ago by someone else answers
      with their event: this one is put away and theirs takes its place (in your horizon too) */
   HN.createLinkEvent = function(id, imageUrl){

@@ -17,6 +17,7 @@ const nextConfig: NextConfig = {
   // …and the prototype files must ship with that function on Vercel.
   outputFileTracingIncludes: {
     "/proto/**": ["./index.html", "./_shared/*.js", "./data/*.json"],
+    "/api/maps/resolve": ["./_shared/map-link.js"],
   },
   async headers() {
     return [{ source: "/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex" }] }];

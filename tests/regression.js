@@ -1486,6 +1486,105 @@ async function overflowEverywhere(p, label){
     await c.context().close();
   }
 
+  /* A place can be a maps link. Fill from link on I'm hosting prefills the wizard and still publishes as yours. */
+  {
+    const c = await ctx('desk');
+    await open(c, '', true);
+    await join(c, 'Map Host', 'maphost');
+    await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
+    await c.click('.dlg [data-act="hostask"][data-id="mine"]'); await c.waitForTimeout(200);
+    const hint = await ev(c, () => {
+      const el = document.getElementById('where-hint'), dlg = document.querySelector('.dlg');
+      const ph = document.getElementById('w-c').getAttribute('placeholder');
+      const hex = node => '#' + getComputedStyle(node).color.match(/\d+/g).slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join('');
+      const ground = node => '#' + getComputedStyle(node).backgroundColor.match(/\d+/g).slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join('');
+      const themes = ['y2fresh', 'win2k'].map(t => {
+        document.documentElement.setAttribute('data-theme', t);
+        return { t:t, hint:contrast(hex(el), ground(dlg)) };
+      });
+      document.documentElement.setAttribute('data-theme', 'win2k');
+      return { text:el.textContent, ph:ph, named:/google|apple|openstreetmap/i.test(el.textContent + ' ' + ph), fill:!!document.getElementById('w-fill'), themes:themes };
+    });
+    ok(hint.text === 'Place or maps link' && hint.ph === 'Place or maps link' && !hint.named && hint.fill && hint.themes.every(t => t.hint >= 4.5),
+       'desk: Where says Place or maps link, names no provider, and Fill from link is on Basics ' + JSON.stringify(hint));
+    const gmaps = 'https://www.google.com/maps/place/Slussen/@59.3200,18.0700,17z/data=!3d59.3195!4d18.0712';
+    await c.fill('#w-c', gmaps); await c.waitForTimeout(80);
+    const pin = await ev(c, () => ({ city:document.getElementById('w-c').value, pin:DRAFT.placePin }));
+    ok(pin.city === 'Slussen' && pin.pin && pin.pin.lat === 59.3195 && pin.pin.lng === 18.0712 && pin.pin.url === gmaps,
+       'desk: a long maps link fills the place and keeps the pasted link ' + JSON.stringify(pin));
+    await c.fill('#w-c', 'https://example.com/place/Foo'); await c.waitForTimeout(50);
+    ok(await ev(c, () => document.getElementById('w-c').value === 'https://example.com/place/Foo' && !DRAFT.placePin),
+       'desk: a non-map link stays plain text');
+    await c.fill('#w-c', 'javascript:alert(1)');
+    await c.fill('#w-t', 'Map night'); await c.fill('#w-d', '2026-11-12');
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]', { force:true }); await c.waitForTimeout(150);
+    ok(await ev(c, () => !DRAFT.placePin && DRAFT.mapReject && /isn't allowed/.test((document.getElementById('err-city') || {}).textContent || '')),
+       'desk: a javascript place is rejected');
+    await c.fill('#w-c', 'https://maps.app.goo.gl/abc'); await c.waitForTimeout(80);
+    ok(await ev(c, () => /Paste the full link/.test((document.getElementById('where-note') || {}).textContent || '') && !DRAFT.placePin),
+       'desk: offline, a short map link asks for the full link');
+    await c.fill('#w-c', gmaps); await c.waitForTimeout(80);
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(150);
+    await c.fill('#w-desc', 'By the lock.'); await c.waitForTimeout(50);
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(100);
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(400);
+    const pub = await ev(c, () => {
+      const id = MYEVENTS[MYEVENTS.length - 1], e = EVENTS[id], r = REC[id] || {};
+      return { id:id, title:e.title, kind:e.kind, acct:e.hostAcct, src:e.sourceUrl || null, added:e.addedBy || null,
+        mine:MYEVENTS.indexOf(id) >= 0, url:r.venue && r.venue.url, lat:r.venue && r.venue.lat, name:r.venue && r.venue.name };
+    });
+    ok(pub.title === 'Map night' && pub.kind === 'own' && pub.mine && pub.acct === 'me' && !pub.src && !pub.added && pub.name === 'Slussen' && pub.lat === 59.3195 && pub.url === gmaps,
+       'desk: the maps place publishes as your event ' + JSON.stringify(pub));
+    await c.evaluate(id => { S.stack = [{ type:'event', id:id }]; render(); }, pub.id); await c.waitForTimeout(300);
+    const mapLink = await ev(c, () => { const a = document.querySelector('a.maplink'); return a ? { text:a.textContent, href:a.getAttribute('href') } : null; });
+    ok(mapLink && mapLink.text === 'Open in Maps' && mapLink.href === gmaps, 'desk: Open in Maps uses the pasted link ' + JSON.stringify(mapLink));
+    await c.evaluate(id => editEventDialog(id), pub.id); await c.waitForTimeout(200);
+    ok(await ev(c, () => { const h = document.getElementById('where-hint'); return !!h && h.textContent === 'Place or maps link' && !document.getElementById('w-fill'); }),
+       'desk: Edit shows the place hint and not Fill from link');
+    await c.evaluate(() => closeDialogs()); await c.waitForTimeout(100);
+    await c.evaluate(() => { FORMDRAFTS.event = null; newEventDialog(); }); await c.waitForTimeout(200);
+    await c.click('.dlg [data-act="hostask"][data-id="mine"]'); await c.waitForTimeout(150);
+    await c.fill('#w-fill', 'https://billetto.se/e/example');
+    await c.click('.dlg [data-act="wizfill"]'); await c.waitForTimeout(200);
+    const off = await ev(c, () => ({ note:(document.getElementById('fill-note') || {}).textContent || '', form:DRAFT.form || '', src:DRAFT.sourceUrl || null }));
+    ok(/fill in the fields yourself/.test(off.note) && off.form !== 'link' && !off.src,
+       'desk: Fill from link offline stays the hosted wizard ' + JSON.stringify(off));
+    await c.evaluate(img => {
+      wizTakeFill(DRAFT, { title:'Filled Night', startsOn:'2026-12-02', startTime:'18:00', city:'Stockholm', description:'From the page.', site:'billetto.se', venue:{ name:'Stockholm', lat:59.3, lng:18.06 }, imageUrl:img });
+      paintWiz();
+    }, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg=='); await c.waitForTimeout(150);
+    const filled = await ev(c, () => ({ title:DRAFT.title, date:DRAFT.date, time:DRAFT.startTime, city:DRAFT.city, desc:DRAFT.desc, img:!!DRAFT.image, kind:DRAFT.kind, src:DRAFT.sourceUrl || null, form:DRAFT.form || '' }));
+    ok(filled.title === 'Filled Night' && filled.date === '2026-12-02' && filled.time === '18:00' && filled.city === 'Stockholm' && filled.desc === 'From the page.' && filled.img && filled.kind !== 'link' && !filled.src && filled.form !== 'link',
+       'desk: Fill from link prefills the wizard and does not make a link event ' + JSON.stringify(filled));
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(150);
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(100);
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(400);
+    const hosted = await ev(c, () => {
+      const id = MYEVENTS[MYEVENTS.length - 1], e = EVENTS[id];
+      goFolder({ kind:'hosting' }); render();
+      return { title:e.title, kind:e.kind, mine:MYEVENTS.indexOf(id) >= 0, src:e.sourceUrl || null, added:e.addedBy || null, acct:e.hostAcct, hosting:S.folder.kind,
+        listed:(document.getElementById('listbody') || document.body).textContent.indexOf('Filled Night') >= 0 };
+    });
+    ok(hosted.title === 'Filled Night' && hosted.kind === 'own' && hosted.mine && !hosted.src && !hosted.added && hosted.acct === 'me' && hosted.hosting === 'hosting' && hosted.listed,
+       'desk: autofill on I am hosting publishes into Hosting with you as host ' + JSON.stringify(hosted));
+    await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
+    await c.click('.dlg [data-act="hostask"][data-id="other"]'); await c.waitForTimeout(150);
+    ok(await ev(c, () => !!document.getElementById('lk-u') && !document.getElementById('w-fill')), 'desk: someone else still opens the link form');
+    await c.fill('#lk-u', 'https://tickets.example/e/night'); await c.press('#lk-u', 'Enter'); await c.waitForTimeout(150);
+    ok(await ev(c, () => { const h = document.getElementById('where-hint'); return !!h && h.textContent === 'Place or maps link'; }),
+       'desk: the link form shows the place hint');
+    await c.fill('#lk-h', 'City Festival'); await c.fill('#w-t', 'Logged Night'); await c.fill('#w-d', '2026-12-03'); await c.fill('#w-c', 'Brno');
+    await c.click('.dlg [data-act="lkadd"]'); await c.waitForTimeout(300);
+    const logged = await ev(c, () => {
+      const id = ADDEDBYME[ADDEDBYME.length - 1], e = EVENTS[id];
+      return { kind:e.kind, mine:MYEVENTS.indexOf(id) >= 0, added:e.addedBy, host:e.hostName, src:e.sourceUrl };
+    });
+    ok(logged.kind === 'link' && !logged.mine && logged.added === 'self' && logged.host === 'City Festival' && /tickets\.example/.test(logged.src || ''),
+       'desk: the link-event path is unchanged ' + JSON.stringify(logged));
+    ok(!c.errors.length, 'desk: no console errors (map link) ' + c.errors.join(' '));
+    await c.context().close();
+  }
+
   /* ---------------- 2026-10-04: New event goes on only when a step has what it needs ---------------- */
   for (const kind of ['desk', 'tab', 'phone']){
     const c = await ctx(kind);

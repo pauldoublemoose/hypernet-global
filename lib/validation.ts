@@ -1,4 +1,12 @@
+import { createRequire } from "node:module";
+import path from "node:path";
 import { z } from "zod";
+
+// Same parser as the page (_shared/map-link.js). Required, not imported, so tsc leaves that script alone.
+const requireMap = createRequire(path.join(process.cwd(), "package.json"));
+function classifyMap(raw: string): { kind: string } {
+  return (requireMap("./_shared/map-link.js") as { classifyMapInput: (s: string) => { kind: string } }).classifyMapInput(raw);
+}
 
 // Request shapes. They repeat the database CHECKs on purpose: a bad request gets a readable 400 with the field
 // that is wrong, instead of a constraint error from Postgres.
@@ -154,6 +162,26 @@ export const eventCreate = z
 
 /** POST /api/events/autofill: the link to read. */
 export const linkRead = z.object({ url: httpUrl }).strict();
+
+/** POST /api/maps/resolve: a short https map link. The page parses whatever it opens. */
+export const mapResolve = z
+  .object({ url: httpUrl })
+  .strict()
+  .superRefine((v, ctx) => {
+    let u: URL;
+    try {
+      u = new URL(v.url);
+    } catch {
+      return;
+    }
+    if (u.protocol !== "https:") {
+      ctx.addIssue({ code: "custom", message: "Only https map links.", path: ["url"] });
+      return;
+    }
+    if (classifyMap(v.url).kind !== "short") {
+      ctx.addIssue({ code: "custom", message: "Paste a short map link.", path: ["url"] });
+    }
+  });
 
 /** POST /api/events/link: an event that already exists elsewhere, as the person checked it after Autofill. Always
  *  public (the page it came from is), hosted by whoever the page names; `imageUrl` is copied into our storage. */

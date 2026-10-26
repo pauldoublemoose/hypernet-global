@@ -105,17 +105,17 @@ test("check draws numbered boxes and a panel, and a click dismisses that item", 
   assert.match(copied, /The join button is easy to miss\./);
 
   const head = document.querySelector(".rvm-head");
-  head.dispatchEvent({ type: "mousedown", button: 0, clientX: 30, clientY: 50, target: head });
-  window.dispatchEvent({ type: "mousemove", clientX: 120, clientY: 90 });
-  window.dispatchEvent({ type: "mouseup" });
+  head.dispatchEvent({ type: "pointerdown", button: 0, clientX: 30, clientY: 50, pointerId: 1, target: head });
+  window.dispatchEvent({ type: "pointermove", clientX: 120, clientY: 90, pointerId: 1 });
+  window.dispatchEvent({ type: "pointerup", pointerId: 1 });
   assert.equal(document.querySelector(".rvm-panel").style.left, "106px");
   assert.equal(document.querySelector(".rvm-panel").style.top, "80px");
 
   window.innerWidth = 375;
   const before = document.querySelector(".rvm-panel").style.left;
-  head.dispatchEvent({ type: "mousedown", button: 0, clientX: 10, clientY: 10, target: head });
-  window.dispatchEvent({ type: "mousemove", clientX: 200, clientY: 200 });
-  window.dispatchEvent({ type: "mouseup" });
+  head.dispatchEvent({ type: "pointerdown", button: 0, clientX: 10, clientY: 10, pointerId: 1, target: head });
+  window.dispatchEvent({ type: "pointermove", clientX: 200, clientY: 200, pointerId: 1 });
+  window.dispatchEvent({ type: "pointerup", pointerId: 1 });
   assert.equal(document.querySelector(".rvm-panel").style.left, before);
 
   document.querySelector(".rvm-min").click();
@@ -167,6 +167,140 @@ test("a missing label uses the target text, and a Vercel host supplies the revis
   assert.match(copied, /1\. \[ \] New/);
 });
 
+test("the panel resizes from the corner and the left and top edges, and remembers the size", async () => {
+  const check = "t:New~New";
+  const search = "?check=" + encodeURIComponent(check);
+  const store = new Map();
+  const { document, window } = boot(search, (doc) => {
+    doc.body.appendChild(box(doc, "button", { id: "newbtn", x: 8, y: 8, w: 60, h: 28, text: "New" }));
+  }, { store });
+  const css = document.querySelector("style").textContent;
+  assert.match(css, /\.rvm-list\{flex:2 1 auto\}/);
+  assert.match(css, /\.rvm-notes\{flex:1 1 auto\}/);
+  assert.match(css, /\.rvm-grip\{[^}]*nwse-resize/);
+  assert.match(css, /\.rvm-edge-w\{[^}]*ew-resize/);
+  assert.match(css, /\.rvm-edge-n\{[^}]*ns-resize/);
+  assert.match(css, /min-width:220px/);
+  assert.match(css, /min-height:140px/);
+  assert.match(css, /@media \(max-width:760px\)\{[\s\S]*\.rvm-grip,\.rvm-edge-w\{display:none\}/);
+
+  const panel = document.querySelector(".rvm-panel");
+  const grip = document.querySelector(".rvm-grip");
+  const edgeW = document.querySelector(".rvm-edge-w");
+  const edgeN = document.querySelector(".rvm-edge-n");
+  place(panel, 400, 200, 280, 240);
+
+  grip.dispatchEvent({ type: "mousedown", button: 0, clientX: 0, clientY: 0, target: grip });
+  window.dispatchEvent({ type: "mousemove", clientX: 40, clientY: 30 });
+  window.dispatchEvent({ type: "mouseup" });
+  assert.equal(panel.style.width, "280px");
+  assert.equal(panel.style.height, "240px");
+
+  pointerDrag(grip, window, 0, 0, 40, 30);
+  assert.equal(panel.style.left, "400px");
+  assert.equal(panel.style.top, "200px");
+  assert.equal(panel.style.width, "320px");
+  assert.equal(panel.style.height, "270px");
+  assert.equal(panel.classList.contains("rvm-sized"), true);
+
+  place(panel, 400, 200, 280, 240);
+  pointerDrag(edgeW, window, 400, 300, 350, 300);
+  assert.equal(panel.style.left, "350px");
+  assert.equal(panel.style.width, "330px");
+  assert.equal(panel.style.top, "200px");
+  assert.equal(panel.style.height, "240px");
+
+  place(panel, 400, 200, 280, 240);
+  pointerDrag(edgeN, window, 500, 200, 500, 160);
+  assert.equal(panel.style.top, "160px");
+  assert.equal(panel.style.height, "280px");
+  assert.equal(panel.style.left, "400px");
+  assert.equal(panel.style.width, "280px");
+
+  place(panel, 400, 200, 280, 240);
+  pointerDrag(grip, window, 0, 0, -100, -150);
+  assert.equal(panel.style.left, "400px");
+  assert.equal(panel.style.top, "200px");
+  assert.equal(panel.style.width, "220px");
+  assert.equal(panel.style.height, "140px");
+
+  place(panel, 100, 100, 280, 200);
+  pointerDrag(edgeW, window, 100, 200, 250, 200);
+  assert.equal(panel.style.left, "160px");
+  assert.equal(panel.style.width, "220px");
+
+  place(panel, 400, 200, 280, 200);
+  pointerDrag(grip, window, 0, 0, 500, 500);
+  assert.equal(panel.style.left, "400px");
+  assert.equal(panel.style.top, "200px");
+  assert.equal(panel.style.width, "624px");
+  assert.equal(panel.style.height, "600px");
+
+  document.querySelector(".rvm-min").click();
+  assert.equal(panel.hidden, true);
+  assert.equal(panel.style.width, "624px");
+  assert.equal(panel.style.height, "600px");
+  const ui = JSON.parse(store.get("rvm:v1:ui:" + check));
+  assert.equal(ui.w, 624);
+  assert.equal(ui.h, 600);
+  assert.equal(ui.x, 400);
+  assert.equal(ui.y, 200);
+  assert.equal(ui.min, true);
+  document.querySelector(".rvm-pill").click();
+  assert.equal(panel.hidden, false);
+  assert.equal(panel.style.width, "624px");
+  assert.equal(panel.style.height, "600px");
+
+  const again = boot(search, (doc) => {
+    doc.body.appendChild(box(doc, "button", { id: "newbtn", x: 8, y: 8, w: 60, h: 28, text: "New" }));
+  }, { store });
+  const panel2 = again.document.querySelector(".rvm-panel");
+  assert.equal(panel2.hidden, false);
+  assert.equal(panel2.style.left, "400px");
+  assert.equal(panel2.style.top, "200px");
+  assert.equal(panel2.style.width, "624px");
+  assert.equal(panel2.style.height, "600px");
+  assert.equal(panel2.classList.contains("rvm-sized"), true);
+
+  again.window.innerWidth = 375;
+  again.window.innerHeight = 640;
+  place(panel2, 12, 400, 280, 200);
+  const grip2 = again.document.querySelector(".rvm-grip");
+  const edgeW2 = again.document.querySelector(".rvm-edge-w");
+  const edgeN2 = again.document.querySelector(".rvm-edge-n");
+  pointerDrag(grip2, again.window, 0, 0, 80, 80);
+  pointerDrag(edgeW2, again.window, 12, 500, -40, 500);
+  assert.equal(panel2.style.left, "12px");
+  assert.equal(panel2.style.width, "280px");
+  assert.equal(panel2.style.height, "200px");
+  pointerDrag(edgeN2, again.window, 100, 400, 100, 320);
+  assert.equal(panel2.style.height, "280px");
+  assert.equal(panel2.style.left, "12px");
+  assert.equal(panel2.style.width, "280px");
+  pointerDrag(edgeN2, again.window, 100, 400, 100, 2000);
+  assert.equal(panel2.style.height, "140px");
+  pointerDrag(edgeN2, again.window, 100, 400, 100, -4000);
+  assert.equal(panel2.style.height, "640px");
+  const phone = JSON.parse(store.get("rvm:v1:ui:" + check));
+  assert.equal(phone.h, 640);
+  assert.equal(phone.min, false);
+});
+
+function place(panel, x, y, w, h) {
+  panel.style.left = x + "px";
+  panel.style.top = y + "px";
+  panel.style.right = "auto";
+  panel.style.bottom = "auto";
+  panel.style.width = w + "px";
+  panel.style.height = h + "px";
+}
+
+function pointerDrag(el, window, x0, y0, x1, y1) {
+  el.dispatchEvent({ type: "pointerdown", button: 0, clientX: x0, clientY: y0, pointerId: 1, target: el });
+  window.dispatchEvent({ type: "pointermove", clientX: x1, clientY: y1, pointerId: 1 });
+  window.dispatchEvent({ type: "pointerup", clientX: x1, clientY: y1, pointerId: 1 });
+}
+
 function box(doc, tag, o) {
   const el = doc.createElement(tag);
   if (o.id) el.id = o.id;
@@ -192,6 +326,7 @@ function boot(search, build, opts = {}) {
   const location = { search, href, hostname, pathname: "/index.html" };
   const sandbox = {
     URL, URLSearchParams, Promise, JSON, Math, Map, RegExp, Number, String, Infinity, parseFloat, parseInt,
+    PointerEvent: function PointerEvent() {},
     setTimeout(fn, ms, ...a) { const t = nodeSetTimeout(fn, ms, ...a); t.unref?.(); return t; },
     clearTimeout, setInterval(fn, ms, ...a) { const t = nodeSetInterval(fn, ms, ...a); t.unref?.(); return t; },
     clearInterval,

@@ -22,9 +22,12 @@ is clicked. A target that is not on the screen says `(not on this screen)`.
 Numbers do not change when one is dismissed. Each box wears the same number in
 a red badge. Feedback goes in the area under the list. Copy adds a header line
 (branch or commit when a meta tag or the Vercel host has it, then the page URL
-without `_vercel_share`) and keeps the numbers. Minimize collapses the panel
-to a `Review 2/4` pill. Clear all dismisses every box. Reload keeps the notes,
-dismissals, position and minimized state for that exact `check` value.
+without `_vercel_share`) and keeps the numbers. The bottom-right handle and the
+left and top edges resize it (about 220×140, inside the viewport); the text
+grows with the panel. On a phone it docks and only the top edge changes height.
+Minimize collapses it to a `Review 2/4` pill and keeps the size. Clear all
+dismisses every box. Reload keeps the notes, dismissals, position, size and
+minimized state for that exact `check` value.
 
 ## Examples
 
@@ -33,5 +36,4 @@ Offline landing (Explore):
 `?offline=1&check=%23newbtn~New|t:Join%20or%20log%20in~Join%20or%20log%20in|t:Event%20Horizons~Event%20Horizons|t:This%20week~This%20week`
 
 A text target and a selector:
-
 `?check=t:Add%20to%20Chronicle~Try%20Add%20to%20Chronicle|%23newEventBtn~New%20event%20asks%20host%20question`

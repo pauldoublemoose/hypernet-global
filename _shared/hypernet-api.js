@@ -504,6 +504,13 @@
   };
   HN.saveEventLook = function(id){ return write('ev:' + id, 'PATCH', '/api/events/' + id, function(){ return { look: lookOut(window.HYPERNET_THEMES.themes[id] || null) }; }, title(id)); };
   HN.deleteEvent = function(id){ return write('ev:' + id, 'DELETE', '/api/events/' + id, undefined, 'the event'); };
+  /* Add to Chronicle. The self-claim and a past invite's accept both call this. No body. */
+  HN.addChronicle = function(id){
+    if (!HN.isId(id)) return Promise.resolve();
+    var ev = QUEUE['ev:' + id];
+    if (ev) QUEUE['rsvp:' + id] = Promise.all([QUEUE['rsvp:' + id] || Promise.resolve(), ev]).catch(function(){});
+    return write('rsvp:' + id, 'POST', '/api/events/' + id + '/chronicle', undefined, title(id));
+  };
   /* role is sent only when the caller passes it (Chronicle filing). A Going, Interested, Went or shift toggle leaves it out, so the server keeps the stored role. */
   HN.rsvp = function(id, fields){
     var ev = QUEUE['ev:' + id];

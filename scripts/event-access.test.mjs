@@ -16,6 +16,7 @@ import {
   eventDayLabel,
   eventListWindow,
   pastInviteNotice,
+  chronicleAddRole,
   rsvpRoleDecision,
   seatOf,
 } from "../lib/event-access.ts";
@@ -242,6 +243,10 @@ test("the chronicle list is an opt-in and the past invite says so", () => {
     CHRONICLE_HELP,
     "Your Chronicle is your list of past events, shown on your profile page. You choose who can see each event there.",
   );
+  assert.equal(chronicleAddRole({ host: false, role: null }), "attendee");
+  assert.equal(chronicleAddRole({ host: true, role: null }), null);
+  assert.equal(chronicleAddRole({ host: false, role: "cocreator" }), "cocreator");
+  assert.equal(chronicleAddRole({ host: true, role: "host" }), "host");
 });
 
 test("the page shows Add to Chronicle with a help button, and search leaves past events out", () => {
@@ -276,6 +281,20 @@ test("the page shows Add to Chronicle with a help button, and search leaves past
   const client = html.slice(html.indexOf("function canInviteToEvent"), html.indexOf("function linkSite"));
   assert.match(client, /isLinkEvent/);
   assert.match(client, /isPast\(lastDay\(e\)\)/);
+  const went = html.slice(html.indexOf("var setWent"), html.indexOf("function acceptChronicle"));
+  assert.match(went, /addChronicle\(evId\)/);
+  const accept = html.slice(html.indexOf("function acceptChronicle"), html.indexOf("function closeChronicleHelp"));
+  assert.match(accept, /addChronicle\(evId\)/);
+  assert.equal(accept.includes("HNAPI.rsvp"), false);
+  const api = readFileSync(new URL("../_shared/hypernet-api.js", import.meta.url), "utf8");
+  assert.match(api, /POST', '\/api\/events\/' \+ id \+ '\/chronicle'/);
+  const chronicle = readFileSync(new URL("../app/api/events/[id]/chronicle/route.ts", import.meta.url), "utf8");
+  assert.match(chronicle, /export const POST/);
+  assert.match(chronicle, /not_past/);
+  assert.match(chronicle, /went = true/);
+  assert.match(chronicle, /chronicleAddRole/);
+  assert.match(chronicle, /coalesce\(r\.role, excluded\.role\)/);
+  assert.equal(chronicle.includes("readJson"), false);
 });
 
 test("the event page copy of EVENT_PERMS matches the server table", () => {

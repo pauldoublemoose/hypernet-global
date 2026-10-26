@@ -8275,15 +8275,19 @@ var setRSVP = gated(function(evId, mode){
 });
 var setWent = gated(function(evId){
   if (!(RESUMING && WENT[evId])) WENT[evId] = !WENT[evId];
-  if (ONLINE) HNAPI.rsvp(evId);
+  if (ONLINE){
+    var pastAdd = WENT[evId] && EVENTS[evId] && isPast(lastDay(EVENTS[evId]));
+    if (pastAdd && window.HNAPI && HNAPI.addChronicle) HNAPI.addChronicle(evId);
+    else HNAPI.rsvp(evId);
+  }
   markRead(evId); render();
   toast(WENT[evId] ? 'Added to your chronicle' : 'Removed from your chronicle', EVENTS[evId].title);
 });
 function acceptChronicle(evId){
   if (!S.loggedIn || !EVENTS[evId]) return;
   WENT[evId] = true;
-  if (!ROLE[evId]) ROLE[evId] = 'attendee';
-  if (ONLINE && window.HNAPI) HNAPI.rsvp(evId, { role:ROLE[evId] });
+  if (!ROLE[evId] && !isMine(evId)) ROLE[evId] = 'attendee';
+  if (ONLINE && window.HNAPI && HNAPI.addChronicle) HNAPI.addChronicle(evId);
   markRead(evId);
   render();
   toast('Added to your chronicle', EVENTS[evId].title);

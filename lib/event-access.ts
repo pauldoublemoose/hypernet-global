@@ -101,6 +101,13 @@ export function pastInviteNotice(name: string, date: string, title: string): str
   return `${name} added you to a past event (${date}): ${title}. Add it to your chronicle?`;
 }
 
+/** Role stored by "Add to Chronicle" when the row has none. A stored role wins, and the host stays the host. */
+export function chronicleAddRole(input: { host: boolean; role: string | null }): "host" | "cocreator" | "attendee" | null {
+  if (input.role === "host" || input.role === "cocreator" || input.role === "attendee") return input.role;
+  if (input.host) return null;
+  return "attendee";
+}
+
 /** Which events a list returns. Omitted means current and upcoming. `only` is the chronicle picker. */
 export function eventListWindow(past: string | undefined): "current" | "past" {
   return past === "only" ? "past" : "current";

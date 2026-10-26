@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
 const { pairKey } = require("../_shared/hypernet-audience.js");
-const { relOf, kind } = require("../_shared/hypernet-rel.js");
+const { relOf, kind, controlOf } = require("../_shared/hypernet-rel.js");
 
 const me = "p-michal";
 const anna = "p-anna";
@@ -41,4 +41,13 @@ test("follow and friendship are independent", () => {
   assert.deepEqual(relOf(me, "p-kai", g({ [`${me}|p-kai`]: true }, friends)), { following: true, friend: "friend-none" });
   assert.equal(kind(relOf(me, "p-kai", g({ [`${me}|p-kai`]: true }, {}))), "following");
   assert.equal(follow[`${me}|${mira}`], false);
+});
+
+test("the relationship control is one menu for the state", () => {
+  const none = { friend: "friend-none", following: false };
+  assert.deepEqual(controlOf(none), { label: "Follow", tone: "primary", items: ["Follow", "Add friend", "Add to list"] });
+  assert.deepEqual(controlOf({ friend: "friend-none", following: true }), { label: "Following", tone: "on", items: ["Unfollow", "Add friend", "Add to list"] });
+  assert.deepEqual(controlOf({ friend: "requested-out", following: false }), { label: "Requested", tone: "", items: ["Cancel request", "Add to list"] });
+  assert.deepEqual(controlOf({ friend: "requested-in", following: true }), { label: "Respond", tone: "primary", items: ["Accept", "Decline", "Add to list"] });
+  assert.deepEqual(controlOf({ friend: "friends", following: true }), { label: "Friends", tone: "on", items: ["Unfriend", "Add to list"] });
 });

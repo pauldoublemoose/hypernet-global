@@ -165,6 +165,7 @@ export const contactLists = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     ownerId: uuid("owner_id").notNull().references(() => people.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    description: text("description").notNull().default(""),
     createdAt: tstz("created_at").notNull().defaultNow(),
   },
   (t) => [uniqueIndex("contact_lists_owner_lower_name").on(t.ownerId, sql`lower(${t.name})`)],

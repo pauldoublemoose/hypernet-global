@@ -22,6 +22,7 @@ create table contact_lists (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references people on delete cascade,
   name text not null check (char_length(name) between 1 and 40),
+  description text not null default '' check (char_length(description) <= 2000),
   created_at timestamptz not null default now()
 );
 create unique index contact_lists_owner_lower_name on contact_lists (owner_id, lower(name));

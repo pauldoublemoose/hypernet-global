@@ -42,6 +42,9 @@ test("delete is refused when an event excludes the list, and include-only refere
 test("membership toggles, and people you know leave you out", () => {
   const added = memberToggle([work], WORK, "p-lena");
   assert.deepEqual(added[0].memberIds, ["p-anna", "p-rio", "p-lena"]);
+  const described = memberToggle([{ id: WORK, name: "Work", description: "Night shift", memberIds: ["p-anna"] }], WORK, "p-rio");
+  assert.equal(described[0].description, "Night shift");
+  assert.deepEqual(described[0].memberIds, ["p-anna", "p-rio"]);
   const removed = memberToggle(added, WORK, "p-anna");
   assert.deepEqual(removed[0].memberIds, ["p-rio", "p-lena"]);
   assert.deepEqual(work.memberIds, ["p-anna", "p-rio"]);

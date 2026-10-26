@@ -261,10 +261,13 @@ export const calloutPatch = z
 export const replyCreate = z.object({ id: z.uuid().optional(), text: z.string().trim().min(1).max(2000) }).strict();
 export const messageCreate = z.object({ id: z.uuid().optional(), body: z.string().trim().min(1).max(4000) }).strict();
 
-/** POST /api/lists — a contact list of yours. At most 50. */
-export const listCreate = z.object({ id: z.uuid().optional(), name: z.string().trim().min(1).max(40) }).strict();
+const listName = z.string().trim().min(1).max(40);
+const listDescription = z.string().trim().max(2000);
+
+/** POST /api/lists — a contact list of yours. At most 50. Description is optional. */
+export const listCreate = z.object({ id: z.uuid().optional(), name: listName, description: listDescription.optional().default("") }).strict();
 /** PATCH /api/lists/:id */
-export const listPatch = z.object({ name: z.string().trim().min(1).max(40) }).strict();
+export const listPatch = z.object({ name: listName, description: listDescription.optional() }).strict();
 
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 export const IMAGE_TYPES = { "image/webp": "webp", "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/avif": "avif" } as const;

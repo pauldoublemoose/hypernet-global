@@ -5,13 +5,13 @@ import { listCreate } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
-const LIST_JSON = `json_build_object('id', l.id, 'name', l.name, 'createdAt', l.created_at,
+const LIST_JSON = `json_build_object('id', l.id, 'name', l.name, 'description', l.description, 'createdAt', l.created_at,
   'memberIds', coalesce((select json_agg(m.person_id) from contact_list_members m where m.list_id = l.id), '[]'))`;
 
-/** POST /api/lists {id?, name} — a contact list of yours. The 51st is 409. A name you already use, in any case, is 409. */
+/** POST /api/lists {id?, name, description?} — a contact list of yours. The 51st is 409. A name you already use, in any case, is 409. */
 export const POST = route(async (req: Request) => {
   const me = await requirePerson();
-  const { id, name } = listCreate.parse(await readJson(req));
+  const { id, name, description } = listCreate.parse(await readJson(req));
   const count = (await sqlx().query(
     `select count(*)::int n from contact_lists where owner_id = $1`,
     [me.id],
@@ -19,10 +19,10 @@ export const POST = route(async (req: Request) => {
   if (count[0].n >= 50) throw new HttpError(409, "list_cap", "You can keep 50 lists.");
   try {
     const rows = (await sqlx().query(
-      `insert into contact_lists (id, owner_id, name)
-         values (coalesce($1::uuid, gen_random_uuid()), $2, $3)
+      `insert into contact_lists (id, owner_id, name, description)
+         values (coalesce($1::uuid, gen_random_uuid()), $2, $3, $4)
        returning id`,
-      [id ?? null, me.id, name],
+      [id ?? null, me.id, name, description],
     )) as { id: string }[];
     const full = (await sqlx().query(`select ${LIST_JSON} v from contact_lists l where l.id = $1`, [rows[0].id])) as { v: unknown }[];
     return json({ list: full[0].v }, 201);

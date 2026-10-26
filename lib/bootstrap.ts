@@ -120,7 +120,7 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
       one(`select coalesce(json_agg(json_build_object('a', f.a, 'b', f.b, 'requestedBy', f.requested_by, 'status', f.status,
              'acceptedAt', f.accepted_at)), '[]') v from friendships f
              where $1::uuid is not null and (f.a = $1::uuid or f.b = $1::uuid)`),
-      one(`select coalesce(json_agg(json_build_object('id', l.id, 'name', l.name, 'createdAt', l.created_at,
+      one(`select coalesce(json_agg(json_build_object('id', l.id, 'name', l.name, 'description', l.description, 'createdAt', l.created_at,
              'memberIds', coalesce((select json_agg(m.person_id) from contact_list_members m where m.list_id = l.id), '[]'))), '[]') v
              from contact_lists l where l.owner_id = $1::uuid`),
       one(`select coalesce(json_agg(json_build_array(f.follower_id, f.followee_id)), '[]') v from person_follows f

@@ -710,7 +710,7 @@ async function overflowEverywhere(p, label){
       return { n:its.length, sorted:ts.every((t, i) => !i || ts[i - 1] >= t), bands:[...document.querySelectorAll('#listbody > .band, #listbody > .costrip > .band')].map(b => b.firstChild.textContent.trim()),
                co:!!co, coBg:st && st.backgroundColor, coFg:st && st.color, coSize:co && parseFloat(getComputedStyle(co.querySelector('.fcoa')).fontSize),
                bodySize:parseFloat(getComputedStyle(document.querySelector('#listbody .fsent')).fontSize), listBg:lb.backgroundColor, cards,
-               strip:document.querySelectorAll('#listbody .costrip .cotile').length, fof:!!document.querySelector('#listbody .ffof .fcard.fp [data-act="followp"]'),
+               strip:document.querySelectorAll('#listbody .costrip .cotile').length, fof:!!document.querySelector('#listbody .ffof .fcard.fp [data-rel-act="rel-menu"]'),
                verbs:!!document.querySelector('#listbody .fev [data-act="v-going"]') && !!document.querySelector('#listbody .fev [data-act="v-interested"]'),
                times:[...document.querySelectorAll('#listbody .fitem .ftime')].slice(0, 6).map(t => t.textContent) };
     });
@@ -1687,11 +1687,13 @@ async function overflowEverywhere(p, label){
     }
     /* following from the window updates it in place; an event opened from it stacks in the same window, the chat stays */
     await c.click(opener[0]); await c.waitForTimeout(300);
-    await c.click('#dscroll .profile-actions [data-act="followp"]'); await c.waitForTimeout(250);
-    const fol = await ev(c, () => { const b = document.querySelector('#dscroll .profile-actions [data-act="followp"]');
-      return { open:!document.getElementById('win').hidden, pf:!!PFOLLOW['p-anna'], text:b ? b.textContent.replace(/\s+/g, ' ').trim() : '' }; });
-    ok(fol.open && !fol.pf && fol.text === 'Follow', kind + ': Follow in the window works in place ' + JSON.stringify(fol));
-    await c.evaluate(() => { followP('p-anna'); document.querySelector('#dscroll .crow .cm[data-type="event"]').click(); }); await c.waitForTimeout(350);
+    await c.click('#dscroll .profile-actions [data-rel-act="rel-menu"]'); await c.waitForTimeout(150);
+    const fol = await ev(c, () => { const b = document.querySelector('#dscroll .profile-actions [data-rel-act="rel-menu"]');
+      const items = [...document.querySelectorAll('.popmenu .pi')].map(x => x.textContent.replace(/\s+/g, ' ').trim());
+      return { open:!document.getElementById('win').hidden, text:b ? b.textContent.replace(/\s+/g, ' ').trim() : '', items:items }; });
+    ok(fol.open && fol.text === 'Friends' && fol.items.indexOf('Unfriend') >= 0 && fol.items.indexOf('Add to list') >= 0, kind + ': the profile relationship control is the Friends menu ' + JSON.stringify(fol));
+    await c.keyboard.press('Escape'); await c.waitForTimeout(100);
+    await c.evaluate(() => { document.querySelector('#dscroll .crow .cm[data-type="event"]').click(); }); await c.waitForTimeout(350);
     ok(await ev(c, () => S.stack.length === 2 && S.stack[1].type === 'event' && S.stack[0].type === 'person' && S.chatOpen === 'c-anna' && !!document.querySelector('#dbar [data-act="back"]')), kind + ': an event opened from the profile stacks in the window (‹ back to it); the chat stays open');
     await c.click('#dbar [data-act="closewin"]'); await c.waitForTimeout(350);
     /* go elsewhere and come back: the same conversation, draft and place */
@@ -2104,7 +2106,7 @@ async function overflowEverywhere(p, label){
       ok(mainTs.every((t, i) => !i || mainTs[i - 1] >= t) && !items.some((x, i) => i && x.verb === 'you' && items[i - 1].verb === 'you'), kind + ': the stream is newest first, your lines among everyone\'s, never two of yours in a row');
       /* people joined: one entry per band, never you, the one in your city first (with Follow), faces for the rest */
       const jn = await ev(c, () => [...document.querySelectorAll('#listbody .fitem[data-verb="joined"]')].map(x => ({ s:x.querySelector('.fsent').textContent, t:x.querySelector('.ftime').textContent,
-        cards:[...x.querySelectorAll('.fcard[data-type="person"]')].map(k => k.getAttribute('data-id')), follow:!!x.querySelector('.fcard [data-act="followp"]'),
+        cards:[...x.querySelectorAll('.fcard[data-type="person"]')].map(k => k.getAttribute('data-id')), follow:!!x.querySelector('.fcard [data-rel-act="rel-menu"]'),
         faces:x.querySelectorAll('.fface').length, more:!!x.querySelector('[data-act="explorekind"][data-id="people"]'), sq:[...x.querySelectorAll('.fface .av')].every(a => a.offsetWidth === 32) })));
       ok(jn.length === 2 && jn[0].s === 'Lena, Tom and 3 others joined Hypernet' && jn[0].t === '50m ago' && jn[0].cards[0] === U(3) && jn[0].follow && jn[0].faces === 4 && jn[0].sq && jn[0].more &&
          jn[1].s === 'Ivo and Eva joined Hypernet' && jn.every(x => !/Michal/.test(x.s)),

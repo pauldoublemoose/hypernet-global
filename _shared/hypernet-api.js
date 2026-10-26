@@ -526,8 +526,12 @@
   var RELCACHE = {};
   /* a refused delete is 409 {events} and no message. write() would toast and reload, so these stay on req() */
 function listResult(p){ return p.then(function(d){ return { ok:true, list:d && d.list, body:d }; }, function(err){ return { ok:false, status:err.status, message:err.message, events:err.body && err.body.events }; }); }
-  HN.listCreate = function(list){ return listResult(req('POST', '/api/lists', { id:list.id, name:list.name })); };
-  HN.listRename = function(id, name){ return listResult(req('PATCH', '/api/lists/' + id, { name:name })); };
+  HN.listCreate = function(list){ return listResult(req('POST', '/api/lists', { id:list.id, name:list.name, description:list.description || '' })); };
+  HN.listRename = function(id, name, description){
+    var body = { name:name };
+    if (arguments.length > 2) body.description = description || '';
+    return listResult(req('PATCH', '/api/lists/' + id, body));
+  };
   HN.listDelete = function(id){ return listResult(req('DELETE', '/api/lists/' + id)); };
   HN.listMember = function(listId, personId, on){
     if (!HN.isId(listId) || !HN.isId(personId)) return Promise.resolve({ ok:true });

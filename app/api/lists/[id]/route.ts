@@ -6,7 +6,7 @@ import { listPatch } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
-const LIST_JSON = `json_build_object('id', l.id, 'name', l.name, 'createdAt', l.created_at,
+const LIST_JSON = `json_build_object('id', l.id, 'name', l.name, 'description', l.description, 'createdAt', l.created_at,
   'memberIds', coalesce((select json_agg(m.person_id) from contact_list_members m where m.list_id = l.id), '[]'))`;
 
 async function owned(id: string, me: string): Promise<boolean> {
@@ -14,15 +14,15 @@ async function owned(id: string, me: string): Promise<boolean> {
   return rows.length > 0;
 }
 
-/** PATCH /api/lists/:id {name} — rename a list of yours. Anyone else's id is 404. The name is unique for you ignoring case. */
+/** PATCH /api/lists/:id {name, description?} — rename a list of yours. Anyone else's id is 404. The name is unique for you ignoring case. */
 export const PATCH = route(async (req: Request, ctx: Ctx) => {
   const id = await idParam(ctx.params);
   const me = await requirePerson();
-  const { name } = listPatch.parse(await readJson(req));
+  const { name, description } = listPatch.parse(await readJson(req));
   try {
     const rows = (await sqlx().query(
-      `update contact_lists set name = $3 where id = $1 and owner_id = $2 returning id`,
-      [id, me.id, name],
+      `update contact_lists set name = $3, description = coalesce($4, description) where id = $1 and owner_id = $2 returning id`,
+      [id, me.id, name, description ?? null],
     )) as unknown[];
     if (!rows.length) throw notFound();
   } catch (err) {

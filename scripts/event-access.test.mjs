@@ -308,6 +308,13 @@ test("the page shows Add to Chronicle with a help button, and search leaves past
   assert.equal(chronicle.includes("readJson"), false);
 });
 
+test("the admin block is labeled Admin controls", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /heading:'Admin controls'/);
+  assert.match(html, /dialog\('Admin controls'/);
+  assert.equal(html.includes("Event controls"), false);
+});
+
 test("the event page copy of EVENT_PERMS matches the server table", () => {
   const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   const m = html.match(/var EVENT_PERMS = (\{[\s\S]*?\});/);

@@ -7551,7 +7551,7 @@ function settleEventControl(evId){
 function eventControlsDialog(evId){
   var e = EVENTS[evId];
   if (!e || !canManageEvent(evId)) return;
-  dialog('Event controls', eventControlsBody(evId), '<button class="btn" data-act="closedlg">Close</button>', 440);
+  dialog('Admin controls', eventControlsBody(evId), '<button class="btn" data-act="closedlg">Close</button>', 440);
   if (ONLINE && window.HNAPI && HNAPI.cocreatorRequests){
     HNAPI.cocreatorRequests(evId).then(function(r){
       var m = {};
@@ -8030,7 +8030,7 @@ function personLabel(pid){
 }
 function eventControlsItems(evId){
   var e = EVENTS[evId], past = !!(e && isPast(lastDay(e))), host = isMine(evId);
-  var items = [{ heading:'Event controls' },
+  var items = [{ heading:'Admin controls' },
     { label:'Who can see it', run:function(){ eventPrivacyDialog(evId); } }];
   if (past) return items;
   items.push({ label:'Invite admin', run:function(){ inviteDialog(evId, 'admin'); } });

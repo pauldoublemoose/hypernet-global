@@ -1518,7 +1518,7 @@ async function overflowEverywhere(p, label){
         var keys = [...document.querySelectorAll('[data-act="evpolicy"]')].map(b => b.getAttribute('data-key') + ':' + b.getAttribute('aria-pressed'));
         return { keys:keys, old:/Only admins can add co-creators/.test(document.body.textContent) };
       });
-      ok(pol.keys.join(',') === 'open:true,request:false,admins:false' && !pol.old, 'desk: Event controls has the three co-creator settings ' + JSON.stringify(pol));
+      ok(pol.keys.join(',') === 'open:true,request:false,admins:false' && !pol.old, 'desk: Admin controls has the three co-creator settings ' + JSON.stringify(pol));
     }
     ok(!c.errors.length, kind + ': no console errors (host ask) ' + c.errors.join(' '));
     await c.context().close();
@@ -2710,7 +2710,7 @@ async function overflowEverywhere(p, label){
                chrome:cs(btn).backgroundColor === 'rgb(212, 208, 200)' && cs(btn).color === 'rgb(20, 20, 20)' }; });
     ok(Object.values(pg).every(Boolean), kind + ': the whole page wears the look (ground, band, hairlines, labels AA, the accent), the toolbar stays chrome ' + JSON.stringify(pg));
     if (kind === 'phone') await shot(c, 'editlook-horizon-themed-phone');
-    /* an event you host: one Edit (Customize is part of it); the phone's bar is Edit · Call out · Invite · Event controls · ⋯ */
+    /* an event you host: one Edit (Customize is part of it); the phone's bar is Edit · Invite · Share · ⋯ */
     await newEvent(c, { title:'Sauna on the ridge', date:'2026-11-08', city:'Brno' }); await c.waitForTimeout(200);
     const host = await ev(c, () => ({ acts:[...document.querySelectorAll(L.phone ? '#evbar .btn' : '#dscroll .pg-event .actbar .btn')].map(b => b.getAttribute('data-act')),
       menu:ctxItems({ type:'event', id:S.stack[0].id }).filter(i => i !== '-').map(i => i.code) }));
@@ -2725,15 +2725,15 @@ async function overflowEverywhere(p, label){
     const barSel = kind === 'phone' ? '#evbar ' : '#dscroll ';
     await c.click(barSel + '[data-act="evmore"]'); await c.waitForTimeout(250);
     const controls = await ev(c, () => (document.querySelector('.ctxmenu, .ctxsheet') || {}).innerText || '');
-    ok(/New call out/.test(controls) && /Promote/.test(controls) && /Add to horizon/.test(controls) && /Event controls/.test(controls) && /Who can see it/.test(controls) && /Invite admin/.test(controls) && /Who can add themselves as co-creator/.test(controls) && /Guests can invite friends/.test(controls) && /Delete/.test(controls),
-       kind + ': the one … holds New call out, Promote, and Event controls ' + controls);
+    ok(/New call out/.test(controls) && /Promote/.test(controls) && /Add to horizon/.test(controls) && /Admin controls/.test(controls) && /Who can see it/.test(controls) && /Invite admin/.test(controls) && /Who can add themselves as co-creator/.test(controls) && /Guests can invite friends/.test(controls) && /Delete/.test(controls),
+       kind + ': the one … holds New call out, Promote, and Admin controls ' + controls);
     await c.keyboard.press('Escape'); await c.waitForTimeout(150);
     await c.evaluate(() => openItem('event', 'evt-deep-listening')); await c.waitForTimeout(350);
     const guest0 = await ev(c, () => ({ admins:document.querySelectorAll('[data-act="evadmins"]').length, invite:document.querySelectorAll('[data-act="evinvite"]').length }));
-    ok(guest0.admins === 0 && guest0.invite === 0, kind + ': a non-admin who has not RSVP’d does not see Event controls or Invite ' + JSON.stringify(guest0));
+    ok(guest0.admins === 0 && guest0.invite === 0, kind + ': a non-admin who has not RSVP’d does not see Admin controls or Invite ' + JSON.stringify(guest0));
     await c.click(barSel + '[data-act="v-going"]'); await c.waitForTimeout(300);
     const guest1 = await ev(c, (sel) => ({ admins:document.querySelectorAll(sel + '[data-act="evadmins"]').length, invite:document.querySelectorAll(sel + '[data-act="evinvite"]').length }), barSel);
-    ok(guest1.admins === 0 && guest1.invite === 1, kind + ': Going, with guests can invite, shows Invite and hides Event controls ' + JSON.stringify(guest1));
+    ok(guest1.admins === 0 && guest1.invite === 1, kind + ': Going, with guests can invite, shows Invite and hides Admin controls ' + JSON.stringify(guest1));
     await c.evaluate(() => { EVENTS['evt-deep-listening'].guestsCanInvite = false; render(); }); await c.waitForTimeout(200);
     ok(await ev(c, () => document.querySelectorAll('[data-act="evinvite"]').length === 0 && document.querySelectorAll('[data-act="evadmins"]').length === 0),
        kind + ': Guests can invite friends off hides Invite for a non-admin');

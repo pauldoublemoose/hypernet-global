@@ -214,12 +214,12 @@ export const eventLink = z
 
 /** PATCH: any subset of the same fields. Ids, host, slug and timestamps are not editable here — except the host's
  *  name of an event added from a link (nobody here hosts it; whoever added it corrects what the page said).
- *  The two booleans are admin-only. The route rejects them for anyone else. */
+ *  Privacy, guest invites and co-creator policy are admin-only. The route rejects them for anyone else. */
 export const eventPatch = z
   .object({
     ...eventFields,
     hostName: z.string().trim().min(1).max(80),
-    onlyAdminsAddCocreators: z.boolean(),
+    cocreatorPolicy: z.enum(["open", "request", "admins"]),
     guestsCanInvite: z.boolean(),
   })
   .partial()
@@ -312,6 +312,12 @@ export const adminInvite = z.object({ userId: z.uuid() }).strict();
 export const adminReply = z.object({ status: z.enum(["accepted", "declined"]) }).strict();
 /** POST /api/events/:id/demote — an admin sets someone else's co-creator role back to attendee. */
 export const demoteBody = z.object({ userId: z.uuid() }).strict();
+
+/** POST /api/events/:id/cocreators — an admin approves or declines a pending co-creator request. */
+export const cocreatorReviewBody = z.object({
+  userId: z.uuid(),
+  action: z.enum(["approve", "decline"]),
+}).strict();
 /** POST /api/events/:id/invites — a guest invite. Writes event_invites and a DM card. Does not change visibility. */
 export const guestInvite = z.object({ personId: z.uuid() }).strict();
 

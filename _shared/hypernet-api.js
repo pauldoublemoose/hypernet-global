@@ -103,6 +103,7 @@
     var ev = { id:e.id, slug:e.slug, title:e.title, date:e.startsOn, description:e.description, hostName:e.hostName, hostId:e.hostId,
                privacy:e.privacy, city:e.city || '', kind: det._kind || (e.source === 'import' ? 'real' : e.source === 'link' ? 'link' : 'own'), ownerIds:[], source:e.source,
                sourceUrl:e.sourceUrl || undefined, addedBy:e.addedBy || undefined };
+    if (e.cocreatorPolicy === 'open' || e.cocreatorPolicy === 'request' || e.cocreatorPolicy === 'admins') ev.cocreatorPolicy = e.cocreatorPolicy;
     return { ev:ev, rec:r };
   }
   function chatRows(list, me){
@@ -164,8 +165,9 @@
     /* RSVPs and promotions */
     var RS = {}, WT = {}, SH = {}, PM = {}, PC = {};
     EVP = {}; HAS = {};
-    var RO = {}, CH = {}, WB = {};
+    var RO = {}, CH = {}, WB = {}, CQ = {};
     d.rsvps.forEach(function(r){
+      if (r.cocreatorPending) (CQ[r.eventId] = CQ[r.eventId] || {})[r.personId] = 1;
       if (r.personId === me){
         if (r.status) RS[r.eventId] = r.status;
         if (r.went) WT[r.eventId] = true;
@@ -177,7 +179,7 @@
         else if (r.went) (WB[r.personId] = WB[r.personId] || {})[r.eventId] = true;
       }
     });
-    window.ROLE = RO; window.CHRON = CH; window.WENTBY = WB;
+    window.ROLE = RO; window.CHRON = CH; window.WENTBY = WB; window.COREQUESTS = CQ;
     d.promotions.forEach(function(p){ if (p[0] === me) PM[p[1]] = true; else PC[p[1]] = (PC[p[1]] || 0) + 1; });
     window.RSVP = RS; window.WENT = WT; window.SHIFT = SH; window.PROMOTED = PM; window.PROMOCOUNT = PC;
     /* horizons */
@@ -571,6 +573,14 @@
   HN.demote = function(evId, pid){
     if (!HN.isId(evId) || !HN.isId(pid)) return Promise.resolve();
     return write('dem:' + evId + ':' + pid, 'POST', '/api/events/' + evId + '/demote', { userId: pid }, 'the role');
+  };
+  HN.cocreatorRequests = function(evId){
+    if (!HN.isId(evId)) return Promise.resolve({ requests:[] });
+    return req('GET', '/api/events/' + evId + '/cocreators');
+  };
+  HN.reviewCocreator = function(evId, pid, action){
+    if (!HN.isId(evId) || !HN.isId(pid)) return Promise.resolve();
+    return write('coreq:' + evId + ':' + pid, 'POST', '/api/events/' + evId + '/cocreators', { userId: pid, action: action }, 'the request');
   };
   HN.sendMessage = function(cid, m){
     var pid = CHATS[cid] && CHATS[cid].memberIds[0]; if (!HN.isId(pid)) return Promise.resolve();

@@ -1504,7 +1504,7 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .msg .evcard:focus{ outline:1px solid var(--sel); outline-offset:2px; }
 /* HOST ASK */
 .hostask-q{ margin:0 0 4px; font-weight:bold; font-size:14px; line-height:20px; color:var(--ink); }
-.hostask-note{ margin:0 0 12px; color:var(--dim); }
+.hostask-note{ margin:0 0 12px; color:var(--ink2); }
 .hostask-choices{ display:flex; flex-direction:column; gap:8px; }
 .hostask-opt{
   display:flex; flex-direction:column; align-items:flex-start; gap:2px;
@@ -1513,8 +1513,12 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
   box-shadow:var(--out); font:inherit; cursor:pointer;
 }
 .hostask-opt b{ font-size:14px; line-height:20px; color:var(--ink); }
-.hostask-opt small{ display:block; font-size:12px; line-height:16px; font-weight:normal; color:var(--dim); }
+.hostask-opt small{ display:block; font-size:12px; line-height:16px; font-weight:normal; color:var(--ink2); }
 .hostask-opt:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
+.hostask-opt.on{ outline:2px solid var(--sel); outline-offset:-2px; }
+.hostask-choices + .hostask-q{ margin-top:16px; }
+.co-mine{ margin:0 0 12px; color:var(--ink2); }
+.co-mine .btn{ margin-left:8px; }
 /* MAP LINK */
 .maphint, .mapnote, .fillfrom .fhelp{ color:var(--ink2); }
 .maphint{ margin:4px 0 0; }
@@ -1928,6 +1932,7 @@ function ic(n, sz){
 var RSVP = {};                 /* eventId -> 'going' | 'interested' */
 var WENT = {};                 /* past events you were at */
 var ROLE = {};                 /* eventId -> 'host' | 'cocreator' | 'attendee'. Absent means no explicit role. */
+var COREQUESTS = {};           /* eventId -> { personId: 1 } pending co-creator requests */
 var CHRON = {};                /* other people: pid -> { eventId: role } */
 var WENTBY = {};               /* other people: pid -> { eventId: true } when they went and named no role */
 var CHRONICLE_ADD = null;      /* role chosen in Add past event, until the new-event panel finishes or closes */
@@ -2186,6 +2191,7 @@ var EVENT_PERMS = {
   removeAdmin: ['host'],
   demoteCocreator: ['host', 'admin'],
   setCocreatorRule: ['host', 'admin'],
+  reviewCocreator: ['host', 'admin'],
   setGuestInvite: ['host', 'admin']
 };
 var EVENT_ADMINS = {};
@@ -2217,9 +2223,15 @@ function guestsCanInviteOf(evId){
   var e = EVENTS[evId];
   return !e || e.guestsCanInvite !== false;
 }
-function onlyAdminsAddCocreators(evId){
-  var e = EVENTS[evId];
-  return !!(e && e.onlyAdminsAddCocreators);
+function cocreatorPolicyOf(evId){
+  var e = EVENTS[evId], p = e && e.cocreatorPolicy;
+  if (p === 'open' || p === 'request' || p === 'admins') return p;
+  return e && e.onlyAdminsAddCocreators ? 'admins' : 'open';
+}
+function meKey(){ return myActor() || 'self'; }
+function cocreatorPendingMine(evId){
+  var m = COREQUESTS[evId];
+  return !!(m && (m[meKey()] || m['self']));
 }
 function canInviteToEvent(evId){
   var e = EVENTS[evId];
@@ -3217,7 +3229,7 @@ function canvasHTML(evId){
   var past = isPast(lastDay(e));
   var bar = !past ? verbsHTML(evId) : S.loggedIn ? toolbarHTML(vb('v-went', evId, 'Went', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] }), paneControls(evId) + vb('share', evId, 'Share', 'share')) : '';
   /* Details (the facts grid) → About → Call outs → Who's going → the plan → the rest, only what there is */
-  var s = adminInviteBanner(evId) + sect('About', descOf(e) ? '<p class="evdesc">'+esc(descOf(e))+'</p>' : '');
+  var s = adminInviteBanner(evId) + cocreatorMineHTML(evId) + sect('About', descOf(e) ? '<p class="evdesc">'+esc(descOf(e))+'</p>' : '');
   s += scheduleHTML(evId);
   if (r.theme) s += sect('Theme', '<div class="themeline">'+esc(typeof r.theme === 'object' ? (r.theme.name || '') : r.theme)+'</div>' +
                                    (r.theme.blurb ? '<p>'+esc(r.theme.blurb)+'</p>' : ''));
@@ -3457,7 +3469,7 @@ function chronicleUnblockDate(){
   el.removeAttribute('min');
   if (DRAFT && DRAFT.date && el.value !== DRAFT.date) el.value = DRAFT.date;
 }
-function openPastEvent(role){
+function openPastEvent(role, into){
   CHRONICLE_ADD = role;
   var d = FORMDRAFTS.event;
   if (!d || !eventDraftDirty(d)){
@@ -3465,7 +3477,8 @@ function openPastEvent(role){
     d.date = shiftIso(TODAY_ISO, -7);
     FORMDRAFTS.event = d;
   }
-  newEventDialog();
+  if (into && HORIZONS[into]) d.into = into;
+  newEventDialog(into);
   chronicleUnblockDate();
 }
 function fileChronicle(id, role){
@@ -6232,6 +6245,10 @@ function lkMissing(d){
   var m = wizMissing(Object.assign({}, d, { editing:null }), 1);
   if (!/^https?:\/\/[^\s\/]+\.[^\s]+$/i.test(String(d.url || '').trim())) m.url = 'Paste the link to the event';
   if (!String(d.host || '').trim()) m.host = 'Add who puts it on';
+  if (d.went && !m.date){
+    var st = isoDate(d.date), en = String(d.end || '').trim() ? isoDate(d.end) : '', last = en || st;
+    if (st && last && !isPast(last)) m.date = 'Pick a day that has already passed';
+  }
   return m;
 }
 function linkFormHTML(d){
@@ -6367,6 +6384,7 @@ function linkAdd(){
               externalUrl:url, sourceSite:linkSite(url), organizerUrl:x.organizerUrl || undefined };
   ADDEDBYME.push(id); READ[id] = true; PROMOCOUNT[id] = 0;
   if (ONLINE) HNAPI.createLinkEvent(id, d.image);
+  if (d.went) fileChronicle(id, 'attendee');
   schedulePersist();
   /* From a horizon's Add events, the new event goes back to the list, ticked. From New event, it is logged and opened. */
   if (d.ctx !== 'new' && PK && HORIZONS[PK.hz]){
@@ -7240,26 +7258,59 @@ function wizDraftOpen(){
   var dl = DLGS[DLGS.length-1];
   return !!(dl && dl.querySelector('.wizsteps') && DRAFT && !DRAFT.editing && FORMDRAFTS.event === DRAFT && eventDraftDirty(DRAFT));
 }
-/* before any details: are you the host, or are you logging someone else's event? */
+/* before any details: who hosts it, and whether it already happened. One screen, then Continue. */
 var HOSTINTO = null;
+var HOSTPICK = { who:'', when:'' };
+function hostAskOpt(group, id, title, note, on){
+  return '<button type="button" class="hostask-opt'+(on ? ' on' : '')+'" data-act="'+group+'" data-id="'+id+'" aria-pressed="'+(on ? 'true' : 'false')+'"><b>'+esc(title)+'</b><small>'+esc(note)+'</small></button>';
+}
 function hostAskHTML(){
+  var who = HOSTPICK.who, when = HOSTPICK.when;
   return '<div class="hostask"><p class="hostask-q" id="host-ask-q">Are you the host?</p>' +
     '<p class="hostask-note">You run this event, or you are logging one that someone else runs.</p>' +
     '<div class="hostask-choices" role="group" aria-labelledby="host-ask-q">' +
-      '<button type="button" class="hostask-opt" data-act="hostask" data-id="mine"><b>I\'m hosting</b><small>You run this event.</small></button>' +
-      '<button type="button" class="hostask-opt" data-act="hostask" data-id="other"><b>Someone else is hosting</b><small>Log an event run by someone not on Hypernet, such as a commercial concert or festival.</small></button>' +
+      hostAskOpt('hostask', 'mine', "I'm hosting", 'You run this event.', who === 'mine') +
+      hostAskOpt('hostask', 'other', 'Someone else is hosting', 'Log an event run by someone not on Hypernet, such as a commercial concert or festival.', who === 'other') +
+    '</div>' +
+    '<p class="hostask-q" id="host-when-q">Is this a new event or did it already happen?</p>' +
+    '<div class="hostask-choices" role="group" aria-labelledby="host-when-q">' +
+      hostAskOpt('hostwhen', 'upcoming', 'Upcoming', 'It has not happened yet.', when === 'upcoming') +
+      hostAskOpt('hostwhen', 'past', 'Already happened', 'Add it to your chronicle.', when === 'past') +
     '</div></div>';
+}
+function hostAskFoot(){
+  var ok = HOSTPICK.who && HOSTPICK.when;
+  return '<button class="btn primary" data-act="hostask-go"'+(ok ? '' : ' aria-disabled="true"')+'>Continue</button>';
 }
 function hostAskTitle(){
   return HOSTINTO && HORIZONS[HOSTINTO] ? 'New event for ' + HORIZONS[HOSTINTO].name : 'New event';
 }
+function hostAskPaint(){
+  var dl = DLGS[DLGS.length-1]; if (!dl) return;
+  dl.querySelector('.dbody').innerHTML = hostAskHTML();
+  var foot = dl.querySelector('.dfoot');
+  if (!foot){ foot = document.createElement('div'); foot.className = 'dfoot'; dl.appendChild(foot); }
+  foot.innerHTML = hostAskFoot();
+  placeDlg(dl);
+}
+function hostAskPick(group, id){
+  if (group === 'hostask') HOSTPICK.who = id === 'other' ? 'other' : 'mine';
+  else HOSTPICK.when = id === 'past' ? 'past' : 'upcoming';
+  hostAskPaint();
+}
+function hostAskGo(){
+  if (!HOSTPICK.who || !HOSTPICK.when) return;
+  var who = HOSTPICK.who, when = HOSTPICK.when;
+  if (who === 'mine' && when === 'past'){ openPastEvent('host', HOSTINTO); return; }
+  if (who === 'other') startOtherHost(when === 'past');
+  else openHostedWizard(HOSTINTO);
+}
 function hostAskShow(){
   var dl = DLGS[DLGS.length-1]; if (!dl) return;
   DRAFT = null;
+  HOSTPICK = { who:'', when:'' };
   dl.querySelector('.dtitle').textContent = hostAskTitle();
-  dl.querySelector('.dbody').innerHTML = hostAskHTML();
-  var foot = dl.querySelector('.dfoot'); if (foot) foot.remove();
-  placeDlg(dl);
+  hostAskPaint();
 }
 /* Optional, on Basics only: paste the event's own page and reuse Autofill. The event stays yours (create, host_id). */
 function fillFromHTML(d){
@@ -7347,10 +7398,12 @@ function openHostedWizard(into){
   if (DRAFT.step === 1) focusIn('w-t');
 }
 /* Someone else is hosting: Michal's link form (paste a page, Autofill, the organiser's name). You are added_by, not host_id. */
-function startOtherHost(){
+function startOtherHost(past){
   FORMDRAFTS.event = null;
   DRAFT = blankLinkDraft();
   DRAFT.ctx = 'new';
+  DRAFT.went = !!past;
+  if (past) DRAFT.note = 'This one already happened. Use a day that has passed.';
   DRAFT.into = HOSTINTO && HORIZONS[HOSTINTO] ? HOSTINTO : null;
   var dl = DLGS[DLGS.length-1]; if (!dl) return;
   dl.querySelector('.dtitle').textContent = 'Add an event from a link';
@@ -7361,7 +7414,8 @@ var newEventDialog = gated(function(into){
   var kept = FORMDRAFTS.event;
   if (CHRONICLE_ADD || (kept && eventDraftDirty(kept))){ openHostedWizard(into); return; }
   HOSTINTO = into && HORIZONS[into] ? into : null;
-  dialog(hostAskTitle(), hostAskHTML(), '', 480, 'hostask');
+  HOSTPICK = { who:'', when:'' };
+  dialog(hostAskTitle(), hostAskHTML(), hostAskFoot(), 480, 'hostask');
 });
 function adminInviteBanner(evId){
   if (!S.loggedIn || adminStatus(evId, myActor()) !== 'pending') return '';
@@ -7376,9 +7430,26 @@ function cocreatorIds(evId){
   });
   return ids;
 }
-function eventControlsDialog(evId){
-  var e = EVENTS[evId];
-  if (!e || !canManageEvent(evId)) return;
+function cocreatorPolicyHTML(evId){
+  var cur = cocreatorPolicyOf(evId);
+  var opts = [['open','Open','Anyone who can see it can add themselves.'], ['request','On request','A request waits for an admin.'], ['admins','Admins only','Only an admin can add a co-creator.']];
+  return '<div class="hostask"><p class="hostask-q" id="co-pol-q">Who can add themselves as co-creator</p><div class="hostask-choices" role="group" aria-labelledby="co-pol-q">' +
+    opts.map(function(o){
+      var on = cur === o[0];
+      return '<button type="button" class="hostask-opt'+(on ? ' on' : '')+'" data-act="evpolicy" data-id="'+evId+'" data-key="'+o[0]+'" aria-pressed="'+(on ? 'true' : 'false')+'"><b>'+esc(o[1])+'</b><small>'+esc(o[2])+'</small></button>';
+    }).join('') + '</div></div>';
+}
+function cocreatorRequestRows(evId){
+  var m = COREQUESTS[evId] || {}, ids = Object.keys(m).filter(function(pid){ return m[pid]; });
+  if (!ids.length) return '';
+  return '<h3>Requests</h3>' + ids.map(function(pid){
+    var name = pid === meKey() || pid === 'self' || pid === myActor() ? 'You' : person(pid).displayName;
+    return '<div class="ev-admin-row"><span>'+esc(name)+' · co-creator requested</span>' +
+      '<button class="btn" data-act="evcoreview" data-id="'+evId+'" data-user="'+esc(pid)+'" data-key="approve">Approve</button>' +
+      '<button class="btn" data-act="evcoreview" data-id="'+evId+'" data-user="'+esc(pid)+'" data-key="decline">Decline</button></div>';
+  }).join('');
+}
+function eventControlsBody(evId){
   var host = isMine(evId);
   var list = adminRows(evId).map(function(a){
     var name = a.userId === myActor() || a.userId === 'self' ? 'You' : person(a.userId).displayName;
@@ -7389,16 +7460,84 @@ function eventControlsDialog(evId){
     return '<div class="ev-admin-row"><span>'+esc(person(pid).displayName)+'</span>' +
       '<button class="btn" data-act="evdemote" data-id="'+evId+'" data-user="'+esc(pid)+'">Demote</button></div>';
   }).join('');
-  dialog('Event controls', '<div class="ev-controls">' +
+  return '<div class="ev-controls">' +
     '<button class="btn" data-act="editevent" data-id="'+evId+'">Edit</button>' +
     '<button class="btn" data-act="evprivacy" data-id="'+evId+'">Who can see it</button>' +
     '<button class="btn" data-act="evinvite" data-id="'+evId+'">Invite</button>' +
     '<button class="btn" data-act="evadmin-invite" data-id="'+evId+'">Invite admin</button>' +
     '<h3>Admins</h3>' + list +
     (crew ? '<h3>Co-creators</h3>' + crew : '') +
-    '<button class="btn ev-toggle" data-act="evtoggle" data-id="'+evId+'" data-key="onlyAdminsAddCocreators" aria-pressed="'+(onlyAdminsAddCocreators(evId)?'true':'false')+'">Only admins can add co-creators</button>' +
+    cocreatorRequestRows(evId) +
+    cocreatorPolicyHTML(evId) +
     '<button class="btn ev-toggle" data-act="evtoggle" data-id="'+evId+'" data-key="guestsCanInvite" aria-pressed="'+(guestsCanInviteOf(evId)?'true':'false')+'">Guests can invite friends</button>' +
-    '</div>', '<button class="btn" data-act="closedlg">Close</button>', 440);
+    '</div>';
+}
+function eventControlsDialog(evId){
+  var e = EVENTS[evId];
+  if (!e || !canManageEvent(evId)) return;
+  dialog('Event controls', eventControlsBody(evId), '<button class="btn" data-act="closedlg">Close</button>', 440);
+  if (ONLINE && window.HNAPI && HNAPI.cocreatorRequests){
+    HNAPI.cocreatorRequests(evId).then(function(r){
+      var m = {};
+      (r && r.requests || []).forEach(function(pid){ m[pid] = 1; });
+      COREQUESTS[evId] = m;
+      var dl = DLGS[DLGS.length - 1], body = dl && dl.querySelector('.dbody');
+      if (body && body.querySelector('[data-act="evpolicy"][data-id="'+evId+'"]')) body.innerHTML = eventControlsBody(evId);
+    }, function(){});
+  }
+}
+function cocreatorMineHTML(evId){
+  if (!S.loggedIn || isMine(evId) || isLinkEvent(evId)) return '';
+  var policy = cocreatorPolicyOf(evId), role = ROLE[evId], pending = cocreatorPendingMine(evId);
+  if (role === 'cocreator') return '<p class="co-mine">You are a co-creator. <button class="btn" data-act="coleave" data-id="'+evId+'">Leave</button></p>';
+  if (pending) return '<p class="co-mine">Co-creator requested. <button class="btn" data-act="cocancel" data-id="'+evId+'">Cancel request</button></p>';
+  if (policy === 'admins') return '';
+  return '<p class="co-mine"><button class="btn" data-act="coclaim" data-id="'+evId+'">'+(policy === 'request' ? 'Request co-creator' : 'Co-creator')+'</button></p>';
+}
+function claimCocreator(evId){
+  var policy = cocreatorPolicyOf(evId);
+  if (!S.loggedIn || isMine(evId) || isLinkEvent(evId) || policy === 'admins') return;
+  if (!COREQUESTS[evId]) COREQUESTS[evId] = {};
+  if (policy === 'request'){
+    ROLE[evId] = 'attendee';
+    COREQUESTS[evId][meKey()] = 1;
+  } else {
+    ROLE[evId] = 'cocreator';
+    delete COREQUESTS[evId][meKey()];
+  }
+  if (ONLINE) HNAPI.rsvp(evId, { role:'cocreator' });
+  render();
+}
+function cancelCocreatorRequest(evId){
+  if (COREQUESTS[evId]) delete COREQUESTS[evId][meKey()];
+  if (ROLE[evId] !== 'cocreator') ROLE[evId] = 'attendee';
+  if (ONLINE) HNAPI.rsvp(evId, { role:'attendee' });
+  render();
+}
+function leaveCocreator(evId){
+  if (COREQUESTS[evId]) delete COREQUESTS[evId][meKey()];
+  delete ROLE[evId];
+  if (ONLINE) HNAPI.rsvp(evId, { role:null });
+  render();
+}
+function reviewCocreator(evId, pid, action){
+  if (!canManageEvent(evId) || !pid || !COREQUESTS[evId] || !COREQUESTS[evId][pid]) return;
+  delete COREQUESTS[evId][pid];
+  if (action === 'approve'){
+    if (pid === meKey() || pid === 'self' || pid === myActor()) ROLE[evId] = 'cocreator';
+    else (CHRON[pid] = CHRON[pid] || {})[evId] = 'cocreator';
+  }
+  if (ONLINE && window.HNAPI && HNAPI.reviewCocreator) HNAPI.reviewCocreator(evId, pid, action === 'approve' ? 'approve' : 'decline');
+  closeDialogs();
+  eventControlsDialog(evId);
+}
+function setCocreatorPolicy(evId, policy){
+  var e = EVENTS[evId];
+  if (!e || !canManageEvent(evId) || (policy !== 'open' && policy !== 'request' && policy !== 'admins')) return;
+  e.cocreatorPolicy = policy;
+  if (ONLINE) HNAPI.patchEvent(evId, { cocreatorPolicy: policy });
+  closeDialogs();
+  eventControlsDialog(evId);
 }
 function eventPrivacyDialog(evId){
   var e = EVENTS[evId];
@@ -7418,12 +7557,9 @@ function saveEventPrivacy(evId){
 function setEventToggle(evId, key){
   var e = EVENTS[evId];
   if (!e || !canManageEvent(evId)) return;
-  if (key === 'onlyAdminsAddCocreators') e.onlyAdminsAddCocreators = !e.onlyAdminsAddCocreators;
-  else if (key === 'guestsCanInvite') e.guestsCanInvite = !guestsCanInviteOf(evId);
+  if (key === 'guestsCanInvite') e.guestsCanInvite = !guestsCanInviteOf(evId);
   else return;
-  if (ONLINE) HNAPI.patchEvent(evId, key === 'onlyAdminsAddCocreators'
-    ? { onlyAdminsAddCocreators:!!e.onlyAdminsAddCocreators }
-    : { guestsCanInvite:e.guestsCanInvite !== false });
+  if (ONLINE) HNAPI.patchEvent(evId, { guestsCanInvite:e.guestsCanInvite !== false });
   closeDialogs();
   eventControlsDialog(evId);
 }
@@ -8543,7 +8679,9 @@ document.addEventListener('click', function(ev){
     case 'pkdone':       pickerDone(); break;
     case 'pkfilter':     pickerFilter(id); break;
     case 'pklink':       linkOpenInPicker(); break;
-    case 'hostask':      if (id === 'other') startOtherHost(); else openHostedWizard(HOSTINTO); break;
+    case 'hostask':      hostAskPick('hostask', id); break;
+    case 'hostwhen':     hostAskPick('hostwhen', id); break;
+    case 'hostask-go':   hostAskGo(); break;
     case 'pknewev': {
       /* keep what you ticked, then make the new event for this horizon */
       var nhz = PK.hz, changed = PK.sel.join() !== HORIZONS[nhz].eventIds.join();
@@ -8596,6 +8734,11 @@ document.addEventListener('click', function(ev){
     case 'evprivacy':    eventPrivacyDialog(id); break;
     case 'evprivacy-save': saveEventPrivacy(id); break;
     case 'evtoggle':     setEventToggle(id, n.getAttribute('data-key')); break;
+    case 'evpolicy':     setCocreatorPolicy(id, n.getAttribute('data-key')); break;
+    case 'coclaim':      claimCocreator(id); break;
+    case 'cocancel':     cancelCocreatorRequest(id); break;
+    case 'coleave':      leaveCocreator(id); break;
+    case 'evcoreview':   reviewCocreator(id, n.getAttribute('data-user'), n.getAttribute('data-key')); break;
     case 'ivpick':       if (INVITE && INVITE.kind === 'admin') sendAdminInvite(id, n.getAttribute('data-user')); else sendEventInvite(id, n.getAttribute('data-user')); break;
     case 'evadmin-accept': answerAdminInvite(id, true); break;
     case 'evadmin-decline': answerAdminInvite(id, false); break;

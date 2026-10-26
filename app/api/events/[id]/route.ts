@@ -33,7 +33,7 @@ export const PATCH = route(async (req: Request, ctx: Ctx) => {
   const { hostName, ...patch } = eventPatch.parse(await readJson(req));
   const gate = await eventGate(id, me.id);
   if (!gate || !canEditEvent(gate.access)) throw notFound(NOT_YOURS);
-  const adminField = "privacy" in patch || "onlyAdminsAddCocreators" in patch || "guestsCanInvite" in patch;
+  const adminField = "privacy" in patch || "cocreatorPolicy" in patch || "guestsCanInvite" in patch;
   if (adminField && !canManageEvent(gate.access)) throw forbidden("Only an admin of this event can change that.");
   try {
     const rows = await db()
@@ -45,6 +45,7 @@ export const PATCH = route(async (req: Request, ctx: Ctx) => {
   } catch (err) {
     if (err instanceof HttpError) throw err;
     if (pgCode(err) === "23514") throw new HttpError(400, "invalid", "A value is not allowed (check the dates, colours and picture).");
+    if (pgCode(err) === "42703" && "cocreatorPolicy" in patch) throw new HttpError(400, "invalid", "Co-creator policy needs migration 0011.");
     throw err;
   }
   return json({ event: await eventFor(id, me.id) });

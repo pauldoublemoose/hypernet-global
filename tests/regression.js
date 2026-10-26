@@ -202,11 +202,18 @@ async function join(p, name, handle){
   await p.fill('#pf-name', name); await p.fill('#pf-handle', handle); await p.click('#pfsave'); await p.waitForTimeout(300);
 }
 /* the New event wizard filled the way a host has to (2026-10-04): Basics, Next, About; then Next, Publish unless told not to */
+async function answerHost(c, who, when){
+  who = who || 'mine'; when = when || 'upcoming';
+  if (!(await c.$('.dlg [data-act="hostask"][data-id="' + who + '"]'))) return false;
+  await c.click('.dlg [data-act="hostask"][data-id="' + who + '"]');
+  await c.click('.dlg [data-act="hostwhen"][data-id="' + when + '"]');
+  await c.click('.dlg [data-act="hostask-go"]');
+  await c.waitForTimeout(220);
+  return true;
+}
 async function newEvent(c, o){
   await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
-  if (await c.$('.dlg [data-act="hostask"][data-id="mine"]')){
-    await c.click('.dlg [data-act="hostask"][data-id="mine"]'); await c.waitForTimeout(200);
-  }
+  await answerHost(c, 'mine', 'upcoming');
   await c.fill('#w-t', o.title); await c.fill('#w-d', o.date);
   if (o.online) await c.check('#w-on'); else await c.fill('#w-c', o.city || 'Brno');
   if (o.privacy) await c.selectOption('#w-p', o.privacy);
@@ -1401,7 +1408,7 @@ async function overflowEverywhere(p, label){
     await toHz();
     await c.click('#dscroll [data-act="addevents"]'); await c.waitForTimeout(300);
     await c.click('.dlg [data-act="pknewev"]'); await c.waitForTimeout(300);
-    await c.click('.dlg [data-act="hostask"][data-id="mine"]'); await c.waitForTimeout(200);
+    await answerHost(c, 'mine', 'upcoming');
     ok(await ev(c, h => document.querySelector('.dlg .dtitle').textContent === 'New event for ' + HORIZONS[h].name, hz), kind + ': New event from Add events says which horizon it is for');
     await c.fill('#w-t', 'Ridge sauna'); await c.fill('#w-d', '2030-11-02'); await c.fill('#w-c', 'Brno'); await c.waitForTimeout(100);
     await c.click('.dlg [data-id="next"]'); await c.waitForTimeout(150);
@@ -1430,26 +1437,32 @@ async function overflowEverywhere(p, label){
       });
       document.documentElement.setAttribute('data-theme', 'y2fresh');
       return { title:(document.querySelector('.dlg .dtitle') || {}).textContent || '', q:(document.querySelector('.hostask-q') || {}).textContent || '',
+               when:(document.querySelector('#host-when-q') || {}).textContent || '',
                mine:!!document.querySelector('[data-act="hostask"][data-id="mine"]'), other:!!document.querySelector('[data-act="hostask"][data-id="other"]'),
+               upcoming:!!document.querySelector('[data-act="hostwhen"][data-id="upcoming"]'), past:!!document.querySelector('[data-act="hostwhen"][data-id="past"]'),
+               go:(document.querySelector('[data-act="hostask-go"]') || {}).getAttribute && document.querySelector('[data-act="hostask-go"]').getAttribute('aria-disabled'),
                fields:!!document.querySelector('#w-t, #lk-u'), themes:themes };
     });
     await c.evaluate(() => newEventDialog()); await c.waitForTimeout(250);
     const q0 = await ask();
-    ok(q0.title === 'New event' && q0.q === 'Are you the host?' && q0.mine && q0.other && !q0.fields && q0.themes.every(t => t.title >= 4.5 && t.note >= 4.5),
-       kind + ': New event asks who hosts it before any details, readable in both themes ' + JSON.stringify(q0));
+    ok(q0.title === 'New event' && q0.q === 'Are you the host?' && q0.when === 'Is this a new event or did it already happen?' && q0.mine && q0.other && q0.upcoming && q0.past && q0.go === 'true' && !q0.fields && q0.themes.every(t => t.title >= 4.5 && t.note >= 4.5),
+       kind + ': New event asks who hosts it and whether it happened, readable in both themes ' + JSON.stringify(q0));
     ok((await overflow(c)) <= 0, kind + ': host question, no horizontal overflow');
-    await c.click('.dlg [data-act="hostask"][data-id="other"]'); await c.waitForTimeout(250);
+    await c.click('.dlg [data-act="hostask"][data-id="other"]'); await c.waitForTimeout(150);
+    ok(await ev(c, () => !document.querySelector('#lk-u') && document.querySelector('[data-act="hostask-go"]').getAttribute('aria-disabled') === 'true'),
+       kind + ': picking a host does not open the form until both answers are in');
+    await answerHost(c, 'other', 'upcoming');
     ok(await ev(c, () => document.querySelector('.dlg .dtitle').textContent === 'Add an event from a link' && document.activeElement.id === 'lk-u' && !document.querySelector('.wizsteps')),
-       kind + ': Someone else opens the link form, not the wizard');
+       kind + ': Someone else, upcoming, opens the link form, not the wizard');
     await c.click('.dlg [data-act="lkback"]'); await c.waitForTimeout(200);
-    ok(await ev(c, () => !!document.querySelector('[data-act="hostask"][data-id="mine"]') && !document.querySelector('#lk-u')),
-       kind + ': Back from the link returns to the question');
-    await c.click('.dlg [data-act="hostask"][data-id="mine"]'); await c.waitForTimeout(250);
+    ok(await ev(c, () => !!document.querySelector('[data-act="hostask"][data-id="mine"]') && !!document.querySelector('#host-when-q') && !document.querySelector('#lk-u')),
+       kind + ': Back from the link returns to both questions');
+    await answerHost(c, 'mine', 'upcoming');
     ok(await ev(c, () => !!document.querySelector('#w-t') && !!document.querySelector('.dlg .wizsteps') && !document.querySelector('#lk-u') && document.querySelector('.dlg .dtitle').textContent === 'New event'),
-       kind + ': I\'m hosting continues to the wizard');
+       kind + ': I\'m hosting, upcoming, continues to the wizard');
     await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
     await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
-    await c.click('.dlg [data-act="hostask"][data-id="other"]'); await c.waitForTimeout(200);
+    await answerHost(c, 'other', 'upcoming');
     await c.fill('#lk-u', 'https://tickets.example/fest'); await c.press('#lk-u', 'Enter'); await c.waitForTimeout(200);
     const off = await ev(c, () => ({ filled:!!DRAFT && DRAFT.filled, note:(DRAFT && DRAFT.note) || '' }));
     ok(off.filled && /fill in the details yourself/.test(off.note), kind + ': offline, Autofill opens the fields to fill in ' + JSON.stringify(off));
@@ -1475,12 +1488,38 @@ async function overflowEverywhere(p, label){
       await c.click('.dlg [data-act="pknewev"]'); await c.waitForTimeout(250);
       ok(await ev(c, h => document.querySelector('.dlg .dtitle').textContent === 'New event for ' + HORIZONS[h].name && !!document.querySelector('[data-act="hostask"][data-id="other"]'), hz),
          'desk: New event for a horizon asks the same question');
-      await c.click('.dlg [data-act="hostask"][data-id="other"]'); await c.waitForTimeout(200);
+      await answerHost(c, 'other', 'upcoming');
       await c.fill('#lk-u', 'https://festival.example/ridge'); await c.press('#lk-u', 'Enter'); await c.waitForTimeout(200);
       await c.fill('#lk-h', 'Ridge Promoters'); await c.fill('#w-t', 'Ridge festival'); await c.fill('#w-d', '2026-12-01'); await c.fill('#w-c', 'Brno'); await c.waitForTimeout(100);
       await c.click('.dlg [data-act="lkadd"]'); await c.waitForTimeout(350);
       ok(await ev(c, h => { const id = ADDEDBYME[ADDEDBYME.length - 1]; return HORIZONS[h].eventIds.indexOf(id) >= 0 && EVENTS[id].kind === 'link' && MYEVENTS.indexOf(id) < 0 && EVENTS[id].hostName === 'Ridge Promoters'; }, hz),
          'desk: a horizon\'s someone-else event is on the horizon, logged by you, hosted by them');
+    }
+    if (kind === 'desk'){
+      await c.evaluate(() => { closeDialogs(); FORMDRAFTS.event = null; newEventDialog(); }); await c.waitForTimeout(200);
+      await answerHost(c, 'mine', 'past');
+      const pastHost = await ev(c, () => ({ role:CHRONICLE_ADD, date:(document.getElementById('w-d') || {}).value || '', min:(document.getElementById('w-d') || {}).getAttribute && document.getElementById('w-d').getAttribute('min'), fill:!!document.getElementById('w-fill') }));
+      ok(pastHost.role === 'host' && pastHost.date && pastHost.date < '2026-10-01' && !pastHost.min && pastHost.fill,
+         'desk: I hosted it and it already happened opens the past wizard ' + JSON.stringify(pastHost));
+      await c.evaluate(() => { closeDialogs(); CHRONICLE_ADD = null; FORMDRAFTS.event = null; newEventDialog(); }); await c.waitForTimeout(200);
+      await answerHost(c, 'other', 'past');
+      await c.fill('#lk-u', 'https://tickets.example/old'); await c.press('#lk-u', 'Enter'); await c.waitForTimeout(150);
+      await c.fill('#lk-h', 'Old Festival'); await c.fill('#w-t', 'Old night'); await c.fill('#w-d', '2026-09-01'); await c.fill('#w-c', 'Brno');
+      await c.click('.dlg [data-act="lkadd"]'); await c.waitForTimeout(300);
+      const went = await ev(c, () => { const id = ADDEDBYME[ADDEDBYME.length - 1]; return { kind:EVENTS[id].kind, went:!!WENT[id], role:ROLE[id], mine:MYEVENTS.indexOf(id) >= 0 }; });
+      ok(went.kind === 'link' && went.went && went.role === 'attendee' && !went.mine, 'desk: someone else and already happened is a past link you went to ' + JSON.stringify(went));
+      await c.evaluate(() => { closeDialogs(); addPastEventDialog(); }); await c.waitForTimeout(200);
+      ok(await ev(c, () => !document.querySelector('[data-act="hostask"]') && !!document.querySelector('input[name="ch-role"]')),
+         'desk: Add past event skips the two questions');
+      const pol = await ev(c, () => {
+        closeDialogs();
+        var id = 'evt-deep-listening';
+        if (MYEVENTS.indexOf(id) < 0) MYEVENTS.push(id);
+        eventControlsDialog(id);
+        var keys = [...document.querySelectorAll('[data-act="evpolicy"]')].map(b => b.getAttribute('data-key') + ':' + b.getAttribute('aria-pressed'));
+        return { keys:keys, old:/Only admins can add co-creators/.test(document.body.textContent) };
+      });
+      ok(pol.keys.join(',') === 'open:true,request:false,admins:false' && !pol.old, 'desk: Event controls has the three co-creator settings ' + JSON.stringify(pol));
     }
     ok(!c.errors.length, kind + ': no console errors (host ask) ' + c.errors.join(' '));
     await c.context().close();
@@ -1492,7 +1531,7 @@ async function overflowEverywhere(p, label){
     await open(c, '', true);
     await join(c, 'Map Host', 'maphost');
     await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
-    await c.click('.dlg [data-act="hostask"][data-id="mine"]'); await c.waitForTimeout(200);
+    await answerHost(c, 'mine', 'upcoming');
     const hint = await ev(c, () => {
       const el = document.getElementById('where-hint'), dlg = document.querySelector('.dlg');
       const ph = document.getElementById('w-c').getAttribute('placeholder');
@@ -1543,7 +1582,7 @@ async function overflowEverywhere(p, label){
        'desk: Edit shows the place hint and not Fill from link');
     await c.evaluate(() => closeDialogs()); await c.waitForTimeout(100);
     await c.evaluate(() => { FORMDRAFTS.event = null; newEventDialog(); }); await c.waitForTimeout(200);
-    await c.click('.dlg [data-act="hostask"][data-id="mine"]'); await c.waitForTimeout(150);
+    await answerHost(c, 'mine', 'upcoming');
     await c.fill('#w-fill', 'https://billetto.se/e/example');
     await c.click('.dlg [data-act="wizfill"]'); await c.waitForTimeout(200);
     const off = await ev(c, () => ({ note:(document.getElementById('fill-note') || {}).textContent || '', form:DRAFT.form || '', src:DRAFT.sourceUrl || null }));
@@ -1568,7 +1607,7 @@ async function overflowEverywhere(p, label){
     ok(hosted.title === 'Filled Night' && hosted.kind === 'own' && hosted.mine && !hosted.src && !hosted.added && hosted.acct === 'me' && hosted.hosting === 'hosting' && hosted.listed,
        'desk: autofill on I am hosting publishes into Hosting with you as host ' + JSON.stringify(hosted));
     await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
-    await c.click('.dlg [data-act="hostask"][data-id="other"]'); await c.waitForTimeout(150);
+    await answerHost(c, 'other', 'upcoming');
     ok(await ev(c, () => !!document.getElementById('lk-u') && !document.getElementById('w-fill')), 'desk: someone else still opens the link form');
     await c.fill('#lk-u', 'https://tickets.example/e/night'); await c.press('#lk-u', 'Enter'); await c.waitForTimeout(150);
     ok(await ev(c, () => { const h = document.getElementById('where-hint'); return !!h && h.textContent === 'Place or maps link'; }),
@@ -1591,7 +1630,7 @@ async function overflowEverywhere(p, label){
     await open(c, '', true);
     await join(c, 'Wiz Host', 'wizhost' + kind);
     await c.evaluate(() => newEventDialog()); await c.waitForTimeout(250);
-    await c.click('.dlg [data-act="hostask"][data-id="mine"]'); await c.waitForTimeout(200);
+    await answerHost(c, 'mine', 'upcoming');
     const foot = () => ev(c, () => ({ step:DRAFT.step, btns:[...document.querySelectorAll('.dlg .dfoot .btn')].map(b => b.textContent.trim() + (b.getAttribute('aria-disabled') === 'true' ? ':off' : '')),
       need:document.getElementById('wiz-need').textContent, errs:[...document.querySelectorAll('.dlg .ferr[data-err]:not([hidden])')].map(x => x.getAttribute('data-err')),
       invalid:[...document.querySelectorAll('.dlg [aria-invalid="true"]')].map(x => x.id), tabs:[...document.querySelectorAll('.dlg .wizsteps .ws')].map(t => t.getAttribute('aria-disabled') === 'true' ? 'off' : 'on'),
@@ -2618,7 +2657,7 @@ async function overflowEverywhere(p, label){
     await open(c, '', true);
     await join(c, 'Wiz Phone', 'wizphone');
     await c.evaluate(() => newEventDialog()); await c.waitForTimeout(300);
-    await c.click('.dlg [data-act="hostask"][data-id="mine"]'); await c.waitForTimeout(200);
+    await answerHost(c, 'mine', 'upcoming');
     const fit = () => ev(c, () => { const b = [...document.querySelectorAll('.dlg .dfoot .btn')], t = [...document.querySelectorAll('.dlg .wizsteps .ws')];
       return { prim:b.filter(x => x.classList.contains('primary')).map(x => x.textContent.trim()).join(), rows:new Set(b.map(x => Math.round(x.getBoundingClientRect().top))).size,
                fit:b.concat(t).every(x => x.scrollWidth <= x.clientWidth + 1), inside:b.every(x => x.getBoundingClientRect().right <= innerWidth), tabs:t.map(x => x.textContent.trim()).join(), dis:b.filter(x => x.getAttribute('aria-disabled') === 'true').map(x => getComputedStyle(x).textShadow).join() }; });

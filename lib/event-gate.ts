@@ -1,5 +1,5 @@
 import { pgCode, sqlx } from "./db";
-import { seatOf, type AccessInput, type Seat } from "./event-access";
+import { cocreatorPolicyOf, seatOf, type AccessInput, type CocreatorPolicy, type Seat } from "./event-access";
 
 /** 0010 is not applied on every database yet. A missing table or column means no admins and the old defaults. */
 export function relationMissing(err: unknown): boolean {
@@ -17,6 +17,7 @@ type EventBase = {
   deleted_at: string | null;
   guests_can_invite?: boolean | null;
   only_admins_add_cocreators?: boolean | null;
+  cocreator_policy?: string | null;
 };
 
 export type EventGate = {
@@ -27,7 +28,7 @@ export type EventGate = {
   privacy: string;
   title: string;
   guestsCanInvite: boolean;
-  onlyAdminsAddCocreators: boolean;
+  cocreatorPolicy: CocreatorPolicy;
   acceptedAdmin: boolean;
   pendingAdmin: boolean;
   linkAdder: boolean;
@@ -35,51 +36,86 @@ export type EventGate = {
   access: AccessInput;
 };
 
-export async function roleGate(eventId: string, viewerId: string): Promise<{ hostId: string | null; onlyAdminsAddCocreators: boolean; acceptedAdmin: boolean }> {
+type RoleGateRow = {
+  host_id: string | null;
+  only_admins_add_cocreators?: boolean | null;
+  cocreator_policy?: string | null;
+  accepted_admin?: boolean;
+};
+
+function roleGateFrom(row: RoleGateRow | undefined): { hostId: string | null; cocreatorPolicy: CocreatorPolicy; acceptedAdmin: boolean } {
+  return {
+    hostId: row?.host_id ?? null,
+    cocreatorPolicy: cocreatorPolicyOf(row?.cocreator_policy, row?.only_admins_add_cocreators),
+    acceptedAdmin: !!row?.accepted_admin,
+  };
+}
+
+export async function roleGate(eventId: string, viewerId: string): Promise<{ hostId: string | null; cocreatorPolicy: CocreatorPolicy; acceptedAdmin: boolean }> {
+  try {
+    const rows = (await sqlx().query(
+      `select host_id, only_admins_add_cocreators, cocreator_policy,
+              exists (select 1 from event_admins a where a.event_id = events.id and a.user_id = $2 and a.status = 'accepted') as accepted_admin
+         from events where id = $1`,
+      [eventId, viewerId],
+    )) as RoleGateRow[];
+    return roleGateFrom(rows[0]);
+  } catch (err) {
+    if (!relationMissing(err)) throw err;
+  }
   try {
     const rows = (await sqlx().query(
       `select host_id, only_admins_add_cocreators,
               exists (select 1 from event_admins a where a.event_id = events.id and a.user_id = $2 and a.status = 'accepted') as accepted_admin
          from events where id = $1`,
       [eventId, viewerId],
-    )) as { host_id: string | null; only_admins_add_cocreators?: boolean | null; accepted_admin?: boolean }[];
-    const row = rows[0];
-    return {
-      hostId: row?.host_id ?? null,
-      onlyAdminsAddCocreators: !!row?.only_admins_add_cocreators,
-      acceptedAdmin: !!row?.accepted_admin,
-    };
+    )) as RoleGateRow[];
+    return roleGateFrom(rows[0]);
   } catch (err) {
     if (!relationMissing(err)) throw err;
     const rows = (await sqlx().query(`select host_id from events where id = $1`, [eventId])) as { host_id: string | null }[];
-    return { hostId: rows[0]?.host_id ?? null, onlyAdminsAddCocreators: false, acceptedAdmin: false };
+    return { hostId: rows[0]?.host_id ?? null, cocreatorPolicy: "open", acceptedAdmin: false };
   }
 }
 
 export async function eventGate(eventId: string, viewerId: string): Promise<EventGate | null> {
   let row: EventBase | undefined;
   let guestsCanInvite = true;
-  let onlyAdminsAddCocreators = false;
+  let cocreatorPolicy: CocreatorPolicy = "open";
   let migrated = true;
   try {
     const rows = (await sqlx().query(
-      `select id, host_id, source, added_by, privacy, title, deleted_at, guests_can_invite, only_admins_add_cocreators
+      `select id, host_id, source, added_by, privacy, title, deleted_at, guests_can_invite, only_admins_add_cocreators, cocreator_policy
          from events where id = $1`,
       [eventId],
     )) as EventBase[];
     row = rows[0];
     if (row) {
       guestsCanInvite = row.guests_can_invite !== false;
-      onlyAdminsAddCocreators = !!row.only_admins_add_cocreators;
+      cocreatorPolicy = cocreatorPolicyOf(row.cocreator_policy, row.only_admins_add_cocreators);
     }
   } catch (err) {
     if (!relationMissing(err)) throw err;
-    migrated = false;
-    const rows = (await sqlx().query(
-      `select id, host_id, source, added_by, privacy, title, deleted_at from events where id = $1`,
-      [eventId],
-    )) as EventBase[];
-    row = rows[0];
+    try {
+      const rows = (await sqlx().query(
+        `select id, host_id, source, added_by, privacy, title, deleted_at, guests_can_invite, only_admins_add_cocreators
+           from events where id = $1`,
+        [eventId],
+      )) as EventBase[];
+      row = rows[0];
+      if (row) {
+        guestsCanInvite = row.guests_can_invite !== false;
+        cocreatorPolicy = cocreatorPolicyOf(null, row.only_admins_add_cocreators);
+      }
+    } catch (err2) {
+      if (!relationMissing(err2)) throw err2;
+      migrated = false;
+      const rows = (await sqlx().query(
+        `select id, host_id, source, added_by, privacy, title, deleted_at from events where id = $1`,
+        [eventId],
+      )) as EventBase[];
+      row = rows[0];
+    }
   }
   if (!row || row.deleted_at) return null;
   let acceptedAdmin = false;
@@ -112,7 +148,7 @@ export async function eventGate(eventId: string, viewerId: string): Promise<Even
     privacy: row.privacy,
     title: row.title,
     guestsCanInvite,
-    onlyAdminsAddCocreators,
+    cocreatorPolicy,
     acceptedAdmin,
     pendingAdmin,
     linkAdder,

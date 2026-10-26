@@ -103,6 +103,8 @@
     var ev = { id:e.id, slug:e.slug, title:e.title, date:e.startsOn, description:e.description, hostName:e.hostName, hostId:e.hostId,
                privacy:e.privacy, city:e.city || '', kind: det._kind || (e.source === 'import' ? 'real' : e.source === 'link' ? 'link' : 'own'), ownerIds:[], source:e.source,
                sourceUrl:e.sourceUrl || undefined, addedBy:e.addedBy || undefined };
+    if (e.cocreatorPolicy === 'open' || e.cocreatorPolicy === 'request') ev.cocreatorPolicy = e.cocreatorPolicy;
+    if (e.invitePolicy === 'admins' || e.invitePolicy === 'cocreators' || e.invitePolicy === 'invited') ev.invitePolicy = e.invitePolicy;
     return { ev:ev, rec:r };
   }
   function chatRows(list, me){
@@ -115,6 +117,10 @@
           var row = { id:m.id, from: m.senderId === me ? 'self' : m.senderId, t:clock(m.createdAt), ts:m.createdAt, text:m.body, cardType:m.cardType, cardId:m.cardId, cardName:m.cardName };
           var spec = m.cardType && ChatCards.get(m.cardType);
           if (spec && spec.read) spec.read(row, m);
+          if ((m.cardType === 'event' || m.cardType === 'chronicle') && m.cardId) {
+            row.eventId = m.cardId;
+            if (m.cardType === 'chronicle') row.chronicle = true;
+          }
           return row;
         }) };
       order.push(cid);
@@ -165,8 +171,9 @@
     /* RSVPs and promotions */
     var RS = {}, WT = {}, SH = {}, PM = {}, PC = {};
     EVP = {}; HAS = {};
-    var RO = {}, CH = {}, WB = {};
+    var RO = {}, CH = {}, WB = {}, CQ = {};
     d.rsvps.forEach(function(r){
+      if (r.cocreatorPending) (CQ[r.eventId] = CQ[r.eventId] || {})[r.personId] = 1;
       if (r.personId === me){
         if (r.status) RS[r.eventId] = r.status;
         if (r.went) WT[r.eventId] = true;
@@ -178,7 +185,7 @@
         else if (r.went) (WB[r.personId] = WB[r.personId] || {})[r.eventId] = true;
       }
     });
-    window.ROLE = RO; window.CHRON = CH; window.WENTBY = WB;
+    window.ROLE = RO; window.CHRON = CH; window.WENTBY = WB; window.COREQUESTS = CQ;
     d.promotions.forEach(function(p){ if (p[0] === me) PM[p[1]] = true; else PC[p[1]] = (PC[p[1]] || 0) + 1; });
     window.RSVP = RS; window.WENT = WT; window.SHIFT = SH; window.PROMOTED = PM; window.PROMOCOUNT = PC;
     /* horizons */
@@ -475,6 +482,8 @@
   };
   /* Autofill: what the page says (nothing is saved), or the event this link already is */
   HN.autofill = function(url){ return req('POST', '/api/events/autofill', { url:url }); };
+  /* a short map link: the server follows it and returns the address it opened. The page parses that. */
+  HN.resolveMap = function(url){ return req('POST', '/api/maps/resolve', { url:url }); };
   /* add an event from a link; the server copies its picture. The same link added a moment ago by someone else answers
      with their event: this one is put away and theirs takes its place (in your horizon too) */
   HN.createLinkEvent = function(id, imageUrl){
@@ -499,6 +508,13 @@
   };
   HN.saveEventLook = function(id){ return write('ev:' + id, 'PATCH', '/api/events/' + id, function(){ return { look: lookOut(window.HYPERNET_THEMES.themes[id] || null) }; }, title(id)); };
   HN.deleteEvent = function(id){ return write('ev:' + id, 'DELETE', '/api/events/' + id, undefined, 'the event'); };
+  /* Add to Chronicle. The self-claim and a past invite's accept both call this. No body. */
+  HN.addChronicle = function(id){
+    if (!HN.isId(id)) return Promise.resolve();
+    var ev = QUEUE['ev:' + id];
+    if (ev) QUEUE['rsvp:' + id] = Promise.all([QUEUE['rsvp:' + id] || Promise.resolve(), ev]).catch(function(){});
+    return write('rsvp:' + id, 'POST', '/api/events/' + id + '/chronicle', undefined, title(id));
+  };
   /* role is sent only when the caller passes it (Chronicle filing). A Going, Interested, Went or shift toggle leaves it out, so the server keeps the stored role. */
   HN.rsvp = function(id, fields){
     var ev = QUEUE['ev:' + id];
@@ -578,6 +594,35 @@
   HN.replyBack = function(id){
     var r = allReplies().filter(function(x){ return x.id === id; })[0]; if (!r) return Promise.resolve();
     return write('re:' + id, 'POST', '/api/callouts/' + r.calloutId + '/replies', { id:id, text:r.text }, 'the reply');
+  };
+  HN.patchEvent = function(id, body){ return write('ev:' + id, 'PATCH', '/api/events/' + id, body, title(id)); };
+  HN.inviteGuest = function(evId, pid){
+    if (!HN.isId(evId) || !HN.isId(pid)) return Promise.resolve();
+    return write('inv:' + evId + ':' + pid, 'POST', '/api/events/' + evId + '/invites', { personId: pid }, 'the invite');
+  };
+  HN.inviteAdmin = function(evId, pid){
+    if (!HN.isId(evId) || !HN.isId(pid)) return Promise.resolve();
+    return write('adm:' + evId + ':' + pid, 'POST', '/api/events/' + evId + '/admins', { userId: pid }, 'the admin invite');
+  };
+  HN.answerAdmin = function(evId, status){
+    var me = meId(); if (!HN.isId(evId) || !HN.isId(me)) return Promise.resolve();
+    return write('adm:' + evId + ':' + me, 'POST', '/api/events/' + evId + '/admins/' + me, { status: status }, 'the admin invite');
+  };
+  HN.removeAdmin = function(evId, pid){
+    if (!HN.isId(evId) || !HN.isId(pid)) return Promise.resolve();
+    return write('adm:' + evId + ':' + pid, 'DELETE', '/api/events/' + evId + '/admins/' + pid, undefined, 'the admin');
+  };
+  HN.demote = function(evId, pid){
+    if (!HN.isId(evId) || !HN.isId(pid)) return Promise.resolve();
+    return write('dem:' + evId + ':' + pid, 'POST', '/api/events/' + evId + '/demote', { userId: pid }, 'the role');
+  };
+  HN.cocreatorRequests = function(evId){
+    if (!HN.isId(evId)) return Promise.resolve({ requests:[] });
+    return req('GET', '/api/events/' + evId + '/cocreators');
+  };
+  HN.reviewCocreator = function(evId, pid, action){
+    if (!HN.isId(evId) || !HN.isId(pid)) return Promise.resolve();
+    return write('coreq:' + evId + ':' + pid, 'POST', '/api/events/' + evId + '/cocreators', { userId: pid, action: action }, 'the request');
   };
   HN.sendMessage = function(cid, m){
     var pid = CHATS[cid] && CHATS[cid].memberIds[0]; if (!HN.isId(pid)) return Promise.resolve();

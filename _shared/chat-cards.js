@@ -1,6 +1,7 @@
 /* Chat cards, keyed by card_type. horizon_invite is the only one.
    Add a type here (phrase, link, accept, decline, api), in lib/chat-cards.ts, and in the
-   list in db/migrations/0007_horizon_collaborators.sql. Its accept and decline route is its own file.
+   IN list of the latest messages_card_type_check migration (0013_message_card_types.sql).
+   Its accept and decline route is its own file.
    A friend request is never a chat card. */
 var ChatCards = (function(){
   function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }

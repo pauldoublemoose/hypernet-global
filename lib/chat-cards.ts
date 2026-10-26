@@ -1,5 +1,6 @@
 /** Chat cards the server will store. The browser registry is `_shared/chat-cards.js` (phrase, link, buttons).
- *  Add a type in both, and in the list in `db/migrations/0007_horizon_collaborators.sql`.
+ *  Add a type in both, and in the IN list of the latest messages_card_type_check migration
+ *  (`db/migrations/0013_message_card_types.sql`).
  *  Accept and decline stay on that type's own route. A friend request is never a chat card.
  */
 export const chatCards = {

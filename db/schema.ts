@@ -12,6 +12,7 @@ import {
   pgTable,
   primaryKey,
   text,
+  unique,
   time,
   timestamp,
   uuid,
@@ -87,8 +88,34 @@ export const events = pgTable(
     createdAt: tstz("created_at").notNull().defaultNow(),
     updatedAt: tstz("updated_at").notNull().defaultNow(),
     deletedAt: tstz("deleted_at"),
+    onlyAdminsAddCocreators: boolean("only_admins_add_cocreators").notNull().default(false),
+    cocreatorPolicy: text("cocreator_policy").notNull().default("open"),
+    invitePolicy: text("invite_policy").notNull().default("invited"),
   },
   (t) => [index().on(t.hostId)],
+);
+
+export const eventAdmins = pgTable(
+  "event_admins",
+  {
+    eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull().references(() => people.id, { onDelete: "cascade" }),
+    invitedBy: uuid("invited_by").notNull().references(() => people.id),
+    status: text("status").notNull(),
+    createdAt: tstz("created_at").notNull().defaultNow(),
+  },
+  (t) => [unique("event_admins_event_user").on(t.eventId, t.userId), index("event_admins_user").on(t.userId)],
+);
+
+export const eventInvites = pgTable(
+  "event_invites",
+  {
+    eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+    inviteeId: uuid("invitee_id").notNull().references(() => people.id, { onDelete: "cascade" }),
+    invitedBy: uuid("invited_by").notNull().references(() => people.id),
+    createdAt: tstz("created_at").notNull().defaultNow(),
+  },
+  (t) => [unique("event_invites_event_invitee").on(t.eventId, t.inviteeId)],
 );
 
 export const horizons = pgTable("horizons", {
@@ -125,6 +152,7 @@ export const rsvps = pgTable(
     went: boolean("went").notNull().default(false),
     shiftIndex: integer("shift_index"),
     role: text("role"),
+    cocreatorPending: boolean("cocreator_pending").notNull().default(false),
     updatedAt: tstz("updated_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.personId, t.eventId] })],

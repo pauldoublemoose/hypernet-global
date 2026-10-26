@@ -9,7 +9,7 @@ import { branchName } from "@/lib/branch";
 // One thing is added on the way out: a line telling the page it is served by the backend (window.HN_BACKEND).
 // _shared/hypernet-api.js reads it: with it the page runs on the database; without it (a static server, the
 // regression suite's file routing) it runs on the bundled fixtures, exactly as before. ?offline=1 forces fixtures.
-const ALLOWED = [/^index\.html$/, /^_shared\/[a-z0-9-]+\.js$/, /^data\/[a-z0-9-]+\.json$/];
+const ALLOWED = [/^index\.html$/, /^review-markers\.js$/, /^_shared\/[a-z0-9-]+\.js$/, /^data\/[a-z0-9-]+\.json$/];
 const TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",

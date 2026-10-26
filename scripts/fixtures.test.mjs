@@ -12,7 +12,7 @@ import { buildSeed, seedUuid } from "./seed.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const require = createRequire(import.meta.url);
-const { canSee, pairKey } = require("../_shared/hypernet-audience.js");
+const { canSee, matchesExclude, pairKey } = require("../_shared/hypernet-audience.js");
 
 function loadFixtures() {
   const w = { window: null };
@@ -99,6 +99,10 @@ test("fixture audiences cover the mixed cases, and one event stays hidden from p
   const second = H.people.map((p) => p.id).filter((id) => id !== ME && !friends.has(id) && canSee(id, ME, { include: ["fof"], exclude: [] }, graph));
   assert.ok(second.length >= 1, "a pure two-hop person");
   for (const id of second) assert.equal(canSee(id, ME, { include: ["friends"], exclude: [] }, graph), false);
+  const except = H.events.find((e) => e.id === "evt-aud-except-work");
+  assert.equal(matchesExclude("p-anna", ME, except.audience, graph), true);
+  assert.equal(matchesExclude("p-rio", ME, except.audience, graph), true);
+  assert.equal(matchesExclude("p-mira", ME, except.audience, graph), false);
 });
 
 test("seed.mjs checks, and its friendship, list, and audience statements match the fixture", () => {

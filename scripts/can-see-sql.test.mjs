@@ -28,12 +28,29 @@ function loadCanSeeEventSql() {
 
 const canSeeEventSql = loadCanSeeEventSql();
 
-const INVITE = " or exists (select 1 from event_invites where event_id = ALIAS.id and invitee_id = VIEWER::uuid)";
+function expectSql(viewer, alias) {
+  const v = viewer + "::uuid";
+  const id = alias + ".id";
+  return (
+    "(can_see_event(" + v + ", " + alias + ") or (" +
+    alias + ".deleted_at is null and " + v + " is not null and (" +
+    "exists (select 1 from event_admins where event_id = " + id + " and user_id = " + v + " and status = 'accepted')" +
+    " or exists (select 1 from rsvps where event_id = " + id + " and person_id = " + v + " and role = 'cocreator' and cocreator_pending = false)" +
+    " or (not exists (select 1 from jsonb_array_elements_text(" + alias + ".audience->'exclude') tok where in_audience(" + v + ", " + alias + ".host_id, tok))" +
+    " and exists (select 1 from event_invites where event_id = " + id + " and invitee_id = " + v + "))" +
+    ")))"
+  );
+}
 
-test("the predicate is can_see_event or an invite row for the viewer parameter and the events alias", () => {
-  assert.equal(canSeeEventSql("$1"), "can_see_event($1::uuid, e)" + INVITE.replace("ALIAS", "e").replace("VIEWER", "$1"));
-  assert.equal(canSeeEventSql("$2", "ce"), "can_see_event($2::uuid, ce)" + INVITE.replace("ALIAS", "ce").replace("VIEWER", "$2"));
-  assert.equal(canSeeEventSql("$12", "e2"), "can_see_event($12::uuid, e2)" + INVITE.replace("ALIAS", "e2").replace("VIEWER", "$12"));
+test("an exclude beats an invite, and the host, an admin, and a co-creator still see the event", () => {
+  assert.equal(canSeeEventSql("$1"), expectSql("$1", "e"));
+  assert.equal(canSeeEventSql("$2", "ce"), expectSql("$2", "ce"));
+  assert.equal(canSeeEventSql("$12", "e2"), expectSql("$12", "e2"));
+  const sql = canSeeEventSql("$1");
+  const excludeAt = sql.indexOf("not exists (select 1 from jsonb_array_elements_text");
+  const inviteAt = sql.indexOf("from event_invites");
+  assert.ok(excludeAt >= 0 && inviteAt > excludeAt);
+  assert.equal(sql.includes(" or exists (select 1 from event_invites"), false);
 });
 
 test("a viewer parameter or alias that is not a placeholder is refused", () => {

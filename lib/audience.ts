@@ -2,16 +2,26 @@ import { sqlx } from "./db";
 import { HttpError } from "./http";
 import { audienceFromPrivacy, type Audience, type Privacy } from "./validation";
 
-/** `can_see_event($n::uuid, alias)` or an invite row for that viewer.
- *  0014 puts the same exists clause inside the function. OR is idempotent.
- *  The wrapper names event_invites, which 0010 creates. */
+/** Who may see an event. 0014 is the same rule inside can_see_event.
+ *  The host, an accepted admin, and an accepted co-creator always see it.
+ *  An exclude hides everyone else, including someone with an invite.
+ *  Otherwise an include match or an event_invites row is enough.
+ *  The extra clauses repeat 0014 so a database that still has 0008's function
+ *  does not let an invite past an exclude. A deleted event stays hidden. */
 export function canSeeEventSql(viewerParam: string, alias = "e"): string {
   if (!/^\$([1-9][0-9]*)$/.test(viewerParam) || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(alias)) {
     throw new Error("canSeeEventSql: viewer must be $n and alias a bare name");
   }
+  const v = viewerParam + "::uuid";
+  const id = alias + ".id";
   return (
-    "can_see_event(" + viewerParam + "::uuid, " + alias + ")" +
-    " or exists (select 1 from event_invites where event_id = " + alias + ".id and invitee_id = " + viewerParam + "::uuid)"
+    "(can_see_event(" + v + ", " + alias + ") or (" +
+    alias + ".deleted_at is null and " + v + " is not null and (" +
+    "exists (select 1 from event_admins where event_id = " + id + " and user_id = " + v + " and status = 'accepted')" +
+    " or exists (select 1 from rsvps where event_id = " + id + " and person_id = " + v + " and role = 'cocreator' and cocreator_pending = false)" +
+    " or (not exists (select 1 from jsonb_array_elements_text(" + alias + ".audience->'exclude') tok where in_audience(" + v + ", " + alias + ".host_id, tok))" +
+    " and exists (select 1 from event_invites where event_id = " + id + " and invitee_id = " + v + "))" +
+    ")))"
   );
 }
 

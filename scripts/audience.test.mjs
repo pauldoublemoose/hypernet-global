@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 import { audience } from "../lib/validation.ts";
 
 const require = createRequire(import.meta.url);
-const { canSee, normalize, toggle, fromPrivacy, derivePrivacy, summary, pickerHTML, isPublicAudience } = require("../_shared/hypernet-audience.js");
+const { canSee, canSeeEventAccess, matchesExclude, normalize, toggle, fromPrivacy, derivePrivacy, summary, pickerHTML, isPublicAudience } = require("../_shared/hypernet-audience.js");
 
 function loadIsPublicAudience() {
   const src = readFileSync(new URL("../lib/audience.ts", import.meta.url), "utf8");
@@ -113,8 +113,40 @@ test("fof in 0008 is the second ring only, and 0014 does not redefine in_audienc
   assert.match(fof, /not exists \(/);
   assert.equal(fof.includes(" or exists"), false);
   const later = readFileSync(new URL("../db/migrations/0014_event_invites_visibility.sql", import.meta.url), "utf8");
-  assert.equal(later.includes("in_audience"), false);
+  assert.equal(later.includes("create or replace function in_audience"), false);
+  assert.equal(later.includes("create function in_audience"), false);
   assert.equal(later.includes("create or replace function can_see_event"), true);
+  const excludeAt = later.indexOf("not exists (");
+  const inviteAt = later.indexOf("from event_invites");
+  assert.ok(excludeAt >= 0 && inviteAt > excludeAt);
+  assert.match(later, /in_audience\(viewer, e\.host_id, tok\)/);
+  assert.match(later, /status = 'accepted'/);
+  assert.match(later, /role = 'cocreator' and r\.cocreator_pending = false/);
+});
+
+test("an excluded invitee cannot see the event, and an invite outside the includes can", () => {
+  const hidden = { include: ["everyone"], exclude: ["friends"] };
+  assert.equal(canSeeEventAccess(B, A, hidden, graph, { invited: true }), false);
+  assert.equal(canSeeEventAccess(C, A, hidden, graph, { invited: true }), true);
+  const friendsOnly = { include: ["friends"], exclude: [] };
+  assert.equal(canSeeEventAccess(C, A, friendsOnly, graph, {}), false);
+  assert.equal(canSeeEventAccess(C, A, friendsOnly, graph, { invited: true }), true);
+});
+
+test("the host, an accepted admin, and an accepted co-creator always see the event", () => {
+  const closed = { include: [], exclude: ["friends"] };
+  assert.equal(canSeeEventAccess(A, A, closed, graph, {}), true);
+  assert.equal(canSeeEventAccess(B, A, closed, graph, { admin: true }), true);
+  assert.equal(canSeeEventAccess(B, A, closed, graph, { cocreator: true }), true);
+  assert.equal(canSeeEventAccess(B, A, closed, graph, { invited: true }), false);
+  assert.equal(canSeeEventAccess(null, A, { include: ["everyone"], exclude: [] }, graph, { admin: true, invited: true }), false);
+});
+
+test("an excluded person is not an invite option", () => {
+  const aud = { include: ["everyone"], exclude: [`list:${LIST}`] };
+  assert.equal(matchesExclude(B, A, aud, graph), true);
+  assert.equal(matchesExclude(C, A, aud, graph), false);
+  assert.equal(matchesExclude(B, A, { include: ["everyone"], exclude: [] }, graph), false);
 });
 
 test("followers is the viewer following the owner, not the other way", () => {
@@ -226,8 +258,20 @@ test("the picker is checkboxes, and Everyone has no hide box", () => {
   assert.match(html, /aria-label="Hide from Friends"/);
   assert.match(html, /aria-label="Hide from Work"/);
   assert.match(html, /class="audsum">Everyone</);
+  assert.match(html, /class="audnote" hidden/);
+  assert.equal(html.includes("Hidden people can't see this event, even if invited."), true);
   assert.match(html, /Friends[\s\S]*class="auddiv"[\s\S]*Work/);
   assert.match(html, /Manage lists/);
+  const excluded = pickerHTML({ include: ["everyone"], exclude: ["friends"] }, [
+    { token: "everyone", label: "Everyone" },
+    { token: "friends", label: "Friends" },
+  ]);
+  assert.match(excluded, /class="audnote">Hidden people can't see this event, even if invited\./);
+  const forAdmin = pickerHTML({ include: ["everyone"], exclude: ["friends"] }, [
+    { token: "everyone", label: "Everyone" },
+    { token: "friends", label: "Friends" },
+  ], { hostNote: false });
+  assert.match(forAdmin, /class="audnote" hidden/);
   const bare = pickerHTML(fromPrivacy("everyone"), [
     { token: "everyone", label: "Everyone" },
     { token: "friends", label: "Friends" },

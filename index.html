@@ -1279,6 +1279,12 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .audmanage{ align-self:flex-start; margin:2px 0 0; padding:0; border:0; background:transparent; color:var(--ink2); font:inherit; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
 .audmanage:focus{ outline:1px dotted var(--ink); outline-offset:2px; }
 .audsum{ margin:8px 0 0; color:var(--ink2); }
+.audnote{ margin:8px 0 0; color:var(--alert); font-size:var(--fs-s); line-height:16px; }
+.audnote[hidden]{ display:none; }
+.msg .evcard.gone{
+  display:block; margin-top:6px; padding:8px; border:1px solid var(--line);
+  color:var(--dim); background:transparent; text-decoration:none; cursor:default;
+}
 [data-theme="y2fresh"] .audbox .ic{ stroke-width:1.6; }
 .dlg.rel-dlg .band{ margin-left:-20px; margin-right:-20px; padding-left:20px; }
 body.is-phone .dlg.rel-dlg .band{ margin-left:-16px; margin-right:-16px; padding-left:16px; }
@@ -2039,8 +2045,8 @@ var IC = {
   lock:'<path d="M5 9h10v8H5zM7 9V6.5a3 3 0 0 1 6 0V9"/>',
   ext:'<path d="M8 4.5h7.5V12M15.5 4.5 5 15"/>',
   dots:'<path d="M4 10h.01M10 10h.01M16 10h.01" stroke-width="3"/>',
-  /* Friends & Privacy does not ship an icon in this page, so Visibility uses this eye. */
-  eye:'<path d="M1.8 10S4.8 5.2 10 5.2 18.2 10 18.2 10 15.2 14.8 10 14.8 1.8 10 1.8 10z"/><circle cx="10" cy="10" r="2.1"/>',
+  /* The include eye from the audience picker, filled with currentColor. */
+  eye:'<path fill="currentColor" fill-rule="evenodd" d="M1.2 10C3.4 6.4 6.3 4.5 10 4.5s6.6 1.9 8.8 5.5c-2.2 3.6-5.1 5.5-8.8 5.5S3.4 13.6 1.2 10zm6 0a2.8 2.8 0 1 0 5.6 0 2.8 2.8 0 0 0-5.6 0z"/>',
   /* a rolled parchment: a curl at each end, the Chronicle mark */
   scroll:'<path d="M7.2 4.4h7c1.3 0 2.2.9 2.2 2.1M7.2 4.4C5.6 4.4 4.4 5.5 4.4 7s1.2 2.6 2.8 2.6h7.2M7.2 9.6V15c0 1.4 1.1 2.5 2.6 2.5h6.4M16.2 4.4v10.8c0 1.3 1 2.3 2.2 2.3"/>',
   /* a toothed ring and a centre hole, so the bar button reads as a gear */
@@ -2050,6 +2056,7 @@ var IC = {
 };
 function ic(n, sz){
   sz = sz || 18;
+  if (n === 'eye') return '<svg class="ic" viewBox="0 0 20 20" width="'+sz+'" height="'+sz+'" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M1.2 10C3.4 6.4 6.3 4.5 10 4.5s6.6 1.9 8.8 5.5c-2.2 3.6-5.1 5.5-8.8 5.5S3.4 13.6 1.2 10zm6 0a2.8 2.8 0 1 0 5.6 0 2.8 2.8 0 0 0-5.6 0z"/></svg>';
   return '<svg class="ic" viewBox="0 0 20 20" width="'+sz+'" height="'+sz+'" aria-hidden="true" fill="none" stroke="currentColor" '+
          'stroke-width="1.7" stroke-linecap="square" stroke-linejoin="miter">'+IC[n]+'</svg>';
 }
@@ -2268,20 +2275,31 @@ function followsOf(pid){
 }
 /* the person you are on the network while logged in (null logged out) */
 function myPid(){ return S.loggedIn && S.acct && typeof acctPid === 'function' ? acctPid(S.acct) : null; }
-/* An invite lets that person see the event, including a private one. Same exists check as can_see_event in 0014. */
+/* Same rule as can_see_event in 0014. The host, an accepted admin, and an accepted co-creator always see it.
+   An exclude hides everyone else, even with an invite. Otherwise an include match or an invite is enough. */
 function canSeeEvent(e){
   if (!e) return false;
   var me = myPid();
-  if (me && typeof EVENT_INVITES !== 'undefined' && EVENT_INVITES[e.id] && EVENT_INVITES[e.id].some(function(r){ return r && r.inviteeId === me; })) return true;
+  var invited = !!(me && typeof EVENT_INVITES !== 'undefined' && EVENT_INVITES[e.id] && EVENT_INVITES[e.id].some(function(r){ return r && r.inviteeId === me; }));
+  if (ownEvent(e) || (me && eventHostPid(e) === me)) return true;
+  if (me && adminStatus(e.id, me) === 'accepted') return true;
+  if (me && ROLE[e.id] === 'cocreator' && !cocreatorPendingMine(e.id)) return true;
+  if (e.audience && window.HNAudience && window.HNRel) {
+    var graph = HNRel.audienceGraph(), host = eventHostPid(e);
+    if (HNAudience.matchesExclude(me, host, e.audience, graph)) return false;
+    if (invited) return true;
+    if (ONLINE) return !!me;
+    return HNAudience.canSee(me, host, e.audience, graph);
+  }
+  if (invited) return true;
   if (ONLINE) return !!me;
-  if (e.audience && window.HNAudience && window.HNRel) return HNAudience.canSee(me, eventHostPid(e), e.audience, HNRel.audienceGraph());
   var pv = e.privacy || 'everyone';
   if (pv === 'everyone') return true;
-  if (ownEvent(e)) return true;
-  var host = eventHostPid(e);
-  if (!me || !host) return false;
-  if (host === me) return true;
-  return pv === 'friends' && followsOf(host).indexOf(me) >= 0;
+  if (!me) return false;
+  var hostOnly = eventHostPid(e);
+  if (!hostOnly) return false;
+  if (hostOnly === me) return true;
+  return pv === 'friends' && followsOf(hostOnly).indexOf(me) >= 0;
 }
 function canSee(evId){ return canSeeEvent(EVENTS[evId]); }
 /* a horizon's events as the one looking may see them */
@@ -4200,10 +4218,15 @@ function chatList(){
   return CHATORDER.filter(function(k){ return CHATS[k] && (CHATS[k].messages.length || CHATDRAFT[k]); })
     .sort(function(a, b){ return ts(b) - ts(a); });
 }
+function eventCardVisible(id){
+  var e = id && EVENTS[id];
+  return !!(e && canSeeEvent(e));
+}
 function msgPreview(m, c){
   if (!m) return 'No messages yet';
   var who = m.from === 'self' ? 'You: ' : '';
   if (m.from === 'sys') return m.text;
+  if (m.eventId && m.cardType !== 'horizon_invite' && !eventCardVisible(m.eventId)) return who + "This event isn't available";
   return who + m.text;
 }
 function unreadChats(){ return S.loggedIn ? Object.keys(UNREADCHAT).filter(function(k){ return UNREADCHAT[k]; }).length : 0; }
@@ -4243,9 +4266,11 @@ function convHTML(cid){
     if (m.from === 'sys') return day + '<div class="msg sys">'+esc(m.text)+'</div>';
     var me = m.from === 'self';
     var head = '<div class="mfrom">'+(me ? '' : '<button type="button" class="mwho" data-act="chatprofile" data-id="'+esc(m.from)+'">'+esc(person(m.from).displayName)+'</button>')+'<span class="mt">'+esc(/^\d{1,2}:\d{2}$/.test(m.t || '') ? m.t : '')+'</span></div>';
-    var card = m.eventId && EVENTS[m.eventId] ? '<a class="evcard" href="#/event/'+esc(m.eventId)+'">'+esc(EVENTS[m.eventId].title)+'</a>' : '';
-    var accept = m.chronicle && !me && m.eventId ? '<span class="chclaim">' + vb('chaccept', m.eventId, 'Add to Chronicle', 'scroll') + '</span>' : '';
-    return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+card+accept+'</div></div>';
+    var hiddenCard = !!(m.eventId && m.cardType !== 'horizon_invite' && !eventCardVisible(m.eventId));
+    var card = hiddenCard ? '<span class="evcard gone">' + "This event isn't available" + '</span>'
+      : (m.eventId && EVENTS[m.eventId] ? '<a class="evcard" href="#/event/'+esc(m.eventId)+'">'+esc(EVENTS[m.eventId].title)+'</a>' : '');
+    var accept = m.chronicle && !me && m.eventId && !hiddenCard ? '<span class="chclaim">' + vb('chaccept', m.eventId, 'Add to Chronicle', 'scroll') + '</span>' : '';
+    return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+(hiddenCard ? '' : esc(m.text))+card+accept+'</div></div>';
   }).join('') : '<div class="msg sys">No messages yet</div>') + '</div>';
   /* the box grows with what you write: Enter sends, Shift+Enter starts a new line */
   h += '<div class="composer"><textarea id="chatbox" rows="1" placeholder="Message '+esc(c.name.split(' ')[0])+'" autocomplete="off" aria-label="Message" aria-describedby="chathint">'+esc(CHATDRAFT[cid] || '')+'</textarea>' +
@@ -7160,8 +7185,9 @@ function audienceWords(e){
 }
 function privacyHTML(d){
   var aud = window.HNAudience ? HNAudience.normalize(d.audience || HNAudience.fromPrivacy(d.privacy || 'everyone')) : { include:['everyone'], exclude:[] };
+  var hostNote = !d || !d.editing || isMine(d.editing);
   return '<div class="field"><label for="w-p">Who can see it</label>' +
-    (window.HNAudience ? HNAudience.pickerHTML(aud, audienceRows()) : '') + '</div>';
+    (window.HNAudience ? HNAudience.pickerHTML(aud, audienceRows(), { hostNote: hostNote }) : '') + '</div>';
 }
 function syncAudiencePicker(){
   var root = document.querySelector('.dlg .audpick');
@@ -7175,6 +7201,22 @@ function syncAudiencePicker(){
   });
   var sum = root.querySelector('.audsum');
   if (sum) sum.textContent = HNAudience.summary(a, listTokenName);
+  var note = root.querySelector('.audnote');
+  if (note) note.hidden = !(a.exclude.length && (!DRAFT.editing || isMine(DRAFT.editing)));
+  syncInviteLock();
+}
+function syncInviteLock(){
+  var sel = document.querySelector('.dlg select[data-act="evinvitepolicy"]');
+  if (!sel || !DRAFT || !window.HNAudience) return;
+  var pub = HNAudience.isPublicAudience({ audience:DRAFT.audience, privacy:DRAFT.privacy });
+  sel.disabled = !!pub;
+  var box = sel.parentNode;
+  if (!box) return;
+  var why = box.querySelector('.ev-policy-why');
+  if (pub){
+    if (!why){ why = document.createElement('span'); why.className = 'ev-policy-why'; box.appendChild(why); }
+    why.textContent = 'This event is public, so anyone can already see it.';
+  } else if (why) why.remove();
 }
 function applyDraftAudience(e){
   if (!window.HNAudience){ e.privacy = DRAFT.privacy || 'everyone'; return; }
@@ -7707,23 +7749,31 @@ function eventControlsBody(evId){
     '</div>';
 }
 function settleEventControl(evId){
-  if (document.querySelector('.dlg .ev-controls')){ closeDialogs(); eventControlsDialog(evId); }
+  if (document.querySelector('.dlg .ev-controls')){ closeDialogs(); eventAccessDialog(evId); }
   else render();
 }
-function eventControlsDialog(evId){
+function eventAccessHTML(evId){
+  return privacyHTML(DRAFT) + eventControlsBody(evId);
+}
+function eventAccessDialog(evId){
   var e = EVENTS[evId];
-  if (!e || !canManageEvent(evId)) return;
-  dialog('Permissions', eventControlsBody(evId), '<button class="btn" data-act="closedlg">Done</button>', 480, 'permissions');
+  if (!e || !canManageEvent(evId) || isLinkEvent(evId)) return;
+  var aud = e.audience || (window.HNAudience ? HNAudience.fromPrivacy(e.privacy || 'everyone') : { include:['everyone'], exclude:[] });
+  DRAFT = { form:'privacy', editing:evId, privacy: e.audience && window.HNAudience ? HNAudience.derivePrivacy(aud) : (e.privacy || 'everyone'), audience:aud,
+    cocreatorPolicy: cocreatorPolicyOf(evId), invitePolicy: invitePolicyOf(evId) };
+  dialog('Visibility and Permissions', eventAccessHTML(evId),
+    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="evprivacy-save" data-id="'+evId+'">Save</button>', 480, 'permissions');
   if (ONLINE && window.HNAPI && HNAPI.cocreatorRequests){
     HNAPI.cocreatorRequests(evId).then(function(r){
       var m = {};
       (r && r.requests || []).forEach(function(pid){ m[pid] = 1; });
       COREQUESTS[evId] = m;
       var dl = DLGS[DLGS.length - 1], body = dl && dl.querySelector('.dbody');
-      if (body && body.querySelector('[data-act="evpolicy"][data-id="'+evId+'"]')) body.innerHTML = eventControlsBody(evId);
+      if (body && body.querySelector('[data-act="evpolicy"][data-id="'+evId+'"]')) body.innerHTML = eventAccessHTML(evId);
     }, function(){});
   }
 }
+function eventControlsDialog(evId){ eventAccessDialog(evId); }
 function cocreatorMineHTML(evId){
   if (!S.loggedIn || isMine(evId) || isLinkEvent(evId)) return '';
   var policy = cocreatorPolicyOf(evId), role = ROLE[evId], pending = cocreatorPendingMine(evId);
@@ -7774,19 +7824,21 @@ function setCocreatorPolicy(evId, policy){
   if (ONLINE) HNAPI.patchEvent(evId, { cocreatorPolicy: policy });
   settleEventControl(evId);
 }
-function eventPrivacyDialog(evId){
-  var e = EVENTS[evId];
-  if (!e || !canManageEvent(evId) || isLinkEvent(evId)) return;
-  var aud = e.audience || (window.HNAudience ? HNAudience.fromPrivacy(e.privacy || 'everyone') : { include:['everyone'], exclude:[] });
-  DRAFT = { form:'privacy', editing:evId, privacy: e.audience && window.HNAudience ? HNAudience.derivePrivacy(aud) : (e.privacy || 'everyone'), audience:aud };
-  dialog('Who can see it', privacyHTML(DRAFT),
-    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="evprivacy-save" data-id="'+evId+'">Save</button>', 440);
-}
+function eventPrivacyDialog(evId){ eventAccessDialog(evId); }
 function saveEventPrivacy(evId){
   var e = EVENTS[evId];
   if (!e || !canManageEvent(evId) || !DRAFT || DRAFT.form !== 'privacy' || DRAFT.editing !== evId) return;
   applyDraftAudience(e);
-  if (ONLINE) HNAPI.patchEvent(evId, { audience:e.audience, privacy:e.privacy });
+  var patch = { audience:e.audience, privacy:e.privacy };
+  if (DRAFT.cocreatorPolicy === 'open' || DRAFT.cocreatorPolicy === 'request'){
+    e.cocreatorPolicy = DRAFT.cocreatorPolicy;
+    patch.cocreatorPolicy = DRAFT.cocreatorPolicy;
+  }
+  if (!isEventPublic(e) && (DRAFT.invitePolicy === 'admins' || DRAFT.invitePolicy === 'cocreators' || DRAFT.invitePolicy === 'invited')){
+    e.invitePolicy = DRAFT.invitePolicy;
+    patch.invitePolicy = DRAFT.invitePolicy;
+  }
+  if (ONLINE) HNAPI.patchEvent(evId, patch);
   closeDialogs(); render();
   toast('Saved', audienceWords(e));
 }
@@ -7824,6 +7876,7 @@ function paintInvite(){
   var past = INVITE.kind !== 'admin' && EVENTS[INVITE.evId] && isPast(lastDay(EVENTS[INVITE.evId]));
   var ids = ncPeopleAll().filter(function(k){
     if (INVITE.kind === 'admin' && (k === host || k === myActor())) return false;
+    if (INVITE.kind !== 'admin' && personExcluded(INVITE.evId, k)) return false;
     var p = person(k);
     return !q || matches(p.displayName, q) || matches(p.handle, q);
   });
@@ -7840,8 +7893,15 @@ function paintInvite(){
   }).join('') || '<div class="empty">Nobody matches.</div>';
   placeDlg();
 }
+function personExcluded(evId, pid){
+  var e = EVENTS[evId];
+  if (!e || !pid || !window.HNAudience || !window.HNRel) return false;
+  var aud = e.audience || HNAudience.fromPrivacy(e.privacy || 'everyone');
+  return HNAudience.matchesExclude(pid, eventHostPid(e), aud, HNRel.audienceGraph());
+}
 function sendEventInvite(evId, pid){
   if (!pid || pid === myActor() || !canInviteToEvent(evId)) return;
+  if (personExcluded(evId, pid)) return;
   if (guestInvited(evId, pid)){ paintInvite(); return; }
   var rows = EVENT_INVITES[evId] || (EVENT_INVITES[evId] = []);
   rows.push({ inviteeId:pid, invitedBy:myActor() });
@@ -8208,8 +8268,7 @@ function eventCogItems(evId){
   var past = isPast(lastDay(e)), logged = isLinkEvent(evId), seat = eventSeat(evId);
   var items = L.phone ? [] : [{ heading:'Admin controls' }];
   if (canFix(evId)) items.push({ label:'Edit', icon:'edit', run:function(){ editEventDialog(evId); } });
-  if (!logged && (seat === 'host' || seat === 'admin')) items.push({ label:'Visibility', icon:'eye', run:function(){ eventPrivacyDialog(evId); } });
-  if (!past && !logged && (seat === 'host' || seat === 'admin')) items.push({ label:'Permissions', icon:'key', run:function(){ eventControlsDialog(evId); } });
+  if (!logged && (seat === 'host' || seat === 'admin')) items.push({ label:'Visibility and Permissions', icon:'eye', run:function(){ eventAccessDialog(evId); } });
   if (seat === 'host' && !past && !logged) items.push({ label:'New call out', icon:'callout', run:function(){ runCmd('new-callout', evId); } });
   if (seat === 'host' || seat === 'link_adder') items.push('-', { label:'Delete', icon:'trash', run:function(){ deleteEventDialog(evId); } });
   return items;
@@ -9176,8 +9235,16 @@ document.addEventListener('change', function(ev){
   var act = n.getAttribute('data-act');
   if (act === 'calmine'){ S.calMine = n.checked; render(); }
   if (act === 'sort'){ S.sort = n.value; render(); }
-  if (act === 'evinvitepolicy'){ setInvitePolicy(n.getAttribute('data-id'), n.value); return; }
-  if (act === 'evpolicy'){ setCocreatorPolicy(n.getAttribute('data-id'), n.value); return; }
+  if (act === 'evinvitepolicy' || act === 'evpolicy'){
+    if (DRAFT && DRAFT.form === 'privacy' && DRAFT.editing === n.getAttribute('data-id')){
+      if (act === 'evinvitepolicy') DRAFT.invitePolicy = n.value;
+      else DRAFT.cocreatorPolicy = n.value;
+      return;
+    }
+    if (act === 'evinvitepolicy') setInvitePolicy(n.getAttribute('data-id'), n.value);
+    else setCocreatorPolicy(n.getAttribute('data-id'), n.value);
+    return;
+  }
 });
 document.addEventListener('input', function(ev){
   var n = ev.target;

@@ -62,6 +62,21 @@
     return include.some(function (tok) { return inAudience(viewer, owner, tok, graph); });
   }
 
+  function matchesExclude(viewer, owner, audience, graph) {
+    var exclude = (audience && audience.exclude) || [];
+    return exclude.some(function (tok) { return inAudience(viewer, owner, tok, graph); });
+  }
+
+  /* Same order as can_see_event in 0014. An exclude hides an invite. Staff still see the event. */
+  function canSeeEventAccess(viewer, owner, audience, graph, access) {
+    access = access || {};
+    if (viewer != null && owner != null && viewer === owner) return true;
+    if (viewer != null && (access.admin || access.cocreator)) return true;
+    if (matchesExclude(viewer, owner, audience, graph)) return false;
+    if (viewer != null && access.invited) return true;
+    return canSee(viewer, owner, audience, graph);
+  }
+
   var NAMED = ["everyone", "friends", "fof", "followers"];
   var NAMED_LABEL = { everyone: "Everyone", friends: "Friends", fof: "Friends of friends", followers: "Followers" };
 
@@ -196,7 +211,7 @@
     return '<div class="audrow"><span class="audname">' + escAttr(r.label) + '</span><span class="audboxes">' + boxes + "</span></div>";
   }
 
-  function pickerHTML(audience, rows) {
+  function pickerHTML(audience, rows, opts) {
     var a = normalize(audience);
     var names = {};
     var built = [], lists = [];
@@ -209,8 +224,11 @@
     var body = head + built.map(function (r) { return rowHTML(a, r); }).join("");
     if (lists.length) body += '<div class="auddiv" role="separator"></div>' + lists.map(function (r) { return rowHTML(a, r); }).join("");
     body += '<button type="button" class="audmanage" data-rel-act="rel-lists-home">Manage lists</button>';
+    var hostNote = !opts || opts.hostNote !== false;
+    var noteHidden = hostNote && a.exclude.length ? "" : " hidden";
     return '<div class="audpick" id="w-p" role="group" aria-label="Who can see it">' + body +
-      '<p class="audsum">' + escAttr(summary(a, function (id) { return names[id]; })) + "</p></div>";
+      '<p class="audsum">' + escAttr(summary(a, function (id) { return names[id]; })) + "</p>" +
+      '<p class="audnote"' + noteHidden + '>Hidden people can\'t see this event, even if invited.</p></div>';
   }
 
   function isPublicAudience(event) {
@@ -223,7 +241,7 @@
   }
 
   var api = {
-    canSee: canSee, inAudience: inAudience, pairKey: pairKey,
+    canSee: canSee, canSeeEventAccess: canSeeEventAccess, matchesExclude: matchesExclude, inAudience: inAudience, pairKey: pairKey,
     normalize: normalize, toggle: toggle, fromPrivacy: fromPrivacy, derivePrivacy: derivePrivacy,
     summary: summary, pickerHTML: pickerHTML, isPublicAudience: isPublicAudience
   };

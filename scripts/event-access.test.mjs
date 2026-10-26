@@ -225,14 +225,31 @@ test("0010 stores invite_policy and the Permissions window uses two dropdowns", 
   assert.match(css, /\.ev-policy-why\{[^}]*color:var\(--ink2\)/);
 });
 
-test("the Visibility dialog saves the audience picker", () => {
+test("the merged dialog renders both sections and one Save writes both", () => {
   const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-  const open = html.slice(html.indexOf("function eventPrivacyDialog"), html.indexOf("function saveEventPrivacy"));
+  const open = html.slice(html.indexOf("function eventAccessDialog"), html.indexOf("function eventControlsDialog"));
   const save = html.slice(html.indexOf("function saveEventPrivacy"), html.indexOf("function setInvitePolicy"));
-  assert.match(open, /audience:aud/);
+  assert.match(open, /Visibility and Permissions/);
+  assert.match(open, /eventAccessHTML\(evId\)/);
+  const parts = html.slice(html.indexOf("function eventAccessHTML"), html.indexOf("function eventAccessDialog"));
+  assert.match(parts, /privacyHTML\(DRAFT\)/);
+  assert.match(parts, /eventControlsBody\(evId\)/);
+  assert.match(open, /evprivacy-save/);
   assert.match(save, /applyDraftAudience\(e\)/);
   assert.match(save, /audience:e\.audience/);
+  assert.match(save, /cocreatorPolicy/);
+  assert.match(save, /invitePolicy/);
   assert.equal(save.includes("sel.value"), false);
+  assert.match(html, /Who can be listed as a co-creator\?/);
+  assert.match(html, /Who can invite guests\?/);
+  assert.match(html, /hostNote: hostNote/);
+  assert.match(html, /!DRAFT\.editing \|\| isMine\(DRAFT\.editing\)/);
+  const cog = html.slice(html.indexOf("function eventCogItems"), html.indexOf("function openItemMenu"));
+  assert.match(cog, /label:'Visibility and Permissions', icon:'eye'/);
+  assert.equal(cog.includes("label:'Visibility',"), false);
+  assert.equal(cog.includes("label:'Permissions'"), false);
+  assert.equal(cog.includes("eventPrivacyDialog"), false);
+  assert.equal(cog.includes("eventControlsDialog"), false);
 });
 
 test("an invite lets that person see a private event", () => {
@@ -247,7 +264,12 @@ test("an invite lets that person see a private event", () => {
   assert.match(sql, /create table event_invites \([\s\S]*unique \(event_id, invitee_id\)/);
   assert.equal(sql.includes("can_see_event"), false);
   const next = readFileSync(new URL("../db/migrations/0014_event_invites_visibility.sql", import.meta.url), "utf8");
-  assert.match(next, /or exists \(select 1 from event_invites where event_id = e\.id and invitee_id = viewer\)/);
+  assert.match(next, /viewer = e\.host_id/);
+  assert.match(next, /status = 'accepted'/);
+  assert.match(next, /role = 'cocreator' and r\.cocreator_pending = false/);
+  const excludeAt = next.indexOf("not exists (");
+  const inviteAt = next.indexOf("from event_invites");
+  assert.ok(excludeAt >= 0 && inviteAt > excludeAt);
   assert.match(next, /'0014_event_invites_visibility'/);
   assert.equal(/drop\s+constraint\s+if\s+exists\s+messages_card_type_check/i.test(next), false);
   assert.equal(/add\s+constraint\s+messages_card_type_check/i.test(next), false);
@@ -257,6 +279,10 @@ test("an invite lets that person see a private event", () => {
   const body = html.slice(start, end);
   assert.match(body, /EVENT_INVITES\[e\.id\]/);
   assert.match(body, /r\.inviteeId === me/);
+  assert.match(body, /matchesExclude/);
+  assert.ok(body.indexOf("matchesExclude") < body.indexOf("if (invited) return true"));
+  assert.match(body, /adminStatus\(e\.id, me\) === 'accepted'/);
+  assert.match(body, /ROLE\[e\.id\] === 'cocreator'/);
 });
 
 test("a logged event refuses every invite", () => {
@@ -424,8 +450,9 @@ test("the event bar is Add to, Share, and a cog for admins", () => {
   assert.match(html, /label:'Chronicle', icon:'scroll'/);
   assert.match(html, /Add to Chronicle', 'scroll'/);
   assert.match(html, /label:'Horizon'/);
-  assert.match(html, /label:'Visibility'/);
+  assert.match(html, /label:'Visibility and Permissions', icon:'eye'/);
   assert.match(html, /icon:'eye'/);
+  assert.match(html, /fill="currentColor"/);
   const gear = html.slice(html.indexOf("cog:'"), html.indexOf("key:'"));
   assert.match(gear, /<circle /);
   assert.match(gear, /Z"/);
@@ -433,11 +460,11 @@ test("the event bar is Add to, Share, and a cog for admins", () => {
   const cog = html.slice(html.indexOf("function eventCogItems"), html.indexOf("function openItemMenu"));
   assert.match(cog, /heading:'Admin controls'/);
   assert.match(cog, /label:'Edit'/);
-  assert.match(cog, /label:'Visibility'/);
-  assert.match(cog, /label:'Permissions', icon:'key'/);
+  assert.match(cog, /label:'Visibility and Permissions', icon:'eye'/);
+  assert.equal(cog.includes("label:'Permissions'"), false);
   assert.match(cog, /label:'New call out'/);
   assert.match(cog, /label:'Delete', icon:'trash'/);
-  assert.match(cog, /!past && !logged && \(seat === 'host' \|\| seat === 'admin'\)/);
+  assert.match(cog, /!logged && \(seat === 'host' \|\| seat === 'admin'\)/);
   assert.match(cog, /seat === 'host' \|\| seat === 'link_adder'/);
   assert.equal(cog.includes("danger"), false);
   assert.match(html, /class="btn alert" data-act="confirmok">Delete/);
@@ -453,8 +480,9 @@ test("the admin block is labeled Admin controls", () => {
   const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   const cog = html.slice(html.indexOf("function eventCogItems"), html.indexOf("function openItemMenu"));
   assert.match(cog, /heading:'Admin controls'/);
-  assert.match(html, /dialog\('Permissions'/);
-  assert.match(html, /data-act="closedlg">Done/);
+  assert.match(html, /dialog\('Visibility and Permissions'/);
+  assert.match(html, /data-act="evprivacy-save"/);
+  assert.equal(html.includes("dialog('Permissions'"), false);
   assert.equal(html.includes("Event controls"), false);
   assert.equal(html.includes("dialog('Admin controls'"), false);
 });
@@ -469,4 +497,43 @@ test("the event page copy of EVENT_PERMS matches the server table", () => {
   assert.deepEqual(EVENT_PERMS.edit, ["host", "admin", "link_adder"]);
   assert.deepEqual(EVENT_PERMS.removeAdmin, ["host"]);
   assert.deepEqual(EVENT_PERMS.reviewCocreator, ["host", "admin"]);
+});
+
+test("an excluded person is absent from the invite options", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const paint = html.slice(html.indexOf("function paintInvite"), html.indexOf("function personExcluded"));
+  assert.match(paint, /personExcluded\(INVITE\.evId, k\)/);
+  assert.equal(html.includes("Hidden by visibility settings"), false);
+  const send = html.slice(html.indexOf("function sendEventInvite"), html.indexOf("function sendAdminInvite"));
+  assert.match(send, /if \(personExcluded\(evId, pid\)\) return;/);
+});
+
+test("the invite route answers like a normal invite and writes nothing when the person is excluded", () => {
+  const route = readFileSync(new URL("../app/api/events/[id]/invites/route.ts", import.meta.url), "utf8");
+  const post = route.slice(route.indexOf("export const POST"));
+  const early = post.indexOf("if (hidden[0]?.hidden) return json({ ok: true }, 201);");
+  const insert = post.indexOf("insert into event_invites");
+  const message = post.indexOf("insert into messages");
+  assert.ok(early >= 0 && early < insert && early < message);
+  assert.equal(post.includes('409, "excluded"'), false);
+  assert.match(post, /in_audience\(\$2, e\.host_id, tok\)/);
+  assert.match(post, /return json\(\{ ok: true \}, 201\)/);
+});
+
+test("a hidden event card shows no event details", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const conv = html.slice(html.indexOf("function convHTML"), html.indexOf("function growBox"));
+  assert.match(conv, /This event isn't available/);
+  assert.match(conv, /hiddenCard \? '' : esc\(m\.text\)/);
+  assert.match(conv, /class="evcard gone"/);
+  assert.match(conv, /m\.cardType !== 'horizon_invite'/);
+  const preview = html.slice(html.indexOf("function msgPreview"), html.indexOf("function unreadChats"));
+  assert.match(preview, /This event isn't available/);
+  assert.match(preview, /m\.cardType !== 'horizon_invite'/);
+  const boot = readFileSync(new URL("../lib/bootstrap.ts", import.meta.url), "utf8");
+  const messages = boot.slice(boot.indexOf("export function messagesJson"), boot.indexOf("export type Bootstrap"));
+  assert.match(messages, /m\.card_type in \('event', 'chronicle'\)/);
+  assert.match(messages, /This event isn''t available/);
+  assert.equal(messages.includes("horizon_invite"), false);
+  assert.match(boot, /messagesJson\("\$1"\)/);
 });

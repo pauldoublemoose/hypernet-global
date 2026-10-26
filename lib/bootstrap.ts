@@ -42,6 +42,18 @@ export const CALLOUT_JSON = `json_build_object('id', c.id, 'authorId', c.author_
 const SEE = canSeeEventSql("$1");
 const VISIBLE_CALLOUT = `(c.event_id is null or exists (select 1 from events ce where ce.id = c.event_id and ${canSeeEventSql("$1", "ce")}))`;
 
+/** A chat card for an event the viewer cannot see carries no title, time, place, or image.
+ *  horizon_invite is left as stored. event and chronicle cards are the invite cards. */
+export function messagesJson(viewerParam = "$1"): string {
+  const see = canSeeEventSql(viewerParam, "ev");
+  return `coalesce((select json_agg(json_build_object('id', m.id, 'senderId', m.sender_id,
+    'body', case when m.card_type in ('event', 'chronicle') and not exists (
+      select 1 from events ev where ev.id = m.card_id and (${see}))
+      then 'This event isn''t available' else m.body end,
+    'cardType', m.card_type, 'cardId', m.card_id, 'createdAt', m.created_at)
+    order by m.created_at) from messages m where m.thread_id = t.id), '[]')`;
+}
+
 export type Bootstrap = {
   hypernet: 1;
   people: unknown[];
@@ -117,9 +129,7 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
                    order by a.ts desc limit 600) a`),
       one(`select coalesce(json_agg(json_build_object('threadId', t.id, 'personId', case when t.a = $1::uuid then t.b else t.a end,
              'lastReadAt', (select tr.last_read_at from thread_reads tr where tr.thread_id = t.id and tr.person_id = $1::uuid),
-             'messages', coalesce((select json_agg(json_build_object('id', m.id, 'senderId', m.sender_id, 'body', m.body,
-                                   'cardType', m.card_type, 'cardId', m.card_id, 'createdAt', m.created_at)
-                                   order by m.created_at) from messages m where m.thread_id = t.id), '[]'))), '[]') v
+             'messages', ${messagesJson("$1")}), '[]') v
              from dm_threads t where $1::uuid is not null and (t.a = $1::uuid or t.b = $1::uuid)`),
       one(`select coalesce(json_agg(json_build_object('a', f.a, 'b', f.b, 'requestedBy', f.requested_by, 'status', f.status,
              'acceptedAt', f.accepted_at)), '[]') v from friendships f
@@ -167,9 +177,7 @@ export async function loadChats(viewer: string): Promise<unknown[]> {
   const rows = (await sqlx().query(
     `select coalesce(json_agg(json_build_object('threadId', t.id, 'personId', case when t.a = $1::uuid then t.b else t.a end,
        'lastReadAt', (select tr.last_read_at from thread_reads tr where tr.thread_id = t.id and tr.person_id = $1::uuid),
-       'messages', coalesce((select json_agg(json_build_object('id', m.id, 'senderId', m.sender_id, 'body', m.body,
-                             'cardType', m.card_type, 'cardId', m.card_id, 'createdAt', m.created_at)
-                             order by m.created_at) from messages m where m.thread_id = t.id), '[]'))), '[]') v
+       'messages', ${messagesJson("$1")}), '[]') v
        from dm_threads t where t.a = $1::uuid or t.b = $1::uuid`,
     [viewer],
   )) as { v: unknown[] }[];

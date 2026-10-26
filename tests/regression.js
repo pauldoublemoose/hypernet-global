@@ -66,8 +66,8 @@
    2026-10-05 (v5-editlook): One Edit — your Event Horizon's toolbar is Add events · Edit · Share · ⋯ (Delete only; no
    Publish that turns into Share, no Published ✓), Share on a private one explains and offers to make it public, Edit
    holds name, description, Private / Public, picture and colours in one save; an event you host has one Edit (no
-   Customize; the phone's bar Edit · Call out · ⋯) of sections; your page has one Edit profile whose preview is your page
-   as others see it with the unsaved changes (Preview and Back to editing on a phone); the whole page wears its look
+   Customize; the phone's bar Edit · Call out · ⋯) of sections; your page has one Edit profile whose look controls save
+   with Done; the whole page wears its look
    (ground, band, hairlines, labels, accent) while its toolbar stays chrome; one to three colours (Add accent, Add header
    colour, each removable) and the text is never picked — AA on light, dark, neon, mid-grey and 2–3 colour pages, a
    mid-tone moves off the middle and says so, looks saved before picks still render; your own avatar wears your look
@@ -1814,15 +1814,19 @@ async function overflowEverywhere(p, label){
 
   /* ---------------- 2026-10-04 (layout): the white spans the centre; each view sits in its container ----------------
      2026-10-05 (v5-shell): every container starts at the white's left, the heading on the white's own edge; the window lies
-     over the list, which never moves for it (was: the containers centred, the heading 16 in, the list stepping aside) */
+     over the list, which never moves for it (was: the containers centred, the heading 16 in, the list stepping aside).
+     2026-10-20: the default height is the main area under the toolbar — 8 below it, 8 above #main's bottom — beside the
+     list and in cover. Width, the kept 320 and the right inset are unchanged. */
   const listGeo = p => p.evaluate(() => { const lb = document.getElementById('listbody'), cs = getComputedStyle(lb);
     return { pad:cs.padding, fit:JSON.stringify(L.fit), st:lb.scrollTop, rects:[...lb.querySelectorAll('.card2, .cart, .row, .fitem, .fuprow, .band, .shh')].slice(0, 80).map(e => { const r = e.getBoundingClientRect(); return [r.left, r.top, r.width, r.height].map(Math.round).join(','); }).join(';') }; });
   const winOver = p => p.evaluate(() => { const w = document.getElementById('win'), wr = w.getBoundingClientRect(), lb = document.getElementById('listbody'), r = lb.getBoundingClientRect(),
-      ce = document.getElementById('center').getBoundingClientRect(), white = document.getElementById('listcol').getBoundingClientRect(), fr = lb.clientLeft, sb = lb.offsetWidth - lb.clientWidth - 2 * fr;
+      ce = document.getElementById('center').getBoundingClientRect(), fr = lb.clientLeft, sb = lb.offsetWidth - lb.clientWidth - 2 * fr,
+      main = document.getElementById('main').getBoundingClientRect(), bar = document.getElementById('toolbar').getBoundingClientRect();
     /* under the first 320 of every entry in view is the list, never the window */
     const hits = [...lb.querySelectorAll('.fitem, .fuprow, .band, .card2, .row')].filter(x => { const q = x.getBoundingClientRect(); return q.top > r.top + 8 && q.bottom < r.bottom - 8 && q.left < r.left + 300; })
       .map(x => { const q = x.getBoundingClientRect(), el = document.elementFromPoint(Math.min(q.right - 4, r.left + 310), (q.top + q.bottom) / 2); return !!el && !!el.closest('#listbody'); });
-    return { open:!w.hidden, mode:L.win, ww:Math.round(wr.width), keep:Math.round(wr.left - r.left), rgap:Math.round(ce.right - wr.right), sb, fr, tgap:Math.round(wr.top - white.top), bgap:Math.round(ce.bottom - wr.bottom),
+    return { open:!w.hidden, mode:L.win, ww:Math.round(wr.width), keep:Math.round(wr.left - r.left), rgap:Math.round(ce.right - wr.right), sb, fr,
+             belowBar:Math.round(wr.top - bar.bottom), aboveMain:Math.round(main.bottom - wr.bottom),
              hits:hits.length, under:hits.filter(x => !x).length, cover:Math.round(wr.left) === Math.round(ce.left) && Math.round(wr.right) === Math.round(ce.right) }; });
   for (const [w, h] of [[1440, 900], [1920, 1080], [1280, 800]]){
     const c = await ctx('desk', { viewport:{ width:w, height:h } });
@@ -1858,9 +1862,9 @@ async function overflowEverywhere(p, label){
       const still = [g1, g2, g3].every(g => g.rects === g0.rects && g.pad === g0.pad && g.fit === g0.fit && g.st === g0.st);
       ok(still && g0.rects.length > 20, tag + ': opening, replacing and closing the window moves nothing in the list (place, padding, squares)');
       if (wg.mode === 'over'){
-        ok(wg.open && wg.ww >= 440 && wg.ww <= 720 && wg.keep >= 320 && wg.rgap === wg.sb + wg.fr + 8 && wg.tgap === 8 && wg.bgap === 8 && wg.hits >= 2 && !wg.under && wg2.keep === wg.keep && wg2.ww === wg.ww,
-           tag + ': the window lies over the right of the white (inset 8, the scrollbar and the frame clear), the list\'s first 320 in view and clickable ' + JSON.stringify(wg));
-      } else ok(w === 1280 && dock && wg.open && wg.cover, tag + ': with no room for both, the window takes the centre ' + JSON.stringify(wg));
+        ok(wg.open && wg.ww >= 440 && wg.ww <= 720 && wg.keep >= 320 && wg.rgap === wg.sb + wg.fr + 8 && wg.belowBar === 8 && wg.aboveMain === 8 && wg.hits >= 2 && !wg.under && wg2.keep === wg.keep && wg2.ww === wg.ww,
+           tag + ': the window lies over the right of the white (scrollbar and frame clear), 8 below the toolbar and 8 above the main area, the list\'s first 320 in view and clickable ' + JSON.stringify(wg));
+      } else ok(w === 1280 && dock && wg.open && wg.cover && wg.belowBar === 8 && wg.aboveMain === 8, tag + ': with no room for both, the window takes the centre at the main area\'s height ' + JSON.stringify(wg));
       if (w === 1440 && dock && hh === '#/home'){ await pick(c, sel + ' >> nth=0'); await c.waitForTimeout(350); await shot(c, 'layout-1440-home-window-dock'); await c.click('#dbar [data-act="closewin"]'); await c.waitForTimeout(250); }
     }
     ok(!c.errors.length && (await overflow(c)) <= 0, w + ': no console errors, no overflow (layout) ' + c.errors.join(' '));
@@ -1875,7 +1879,9 @@ async function overflowEverywhere(p, label){
     const ex = await geoOf(c), cols = await ev(c, () => L.fit && L.fit.cols);
     await shot(c, 'layout-768-explore');
     await c.click('#listbody .srow .card2 >> nth=0'); await c.waitForTimeout(350);
-    const wv = await ev(c, () => { const wr = document.getElementById('win').getBoundingClientRect(), ce = document.getElementById('center').getBoundingClientRect(); return Math.round(wr.left) === Math.round(ce.left) && Math.round(wr.width) === Math.round(ce.width); });
+    const wv = await ev(c, () => { const wr = document.getElementById('win').getBoundingClientRect(), ce = document.getElementById('center').getBoundingClientRect(),
+      main = document.getElementById('main').getBoundingClientRect(), bar = document.getElementById('toolbar').getBoundingClientRect();
+      return Math.round(wr.left) === Math.round(ce.left) && Math.round(wr.width) === Math.round(ce.width) && Math.round(wr.top - bar.bottom) === 8 && Math.round(main.bottom - wr.bottom) === 8; });
     ok(hm.cl === 0 && hm.cw === hm.panelW - hm.sb && hm.head === 0 && ex.cw === ex.panelW - ex.sb && cols === 3 && wv,
        '768: Home and Explore fill the white, the overview is three squares wide, an opened event takes the centre ' + JSON.stringify([hm, ex, cols, wv]));
     ok(!c.errors.length && (await overflow(c)) <= 0, '768: no console errors, no overflow (layout)');
@@ -2283,8 +2289,8 @@ async function overflowEverywhere(p, label){
 
   /* 2026-10-05 (v5-editlook): One Edit — an Event Horizon, an event you host and your profile each have one Edit
      (facts, who can see it, picture, colours); Share is always Share; the whole page wears its look (one to three
-     colours, text chosen for contrast, controls stay chrome); your face wears your look everywhere; Edit profile
-     previews your page as others see it (Preview on a phone); the New event wizard shows one primary at a time */
+     colours, text chosen for contrast, controls stay chrome); your face wears your look everywhere; Edit profile's
+     look controls save with Done; the New event wizard shows one primary at a time */
   for (const kind of ['desk', 'phone']){
     const c = await ctx(kind);
     await open(c, '', true);
@@ -2351,25 +2357,16 @@ async function overflowEverywhere(p, label){
     ok(ee.secs === 'Details,Words,Who can see it,Look' && ee.priv && ee.look && !ee.tabs, kind + ': Edit event is one form of sections — details, words, who can see it, look ' + JSON.stringify(ee));
     if (kind === 'phone') await shot(c, 'editlook-edit-event-phone');
     await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
-    /* your profile: one Edit profile; its colours, and your page as others see it beside it (Preview on a phone) */
+    /* your profile: one Edit profile; its look controls save with Done, and the picks survive a reload */
     await c.evaluate(() => openItem('person', 'self')); await c.waitForTimeout(350);
     ok(await ev(c, () => [...document.querySelectorAll('#dscroll .pg-person .actbar .btn')].map(b => b.getAttribute('data-act')).join() === 'editprofile'), kind + ': your page has one Edit profile');
     await c.click('#dscroll [data-act="editprofile"]'); await c.waitForTimeout(300);
     await c.fill('#pedit-name', 'Edda Preview'); await c.click('#dscroll [data-czact="start"][data-i="5"]'); await c.waitForTimeout(250);
-    let pv;
-    if (kind === 'phone'){
-      ok(await ev(c, () => !document.querySelector('#dscroll .custprev') && !!document.querySelector('#dscroll [data-act="pfpreview"]')), 'phone: Edit profile has Preview instead of a squeezed side preview');
-      await c.click('#dscroll [data-act="pfpreview"]'); await c.waitForTimeout(300);
-      await shot(c, 'editlook-profile-preview-phone');
-    }
-    pv = await ev(c, () => { const pg = document.querySelector('#dscroll .pvpage .pg-person'); return pg && { name:pg.querySelector('.hl').textContent, plain:pg.classList.contains('plain'),
-      bg:getComputedStyle(pg).backgroundColor, other:!!pg.querySelector('[data-act="followp"]') && !pg.querySelector('[data-act="editprofile"]'), inert:pg.closest('[inert]') !== null, saved:PEOPLE.self.displayName }; });
-    ok(pv && pv.name === 'Edda Preview' && !pv.plain && pv.bg === 'rgb(0, 0, 0)' && pv.other && pv.inert && pv.saved === 'Edda Lund',
-       kind + ': the preview is your page as others see it, with the unsaved name and colours ' + JSON.stringify(pv));
-    if (kind === 'phone'){
-      await c.click('#dscroll [data-act="pfpreview"][data-id="off"]'); await c.waitForTimeout(250);
-      ok(await ev(c, () => document.getElementById('pedit-name').value === 'Edda Preview' && DRAFT.c1 === '#000000'), 'phone: Back to editing keeps what you typed and picked');
-    } else await shot(c, 'editlook-edit-profile-desk');
+    const editing = await ev(c, () => ({ preview:!!document.querySelector('#dscroll [data-act="pfpreview"], #dscroll .pvpage'),
+      look:!!document.querySelector('#dscroll [data-czlook]'), name:document.getElementById('pedit-name').value, c1:DRAFT.c1 }));
+    ok(!editing.preview && editing.look && editing.name === 'Edda Preview' && editing.c1 === '#000000',
+       kind + ': Edit profile keeps the look controls and what you typed, with no preview ' + JSON.stringify(editing));
+    if (kind === 'desk') await shot(c, 'editlook-edit-profile-desk');
     await c.click('#dscroll [data-act="profiledone"]'); await c.waitForTimeout(400);
     /* the profile look shows wherever you are: your page, your avatar (toolbar or You tab), and under your account's id */
     if (kind === 'phone'){ await c.evaluate(() => { S.stack = []; setTab('you'); }); await c.waitForTimeout(300); }

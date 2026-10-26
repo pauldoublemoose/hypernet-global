@@ -2776,7 +2776,6 @@ async function overflowEverywhere(p, label){
     ok(await ev(c, () => { const d = document.querySelector('.dlg.permissions'); return !!d && d.querySelector('.dtitle').textContent === 'Permissions' && /Invite admin/.test(d.innerText) && /Guests can invite friends/.test(d.innerText) && /Who can add themselves as co-creator/.test(d.innerText) && d.querySelector('.dfoot').textContent.trim() === 'Done'; }),
        kind + ': Permissions holds invite admin, guests can invite, and the co-creator rule');
     await c.keyboard.press('Escape'); await c.waitForTimeout(150);
-    await c.keyboard.press('Escape'); await c.waitForTimeout(150);
     await c.evaluate(() => { window.__copied = []; Object.defineProperty(navigator, 'clipboard', { configurable:true, value:{ writeText:t => { window.__copied.push(t); return Promise.resolve(); } } }); });
     await c.click(barSel + '[data-act="share"]'); await c.waitForTimeout(250);
     const shared = await ev(c, () => ({ menu:(document.querySelector('.ctxmenu') || {}).innerText || '', copied:/Link copied/.test(document.getElementById('toasts').textContent) }));

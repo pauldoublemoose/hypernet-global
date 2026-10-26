@@ -3221,14 +3221,17 @@ async function overflowEverywhere(p, label){
       c.on('request', r => { if (/\/api\//.test(r.url())) api.push(r.url()); });
       await open(c, '', true);
       await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+      /* Borderland's fixture owner is the demo, so clearing its role still leaves it under Hosted.
+         Late quay supper is Anna's. Clearing the Going RSVP takes it out of Chronicle, so the file is what puts it under Attended. */
       await c.evaluate(() => {
-        delete ROLE['evt-world-borderland-2026'];
-        delete WENT['evt-world-borderland-2026'];
+        delete ROLE['evt-chronicle-going'];
+        delete WENT['evt-chronicle-going'];
+        delete RSVP['evt-chronicle-going'];
         openItem('person', 'self');
         beginProfileEdit();
       });
       await c.waitForTimeout(400);
-      const before = await ev(c, () => [...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].filter(s => s.textContent.indexOf('Borderland 2026') >= 0).map(s => s.getAttribute('data-role')));
+      const before = await ev(c, () => [...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].filter(s => s.textContent.indexOf('Late quay supper') >= 0).map(s => s.getAttribute('data-role')));
       await c.evaluate(() => document.querySelector('[data-act="addpastevent"]').click());
       await c.waitForTimeout(300);
       await c.fill('#ch-q', 'Harbour');
@@ -3241,20 +3244,20 @@ async function overflowEverywhere(p, label){
         add:CHRONICLE_ADD,
         create:!!document.querySelector('.dlg [data-act="new-event"], .dlg [data-act="chronicle-go"]')
       }));
-      await c.fill('#ch-q', 'Borderland');
+      await c.fill('#ch-q', 'Late quay');
       const found = await ev(c, () => [...document.querySelectorAll('.dlg [data-act="chpick"]')].map(b => ({ id:b.getAttribute('data-id'), past:isPast(lastDay(EVENTS[b.getAttribute('data-id')])) })));
       await c.click('.dlg [data-act="chpick"]');
       await c.check('.dlg input[name="ch-role"][value="attendee"]');
       await c.click('.dlg [data-act="chronicle-add"]');
       await c.waitForTimeout(400);
       const after = await ev(c, () => ({
-        hit:[...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].filter(s => s.textContent.indexOf('Borderland 2026') >= 0).map(s => s.getAttribute('data-role')),
-        role:ROLE['evt-world-borderland-2026'] || null,
-        went:!!WENT['evt-world-borderland-2026']
+        hit:[...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].filter(s => s.textContent.indexOf('Late quay supper') >= 0).map(s => s.getAttribute('data-role')),
+        role:ROLE['evt-chronicle-going'] || null,
+        went:!!WENT['evt-chronicle-going']
       }));
       ok(!before.length && !harbour.length && !miss.hits && !miss.wiz && !miss.add && !miss.create &&
          /New event/.test(miss.line) && /Already happened/.test(miss.line) &&
-         found.length === 1 && found[0].id === 'evt-world-borderland-2026' && found[0].past &&
+         found.length === 1 && found[0].id === 'evt-chronicle-going' && found[0].past &&
          after.hit.length === 1 && after.hit[0] === 'attendee' && after.role === 'attendee' && after.went && !api.length,
          kind + ': Add past event search returns a past demo event, files it under Attended, and hides an upcoming event ' + JSON.stringify({ before, harbour, miss, found, after, api }));
       ok(!c.errors.length, kind + ': no console errors (chronicle search) ' + c.errors.join(' '));

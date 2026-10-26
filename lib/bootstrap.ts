@@ -14,7 +14,8 @@ export const EVENT_JSON = `json_build_object(
   'startsOn', e.starts_on, 'endsOn', e.ends_on, 'startTime', to_char(e.start_time, 'HH24:MI'), 'endTime', to_char(e.end_time, 'HH24:MI'),
   'timezone', e.timezone, 'kind', e.kind, 'tags', e.tags, 'schedule', e.schedule, 'privacy', e.privacy, 'audience', e.audience, 'city', e.city, 'region', e.region, 'country', e.country,
   'venue', e.venue, 'access', e.access, 'whatToBring', e.what_to_bring, 'details', e.details, 'look', e.look, 'source', e.source,
-  'sourceUrl', e.source_url, 'addedBy', e.added_by,
+  'sourceUrl', e.source_url, 'addedBy', e.added_by, 'cocreatorPolicy', to_jsonb(e)->>'cocreator_policy',
+  'invitePolicy', to_jsonb(e)->>'invite_policy',
   'previousEditionId', e.previous_edition_id, 'createdAt', e.created_at, 'updatedAt', e.updated_at)`;
 
 export const PERSON_JSON = `json_build_object('id', p.id, 'handle', p.handle, 'displayName', p.display_name, 'bio', p.bio,
@@ -90,7 +91,9 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
              where $1::uuid is not null and (f.follower_id = $1::uuid or f.followee_id = $1::uuid)`),
       one(`select coalesce(json_agg(${EVENT_JSON} order by e.starts_on), '[]') v from events e where ${SEE}`),
       one(`select coalesce(json_agg(json_build_object('personId', r.person_id, 'eventId', r.event_id, 'status', r.status, 'went', r.went,
-             'shiftIndex', r.shift_index, 'role', r.role, 'updatedAt', r.updated_at)), '[]') v
+             'shiftIndex', r.shift_index, 'role', r.role, 'updatedAt', r.updated_at,
+             'cocreatorPending', case when r.person_id = $1::uuid
+               then coalesce((to_jsonb(r)->>'cocreator_pending')::boolean, false) else false end)), '[]') v
              from rsvps r join events e on e.id = r.event_id where ${SEE}`),
       one(`select coalesce(json_agg(json_build_array(pr.person_id, pr.event_id)), '[]') v
              from promotions pr join events e on e.id = pr.event_id where ${SEE}`),
@@ -114,7 +117,8 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
                    order by a.ts desc limit 600) a`),
       one(`select coalesce(json_agg(json_build_object('threadId', t.id, 'personId', case when t.a = $1::uuid then t.b else t.a end,
              'lastReadAt', (select tr.last_read_at from thread_reads tr where tr.thread_id = t.id and tr.person_id = $1::uuid),
-             'messages', coalesce((select json_agg(json_build_object('id', m.id, 'senderId', m.sender_id, 'body', m.body, 'createdAt', m.created_at)
+             'messages', coalesce((select json_agg(json_build_object('id', m.id, 'senderId', m.sender_id, 'body', m.body,
+                                   'cardType', m.card_type, 'cardId', m.card_id, 'createdAt', m.created_at)
                                    order by m.created_at) from messages m where m.thread_id = t.id), '[]'))), '[]') v
              from dm_threads t where $1::uuid is not null and (t.a = $1::uuid or t.b = $1::uuid)`),
       one(`select coalesce(json_agg(json_build_object('a', f.a, 'b', f.b, 'requestedBy', f.requested_by, 'status', f.status,
@@ -163,7 +167,8 @@ export async function loadChats(viewer: string): Promise<unknown[]> {
   const rows = (await sqlx().query(
     `select coalesce(json_agg(json_build_object('threadId', t.id, 'personId', case when t.a = $1::uuid then t.b else t.a end,
        'lastReadAt', (select tr.last_read_at from thread_reads tr where tr.thread_id = t.id and tr.person_id = $1::uuid),
-       'messages', coalesce((select json_agg(json_build_object('id', m.id, 'senderId', m.sender_id, 'body', m.body, 'createdAt', m.created_at)
+       'messages', coalesce((select json_agg(json_build_object('id', m.id, 'senderId', m.sender_id, 'body', m.body,
+                             'cardType', m.card_type, 'cardId', m.card_id, 'createdAt', m.created_at)
                              order by m.created_at) from messages m where m.thread_id = t.id), '[]'))), '[]') v
        from dm_threads t where t.a = $1::uuid or t.b = $1::uuid`,
     [viewer],

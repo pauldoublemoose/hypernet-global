@@ -1,4 +1,12 @@
+import { createRequire } from "node:module";
+import path from "node:path";
 import { z } from "zod";
+
+// Same parser as the page (_shared/map-link.js). Required, not imported, so tsc leaves that script alone.
+const requireMap = createRequire(path.join(process.cwd(), "package.json"));
+function classifyMap(raw: string): { kind: string } {
+  return (requireMap("./_shared/map-link.js") as { classifyMapInput: (s: string) => { kind: string } }).classifyMapInput(raw);
+}
 
 // Request shapes. They repeat the database CHECKs on purpose: a bad request gets a readable 400 with the field
 // that is wrong, instead of a constraint error from Postgres.
@@ -114,6 +122,46 @@ const eventFields = {
 const endsAfterStart = (e: { startsOn?: string; endsOn?: string | null }) =>
   !e.startsOn || !e.endsOn || e.endsOn >= e.startsOn;
 
+const URL_MSG = "Only http:// and https:// links.";
+
+function isHttpUrl(raw: string): boolean {
+  try {
+    const u = new URL(raw.trim());
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+const httpUrl = z.string().trim().max(2000).refine(isHttpUrl, URL_MSG);
+
+const URL_KEYS = new Set(["url", "link", "href", "externalUrl", "organizerUrl", "imageUrl", "sourceUrl"]);
+
+function rejectBadUrls(value: unknown, path: (string | number)[], ctx: z.RefinementCtx, asUrl: boolean) {
+  if (value == null) return;
+  if (typeof value === "string") {
+    if (!asUrl || value.trim() === "") return;
+    if (!isHttpUrl(value)) ctx.addIssue({ code: "custom", message: URL_MSG, path });
+    return;
+  }
+  if (Array.isArray(value)) {
+    const parent = path[path.length - 1];
+    value.forEach((item, i) => {
+      rejectBadUrls(item, [...path, i], ctx, parent === "sources" && typeof item === "string");
+    });
+    return;
+  }
+  if (typeof value === "object") {
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      rejectBadUrls(v, [...path, k], ctx, URL_KEYS.has(k));
+    }
+  }
+}
+
+function rejectEventUrls(value: { access?: unknown; details?: unknown; venue?: unknown }, ctx: z.RefinementCtx) {
+  for (const key of ["access", "details", "venue"] as const) rejectBadUrls(value[key], [key], ctx, false);
+}
+
 export const eventCreate = z
   .object({
     id: z.uuid().optional(), // the browser names what it creates, so it can show it before the server answers
@@ -136,21 +184,40 @@ export const eventCreate = z
     audience: audience.optional(),
   })
   .strict()
-  .refine(endsAfterStart, { message: "endsOn is before startsOn", path: ["endsOn"] });
-
-const webUrl = z.string().trim().max(2000).regex(/^https?:\/\/\S+$/i, "a link starting with https://");
+  .refine(endsAfterStart, { message: "endsOn is before startsOn", path: ["endsOn"] })
+  .superRefine(rejectEventUrls);
 
 /** POST /api/events/autofill: the link to read. */
-export const linkRead = z.object({ url: webUrl }).strict();
+export const linkRead = z.object({ url: httpUrl }).strict();
+
+/** POST /api/maps/resolve: a short https map link. The page parses whatever it opens. */
+export const mapResolve = z
+  .object({ url: httpUrl })
+  .strict()
+  .superRefine((v, ctx) => {
+    let u: URL;
+    try {
+      u = new URL(v.url);
+    } catch {
+      return;
+    }
+    if (u.protocol !== "https:") {
+      ctx.addIssue({ code: "custom", message: "Only https map links.", path: ["url"] });
+      return;
+    }
+    if (classifyMap(v.url).kind !== "short") {
+      ctx.addIssue({ code: "custom", message: "Paste a short map link.", path: ["url"] });
+    }
+  });
 
 /** POST /api/events/link: an event that already exists elsewhere, as the person checked it after Autofill. Always
  *  public (the page it came from is), hosted by whoever the page names; `imageUrl` is copied into our storage. */
 export const eventLink = z
   .object({
     id: z.uuid().optional(),
-    sourceUrl: webUrl,
+    sourceUrl: httpUrl,
     hostName: z.string().trim().min(1).max(80),
-    imageUrl: webUrl.nullish(),
+    imageUrl: httpUrl.nullish(),
     ...eventFields,
     description: eventFields.description.default(""),
     endsOn: eventFields.endsOn.optional(),
@@ -169,22 +236,33 @@ export const eventLink = z
   })
   .omit({ privacy: true })
   .strict()
-  .refine(endsAfterStart, { message: "endsOn is before startsOn", path: ["endsOn"] });
+  .refine(endsAfterStart, { message: "endsOn is before startsOn", path: ["endsOn"] })
+  .superRefine(rejectEventUrls);
 
 /** PATCH: any subset of the same fields. Ids, host, slug and timestamps are not editable here — except the host's
- *  name of an event added from a link (nobody here hosts it; whoever added it corrects what the page said). */
+ *  name of an event added from a link (nobody here hosts it; whoever added it corrects what the page said).
+ *  Privacy, who can send invites, and co-creator policy are admin-only. The route rejects them for anyone else. */
 export const eventPatch = z
-  .object({ ...eventFields, hostName: z.string().trim().min(1).max(80), audience: audience.optional() })
+  .object({
+    ...eventFields,
+    hostName: z.string().trim().min(1).max(80),
+    audience: audience.optional(),
+    cocreatorPolicy: z.enum(["open", "request"]),
+    invitePolicy: z.enum(["admins", "cocreators", "invited"]),
+  })
   .partial()
   .strict()
   .refine((p) => Object.keys(p).length > 0, { message: "nothing to change" })
-  .refine(endsAfterStart, { message: "endsOn is before startsOn", path: ["endsOn"] });
+  .refine(endsAfterStart, { message: "endsOn is before startsOn", path: ["endsOn"] })
+  .superRefine(rejectEventUrls);
 
 export const eventQuery = z.object({
   from: day.optional(),
   to: day.optional(),
   host: z.uuid().optional(),
   limit: z.coerce.number().int().min(1).max(200).default(100),
+  /** `only` returns past events for the chronicle picker. Omit it and past events stay out. */
+  past: z.enum(["only"]).optional(),
 });
 
 const handle = z.string().trim().toLowerCase().regex(/^[a-z0-9._-]{1,30}$/, "1–30 of a-z 0-9 . _ -");
@@ -257,6 +335,21 @@ export const calloutPatch = z
   .partial()
   .strict()
   .refine((p) => Object.keys(p).length > 0, { message: "nothing to change" });
+
+/** POST /api/events/:id/admins — invite someone to administer the page. */
+export const adminInvite = z.object({ userId: z.uuid() }).strict();
+/** POST /api/events/:id/admins/:userId — the invitee accepts or declines. Decline deletes the row. */
+export const adminReply = z.object({ status: z.enum(["accepted", "declined"]) }).strict();
+/** POST /api/events/:id/demote — an admin sets someone else's co-creator role back to attendee. */
+export const demoteBody = z.object({ userId: z.uuid() }).strict();
+
+/** POST /api/events/:id/cocreators — an admin approves or declines a pending co-creator request. */
+export const cocreatorReviewBody = z.object({
+  userId: z.uuid(),
+  action: z.enum(["approve", "decline"]),
+}).strict();
+/** POST /api/events/:id/invites — a guest invite. Writes event_invites and a DM card. Does not change visibility. */
+export const guestInvite = z.object({ personId: z.uuid() }).strict();
 
 export const replyCreate = z.object({ id: z.uuid().optional(), text: z.string().trim().min(1).max(2000) }).strict();
 export const messageCreate = z.object({ id: z.uuid().optional(), body: z.string().trim().min(1).max(4000) }).strict();

@@ -4,19 +4,22 @@ import { canSeeEventSql, resolveAudience } from "@/lib/audience";
 import { EVENT_JSON, presentEvent } from "@/lib/bootstrap";
 import { eventFor, makeSlug } from "@/lib/events";
 import { HttpError, json, readJson, route } from "@/lib/http";
+import { eventListWindow } from "@/lib/event-access";
 import { eventCreate, eventQuery } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
 /**
- * GET /api/events?from=YYYY-MM-DD&to=YYYY-MM-DD&host=<person id>&limit=100
+ * GET /api/events?from=YYYY-MM-DD&to=YYYY-MM-DD&host=<person id>&limit=100&past=only
  * The events the viewer may see. Logged out, that is none. `from` compares with the last
  * day of the event, so one that is still running is included.
+ * Past events (the end, or the start when there is no end, is before today) stay out unless `past=only`.
  */
 export const GET = route(async (req: Request) => {
   const q = eventQuery.parse(Object.fromEntries(new URL(req.url).searchParams));
   const { person } = await currentPerson();
   if (!person) return json({ events: [], viewer: null });
+  const listWindow = eventListWindow(q.past);
   const rows = (await sqlx().query(
     `select coalesce(json_agg(v order by starts_on, title), '[]') v from (
        select ${EVENT_JSON} v, e.starts_on, e.title from events e
@@ -24,11 +27,14 @@ export const GET = route(async (req: Request) => {
           and ($2::date is null or coalesce(e.ends_on, e.starts_on) >= $2::date)
           and ($3::date is null or e.starts_on <= $3::date)
           and ($4::uuid is null or e.host_id = $4::uuid)
+          and (
+            ($6::text = 'past' and coalesce(e.ends_on, e.starts_on) < current_date)
+            or ($6::text = 'current' and coalesce(e.ends_on, e.starts_on) >= current_date)
+          )
         order by e.starts_on, e.title limit $5) x`,
-    [person?.id ?? null, q.from ?? null, q.to ?? null, q.host ?? null, q.limit],
+    [person.id, q.from ?? null, q.to ?? null, q.host ?? null, q.limit, listWindow],
   )) as { v: { hostId: string | null }[] }[];
-  const viewer = person?.id ?? null;
-  return json({ events: rows[0].v.map((e) => presentEvent(e, viewer)), viewer });
+  return json({ events: rows[0].v.map((ev) => presentEvent(ev, person.id)), viewer: person.id });
 });
 
 /** POST /api/events {id?, title, startsOn, …} — create an event hosted by the logged-in person. */

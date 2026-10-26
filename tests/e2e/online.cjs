@@ -62,6 +62,11 @@ async function person(browser, email, handle, name){
 
 async function newEvent(p, title, privacy, withPicture){
   await p.evaluate(() => newEventDialog());
+  if (await p.$('.dlg [data-act="hostask"][data-id="mine"]')){
+    await p.click('.dlg [data-act="hostask"][data-id="mine"]');
+    await p.click('.dlg [data-act="hostwhen"][data-id="upcoming"]');
+    await p.click('.dlg [data-act="hostask-go"]');
+  }
   await p.fill('#w-t', title);
   const day = await p.evaluate(() => { const d = new Date(); d.setDate(d.getDate() + 10); return isoOf(d); });
   await p.fill('#w-d', day); await p.fill('#w-c', 'Brno');

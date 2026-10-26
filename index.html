@@ -7539,6 +7539,8 @@ function cocreatorRequestRows(evId){
       '<button class="btn" data-act="evcoreview" data-id="'+evId+'" data-user="'+esc(pid)+'" data-key="decline">Decline</button></div>';
   }).join('');
 }
+// F&P will swap this for isPublicAudience() from lib/audience.ts once 0008 merges (public there means include has 'everyone', even with excludes).
+function isEventPublic(ev){ return !!(ev && (ev.privacy || 'everyone') === 'everyone'); }
 function eventControlsBody(evId){
   var host = isMine(evId);
   var e = EVENTS[evId];
@@ -7553,7 +7555,7 @@ function eventControlsBody(evId){
     return '<div class="ev-admin-row"><span>'+esc(person(pid).displayName)+'</span>' +
       '<button class="btn" data-act="evdemote" data-id="'+evId+'" data-user="'+esc(pid)+'">Demote</button></div>';
   }).join('');
-  var pub = !!(e && (e.privacy || 'everyone') === 'everyone');
+  var pub = isEventPublic(e);
   var inviteBtn = past || logged ? '' :
     '<button class="btn" data-act="evadmin-invite" data-id="'+evId+'">Invite admin</button>';
   var invitePolicy = past || logged ? '' :
@@ -7653,7 +7655,7 @@ function setInvitePolicy(evId, policy){
   var e = EVENTS[evId];
   if (!e || !canManageEvent(evId)) return;
   if (policy !== 'admins' && policy !== 'cocreators' && policy !== 'invited') return;
-  if ((e.privacy || 'everyone') === 'everyone') return;
+  if (isEventPublic(e)) return;
   e.invitePolicy = policy;
   if (ONLINE) HNAPI.patchEvent(evId, { invitePolicy:policy });
   settleEventControl(evId);

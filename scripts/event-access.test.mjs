@@ -200,7 +200,12 @@ test("0010 stores invite_policy and the Permissions window uses two dropdowns", 
   assert.ok(ret.indexOf("cocreatorPolicyHTML") < ret.indexOf("invitePolicy"));
   assert.match(body, /Who can invite guests\?/);
   assert.match(body, /This event is public, so anyone can already see it\./);
-  assert.match(body, /\(e\.privacy \|\| 'everyone'\) === 'everyone'/);
+  assert.match(body, /isEventPublic\(e\)/);
+  const pub = html.slice(html.indexOf("function isEventPublic"), html.indexOf("function eventControlsBody"));
+  assert.match(pub, /F&P will swap this for isPublicAudience\(\) from lib\/audience\.ts once 0008 merges/);
+  assert.match(pub, /\(ev\.privacy \|\| 'everyone'\) === 'everyone'/);
+  const setInvite = html.slice(html.indexOf("function setInvitePolicy"), html.indexOf("var INVITE"));
+  assert.match(setInvite, /isEventPublic\(e\)/);
   const policy = html.slice(html.indexOf("function cocreatorPolicyHTML"), html.indexOf("function cocreatorRequestRows"));
   const select = html.slice(html.indexOf("function policySelect"), html.indexOf("function cocreatorPolicyHTML"));
   assert.match(select, /<select/);

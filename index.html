@@ -8037,7 +8037,7 @@ function eventCogItems(evId){
   var e = EVENTS[evId];
   if (!e) return [];
   var past = isPast(lastDay(e)), logged = isLinkEvent(evId), seat = eventSeat(evId);
-  var items = [{ heading:'Admin controls' }];
+  var items = L.phone ? [] : [{ heading:'Admin controls' }];
   if (canFix(evId)) items.push({ label:'Edit', icon:'edit', run:function(){ editEventDialog(evId); } });
   if (!logged && (seat === 'host' || seat === 'admin')) items.push({ label:'Visibility', icon:'eye', run:function(){ eventPrivacyDialog(evId); } });
   if (!past && !logged && (seat === 'host' || seat === 'admin')) items.push({ label:'Permissions', icon:'key', run:function(){ eventControlsDialog(evId); } });

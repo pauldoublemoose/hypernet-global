@@ -1634,10 +1634,10 @@ async function overflowEverywhere(p, label){
       const hex = el => { const m = getComputedStyle(el).color.match(/\d+/g); return '#' + m.slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join(''); };
       const ground = el => { var n = el; while (n){ var m = getComputedStyle(n).backgroundColor.match(/\d+/g); if (m && (m.length < 4 || +m[3] !== 0)) return '#' + m.slice(0, 3).map(function(x){ return (+x).toString(16).padStart(2, '0'); }).join(''); n = n.parentElement; } return '#ffffff'; };
       const mark = menu.querySelector('[data-icon="eye"]');
+      const titles = [...menu.querySelectorAll('.chead, .dtitle')].map(n => n.textContent.trim());
       const themes = ['y2fresh', 'win2k'].map(t => { document.documentElement.setAttribute('data-theme', t); return { t:t, ink:contrast(hex(mark), ground(mark)) }; });
       document.documentElement.setAttribute('data-theme', 'win2k');
-      const head = (menu.querySelector('.chead') || {}).textContent || '';
-      return { q:document.querySelectorAll('.helptip-btn').length, eye:!!(vis && vis.icon === 'eye'), head:head.trim() === 'Admin controls',
+      return { q:document.querySelectorAll('.helptip-btn').length, eye:!!(vis && vis.icon === 'eye'), head:titles.length === 1 && titles[0] === 'Admin controls',
         order:labels.join(','), last:!!(del && del.t === 'Delete' && !del.danger && del.icon === 'trash'),
         perm:!!(perm && perm.icon === 'key'),
         plain:!!(delEl && visEl) && getComputedStyle(delEl).color === getComputedStyle(visEl).color && getComputedStyle(delEl).backgroundColor === getComputedStyle(visEl).backgroundColor,

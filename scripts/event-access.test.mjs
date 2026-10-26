@@ -308,6 +308,20 @@ test("the page shows Add to Chronicle with a help button, and search leaves past
   assert.equal(chronicle.includes("readJson"), false);
 });
 
+test("the boost action is labeled Boost", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /aria-label="Boost"/);
+  assert.match(html, /label:'Boost'/);
+  assert.match(html, /it\.check \? 'Boosted' : 'Boost'/);
+  assert.match(html, /data-act="v-promote"/);
+  assert.match(html, /code:'promote'/);
+  assert.equal(html.includes("'Promote'"), false);
+  assert.equal(html.includes('"Promote"'), false);
+  assert.equal(html.includes("'Promoted'"), false);
+  assert.equal(html.includes('"Promoted"'), false);
+  assert.equal(html.includes("Not promoted"), false);
+});
+
 test("the admin block is labeled Admin controls", () => {
   const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /heading:'Admin controls'/);

@@ -35,3 +35,7 @@ Offline landing (Explore):
 A text target and a selector:
 
 `?check=t:Add%20to%20Chronicle~Try%20Add%20to%20Chronicle|%23newEventBtn~New%20event%20asks%20host%20question`
+
+Event page. Boost is the last item, and it attaches when the more menu is open:
+
+`?offline=1&check=.hostask~Host|%23iv-list%20.ivbtn~Invite|.verbs:has([data-act=evmore])~Event%20bar|[data-act=evmore]~More|.chclaim%20.helptip-btn~Chronicle|.chead%20.helptip-btn~Co-creator|t:Boost~Boost`

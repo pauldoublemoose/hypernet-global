@@ -2725,8 +2725,8 @@ async function overflowEverywhere(p, label){
     const barSel = kind === 'phone' ? '#evbar ' : '#dscroll ';
     await c.click(barSel + '[data-act="evmore"]'); await c.waitForTimeout(250);
     const controls = await ev(c, () => (document.querySelector('.ctxmenu, .ctxsheet') || {}).innerText || '');
-    ok(/New call out/.test(controls) && /Promote/.test(controls) && /Add to horizon/.test(controls) && /Admin controls/.test(controls) && /Who can see it/.test(controls) && /Invite admin/.test(controls) && /Who can add themselves as co-creator/.test(controls) && /Guests can invite friends/.test(controls) && /Delete/.test(controls),
-       kind + ': the one … holds New call out, Promote, and Admin controls ' + controls);
+    ok(/New call out/.test(controls) && /Boost/.test(controls) && /Add to horizon/.test(controls) && /Admin controls/.test(controls) && /Who can see it/.test(controls) && /Invite admin/.test(controls) && /Who can add themselves as co-creator/.test(controls) && /Guests can invite friends/.test(controls) && /Delete/.test(controls),
+       kind + ': the one … holds New call out, Boost, and Admin controls ' + controls);
     await c.keyboard.press('Escape'); await c.waitForTimeout(150);
     await c.evaluate(() => openItem('event', 'evt-deep-listening')); await c.waitForTimeout(350);
     const guest0 = await ev(c, () => ({ admins:document.querySelectorAll('[data-act="evadmins"]').length, invite:document.querySelectorAll('[data-act="evinvite"]').length }));

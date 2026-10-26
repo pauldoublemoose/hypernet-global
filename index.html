@@ -2518,7 +2518,7 @@ function destEvents(f){
 function folderName(f){
   f = f || S.folder;
   if (f.kind === 'explore') return f.id ? (EXPLOREKINDS.filter(function(k){ return k[0] === f.id; })[0] || [0, 'Explore'])[1] : 'Explore';
-  return { home:'Home', interested:'Interested', going:'Going', hosting:'Hosting', promoted:'Promoted',
+  return { home:'Home', interested:'Interested', going:'Going', hosting:'Hosting', promoted:'Boosted',
            search:'Search', you:'You', chats:'Chats', shelf: shelfTitle(f.id) }[f.kind] || (f.kind === 'horizon' && HORIZONS[f.id] ? HORIZONS[f.id].name : 'Home');
 }
 function folderSub(f){
@@ -2662,7 +2662,7 @@ function statePills(evId){
   if (st === 'going')      h += '<span class="pill going">'+ic('check',11)+'<span>Going</span></span>';
   if (st === 'interested') h += '<span class="pill int">'+ic('heart',11)+'<span>Interested</span></span>';
   if (st === 'hosting')    h += '<span class="pill host">'+ic('star',11)+'<span>Hosting</span></span>';
-  if (S.loggedIn && PROMOTED[evId]) h += '<span class="pill">'+ic('promote',11)+'<span>Promoted</span></span>';
+  if (S.loggedIn && PROMOTED[evId]) h += '<span class="pill">'+ic('promote',11)+'<span>Boosted</span></span>';
   return h;
 }
 function rowHTML(it){
@@ -2750,7 +2750,7 @@ function renderList(){
     } else h = '<div class="empty">' + (k === 'search' ? ''
       : k === 'going' ? 'You are not going to anything yet.'
       : k === 'interested' ? 'Nothing saved yet.'
-      : k === 'promoted' ? 'Nothing promoted yet.'
+      : k === 'promoted' ? 'Nothing boosted yet.'
       : k === 'hosting' ? 'You are not hosting anything yet.<br><button class="btn primary" data-act="new-event">'+ic('plus')+'New event</button>'
       : 'Nothing here yet.') + '</div>';
   } else {
@@ -2958,7 +2958,7 @@ function factsHTML(evId){
   var net = S.loggedIn ? attendees(evId).filter(function(pid){ return PFOLLOW[pid]; }).length : 0;
   f.push([past ? 'Went' : 'Going', attendeeCount(evId) + ' on Hypernet',
     [going ? 'Including you' : '', net ? net + ' you follow' : ''].filter(Boolean).join(' · ')]);
-  if (S.loggedIn && PROMOTED[evId]) f.push(['Promoted', 'By you' + (promoCount(evId) > 1 ? ' and ' + (promoCount(evId) - 1) + ' more' : ''), '']);
+  if (S.loggedIn && PROMOTED[evId]) f.push(['Boosted', 'By you' + (promoCount(evId) > 1 ? ' and ' + (promoCount(evId) - 1) + ' more' : ''), '']);
   var org = r.organiser;
   var hp0 = hostPersonOf(e), camp = (r.ownerGroupIds || []).map(groupHorizon).filter(Boolean)[0];
   var hostTo = hp0 && hp0.id !== 'self' ? { type:'person', id:hp0.id } : camp ? { type:'horizon', id:camp } : null;
@@ -3337,7 +3337,7 @@ function compactVerbs(evId){
   return '<div class="cverbs">' +
     '<button class="ib'+(st==='interested'?' on':'')+'" data-act="v-interested" data-id="'+evId+'" aria-label="Interested" aria-pressed="'+(st==='interested')+'">'+ic('heart')+'</button>' +
     '<button class="ib'+(st==='going'?' on':'')+'" data-act="v-going" data-id="'+evId+'" aria-label="Going" aria-pressed="'+(st==='going')+'">'+ic('check')+'</button>' +
-    '<button class="ib'+(S.loggedIn && PROMOTED[evId]?' on':'')+'" data-act="v-promote" data-id="'+evId+'" aria-label="Promote">'+ic('promote')+'</button></div>';
+    '<button class="ib'+(S.loggedIn && PROMOTED[evId]?' on':'')+'" data-act="v-promote" data-id="'+evId+'" aria-label="Boost">'+ic('promote')+'</button></div>';
 }
 function eventCRow(e, withVerbs){
   return '<div class="crow">' + sqHTML(e.id, 48) +
@@ -3858,7 +3858,7 @@ function cardTag(it){
   if (it.type === 'event'){
     if (WENT[it.id]) return '<span class="ctag">Went</span>';
     var st = stateOf(it.id);
-    return st ? '<span class="ctag">'+{ going:'Going', interested:'Interested', hosting:'Hosting' }[st]+'</span>' : PROMOTED[it.id] ? '<span class="ctag">Promoted</span>' : '';
+    return st ? '<span class="ctag">'+{ going:'Going', interested:'Interested', hosting:'Hosting' }[st]+'</span>' : PROMOTED[it.id] ? '<span class="ctag">Boosted</span>' : '';
   }
   if (it.type === 'horizon') return hzOwnedByMe(it.id) ? '<span class="ctag">Yours</span>' : HZFOLLOW[it.id] ? '<span class="ctag">Following</span>' : '';
   if (it.type === 'callout') return isOwnCallout(calloutOf(it.id)) ? '<span class="ctag">Yours</span>' : myReplies(it.id).length ? '<span class="ctag">Replied</span>' : '';
@@ -4842,7 +4842,7 @@ function actSentence(e){
   switch (e.verb){
     case 'going':             return who + be + 'going';
     case 'interested':        return who + be + 'interested';
-    case 'promoted':          return who + ' promoted an event';
+    case 'promoted':          return who + ' boosted an event';
     case 'created_event':     return who + ' created an event';
     case 'posted_callout':    return who + ' posted a call out';
     case 'replied_callout':   return who + ' replied to ' + (isOwnCallout(calloutOf(e.objId)) ? 'your call out ' : '') + objLink('callout', e.objId, calloutOf(e.objId).title);
@@ -4860,7 +4860,7 @@ function youLineHTML(rows){
   var frag = {
     going:function(l){ return 'going to ' + list(l, evLink); },
     interested:function(l){ return 'interested in ' + list(l, evLink); },
-    promoted:function(l){ return 'promoted ' + list(l, evLink); },
+    promoted:function(l){ return 'boosted ' + list(l, evLink); },
     created_event:function(l){ return 'created ' + list(l, evLink); },
     published_horizon:function(l){ return 'published ' + list(l, hzLink); },
     created_horizon:function(l){ return 'made ' + list(l, hzLink) + ' (private)'; },
@@ -5107,7 +5107,7 @@ function renderNav(){
   h += navRow({kind:'interested'}, ic('heart'), 'Interested', { count: rsvpList('interested').length || '' });
   h += navRow({kind:'hosting'}, ic('star'), 'Hosting', { count: MYEVENTS.length || '' });
   var npro = Object.keys(PROMOTED).filter(function(k){ return PROMOTED[k] && EVENTS[k]; }).length;
-  if (npro) h += navRow({kind:'promoted'}, ic('promote'), 'Promoted', { count: npro });
+  if (npro) h += navRow({kind:'promoted'}, ic('promote'), 'Boosted', { count: npro });
   if (MYHORIZONS.length) h += '<div class="navh">Your horizons</div>';
   MYHORIZONS.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { count: hzEventIds(k).length || '', drop:true, hz:true }); });
   var followed = Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k] && HORIZONS[k]; });
@@ -7971,8 +7971,8 @@ function ctxItems(t, only){
         run: ctxVerb(function(){ setRSVP(id, 'interested'); }, function(){ return RSVP[id] === 'interested'; }, 'Interested', EVENTS[id].title) },
       { code:'going', label:'Going', icon:'check', check: st === 'going',
         run: ctxVerb(function(){ setRSVP(id, 'going'); }, function(){ return RSVP[id] === 'going'; }, 'Going', EVENTS[id].title) });
-    if (!past) out.push({ code:'promote', label:'Promote', icon:'promote', check: S.loggedIn && !!PROMOTED[id],
-        run: ctxVerb(function(){ doPromote(id); }, function(){ return !!PROMOTED[id]; }, 'Promoted', EVENTS[id].title) });
+    if (!past) out.push({ code:'promote', label:'Boost', icon:'promote', check: S.loggedIn && !!PROMOTED[id],
+        run: ctxVerb(function(){ doPromote(id); }, function(){ return !!PROMOTED[id]; }, 'Boosted', EVENTS[id].title) });
     out.push('-');
     /* logged out there are no horizons of yours to list yet: log in, then pick one */
     if (S.loggedIn) out.push({ code:'addto', label:'Add to horizon', icon:'addhorizon', sub: ctxHorizonItems(id) });
@@ -8061,7 +8061,7 @@ function openEventMore(btn, id){
   items.forEach(function(it){
     if (it && it.code === 'promote'){
       var n = promoCount(id);
-      it.label = (it.check ? 'Promoted' : 'Promote') + (n ? ' ' + n : '');
+      it.label = (it.check ? 'Boosted' : 'Boost') + (n ? ' ' + n : '');
     }
   });
   if (btn.getAttribute('data-controls') === '1'){
@@ -8422,14 +8422,14 @@ function toggleHelpTip(btn){
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
 var doPromote = gated(function(evId){
-  if (RESUMING && PROMOTED[evId]){ render(); toast('Promoted', EVENTS[evId].title); return; }
+  if (RESUMING && PROMOTED[evId]){ render(); toast('Boosted', EVENTS[evId].title); return; }
   PROMOTED[evId] = !PROMOTED[evId];
   if (PROMOTED[evId]) logAct('promoted', 'event', evId);
   if (ONLINE) HNAPI.promote(evId);
   render();
   /* nothing here knows who follows you, so the toast doesn't claim an audience */
-  toast(PROMOTED[evId] ? 'Promoted' : 'Not promoted', EVENTS[evId].title,
-    PROMOTED[evId] ? function(){ PROMOTED[evId] = false; if (ONLINE) HNAPI.promote(evId); render(); toast('Not promoted', EVENTS[evId].title); } : null);
+  toast(PROMOTED[evId] ? 'Boosted' : 'Not boosted', EVENTS[evId].title,
+    PROMOTED[evId] ? function(){ PROMOTED[evId] = false; if (ONLINE) HNAPI.promote(evId); render(); toast('Not boosted', EVENTS[evId].title); } : null);
 });
 var toggleInHorizon = gated(function(evId, hzId){
   var hz = HORIZONS[hzId], i = hz.eventIds.indexOf(evId);

@@ -965,8 +965,11 @@ async function overflowEverywhere(p, label){
       const showPage = () => ev(c, id => { goFolder({ kind:'hosting' }); if (L.phone) S.tab = 'you'; S.stack = [{ type:'event', id }]; render(); }, own);
       const showList = () => ev(c, () => { goFolder({ kind:'hosting' }); if (L.phone) S.tab = 'you'; S.stack = []; render(); });
       await showPage(); await c.waitForTimeout(300);
-      /* 2026-10-05: the look is the Look section of the event's one Edit */
-      if (kind === 'desk') await c.click('#dscroll .actbar [data-act="editevent"]'); else await c.evaluate(id => editEventDialog(id), own);
+      /* 2026-10-05: the look is the Look section of the event's one Edit. Edit is in the cog. */
+      if (kind === 'desk'){
+        await c.click('#dscroll .actbar [data-act="evcog"]'); await c.waitForTimeout(200);
+        await c.click('.ctxmenu .ci:has-text("Edit")');
+      } else await c.evaluate(id => editEventDialog(id), own);
       await c.waitForTimeout(300);
       const lookCtl = () => ev(c, () => { const z = document.querySelector('.dlg [data-czlook]'); return { color:z.querySelectorAll('input[type=color]').length, file:z.querySelectorAll('input[type=file]').length,
         selects:z.querySelectorAll('select').length, boxes:z.querySelectorAll('input[type=checkbox]').length, adds:[...z.querySelectorAll('.czadd')].map(b => b.textContent.trim()) }; });
@@ -1399,8 +1402,10 @@ async function overflowEverywhere(p, label){
        kind + ': it is on the horizon, public, and not in your Hosting');
     await c.evaluate(i => { S.stack = [{ type:'event', id:i }]; render(); }, id); await c.waitForTimeout(350);
     const pg = await ev(c, () => { const w = L.phone ? document.body : document.getElementById('win');
-      return { credit:[...w.querySelectorAll('.srcline')].map(x => x.textContent).join(' '), host:!!w.querySelector('.pill.host'), edit:!!document.querySelector('[data-act="editevent"]'),
-               callout:!!document.querySelector('[data-act="newcalloutfor"]'), link:[...w.querySelectorAll('.chips a')].some(a => /billetto\.se/.test(a.href)) }; });
+      const labels = eventCogItems(S.stack[0].id).filter(i => i && i.label).map(i => i.label);
+      return { credit:[...w.querySelectorAll('.srcline')].map(x => x.textContent).join(' '), host:!!w.querySelector('.pill.host'),
+               edit:labels.indexOf('Edit') >= 0 && !!document.querySelector('[data-act="evcog"]'),
+               callout:labels.indexOf('New call out') >= 0, link:[...w.querySelectorAll('.chips a')].some(a => /billetto\.se/.test(a.href)) }; });
     ok(/Added from billetto\.se by you/.test(pg.credit) && pg.link, kind + ': its page credits who added it and links to its page ' + JSON.stringify(pg));
     ok(pg.edit && !pg.host && !pg.callout, kind + ': whoever added it may edit it, without the host\'s verbs');
     /* New event from Add events: once published it is on the horizon */

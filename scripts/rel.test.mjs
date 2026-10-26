@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
 const { pairKey } = require("../_shared/hypernet-audience.js");
-const { relOf, kind, controlOf } = require("../_shared/hypernet-rel.js");
+const { relOf, kind, controlOf, openContacts, ingest, ingestLists } = require("../_shared/hypernet-rel.js");
 
 const me = "p-michal";
 const anna = "p-anna";
@@ -41,6 +41,74 @@ test("follow and friendship are independent", () => {
   assert.deepEqual(relOf(me, "p-kai", g({ [`${me}|p-kai`]: true }, friends)), { following: true, friend: "friend-none" });
   assert.equal(kind(relOf(me, "p-kai", g({ [`${me}|p-kai`]: true }, {}))), "following");
   assert.equal(follow[`${me}|${mira}`], false);
+});
+
+test("openContacts is one dialog with Friends, Followers, Following, then Lists", () => {
+  const prev = {
+    esc: global.esc, S: global.S, myPid: global.myPid, PEOPLE: global.PEOPLE, person: global.person,
+    PFOLLOW: global.PFOLLOW, NETFOLLOWS: global.NETFOLLOWS, dialog: global.dialog, loginDialog: global.loginDialog, ONLINE: global.ONLINE,
+  };
+  global.esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  global.S = { loggedIn: true };
+  global.myPid = () => "p-michal";
+  global.ONLINE = false;
+  global.PEOPLE = {
+    "p-anna": { displayName: "Anna Vale", handle: "anna" },
+    "p-mira": { displayName: "Mira Chen", handle: "mira" },
+    "p-oskar": { displayName: "Oskar Lind", handle: "oskar" },
+    "p-yuki": { displayName: "Yuki Sato", handle: "yuki" },
+    "p-lena": { displayName: "Lena Brandt", handle: "lena" },
+    "p-priya": { displayName: "Priya Raman", handle: "priya" },
+    "p-rio": { displayName: "Rio Moss", handle: "rio" },
+    "p-kai": { displayName: "Kai Okonkwo", handle: "kai" },
+    "p-sasha": { displayName: "Sasha Reed", handle: "sasha" },
+  };
+  global.person = (id) => global.PEOPLE[id];
+  global.PFOLLOW = { "p-anna": true, "p-rio": true, "p-kai": true, "p-sasha": true };
+  global.NETFOLLOWS = {
+    "p-michal": ["p-anna", "p-rio", "p-kai", "p-sasha"],
+    "p-lena": ["p-michal"],
+    "p-priya": ["p-michal"],
+  };
+  ingest({
+    friendships: [
+      { a: "p-anna", b: "p-michal", requestedBy: "p-michal", status: "accepted" },
+      { a: "p-michal", b: "p-mira", requestedBy: "p-mira", status: "accepted" },
+      { a: "p-michal", b: "p-oskar", requestedBy: "p-oskar", status: "accepted" },
+      { a: "p-michal", b: "p-yuki", requestedBy: "p-michal", status: "accepted" },
+    ],
+  });
+  ingestLists([
+    { id: "11111111-1111-4111-8111-111111111111", name: "Work", memberIds: ["p-anna", "p-rio"] },
+    { id: "22222222-2222-4222-8222-222222222222", name: "Close", memberIds: ["p-mira", "p-kai"] },
+  ]);
+  let opened = null;
+  global.dialog = (title, html, foot, w, cls) => {
+    opened = { title, html, foot, w, cls };
+    return { setAttribute() {}, _rel: null };
+  };
+  openContacts();
+  assert.equal(opened.title, "Contacts");
+  assert.equal(opened.cls, "rel-dlg");
+  const html = opened.html;
+  const at = (label) => html.indexOf('<div class="band">' + label + "</div>");
+  const friends = at("Friends");
+  const followers = at("Followers");
+  const following = at("Following");
+  const lists = at("Lists");
+  assert.ok(friends >= 0 && friends < followers && followers < following && following < lists);
+  for (const name of ["Anna Vale", "Mira Chen", "Oskar Lind", "Yuki Sato", "Lena Brandt", "Priya Raman", "Rio Moss", "Kai Okonkwo", "Sasha Reed", "Work", "Close", "New list"]) {
+    assert.ok(html.includes(name), name);
+  }
+  opened = null;
+  let asked = 0;
+  global.S = { loggedIn: false };
+  global.loginDialog = () => { asked += 1; };
+  openContacts();
+  assert.equal(asked, 1);
+  assert.equal(opened, null);
+  global.esc = prev.esc; global.S = prev.S; global.myPid = prev.myPid; global.PEOPLE = prev.PEOPLE; global.person = prev.person;
+  global.PFOLLOW = prev.PFOLLOW; global.NETFOLLOWS = prev.NETFOLLOWS; global.dialog = prev.dialog; global.loginDialog = prev.loginDialog; global.ONLINE = prev.ONLINE;
 });
 
 test("the relationship control is one menu for the state", () => {

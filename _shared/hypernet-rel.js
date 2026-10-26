@@ -441,6 +441,7 @@
     if (RELDLG.mode === "add") { var al = listById(RELDLG.listId); return al ? "Add people to " + al.name : "Add people"; }
     if (RELDLG.mode === "addto") { var who = root.person(RELDLG.pid); return "Add “" + ((who && who.displayName) || "them") + "” to"; }
     if (RELDLG.mode === "blocked") return "This list is in use";
+    if (RELDLG.mode === "contacts") return "Contacts";
     if (RELDLG.mode === "list") return RELDLG.title || "";
     return "";
   }
@@ -453,6 +454,7 @@
     if (RELDLG.mode === "add") return addPeopleHTML(RELDLG.listId, RELDLG.q || "");
     if (RELDLG.mode === "addto") return addToHTML(RELDLG.pid);
     if (RELDLG.mode === "blocked") return blockedHTML(RELDLG.events);
+    if (RELDLG.mode === "contacts") return contactsHTML(RELDLG.names);
     return listHTML(RELDLG.names, RELDLG.hidden);
   }
 
@@ -503,6 +505,48 @@
         refreshDlg();
       });
     }
+  }
+
+  function contactNames() {
+    var me = typeof root.myPid === "function" ? root.myPid() : null;
+    var pid = me || "self";
+    return {
+      friends: namesFromGraph(pid, "friends") || [],
+      followers: namesFromGraph(pid, "followers") || [],
+      following: namesFromGraph(pid, "following") || []
+    };
+  }
+
+  function contactsHTML(names) {
+    var n = names || {};
+    var band = function (label, body) {
+      return '<div class="band">' + root.esc(label) + "</div>" + body;
+    };
+    var friends = n.friendsHidden ? listHTML(null, true) : listHTML(n.friends || [], false);
+    return band("Friends", friends) +
+      band("Followers", listHTML(n.followers || [], false)) +
+      band("Following", listHTML(n.following || [], false)) +
+      band("Lists", listsHomeHTML());
+  }
+
+  function openContacts() {
+    if (!root.S || !root.S.loggedIn) { if (root.loginDialog) root.loginDialog(); return; }
+    var names = contactNames();
+    var meta = { mode: "contacts", names: names };
+    RELDLG = meta;
+    openDialog("Contacts", contactsHTML(names), meta);
+    var me = typeof root.myPid === "function" ? root.myPid() : null;
+    if (!(root.ONLINE && root.HNAPI && root.HNAPI.relations) || !me) return;
+    root.HNAPI.relations(me).then(function (d) {
+      if (!RELDLG || RELDLG.mode !== "contacts" || !d) return;
+      RELDLG.names = {
+        friends: d.friends == null ? null : (d.friends || []),
+        followers: d.followers || [],
+        following: d.following || [],
+        friendsHidden: d.friends == null
+      };
+      refreshDlg();
+    });
   }
 
   function listById(id) {
@@ -1030,6 +1074,7 @@
     relActionsHTML: relActionsHTML, controlOf: controlOf, listPageHTML: listPageHTML, mount: mount, toggleFollow: toggleFollow,
     requestFriend: requestFriend, acceptFriend: acceptFriend, deleteFriend: deleteFriend,
     incomingCount: incomingCount, requestsButton: requestsButton, openRequests: openRequests, openList: openList,
+    openLists: openLists, openContacts: openContacts, contactsHTML: contactsHTML,
     ingest: ingest, ingestFixtures: ingestFixtures, ingestLists: ingestLists, lists: listsSnapshot,
     nameProblem: nameProblem, planDelete: planDelete, memberToggle: memberToggle, knownIds: knownIds
   };

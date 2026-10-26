@@ -200,7 +200,8 @@ create table thread_reads (
 );
 
 /* the one privacy rule (canSeeEvent in index.html); viewer is null when logged out.
-   everyone = anyone; friends = the host and the people the host follows; only_me = the host. */
+   everyone = anyone; friends = the host and the people the host follows; only_me = the host.
+   Invitees are not included yet. Friends & Privacy will add an event_invites clause in a later migration. */
 create function can_see_event(viewer uuid, e events) returns boolean language sql stable as $$
   select e.deleted_at is null and (
        e.privacy = 'everyone'

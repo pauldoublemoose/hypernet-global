@@ -791,7 +791,8 @@ body:not(.is-phone) .edlg .custprev .previewbox, body:not(.is-phone) .edlg .pvpa
 #toasts{ position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:90; display:flex; flex-direction:column; align-items:center; pointer-events:none; }
 .toast{ min-width:220px; max-width:320px; padding:10px 14px; background:#ffffe1; border:1px solid #6d6a5e; box-shadow:2px 2px 6px rgba(0,0,0,.3); font-size:var(--fs-s); }
 .toast b{ display:block; font-size:var(--fs); }
-.toast.act{ display:flex; align-items:center; gap:12px; pointer-events:auto; }
+.toast.act{ display:flex; align-items:center; gap:12px; pointer-events:none; }
+.toast.act .btn{ pointer-events:auto; }
 .toast .tt2{ flex:1; min-width:0; }
 #sh-url{ width:100%; color:var(--ink2); }
 .ab-tap{ cursor:pointer; align-self:stretch; display:flex; flex-direction:column; justify-content:center; }
@@ -1487,6 +1488,115 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
   [data-theme="y2fresh"]{ --dur:0ms; }
   [data-theme="y2fresh"] :is(.btn, .ib, .row, .nrow){ transition:none; }
 }
+/* EVENT CONTROLS */
+.ev-constel:empty{ display:none; }
+/* EVENT BAR
+   One left-aligned row on the event page. It wraps when the pane is narrow.
+   The empty constellation slot stays for a later button. */
+/* EVENT COG — the settings menu. Rows use the same ink. The are-you-sure Delete button keeps the alert fill. */
+.ctxmenu .cico{ flex:0 0 16px; display:grid; place-items:center; margin-right:6px; }
+.dlg .dfoot .btn.alert{ background:var(--alert); color:var(--white); }
+.pg-event > .actbar .verbs,
+#evbar .verbs{ flex-wrap:wrap; justify-content:flex-start; align-items:center; gap:4px; }
+.pg-event > .actbar .verbs > .vb,
+.pg-event > .actbar .verbs > .vgroup,
+#evbar .verbs > .vb,
+#evbar .verbs > .vgroup,
+#evbar .vb,
+#evbar .vgroup{ flex:0 0 auto; margin-left:0; }
+#evbar .vb{ width:auto; min-width:var(--act); padding:0 10px; font-size:13px; }
+#evbar .vb.icononly{ width:var(--act); padding:0; flex-basis:var(--act); }
+.pg-event > .actbar .vgroup .vb,
+#evbar .vgroup .vb{ flex:0 0 auto; }
+@container detail (max-width:560px){
+  .pg-event > .actbar .vgroup,
+  .pg-event > .actbar .vgroup .vb,
+  .pg-event > .actbar .verbs > .vb{ flex:0 0 auto; }
+}
+.ctxmenu .chead, .ctxsheet .chead{
+  display:flex; align-items:center; gap:6px;
+  padding:8px 8px 2px; font-size:12px; font-weight:bold; color:var(--ink2);
+}
+.ctxsheet .chead{ min-height:36px; padding:8px 18px 0; background:var(--face); cursor:default; }
+.ev-invite-banner{
+  margin:12px 16px 0; padding:12px; border:1px solid var(--rule); color:var(--ink); background:transparent;
+}
+.ev-invite-banner p{ margin:0 0 8px; color:var(--ink); }
+.ev-invite-banner .btn{ margin-right:8px; }
+.ev-controls{ display:flex; flex-direction:column; gap:8px; color:var(--ink); }
+.ev-controls h3{ margin:8px 0 0; font-size:13px; color:var(--ink2); }
+.ev-admin-row{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  color:var(--ink); border-bottom:1px solid var(--rule); padding:6px 0;
+}
+.ev-policy{ display:flex; flex-direction:column; align-items:stretch; gap:4px; margin:0; color:var(--ink); }
+.ev-policy-q{ font-weight:bold; font-size:14px; line-height:20px; color:var(--ink); }
+.ev-policy select{ width:100%; color:var(--ink); background:var(--white); box-shadow:var(--in); }
+.ev-policy select:disabled{
+  color:var(--dim); -webkit-text-fill-color:var(--dim); opacity:1; cursor:default;
+}
+.ev-policy-why{ margin:0; font-size:12px; line-height:16px; color:var(--ink2); }
+.dlg .btn.alert{ color:var(--alert); }
+.msg .evcard{
+  display:block; margin-top:6px; padding:8px; border:1px solid var(--rule); color:var(--ink); text-decoration:none;
+}
+.msg .evcard:focus{ outline:1px solid var(--sel); outline-offset:2px; }
+/* HOST ASK */
+.hostask-q{ margin:0 0 4px; font-weight:bold; font-size:14px; line-height:20px; color:var(--ink); }
+.hostask-note{ margin:0 0 12px; color:var(--ink2); }
+.hostask-choices{ display:flex; flex-direction:column; gap:8px; }
+.hostask-opt{
+  display:flex; flex-direction:column; align-items:flex-start; gap:2px;
+  width:100%; min-height:44px; padding:10px 12px; text-align:left;
+  background:var(--white); color:var(--ink); border:1px solid var(--rule);
+  box-shadow:var(--out); font:inherit; cursor:pointer;
+}
+.hostask-opt b{ font-size:14px; line-height:20px; color:var(--ink); }
+.hostask-opt small{ display:block; font-size:12px; line-height:16px; font-weight:normal; color:var(--ink2); }
+.hostask-opt:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
+.hostask-opt.on{ outline:2px solid var(--sel); outline-offset:-2px; }
+.hostask-choices + .hostask-q{ margin-top:16px; }
+.co-mine{ margin:0 0 12px; color:var(--ink2); }
+.co-mine .btn{ margin-left:8px; }
+/* MAP LINK */
+.maphint, .mapnote, .fillfrom .fhelp{ color:var(--ink2); }
+.maphint{ margin:4px 0 0; }
+.mapnote{ margin:4px 0 0; font-size:12px; line-height:16px; }
+a.maplink{ color:var(--ink); }
+a.maplink:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
+.fillfrom{ margin-bottom:12px; }
+.fillfrom .lkrow{ align-items:center; }
+/* HELP TIP
+   helpTip(text) in the page script. A small "?" and its note, set beside a label.
+   It is not an action button: no class "btn", so a toolbar that counts .btn leaves it out.
+   Click, tap, and keyboard open the note. Escape, or a click outside, closes it. */
+.chclaim{ display:inline-flex; align-items:center; gap:6px; flex:0 1 auto; min-width:0; }
+.helprow{ display:flex; align-items:center; gap:6px; }
+.helprow .hostask-q{ margin:0; }
+.hostask .helprow{ margin:0 0 8px; }
+.helptip{ position:relative; display:inline-flex; align-items:center; flex:0 0 auto; vertical-align:middle; }
+.helptip-btn{
+  width:22px; height:22px; min-width:22px; min-height:22px; padding:0;
+  border:1px solid var(--ink2); background:transparent; color:var(--ink2);
+  font:normal 12px/1 var(--sys); cursor:pointer;
+}
+.helptip-btn:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
+.helptip-note{
+  display:none; position:absolute; z-index:8; top:calc(100% + 4px); left:0;
+  width:min(280px, 70vw); padding:8px 10px; text-align:left; white-space:normal;
+  background:var(--rule); color:var(--ink); border:1px solid var(--ink2);
+  font-size:13px; line-height:1.35; font-weight:normal;
+}
+.helptip:hover .helptip-note,
+.helptip:focus-within .helptip-note,
+.helptip.on .helptip-note{ display:block; }
+#evbar .helptip-note, .dlg .helptip-note{ top:auto; bottom:calc(100% + 4px); left:auto; right:0; }
+.msg .chclaim{ margin-top:8px; flex-wrap:wrap; }
+.msg .helptip-note{ position:static; width:auto; margin-top:6px; }
+#evbar .verbs:has(.chclaim){ flex-wrap:wrap; }
+/* INVITE ROW — one button per person. The sent state stays readable on both themes. */
+.linkrow .ivbtn{ flex:0 0 auto; }
+.linkrow .ivbtn[disabled], .linkrow .ivbtn[aria-disabled="true"]{ color:var(--ink2); text-shadow:none; }
 </style>
 </head>
 <body>
@@ -1537,6 +1647,7 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 <script src="_shared/hypernet-themes.js"></script>
 <script src="_shared/hypernet-event-details.js"></script>
 <script src="_shared/hypernet-api.js"></script>
+<script src="_shared/map-link.js"></script>
 <script>
 /* =========================================================================
    0. DATA ADAPTERS — same fixtures as every other concept
@@ -1877,6 +1988,13 @@ var IC = {
   lock:'<path d="M5 9h10v8H5zM7 9V6.5a3 3 0 0 1 6 0V9"/>',
   ext:'<path d="M8 4.5h7.5V12M15.5 4.5 5 15"/>',
   dots:'<path d="M4 10h.01M10 10h.01M16 10h.01" stroke-width="3"/>',
+  /* Friends & Privacy does not ship an icon in this page, so Visibility uses this eye. */
+  eye:'<path d="M1.8 10S4.8 5.2 10 5.2 18.2 10 18.2 10 15.2 14.8 10 14.8 1.8 10 1.8 10z"/><circle cx="10" cy="10" r="2.1"/>',
+  /* a rolled parchment: a curl at each end, the Chronicle mark */
+  scroll:'<path d="M7.2 4.4h7c1.3 0 2.2.9 2.2 2.1M7.2 4.4C5.6 4.4 4.4 5.5 4.4 7s1.2 2.6 2.8 2.6h7.2M7.2 9.6V15c0 1.4 1.1 2.5 2.6 2.5h6.4M16.2 4.4v10.8c0 1.3 1 2.3 2.2 2.3"/>',
+  /* a toothed ring and a centre hole, so the bar button reads as a gear */
+  cog:'<path d="M7.94 4.47 7.66 1.62 12.34 1.62 12.06 4.47 13.76 5.45 16.09 3.78 18.43 7.84 15.82 9.02 15.82 10.98 18.43 12.16 16.09 16.22 13.76 14.55 12.06 15.53 12.34 18.38 7.66 18.38 7.94 15.53 6.24 14.55 3.91 16.22 1.57 12.16 4.18 10.98 4.18 9.02 1.57 7.84 3.91 3.78 6.24 5.45Z"/><circle cx="10" cy="10" r="2.35"/>',
+  key:'<circle cx="6.6" cy="7.4" r="3.2"/><path d="M9.2 9.6 17 17.2M13.6 13.8l2.2 2.2M15.2 15.4l1.8 1.8"/>',
   trash:'<path d="M4 6h12M8 6V4h4v2M5.5 6l.8 11h7.4l.8-11M8.5 9v5M11.5 9v5"/>'
 };
 function ic(n, sz){
@@ -1891,6 +2009,7 @@ function ic(n, sz){
 var RSVP = {};                 /* eventId -> 'going' | 'interested' */
 var WENT = {};                 /* past events you were at */
 var ROLE = {};                 /* eventId -> 'host' | 'cocreator' | 'attendee'. Absent means no explicit role. */
+var COREQUESTS = {};           /* eventId -> { personId: 1 } pending co-creator requests */
 var CHRON = {};                /* other people: pid -> { eventId: role } */
 var WENTBY = {};               /* other people: pid -> { eventId: true } when they went and named no role */
 var CHRONICLE_ADD = null;      /* role chosen in Add past event, until the new-event panel finishes or closes */
@@ -2095,6 +2214,8 @@ function followsOf(pid){
 }
 /* the person you are on the network while logged in (null logged out) */
 function myPid(){ return S.loggedIn && S.acct && typeof acctPid === 'function' ? acctPid(S.acct) : null; }
+/* Invitees are not included yet. Friends & Privacy will add an event_invites clause in a later migration.
+   An invite does not open a private event in this build. */
 function canSeeEvent(e){
   if (!e) return false;
   var pv = e.privacy || 'everyone';
@@ -2139,7 +2260,75 @@ function isMine(evId){ return S.loggedIn && ownEvent(EVENTS[evId]); }
    correct it (Edit, Delete) — they are not its host, so none of the host's verbs */
 function isLinkEvent(evId){ return !!EVENTS[evId] && EVENTS[evId].kind === 'link'; }
 function addedByMe(evId){ return S.loggedIn && isLinkEvent(evId) && ADDEDBYME.indexOf(evId) >= 0; }
-function canFix(evId){ return isMine(evId) || addedByMe(evId); }
+var EVENT_PERMS = {
+  manage: ['host', 'admin'],
+  edit: ['host', 'admin', 'link_adder'],
+  privacy: ['host', 'admin'],
+  inviteAdmin: ['host', 'admin'],
+  removeAdmin: ['host'],
+  demoteCocreator: ['host', 'admin'],
+  setCocreatorRule: ['host', 'admin'],
+  reviewCocreator: ['host', 'admin'],
+  setGuestInvite: ['host', 'admin']
+};
+var EVENT_ADMINS = {};
+var EVENT_INVITES = {};
+function adminRows(evId){ return EVENT_ADMINS[evId] || []; }
+function adminStatus(evId, pid){
+  if (!pid) return '';
+  var row = adminRows(evId).filter(function(a){ return a.userId === pid; })[0];
+  return row ? row.status : '';
+}
+function eventSeat(evId){
+  var e = EVENTS[evId];
+  if (!S.loggedIn || !e) return 'guest';
+  if (isMine(evId)) return 'host';
+  if (adminStatus(evId, myActor()) === 'accepted') return 'admin';
+  if (addedByMe(evId)) return 'link_adder';
+  var role = ROLE[evId];
+  if (role === 'cocreator') return 'cocreator';
+  if (role === 'attendee') return 'attendee';
+  return 'guest';
+}
+function allowsPerm(action, seat){
+  var list = EVENT_PERMS[action] || [];
+  return list.indexOf(seat) >= 0;
+}
+function canManageEvent(evId){ return allowsPerm('manage', eventSeat(evId)); }
+function canFix(evId){ return allowsPerm('edit', eventSeat(evId)); }
+function invitePolicyOf(evId){
+  var e = EVENTS[evId], p = e && e.invitePolicy;
+  if (p === 'admins' || p === 'cocreators' || p === 'invited') return p;
+  return 'invited';
+}
+function cocreatorPolicyOf(evId){
+  var e = EVENTS[evId], p = e && e.cocreatorPolicy;
+  if (p === 'open' || p === 'request') return p;
+  return e && e.onlyAdminsAddCocreators ? 'request' : 'open';
+}
+function meKey(){ return myActor() || 'self'; }
+function cocreatorPendingMine(evId){
+  var m = COREQUESTS[evId];
+  return !!(m && (m[meKey()] || m['self']));
+}
+function canInviteToEvent(evId){
+  var e = EVENTS[evId];
+  if (!e || !S.loggedIn || isLinkEvent(evId)) return false;
+  var seat = eventSeat(evId);
+  if (isPast(lastDay(e))){
+    if (seat === 'host') return true;
+    var pastRole = ROLE[evId];
+    return pastRole === 'attendee' || pastRole === 'cocreator';
+  }
+  if (seat === 'host' || seat === 'admin') return true;
+  if (!canSeeEvent(e)) return false;
+  var policy = invitePolicyOf(evId), role = ROLE[evId];
+  if (policy === 'admins') return false;
+  if (policy === 'cocreators') return role === 'cocreator' || seat === 'cocreator';
+  if (role === 'attendee' || role === 'cocreator') return true;
+  if (RSVP[evId] === 'going' && !role) return true;
+  return false;
+}
 function linkSite(u){ return String(u || '').replace(/^https?:\/\/(www\.)?/i, '').replace(/[\/?#].*$/, ''); }
 /* the entry point for someone without an account says so */
 function joinLabel(){ return ACCTS.me ? 'Log in' : 'Join / Log in'; }
@@ -2162,7 +2351,7 @@ function toast(title, body, undo){
   placeToasts();
   TOASTT = setTimeout(function(){
     /* a tap aimed at a toast's button that arrives just after it went is swallowed, not passed to what was under it */
-    var b = box.querySelector('.toast.act'); if (b){ TOASTGHOST = { r:b.getBoundingClientRect(), until:Date.now() + 700 }; }
+    var b = box.querySelector('.toast.act [data-act="toastundo"]'); if (b){ TOASTGHOST = { r:b.getBoundingClientRect(), until:Date.now() + 700 }; }
     box.innerHTML = ''; TOASTACT = null;
   }, undo ? 6000 : 2400);
 }
@@ -2345,7 +2534,7 @@ function destEvents(f){
 function folderName(f){
   f = f || S.folder;
   if (f.kind === 'explore') return f.id ? (EXPLOREKINDS.filter(function(k){ return k[0] === f.id; })[0] || [0, 'Explore'])[1] : 'Explore';
-  return { home:'Home', interested:'Interested', going:'Going', hosting:'Hosting', promoted:'Promoted',
+  return { home:'Home', interested:'Interested', going:'Going', hosting:'Hosting', promoted:'Boosted',
            search:'Search', you:'You', chats:'Chats', shelf: shelfTitle(f.id) }[f.kind] || (f.kind === 'horizon' && HORIZONS[f.id] ? HORIZONS[f.id].name : 'Home');
 }
 function folderSub(f){
@@ -2404,17 +2593,18 @@ function searchItems(q){
   q = String(q||'').trim();
   if (!q) return [];
   var out = [];
+  var current = function(e){ return !isPast(lastDay(e)); };
   if (TAGFIND && fold(q) === fold(TAGFIND)){
-    allEvents().filter(canSeeEvent).filter(function(e){ return eventTagHit(e, q); }).forEach(function(e){
+    allEvents().filter(canSeeEvent).filter(current).filter(function(e){ return eventTagHit(e, q); }).forEach(function(e){
       out.push({ type:'event', id:e.id });
     });
     searchPeople(q, out);
     return out;
   }
   var dq = dateQuery(q);
-  if (dq) return feedEvents().filter(function(e){ var a = dayDiff(e.date), b = dayDiff(lastDay(e)); return b >= dq[0] && a <= dq[1]; })
+  if (dq) return feedEvents().filter(current).filter(function(e){ var a = dayDiff(e.date), b = dayDiff(lastDay(e)); return b >= dq[0] && a <= dq[1]; })
     .map(function(e){ return { type:'event', id:e.id }; });
-  allEvents().filter(canSeeEvent).sort(function(a,b){
+  allEvents().filter(canSeeEvent).filter(current).sort(function(a,b){
     var pa = isPast(lastDay(a)) ? 1 : 0, pb = isPast(lastDay(b)) ? 1 : 0;
     return pa !== pb ? pa - pb : (pa ? -byDate(a,b) : byDate(a,b));
   }).forEach(function(e){
@@ -2488,7 +2678,7 @@ function statePills(evId){
   if (st === 'going')      h += '<span class="pill going">'+ic('check',11)+'<span>Going</span></span>';
   if (st === 'interested') h += '<span class="pill int">'+ic('heart',11)+'<span>Interested</span></span>';
   if (st === 'hosting')    h += '<span class="pill host">'+ic('star',11)+'<span>Hosting</span></span>';
-  if (S.loggedIn && PROMOTED[evId]) h += '<span class="pill">'+ic('promote',11)+'<span>Promoted</span></span>';
+  if (S.loggedIn && PROMOTED[evId]) h += '<span class="pill">'+ic('promote',11)+'<span>Boosted</span></span>';
   return h;
 }
 function rowHTML(it){
@@ -2576,7 +2766,7 @@ function renderList(){
     } else h = '<div class="empty">' + (k === 'search' ? ''
       : k === 'going' ? 'You are not going to anything yet.'
       : k === 'interested' ? 'Nothing saved yet.'
-      : k === 'promoted' ? 'Nothing promoted yet.'
+      : k === 'promoted' ? 'Nothing boosted yet.'
       : k === 'hosting' ? 'You are not hosting anything yet.<br><button class="btn primary" data-act="new-event">'+ic('plus')+'New event</button>'
       : 'Nothing here yet.') + '</div>';
   } else {
@@ -2686,10 +2876,21 @@ var PHASELAB = { build:'Build', early_entry:'Early entry', gates_open:'Gates ope
 var EXPECTLAB = { none:'Optional', encouraged:'Encouraged', expected:'Expected', required:'Required' };
 var ARTLAB = { honoraria:'Honoraria', grants:'Grants', dreams_cobudget:'Co-budgeted by members' };
 function humanKey(k){ return String(k).replace(/[_-]+/g,' ').replace(/([a-z])([A-Z])/g,'$1 $2').replace(/^./, function(c){ return c.toUpperCase(); }); }
+function safeHref(u){
+  if (u == null) return null;
+  var s = String(u).trim();
+  if (!s) return null;
+  try {
+    var url = new URL(s);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    return url.href;
+  } catch (e) { return null; }
+}
 function linkify(s){
   s = String(s);
-  if (/^https?:\/\/\S+$/.test(s)) return '<a href="'+esc(s)+'" target="_blank" rel="noopener">'+esc(s.replace(/^https?:\/\/(www\.)?/,'').replace(/\/$/,''))+'</a>';
-  return esc(s);
+  var href = safeHref(s);
+  if (!href) return esc(s);
+  return '<a href="'+esc(href)+'" target="_blank" rel="noopener">'+esc(s.replace(/^https?:\/\/(www\.)?/,'').replace(/\/$/,''))+'</a>';
 }
 /* renders whatever shape a field comes in: text, list, list of records, or a record */
 function rv(v){
@@ -2708,7 +2909,8 @@ function itemRow(o){
   var w = pickK(o, ['deadline','date','when']);
   var u = pickK(o, ['url','link','href']);
   var rest = {}; Object.keys(o).forEach(function(k){ if (used.indexOf(k) < 0 && o[k] != null && o[k] !== '') rest[k] = o[k]; });
-  return '<div class="irow">' + (t ? '<div class="it">'+(u ? '<a href="'+esc(u)+'" target="_blank" rel="noopener">'+esc(t)+'</a>' : esc(t))+'</div>' : '') +
+  var href = safeHref(u);
+  return '<div class="irow">' + (t ? '<div class="it">'+(href ? '<a href="'+esc(href)+'" target="_blank" rel="noopener">'+esc(t)+'</a>' : esc(t))+'</div>' : '') +
     (b ? (typeof b === 'object' ? rv(b) : '<div>'+linkify(b)+'</div>') : '') +
     (w ? '<div class="iw">'+esc(fmtMaybeDate(w))+'</div>' : '') + (u && !t ? '<div class="iw">'+linkify(u)+'</div>' : '') +
     (Object.keys(rest).length ? kvHTML(rest) : '') + '</div>';
@@ -2759,7 +2961,9 @@ function factsHTML(evId){
     var v = r.venue || {}, place = v.name || r.city || whereOf(e);
     var sub = [v.name && r.city !== v.name ? r.city : '', r.region, COUNTRY[r.country] || r.country].filter(Boolean).join(', ');
     var vis = { on_rsvp:'Address on RSVP', ticket_holders:'Address for ticket holders', secret:'Secret location' }[v.addressVisibility];
-    f.push(['Where', place, [sub, vis].filter(Boolean).join(' · ')]);
+    var extra = [sub, vis].filter(Boolean).join(' · ');
+    var mapHref = safeHref(v.url);
+    f.push(['Where', place, mapHref ? { text:extra, href:mapHref, link:'Open in Maps' } : extra]);
   }
   if (r.access && r.access.model && !entryHTML(evId)) f.push(['Entry', ACCESSLAB[r.access.model] || titleCase(r.access.model), past ? '' : priceSummary(r.access)]);
   var pop = r.burn && r.burn.population;
@@ -2770,7 +2974,7 @@ function factsHTML(evId){
   var net = S.loggedIn ? attendees(evId).filter(function(pid){ return PFOLLOW[pid]; }).length : 0;
   f.push([past ? 'Went' : 'Going', attendeeCount(evId) + ' on Hypernet',
     [going ? 'Including you' : '', net ? net + ' you follow' : ''].filter(Boolean).join(' · ')]);
-  if (S.loggedIn && PROMOTED[evId]) f.push(['Promoted', 'By you' + (promoCount(evId) > 1 ? ' and ' + (promoCount(evId) - 1) + ' more' : ''), '']);
+  if (S.loggedIn && PROMOTED[evId]) f.push(['Boosted', 'By you' + (promoCount(evId) > 1 ? ' and ' + (promoCount(evId) - 1) + ' more' : ''), '']);
   var org = r.organiser;
   var hp0 = hostPersonOf(e), camp = (r.ownerGroupIds || []).map(groupHorizon).filter(Boolean)[0];
   var hostTo = hp0 && hp0.id !== 'self' ? { type:'person', id:hp0.id } : camp ? { type:'horizon', id:camp } : null;
@@ -2900,7 +3104,8 @@ function principlesHTML(p){
   if (p.base) h += '<p>' + (p.base === 'own' ? 'Their own principles' : 'Built on the ' + esc(p.base)) + (p.additions && p.additions.length ? ', plus:' : '.') + '</p>';
   if (p.additions && p.additions.length) h += chipsHTML(p.additions, 'strong');
   if (p.renamed && p.renamed.length) h += rv(p.renamed);
-  if (p.url) h += '<div class="chips" style="margin-top:12px"><a class="chip plain" href="'+esc(p.url)+'" target="_blank" rel="noopener">Read them</a></div>';
+  var pHref = safeHref(p.url);
+  if (pHref) h += '<div class="chips" style="margin-top:12px"><a class="chip plain" href="'+esc(pHref)+'" target="_blank" rel="noopener">Read them</a></div>';
   return h;
 }
 function nextHTML(n){
@@ -2914,7 +3119,11 @@ function sourcesHTML(r){
   (r.sources || []).forEach(function(s){ var u = typeof s === 'string' ? s : s.url; if (u && !ls.some(function(x){ return x.url === u; })) ls.push({ label: (s.label || u), url:u }); });
   var way = entryLinkOf(r);
   ls.sort(function(a, b){ return (b.url === way) - (a.url === way); });
-  return ls.length ? '<div class="chips">' + ls.map(function(l){ return '<a class="chip plain'+(l.url === way ? ' strong' : '')+'" href="'+esc(l.url)+'" target="_blank" rel="noopener">'+esc(l.label)+'</a>'; }).join('') + '</div>' : '';
+  return ls.length ? '<div class="chips">' + ls.map(function(l){
+    var href = safeHref(l.url);
+    return href ? '<a class="chip plain'+(l.url === way ? ' strong' : '')+'" href="'+esc(href)+'" target="_blank" rel="noopener">'+esc(l.label)+'</a>'
+                : '<span class="chip plain">'+esc(l.label)+'</span>';
+  }).join('') + '</div>' : '';
 }
 function provenance(evId){
   var r = recOf(evId);
@@ -2954,15 +3163,6 @@ function vb(act, id, label, icon, opts){
   return '<button class="'+cls+'" data-act="'+act+'" data-id="'+id+'"' + (opts.pressed != null ? ' aria-pressed="'+!!opts.pressed+'"' : '') +
     (opts.attrs || '') + (label ? '' : ' aria-label="'+esc(opts.aria || '')+'"') + '>' + (icon ? ic(icon, 16) : '') + (label ? esc(label) : '') + (opts.after || '') + '</button>';
 }
-function addtoBtnHTML(evId){
-  var n = S.loggedIn ? MYHORIZONS.filter(function(k){ return HORIZONS[k] && HORIZONS[k].eventIds.indexOf(evId) >= 0; }).length : 0;
-  return vb('addto', evId, n ? 'On ' + plural(n, 'horizon') : 'Add to horizon', n ? 'check' : 'addhorizon', { on:!!n });
-}
-function promoBtnHTML(evId, bare){
-  var pro = S.loggedIn && PROMOTED[evId];
-  return vb('v-promote', evId, pro ? 'Promoted' : 'Promote', 'promote', { on:pro, pressed:pro,
-    after: !bare && promoCount(evId) ? ' <span class="n">'+promoCount(evId)+'</span>' : '' });
-}
 function stateGroupHTML(evId){
   var st = S.loggedIn ? RSVP[evId] : undefined;
   return '<div class="vgroup" role="group" aria-label="Your state">' +
@@ -2973,35 +3173,58 @@ function stateGroupHTML(evId){
 function hostGroupHTML(evId){
   return '<div class="vgroup" role="group" aria-label="Your event">' + vb('editevent', evId, 'Edit', 'edit', { primary:true }) + '</div>';
 }
-function verbsHTML(evId){
-  var h = '<div class="verbs">';
-  if (isMine(evId)){
-    /* the host's page leads with the host's verbs; Interested / Going are for guests */
-    h += hostGroupHTML(evId) + vb('newcalloutfor', evId, 'New call out', 'callout') + promoBtnHTML(evId) + '<span class="vsec">' + addtoBtnHTML(evId) + vb('share', evId, 'Share', 'share') +
-         vb('evmore', evId, '', 'dots', { aria:'More', attrs:' data-more="delete" aria-haspopup="menu"' });
-    return h + '</span></div>';
-  }
-  h += stateGroupHTML(evId) + promoBtnHTML(evId) + '<span class="vsec">' + addtoBtnHTML(evId) + vb('share', evId, 'Share', 'share');
-  if (addedByMe(evId)) h += vb('editevent', evId, 'Edit', 'edit') + vb('evmore', evId, '', 'dots', { aria:'More', attrs:' data-more="delete" aria-haspopup="menu"' });
-  return h + '</span></div>';
+/* helpTip(text) — a small "?" beside a label that needs one sentence.
+   Not an action button (no class "btn"): a toolbar that counts .btn leaves it out.
+   Click, tap, and keyboard open the note. Escape, or a click outside, closes it.
+   helpTip('A co-creator is someone who may have contributed to the event.') */
+var HELPTIPSEQ = 0;
+var CHRONICLE_HELP_TEXT = 'Your Chronicle is your list of past events, shown on your profile page. You choose who can see each event there.';
+var COCREATOR_HELP_TEXT = "A co-creator is someone who may have contributed to the event. They don't own the event page and have no admin access to it.";
+function helpTip(text){
+  var id = 'helptip-' + (++HELPTIPSEQ);
+  return '<span class="helptip"><button type="button" class="helptip-btn" data-act="helptip" aria-expanded="false" aria-controls="'+id+'" aria-describedby="'+id+'" aria-label="Help">?</button>' +
+    '<span class="helptip-note" id="'+id+'" role="tooltip">'+esc(text)+'</span></span>';
 }
-/* the phone's bottom bar: the two verbs that matter here, and ⋯ for the rest (the same menu as a long-press) */
-function evbarHTML(evId){
-  var e = EVENTS[evId], past = isPast(lastDay(e)), mine = isMine(evId), more, h = '<div class="verbs">';
-  if (mine){
-    h += hostGroupHTML(evId) + (past ? '' : vb('newcalloutfor', evId, 'Call out', 'callout', { attrs:' aria-label="New call out"' }));
-    more = past ? 'addto,share,delete' : 'promote,addto,share,delete';
-  } else if (past){
-    if (S.loggedIn) h += vb('v-went', evId, 'Went', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] });
-    else h += vb('share', evId, 'Share', 'share');
-    more = S.loggedIn ? 'addto,share' : 'addto';
-  } else {
-    /* the three event verbs stay together, as on a desktop */
-    h += stateGroupHTML(evId) + promoBtnHTML(evId, true);
-    more = 'addto,share';
-  }
-  if (!mine && addedByMe(evId)) more += ',edit,delete';
-  return h + vb('evmore', evId, '', 'dots', { aria:'More', attrs:' data-more="'+more+'" aria-haspopup="menu"' }) + '</div>';
+function chronicleClaimHTML(evId){
+  return '<span class="chclaim">' + vb('v-went', evId, 'Add to Chronicle', 'scroll', { on:!!WENT[evId], pressed:!!WENT[evId] }) + '</span>';
+}
+function boostLabel(evId){
+  var on = S.loggedIn && !!PROMOTED[evId];
+  var n = promoCount(evId);
+  return (on ? 'Boosted' : 'Boost') + (n ? ' ' + n : '');
+}
+function paneControls(evId){
+  return '<span class="ev-constel" data-slot="constellation" data-id="'+evId+'"></span>';
+}
+/* One plan for the desktop bar and the phone bar. show is the row, left to right.
+   cog is the host, an accepted admin, or the person who logged a link event. */
+function eventBarPlan(evId){
+  var e = EVENTS[evId];
+  var past = !!(e && isPast(lastDay(e)));
+  var logged = !!(e && isLinkEvent(evId));
+  var seat = eventSeat(evId);
+  var cog = seat === 'host' || seat === 'admin' || (logged && seat === 'link_adder');
+  var show = [];
+  if (!past && !cog) show.push('rsvp');
+  if (canInviteToEvent(evId)) show.push('invite');
+  show.push('addto');
+  show.push('share');
+  if (!past) show.push('boost');
+  if (cog) show.push('cog');
+  return { show:show };
+}
+function eventBarHTML(evId){
+  var plan = eventBarPlan(evId), e = EVENTS[evId], past = !!(e && isPast(lastDay(e)));
+  var h = '<div class="verbs">' + paneControls(evId);
+  plan.show.forEach(function(k){
+    if (k === 'rsvp') h += stateGroupHTML(evId);
+    else if (k === 'invite') h += vb('evinvite', evId, past ? 'Add people' : 'Invite', 'user');
+    else if (k === 'addto') h += vb('evaddto', evId, 'Add to', 'plus', { attrs:' aria-haspopup="menu"' });
+    else if (k === 'share') h += vb('share', evId, 'Share', 'share');
+    else if (k === 'boost') h += vb('v-promote', evId, boostLabel(evId), 'promote', { on:S.loggedIn && !!PROMOTED[evId], pressed:S.loggedIn && !!PROMOTED[evId] });
+    else if (k === 'cog') h += vb('evcog', evId, '', 'cog', { aria:'Settings', attrs:' aria-haspopup="menu"' });
+  });
+  return h + '</div>';
 }
 /* where the official way in lives: the organiser's ticket or membership page */
 function entryLinkOf(r){
@@ -3016,7 +3239,7 @@ function entryLinkOf(r){
 function entryHTML(evId){
   var r = recOf(evId), a = r.access, e = EVENTS[evId];
   if (!a || !a.model || isPast(lastDay(e)) || /^(free|donation|pay_what_you_can|invite)$/.test(a.model)) return '';
-  var url = entryLinkOf(r), m = a.model;
+  var url = safeHref(entryLinkOf(r)), m = a.model;
   var label = /^(ticket|lottery)$/.test(m) ? 'Get tickets' : /member/.test(m) ? 'Become a member' : 'How to get in';
   var sale = (a.sales || []).map(function(sl){ return [sl, saleState(sl)]; }).filter(function(x){ return x[1] && x[1] !== 'Closed'; })[0];
   var sub = [priceSummary(a), sale ? sale[0].name + ': ' + sale[1].toLowerCase() : ''].filter(Boolean).join(' · ');
@@ -3050,11 +3273,22 @@ function pageHTML(o){
   h += '<div class="layer"><div class="lin">' + (o.facts || '') + (o.body || '') + '</div></div></article>';
   return h;
 }
-/* a facts grid: [label, value, small print, {type,id} to open] */
+/* a facts grid: [label, value, small print, {type,id} to open]. Small print is a string, or {text, href, link}
+   when the href was already checked (a map link the person pasted). */
+function factSmall(s){
+  if (!s) return '';
+  if (typeof s === 'object'){
+    var href = safeHref(s.href);
+    var bits = esc(s.text || '');
+    if (href && s.link) bits += (bits ? ' · ' : '') + '<a class="maplink" href="'+esc(href)+'" target="_blank" rel="noopener">'+esc(s.link)+'</a>';
+    return bits ? '<div class="fs">'+bits+'</div>' : '';
+  }
+  return '<div class="fs">'+esc(s)+'</div>';
+}
 function factGrid(f){
   return f.length ? '<div class="facts" role="group" aria-label="Details"><h3 class="fh">Details</h3>' + f.map(function(x){
     var v = x[3] ? '<button class="fvlink" data-act="open" data-type="'+x[3].type+'" data-id="'+x[3].id+'">'+esc(x[1])+'</button>' : esc(x[1]);
-    return '<div class="fact"><div class="fk">'+esc(x[0])+'</div><div class="fv">'+v+'</div>'+(x[2]?'<div class="fs">'+esc(x[2])+'</div>':'')+'</div>';
+    return '<div class="fact"><div class="fk">'+esc(x[0])+'</div><div class="fv">'+v+'</div>'+factSmall(x[2])+'</div>';
   }).join('') + '</div>' : '';
 }
 /* the toolbar's shape: one primary group, then the secondary actions pushed to the right */
@@ -3084,9 +3318,9 @@ function canvasHTML(evId){
   var e = EVENTS[evId], t = TH(evId), r = recOf(evId), b = r.burn || {};
   var big = r.scale === 'burn' || !!r.burn;
   var past = isPast(lastDay(e));
-  var bar = !past ? verbsHTML(evId) : S.loggedIn ? toolbarHTML(vb('v-went', evId, 'Went', 'check', { on:!!WENT[evId], pressed:!!WENT[evId] }), vb('share', evId, 'Share', 'share')) : '';
+  var bar = eventBarHTML(evId);
   /* Details (the facts grid) → About → Call outs → Who's going → the plan → the rest, only what there is */
-  var s = sect('About', descOf(e) ? '<p class="evdesc">'+esc(descOf(e))+'</p>' : '');
+  var s = adminInviteBanner(evId) + cocreatorMineHTML(evId) + sect('About', descOf(e) ? '<p class="evdesc">'+esc(descOf(e))+'</p>' : '');
   s += scheduleHTML(evId);
   if (r.theme) s += sect('Theme', '<div class="themeline">'+esc(typeof r.theme === 'object' ? (r.theme.name || '') : r.theme)+'</div>' +
                                    (r.theme.blurb ? '<p>'+esc(r.theme.blurb)+'</p>' : ''));
@@ -3117,11 +3351,11 @@ function canvasHTML(evId){
 
 function compactVerbs(evId){
   var st = S.loggedIn ? RSVP[evId] : '';
-  if (isPast(lastDay(EVENTS[evId]))) return S.loggedIn ? '<div class="cverbs"><button class="ib'+(WENT[evId]?' on':'')+'" data-act="v-went" data-id="'+evId+'" aria-label="Went" aria-pressed="'+!!WENT[evId]+'">'+ic('check')+'</button></div>' : '';
+  if (isPast(lastDay(EVENTS[evId]))) return S.loggedIn ? '<div class="cverbs">'+chronicleClaimHTML(evId)+'</div>' : '';
   return '<div class="cverbs">' +
     '<button class="ib'+(st==='interested'?' on':'')+'" data-act="v-interested" data-id="'+evId+'" aria-label="Interested" aria-pressed="'+(st==='interested')+'">'+ic('heart')+'</button>' +
     '<button class="ib'+(st==='going'?' on':'')+'" data-act="v-going" data-id="'+evId+'" aria-label="Going" aria-pressed="'+(st==='going')+'">'+ic('check')+'</button>' +
-    '<button class="ib'+(S.loggedIn && PROMOTED[evId]?' on':'')+'" data-act="v-promote" data-id="'+evId+'" aria-label="Promote">'+ic('promote')+'</button></div>';
+    '<button class="ib'+(S.loggedIn && PROMOTED[evId]?' on':'')+'" data-act="v-promote" data-id="'+evId+'" aria-label="Boost">'+ic('promote')+'</button></div>';
 }
 function eventCRow(e, withVerbs){
   return '<div class="crow">' + sqHTML(e.id, 48) +
@@ -3326,7 +3560,7 @@ function chronicleUnblockDate(){
   el.removeAttribute('min');
   if (DRAFT && DRAFT.date && el.value !== DRAFT.date) el.value = DRAFT.date;
 }
-function openPastEvent(role){
+function openPastEvent(role, into){
   CHRONICLE_ADD = role;
   var d = FORMDRAFTS.event;
   if (!d || !eventDraftDirty(d)){
@@ -3334,7 +3568,8 @@ function openPastEvent(role){
     d.date = shiftIso(TODAY_ISO, -7);
     FORMDRAFTS.event = d;
   }
-  newEventDialog();
+  if (into && HORIZONS[into]) d.into = into;
+  newEventDialog(into);
   chronicleUnblockDate();
 }
 function fileChronicle(id, role){
@@ -3554,7 +3789,7 @@ function renderDetail(){
   LASTDETAIL = key;
   var bar = $('evbar'), onEv = L.phone && it.type === 'event' && EVENTS[it.id];
   $('app').classList.toggle('has-evbar', !!onEv);
-  if (onEv){ bar.className = ''; bar.innerHTML = evbarHTML(it.id); }
+  if (onEv){ bar.className = ''; bar.innerHTML = eventBarHTML(it.id); }
   else bar.innerHTML = '';
   /* the title bar: ‹ when there is something to step back to inside the window, what it is, and the window's buttons */
   var prev = S.stack.length > 1 ? S.stack[S.stack.length-2] : null, name = itemName(it);
@@ -3641,7 +3876,7 @@ function cardTag(it){
   if (it.type === 'event'){
     if (WENT[it.id]) return '<span class="ctag">Went</span>';
     var st = stateOf(it.id);
-    return st ? '<span class="ctag">'+{ going:'Going', interested:'Interested', hosting:'Hosting' }[st]+'</span>' : PROMOTED[it.id] ? '<span class="ctag">Promoted</span>' : '';
+    return st ? '<span class="ctag">'+{ going:'Going', interested:'Interested', hosting:'Hosting' }[st]+'</span>' : PROMOTED[it.id] ? '<span class="ctag">Boosted</span>' : '';
   }
   if (it.type === 'horizon') return hzOwnedByMe(it.id) ? '<span class="ctag">Yours</span>' : HZFOLLOW[it.id] ? '<span class="ctag">Following</span>' : '';
   if (it.type === 'callout') return isOwnCallout(calloutOf(it.id)) ? '<span class="ctag">Yours</span>' : myReplies(it.id).length ? '<span class="ctag">Replied</span>' : '';
@@ -3945,7 +4180,9 @@ function convHTML(cid){
     if (m.from === 'sys') return day + '<div class="msg sys">'+esc(m.text)+'</div>';
     var me = m.from === 'self';
     var head = '<div class="mfrom">'+(me ? '' : '<button type="button" class="mwho" data-act="chatprofile" data-id="'+esc(m.from)+'">'+esc(person(m.from).displayName)+'</button>')+'<span class="mt">'+esc(/^\d{1,2}:\d{2}$/.test(m.t || '') ? m.t : '')+'</span></div>';
-    return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+'</div></div>';
+    var card = m.eventId && EVENTS[m.eventId] ? '<a class="evcard" href="#/event/'+esc(m.eventId)+'">'+esc(EVENTS[m.eventId].title)+'</a>' : '';
+    var accept = m.chronicle && !me && m.eventId ? '<span class="chclaim">' + vb('chaccept', m.eventId, 'Add to Chronicle', 'scroll') + '</span>' : '';
+    return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+card+accept+'</div></div>';
   }).join('') : '<div class="msg sys">No messages yet</div>') + '</div>';
   /* the box grows with what you write: Enter sends, Shift+Enter starts a new line */
   h += '<div class="composer"><textarea id="chatbox" rows="1" placeholder="Message '+esc(c.name.split(' ')[0])+'" autocomplete="off" aria-label="Message" aria-describedby="chathint">'+esc(CHATDRAFT[cid] || '')+'</textarea>' +
@@ -4623,7 +4860,7 @@ function actSentence(e){
   switch (e.verb){
     case 'going':             return who + be + 'going';
     case 'interested':        return who + be + 'interested';
-    case 'promoted':          return who + ' promoted an event';
+    case 'promoted':          return who + ' boosted an event';
     case 'created_event':     return who + ' created an event';
     case 'posted_callout':    return who + ' posted a call out';
     case 'replied_callout':   return who + ' replied to ' + (isOwnCallout(calloutOf(e.objId)) ? 'your call out ' : '') + objLink('callout', e.objId, calloutOf(e.objId).title);
@@ -4641,7 +4878,7 @@ function youLineHTML(rows){
   var frag = {
     going:function(l){ return 'going to ' + list(l, evLink); },
     interested:function(l){ return 'interested in ' + list(l, evLink); },
-    promoted:function(l){ return 'promoted ' + list(l, evLink); },
+    promoted:function(l){ return 'boosted ' + list(l, evLink); },
     created_event:function(l){ return 'created ' + list(l, evLink); },
     published_horizon:function(l){ return 'published ' + list(l, hzLink); },
     created_horizon:function(l){ return 'made ' + list(l, hzLink) + ' (private)'; },
@@ -4888,7 +5125,7 @@ function renderNav(){
   h += navRow({kind:'interested'}, ic('heart'), 'Interested', { count: rsvpList('interested').length || '' });
   h += navRow({kind:'hosting'}, ic('star'), 'Hosting', { count: MYEVENTS.length || '' });
   var npro = Object.keys(PROMOTED).filter(function(k){ return PROMOTED[k] && EVENTS[k]; }).length;
-  if (npro) h += navRow({kind:'promoted'}, ic('promote'), 'Promoted', { count: npro });
+  if (npro) h += navRow({kind:'promoted'}, ic('promote'), 'Boosted', { count: npro });
   if (MYHORIZONS.length) h += '<div class="navh">Your horizons</div>';
   MYHORIZONS.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { count: hzEventIds(k).length || '', drop:true, hz:true }); });
   var followed = Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k] && HORIZONS[k]; });
@@ -6091,6 +6328,10 @@ function lkMissing(d){
   var m = wizMissing(Object.assign({}, d, { editing:null }), 1);
   if (!/^https?:\/\/[^\s\/]+\.[^\s]+$/i.test(String(d.url || '').trim())) m.url = 'Paste the link to the event';
   if (!String(d.host || '').trim()) m.host = 'Add who puts it on';
+  if (d.went && !m.date){
+    var st = isoDate(d.date), en = String(d.end || '').trim() ? isoDate(d.end) : '', last = en || st;
+    if (st && last && !isPast(last)) m.date = 'Pick a day that has already passed';
+  }
   return m;
 }
 function linkFormHTML(d){
@@ -6104,7 +6345,7 @@ function linkFormHTML(d){
       'The event’s own page: a ticket shop, the organiser’s site. Autofill fills in the rest.'))+'</p></div>';
   var have = d.existing && EVENTS[d.existing];
   if (have) h += '<div class="lkhave"><div class="lkhavet">Already on Hypernet</div>' + eventCRow(have, false) +
-    '<button type="button" class="btn primary" data-act="lkuse" data-id="'+have.id+'">'+(PK && PK.sel.indexOf(have.id) >= 0 ? 'Back to the list' : 'Add this one')+'</button></div>';
+    '<button type="button" class="btn primary" data-act="lkuse" data-id="'+have.id+'">'+(d.ctx !== 'new' && PK && PK.sel.indexOf(have.id) >= 0 ? 'Back to the list' : (d.ctx === 'new' ? 'Open it' : 'Add this one'))+'</button></div>';
   if (!d.filled && !edit){
     if (!have) h += '<p><button type="button" class="linkbtn" data-act="lkmanual">Or fill it in yourself</button></p>';
     return h;
@@ -6128,7 +6369,9 @@ function paintLink(){
      it now (Autofill adds https://), not as it was typed */
   var lu = $('lk-u'); if (lu) lu.value = DRAFT.url;
   b.innerHTML = linkFormHTML(DRAFT);
-  dl.querySelector('.dfoot').innerHTML = linkFootHTML(DRAFT);
+  var foot = dl.querySelector('.dfoot');
+  if (!foot){ foot = document.createElement('div'); foot.className = 'dfoot'; dl.appendChild(foot); }
+  foot.innerHTML = linkFootHTML(DRAFT);
   b.scrollTop = top; placeDlg(dl);
 }
 /* as you type: the footer and the messages follow, the field you are in is left alone */
@@ -6186,7 +6429,21 @@ function linkAutofill(){
   });
 }
 function linkUseExisting(id){
-  if (!PK || !EVENTS[id]) return;
+  if (!EVENTS[id]) return;
+  /* New event has no picker: open the event that this link already is, and file it on the horizon you started from */
+  if (!PK || (DRAFT && DRAFT.ctx === 'new')){
+    var into = DRAFT && DRAFT.into && HORIZONS[DRAFT.into] && hzOwnedByMe(DRAFT.into) ? DRAFT.into : null;
+    if (into && HORIZONS[into].eventIds.indexOf(id) < 0){
+      HORIZONS[into].eventIds.push(id);
+      logAct('added_to_horizon', 'horizon', into, { eventIds:[id] });
+      if (ONLINE) HNAPI.horizonEvents(into);
+    }
+    DRAFT = null; closeDialogs();
+    if (L.phone) S.tab = 'you';
+    S.stack = [{ type:'event', id:id }];
+    render();
+    return;
+  }
   if (PK.sel.indexOf(id) < 0) PK.sel.push(id);
   PK.fresh = [id].concat(PK.fresh.filter(function(x){ return x !== id; }));
   PK.q = ''; PK.f = isPast(lastDay(EVENTS[id])) ? 'past' : 'upcoming';
@@ -6205,14 +6462,30 @@ function linkAdd(){
   REC[id] = { kind:tk.kind, tags:tk.tags, startTime:d.startTime || undefined, endTime:d.endTime || undefined, endDate: end && end > start ? end : undefined,
               timezone:x.timezone || undefined, region:x.region || undefined, country:x.country || undefined, scale: end && end > start ? 'gathering' : 'meetup',
               venueKind: d.online ? 'virtual' : 'physical', city:city,
-              venue: d.online ? undefined : (x.venue && x.venue.name ? x.venue : { name:city, addressVisibility:'public' }),
+              venue: d.online ? undefined : linkVenue(x.venue, city),
               description:d.desc, access:Object.assign({}, x.access || {}, { model:d.entry, url:url }), whatToBring:[],
               externalUrl:url, sourceSite:linkSite(url), organizerUrl:x.organizerUrl || undefined };
   ADDEDBYME.push(id); READ[id] = true; PROMOCOUNT[id] = 0;
   if (ONLINE) HNAPI.createLinkEvent(id, d.image);
+  if (d.went) fileChronicle(id, 'attendee');
   schedulePersist();
-  PK.sel.push(id); PK.fresh.unshift(id); PK.q = ''; PK.f = isPast(lastDay(EVENTS[id])) ? 'past' : 'upcoming';
-  pickerShow();
+  /* From a horizon's Add events, the new event goes back to the list, ticked. From New event, it is logged and opened. */
+  if (d.ctx !== 'new' && PK && HORIZONS[PK.hz]){
+    PK.sel.push(id); PK.fresh.unshift(id); PK.q = ''; PK.f = isPast(lastDay(EVENTS[id])) ? 'past' : 'upcoming';
+    pickerShow();
+    toast('Added from ' + linkSite(url), EVENTS[id].title);
+    return;
+  }
+  var into = d.into && HORIZONS[d.into] && hzOwnedByMe(d.into) ? d.into : null;
+  if (into && HORIZONS[into].eventIds.indexOf(id) < 0){
+    HORIZONS[into].eventIds.push(id);
+    logAct('added_to_horizon', 'horizon', into, { eventIds:[id] });
+    if (ONLINE) HNAPI.horizonEvents(into);
+  }
+  DRAFT = null; closeDialogs();
+  if (L.phone) S.tab = 'you';
+  S.stack = [{ type:'event', id:id }];
+  render();
   toast('Added from ' + linkSite(url), EVENTS[id].title);
 }
 /* Edit on an event you added from a link: the same form, its link kept */
@@ -6221,13 +6494,19 @@ function linkEditOpen(evId){
   DRAFT = Object.assign(blankLinkDraft(), { ctx:'edit', editing:evId, filled:true, url:e.sourceUrl || r.externalUrl || '', host:e.hostName || '',
     title:e.title, date:e.date, end:r.endDate || '', startTime:r.startTime || '', endTime:r.endTime || '', kind:r.kind || 'other', baseKind:r.kind || 'other', tags:eventTagIds(r),
     online:r.venueKind === 'virtual', city: r.venueKind === 'virtual' ? '' : (r.city || e.city || ''), entry:(r.access && r.access.model) || 'free', desc:descOf(e) });
+  if (!DRAFT.online) DRAFT.placePin = pinFromVenue(r.venue, DRAFT.city);
   dialog('Edit event', linkFormHTML(DRAFT), linkFootHTML(DRAFT), 520, 'lkdlg');
   focusIn('lk-h');
 }
 function linkSaveEdit(d){
   var id = d.editing, e = EVENTS[id], r = REC[id] = REC[id] || {};
   var start = isoDate(d.date), end = isoDate(d.end), city = d.online ? '' : String(d.city || '').trim();
-  if (!d.online && (!r.venue || !r.venue.name || r.venue.name === r.city)) r.venue = Object.assign({}, r.venue || { addressVisibility:'public' }, { name:city });
+  if (!d.online){
+    var oldCity = r.city;
+    if (!r.venue) r.venue = { addressVisibility:'public', name:city };
+    else if (!r.venue.name || r.venue.name === oldCity || d.placeEdited) r.venue.name = city;
+    applyPlacePin(r.venue, city);
+  }
   if (d.online) r.venue = undefined;
   e.title = d.title.trim(); e.date = start; e.description = d.desc; e.hostName = d.host.trim(); e.city = city;
   r.endDate = end && end > start ? end : undefined; r.startTime = d.startTime || undefined; r.endTime = d.endTime || undefined;
@@ -6654,6 +6933,102 @@ function setDraftTags(tags){
 function wzErr(miss, k){ return '<span class="ferr" id="err-'+k+'" data-err="'+k+'" role="alert"'+(miss[k] ? '' : ' hidden')+'>'+esc(miss[k] || '')+'</span>'; }
 function wzBad(miss, k){ return miss[k] ? ' aria-invalid="true"' : ''; }
 var WZOPT = ' <span class="opt">optional</span>';
+/* a map link in Where: the place name and coordinates go on the venue the form already saves.
+   The pasted link is venue.url, which Open in Maps uses. A plain sentence stays a plain sentence. */
+function placeLabel(pin){
+  if (!pin) return '';
+  if (pin.name) return String(pin.name).slice(0, 120);
+  var label = window.HN_MAP ? HN_MAP.coordLabel(pin) : '';
+  return String(label || '').slice(0, 120);
+}
+function pinFromVenue(v, city){
+  if (!v) return null;
+  var href = safeHref(v.url);
+  var lat = Number(v.lat), lng = Number(v.lng), hasLl = Number.isFinite(lat) && Number.isFinite(lng);
+  if (!href && !hasLl) return null;
+  return { name: city || v.name || '', lat: hasLl ? lat : null, lng: hasLl ? lng : null, url: href || '', provider: null };
+}
+function applyPlacePin(venue, city){
+  if (!venue) return venue;
+  var p = DRAFT && DRAFT.placePin;
+  if (p && p.name === city){
+    if (p.lat != null && p.lng != null){ venue.lat = p.lat; venue.lng = p.lng; }
+    else { delete venue.lat; delete venue.lng; }
+    var href = safeHref(p.url);
+    if (href) venue.url = href; else delete venue.url;
+    return venue;
+  }
+  if (DRAFT && DRAFT.placeEdited){ delete venue.lat; delete venue.lng; delete venue.url; }
+  return venue;
+}
+function placeVenue(city){
+  var v = { name:city, addressVisibility:'public' };
+  applyPlacePin(v, city);
+  return v;
+}
+function linkVenue(base, city){
+  var v = Object.assign({ addressVisibility:'public' }, base || {});
+  if (!v.name) v.name = city;
+  if (DRAFT && (DRAFT.placeEdited || (DRAFT.placePin && DRAFT.placePin.name === city))){
+    if (city) v.name = city;
+    applyPlacePin(v, city);
+  }
+  return v;
+}
+function placeNote(msg){
+  var n = $('where-note');
+  if (!n) return;
+  n.textContent = msg || '';
+  n.hidden = !msg;
+}
+var MAPWAIT = null;
+function placeTouch(raw){
+  if (!DRAFT) return;
+  DRAFT.placeEdited = true;
+  if (MAPWAIT){ clearTimeout(MAPWAIT); MAPWAIT = null; }
+  var c = window.HN_MAP ? HN_MAP.classifyMapInput(raw) : { kind: String(raw || '').trim() ? 'text' : 'empty' };
+  DRAFT.mapReject = false;
+  if (c.kind === 'empty'){ DRAFT.city = ''; DRAFT.placePin = null; DRAFT.placeNote = ''; placeNote(''); return; }
+  if (c.kind === 'unsafe'){ DRAFT.city = ''; DRAFT.placePin = null; DRAFT.mapReject = true; DRAFT.placeNote = ''; placeNote(''); return; }
+  if (c.kind === 'text'){
+    DRAFT.city = String(raw);
+    if (!(DRAFT.placePin && DRAFT.placePin.name === String(raw).trim())) DRAFT.placePin = null;
+    DRAFT.placeNote = ''; placeNote(''); return;
+  }
+  if (c.kind === 'pin'){
+    var label = placeLabel(c.pin);
+    DRAFT.placePin = { name:label, lat:c.pin.lat, lng:c.pin.lng, url:c.url, provider:c.pin.provider };
+    DRAFT.city = label; DRAFT.placeNote = '';
+    var field = $('w-c');
+    if (field && label && field.value !== label) field.value = label;
+    placeNote(''); return;
+  }
+  DRAFT.placePin = null; DRAFT.city = '';
+  if (!ONLINE || !window.HNAPI || !HNAPI.resolveMap){ DRAFT.placeNote = 'Paste the full link.'; placeNote(DRAFT.placeNote); return; }
+  DRAFT.placeNote = 'Reading the map link…'; placeNote(DRAFT.placeNote);
+  var token = String(raw).trim();
+  MAPWAIT = setTimeout(function(){
+    MAPWAIT = null;
+    if (!DRAFT || DRAFT.online) return;
+    var cur = $('w-c');
+    if (cur && cur.value.trim() !== token) return;
+    HNAPI.resolveMap(token).then(function(r){
+      if (!DRAFT) return;
+      var now = $('w-c');
+      if (now && now.value.trim() !== token) return;
+      var pin = r && r.url && window.HN_MAP ? HN_MAP.parseMapLink(r.url) : null;
+      if (!pin){ DRAFT.placeNote = 'Paste the full link.'; placeNote(DRAFT.placeNote); refreshWizFoot(); return; }
+      var name = placeLabel(pin);
+      DRAFT.placePin = { name:name, lat:pin.lat, lng:pin.lng, url:token, provider:pin.provider };
+      DRAFT.city = name; DRAFT.placeNote = ''; DRAFT.mapReject = false;
+      if (now) now.value = name;
+      placeNote(''); refreshWizFoot(); schedulePersist();
+    }, function(){
+      if (!DRAFT) return;
+      DRAFT.placeNote = 'Paste the full link.'; placeNote(DRAFT.placeNote);
+    });
+  }, 300);
+}
 function basicsHTML(d, miss, withPrivacy){
   var newEv = d.mode !== 'edit' && d.form !== 'link', bad = function(k){ return wzBad(miss, k); }, err = function(k){ return wzErr(miss, k); }, opt = WZOPT;
   return '<div class="field"><label for="w-t">Title</label><input type="text" id="w-t" data-cz="title" value="'+esc(d.title)+'" placeholder="Ridge sauna, midnight" autocomplete="off" aria-required="true" aria-describedby="err-title"'+bad('title')+'>' + err('title') + '</div>' +
@@ -6662,9 +7037,11 @@ function basicsHTML(d, miss, withPrivacy){
     '<div class="frow"><div class="field"><label for="w-st">From'+opt+'</label><input type="time" id="w-st" data-cz="startTime" value="'+esc(d.startTime||'')+'"></div>' +
     '<div class="field"><label for="w-et">Until'+opt+'</label><input type="time" id="w-et" data-cz="endTime" value="'+esc(d.endTime||'')+'"></div></div>' +
     tagsFieldHTML(d) +
-    /* a place, or Online */
-    '<div class="field"><label for="w-c">Where</label><div class="wherein"><input type="text" id="w-c" data-cz="city" value="'+esc(d.online ? '' : d.city)+'" placeholder="'+(d.online ? 'Online' : 'Stockholm')+'"'+(d.online ? ' disabled' : '')+' aria-required="true" aria-describedby="err-city"'+bad('city')+'>' +
-      '<label class="wzon"><input type="checkbox" id="w-on" data-cz="online"'+(d.online ? ' checked' : '')+'>Online</label></div>' + err('city') + '</div>' +
+    /* a place name, or a map link. The hint stays generic; parsing is in _shared/map-link.js */
+    '<div class="field"><label for="w-c">Where</label><div class="wherein"><input type="text" id="w-c" data-cz="city" value="'+esc(d.online ? '' : d.city)+'" placeholder="'+(d.online ? 'Online' : 'Place or maps link')+'"'+(d.online ? ' disabled' : '')+' aria-required="true" aria-describedby="where-hint where-note err-city"'+bad('city')+'>' +
+      '<label class="wzon"><input type="checkbox" id="w-on" data-cz="online"'+(d.online ? ' checked' : '')+'>Online</label></div>' +
+      '<p class="fhelp maphint" id="where-hint"'+(d.online ? ' hidden' : '')+'>Place or maps link</p>' +
+      '<p class="mapnote" id="where-note" role="status"'+(d.placeNote && !d.online ? '' : ' hidden')+'>'+esc(d.placeNote || '')+'</p>' + err('city') + '</div>' +
     (withPrivacy ? privacyHTML(d) : '') +
     '<div class="field"><label for="w-k">Entry</label><select id="w-k" data-cz="entry">' +
       ['free','donation','pay_what_you_can','ticket','membership','invite'].concat(ACCESSLAB[d.entry] && ['free','donation','pay_what_you_can','ticket','membership','invite'].indexOf(d.entry) < 0 ? [d.entry] : []).map(function(p){ return '<option value="'+p+'"'+(p===d.entry?' selected':'')+'>'+ACCESSLAB[p]+'</option>'; }).join('') +
@@ -6832,10 +7209,10 @@ function wordsHTML(d, miss){
     '<div class="field"><label for="w-b">Bring'+WZOPT+'</label><textarea id="w-b" data-cz="bring" rows="3" placeholder="A towel&#10;Something warm for after">'+esc(d.bring)+'</textarea></div>' +
     schedFieldHTML(d);
 }
-/* the steps, as short tabs that always fit (owner, 2026-10-05: the "1 · Basics / 2 · Words / 3 · Look optional" tabs
+/* the steps, as short tabs that always fit (owner, 2026-10-05: the "1 · Basics / 2 · About / 3 · Look optional" tabs
    overflowed on a phone): back is always open, forward only past steps that have everything they need (2026-10-04) */
 function wizStepsHTML(d){
-  return '<div class="wizsteps" role="tablist" aria-label="Steps">' + ['Basics', 'Words', 'Look'].map(function(l, i){
+  return '<div class="wizsteps" role="tablist" aria-label="Steps">' + ['Basics', 'About', 'Look'].map(function(l, i){
     var on = d.step === i + 1, open = on || wizReach(d, i + 1);
     return '<button type="button" role="tab" class="ws'+(on?' on':'')+'" aria-selected="'+on+'"'+(open ? '' : ' aria-disabled="true"')+' data-act="wizstep" data-id="'+(i+1)+'">' +
       '<span class="wsn" aria-hidden="true">'+(i+1)+'</span>'+l+'</button>'; }).join('') + '</div>';
@@ -6849,17 +7226,17 @@ function wizBodyHTML(){
   var d = DRAFT;
   if (d.form === 'horizon') return editHorizonBodyHTML();
   var miss = d.showErr ? wizMissingNow(d) : {};
-  if (d.mode === 'edit') return edWrap(edSec('Details', basicsHTML(d, miss, false)) + edSec('Words', wordsHTML(d, miss)) +
+  if (d.mode === 'edit') return edWrap(edSec('Details', basicsHTML(d, miss, false)) + edSec('About', wordsHTML(d, miss)) +
                                        edSec('Who can see it', privacyHTML(d)) + edSec('Look', czControlsHTML(d)), customizePreviewHTML());
   var h = wizStepsHTML(d);
-  if (d.step === 1) h += basicsHTML(d, miss, true);
+  if (d.step === 1) h += fillFromHTML(d) + basicsHTML(d, miss, true);
   else if (d.step === 2) h += wordsHTML(d, miss);
   else h += customizeHTML();
   return h;
 }
 /* ---- what each step needs before you can go on (owner, 2026-10-04: "not possible to go to the next step until you have
    everything filled out"). Basics: a title, a start date (a new event: today or later), an end on or after the start if
-   there is one, and where it is — a place, or Online. Words: a description. Look: nothing, it is optional. ---- */
+   there is one, and where it is — a place, or Online. About: a description. Look: nothing, it is optional. ---- */
 function wizEvent(d){ return !!d && (!d.editing || d.mode === 'edit'); }
 function wizMissing(d, step){
   var m = {};
@@ -6870,7 +7247,8 @@ function wizMissing(d, step){
     if (!st) m.date = 'Add the day it starts';
     else if (d.mode !== 'edit' && d.form !== 'link' && st < TODAY_ISO) m.date = 'Pick today or a later day';
     if (en === null || (en && st && en < st)) m.end = 'It ends before it starts';
-    if (!d.online && !String(d.city || '').trim()) m.city = 'Add where it is, or tick Online';
+    if (!d.online && d.mapReject) m.city = "That link isn't allowed.";
+    else if (!d.online && !String(d.city || '').trim()) m.city = 'Add where it is, or tick Online';
   }
   if (step === 2 && !String(d.desc || '').trim()) m.desc = 'Add a line or two about it';
   return m;
@@ -6907,7 +7285,7 @@ function wizSyncErrs(){
     if (inp){ if (msg) inp.setAttribute('aria-invalid', 'true'); else inp.removeAttribute('aria-invalid'); }
   });
 }
-/* the footer: one primary action at a time, always in the same place — Next on Basics and Words, Publish event on Look
+/* the footer: one primary action at a time, always in the same place — Next on Basics and About, Publish event on Look
    (owner, 2026-10-05: "Publish event button is not looking nice": four equal buttons in one row on a phone). Back
    beside it; what it is waiting for in a line of its own; no Cancel — × in the title bar closes and keeps the draft */
 function wizFootHTML(){
@@ -6935,7 +7313,7 @@ var FORMDRAFTS = {};
 var EVENTKINDS = ['meetup','build','workshop','volunteer_day','fundraiser','camp_meeting','burn_night','town_hall','decompression','burn','sale','other'];
 function blankEventDraft(){
   return Object.assign({ step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', baseKind:'meetup', tags:[], schedule:[], city:'', online:false, privacy:'everyone', entry:'free', desc:'', bring:'',
-           lookTouched:false }, lookDraft(plainTheme('◉')));
+           fillUrl:'', lookTouched:false }, lookDraft(plainTheme('◉')));
 }
 function eventDraftDirty(d){
   var b = blankEventDraft();
@@ -6963,19 +7341,420 @@ function wizDraftOpen(){
   var dl = DLGS[DLGS.length-1];
   return !!(dl && dl.querySelector('.wizsteps') && DRAFT && !DRAFT.editing && FORMDRAFTS.event === DRAFT && eventDraftDirty(DRAFT));
 }
-var newEventDialog = gated(function(into){
+/* before any details: who hosts it, and whether it already happened. One screen, then Continue. */
+var HOSTINTO = null;
+var HOSTPICK = { who:'', when:'' };
+function hostAskOpt(group, id, title, note, on){
+  return '<button type="button" class="hostask-opt'+(on ? ' on' : '')+'" data-act="'+group+'" data-id="'+id+'" aria-pressed="'+(on ? 'true' : 'false')+'"><b>'+esc(title)+'</b><small>'+esc(note)+'</small></button>';
+}
+function hostAskHTML(){
+  var who = HOSTPICK.who, when = HOSTPICK.when;
+  return '<div class="hostask"><p class="hostask-q" id="host-ask-q">Are you the host?</p>' +
+    '<p class="hostask-note">You run this event, or you are logging one that someone else runs.</p>' +
+    '<div class="hostask-choices" role="group" aria-labelledby="host-ask-q">' +
+      hostAskOpt('hostask', 'mine', "I'm hosting", 'You run this event.', who === 'mine') +
+      hostAskOpt('hostask', 'other', 'Someone else is hosting', 'Log an event run by someone not on Hypernet, such as a commercial concert or festival.', who === 'other') +
+    '</div>' +
+    '<p class="hostask-q" id="host-when-q">Is this a new event or did it already happen?</p>' +
+    '<div class="hostask-choices" role="group" aria-labelledby="host-when-q">' +
+      hostAskOpt('hostwhen', 'upcoming', 'Upcoming', 'It has not happened yet.', when === 'upcoming') +
+      hostAskOpt('hostwhen', 'past', 'Already happened', 'Add it to your chronicle.', when === 'past') +
+    '</div></div>';
+}
+function hostAskFoot(){
+  var ok = HOSTPICK.who && HOSTPICK.when;
+  return '<button class="btn primary" data-act="hostask-go"'+(ok ? '' : ' aria-disabled="true"')+'>Continue</button>';
+}
+function hostAskTitle(){
+  return HOSTINTO && HORIZONS[HOSTINTO] ? 'New event for ' + HORIZONS[HOSTINTO].name : 'New event';
+}
+function hostAskPaint(){
+  var dl = DLGS[DLGS.length-1]; if (!dl) return;
+  dl.querySelector('.dbody').innerHTML = hostAskHTML();
+  var foot = dl.querySelector('.dfoot');
+  if (!foot){ foot = document.createElement('div'); foot.className = 'dfoot'; dl.appendChild(foot); }
+  foot.innerHTML = hostAskFoot();
+  placeDlg(dl);
+}
+function hostAskPick(group, id){
+  if (group === 'hostask') HOSTPICK.who = id === 'other' ? 'other' : 'mine';
+  else HOSTPICK.when = id === 'past' ? 'past' : 'upcoming';
+  hostAskPaint();
+}
+function hostAskGo(){
+  if (!HOSTPICK.who || !HOSTPICK.when) return;
+  var who = HOSTPICK.who, when = HOSTPICK.when;
+  if (who === 'mine' && when === 'past'){ openPastEvent('host', HOSTINTO); return; }
+  if (who === 'other') startOtherHost(when === 'past');
+  else openHostedWizard(HOSTINTO);
+}
+function hostAskShow(){
+  var dl = DLGS[DLGS.length-1]; if (!dl) return;
+  DRAFT = null;
+  HOSTPICK = { who:'', when:'' };
+  dl.querySelector('.dtitle').textContent = hostAskTitle();
+  hostAskPaint();
+}
+/* Optional, on Basics only: paste the event's own page and reuse Autofill. The event stays yours (create, host_id). */
+function fillFromHTML(d){
+  return '<div class="field fillfrom"><label for="w-fill">Fill from link'+WZOPT+'</label><div class="lkrow">' +
+    '<input type="url" id="w-fill" data-cz="fillUrl" value="'+esc(d.fillUrl || '')+'" placeholder="https://" autocomplete="off" inputmode="url" aria-describedby="fill-note">' +
+    '<button type="button" class="btn" data-act="wizfill"'+(d.fillBusy ? ' aria-disabled="true"' : '')+'>'+(d.fillBusy ? 'Reading…' : 'Fill')+'</button></div>' +
+    '<p class="fhelp" id="fill-note" role="status">'+esc(d.fillNote || 'Optional. Paste a page, then Fill.')+'</p></div>';
+}
+function wizTakeFill(d, x){
+  if (!d || !x) return;
+  if (x.title) d.title = x.title;
+  if (x.startsOn) d.date = x.startsOn;
+  if (x.endsOn) d.end = x.endsOn;
+  if (x.startTime) d.startTime = x.startTime;
+  if (x.endTime) d.endTime = x.endTime;
+  if (x.description) d.desc = x.description;
+  if (x.online){ d.online = true; d.city = ''; d.placePin = null; d.mapReject = false; }
+  else {
+    var place = x.city || (x.venue && x.venue.name) || '';
+    if (place){ d.online = false; d.city = String(place).slice(0, 120); d.mapReject = false; }
+    var v = x.venue || {}, lat = Number(v.lat), lng = Number(v.lng);
+    if (d.city && Number.isFinite(lat) && Number.isFinite(lng)) d.placePin = { name:d.city, lat:lat, lng:lng, url:'', provider:null };
+  }
+  var img = x.imageUrl && window.HN_IMAGE && window.HN_IMAGE(x.imageUrl);
+  if (img){ d.image = img; d.lookTouched = true; }
+  var site = x.site || (d.fillUrl ? linkSite(d.fillUrl) : 'the page');
+  d.fillNote = 'Filled in from ' + site + '.' + (img || !x.imageUrl ? '' : ' Its picture stays on that page.') + ' Change anything, then publish. You stay the host.';
+}
+function wizFill(){
+  var d = DRAFT;
+  if (!d || d.form === 'link' || d.mode === 'edit' || d.form === 'horizon' || d.fillBusy) return;
+  var field = $('w-fill');
+  var u = String((field && field.value) || d.fillUrl || '').trim();
+  if (u && !/^https?:\/\//i.test(u) && /\./.test(u)) u = 'https://' + u;
+  d.fillUrl = u;
+  if (!/^https?:\/\/[^\s\/]+\.[^\s]+$/i.test(u)){
+    d.fillNote = 'Paste a link to the event’s page.';
+    paintWiz(); focusIn('w-fill'); return;
+  }
+  if (!ONLINE || !window.HNAPI || !HNAPI.autofill){
+    d.fillNote = 'Fill from link reads pages on the live site only. Here, fill in the fields yourself.';
+    paintWiz(); focusIn('w-t'); return;
+  }
+  d.fillBusy = true; d.fillNote = 'Reading ' + linkSite(u) + '…'; paintWiz();
+  HNAPI.autofill(u).then(function(r){
+    if (DRAFT !== d) return;
+    d.fillBusy = false;
+    if (r && r.draft) wizTakeFill(d, r.draft);
+    else d.fillNote = (r && r.existing ? 'This page is already an event here. You’re still making your own, and you stay the host.' : 'Couldn’t read that page. Fill in the fields yourself.');
+    paintWiz();
+    if (d.title) focusIn('w-t');
+  }, function(err){
+    if (DRAFT !== d) return;
+    d.fillBusy = false;
+    d.fillNote = (err && err.message ? err.message.replace(/\.?$/, '.') : 'Couldn’t read that page.') + ' Fill in the fields yourself.';
+    paintWiz(); focusIn('w-t');
+  });
+}
+/* the wizard, as it was: a kept draft resumes once I'm hosting. Add past event skips the question (the role was already chosen) */
+function openHostedWizard(into){
   DRAFT = FORMDRAFTS.event || blankEventDraft();
-  /* opened from a horizon's Add events: once published, it goes on that horizon */
-  DRAFT.into = into && HORIZONS[into] ? into : null;
-  /* a draft kept from before looks were picked colours gets its picks (or the plain look) */
+  DRAFT.into = into && HORIZONS[into] ? into : (DRAFT.into && HORIZONS[DRAFT.into] ? DRAFT.into : null);
   ['mood','pal','surface','type','headline','motion','shape','density','pattern','backdrop','atmosphere','parallax','orn'].forEach(function(k){ delete DRAFT[k]; });
   normLookDraft(DRAFT);
   if (DRAFT.online == null) DRAFT.online = false;
   DRAFT.showErr = false;
   FORMDRAFTS.event = DRAFT;
-  dialog(DRAFT.into ? 'New event for ' + HORIZONS[DRAFT.into].name : 'New event', wizBodyHTML(), wizFootHTML(), 900, 'wizdlg');
+  var title = DRAFT.into ? 'New event for ' + HORIZONS[DRAFT.into].name : 'New event';
+  var dl = DLGS[DLGS.length-1];
+  if (dl && dl.querySelector('.hostask')){
+    dl.classList.add('wizdlg');
+    var w = Math.min(900, window.innerWidth - 24);
+    dl.style.width = w + 'px';
+    dl.style.left = Math.max(12, (window.innerWidth - w) / 2) + 'px';
+    dl.querySelector('.dtitle').textContent = title;
+    dl.querySelector('.dbody').innerHTML = wizBodyHTML();
+    var foot = dl.querySelector('.dfoot');
+    if (!foot){ foot = document.createElement('div'); foot.className = 'dfoot'; dl.appendChild(foot); }
+    foot.innerHTML = wizFootHTML();
+    placeDlg(dl);
+    if (DRAFT.step === 1) focusIn('w-t');
+    return;
+  }
+  dialog(title, wizBodyHTML(), wizFootHTML(), 900, 'wizdlg');
   if (DRAFT.step === 1) focusIn('w-t');
+}
+/* Someone else is hosting: Michal's link form (paste a page, Autofill, the organiser's name). You are added_by, not host_id. */
+function startOtherHost(past){
+  FORMDRAFTS.event = null;
+  DRAFT = blankLinkDraft();
+  DRAFT.ctx = 'new';
+  DRAFT.went = !!past;
+  if (past) DRAFT.note = 'This one already happened. Use a day that has passed.';
+  DRAFT.into = HOSTINTO && HORIZONS[HOSTINTO] ? HOSTINTO : null;
+  var dl = DLGS[DLGS.length-1]; if (!dl) return;
+  dl.querySelector('.dtitle').textContent = 'Add an event from a link';
+  paintLink();
+  focusIn('lk-u');
+}
+/* A kept draft does not skip this question. It resumes after I'm hosting.
+   Add past event sets CHRONICLE_ADD first, and that is the only caller that skips it.
+   Horizon > From a link never comes through here. */
+var newEventDialog = gated(function(into){
+  if (CHRONICLE_ADD){ openHostedWizard(into); return; }
+  HOSTINTO = into && HORIZONS[into] ? into : null;
+  HOSTPICK = { who:'', when:'' };
+  dialog(hostAskTitle(), hostAskHTML(), hostAskFoot(), 480, 'hostask');
 });
+function adminInviteBanner(evId){
+  if (!S.loggedIn || adminStatus(evId, myActor()) !== 'pending') return '';
+  return '<div class="ev-invite-banner" role="status"><p>You are invited to be an admin of this event.</p>' +
+    '<button class="btn primary" data-act="evadmin-accept" data-id="'+evId+'">Accept</button>' +
+    '<button class="btn" data-act="evadmin-decline" data-id="'+evId+'">Decline</button></div>';
+}
+function cocreatorIds(evId){
+  var me = myActor(), ids = [];
+  Object.keys(CHRON).forEach(function(pid){
+    if (pid !== me && pid !== 'self' && CHRON[pid] && CHRON[pid][evId] === 'cocreator') ids.push(pid);
+  });
+  return ids;
+}
+function policySelect(evId, act, question, value, options, extra){
+  extra = extra || {};
+  var sid = act + '-' + evId;
+  return '<label class="ev-policy"><span class="ev-policy-q" id="'+sid+'-q">'+esc(question)+'</span>' +
+    '<select id="'+sid+'" data-act="'+act+'" data-id="'+evId+'" aria-labelledby="'+sid+'-q"'+(extra.disabled ? ' disabled' : '')+'>' +
+    options.map(function(o){
+      return '<option value="'+o[0]+'"'+(value === o[0] ? ' selected' : '')+'>'+esc(o[1])+'</option>';
+    }).join('') + '</select>' +
+    (extra.why ? '<span class="ev-policy-why">'+esc(extra.why)+'</span>' : '') + '</label>';
+}
+function cocreatorPolicyHTML(evId){
+  return policySelect(evId, 'evpolicy', 'Who can be listed as a co-creator?', cocreatorPolicyOf(evId),
+    [['open','Open – anyone can list themselves as a co-creator'], ['request','On request – admins must approve requests']]);
+}
+function cocreatorRequestRows(evId){
+  var m = COREQUESTS[evId] || {}, ids = Object.keys(m).filter(function(pid){ return m[pid]; });
+  if (!ids.length) return '';
+  return '<h3>Requests</h3>' + ids.map(function(pid){
+    var name = pid === meKey() || pid === 'self' || pid === myActor() ? 'You' : person(pid).displayName;
+    return '<div class="ev-admin-row"><span>'+esc(name)+' · co-creator requested</span>' +
+      '<button class="btn" data-act="evcoreview" data-id="'+evId+'" data-user="'+esc(pid)+'" data-key="approve">Approve</button>' +
+      '<button class="btn" data-act="evcoreview" data-id="'+evId+'" data-user="'+esc(pid)+'" data-key="decline">Decline</button></div>';
+  }).join('');
+}
+// F&P will swap this for isPublicAudience() from lib/audience.ts once 0008 merges (public there means include has 'everyone', even with excludes).
+function isEventPublic(ev){ return !!(ev && (ev.privacy || 'everyone') === 'everyone'); }
+function eventControlsBody(evId){
+  var host = isMine(evId);
+  var e = EVENTS[evId];
+  var past = !!(e && isPast(lastDay(e)));
+  var logged = isLinkEvent(evId);
+  var list = adminRows(evId).map(function(a){
+    var name = a.userId === myActor() || a.userId === 'self' ? 'You' : person(a.userId).displayName;
+    var rm = host && !past && !logged ? '<button class="btn alert" data-act="evadmin-remove" data-id="'+evId+'" data-user="'+esc(a.userId)+'">Remove</button>' : '';
+    return '<div class="ev-admin-row"><span>'+esc(name)+' · '+esc(a.status)+'</span>'+rm+'</div>';
+  }).join('') || '<p class="fhelp">No other admins yet.</p>';
+  var crew = past || logged ? '' : cocreatorIds(evId).map(function(pid){
+    return '<div class="ev-admin-row"><span>'+esc(person(pid).displayName)+'</span>' +
+      '<button class="btn" data-act="evdemote" data-id="'+evId+'" data-user="'+esc(pid)+'">Demote</button></div>';
+  }).join('');
+  var pub = isEventPublic(e);
+  var inviteBtn = past || logged ? '' :
+    '<button class="btn" data-act="evadmin-invite" data-id="'+evId+'">Invite admin</button>';
+  var invitePolicy = past || logged ? '' :
+    policySelect(evId, 'evinvitepolicy', 'Who can invite guests?', invitePolicyOf(evId),
+      [['admins','Admins only'], ['cocreators','Admins and co-creators'], ['invited','Anyone with an invite']],
+      { disabled:pub, why: pub ? 'This event is public, so anyone can already see it.' : '' });
+  return '<div class="ev-controls">' + inviteBtn +
+    '<h3>Admins</h3>' + list +
+    (crew ? '<h3>Co-creators</h3>' + crew : '') +
+    (past || logged ? '' : cocreatorRequestRows(evId) + cocreatorPolicyHTML(evId) + invitePolicy) +
+    '</div>';
+}
+function settleEventControl(evId){
+  if (document.querySelector('.dlg .ev-controls')){ closeDialogs(); eventControlsDialog(evId); }
+  else render();
+}
+function eventControlsDialog(evId){
+  var e = EVENTS[evId];
+  if (!e || !canManageEvent(evId)) return;
+  dialog('Permissions', eventControlsBody(evId), '<button class="btn" data-act="closedlg">Done</button>', 480, 'permissions');
+  if (ONLINE && window.HNAPI && HNAPI.cocreatorRequests){
+    HNAPI.cocreatorRequests(evId).then(function(r){
+      var m = {};
+      (r && r.requests || []).forEach(function(pid){ m[pid] = 1; });
+      COREQUESTS[evId] = m;
+      var dl = DLGS[DLGS.length - 1], body = dl && dl.querySelector('.dbody');
+      if (body && body.querySelector('[data-act="evpolicy"][data-id="'+evId+'"]')) body.innerHTML = eventControlsBody(evId);
+    }, function(){});
+  }
+}
+function cocreatorMineHTML(evId){
+  if (!S.loggedIn || isMine(evId) || isLinkEvent(evId)) return '';
+  var policy = cocreatorPolicyOf(evId), role = ROLE[evId], pending = cocreatorPendingMine(evId);
+  if (role === 'cocreator') return '<p class="co-mine">You are a co-creator. <button class="btn" data-act="coleave" data-id="'+evId+'">Leave</button></p>';
+  if (pending) return '<p class="co-mine">Co-creator requested. <button class="btn" data-act="cocancel" data-id="'+evId+'">Cancel request</button></p>';
+  return '<p class="co-mine"><button class="btn" data-act="coclaim" data-id="'+evId+'">'+(policy === 'request' ? 'Request co-creator' : 'Co-creator')+'</button></p>';
+}
+function claimCocreator(evId){
+  var policy = cocreatorPolicyOf(evId);
+  if (!S.loggedIn || isMine(evId) || isLinkEvent(evId)) return;
+  if (!COREQUESTS[evId]) COREQUESTS[evId] = {};
+  if (policy === 'request'){
+    ROLE[evId] = 'attendee';
+    COREQUESTS[evId][meKey()] = 1;
+  } else {
+    ROLE[evId] = 'cocreator';
+    delete COREQUESTS[evId][meKey()];
+  }
+  if (ONLINE) HNAPI.rsvp(evId, { role:'cocreator' });
+  render();
+}
+function cancelCocreatorRequest(evId){
+  if (COREQUESTS[evId]) delete COREQUESTS[evId][meKey()];
+  if (ROLE[evId] !== 'cocreator') ROLE[evId] = 'attendee';
+  if (ONLINE) HNAPI.rsvp(evId, { role:'attendee' });
+  render();
+}
+function leaveCocreator(evId){
+  if (COREQUESTS[evId]) delete COREQUESTS[evId][meKey()];
+  delete ROLE[evId];
+  if (ONLINE) HNAPI.rsvp(evId, { role:null });
+  render();
+}
+function reviewCocreator(evId, pid, action){
+  if (!canManageEvent(evId) || !pid || !COREQUESTS[evId] || !COREQUESTS[evId][pid]) return;
+  delete COREQUESTS[evId][pid];
+  if (action === 'approve'){
+    if (pid === meKey() || pid === 'self' || pid === myActor()) ROLE[evId] = 'cocreator';
+    else (CHRON[pid] = CHRON[pid] || {})[evId] = 'cocreator';
+  }
+  if (ONLINE && window.HNAPI && HNAPI.reviewCocreator) HNAPI.reviewCocreator(evId, pid, action === 'approve' ? 'approve' : 'decline');
+  settleEventControl(evId);
+}
+function setCocreatorPolicy(evId, policy){
+  var e = EVENTS[evId];
+  if (!e || !canManageEvent(evId) || (policy !== 'open' && policy !== 'request')) return;
+  e.cocreatorPolicy = policy;
+  if (ONLINE) HNAPI.patchEvent(evId, { cocreatorPolicy: policy });
+  settleEventControl(evId);
+}
+function eventPrivacyDialog(evId){
+  var e = EVENTS[evId];
+  if (!e || !canManageEvent(evId) || isLinkEvent(evId)) return;
+  DRAFT = { form:'privacy', editing:evId, privacy:e.privacy || 'everyone' };
+  dialog('Who can see it', privacyHTML(DRAFT),
+    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="evprivacy-save" data-id="'+evId+'">Save</button>', 440);
+}
+function saveEventPrivacy(evId){
+  var e = EVENTS[evId], sel = $('w-p');
+  if (!e || !canManageEvent(evId) || !sel) return;
+  e.privacy = sel.value;
+  if (ONLINE) HNAPI.patchEvent(evId, { privacy:e.privacy });
+  closeDialogs(); render();
+  toast('Saved', PRIVACY[e.privacy] || '');
+}
+function setInvitePolicy(evId, policy){
+  var e = EVENTS[evId];
+  if (!e || !canManageEvent(evId)) return;
+  if (policy !== 'admins' && policy !== 'cocreators' && policy !== 'invited') return;
+  if (isEventPublic(e)) return;
+  e.invitePolicy = policy;
+  if (ONLINE) HNAPI.patchEvent(evId, { invitePolicy:policy });
+  settleEventControl(evId);
+}
+var INVITE = null;
+function inviteDialog(evId, kind){
+  if (kind === 'admin'){ if (!canManageEvent(evId)) return; }
+  else if (!canInviteToEvent(evId)) return;
+  INVITE = { evId:evId, kind:kind, q:'' };
+  var pastInvite = kind !== 'admin' && EVENTS[evId] && isPast(lastDay(EVENTS[evId]));
+  var foot = kind === 'admin'
+    ? '<button class="btn" data-act="closedlg">Cancel</button>'
+    : '<button class="btn" data-act="closedlg">Done</button>';
+  dialog(kind === 'admin' ? 'Invite admin' : (pastInvite ? 'Add people' : 'Invite'),
+    '<div class="field"><label for="iv-q">To</label><input type="search" id="iv-q" placeholder="Search people" autocomplete="off"></div>' +
+    '<div class="picklist" id="iv-list"></div>',
+    foot, 480);
+  paintInvite();
+  focusIn('iv-q');
+}
+function guestInvited(evId, pid){
+  return (EVENT_INVITES[evId] || []).some(function(r){ return r.inviteeId === pid; });
+}
+function paintInvite(){
+  var el = $('iv-list'); if (!INVITE || !el) return;
+  var q = INVITE.q.toLowerCase().trim(), host = eventHostPid(EVENTS[INVITE.evId]);
+  var past = INVITE.kind !== 'admin' && EVENTS[INVITE.evId] && isPast(lastDay(EVENTS[INVITE.evId]));
+  var ids = ncPeopleAll().filter(function(k){
+    if (INVITE.kind === 'admin' && (k === host || k === myActor())) return false;
+    var p = person(k);
+    return !q || matches(p.displayName, q) || matches(p.handle, q);
+  });
+  el.innerHTML = ids.map(function(k){
+    var p = person(k);
+    var who = '<div class="lr">'+esc(p.displayName)+'<div class="fhelp">@'+esc(p.handle)+'</div></div>';
+    if (INVITE.kind === 'admin'){
+      return '<div class="linkrow" data-act="ivpick" data-id="'+INVITE.evId+'" data-user="'+esc(k)+'" role="button">'+avHTML(k,'a40')+who+'</div>';
+    }
+    var sent = guestInvited(INVITE.evId, k);
+    var label = sent ? (past ? 'Added' : 'Invited') : (past ? 'Add' : 'Invite');
+    return '<div class="linkrow static">'+avHTML(k,'a40')+who+
+      '<button type="button" class="btn ivbtn" data-act="ivsend" data-id="'+INVITE.evId+'" data-user="'+esc(k)+'"'+(sent ? ' disabled' : '')+'>'+esc(label)+'</button></div>';
+  }).join('') || '<div class="empty">Nobody matches.</div>';
+  placeDlg();
+}
+function sendEventInvite(evId, pid){
+  if (!pid || pid === myActor() || !canInviteToEvent(evId)) return;
+  if (guestInvited(evId, pid)){ paintInvite(); return; }
+  var rows = EVENT_INVITES[evId] || (EVENT_INVITES[evId] = []);
+  rows.push({ inviteeId:pid, invitedBy:myActor() });
+  var dm = openDM(pid), st = stamp(), e = EVENTS[evId], title = e ? e.title : 'an event';
+  var past = !!(e && isPast(lastDay(e)));
+  var who = person(myActor() || 'self').displayName || 'Someone';
+  var text = past
+    ? who + ' added you to a past event (' + fmtDay(e.date) + '): ' + title + '. Add it to your chronicle?'
+    : "You're invited to " + title + '.';
+  CHATS[dm].messages.push({ from:'self', t:st.t, ts:st.ts, text:text, eventId:evId, chronicle:past });
+  if (ONLINE) HNAPI.inviteGuest(evId, pid);
+  render();
+  if (INVITE && INVITE.evId === evId) paintInvite();
+  toast(past ? 'Added' : 'Invited', person(pid).displayName);
+}
+function sendAdminInvite(evId, pid){
+  if (!pid || !canManageEvent(evId)) return;
+  var e = EVENTS[evId];
+  if (e && eventHostPid(e) === pid){ toast('Already the host', person(pid).displayName); return; }
+  var rows = EVENT_ADMINS[evId] || (EVENT_ADMINS[evId] = []);
+  if (rows.some(function(a){ return a.userId === pid; })){ toast('Already invited', person(pid).displayName); return; }
+  rows.push({ userId:pid, invitedBy:myActor(), status:'pending' });
+  if (ONLINE) HNAPI.inviteAdmin(evId, pid);
+  closeDialogs(); INVITE = null;
+  eventControlsDialog(evId);
+  toast('Admin invited', person(pid).displayName);
+}
+function answerAdminInvite(evId, accept){
+  var pid = myActor(), rows = adminRows(evId), row = rows.filter(function(a){ return a.userId === pid && a.status === 'pending'; })[0];
+  if (!row) return;
+  if (accept){ row.status = 'accepted'; if (ONLINE) HNAPI.answerAdmin(evId, 'accepted'); }
+  else {
+    EVENT_ADMINS[evId] = rows.filter(function(a){ return a !== row; });
+    if (ONLINE) HNAPI.answerAdmin(evId, 'declined');
+  }
+  render();
+  toast(accept ? 'You are an admin' : 'Invite declined', EVENTS[evId] ? EVENTS[evId].title : '');
+}
+function removeAdmin(evId, pid){
+  if (!isMine(evId) || !pid) return;
+  EVENT_ADMINS[evId] = adminRows(evId).filter(function(a){ return a.userId !== pid; });
+  if (ONLINE) HNAPI.removeAdmin(evId, pid);
+  settleEventControl(evId);
+}
+function demoteCocreator(evId, pid){
+  if (!canManageEvent(evId) || !pid || pid === myActor()) return;
+  if (!CHRON[pid] || CHRON[pid][evId] !== 'cocreator') return;
+  CHRON[pid][evId] = 'attendee';
+  if (ONLINE) HNAPI.demote(evId, pid);
+  settleEventControl(evId);
+  toast('Demoted', person(pid).displayName);
+}
 /* ---- Edit an event you host: its facts, its words, who can see it and its look, in one dialog ---- */
 var editEventDialog = gated(function(evId){
   var e = EVENTS[evId], r = recOf(evId);
@@ -6987,6 +7766,7 @@ var editEventDialog = gated(function(evId){
             bring: Array.isArray(r.whatToBring) ? r.whatToBring.join('\n') : (r.whatToBring || ''),
             schedule: (Array.isArray(r.schedule) ? r.schedule : []).map(function(b){ var o = { title:b.title || '', start:b.start || '' }; if (b.end) o.end = b.end; return o; }),
             lookTouched:false }, lookDraft(TH(evId)));
+  if (!DRAFT.online) DRAFT.placePin = pinFromVenue(r.venue, DRAFT.city);
   dialog('Edit ' + e.title, wizBodyHTML(), wizFootHTML(), 900, 'edlg');
   focusIn('w-t');
 });
@@ -7049,12 +7829,18 @@ function setEventLook(id, t){
 }
 function saveEventEdit(t){
   var id = DRAFT.editing, e = EVENTS[id], r = REC[id] || (REC[id] = {});
-  var start = isoDate(DRAFT.date), end = isoDate(DRAFT.end), city = String(DRAFT.city || '').trim();
+  var start = isoDate(DRAFT.date), end = isoDate(DRAFT.end), city = String(DRAFT.city || '').trim(), oldCity = r.city;
   if (!e.slug) e.slug = evSlug(id);          /* the link people already have keeps working */
   e.title = DRAFT.title.trim(); e.date = start; e.privacy = DRAFT.privacy; e.description = DRAFT.desc;
   if (DRAFT.online) r.venueKind = 'virtual';
   else { if (r.venueKind === 'virtual') r.venueKind = 'physical';
-         if (city){ e.city = city; if (r.venue && (!r.venue.name || r.venue.name === r.city)) r.venue.name = city; r.city = city; } }
+         if (city){
+           e.city = city;
+           if (!r.venue) r.venue = { name:city, addressVisibility:'public' };
+           else if (!r.venue.name || r.venue.name === oldCity || DRAFT.placeEdited) r.venue.name = city;
+           applyPlacePin(r.venue, city);
+           r.city = city;
+         } }
   r.endDate = end && end > start ? end : undefined;
   var tk = tagsForSave(DRAFT);
   r.description = DRAFT.desc; r.kind = tk.kind; r.tags = tk.tags;
@@ -7092,7 +7878,7 @@ function wizAct(which){
                  hostName:S.me.name, hostAcct:S.acct, privacy:DRAFT.privacy, ownerIds:['self'], kind:'own', city:city };
   var tk = tagsForSave(DRAFT);
   REC[id] = { kind:tk.kind, tags:tk.tags, startTime:DRAFT.startTime || undefined, endTime:DRAFT.endTime || undefined, scale: end && end > start ? 'gathering' : 'meetup', endDate: end && end > start ? end : undefined,
-              venueKind:DRAFT.online ? 'virtual' : 'physical', city:city, venue:DRAFT.online ? undefined : { name:city, addressVisibility:'public' }, description:DRAFT.desc,
+              venueKind:DRAFT.online ? 'virtual' : 'physical', city:city, venue:DRAFT.online ? undefined : placeVenue(city), description:DRAFT.desc,
               access:{ model:DRAFT.entry }, whatToBring: String(DRAFT.bring||'').split('\n').map(function(s){ return s.trim(); }).filter(Boolean) };
   var schN = scheduleForSave(DRAFT); if (schN) REC[id].schedule = schN;
   if (t){ t.glyph = PLAINGLYPH[REC[id].kind] || '◆'; window.HYPERNET_THEMES.themes[id] = t; }
@@ -7202,15 +7988,15 @@ function ctxItems(t, only){
     var st = S.loggedIn ? RSVP[id] : '', mine = isMine(id), past = isPast(lastDay(EVENTS[id]));
     /* the host's menu leads with the host's verbs, like the host's page */
     if (mine) out.push({ code:'edit', label:'Edit…', icon:'edit', run:function(){ editEventDialog(id); } });
-    else if (past) out.push({ code:'went', label:'Went', icon:'check', check: S.loggedIn && !!WENT[id],
-      run: ctxVerb(function(){ setWent(id); }, function(){ return !!WENT[id]; }, 'Marked as went', EVENTS[id].title) });
+    else if (past) out.push({ code:'went', label:'Add to Chronicle', icon:'scroll', check: S.loggedIn && !!WENT[id],
+      run: ctxVerb(function(){ setWent(id); }, function(){ return !!WENT[id]; }, 'Added to your chronicle', EVENTS[id].title) });
     else out.push(
       { code:'interested', label:'Interested', icon:'heart', check: st === 'interested',
         run: ctxVerb(function(){ setRSVP(id, 'interested'); }, function(){ return RSVP[id] === 'interested'; }, 'Interested', EVENTS[id].title) },
       { code:'going', label:'Going', icon:'check', check: st === 'going',
         run: ctxVerb(function(){ setRSVP(id, 'going'); }, function(){ return RSVP[id] === 'going'; }, 'Going', EVENTS[id].title) });
-    if (!past) out.push({ code:'promote', label:'Promote', icon:'promote', check: S.loggedIn && !!PROMOTED[id],
-        run: ctxVerb(function(){ doPromote(id); }, function(){ return !!PROMOTED[id]; }, 'Promoted', EVENTS[id].title) });
+    if (!past) out.push({ code:'promote', label:'Boost', icon:'promote', check: S.loggedIn && !!PROMOTED[id],
+        run: ctxVerb(function(){ doPromote(id); }, function(){ return !!PROMOTED[id]; }, 'Boosted', EVENTS[id].title) });
     out.push('-');
     /* logged out there are no horizons of yours to list yet: log in, then pick one */
     if (S.loggedIn) out.push({ code:'addto', label:'Add to horizon', icon:'addhorizon', sub: ctxHorizonItems(id) });
@@ -7263,7 +8049,48 @@ function openMoreMenu(btn, type, id, only){
   var r = btn.getBoundingClientRect();
   openCtxMenu(t, r.left, r.bottom + 2, false, only);
 }
-
+function onMyHorizon(evId){
+  return MYHORIZONS.some(function(k){ return HORIZONS[k] && HORIZONS[k].eventIds.indexOf(evId) >= 0; });
+}
+function addToMenuItems(evId){
+  var e = EVENTS[evId], past = !!(e && isPast(lastDay(e))), items = [];
+  if (past && S.loggedIn) items.push({ label:'Chronicle', icon:'scroll', check:!!WENT[evId], run:function(){ setWent(evId); } });
+  if (S.loggedIn) items.push({ label:'Horizon', icon:'addhorizon', check:onMyHorizon(evId), sub:ctxHorizonItems(evId) });
+  else items.push({ label:'Horizon', icon:'addhorizon', run:function(){ gated(addToDialog)(evId); } });
+  return items;
+}
+function eventCogItems(evId){
+  var e = EVENTS[evId];
+  if (!e) return [];
+  var past = isPast(lastDay(e)), logged = isLinkEvent(evId), seat = eventSeat(evId);
+  var items = L.phone ? [] : [{ heading:'Admin controls' }];
+  if (canFix(evId)) items.push({ label:'Edit', icon:'edit', run:function(){ editEventDialog(evId); } });
+  if (!logged && (seat === 'host' || seat === 'admin')) items.push({ label:'Visibility', icon:'eye', run:function(){ eventPrivacyDialog(evId); } });
+  if (!past && !logged && (seat === 'host' || seat === 'admin')) items.push({ label:'Permissions', icon:'key', run:function(){ eventControlsDialog(evId); } });
+  if (seat === 'host' && !past && !logged) items.push({ label:'New call out', icon:'callout', run:function(){ runCmd('new-callout', evId); } });
+  if (seat === 'host' || seat === 'link_adder') items.push('-', { label:'Delete', icon:'trash', run:function(){ deleteEventDialog(evId); } });
+  return items;
+}
+function openItemMenu(btn, id, items, opts){
+  opts = opts || {};
+  var t = { el:btn, act:null, type:'event', id:id };
+  var title = opts.title || itemName(t);
+  if (L.phone && !opts.float){
+    closeCtx(); closePopup(); closeDialogs();
+    CTXS = { target:t, stack:[{ title:title, items:items }] };
+    dialog(title, '', '', 420, 'sheet ctxsheet');
+    ctxSheetPaint();
+    return;
+  }
+  closeCtx(); closePopup();
+  var root = ctxMenuEl(items, 0), r = btn.getBoundingClientRect();
+  CTX = { root:root, sub:null, subOf:null, target:t, back:document.activeElement };
+  btn.classList.add('ctx-on');
+  ctxPlace(root, r.left, r.bottom + 2);
+  ctxFocus(root.querySelector('.ci'));
+}
+function openAddToMenu(btn, id){ openItemMenu(btn, id, addToMenuItems(id), { title:'Add to' }); }
+function openEventCog(btn, id){ openItemMenu(btn, id, eventCogItems(id), { title:'Admin controls' }); }
 /* ---- the desktop menu ---- */
 var CTX = null;                /* { root, sub, subOf, target, back, tOpen, tClose } */
 function ctxMenuEl(items, level){
@@ -7271,10 +8098,13 @@ function ctxMenuEl(items, level){
   m.className = 'ctxmenu'; m.setAttribute('role', 'menu'); m.tabIndex = -1; m._items = items; m._level = level;
   m.innerHTML = items.map(function(it, i){
     if (it === '-') return '<div class="csep" role="separator"></div>';
+    if (it.heading) return '<div class="chead" role="presentation">'+esc(it.heading)+'</div>';
     var role = it.check != null ? 'menuitemcheckbox' : 'menuitem';
-    return '<div class="ci'+(it.def?' def':'')+'" role="'+role+'" tabindex="-1" data-ci="'+i+'"' +
+    return '<div class="ci'+(it.def?' def':'')+(it.danger?' danger':'')+'" role="'+role+'" tabindex="-1" data-ci="'+i+'"' +
+      (it.icon ? ' data-icon="'+esc(it.icon)+'"' : '') +
       (it.check != null ? ' aria-checked="'+!!it.check+'"' : '') + (it.sub ? ' aria-haspopup="menu" aria-expanded="false"' : '') + '>' +
       '<span class="cck">'+(it.check ? ic('check', 14) : '')+'</span>' +
+      (it.icon ? '<span class="cico">'+ic(it.icon, 14)+'</span>' : '') +
       (it.art ? '<span class="cart2">'+hzArt(it.art, 16)+'</span>' : '') +
       '<span class="clab">'+esc(it.label)+'</span>' + (it.sub ? '<span class="carr" aria-hidden="true"></span>' : '') + '</div>';
   }).join('');
@@ -7332,6 +8162,7 @@ function ctxActivate(item){
 function ctxMenuOf(node){ return node && node.closest ? node.closest('.ctxmenu') : null; }
 document.addEventListener('click', function(ev){
   var m = ctxMenuOf(ev.target); if (!m) return;
+  if (ev.target.closest && ev.target.closest('.helptip')) return;
   ev.stopPropagation();
   var item = ev.target.closest('.ci'); if (item) ctxActivate(item);
 }, true);
@@ -7358,6 +8189,16 @@ window.addEventListener('keydown', function(ev){
   var k = ev.key, ae = document.activeElement, inSub = CTX.sub && CTX.sub.contains(ae);
   var menu = inSub ? CTX.sub : CTX.root, items = Array.prototype.slice.call(menu.querySelectorAll('.ci')), ix = items.indexOf(ae);
   ev.stopPropagation();
+  /* a "?" inside this menu closes on Escape and leaves the menu up */
+  if (k === 'Escape' && document.querySelector('.ctxmenu .helptip.on')){
+    closeHelpTips();
+    if (ae && ae.classList && ae.classList.contains('helptip-btn')) ae.blur();
+    ev.preventDefault();
+    return;
+  }
+  if ((k === 'Enter' || k === ' ') && ae && ae.classList && ae.classList.contains('helptip-btn')){
+    toggleHelpTip(ae); ev.preventDefault(); return;
+  }
   if (k === 'ArrowDown' || k === 'ArrowUp'){
     var n = items.length, next = ix < 0 ? (k === 'ArrowDown' ? 0 : n - 1) : (ix + (k === 'ArrowDown' ? 1 : n - 1)) % n;
     ctxFocus(items[next]); ev.preventDefault(); return;
@@ -7376,10 +8217,12 @@ function ctxSheetBody(items, back){
   var h = back ? '<div class="sheetrow" data-act="ctxback" role="button">'+'<span class="cico">'+ic('back', 22)+'</span><span class="clab">Back</span></div>' : '';
   return h + items.map(function(it, i){
     if (it === '-') return '<div class="csep" role="separator"></div>';
+    if (it.heading) return '<div class="chead" role="presentation">'+esc(it.heading)+'</div>';
     var lead = it.lead || (it.art ? hzIconHTML(it.art, 32) : ic(it.icon || 'horizon', 22));
     var tail = it.sub ? ic('back', 18).replace('class="ic"', 'class="ic" style="transform:scaleX(-1)"')
              : it.check != null ? '<span class="lstate hzchk'+(it.check?' on':'')+'" aria-hidden="true">'+ic('check')+'</span>' : '';
-    return '<div class="sheetrow'+(it.def?' def':'')+'" data-act="ctxrun" data-id="'+i+'" role="'+(it.check != null ? 'menuitemcheckbox' : 'menuitem')+'"' +
+    return '<div class="sheetrow'+(it.def?' def':'')+(it.danger?' danger':'')+'" data-act="ctxrun" data-id="'+i+'" role="'+(it.check != null ? 'menuitemcheckbox' : 'menuitem')+'"' +
+      (it.icon ? ' data-icon="'+esc(it.icon)+'"' : '') +
       (it.check != null ? ' aria-checked="'+!!it.check+'"' : '') + '><span class="cico">'+lead+'</span><span class="clab">'+esc(it.label)+'</span>'+tail+'</div>';
   }).join('');
 }
@@ -7556,19 +8399,48 @@ var setRSVP = gated(function(evId, mode){
 });
 var setWent = gated(function(evId){
   if (!(RESUMING && WENT[evId])) WENT[evId] = !WENT[evId];
-  if (ONLINE) HNAPI.rsvp(evId);
+  if (ONLINE){
+    var pastAdd = WENT[evId] && EVENTS[evId] && isPast(lastDay(EVENTS[evId]));
+    if (pastAdd && window.HNAPI && HNAPI.addChronicle) HNAPI.addChronicle(evId);
+    else HNAPI.rsvp(evId);
+  }
   markRead(evId); render();
-  toast(WENT[evId] ? 'Marked as went' : 'Removed', EVENTS[evId].title);
+  toast(WENT[evId] ? 'Added to your chronicle' : 'Removed from your chronicle', EVENTS[evId].title);
 });
+function acceptChronicle(evId){
+  if (!S.loggedIn || !EVENTS[evId]) return;
+  WENT[evId] = true;
+  if (!ROLE[evId] && !isMine(evId)) ROLE[evId] = 'attendee';
+  if (ONLINE && window.HNAPI && HNAPI.addChronicle) HNAPI.addChronicle(evId);
+  markRead(evId);
+  render();
+  toast('Added to your chronicle', EVENTS[evId].title);
+}
+function closeHelpTips(except){
+  document.querySelectorAll('.helptip.on').forEach(function(w){
+    if (except && (w === except || w.contains(except))) return;
+    w.classList.remove('on');
+    var b = w.querySelector('.helptip-btn');
+    if (b) b.setAttribute('aria-expanded', 'false');
+  });
+}
+function toggleHelpTip(btn){
+  var wrap = btn && btn.closest ? btn.closest('.helptip') : null;
+  if (!wrap) return;
+  var open = !wrap.classList.contains('on');
+  closeHelpTips(open ? wrap : null);
+  wrap.classList.toggle('on', open);
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
 var doPromote = gated(function(evId){
-  if (RESUMING && PROMOTED[evId]){ render(); toast('Promoted', EVENTS[evId].title); return; }
+  if (RESUMING && PROMOTED[evId]){ render(); toast('Boosted', EVENTS[evId].title); return; }
   PROMOTED[evId] = !PROMOTED[evId];
   if (PROMOTED[evId]) logAct('promoted', 'event', evId);
   if (ONLINE) HNAPI.promote(evId);
   render();
   /* nothing here knows who follows you, so the toast doesn't claim an audience */
-  toast(PROMOTED[evId] ? 'Promoted' : 'Not promoted', EVENTS[evId].title,
-    PROMOTED[evId] ? function(){ PROMOTED[evId] = false; if (ONLINE) HNAPI.promote(evId); render(); toast('Not promoted', EVENTS[evId].title); } : null);
+  toast(PROMOTED[evId] ? 'Boosted' : 'Not boosted', EVENTS[evId].title,
+    PROMOTED[evId] ? function(){ PROMOTED[evId] = false; if (ONLINE) HNAPI.promote(evId); render(); toast('Not boosted', EVENTS[evId].title); } : null);
 });
 var toggleInHorizon = gated(function(evId, hzId){
   var hz = HORIZONS[hzId], i = hz.eventIds.indexOf(evId);
@@ -7605,7 +8477,10 @@ function confirmDialog(title, text, okLabel, fn){
 var DELETED = { events:[], horizons:[] };
 function deleteEventDialog(evId){
   if (!canFix(evId)) return;
-  confirmDialog('Delete event', 'Delete “' + EVENTS[evId].title + '”? It leaves Hypernet, every horizon it is on and everyone’s lists.', 'Delete event', function(){ deleteEvent(evId); });
+  var name = EVENTS[evId].title;
+  CONFIRMFN = function(){ deleteEvent(evId); };
+  dialog('Delete', "<p class=\"cmsg\">Delete " + esc(name) + "? This can't be undone.</p>",
+    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn alert" data-act="confirmok">Delete</button>', 420);
 }
 function deleteEvent(evId){
   var title = EVENTS[evId].title;
@@ -7834,10 +8709,15 @@ document.addEventListener('click', function(ev){
   var pop = ev.target.closest('.popmenu .pi');
   if (pop && !pop.classList.contains('sepi')){ runCmd(pop.getAttribute('data-pop'), pop.getAttribute('data-arg')); return; }
   var n = ev.target.closest('[data-act]');
-  if (!n){ closePopup(); return; }
+  if (!n){
+    if (!(ev.target.closest && ev.target.closest('.helptip'))) closeHelpTips();
+    closePopup();
+    return;
+  }
   if (n.tagName === 'SELECT' || (n.tagName === 'INPUT' && n.type !== 'checkbox')) return;
   var act = n.getAttribute('data-act'), id = n.getAttribute('data-id');
   if (act !== 'newmenu' && act !== 'acctmenu') closePopup();
+  if (act !== 'helptip' && !(ev.target.closest && ev.target.closest('.helptip'))) closeHelpTips();
   if (n.tagName === 'A') ev.preventDefault();
   switch (act){
     case 'tagtoggle': tagToggle(); break;
@@ -7871,13 +8751,19 @@ document.addEventListener('click', function(ev){
     case 'clearsearch': leaveSearch(); render(); break;
     case 'tab':      setTab(id); break;
     case 'toggle-right': S.rightOpen = !L.right; if (S.rightOpen) S.lastOpened = 'right'; render(); break;
-    case 'v-interested': setRSVP(id, 'interested'); break;
-    case 'v-going':      setRSVP(id, 'going'); break;
-    case 'v-promote':    doPromote(id); break;
+    case 'v-interested': if (EVENTS[id] && isPast(lastDay(EVENTS[id]))) break; setRSVP(id, 'interested'); break;
+    case 'v-going':      if (EVENTS[id] && isPast(lastDay(EVENTS[id]))) break; setRSVP(id, 'going'); break;
+    case 'v-promote':    if (EVENTS[id] && isPast(lastDay(EVENTS[id]))) break; doPromote(id); break;
     case 'v-went':       setWent(id); break;
+    case 'helptip':      toggleHelpTip(n); break;
+    case 'chaccept':     acceptChronicle(id); break;
     case 'addto':        gated(addToDialog)(id); break;
     case 'dofile':       toggleInHorizon(id, n.getAttribute('data-hz')); break;
-    case 'share':        if (n.getAttribute('data-type') === 'horizon') shareHorizon(id); else shareLink(n.getAttribute('data-type') || 'event', id); break;
+    case 'share':        if (n.getAttribute('data-type') === 'horizon') shareHorizon(id);
+                         else if (n.getAttribute('data-type') && n.getAttribute('data-type') !== 'event') shareLink(n.getAttribute('data-type'), id);
+                         else shareLink('event', id); break;
+    case 'evaddto':      openAddToMenu(n, id); break;
+    case 'evcog':        openEventCog(n, id); break;
     case 'ctxrun':       ctxSheetRun(+id); break;
     case 'ctxback':      ctxSheetBack(); break;
     case 'customize':    editEventDialog(id); break;
@@ -8009,17 +8895,22 @@ document.addEventListener('click', function(ev){
     case 'pkdone':       pickerDone(); break;
     case 'pkfilter':     pickerFilter(id); break;
     case 'pklink':       linkOpenInPicker(); break;
+    case 'hostask':      hostAskPick('hostask', id); break;
+    case 'hostwhen':     hostAskPick('hostwhen', id); break;
+    case 'hostask-go':   hostAskGo(); break;
     case 'pknewev': {
       /* keep what you ticked, then make the new event for this horizon */
       var nhz = PK.hz, changed = PK.sel.join() !== HORIZONS[nhz].eventIds.join();
       if (changed) pickerDone(); else closeDialogs();
+      CHRONICLE_ADD = null;
       newEventDialog(nhz);
       break;
     }
     case 'lkfill':       linkAutofill(); break;
+    case 'wizfill':      wizFill(); break;
     case 'lkmanual':     DRAFT.filled = true; DRAFT.note = ''; paintLink(); focusIn('lk-h'); break;
     case 'lkadd':        linkAdd(); break;
-    case 'lkback':       pickerShow(); break;
+    case 'lkback':       if (DRAFT && DRAFT.ctx === 'new') hostAskShow(); else pickerShow(); break;
     case 'lkuse':        linkUseExisting(id); break;
     case 'unfile':       removeFromHorizon(id, n.getAttribute('data-hz')); break;
     case 'donewcallout': {
@@ -8046,14 +8937,29 @@ document.addEventListener('click', function(ev){
     case 'wiz':          wizAct(id); break;
     case 'editcallout':  newCalloutDialog({ edit:id }); break;
     case 'closecallout': closeCallout(id); break;
-    case 'newcalloutfor': gated(newCalloutDialog)({ eventId:id }); break;
+    case 'newcalloutfor': if (EVENTS[id] && isPast(lastDay(EVENTS[id]))) break; gated(newCalloutDialog)({ eventId:id }); break;
     case 'editevent':    editEventDialog(id); break;
     case 'wizstep': {
       var ws = +id, wb = ws > DRAFT.step ? wizFirstBad(DRAFT, ws) : 0;
       if (wb) wizShowMissing(wb); else { DRAFT.step = ws; DRAFT.showErr = false; paintWiz(); }
       break;
     }
-    case 'evmore':       openMoreMenu(n, 'event', id, (n.getAttribute('data-more') || 'delete').split(',')); break;
+    case 'evmore':       openEventCog(n, id); break;
+    case 'evadmins':     eventControlsDialog(id); break;
+    case 'evinvite':     inviteDialog(id, 'guest'); break;
+    case 'evadmin-invite': inviteDialog(id, 'admin'); break;
+    case 'evprivacy':    eventPrivacyDialog(id); break;
+    case 'evprivacy-save': saveEventPrivacy(id); break;
+    case 'coclaim':      claimCocreator(id); break;
+    case 'cocancel':     cancelCocreatorRequest(id); break;
+    case 'coleave':      leaveCocreator(id); break;
+    case 'evcoreview':   reviewCocreator(id, n.getAttribute('data-user'), n.getAttribute('data-key')); break;
+    case 'ivpick':       if (INVITE && INVITE.kind === 'admin') sendAdminInvite(id, n.getAttribute('data-user')); break;
+    case 'ivsend':       sendEventInvite(id, n.getAttribute('data-user')); break;
+    case 'evadmin-accept': answerAdminInvite(id, true); break;
+    case 'evadmin-decline': answerAdminInvite(id, false); break;
+    case 'evadmin-remove': removeAdmin(id, n.getAttribute('data-user')); break;
+    case 'evdemote':     demoteCocreator(id, n.getAttribute('data-user')); break;
     case 'toentry':      { var es = document.querySelector('#dscroll [data-sect="entry"]'); if (es) es.scrollIntoView({ block:'start', behavior:'smooth' }); break; }
     case 'hzmore':       openMoreMenu(n, 'horizon', id, (n.getAttribute('data-more') || 'share,delete').split(',')); break;
     case 'confirmok':    { var cf = CONFIRMFN; CONFIRMFN = null; if (cf) cf(); break; }
@@ -8105,7 +9011,13 @@ document.addEventListener('change', function(ev){
     if (k === 'vis'){ DRAFT.published = n.value === 'public';
       document.querySelectorAll('.dlg .visopt').forEach(function(l){ l.classList.toggle('on', l.querySelector('input').checked); }); czPreviews(); return; }
     DRAFT[k] = n.type === 'checkbox' ? n.checked : n.value;
-    if (k === 'online'){ var wc = $('w-c'); if (wc){ wc.disabled = n.checked; wc.placeholder = n.checked ? 'Online' : 'Stockholm'; wc.value = n.checked ? '' : DRAFT.city || ''; } }
+    if (k === 'online'){
+      var wc = $('w-c');
+      if (wc){ wc.disabled = n.checked; wc.placeholder = n.checked ? 'Online' : 'Place or maps link'; wc.value = n.checked ? '' : DRAFT.city || ''; }
+      var wh = $('where-hint'); if (wh) wh.hidden = !!n.checked;
+      if (n.checked){ DRAFT.placePin = null; DRAFT.mapReject = false; DRAFT.placeNote = ''; var wn = $('where-note'); if (wn){ wn.textContent = ''; wn.hidden = true; } }
+    }
+    if (k === 'city') placeTouch(n.value);
     if (LOOKKEYS.test(k)) DRAFT.lookTouched = true;
     /* text fields already updated the preview as you typed; repainting the form here would swallow the click that blurred them */
     refreshWizFoot();
@@ -8118,6 +9030,8 @@ document.addEventListener('change', function(ev){
   var act = n.getAttribute('data-act');
   if (act === 'calmine'){ S.calMine = n.checked; render(); }
   if (act === 'sort'){ S.sort = n.value; render(); }
+  if (act === 'evinvitepolicy'){ setInvitePolicy(n.getAttribute('data-id'), n.value); return; }
+  if (act === 'evpolicy'){ setCocreatorPolicy(n.getAttribute('data-id'), n.value); return; }
 });
 document.addEventListener('input', function(ev){
   var n = ev.target;
@@ -8126,6 +9040,7 @@ document.addEventListener('input', function(ev){
     PFILT[n.getAttribute('data-id')] = n.value; render(); return;
   }
   if (n.id === 'nc-q' && NC){ NC.q = n.value; paintNewChat(); return; }
+  if (n.id === 'iv-q' && INVITE){ INVITE.q = n.value; paintInvite(); return; }
   if (n.id === 'pf-handle' && PF) PF.handleTouched = true;
   if (n.id === 'pf-name' && PF && PF.mode === 'signup' && !PF.handleTouched){ var hi0 = $('pf-handle'); if (hi0) hi0.value = suggestHandle(n.value); }
   if (n.id === 'ptag-q'){
@@ -8147,6 +9062,7 @@ document.addEventListener('input', function(ev){
   if (!n.closest('[data-cz]') || !DRAFT || n.tagName === 'SELECT' || n.type === 'checkbox' || n.type === 'radio') return;
   var kz = n.getAttribute('data-cz');
   if (/^c[123]$/.test(kz)){ czSetColor(kz, n.value, n); return; }
+  if (kz === 'city'){ placeTouch(n.value); refreshWizFoot(); schedulePersist(); if (document.querySelector('.dlg [data-czlook]')) czPreviews(); return; }
   DRAFT[kz] = n.value;
   if (kz === 'name' && n.value.trim()){ var en = $('err-name'); if (en) en.hidden = true; n.removeAttribute('aria-invalid'); }
   if (LOOKKEYS.test(kz)) DRAFT.lookTouched = true;
@@ -8251,6 +9167,7 @@ document.addEventListener('keydown', function(ev){
   if (tagOn && (ev.key === 'Enter' || ev.key === ' ') && ae && ae.classList && ae.classList.contains('tagopt')){ ev.preventDefault(); tagPick(ae.getAttribute('data-id')); return; }
   if (!tagOn && ae && ae.id === 'w-tagbox' && (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'ArrowDown')){ ev.preventDefault(); tagSetOpen(true); return; }
   if (ev.key === 'Enter' && ae && ae.id === 'lk-u' && !ae.readOnly){ ev.preventDefault(); linkAutofill(); return; }
+  if (ev.key === 'Enter' && ae && ae.id === 'w-fill'){ ev.preventDefault(); wizFill(); return; }
   if (ev.key === 'Enter' && ae && ae.id === 'ptag-q'){
     ev.preventDefault();
     var typed = String(ae.value || '').trim(), hits = tagChoices(tagFlowState());
@@ -8265,6 +9182,13 @@ document.addEventListener('keydown', function(ev){
     return;
   }
   if (ev.key === 'Escape'){
+    if (document.querySelector('.helptip.on') || (ae && ae.classList && ae.classList.contains('helptip-btn'))){
+      closeHelpTips();
+      if (ae && ae.classList && ae.classList.contains('helptip-btn')) ae.blur();
+      ev.preventDefault();
+      ev.stopPropagation();
+      return;
+    }
     if (DLGS.length){ dismissDialog(); return; }
     if (POP){ closePopup(); return; }
     if (ae && ae.id === 'q' && S.folder.kind === 'search'){ leaveSearch(); render(); ae.blur(); return; }
@@ -8739,5 +9663,6 @@ window.addEventListener('resize', function(){
   setTimeout(start, 2500);
 })();
 </script>
+<script src="review-markers.js" defer></script>
 </body>
 </html>

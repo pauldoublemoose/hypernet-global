@@ -2752,7 +2752,7 @@ async function overflowEverywhere(p, label){
     ok(/Share link/.test(shared.menu) && /Boost/.test(shared.menu) && shared.copied, kind + ': Share copies the link and lists Boost ' + JSON.stringify(shared));
     await c.keyboard.press('Escape'); await c.waitForTimeout(150);
     await c.evaluate(() => openItem('event', 'evt-deep-listening')); await c.waitForTimeout(350);
-    const guest0 = await ev(c, () => ({ admins:document.querySelectorAll('[data-act="evadmins"]').length, invite:document.querySelectorAll('[data-act="evinvite"]').length, cog:document.querySelectorAll('[data-act="evcog"]').length, add:document.querySelectorAll('[data-act="evaddto"]').length }));
+    const guest0 = await ev(c, (sel) => ({ admins:document.querySelectorAll(sel + '[data-act="evadmins"]').length, invite:document.querySelectorAll(sel + '[data-act="evinvite"]').length, cog:document.querySelectorAll(sel + '[data-act="evcog"]').length, add:document.querySelectorAll(sel + '[data-act="evaddto"]').length }), barSel);
     ok(guest0.admins === 0 && guest0.invite === 0 && guest0.cog === 0 && guest0.add === 1, kind + ': a non-admin who has not RSVP’d has Add to and no cog or Invite ' + JSON.stringify(guest0));
     await c.click(barSel + '[data-act="v-going"]'); await c.waitForTimeout(300);
     const guest1 = await ev(c, (sel) => ({ admins:document.querySelectorAll(sel + '[data-act="evadmins"]').length, invite:document.querySelectorAll(sel + '[data-act="evinvite"]').length }), barSel);

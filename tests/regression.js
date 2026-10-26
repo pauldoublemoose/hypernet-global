@@ -204,6 +204,9 @@ async function join(p, name, handle){
 /* the New event wizard filled the way a host has to (2026-10-04): Basics, Next, About; then Next, Publish unless told not to */
 async function newEvent(c, o){
   await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
+  if (await c.$('.dlg [data-act="hostask"][data-id="mine"]')){
+    await c.click('.dlg [data-act="hostask"][data-id="mine"]'); await c.waitForTimeout(200);
+  }
   await c.fill('#w-t', o.title); await c.fill('#w-d', o.date);
   if (o.online) await c.check('#w-on'); else await c.fill('#w-c', o.city || 'Brno');
   if (o.privacy) await c.selectOption('#w-p', o.privacy);
@@ -1398,6 +1401,7 @@ async function overflowEverywhere(p, label){
     await toHz();
     await c.click('#dscroll [data-act="addevents"]'); await c.waitForTimeout(300);
     await c.click('.dlg [data-act="pknewev"]'); await c.waitForTimeout(300);
+    await c.click('.dlg [data-act="hostask"][data-id="mine"]'); await c.waitForTimeout(200);
     ok(await ev(c, h => document.querySelector('.dlg .dtitle').textContent === 'New event for ' + HORIZONS[h].name, hz), kind + ': New event from Add events says which horizon it is for');
     await c.fill('#w-t', 'Ridge sauna'); await c.fill('#w-d', '2030-11-02'); await c.fill('#w-c', 'Brno'); await c.waitForTimeout(100);
     await c.click('.dlg [data-id="next"]'); await c.waitForTimeout(150);
@@ -1410,12 +1414,85 @@ async function overflowEverywhere(p, label){
     ok(!c.errors.length, kind + ': no console errors (From a link) ' + c.errors.join(' '));
   }
 
+  /* New event asks who the host is before any details. I'm hosting continues the wizard.
+     Someone else opens the link form: you are added_by, not the host. */
+  for (const kind of ['desk', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '', true);
+    await join(c, 'Host Ask', 'hostask' + kind);
+    const ask = () => ev(c, () => {
+      const opt = document.querySelector('.hostask-opt'), b = document.querySelector('.hostask-opt b'), s = document.querySelector('.hostask-opt small');
+      const hex = el => '#' + getComputedStyle(el).color.match(/\d+/g).slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join('');
+      const ground = el => '#' + getComputedStyle(el).backgroundColor.match(/\d+/g).slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join('');
+      const themes = ['y2fresh', 'win2k'].map(t => {
+        document.documentElement.setAttribute('data-theme', t);
+        return { t:t, title:contrast(hex(b), ground(opt)), note:contrast(hex(s), ground(opt)) };
+      });
+      document.documentElement.setAttribute('data-theme', 'y2fresh');
+      return { title:(document.querySelector('.dlg .dtitle') || {}).textContent || '', q:(document.querySelector('.hostask-q') || {}).textContent || '',
+               mine:!!document.querySelector('[data-act="hostask"][data-id="mine"]'), other:!!document.querySelector('[data-act="hostask"][data-id="other"]'),
+               fields:!!document.querySelector('#w-t, #lk-u'), themes:themes };
+    });
+    await c.evaluate(() => newEventDialog()); await c.waitForTimeout(250);
+    const q0 = await ask();
+    ok(q0.title === 'New event' && q0.q === 'Are you the host?' && q0.mine && q0.other && !q0.fields && q0.themes.every(t => t.title >= 4.5 && t.note >= 4.5),
+       kind + ': New event asks who hosts it before any details, readable in both themes ' + JSON.stringify(q0));
+    ok((await overflow(c)) <= 0, kind + ': host question, no horizontal overflow');
+    await c.click('.dlg [data-act="hostask"][data-id="other"]'); await c.waitForTimeout(250);
+    ok(await ev(c, () => document.querySelector('.dlg .dtitle').textContent === 'Add an event from a link' && document.activeElement.id === 'lk-u' && !document.querySelector('.wizsteps')),
+       kind + ': Someone else opens the link form, not the wizard');
+    await c.click('.dlg [data-act="lkback"]'); await c.waitForTimeout(200);
+    ok(await ev(c, () => !!document.querySelector('[data-act="hostask"][data-id="mine"]') && !document.querySelector('#lk-u')),
+       kind + ': Back from the link returns to the question');
+    await c.click('.dlg [data-act="hostask"][data-id="mine"]'); await c.waitForTimeout(250);
+    ok(await ev(c, () => !!document.querySelector('#w-t') && !!document.querySelector('.dlg .wizsteps') && !document.querySelector('#lk-u') && document.querySelector('.dlg .dtitle').textContent === 'New event'),
+       kind + ': I\'m hosting continues to the wizard');
+    await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+    await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
+    await c.click('.dlg [data-act="hostask"][data-id="other"]'); await c.waitForTimeout(200);
+    await c.fill('#lk-u', 'https://tickets.example/fest'); await c.press('#lk-u', 'Enter'); await c.waitForTimeout(200);
+    const off = await ev(c, () => ({ filled:!!DRAFT && DRAFT.filled, note:(DRAFT && DRAFT.note) || '' }));
+    ok(off.filled && /fill in the details yourself/.test(off.note), kind + ': offline, Autofill opens the fields to fill in ' + JSON.stringify(off));
+    await c.fill('#lk-h', 'City Festival'); await c.fill('#w-t', 'Night market ' + kind); await c.fill('#w-d', '2026-11-20'); await c.fill('#w-c', 'Brno'); await c.waitForTimeout(100);
+    await c.click('.dlg [data-act="lkadd"]'); await c.waitForTimeout(350);
+    const logged = await ev(c, () => {
+      const id = ADDEDBYME[ADDEDBYME.length - 1], e = EVENTS[id];
+      return { kind:e && e.kind, host:e && e.hostName, mine:MYEVENTS.indexOf(id) >= 0, privacy:e && e.privacy, added:ADDEDBYME.indexOf(id) >= 0,
+               page:S.stack[0] && S.stack[0].id === id, credit:[...document.querySelectorAll('.srcline')].map(x => x.textContent).join(' ') };
+    });
+    ok(logged.kind === 'link' && logged.host === 'City Festival' && !logged.mine && logged.privacy === 'everyone' && logged.added && logged.page && /Added from tickets\.example by you/.test(logged.credit),
+       kind + ': someone else is a link event you added, and you do not host it ' + JSON.stringify(logged));
+    if (kind === 'desk'){
+      const hz = await ev(c, () => {
+        var hid = 'horizon-ask';
+        HORIZONS[hid] = { id:hid, name:'Ask list', description:'', isPersonalDefault:false, isPublished:false, ownerName:S.me.name, ownerId:'self', ownerAcct:S.acct, eventIds:[] };
+        MYHORIZONS.push(hid);
+        return hid;
+      });
+      await c.evaluate(h => { goFolder({ kind:'explore', id:'horizons' }); S.stack = [{ type:'horizon', id:h }]; render(); }, hz); await c.waitForTimeout(350);
+      await c.click('#dscroll [data-act="addevents"]'); await c.waitForTimeout(300);
+      ok(await ev(c, () => !!document.querySelector('.dlg [data-act="pklink"]')), 'desk: From a link is still in Add events');
+      await c.click('.dlg [data-act="pknewev"]'); await c.waitForTimeout(250);
+      ok(await ev(c, h => document.querySelector('.dlg .dtitle').textContent === 'New event for ' + HORIZONS[h].name && !!document.querySelector('[data-act="hostask"][data-id="other"]'), hz),
+         'desk: New event for a horizon asks the same question');
+      await c.click('.dlg [data-act="hostask"][data-id="other"]'); await c.waitForTimeout(200);
+      await c.fill('#lk-u', 'https://festival.example/ridge'); await c.press('#lk-u', 'Enter'); await c.waitForTimeout(200);
+      await c.fill('#lk-h', 'Ridge Promoters'); await c.fill('#w-t', 'Ridge festival'); await c.fill('#w-d', '2026-12-01'); await c.fill('#w-c', 'Brno'); await c.waitForTimeout(100);
+      await c.click('.dlg [data-act="lkadd"]'); await c.waitForTimeout(350);
+      ok(await ev(c, h => { const id = ADDEDBYME[ADDEDBYME.length - 1]; return HORIZONS[h].eventIds.indexOf(id) >= 0 && EVENTS[id].kind === 'link' && MYEVENTS.indexOf(id) < 0 && EVENTS[id].hostName === 'Ridge Promoters'; }, hz),
+         'desk: a horizon\'s someone-else event is on the horizon, logged by you, hosted by them');
+    }
+    ok(!c.errors.length, kind + ': no console errors (host ask) ' + c.errors.join(' '));
+    await c.context().close();
+  }
+
   /* ---------------- 2026-10-04: New event goes on only when a step has what it needs ---------------- */
   for (const kind of ['desk', 'tab', 'phone']){
     const c = await ctx(kind);
     await open(c, '', true);
     await join(c, 'Wiz Host', 'wizhost' + kind);
     await c.evaluate(() => newEventDialog()); await c.waitForTimeout(250);
+    await c.click('.dlg [data-act="hostask"][data-id="mine"]'); await c.waitForTimeout(200);
     const foot = () => ev(c, () => ({ step:DRAFT.step, btns:[...document.querySelectorAll('.dlg .dfoot .btn')].map(b => b.textContent.trim() + (b.getAttribute('aria-disabled') === 'true' ? ':off' : '')),
       need:document.getElementById('wiz-need').textContent, errs:[...document.querySelectorAll('.dlg .ferr[data-err]:not([hidden])')].map(x => x.getAttribute('data-err')),
       invalid:[...document.querySelectorAll('.dlg [aria-invalid="true"]')].map(x => x.id), tabs:[...document.querySelectorAll('.dlg .wizsteps .ws')].map(t => t.getAttribute('aria-disabled') === 'true' ? 'off' : 'on'),
@@ -2442,6 +2519,7 @@ async function overflowEverywhere(p, label){
     await open(c, '', true);
     await join(c, 'Wiz Phone', 'wizphone');
     await c.evaluate(() => newEventDialog()); await c.waitForTimeout(300);
+    await c.click('.dlg [data-act="hostask"][data-id="mine"]'); await c.waitForTimeout(200);
     const fit = () => ev(c, () => { const b = [...document.querySelectorAll('.dlg .dfoot .btn')], t = [...document.querySelectorAll('.dlg .wizsteps .ws')];
       return { prim:b.filter(x => x.classList.contains('primary')).map(x => x.textContent.trim()).join(), rows:new Set(b.map(x => Math.round(x.getBoundingClientRect().top))).size,
                fit:b.concat(t).every(x => x.scrollWidth <= x.clientWidth + 1), inside:b.every(x => x.getBoundingClientRect().right <= innerWidth), tabs:t.map(x => x.textContent.trim()).join(), dis:b.filter(x => x.getAttribute('aria-disabled') === 'true').map(x => getComputedStyle(x).textShadow).join() }; });

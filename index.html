@@ -1502,6 +1502,19 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
   display:block; margin-top:6px; padding:8px; border:1px solid var(--rule); color:var(--ink); text-decoration:none;
 }
 .msg .evcard:focus{ outline:1px solid var(--sel); outline-offset:2px; }
+/* HOST ASK */
+.hostask-q{ margin:0 0 4px; font-weight:bold; font-size:14px; line-height:20px; color:var(--ink); }
+.hostask-note{ margin:0 0 12px; color:var(--dim); }
+.hostask-choices{ display:flex; flex-direction:column; gap:8px; }
+.hostask-opt{
+  display:flex; flex-direction:column; align-items:flex-start; gap:2px;
+  width:100%; min-height:44px; padding:10px 12px; text-align:left;
+  background:var(--white); color:var(--ink); border:1px solid var(--rule);
+  box-shadow:var(--out); font:inherit; cursor:pointer;
+}
+.hostask-opt b{ font-size:14px; line-height:20px; color:var(--ink); }
+.hostask-opt small{ display:block; font-size:12px; line-height:16px; font-weight:normal; color:var(--dim); }
+.hostask-opt:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
 </style>
 </head>
 <body>
@@ -6210,7 +6223,7 @@ function linkFormHTML(d){
       'The event’s own page: a ticket shop, the organiser’s site. Autofill fills in the rest.'))+'</p></div>';
   var have = d.existing && EVENTS[d.existing];
   if (have) h += '<div class="lkhave"><div class="lkhavet">Already on Hypernet</div>' + eventCRow(have, false) +
-    '<button type="button" class="btn primary" data-act="lkuse" data-id="'+have.id+'">'+(PK && PK.sel.indexOf(have.id) >= 0 ? 'Back to the list' : 'Add this one')+'</button></div>';
+    '<button type="button" class="btn primary" data-act="lkuse" data-id="'+have.id+'">'+(d.ctx !== 'new' && PK && PK.sel.indexOf(have.id) >= 0 ? 'Back to the list' : (d.ctx === 'new' ? 'Open it' : 'Add this one'))+'</button></div>';
   if (!d.filled && !edit){
     if (!have) h += '<p><button type="button" class="linkbtn" data-act="lkmanual">Or fill it in yourself</button></p>';
     return h;
@@ -6234,7 +6247,9 @@ function paintLink(){
      it now (Autofill adds https://), not as it was typed */
   var lu = $('lk-u'); if (lu) lu.value = DRAFT.url;
   b.innerHTML = linkFormHTML(DRAFT);
-  dl.querySelector('.dfoot').innerHTML = linkFootHTML(DRAFT);
+  var foot = dl.querySelector('.dfoot');
+  if (!foot){ foot = document.createElement('div'); foot.className = 'dfoot'; dl.appendChild(foot); }
+  foot.innerHTML = linkFootHTML(DRAFT);
   b.scrollTop = top; placeDlg(dl);
 }
 /* as you type: the footer and the messages follow, the field you are in is left alone */
@@ -6292,7 +6307,21 @@ function linkAutofill(){
   });
 }
 function linkUseExisting(id){
-  if (!PK || !EVENTS[id]) return;
+  if (!EVENTS[id]) return;
+  /* New event has no picker: open the event that this link already is, and file it on the horizon you started from */
+  if (!PK || (DRAFT && DRAFT.ctx === 'new')){
+    var into = DRAFT && DRAFT.into && HORIZONS[DRAFT.into] && hzOwnedByMe(DRAFT.into) ? DRAFT.into : null;
+    if (into && HORIZONS[into].eventIds.indexOf(id) < 0){
+      HORIZONS[into].eventIds.push(id);
+      logAct('added_to_horizon', 'horizon', into, { eventIds:[id] });
+      if (ONLINE) HNAPI.horizonEvents(into);
+    }
+    DRAFT = null; closeDialogs();
+    if (L.phone) S.tab = 'you';
+    S.stack = [{ type:'event', id:id }];
+    render();
+    return;
+  }
   if (PK.sel.indexOf(id) < 0) PK.sel.push(id);
   PK.fresh = [id].concat(PK.fresh.filter(function(x){ return x !== id; }));
   PK.q = ''; PK.f = isPast(lastDay(EVENTS[id])) ? 'past' : 'upcoming';
@@ -6317,8 +6346,23 @@ function linkAdd(){
   ADDEDBYME.push(id); READ[id] = true; PROMOCOUNT[id] = 0;
   if (ONLINE) HNAPI.createLinkEvent(id, d.image);
   schedulePersist();
-  PK.sel.push(id); PK.fresh.unshift(id); PK.q = ''; PK.f = isPast(lastDay(EVENTS[id])) ? 'past' : 'upcoming';
-  pickerShow();
+  /* From a horizon's Add events, the new event goes back to the list, ticked. From New event, it is logged and opened. */
+  if (d.ctx !== 'new' && PK && HORIZONS[PK.hz]){
+    PK.sel.push(id); PK.fresh.unshift(id); PK.q = ''; PK.f = isPast(lastDay(EVENTS[id])) ? 'past' : 'upcoming';
+    pickerShow();
+    toast('Added from ' + linkSite(url), EVENTS[id].title);
+    return;
+  }
+  var into = d.into && HORIZONS[d.into] && hzOwnedByMe(d.into) ? d.into : null;
+  if (into && HORIZONS[into].eventIds.indexOf(id) < 0){
+    HORIZONS[into].eventIds.push(id);
+    logAct('added_to_horizon', 'horizon', into, { eventIds:[id] });
+    if (ONLINE) HNAPI.horizonEvents(into);
+  }
+  DRAFT = null; closeDialogs();
+  if (L.phone) S.tab = 'you';
+  S.stack = [{ type:'event', id:id }];
+  render();
   toast('Added from ' + linkSite(url), EVENTS[id].title);
 }
 /* Edit on an event you added from a link: the same form, its link kept */
@@ -7069,18 +7113,71 @@ function wizDraftOpen(){
   var dl = DLGS[DLGS.length-1];
   return !!(dl && dl.querySelector('.wizsteps') && DRAFT && !DRAFT.editing && FORMDRAFTS.event === DRAFT && eventDraftDirty(DRAFT));
 }
-var newEventDialog = gated(function(into){
+/* before any details: are you the host, or are you logging someone else's event? */
+var HOSTINTO = null;
+function hostAskHTML(){
+  return '<div class="hostask"><p class="hostask-q" id="host-ask-q">Are you the host?</p>' +
+    '<p class="hostask-note">You run this event, or you are logging one that someone else runs.</p>' +
+    '<div class="hostask-choices" role="group" aria-labelledby="host-ask-q">' +
+      '<button type="button" class="hostask-opt" data-act="hostask" data-id="mine"><b>I\'m hosting</b><small>You run this event.</small></button>' +
+      '<button type="button" class="hostask-opt" data-act="hostask" data-id="other"><b>Someone else is hosting</b><small>Log an event run by someone not on Hypernet, such as a commercial concert or festival.</small></button>' +
+    '</div></div>';
+}
+function hostAskTitle(){
+  return HOSTINTO && HORIZONS[HOSTINTO] ? 'New event for ' + HORIZONS[HOSTINTO].name : 'New event';
+}
+function hostAskShow(){
+  var dl = DLGS[DLGS.length-1]; if (!dl) return;
+  DRAFT = null;
+  dl.querySelector('.dtitle').textContent = hostAskTitle();
+  dl.querySelector('.dbody').innerHTML = hostAskHTML();
+  var foot = dl.querySelector('.dfoot'); if (foot) foot.remove();
+  placeDlg(dl);
+}
+/* the wizard, as it was: a kept draft resumes, and Add past event skips the question (the role was already chosen) */
+function openHostedWizard(into){
   DRAFT = FORMDRAFTS.event || blankEventDraft();
-  /* opened from a horizon's Add events: once published, it goes on that horizon */
-  DRAFT.into = into && HORIZONS[into] ? into : null;
-  /* a draft kept from before looks were picked colours gets its picks (or the plain look) */
+  DRAFT.into = into && HORIZONS[into] ? into : (DRAFT.into && HORIZONS[DRAFT.into] ? DRAFT.into : null);
   ['mood','pal','surface','type','headline','motion','shape','density','pattern','backdrop','atmosphere','parallax','orn'].forEach(function(k){ delete DRAFT[k]; });
   normLookDraft(DRAFT);
   if (DRAFT.online == null) DRAFT.online = false;
   DRAFT.showErr = false;
   FORMDRAFTS.event = DRAFT;
-  dialog(DRAFT.into ? 'New event for ' + HORIZONS[DRAFT.into].name : 'New event', wizBodyHTML(), wizFootHTML(), 900, 'wizdlg');
+  var title = DRAFT.into ? 'New event for ' + HORIZONS[DRAFT.into].name : 'New event';
+  var dl = DLGS[DLGS.length-1];
+  if (dl && dl.querySelector('.hostask')){
+    dl.classList.add('wizdlg');
+    var w = Math.min(900, window.innerWidth - 24);
+    dl.style.width = w + 'px';
+    dl.style.left = Math.max(12, (window.innerWidth - w) / 2) + 'px';
+    dl.querySelector('.dtitle').textContent = title;
+    dl.querySelector('.dbody').innerHTML = wizBodyHTML();
+    var foot = dl.querySelector('.dfoot');
+    if (!foot){ foot = document.createElement('div'); foot.className = 'dfoot'; dl.appendChild(foot); }
+    foot.innerHTML = wizFootHTML();
+    placeDlg(dl);
+    if (DRAFT.step === 1) focusIn('w-t');
+    return;
+  }
+  dialog(title, wizBodyHTML(), wizFootHTML(), 900, 'wizdlg');
   if (DRAFT.step === 1) focusIn('w-t');
+}
+/* Someone else is hosting: Michal's link form (paste a page, Autofill, the organiser's name). You are added_by, not host_id. */
+function startOtherHost(){
+  FORMDRAFTS.event = null;
+  DRAFT = blankLinkDraft();
+  DRAFT.ctx = 'new';
+  DRAFT.into = HOSTINTO && HORIZONS[HOSTINTO] ? HOSTINTO : null;
+  var dl = DLGS[DLGS.length-1]; if (!dl) return;
+  dl.querySelector('.dtitle').textContent = 'Add an event from a link';
+  paintLink();
+  focusIn('lk-u');
+}
+var newEventDialog = gated(function(into){
+  var kept = FORMDRAFTS.event;
+  if (CHRONICLE_ADD || (kept && eventDraftDirty(kept))){ openHostedWizard(into); return; }
+  HOSTINTO = into && HORIZONS[into] ? into : null;
+  dialog(hostAskTitle(), hostAskHTML(), '', 480, 'hostask');
 });
 function adminInviteBanner(evId){
   if (!S.loggedIn || adminStatus(evId, myActor()) !== 'pending') return '';
@@ -8255,6 +8352,7 @@ document.addEventListener('click', function(ev){
     case 'pkdone':       pickerDone(); break;
     case 'pkfilter':     pickerFilter(id); break;
     case 'pklink':       linkOpenInPicker(); break;
+    case 'hostask':      if (id === 'other') startOtherHost(); else openHostedWizard(HOSTINTO); break;
     case 'pknewev': {
       /* keep what you ticked, then make the new event for this horizon */
       var nhz = PK.hz, changed = PK.sel.join() !== HORIZONS[nhz].eventIds.join();
@@ -8265,7 +8363,7 @@ document.addEventListener('click', function(ev){
     case 'lkfill':       linkAutofill(); break;
     case 'lkmanual':     DRAFT.filled = true; DRAFT.note = ''; paintLink(); focusIn('lk-h'); break;
     case 'lkadd':        linkAdd(); break;
-    case 'lkback':       pickerShow(); break;
+    case 'lkback':       if (DRAFT && DRAFT.ctx === 'new') hostAskShow(); else pickerShow(); break;
     case 'lkuse':        linkUseExisting(id); break;
     case 'unfile':       removeFromHorizon(id, n.getAttribute('data-hz')); break;
     case 'donewcallout': {

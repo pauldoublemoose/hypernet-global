@@ -202,8 +202,18 @@ async function join(p, name, handle){
   await p.fill('#pf-name', name); await p.fill('#pf-handle', handle); await p.click('#pfsave'); await p.waitForTimeout(300);
 }
 /* the New event wizard filled the way a host has to (2026-10-04): Basics, Next, About; then Next, Publish unless told not to */
+async function answerHost(c, who, when){
+  who = who || 'mine'; when = when || 'upcoming';
+  if (!(await c.$('.dlg [data-act="hostask"][data-id="' + who + '"]'))) return false;
+  await c.click('.dlg [data-act="hostask"][data-id="' + who + '"]');
+  await c.click('.dlg [data-act="hostwhen"][data-id="' + when + '"]');
+  await c.click('.dlg [data-act="hostask-go"]');
+  await c.waitForTimeout(220);
+  return true;
+}
 async function newEvent(c, o){
   await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
+  await answerHost(c, 'mine', 'upcoming');
   await c.fill('#w-t', o.title); await c.fill('#w-d', o.date);
   if (o.online) await c.check('#w-on'); else await c.fill('#w-c', o.city || 'Brno');
   if (o.privacy) await c.selectOption('#w-p', o.privacy);
@@ -342,8 +352,7 @@ async function overflowEverywhere(p, label){
   ok(await ev(r, () => document.querySelector('#toasts .toast').getBoundingClientRect().bottom <= document.getElementById('evbar').getBoundingClientRect().top), 'R2: toast sits above the phone verb bar');
   /* Share in the ⋯ sheet copies the link (no clipboard API on this origin: the hidden-field fallback) */
   await r.evaluate(() => { window.__exec = []; Object.defineProperty(navigator, 'clipboard', { value:undefined, configurable:true }); document.execCommand = function(cmd){ window.__exec.push([cmd, (document.activeElement || {}).value]); return true; }; });
-  await r.tap('#evbar [data-act="evmore"]'); await r.waitForTimeout(200);
-  await r.tap('.ctxsheet .sheetrow:has-text("Share")'); await r.waitForTimeout(250);
+  await r.tap('#evbar [data-act="share"]'); await r.waitForTimeout(250);
   ok(await ev(r, () => window.__exec.length === 1 && window.__exec[0][0] === 'copy' && window.__exec[0][1] === linkOf('event', 'evt-fill-3') && /Link copied/.test(document.getElementById('toasts').textContent) && !DLGS.length),
      'R2: phone ⋯ → Share copies the event\'s link, without a clipboard API (fallback)');
   /* a toast with a button (Undo), then a late tap where its button was */
@@ -434,12 +443,12 @@ async function overflowEverywhere(p, label){
     const sigs = {};
     for (const sl of ['burning-man-2027', 'ridge-dawn-stretch', 'led-forest-walk', 'night-kitchen-line', 'zurich-decompression-2026']){
       await c.goto(URL + '#/event/' + sl); await c.waitForTimeout(400);
-      for (const act of ['v-interested', 'v-going', 'v-promote']){
+      for (const act of ['v-interested', 'v-going', 'share']){
         const sig = await ev(c, ([a, K, ph]) => { const b = document.querySelector((ph ? '#evbar' : '#dscroll .actbar') + ' [data-act="'+a+'"]'); if (!b) return 'missing'; const st = getComputedStyle(b); return K.map(k => st[k]).join('|'); }, [act, KEYS, kind === 'phone']);
         (sigs[act] = sigs[act] || new Set()).add(sig);
       }
     }
-    ok(Object.keys(sigs).every(a => sigs[a].size === 1 && !sigs[a].has('missing')), kind + ': Interested / Going / Promote have identical computed styles on 5 event pages');
+    ok(Object.keys(sigs).every(a => sigs[a].size === 1 && !sigs[a].has('missing')), kind + ': Interested, Going and Share have identical computed styles on 5 event pages');
     ok(new Set(Object.keys(sigs).map(a => [...sigs[a]][0])).size === 1, kind + ': and the three verbs share one style');
     ok(!c.errors.length, kind + ': no console errors (controls)');
   }
@@ -956,8 +965,11 @@ async function overflowEverywhere(p, label){
       const showPage = () => ev(c, id => { goFolder({ kind:'hosting' }); if (L.phone) S.tab = 'you'; S.stack = [{ type:'event', id }]; render(); }, own);
       const showList = () => ev(c, () => { goFolder({ kind:'hosting' }); if (L.phone) S.tab = 'you'; S.stack = []; render(); });
       await showPage(); await c.waitForTimeout(300);
-      /* 2026-10-05: the look is the Look section of the event's one Edit */
-      if (kind === 'desk') await c.click('#dscroll .actbar [data-act="editevent"]'); else await c.evaluate(id => editEventDialog(id), own);
+      /* 2026-10-05: the look is the Look section of the event's one Edit. Edit is in the cog. */
+      if (kind === 'desk'){
+        await c.click('#dscroll .actbar [data-act="evcog"]'); await c.waitForTimeout(200);
+        await c.click('.ctxmenu .ci:has-text("Edit")');
+      } else await c.evaluate(id => editEventDialog(id), own);
       await c.waitForTimeout(300);
       const lookCtl = () => ev(c, () => { const z = document.querySelector('.dlg [data-czlook]'); return { color:z.querySelectorAll('input[type=color]').length, file:z.querySelectorAll('input[type=file]').length,
         selects:z.querySelectorAll('select').length, boxes:z.querySelectorAll('input[type=checkbox]').length, adds:[...z.querySelectorAll('.czadd')].map(b => b.textContent.trim()) }; });
@@ -1390,14 +1402,17 @@ async function overflowEverywhere(p, label){
        kind + ': it is on the horizon, public, and not in your Hosting');
     await c.evaluate(i => { S.stack = [{ type:'event', id:i }]; render(); }, id); await c.waitForTimeout(350);
     const pg = await ev(c, () => { const w = L.phone ? document.body : document.getElementById('win');
-      return { credit:[...w.querySelectorAll('.srcline')].map(x => x.textContent).join(' '), host:!!w.querySelector('.pill.host'), edit:!!document.querySelector('[data-act="editevent"]'),
-               callout:!!document.querySelector('[data-act="newcalloutfor"]'), link:[...w.querySelectorAll('.chips a')].some(a => /billetto\.se/.test(a.href)) }; });
+      const labels = eventCogItems(S.stack[0].id).filter(i => i && i.label).map(i => i.label);
+      return { credit:[...w.querySelectorAll('.srcline')].map(x => x.textContent).join(' '), host:!!w.querySelector('.pill.host'),
+               edit:labels.indexOf('Edit') >= 0 && !!document.querySelector('[data-act="evcog"]'),
+               callout:labels.indexOf('New call out') >= 0, link:[...w.querySelectorAll('.chips a')].some(a => /billetto\.se/.test(a.href)) }; });
     ok(/Added from billetto\.se by you/.test(pg.credit) && pg.link, kind + ': its page credits who added it and links to its page ' + JSON.stringify(pg));
     ok(pg.edit && !pg.host && !pg.callout, kind + ': whoever added it may edit it, without the host\'s verbs');
     /* New event from Add events: once published it is on the horizon */
     await toHz();
     await c.click('#dscroll [data-act="addevents"]'); await c.waitForTimeout(300);
     await c.click('.dlg [data-act="pknewev"]'); await c.waitForTimeout(300);
+    await answerHost(c, 'mine', 'upcoming');
     ok(await ev(c, h => document.querySelector('.dlg .dtitle').textContent === 'New event for ' + HORIZONS[h].name, hz), kind + ': New event from Add events says which horizon it is for');
     await c.fill('#w-t', 'Ridge sauna'); await c.fill('#w-d', '2030-11-02'); await c.fill('#w-c', 'Brno'); await c.waitForTimeout(100);
     await c.click('.dlg [data-id="next"]'); await c.waitForTimeout(150);
@@ -1410,12 +1425,403 @@ async function overflowEverywhere(p, label){
     ok(!c.errors.length, kind + ': no console errors (From a link) ' + c.errors.join(' '));
   }
 
+  /* New event asks who the host is before any details. I'm hosting continues the wizard.
+     Someone else opens the link form: you are added_by, not the host. */
+  for (const kind of ['desk', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '', true);
+    await join(c, 'Host Ask', 'hostask' + kind);
+    const ask = () => ev(c, () => {
+      const opt = document.querySelector('.hostask-opt'), b = document.querySelector('.hostask-opt b'), s = document.querySelector('.hostask-opt small');
+      const hex = el => '#' + getComputedStyle(el).color.match(/\d+/g).slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join('');
+      const ground = el => '#' + getComputedStyle(el).backgroundColor.match(/\d+/g).slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join('');
+      const themes = ['y2fresh', 'win2k'].map(t => {
+        document.documentElement.setAttribute('data-theme', t);
+        return { t:t, title:contrast(hex(b), ground(opt)), note:contrast(hex(s), ground(opt)) };
+      });
+      document.documentElement.setAttribute('data-theme', 'y2fresh');
+      return { title:(document.querySelector('.dlg .dtitle') || {}).textContent || '', q:(document.querySelector('.hostask-q') || {}).textContent || '',
+               when:(document.querySelector('#host-when-q') || {}).textContent || '',
+               mine:!!document.querySelector('[data-act="hostask"][data-id="mine"]'), other:!!document.querySelector('[data-act="hostask"][data-id="other"]'),
+               upcoming:!!document.querySelector('[data-act="hostwhen"][data-id="upcoming"]'), past:!!document.querySelector('[data-act="hostwhen"][data-id="past"]'),
+               go:(document.querySelector('[data-act="hostask-go"]') || {}).getAttribute && document.querySelector('[data-act="hostask-go"]').getAttribute('aria-disabled'),
+               fields:!!document.querySelector('#w-t, #lk-u'), themes:themes };
+    });
+    await c.evaluate(() => newEventDialog()); await c.waitForTimeout(250);
+    const q0 = await ask();
+    ok(q0.title === 'New event' && q0.q === 'Are you the host?' && q0.when === 'Is this a new event or did it already happen?' && q0.mine && q0.other && q0.upcoming && q0.past && q0.go === 'true' && !q0.fields && q0.themes.every(t => t.title >= 4.5 && t.note >= 4.5),
+       kind + ': New event asks who hosts it and whether it happened, readable in both themes ' + JSON.stringify(q0));
+    ok((await overflow(c)) <= 0, kind + ': host question, no horizontal overflow');
+    await c.click('.dlg [data-act="hostask"][data-id="other"]'); await c.waitForTimeout(150);
+    ok(await ev(c, () => !document.querySelector('#lk-u') && document.querySelector('[data-act="hostask-go"]').getAttribute('aria-disabled') === 'true'),
+       kind + ': picking a host does not open the form until both answers are in');
+    await answerHost(c, 'other', 'upcoming');
+    ok(await ev(c, () => document.querySelector('.dlg .dtitle').textContent === 'Add an event from a link' && document.activeElement.id === 'lk-u' && !document.querySelector('.wizsteps')),
+       kind + ': Someone else, upcoming, opens the link form, not the wizard');
+    await c.click('.dlg [data-act="lkback"]'); await c.waitForTimeout(200);
+    ok(await ev(c, () => !!document.querySelector('[data-act="hostask"][data-id="mine"]') && !!document.querySelector('#host-when-q') && !document.querySelector('#lk-u')),
+       kind + ': Back from the link returns to both questions');
+    await answerHost(c, 'mine', 'upcoming');
+    ok(await ev(c, () => !!document.querySelector('#w-t') && !!document.querySelector('.dlg .wizsteps') && !document.querySelector('#lk-u') && document.querySelector('.dlg .dtitle').textContent === 'New event'),
+       kind + ': I\'m hosting, upcoming, continues to the wizard');
+    await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+    await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
+    await answerHost(c, 'other', 'upcoming');
+    await c.fill('#lk-u', 'https://tickets.example/fest'); await c.press('#lk-u', 'Enter'); await c.waitForTimeout(200);
+    const off = await ev(c, () => ({ filled:!!DRAFT && DRAFT.filled, note:(DRAFT && DRAFT.note) || '' }));
+    ok(off.filled && /fill in the details yourself/.test(off.note), kind + ': offline, Autofill opens the fields to fill in ' + JSON.stringify(off));
+    await c.fill('#lk-h', 'City Festival'); await c.fill('#w-t', 'Night market ' + kind); await c.fill('#w-d', '2026-11-20'); await c.fill('#w-c', 'Brno'); await c.waitForTimeout(100);
+    await c.click('.dlg [data-act="lkadd"]'); await c.waitForTimeout(350);
+    const logged = await ev(c, () => {
+      const id = ADDEDBYME[ADDEDBYME.length - 1], e = EVENTS[id];
+      return { kind:e && e.kind, host:e && e.hostName, mine:MYEVENTS.indexOf(id) >= 0, privacy:e && e.privacy, added:ADDEDBYME.indexOf(id) >= 0,
+               page:S.stack[0] && S.stack[0].id === id, credit:[...document.querySelectorAll('.srcline')].map(x => x.textContent).join(' ') };
+    });
+    ok(logged.kind === 'link' && logged.host === 'City Festival' && !logged.mine && logged.privacy === 'everyone' && logged.added && logged.page && /Added from tickets\.example by you/.test(logged.credit),
+       kind + ': someone else is a link event you added, and you do not host it ' + JSON.stringify(logged));
+    if (kind === 'desk'){
+      const hz = await ev(c, () => {
+        var hid = 'horizon-ask';
+        HORIZONS[hid] = { id:hid, name:'Ask list', description:'', isPersonalDefault:false, isPublished:false, ownerName:S.me.name, ownerId:'self', ownerAcct:S.acct, eventIds:[] };
+        MYHORIZONS.push(hid);
+        return hid;
+      });
+      await c.evaluate(h => { goFolder({ kind:'explore', id:'horizons' }); S.stack = [{ type:'horizon', id:h }]; render(); }, hz); await c.waitForTimeout(350);
+      await c.click('#dscroll [data-act="addevents"]'); await c.waitForTimeout(300);
+      ok(await ev(c, () => !!document.querySelector('.dlg [data-act="pklink"]')), 'desk: From a link is still in Add events');
+      await c.click('.dlg [data-act="pknewev"]'); await c.waitForTimeout(250);
+      ok(await ev(c, h => document.querySelector('.dlg .dtitle').textContent === 'New event for ' + HORIZONS[h].name && !!document.querySelector('[data-act="hostask"][data-id="other"]'), hz),
+         'desk: New event for a horizon asks the same question');
+      await answerHost(c, 'other', 'upcoming');
+      await c.fill('#lk-u', 'https://festival.example/ridge'); await c.press('#lk-u', 'Enter'); await c.waitForTimeout(200);
+      await c.fill('#lk-h', 'Ridge Promoters'); await c.fill('#w-t', 'Ridge festival'); await c.fill('#w-d', '2026-12-01'); await c.fill('#w-c', 'Brno'); await c.waitForTimeout(100);
+      await c.click('.dlg [data-act="lkadd"]'); await c.waitForTimeout(350);
+      ok(await ev(c, h => { const id = ADDEDBYME[ADDEDBYME.length - 1]; return HORIZONS[h].eventIds.indexOf(id) >= 0 && EVENTS[id].kind === 'link' && MYEVENTS.indexOf(id) < 0 && EVENTS[id].hostName === 'Ridge Promoters'; }, hz),
+         'desk: a horizon\'s someone-else event is on the horizon, logged by you, hosted by them');
+    }
+    if (kind === 'desk'){
+      await c.evaluate(() => { closeDialogs(); FORMDRAFTS.event = null; newEventDialog(); }); await c.waitForTimeout(200);
+      await answerHost(c, 'mine', 'past');
+      const pastHost = await ev(c, () => ({ role:CHRONICLE_ADD, date:(document.getElementById('w-d') || {}).value || '', min:(document.getElementById('w-d') || {}).getAttribute && document.getElementById('w-d').getAttribute('min'), fill:!!document.getElementById('w-fill') }));
+      ok(pastHost.role === 'host' && pastHost.date && pastHost.date < '2026-10-01' && !pastHost.min && pastHost.fill,
+         'desk: I hosted it and it already happened opens the past wizard ' + JSON.stringify(pastHost));
+      await c.evaluate(() => { closeDialogs(); CHRONICLE_ADD = null; FORMDRAFTS.event = null; newEventDialog(); }); await c.waitForTimeout(200);
+      await answerHost(c, 'other', 'past');
+      await c.fill('#lk-u', 'https://tickets.example/old'); await c.press('#lk-u', 'Enter'); await c.waitForTimeout(150);
+      await c.fill('#lk-h', 'Old Festival'); await c.fill('#w-t', 'Old night'); await c.fill('#w-d', '2026-09-01'); await c.fill('#w-c', 'Brno');
+      await c.click('.dlg [data-act="lkadd"]'); await c.waitForTimeout(300);
+      const went = await ev(c, () => { const id = ADDEDBYME[ADDEDBYME.length - 1]; return { kind:EVENTS[id].kind, went:!!WENT[id], role:ROLE[id], mine:MYEVENTS.indexOf(id) >= 0 }; });
+      ok(went.kind === 'link' && went.went && went.role === 'attendee' && !went.mine, 'desk: someone else and already happened is a past link you went to ' + JSON.stringify(went));
+      await c.evaluate(() => { closeDialogs(); addPastEventDialog(); }); await c.waitForTimeout(200);
+      ok(await ev(c, () => !document.querySelector('[data-act="hostask"]') && !!document.querySelector('input[name="ch-role"]')),
+         'desk: Add past event skips the two questions');
+      const pol = await ev(c, () => {
+        closeDialogs();
+        var id = 'evt-deep-listening';
+        if (MYEVENTS.indexOf(id) < 0) MYEVENTS.push(id);
+        eventControlsDialog(id);
+        var sel = document.querySelector('[data-act="evpolicy"]');
+        var invite = document.querySelector('[data-act="evinvitepolicy"]');
+        return { value:sel && sel.value, options:sel ? [...sel.options].map(o => o.value).join(',') : '',
+          old:/Only admins can add co-creators/.test(document.body.textContent),
+          inviteOff:!!(invite && invite.disabled), why:!!document.querySelector('.ev-policy-why') };
+      });
+      ok(pol.value === 'open' && pol.options === 'open,request' && !pol.old && pol.inviteOff && pol.why, 'desk: the co-creator rule is a dropdown, and a public event disables invites ' + JSON.stringify(pol));
+    }
+    ok(!c.errors.length, kind + ': no console errors (host ask) ' + c.errors.join(' '));
+    await c.context().close();
+  }
+
+  /* A kept draft, even one restored from this browser, does not skip the host question.
+     Toolbar New, the phone New sheet, Hosting's empty New event, and Horizon > New event ask it.
+     Add past event and Horizon > From a link still skip. No key starts a new event. */
+  for (const kind of ['desk', 'phone']){
+    const c = await ctx(kind);
+    await open(c, '', true);
+    await join(c, 'Draft Ask', 'draftask' + kind);
+    const asked = () => ev(c, () => ({
+      q:(document.querySelector('.hostask-q') || {}).textContent || '',
+      when:(document.querySelector('#host-when-q') || {}).textContent || '',
+      wiz:!!document.querySelector('#w-t'), link:!!document.querySelector('#lk-u'),
+      role:!!document.querySelector('input[name="ch-role"]'),
+      title:(document.querySelector('#w-t') || {}).value || ''
+    }));
+    const shows = s => s.q === 'Are you the host?' && s.when === 'Is this a new event or did it already happen?' && !s.wiz && !s.link;
+    await c.evaluate(() => { var d = blankEventDraft(); d.title = 'Kept ridge night'; FORMDRAFTS.event = d; persist(); });
+    await c.reload(); await c.waitForTimeout(900);
+    const stored = await ev(c, () => { var raw = localStorage.getItem('hypernet-feed:v2') || ''; return { title:raw.indexOf('Kept ridge night') >= 0, chronicle:raw.indexOf('CHRONICLE_ADD') >= 0 }; });
+    ok(stored.title && !stored.chronicle, kind + ': the kept draft is in localStorage and CHRONICLE_ADD is not ' + JSON.stringify(stored));
+    if (kind === 'desk'){
+      await c.click('#newbtn'); await c.waitForTimeout(150);
+      await c.click('.popmenu [data-pop="new-event"]'); await c.waitForTimeout(250);
+    } else {
+      await c.click('[data-act="newsheet"]'); await c.waitForTimeout(200);
+      await c.click('.dlg [data-act="runcmd"][data-id="new-event"]'); await c.waitForTimeout(250);
+    }
+    ok(shows(await asked()), kind + ': ' + (kind === 'desk' ? 'toolbar New > Event' : 'New sheet > Event') + ' asks who hosts it even with a kept draft');
+    await answerHost(c, 'mine', 'upcoming');
+    ok((await asked()).title === 'Kept ridge night', kind + ': I\'m hosting still resumes the kept draft');
+    await c.keyboard.press('Escape'); await c.waitForTimeout(150);
+    await c.evaluate(() => { CHRONICLE_ADD = 'host'; goFolder({ kind:'hosting' }); if (L.phone) S.tab = 'you'; MYEVENTS = []; S.stack = []; render(); });
+    await c.waitForTimeout(250);
+    await c.click('#listbody [data-act="new-event"]'); await c.waitForTimeout(250);
+    ok(shows(await asked()), kind + ': Hosting\'s empty New event asks, and a leftover chronicle role does not skip it');
+    await c.keyboard.press('Escape'); await c.waitForTimeout(150);
+    await c.evaluate(() => {
+      CHRONICLE_ADD = 'host';
+      var hid = 'horizon-draftask';
+      HORIZONS[hid] = { id:hid, name:'Draft list', description:'', isPersonalDefault:false, isPublished:false, ownerName:S.me.name, ownerId:'self', ownerAcct:S.acct, eventIds:[] };
+      if (MYHORIZONS.indexOf(hid) < 0) MYHORIZONS.push(hid);
+      closeDialogs(); goFolder({ kind:'explore', id:'horizons' }); if (L.phone) S.tab = 'explore';
+      S.stack = [{ type:'horizon', id:hid }]; render();
+    });
+    await c.waitForTimeout(300);
+    await c.click('#dscroll [data-act="addevents"]'); await c.waitForTimeout(250);
+    await c.click('.dlg [data-act="pknewev"]'); await c.waitForTimeout(250);
+    ok(shows(await asked()), kind + ': Horizon > New event asks, even if a chronicle add was still set');
+    await c.keyboard.press('Escape'); await c.waitForTimeout(150);
+    await c.click('#dscroll [data-act="addevents"]'); await c.waitForTimeout(250);
+    await c.click('.dlg [data-act="pklink"]'); await c.waitForTimeout(250);
+    const link = await asked();
+    ok(link.link && !link.q && !link.wiz, kind + ': Horizon > From a link skips the question ' + JSON.stringify(link));
+    await c.evaluate(() => { closeDialogs(); PEDIT = true; if (L.phone){ S.tab = 'you'; goFolder({ kind:'you' }); } S.stack = [{ type:'person', id:'self' }]; render(); });
+    await c.waitForTimeout(300);
+    await c.click('[data-act="addpastevent"]'); await c.waitForTimeout(200);
+    await c.click('.dlg input[name="ch-role"]'); await c.click('.dlg [data-act="chronicle-go"]'); await c.waitForTimeout(250);
+    const past = await asked();
+    ok(!past.q && past.wiz && !past.role, kind + ': Add past event still skips the question ' + JSON.stringify(past));
+    await c.evaluate(() => { closeDialogs(); CHRONICLE_ADD = null; });
+    await c.keyboard.press('n'); await c.waitForTimeout(100);
+    ok(!(await c.$('.dlg')), kind + ': no keyboard shortcut starts a new event');
+    await c.evaluate(() => { closeDialogs(); CHRONICLE_ADD = null; FORMDRAFTS.event = null; });
+    await newEvent(c, { title:'Ridge gathering', date:'2026-11-08', city:'Stockholm' });
+    const bar = kind === 'phone' ? '#evbar ' : '#dscroll ';
+    await c.evaluate(() => { EVENT_INVITES[S.stack[0].id] = [{ inviteeId:'p-anna', invitedBy:myActor() }]; });
+    await c.click(bar + '[data-act="evinvite"]'); await c.waitForTimeout(300);
+    const openInvite = await ev(c, () => {
+      const anna = document.querySelector('.dlg [data-act="ivsend"][data-user="p-anna"]');
+      const rows = [...document.querySelectorAll('.dlg .linkrow')];
+      return { title:(document.querySelector('.dlg .dtitle') || {}).textContent,
+        done:(document.querySelector('.dlg .dfoot .btn') || {}).textContent,
+        rowAct:rows.some(r => r.getAttribute('data-act')),
+        anna:anna && anna.textContent, annaOff:!!(anna && anna.disabled),
+        fresh:[...document.querySelectorAll('.dlg [data-act="ivsend"]:not([disabled])')].slice(0, 2).map(b => b.getAttribute('data-user')) };
+    });
+    ok(openInvite.title === 'Invite' && openInvite.done === 'Done' && !openInvite.rowAct && openInvite.anna === 'Invited' && openInvite.annaOff && openInvite.fresh.length === 2,
+       kind + ': the picker opens with a button per person, Done, and someone already invited ' + JSON.stringify(openInvite));
+    const before = await ev(c, () => Object.keys(CHATS).reduce((n, k) => n + CHATS[k].messages.length, 0));
+    await c.click('.dlg .linkrow.static .lr'); await c.waitForTimeout(150);
+    const afterRow = await ev(c, () => Object.keys(CHATS).reduce((n, k) => n + CHATS[k].messages.length, 0));
+    ok(afterRow === before && !!(await c.$('.dlg [data-act="ivsend"]')), kind + ': clicking the row sends nothing and leaves the window open');
+    for (const id of openInvite.fresh){ await c.click('.dlg [data-act="ivsend"][data-user="' + id + '"]'); await c.waitForTimeout(200); }
+    const sent = await ev(c, ids => ids.map(id => { const b = document.querySelector('.dlg [data-act="ivsend"][data-user="' + id + '"]'); return b ? b.textContent + (b.disabled ? '*' : '') : 'missing'; }), openInvite.fresh);
+    const msgs = await ev(c, () => Object.keys(CHATS).reduce((n, k) => n + CHATS[k].messages.length, 0));
+    ok(sent.join() === 'Invited*,Invited*' && !!(await c.$('.dlg')) && msgs === before + 2, kind + ': two invites in one sitting, the window stays open ' + JSON.stringify(sent));
+    if (kind === 'desk') await shot(c, 'invite-picker-two');
+    if (kind === 'phone') await shot(c, 'invite-picker-phone');
+    await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+    await c.click(bar + '[data-act="evinvite"]'); await c.waitForTimeout(250);
+    ok(await ev(c, ids => ids.every(id => { const b = document.querySelector('.dlg [data-act="ivsend"][data-user="' + id + '"]'); return b && b.disabled && b.textContent === 'Invited'; }), ['p-anna'].concat(openInvite.fresh)),
+       kind + ': reopening the picker still shows who was invited');
+    await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+    await c.click(bar + '[data-act="evcog"]'); await c.waitForTimeout(300);
+    const co = await ev(c, () => {
+      const menu = document.querySelector('.ctxmenu, .ctxsheet');
+      const rows = [...menu.querySelectorAll('.ci, .sheetrow')].map(r => ({ t:(r.querySelector('.clab') || r).textContent.trim(), danger:r.classList.contains('danger'), icon:r.getAttribute('data-icon') }));
+      const labels = rows.map(r => r.t);
+      const del = rows[rows.length - 1];
+      const vis = rows.filter(r => r.t === 'Visibility')[0];
+      const perm = rows.filter(r => r.t === 'Permissions')[0];
+      const visEl = menu.querySelector('[data-icon="eye"]');
+      const delEl = menu.querySelector('[data-icon="trash"]');
+      const hex = el => { const m = getComputedStyle(el).color.match(/\d+/g); return '#' + m.slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join(''); };
+      const ground = el => { var n = el; while (n){ var m = getComputedStyle(n).backgroundColor.match(/\d+/g); if (m && (m.length < 4 || +m[3] !== 0)) return '#' + m.slice(0, 3).map(function(x){ return (+x).toString(16).padStart(2, '0'); }).join(''); n = n.parentElement; } return '#ffffff'; };
+      const mark = menu.querySelector('[data-icon="eye"]');
+      const titles = [...menu.querySelectorAll('.chead, .dtitle')].map(n => n.textContent.trim());
+      const themes = ['y2fresh', 'win2k'].map(t => { document.documentElement.setAttribute('data-theme', t); return { t:t, ink:contrast(hex(mark), ground(mark)) }; });
+      document.documentElement.setAttribute('data-theme', 'win2k');
+      return { q:document.querySelectorAll('.helptip-btn').length, eye:!!(vis && vis.icon === 'eye'), head:titles.length === 1 && titles[0] === 'Admin controls',
+        order:labels.join(','), last:!!(del && del.t === 'Delete' && !del.danger && del.icon === 'trash'),
+        perm:!!(perm && perm.icon === 'key'),
+        plain:!!(delEl && visEl) && getComputedStyle(delEl).color === getComputedStyle(visEl).color && getComputedStyle(delEl).backgroundColor === getComputedStyle(visEl).backgroundColor,
+        edit:labels.indexOf('Edit') === 0, boost:labels.some(t => /Boost/.test(t)),
+        horizon:labels.some(t => /Horizon|horizon/.test(t)), themes:themes };
+    });
+    ok(co.q === 0 && co.eye && co.head && co.last && co.plain && co.perm && co.edit && !co.boost && !co.horizon && co.order === 'Edit,Visibility,Permissions,New call out,Delete' && co.themes.every(t => t.ink >= 4.5),
+       kind + ': the cog is titled Admin controls, then Edit, Visibility, Permissions, New call out, and a plain Delete ' + JSON.stringify(co));
+    await c.click(kind === 'phone' ? '.ctxsheet [data-icon="key"]' : '.ctxmenu [data-icon="key"]'); await c.waitForTimeout(250);
+    const perm = await ev(c, () => {
+      const d = document.querySelector('.dlg.permissions');
+      if (!d) return null;
+      return { title:(d.querySelector('.dtitle') || {}).textContent, done:(d.querySelector('.dfoot [data-act="closedlg"]') || {}).textContent,
+        admin:!!d.querySelector('[data-act="evadmin-invite"]'), invites:/Who can invite guests\?/.test(d.innerText),
+        rule:/Who can be listed as a co-creator\?/.test(d.innerText), edit:!!d.querySelector('[data-act="editevent"]') };
+    });
+    ok(perm && perm.title === 'Permissions' && perm.done === 'Done' && perm.admin && perm.invites && perm.rule && !perm.edit,
+       kind + ': Permissions opens the admin settings, and Done closes it ' + JSON.stringify(perm));
+    await c.click('.dlg.permissions [data-act="closedlg"]'); await c.waitForTimeout(150);
+    await c.click(bar + '[data-act="evcog"]'); await c.waitForTimeout(250);
+    await c.click(kind === 'phone' ? '.ctxsheet [data-icon="eye"]' : '.ctxmenu [data-icon="eye"]'); await c.waitForTimeout(250);
+    ok(await ev(c, () => (document.querySelector('.dlg .dtitle') || {}).textContent === 'Who can see it'), kind + ': Visibility opens Who can see it');
+    await c.keyboard.press('Escape'); await c.waitForTimeout(150);
+    await c.click(bar + '[data-act="evcog"]'); await c.waitForTimeout(250);
+    await c.click(kind === 'phone' ? '.ctxsheet [data-icon="trash"]' : '.ctxmenu [data-icon="trash"]'); await c.waitForTimeout(250);
+    const doomed = await ev(c, () => S.stack[0].id);
+    const ask = await ev(c, id => {
+      const btn = document.querySelector('.dlg [data-act="confirmok"]');
+      const swatch = prop => { const s = document.createElement('span'); s.style.color = prop; document.body.appendChild(s); const c = getComputedStyle(s).color; s.remove(); return c; };
+      const cs = btn ? getComputedStyle(btn) : null;
+      return { title:(document.querySelector('.dlg .cmsg') || {}).textContent, cancel:!!document.querySelector('.dlg [data-act="closedlg"]'),
+        danger:!!(btn && btn.classList.contains('alert')),
+        fill:!!(cs && cs.backgroundColor === swatch('var(--alert)') && cs.color === swatch('var(--white)')),
+        still:!!EVENTS[id] };
+    }, doomed);
+    ok(ask.title === 'Delete ' + (await ev(c, id => EVENTS[id].title, doomed)) + '? This can\'t be undone.' && ask.cancel && ask.danger && ask.fill && ask.still,
+       kind + ': Delete asks before it removes the event, and the confirm button stays red ' + JSON.stringify(ask));
+    await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+    ok(await ev(c, id => !!EVENTS[id] && !document.querySelector('.dlg'), doomed), kind + ': Cancel leaves the event in place');
+    await c.evaluate(() => { closeCtx(); closeDialogs(); }); await c.waitForTimeout(150);
+    await c.evaluate(() => { var id = S.stack[0].id; EVENTS[id].date = '2026-09-01'; if (REC[id]) REC[id].endDate = ''; render(); });
+    await c.waitForTimeout(250);
+    const claim = await ev(c, () => {
+      const root = document.querySelector(L.phone ? '#evbar' : '#dscroll .actbar');
+      const acts = [...root.querySelectorAll('.btn')].map(b => (b.getAttribute('data-act') || '') + ':' + b.textContent.trim());
+      return { acts:acts.join('|'), tip:!!root.querySelector('.helptip-btn'), went:!!root.querySelector('[data-act="v-went"]') };
+    });
+    ok(claim && !claim.tip && !claim.went && /evinvite:Add people/.test(claim.acts) && /evaddto:Add to/.test(claim.acts) && /share:Share/.test(claim.acts) && /evcog:/.test(claim.acts) && !/v-promote/.test(claim.acts),
+       kind + ': a past host bar is Add people, Add to, Share, and a cog, with no Boost and no question mark ' + JSON.stringify(claim));
+    await c.click(bar + '[data-act="evaddto"]'); await c.waitForTimeout(250);
+    const added = await ev(c, () => [...document.querySelectorAll('.ctxmenu .ci, .ctxsheet .sheetrow')].map(n => ({ t:(n.querySelector('.clab') || n).textContent.trim(), icon:n.getAttribute('data-icon') })));
+    const chronicle = added.filter(r => r.t === 'Chronicle')[0];
+    ok(!!chronicle && chronicle.icon === 'scroll' && added.some(r => r.t === 'Horizon') && !added.some(r => r.t === 'Add to horizon'),
+       kind + ': Add to lists Chronicle with a scroll and Horizon ' + JSON.stringify(added));
+    await c.keyboard.press('Escape'); await c.waitForTimeout(100);
+    await c.evaluate(() => { var id = S.stack[0].id; WENT[id] = true; var k = MYHORIZONS[0]; if (k && HORIZONS[k] && HORIZONS[k].eventIds.indexOf(id) < 0) HORIZONS[k].eventIds.push(id); });
+    await c.click(bar + '[data-act="evaddto"]'); await c.waitForTimeout(250);
+    ok(await ev(c, () => { const rows = [...document.querySelectorAll('.ctxmenu .ci, .ctxsheet .sheetrow')];
+      const on = name => rows.some(r => (r.querySelector('.clab') || {}).textContent === name && r.getAttribute('aria-checked') === 'true');
+      return on('Chronicle') && on('Horizon'); }), kind + ': Chronicle and Horizon show a check once the event is added');
+    await c.keyboard.press('Escape'); await c.waitForTimeout(100);
+    await c.click(bar + '[data-act="evinvite"]'); await c.waitForTimeout(250);
+    const pastInv = await ev(c, ids => {
+      const anna = document.querySelector('.dlg [data-act="ivsend"][data-user="p-anna"]');
+      const nxt = document.querySelector('.dlg [data-act="ivsend"]:not([disabled])');
+      return { title:(document.querySelector('.dlg .dtitle') || {}).textContent, anna:anna && anna.textContent, add:nxt && nxt.textContent, id:nxt && nxt.getAttribute('data-user') };
+    });
+    ok(pastInv.title === 'Add people' && pastInv.anna === 'Added' && pastInv.add === 'Add', kind + ': a past picker says Add and Added ' + JSON.stringify(pastInv));
+    await c.click('.dlg [data-act="ivsend"][data-user="' + pastInv.id + '"]'); await c.waitForTimeout(200);
+    ok(await ev(c, id => { const b = document.querySelector('.dlg [data-act="ivsend"][data-user="' + id + '"]'); return !!document.querySelector('.dlg') && b && b.disabled && b.textContent === 'Added'; }, pastInv.id),
+       kind + ': Add keeps the past picker open and switches that row to Added');
+    ok(!c.errors.length, kind + ': no console errors (draft ask, invites, help) ' + c.errors.join(' '));
+    await c.context().close();
+  }
+
+  /* A place can be a maps link. Fill from link on I'm hosting prefills the wizard and still publishes as yours. */
+  {
+    const c = await ctx('desk');
+    await open(c, '', true);
+    await join(c, 'Map Host', 'maphost');
+    await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
+    await answerHost(c, 'mine', 'upcoming');
+    const hint = await ev(c, () => {
+      const el = document.getElementById('where-hint'), dlg = document.querySelector('.dlg');
+      const ph = document.getElementById('w-c').getAttribute('placeholder');
+      const hex = node => '#' + getComputedStyle(node).color.match(/\d+/g).slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join('');
+      const ground = node => '#' + getComputedStyle(node).backgroundColor.match(/\d+/g).slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join('');
+      const themes = ['y2fresh', 'win2k'].map(t => {
+        document.documentElement.setAttribute('data-theme', t);
+        return { t:t, hint:contrast(hex(el), ground(dlg)) };
+      });
+      document.documentElement.setAttribute('data-theme', 'win2k');
+      return { text:el.textContent, ph:ph, named:/google|apple|openstreetmap/i.test(el.textContent + ' ' + ph), fill:!!document.getElementById('w-fill'), themes:themes };
+    });
+    ok(hint.text === 'Place or maps link' && hint.ph === 'Place or maps link' && !hint.named && hint.fill && hint.themes.every(t => t.hint >= 4.5),
+       'desk: Where says Place or maps link, names no provider, and Fill from link is on Basics ' + JSON.stringify(hint));
+    const gmaps = 'https://www.google.com/maps/place/Slussen/@59.3200,18.0700,17z/data=!3d59.3195!4d18.0712';
+    await c.fill('#w-c', gmaps); await c.waitForTimeout(80);
+    const pin = await ev(c, () => ({ city:document.getElementById('w-c').value, pin:DRAFT.placePin }));
+    ok(pin.city === 'Slussen' && pin.pin && pin.pin.lat === 59.3195 && pin.pin.lng === 18.0712 && pin.pin.url === gmaps,
+       'desk: a long maps link fills the place and keeps the pasted link ' + JSON.stringify(pin));
+    await c.fill('#w-c', 'https://example.com/place/Foo'); await c.waitForTimeout(50);
+    ok(await ev(c, () => document.getElementById('w-c').value === 'https://example.com/place/Foo' && !DRAFT.placePin),
+       'desk: a non-map link stays plain text');
+    await c.fill('#w-c', 'javascript:alert(1)');
+    await c.fill('#w-t', 'Map night'); await c.fill('#w-d', '2026-11-12');
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]', { force:true }); await c.waitForTimeout(150);
+    ok(await ev(c, () => !DRAFT.placePin && DRAFT.mapReject && /isn't allowed/.test((document.getElementById('err-city') || {}).textContent || '')),
+       'desk: a javascript place is rejected');
+    await c.fill('#w-c', 'https://maps.app.goo.gl/abc'); await c.waitForTimeout(80);
+    ok(await ev(c, () => /Paste the full link/.test((document.getElementById('where-note') || {}).textContent || '') && !DRAFT.placePin),
+       'desk: offline, a short map link asks for the full link');
+    await c.fill('#w-c', gmaps); await c.waitForTimeout(80);
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(150);
+    await c.fill('#w-desc', 'By the lock.'); await c.waitForTimeout(50);
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(100);
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(400);
+    const pub = await ev(c, () => {
+      const id = MYEVENTS[MYEVENTS.length - 1], e = EVENTS[id], r = REC[id] || {};
+      return { id:id, title:e.title, kind:e.kind, acct:e.hostAcct, src:e.sourceUrl || null, added:e.addedBy || null,
+        mine:MYEVENTS.indexOf(id) >= 0, url:r.venue && r.venue.url, lat:r.venue && r.venue.lat, name:r.venue && r.venue.name };
+    });
+    ok(pub.title === 'Map night' && pub.kind === 'own' && pub.mine && pub.acct === 'me' && !pub.src && !pub.added && pub.name === 'Slussen' && pub.lat === 59.3195 && pub.url === gmaps,
+       'desk: the maps place publishes as your event ' + JSON.stringify(pub));
+    await c.evaluate(id => { S.stack = [{ type:'event', id:id }]; render(); }, pub.id); await c.waitForTimeout(300);
+    const mapLink = await ev(c, () => { const a = document.querySelector('a.maplink'); return a ? { text:a.textContent, href:a.getAttribute('href') } : null; });
+    ok(mapLink && mapLink.text === 'Open in Maps' && mapLink.href === gmaps, 'desk: Open in Maps uses the pasted link ' + JSON.stringify(mapLink));
+    await c.evaluate(id => editEventDialog(id), pub.id); await c.waitForTimeout(200);
+    ok(await ev(c, () => { const h = document.getElementById('where-hint'); return !!h && h.textContent === 'Place or maps link' && !document.getElementById('w-fill'); }),
+       'desk: Edit shows the place hint and not Fill from link');
+    await c.evaluate(() => closeDialogs()); await c.waitForTimeout(100);
+    await c.evaluate(() => { FORMDRAFTS.event = null; newEventDialog(); }); await c.waitForTimeout(200);
+    await answerHost(c, 'mine', 'upcoming');
+    await c.fill('#w-fill', 'https://billetto.se/e/example');
+    await c.click('.dlg [data-act="wizfill"]'); await c.waitForTimeout(200);
+    const off = await ev(c, () => ({ note:(document.getElementById('fill-note') || {}).textContent || '', form:DRAFT.form || '', src:DRAFT.sourceUrl || null }));
+    ok(/fill in the fields yourself/.test(off.note) && off.form !== 'link' && !off.src,
+       'desk: Fill from link offline stays the hosted wizard ' + JSON.stringify(off));
+    await c.evaluate(img => {
+      wizTakeFill(DRAFT, { title:'Filled Night', startsOn:'2026-12-02', startTime:'18:00', city:'Stockholm', description:'From the page.', site:'billetto.se', venue:{ name:'Stockholm', lat:59.3, lng:18.06 }, imageUrl:img });
+      paintWiz();
+    }, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg=='); await c.waitForTimeout(150);
+    const filled = await ev(c, () => ({ title:DRAFT.title, date:DRAFT.date, time:DRAFT.startTime, city:DRAFT.city, desc:DRAFT.desc, img:!!DRAFT.image, kind:DRAFT.kind, src:DRAFT.sourceUrl || null, form:DRAFT.form || '' }));
+    ok(filled.title === 'Filled Night' && filled.date === '2026-12-02' && filled.time === '18:00' && filled.city === 'Stockholm' && filled.desc === 'From the page.' && filled.img && filled.kind !== 'link' && !filled.src && filled.form !== 'link',
+       'desk: Fill from link prefills the wizard and does not make a link event ' + JSON.stringify(filled));
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(150);
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(100);
+    await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]'); await c.waitForTimeout(400);
+    const hosted = await ev(c, () => {
+      const id = MYEVENTS[MYEVENTS.length - 1], e = EVENTS[id];
+      goFolder({ kind:'hosting' }); render();
+      return { title:e.title, kind:e.kind, mine:MYEVENTS.indexOf(id) >= 0, src:e.sourceUrl || null, added:e.addedBy || null, acct:e.hostAcct, hosting:S.folder.kind,
+        listed:(document.getElementById('listbody') || document.body).textContent.indexOf('Filled Night') >= 0 };
+    });
+    ok(hosted.title === 'Filled Night' && hosted.kind === 'own' && hosted.mine && !hosted.src && !hosted.added && hosted.acct === 'me' && hosted.hosting === 'hosting' && hosted.listed,
+       'desk: autofill on I am hosting publishes into Hosting with you as host ' + JSON.stringify(hosted));
+    await c.evaluate(() => newEventDialog()); await c.waitForTimeout(200);
+    await answerHost(c, 'other', 'upcoming');
+    ok(await ev(c, () => !!document.getElementById('lk-u') && !document.getElementById('w-fill')), 'desk: someone else still opens the link form');
+    await c.fill('#lk-u', 'https://tickets.example/e/night'); await c.press('#lk-u', 'Enter'); await c.waitForTimeout(150);
+    ok(await ev(c, () => { const h = document.getElementById('where-hint'); return !!h && h.textContent === 'Place or maps link'; }),
+       'desk: the link form shows the place hint');
+    await c.fill('#lk-h', 'City Festival'); await c.fill('#w-t', 'Logged Night'); await c.fill('#w-d', '2026-12-03'); await c.fill('#w-c', 'Brno');
+    await c.click('.dlg [data-act="lkadd"]'); await c.waitForTimeout(300);
+    const logged = await ev(c, () => {
+      const id = ADDEDBYME[ADDEDBYME.length - 1], e = EVENTS[id];
+      return { kind:e.kind, mine:MYEVENTS.indexOf(id) >= 0, added:e.addedBy, host:e.hostName, src:e.sourceUrl };
+    });
+    ok(logged.kind === 'link' && !logged.mine && logged.added === 'self' && logged.host === 'City Festival' && /tickets\.example/.test(logged.src || ''),
+       'desk: the link-event path is unchanged ' + JSON.stringify(logged));
+    ok(!c.errors.length, 'desk: no console errors (map link) ' + c.errors.join(' '));
+    await c.context().close();
+  }
+
   /* ---------------- 2026-10-04: New event goes on only when a step has what it needs ---------------- */
   for (const kind of ['desk', 'tab', 'phone']){
     const c = await ctx(kind);
     await open(c, '', true);
     await join(c, 'Wiz Host', 'wizhost' + kind);
     await c.evaluate(() => newEventDialog()); await c.waitForTimeout(250);
+    await answerHost(c, 'mine', 'upcoming');
     const foot = () => ev(c, () => ({ step:DRAFT.step, btns:[...document.querySelectorAll('.dlg .dfoot .btn')].map(b => b.textContent.trim() + (b.getAttribute('aria-disabled') === 'true' ? ':off' : '')),
       need:document.getElementById('wiz-need').textContent, errs:[...document.querySelectorAll('.dlg .ferr[data-err]:not([hidden])')].map(x => x.getAttribute('data-err')),
       invalid:[...document.querySelectorAll('.dlg [aria-invalid="true"]')].map(x => x.id), tabs:[...document.querySelectorAll('.dlg .wizsteps .ws')].map(t => t.getAttribute('aria-disabled') === 'true' ? 'off' : 'on'),
@@ -1547,9 +1953,11 @@ async function overflowEverywhere(p, label){
     await c.evaluate(id => openItem('event', id), own); await c.waitForTimeout(350);
     const bar = kind === 'phone' ? '#evbar' : '#dscroll .actbar';
     const host = await ev(c, b => ({ heads:[...document.querySelectorAll('#dscroll .sect h3')].map(h => h.textContent), btn:!!document.querySelector(b + ' [data-act="newcalloutfor"]') }), bar);
-    ok(host.heads.length > 1 && host.heads.indexOf('Call outs') < 0 && host.btn, kind + ': the host’s event without call outs has no Call outs heading, and New call out in its toolbar ' + JSON.stringify(host));
+    ok(host.heads.length > 1 && host.heads.indexOf('Call outs') < 0 && !host.btn, kind + ': the host’s event without call outs has no Call outs heading, and New call out is not a bar button ' + JSON.stringify(host));
+    await c.click(bar + ' [data-act="evcog"]'); await c.waitForTimeout(250);
+    ok(await ev(c, () => /New call out/.test((document.querySelector('.ctxmenu, .ctxsheet') || {}).innerText || '')), kind + ': New call out is in the cog');
     if (kind === 'desk') await shot(c, 'event-toolbar-new-callout');
-    await c.click(bar + ' [data-act="newcalloutfor"]'); await c.waitForTimeout(300);
+    await c.click(kind === 'phone' ? '.ctxsheet .sheetrow:has-text("New call out")' : '.ctxmenu .ci:has-text("New call out")'); await c.waitForTimeout(300);
     ok(await ev(c, id => document.getElementById('co-e').value === id && /call out/i.test(document.querySelector('.dlg .dtitle').textContent), own), kind + ': New call out opens the form with this event chosen');
     await c.evaluate(() => { closeDialogs(); FORMDRAFTS.callout = null; }); await c.waitForTimeout(150);
     for (const [id, has] of [[await ev(c, () => calloutEventId(calloutOf('co-sound'))), true], ['evt-fill-3', false]]){
@@ -2351,32 +2759,81 @@ async function overflowEverywhere(p, label){
                chrome:cs(btn).backgroundColor === 'rgb(212, 208, 200)' && cs(btn).color === 'rgb(20, 20, 20)' }; });
     ok(Object.values(pg).every(Boolean), kind + ': the whole page wears the look (ground, band, hairlines, labels AA, the accent), the toolbar stays chrome ' + JSON.stringify(pg));
     if (kind === 'phone') await shot(c, 'editlook-horizon-themed-phone');
-    /* an event you host: one Edit (Customize is part of it); the phone's bar is Edit · Call out · Invite · Event controls · ⋯ */
+    /* an event you host: Edit is in the cog; the bar is Invite · Add to · Share · cog */
     await newEvent(c, { title:'Sauna on the ridge', date:'2026-11-08', city:'Brno' }); await c.waitForTimeout(200);
     const host = await ev(c, () => ({ acts:[...document.querySelectorAll(L.phone ? '#evbar .btn' : '#dscroll .pg-event .actbar .btn')].map(b => b.getAttribute('data-act')),
       menu:ctxItems({ type:'event', id:S.stack[0].id }).filter(i => i !== '-').map(i => i.code) }));
-    ok(host.acts.indexOf('editevent') >= 0 && host.acts.indexOf('customize') < 0 && host.menu.indexOf('customize') < 0 && host.menu.indexOf('edit') >= 0 &&
-       (kind === 'desk' || host.acts.join() === 'editevent,newcalloutfor,evinvite,evadmins,evmore'), kind + ': an event you host has one Edit, no Customize ' + JSON.stringify(host));
+    ok(host.acts.indexOf('editevent') < 0 && host.acts.indexOf('customize') < 0 && host.acts.indexOf('evadmins') < 0 && host.acts.filter(a => a === 'evcog').length === 1 &&
+       host.menu.indexOf('customize') < 0 && host.menu.indexOf('edit') >= 0 && host.acts.join() === 'evinvite,evaddto,share,v-promote,evcog',
+       kind + ': an event you host has Invite, Add to, Share, Boost and a cog ' + JSON.stringify(host));
     await c.evaluate(() => editEventDialog(S.stack[0].id)); await c.waitForTimeout(300);
     const ee = await ev(c, () => ({ secs:[...document.querySelectorAll('.dlg .edsec > h3')].map(h => h.textContent).join(), priv:!!document.querySelector('.dlg .edsec #w-p'), look:!!document.querySelector('.dlg [data-czlook] #cz-c1'), tabs:!!document.querySelector('.dlg .wizsteps') }));
     ok(ee.secs === 'Details,About,Who can see it,Look' && ee.priv && ee.look && !ee.tabs, kind + ': Edit event is one form of sections — details, about, who can see it, look ' + JSON.stringify(ee));
     if (kind === 'phone') await shot(c, 'editlook-edit-event-phone');
     await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
     const barSel = kind === 'phone' ? '#evbar ' : '#dscroll ';
-    await c.click(barSel + '[data-act="evadmins"]'); await c.waitForTimeout(250);
-    const controls = await ev(c, () => (document.querySelector('.dlg.ev-controls, .dlg .ev-controls') || {}).innerText || '');
-    ok(/Who can see it/.test(controls) && /Invite/.test(controls) && /Only admins can add co-creators/.test(controls) && /Guests can invite friends/.test(controls),
-       kind + ': Event controls lists Who can see it, Invite, and both toggles ' + controls);
-    await c.click('.dlg [data-act="closedlg"]'); await c.waitForTimeout(150);
+    await c.click(barSel + '[data-act="evcog"]'); await c.waitForTimeout(250);
+    const controls = await ev(c, () => (document.querySelector('.ctxmenu, .ctxsheet') || {}).innerText || '');
+    ok(/New call out/.test(controls) && !/Boost/.test(controls) && !/Add to horizon/.test(controls) && /Admin controls/.test(controls) && /Visibility/.test(controls) && /Permissions/.test(controls) && !/Invite admin/.test(controls) && !/Guests can invite friends/.test(controls) && /Delete/.test(controls),
+       kind + ': the cog holds Edit, Visibility, Permissions, New call out, and Delete ' + controls);
+    await c.click(kind === 'phone' ? '.ctxsheet [data-icon="key"]' : '.ctxmenu [data-icon="key"]'); await c.waitForTimeout(250);
+    const permBox = await ev(c, () => {
+      const d = document.querySelector('.dlg.permissions'); if (!d) return null;
+      const kids = [...d.querySelector('.ev-controls').children];
+      const invite = d.querySelector('[data-act="evinvitepolicy"]');
+      const rule = d.querySelector('[data-act="evpolicy"]');
+      const why = d.querySelector('.ev-policy-why');
+      const swatch = prop => { const s = document.createElement('span'); s.style.color = prop; document.body.appendChild(s); const col = getComputedStyle(s).color; s.remove(); return col; };
+      const rgb = s => '#' + String(s).match(/\d+/g).slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join('');
+      const ground = el => { var n = el; while (n){ var m = getComputedStyle(n).backgroundColor.match(/\d+/g); if (m && (m.length < 4 || +m[3] !== 0)) return '#' + m.slice(0, 3).map(x => (+x).toString(16).padStart(2, '0')).join(''); n = n.parentElement; } return '#ffffff'; };
+      const was = document.documentElement.getAttribute('data-theme');
+      const themes = ['y2fresh', 'win2k'].map(t => {
+        document.documentElement.setAttribute('data-theme', t);
+        const cs = getComputedStyle(invite);
+        const fill = cs.webkitTextFillColor && cs.webkitTextFillColor !== 'rgba(0, 0, 0, 0)' ? cs.webkitTextFillColor : cs.color;
+        return { t:t, dim:fill === swatch('var(--dim)'), why:contrast(rgb(getComputedStyle(why).color), ground(why)) >= 4.5 };
+      });
+      document.documentElement.setAttribute('data-theme', was || 'win2k');
+      const text = d.innerText;
+      const ia = text.indexOf('Invite admin'), ad = text.indexOf('Admins'), co = text.indexOf('Who can be listed as a co-creator?'), iv = text.indexOf('Who can invite guests?');
+      return { title:d.querySelector('.dtitle').textContent, done:d.querySelector('.dfoot').textContent.trim(),
+        first:kids[0] && kids[0].textContent.trim(), order:ia >= 0 && ia < ad && ad < co && co < iv,
+        coOpts:rule ? [...rule.options].map(o => o.textContent).join('|') : '', coValue:rule && rule.value,
+        opts:invite ? [...invite.options].map(o => o.textContent).join('|') : '', value:invite && invite.value,
+        disabled:!!(invite && invite.disabled), why:why && why.textContent, themes:themes };
+    });
+    ok(permBox && permBox.title === 'Permissions' && permBox.done === 'Done' && permBox.first === 'Invite admin' && permBox.order && permBox.coValue === 'open' && permBox.coOpts === 'Open – anyone can list themselves as a co-creator|On request – admins must approve requests' && permBox.opts === 'Admins only|Admins and co-creators|Anyone with an invite' && permBox.value === 'invited' && permBox.disabled && permBox.why === 'This event is public, so anyone can already see it.' && permBox.themes.every(t => t.dim && t.why),
+       kind + ': Permissions is Invite admin, the admin list, the co-creator dropdown, then Who can invite guests, disabled on a public event ' + JSON.stringify(permBox));
+    await c.selectOption('.dlg.permissions [data-act="evpolicy"]', 'request'); await c.waitForTimeout(250);
+    const coSaved = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evpolicy"]'); const id = sel && sel.getAttribute('data-id'); return { value:sel && sel.value, saved:id && cocreatorPolicyOf(id) }; });
+    ok(coSaved.value === 'request' && coSaved.saved === 'request', kind + ': the co-creator dropdown saves ' + JSON.stringify(coSaved));
+    await c.evaluate(() => { var sel = document.querySelector('[data-act="evinvitepolicy"]'); var id = sel.getAttribute('data-id'); EVENTS[id].privacy = 'only_me'; settleEventControl(id); });
+    await c.waitForTimeout(250);
+    const opened = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { disabled:!!(sel && sel.disabled), why:!!document.querySelector('.ev-policy-why'), value:sel && sel.value }; });
+    ok(opened && !opened.disabled && !opened.why && opened.value === 'invited', kind + ': a private event enables Who can invite guests ' + JSON.stringify(opened));
+    await c.selectOption('.dlg.permissions [data-act="evinvitepolicy"]', 'admins'); await c.waitForTimeout(250);
+    const asAdmins = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { value:sel && sel.value, saved:invitePolicyOf(sel.getAttribute('data-id')) }; });
+    ok(asAdmins.value === 'admins' && asAdmins.saved === 'admins', kind + ': Admins only saves ' + JSON.stringify(asAdmins));
+    await c.selectOption('.dlg.permissions [data-act="evinvitepolicy"]', 'cocreators'); await c.waitForTimeout(250);
+    const asCo = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { value:sel && sel.value, saved:invitePolicyOf(sel.getAttribute('data-id')) }; });
+    ok(asCo.value === 'cocreators' && asCo.saved === 'cocreators', kind + ': Admins and co-creators saves ' + JSON.stringify(asCo));
+    await c.selectOption('.dlg.permissions [data-act="evinvitepolicy"]', 'invited'); await c.waitForTimeout(250);
+    const asInvited = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { value:sel && sel.value, saved:invitePolicyOf(sel.getAttribute('data-id')) }; });
+    ok(asInvited.value === 'invited' && asInvited.saved === 'invited', kind + ': Anyone with an invite saves ' + JSON.stringify(asInvited));
+    await c.keyboard.press('Escape'); await c.waitForTimeout(150);
+    await c.evaluate(() => { window.__copied = []; Object.defineProperty(navigator, 'clipboard', { configurable:true, value:{ writeText:t => { window.__copied.push(t); return Promise.resolve(); } } }); });
+    await c.click(barSel + '[data-act="share"]'); await c.waitForTimeout(250);
+    const shared = await ev(c, (sel) => ({ menu:!!document.querySelector('.ctxmenu, .ctxsheet'), copied:/Link copied/.test(document.getElementById('toasts').textContent), boost:!!document.querySelector(sel + '[data-act="v-promote"]') }), barSel);
+    ok(!shared.menu && shared.copied && shared.boost, kind + ': Share copies the link, and Boost is its own bar button ' + JSON.stringify(shared));
     await c.evaluate(() => openItem('event', 'evt-deep-listening')); await c.waitForTimeout(350);
-    const guest0 = await ev(c, () => ({ admins:document.querySelectorAll('[data-act="evadmins"]').length, invite:document.querySelectorAll('[data-act="evinvite"]').length }));
-    ok(guest0.admins === 0 && guest0.invite === 0, kind + ': a non-admin who has not RSVP’d does not see Event controls or Invite ' + JSON.stringify(guest0));
+    const guest0 = await ev(c, (sel) => ({ admins:document.querySelectorAll(sel + '[data-act="evadmins"]').length, invite:document.querySelectorAll(sel + '[data-act="evinvite"]').length, cog:document.querySelectorAll(sel + '[data-act="evcog"]').length, add:document.querySelectorAll(sel + '[data-act="evaddto"]').length }), barSel);
+    ok(guest0.admins === 0 && guest0.invite === 0 && guest0.cog === 0 && guest0.add === 1, kind + ': a non-admin who has not RSVP’d has Add to and no cog or Invite ' + JSON.stringify(guest0));
     await c.click(barSel + '[data-act="v-going"]'); await c.waitForTimeout(300);
     const guest1 = await ev(c, (sel) => ({ admins:document.querySelectorAll(sel + '[data-act="evadmins"]').length, invite:document.querySelectorAll(sel + '[data-act="evinvite"]').length }), barSel);
-    ok(guest1.admins === 0 && guest1.invite === 1, kind + ': Going, with guests can invite, shows Invite and hides Event controls ' + JSON.stringify(guest1));
-    await c.evaluate(() => { EVENTS['evt-deep-listening'].guestsCanInvite = false; render(); }); await c.waitForTimeout(200);
+    ok(guest1.admins === 0 && guest1.invite === 1, kind + ': Going, with guests can invite, shows Invite and hides Admin controls ' + JSON.stringify(guest1));
+    await c.evaluate(() => { EVENTS['evt-deep-listening'].invitePolicy = 'admins'; render(); }); await c.waitForTimeout(200);
     ok(await ev(c, () => document.querySelectorAll('[data-act="evinvite"]').length === 0 && document.querySelectorAll('[data-act="evadmins"]').length === 0),
-       kind + ': Guests can invite friends off hides Invite for a non-admin');
+       kind + ': Admins only hides Invite for a non-admin');
     const hidden = await ev(c, () => {
       var e = EVENTS['evt-dj-closed'];
       EVENT_INVITES[e.id] = [{ inviteeId: myActor(), invitedBy: 'p-anna' }];
@@ -2439,6 +2896,7 @@ async function overflowEverywhere(p, label){
     await open(c, '', true);
     await join(c, 'Wiz Phone', 'wizphone');
     await c.evaluate(() => newEventDialog()); await c.waitForTimeout(300);
+    await answerHost(c, 'mine', 'upcoming');
     const fit = () => ev(c, () => { const b = [...document.querySelectorAll('.dlg .dfoot .btn')], t = [...document.querySelectorAll('.dlg .wizsteps .ws')];
       return { prim:b.filter(x => x.classList.contains('primary')).map(x => x.textContent.trim()).join(), rows:new Set(b.map(x => Math.round(x.getBoundingClientRect().top))).size,
                fit:b.concat(t).every(x => x.scrollWidth <= x.clientWidth + 1), inside:b.every(x => x.getBoundingClientRect().right <= innerWidth), tabs:t.map(x => x.textContent.trim()).join(), dis:b.filter(x => x.getAttribute('aria-disabled') === 'true').map(x => getComputedStyle(x).textShadow).join() }; });

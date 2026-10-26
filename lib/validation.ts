@@ -1,4 +1,12 @@
+import { createRequire } from "node:module";
+import path from "node:path";
 import { z } from "zod";
+
+// Same parser as the page (_shared/map-link.js). Required, not imported, so tsc leaves that script alone.
+const requireMap = createRequire(path.join(process.cwd(), "package.json"));
+function classifyMap(raw: string): { kind: string } {
+  return (requireMap("./_shared/map-link.js") as { classifyMapInput: (s: string) => { kind: string } }).classifyMapInput(raw);
+}
 
 // Request shapes. They repeat the database CHECKs on purpose: a bad request gets a readable 400 with the field
 // that is wrong, instead of a constraint error from Postgres.
@@ -155,6 +163,26 @@ export const eventCreate = z
 /** POST /api/events/autofill: the link to read. */
 export const linkRead = z.object({ url: httpUrl }).strict();
 
+/** POST /api/maps/resolve: a short https map link. The page parses whatever it opens. */
+export const mapResolve = z
+  .object({ url: httpUrl })
+  .strict()
+  .superRefine((v, ctx) => {
+    let u: URL;
+    try {
+      u = new URL(v.url);
+    } catch {
+      return;
+    }
+    if (u.protocol !== "https:") {
+      ctx.addIssue({ code: "custom", message: "Only https map links.", path: ["url"] });
+      return;
+    }
+    if (classifyMap(v.url).kind !== "short") {
+      ctx.addIssue({ code: "custom", message: "Paste a short map link.", path: ["url"] });
+    }
+  });
+
 /** POST /api/events/link: an event that already exists elsewhere, as the person checked it after Autofill. Always
  *  public (the page it came from is), hosted by whoever the page names; `imageUrl` is copied into our storage. */
 export const eventLink = z
@@ -186,13 +214,13 @@ export const eventLink = z
 
 /** PATCH: any subset of the same fields. Ids, host, slug and timestamps are not editable here — except the host's
  *  name of an event added from a link (nobody here hosts it; whoever added it corrects what the page said).
- *  The two booleans are admin-only. The route rejects them for anyone else. */
+ *  Privacy, who can send invites, and co-creator policy are admin-only. The route rejects them for anyone else. */
 export const eventPatch = z
   .object({
     ...eventFields,
     hostName: z.string().trim().min(1).max(80),
-    onlyAdminsAddCocreators: z.boolean(),
-    guestsCanInvite: z.boolean(),
+    cocreatorPolicy: z.enum(["open", "request"]),
+    invitePolicy: z.enum(["admins", "cocreators", "invited"]),
   })
   .partial()
   .strict()
@@ -205,6 +233,8 @@ export const eventQuery = z.object({
   to: day.optional(),
   host: z.uuid().optional(),
   limit: z.coerce.number().int().min(1).max(200).default(100),
+  /** `only` returns past events for the chronicle picker. Omit it and past events stay out. */
+  past: z.enum(["only"]).optional(),
 });
 
 const handle = z.string().trim().toLowerCase().regex(/^[a-z0-9._-]{1,30}$/, "1–30 of a-z 0-9 . _ -");
@@ -284,6 +314,12 @@ export const adminInvite = z.object({ userId: z.uuid() }).strict();
 export const adminReply = z.object({ status: z.enum(["accepted", "declined"]) }).strict();
 /** POST /api/events/:id/demote — an admin sets someone else's co-creator role back to attendee. */
 export const demoteBody = z.object({ userId: z.uuid() }).strict();
+
+/** POST /api/events/:id/cocreators — an admin approves or declines a pending co-creator request. */
+export const cocreatorReviewBody = z.object({
+  userId: z.uuid(),
+  action: z.enum(["approve", "decline"]),
+}).strict();
 /** POST /api/events/:id/invites — a guest invite. Writes event_invites and a DM card. Does not change visibility. */
 export const guestInvite = z.object({ personId: z.uuid() }).strict();
 

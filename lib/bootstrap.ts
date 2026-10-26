@@ -12,7 +12,8 @@ export const EVENT_JSON = `json_build_object(
   'startsOn', e.starts_on, 'endsOn', e.ends_on, 'startTime', to_char(e.start_time, 'HH24:MI'), 'endTime', to_char(e.end_time, 'HH24:MI'),
   'timezone', e.timezone, 'kind', e.kind, 'tags', e.tags, 'schedule', e.schedule, 'privacy', e.privacy, 'city', e.city, 'region', e.region, 'country', e.country,
   'venue', e.venue, 'access', e.access, 'whatToBring', e.what_to_bring, 'details', e.details, 'look', e.look, 'source', e.source,
-  'sourceUrl', e.source_url, 'addedBy', e.added_by,
+  'sourceUrl', e.source_url, 'addedBy', e.added_by, 'cocreatorPolicy', to_jsonb(e)->>'cocreator_policy',
+  'invitePolicy', to_jsonb(e)->>'invite_policy',
   'previousEditionId', e.previous_edition_id, 'createdAt', e.created_at, 'updatedAt', e.updated_at)`;
 
 export const PERSON_JSON = `json_build_object('id', p.id, 'handle', p.handle, 'displayName', p.display_name, 'bio', p.bio,
@@ -49,7 +50,9 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
       none(`select coalesce(json_agg(json_build_array(f.follower_id, f.followee_id)), '[]') v from person_follows f`),
       one(`select coalesce(json_agg(${EVENT_JSON} order by e.starts_on), '[]') v from events e where can_see_event($1::uuid, e)`),
       one(`select coalesce(json_agg(json_build_object('personId', r.person_id, 'eventId', r.event_id, 'status', r.status, 'went', r.went,
-             'shiftIndex', r.shift_index, 'role', r.role, 'updatedAt', r.updated_at)), '[]') v
+             'shiftIndex', r.shift_index, 'role', r.role, 'updatedAt', r.updated_at,
+             'cocreatorPending', case when r.person_id = $1::uuid
+               then coalesce((to_jsonb(r)->>'cocreator_pending')::boolean, false) else false end)), '[]') v
              from rsvps r join events e on e.id = r.event_id where can_see_event($1::uuid, e)`),
       one(`select coalesce(json_agg(json_build_array(pr.person_id, pr.event_id)), '[]') v
              from promotions pr join events e on e.id = pr.event_id where can_see_event($1::uuid, e)`),

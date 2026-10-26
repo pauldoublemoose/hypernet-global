@@ -89,7 +89,8 @@ export const events = pgTable(
     updatedAt: tstz("updated_at").notNull().defaultNow(),
     deletedAt: tstz("deleted_at"),
     onlyAdminsAddCocreators: boolean("only_admins_add_cocreators").notNull().default(false),
-    guestsCanInvite: boolean("guests_can_invite").notNull().default(true),
+    cocreatorPolicy: text("cocreator_policy").notNull().default("open"),
+    invitePolicy: text("invite_policy").notNull().default("invited"),
   },
   (t) => [index().on(t.hostId)],
 );
@@ -151,6 +152,7 @@ export const rsvps = pgTable(
     went: boolean("went").notNull().default(false),
     shiftIndex: integer("shift_index"),
     role: text("role"),
+    cocreatorPending: boolean("cocreator_pending").notNull().default(false),
     updatedAt: tstz("updated_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.personId, t.eventId] })],

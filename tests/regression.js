@@ -2651,12 +2651,20 @@ async function overflowEverywhere(p, label){
           n = n.nextElementSibling;
         }
         const pad = sel => { const el = document.querySelector(sel); return el ? getComputedStyle(el).paddingLeft : ''; };
+        const rows = [...document.querySelectorAll('#navbody .nrow:not(.search)')].map(el => getComputedStyle(el).paddingLeft);
+        const heads = [...document.querySelectorAll('#navbody .navh')].map(el => getComputedStyle(el).paddingLeft);
+        HNNav.register({ section:'home', id:'indent-probe', label:'Probe', icon:'dots', order:90 });
+        render();
+        const probe = document.querySelector('#navbody [data-act="navplug"][data-id="indent-probe"]');
         return { after, about:pad('#navbody [data-act="aboutapp"]'), explore:pad('#navbody .nrow.nsubrow[data-kind="explore"]'), home:pad('#navbody .nrow[data-kind="home"]'), host:pad('#navbody .nrow[data-kind="hosting"]'),
+          rowsSame: rows.length > 0 && rows.every(p => p === rows[0]), head: heads[0], headsFlush: heads.length > 0 && heads.every(p => p === heads[0]) && heads[0] !== rows[0],
+          plugs: [...document.querySelectorAll('#navbody [data-section], #navbody .nrow.locked')].every(el => el.classList.contains('nsubrow')),
+          probe: !!(probe && probe.classList.contains('nsubrow') && getComputedStyle(probe).paddingLeft === rows[0]),
           act:(document.querySelector('#navbody [data-act="aboutapp"]') || {}).getAttribute && document.querySelector('#navbody [data-act="aboutapp"]').getAttribute('data-act'),
           locked:document.querySelector('#navbody [data-act="aboutapp"]').getAttribute('aria-disabled') };
       });
-      ok(spec.after[0] === 'About Hypernet' && spec.after[1] === 'Inferno' && spec.after[2] === 'Moonwalk' && spec.about === spec.explore && spec.home === spec.host && spec.about !== spec.home && spec.act === 'aboutapp' && !spec.locked,
-         w + ': About Hypernet leads SPECIAL, indented like Explore; HOME and MANAGE stay flush ' + JSON.stringify(spec));
+      ok(spec.after[0] === 'About Hypernet' && spec.after[1] === 'Inferno' && spec.after[2] === 'Moonwalk' && spec.about === spec.explore && spec.home === spec.host && spec.home === spec.about && spec.rowsSame && spec.headsFlush && spec.plugs && spec.probe && spec.act === 'aboutapp' && !spec.locked,
+         w + ': About Hypernet leads SPECIAL, and every section’s rows share that indent while headers stay flush ' + JSON.stringify(spec));
       if (kind === 'phone') await c.tap('#navbody .nrow[data-kind="going"]'); else await c.click('#navbody .nrow[data-kind="going"]');
       await c.waitForTimeout(300);
       const opened = await ev(c, () => ({
@@ -2664,10 +2672,11 @@ async function overflowEverywhere(p, label){
         on:[...document.querySelectorAll('#calcol [data-act="calmode"].on')].map(b => b.textContent).join('|'),
         modes:[...document.querySelectorAll('#calcol [data-act="calmode"]')].map(b => b.textContent).join('|'),
         go:document.querySelectorAll('#calcol .calcell.mine-go').length, host:document.querySelectorAll('#calcol .calcell.mine-host').length,
-        overlap:[...document.querySelectorAll('#calcol .calcell.mine-host')].some(el => el.classList.contains('mine-go'))
+        overlap:[...document.querySelectorAll('#calcol .calcell.mine-host')].some(el => el.classList.contains('mine-go')),
+        h2:(document.querySelector('#chead h2') || {}).textContent, sub:(document.querySelector('#chead .csub') || {}).textContent
       }));
-      ok(opened.kind === 'going' && opened.cal && opened.on === 'Month' && opened.modes.indexOf('Day') < 0 && opened.modes.indexOf('Year') >= 0 && opened.go > 0 && opened.host > 0 && !opened.overlap,
-         w + ': Calendar opens on Month, with going and hosting days and no Day mode ' + JSON.stringify(opened));
+      ok(opened.kind === 'going' && opened.cal && opened.on === 'Month' && opened.modes.indexOf('Day') < 0 && opened.modes.indexOf('Year') >= 0 && opened.go > 0 && opened.host > 0 && !opened.overlap && opened.h2 === 'Calendar' && /^\d+ events?$/.test(opened.sub || ''),
+         w + ': Calendar opens on Month, titled Calendar, with going and hosting days and no Day mode ' + JSON.stringify(opened));
       if (kind === 'phone') await c.tap('#calcol [data-act="calmode"][data-id="year"]'); else await c.click('#calcol [data-act="calmode"][data-id="year"]');
       await c.waitForTimeout(250);
       const year = await ev(c, () => ({ grid:!!document.querySelector('#calcol .calyear'), months:document.querySelectorAll('#calcol .calminit').length, go:document.querySelectorAll('#calcol .d.mine-go').length, host:document.querySelectorAll('#calcol .d.mine-host').length }));
@@ -3200,6 +3209,61 @@ async function overflowEverywhere(p, label){
       ok(!c.errors.length, kind + ': no console errors (chronicle going) ' + c.errors.join(' '));
       await c.context().close();
     }
+  }
+
+  /* Your call outs shares the collection page. Without HNCallouts, Posted is today's call outs and Interacted stays empty. */
+  {
+    const c = await ctx('desk');
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(300);
+    await c.goto(URL + '#/owncallouts'); await c.waitForTimeout(300);
+    const local = await ev(c, () => {
+      CALLOUTS.unshift({ id:'co-local-test', title:'Ridge hands', body:'Need two', hostName:'Michal', hostAcct:S.acct, expiresAt:'2026-12-01' });
+      render();
+      return {
+        h2: document.querySelector('#chead h2').textContent,
+        sub: document.querySelector('#chead .csub').textContent,
+        tabs: [...document.querySelectorAll('#listbody .tc-tab')].map(t => t.textContent).join('|'),
+        on: [...document.querySelectorAll('#listbody .tc-tab.on')].map(t => t.textContent).join(''),
+        titles: [...document.querySelectorAll('#listbody .row .r-title')].map(t => t.textContent)
+      };
+    });
+    ok(local.h2 === 'Your call outs' && local.tabs === 'Posted|Interacted' && local.on === 'Posted' && local.titles.indexOf('Ridge hands') >= 0 && /call out/.test(local.sub),
+       'call outs: without HNCallouts, Posted lists your call outs ' + JSON.stringify(local));
+    await c.click('#listbody .tc-tab[data-id="interacted"]'); await c.waitForTimeout(200);
+    const idle = await ev(c, () => ({ hash:location.hash, empty:(document.querySelector('#listbody .empty') || {}).textContent || '', rows:document.querySelectorAll('#listbody .row').length }));
+    ok(idle.hash === '#/owncallouts/interacted' && /not interacted/.test(idle.empty) && idle.rows === 0,
+       'call outs: Interacted is empty without the API, not built from replies ' + JSON.stringify(idle));
+    await c.evaluate(() => {
+      var mine = [{ id:'co-remote', title:'Need a rigger', author:'You', created_at:'2026-10-20T12:00:00Z' }];
+      var inter = [{ callout:{ id:'co-other', text:'Lights for the quay', author:{ displayName:'Anna Vale' }, created_at:'2026-10-01T00:00:00Z' }, kinds:['boost','bookmark','reply','nope'], at:'2026-10-21T00:00:00Z' }];
+      window.__co = { n:0 };
+      window.HNCallouts = {
+        mine: function(){ return Promise.resolve(mine.slice()); },
+        interacted: function(){ return Promise.resolve(inter.map(function(x){ return Object.assign({}, x, { kinds:x.kinds.slice() }); })); },
+        onChange: function(fn){ window.__co.n++; window.__co.fn = fn; return function(){ window.__co.n--; window.__co.fn = null; }; },
+        _set: function(m){ mine = m; }
+      };
+      render();
+    });
+    await c.waitForFunction(() => { const t = document.querySelector('#listbody .r-title'); return t && t.textContent === 'Lights for the quay'; });
+    const marks = await ev(c, () => ({
+      titles: [...document.querySelectorAll('#listbody .r-title')].map(t => t.textContent).join('|'),
+      marks: [...document.querySelectorAll('#listbody .kmark')].map(m => m.getAttribute('title')).join('|'),
+      sub: document.querySelector('#chead .csub').textContent,
+      n: window.__co.n
+    }));
+    ok(marks.titles === 'Lights for the quay' && marks.marks === 'Boosted|Bookmarked|Replied' && marks.sub === '1 interaction' && marks.n === 1,
+       'call outs: HNCallouts fills Interacted with kind marks ' + JSON.stringify(marks));
+    await c.evaluate(() => { window.HNCallouts._set([{ id:'co-remote', title:'Need a rigger', author:'You', created_at:'2026-10-20T12:00:00Z' }, { id:'co-remote-2', title:'Second ask', text:'More hands', author:'You', created_at:'2026-10-22T00:00:00Z' }]); window.__co.fn(); });
+    await c.click('#listbody [data-act="tctab"][data-id="posted"]');
+    await c.waitForFunction(() => [...document.querySelectorAll('#listbody .r-title')].some(t => t.textContent === 'Second ask'));
+    ok(await ev(c, () => [...document.querySelectorAll('#listbody .r-title')].map(t => t.textContent).join('|')) === 'Need a rigger|Second ask',
+       'call outs: onChange refreshes Posted from mine()');
+    await c.evaluate(() => { goFolder({ kind:'home' }); render(); });
+    ok(await ev(c, () => window.__co.n === 0 && !window.__co.fn), 'call outs: leaving the page unsubscribes');
+    ok(!c.errors.length, 'call outs: no console errors ' + c.errors.join(' '));
+    await c.context().close();
   }
 
   /* ---------------- tablet ---------------- */

@@ -1513,7 +1513,7 @@ async function overflowEverywhere(p, label){
       const went = await ev(c, () => { const id = ADDEDBYME[ADDEDBYME.length - 1]; return { kind:EVENTS[id].kind, went:!!WENT[id], role:ROLE[id], mine:MYEVENTS.indexOf(id) >= 0 }; });
       ok(went.kind === 'link' && went.went && went.role === 'attendee' && !went.mine, 'desk: someone else and already happened is a past link you went to ' + JSON.stringify(went));
       await c.evaluate(() => { closeDialogs(); addPastEventDialog(); }); await c.waitForTimeout(200);
-      ok(await ev(c, () => !document.querySelector('[data-act="hostask"]') && !!document.querySelector('input[name="ch-role"]')),
+      ok(await ev(c, () => !document.querySelector('[data-act="hostask"]') && !!document.querySelector('.dlg .chrole') && !document.querySelector('input[name="ch-role"]')),
          'desk: Add past event skips the two questions');
       const pol = await ev(c, () => {
         closeDialogs();
@@ -1523,7 +1523,7 @@ async function overflowEverywhere(p, label){
         var sel = document.querySelector('[data-act="evpolicy"]');
         var invite = document.querySelector('[data-act="evinvitepolicy"]');
         return { value:sel && sel.value, options:sel ? [...sel.options].map(o => o.value).join(',') : '',
-          old:/Only admins can add co-creators/.test(document.body.textContent),
+          old:/Only admins can add co-creators/.test((document.querySelector('.dlg') || {}).textContent || ''),
           inviteOff:!!(invite && invite.disabled), why:!!document.querySelector('.ev-policy-why') };
       });
       ok(pol.value === 'open' && pol.options === 'open,request' && !pol.old && pol.inviteOff && pol.why, 'desk: the co-creator rule is a dropdown, and a public event disables invites ' + JSON.stringify(pol));
@@ -1587,9 +1587,20 @@ async function overflowEverywhere(p, label){
     await c.evaluate(() => { closeDialogs(); PEDIT = true; if (L.phone){ S.tab = 'you'; goFolder({ kind:'you' }); } S.stack = [{ type:'person', id:'self' }]; render(); });
     await c.waitForTimeout(300);
     await c.click('[data-act="addpastevent"]'); await c.waitForTimeout(200);
-    await c.click('.dlg input[name="ch-role"]'); await c.click('.dlg [data-act="chronicle-go"]'); await c.waitForTimeout(250);
-    const past = await asked();
-    ok(!past.q && past.wiz && !past.role, kind + ': Add past event still skips the question ' + JSON.stringify(past));
+    const past = await ev(c, () => {
+      const yes = document.querySelector('.dlg [data-act="chronicle-add"]');
+      return {
+        q:(document.querySelector('.hostask-q') || {}).textContent || '',
+        wiz:!!document.querySelector('#w-t'),
+        role:!!document.querySelector('input[name="ch-role"]'),
+        cycle:!!document.querySelector('.dlg [data-act="chrolemenu"][aria-haspopup="menu"]'),
+        search:!!document.querySelector('#ch-q'),
+        yes:yes ? yes.textContent : '',
+        off:!!(yes && yes.disabled)
+      };
+    });
+    ok(!past.q && !past.wiz && !past.role && past.cycle && past.search && past.yes === 'Add to Chronicle (0)' && past.off,
+       kind + ': Add past event searches past events and does not open the wizard ' + JSON.stringify(past));
     await c.evaluate(() => { closeDialogs(); CHRONICLE_ADD = null; });
     await c.keyboard.press('n'); await c.waitForTimeout(100);
     ok(!(await c.$('.dlg')), kind + ': no keyboard shortcut starts a new event');
@@ -3120,32 +3131,32 @@ async function overflowEverywhere(p, label){
   }
 
   /* RSVP role: Going, Interested, Went and a shift must not send role, or a stored role is cleared.
-     Add past event still sends Host, Co-creator and Attendee. The new event is yours, so the host check allows it. */
+     Add past event marks several past events from the role menu, then files them together. */
   {
     const ME = '00000000-0000-4000-8000-000000000001', EV = '00000000-0000-4000-8000-000000000101';
+    const OLD = '00000000-0000-4000-8000-000000000102', OTHER = '00000000-0000-4000-8000-000000000103';
+    const CREW = '00000000-0000-4000-8000-000000000104', LOCK = '00000000-0000-4000-8000-000000000105';
+    const QUIET = '00000000-0000-4000-8000-000000000106';
+    const HOST2 = '00000000-0000-4000-8000-000000000099';
     const person = { id:ME, handle:'hana', displayName:'Hana Cerna', bio:'', skills:[], cities:['Brno'], look:null, lastSeenAt:null, createdAt:'2026-09-01T10:00:00Z' };
+    const row = (id, title, startsOn, hostId, policy) => ({ id:id, slug:id.slice(0, 8), title:title, startsOn:startsOn, endsOn:null, startTime:null, endTime:null,
+      timezone:'Europe/Prague', hostId:hostId, hostName:hostId === ME ? 'Hana Cerna' : 'Anna Vale', description:'x', kind:'meetup', privacy:'everyone', city:'Brno', region:null, country:'CZ', venue:null, access:null,
+      whatToBring:[], details:{}, look:null, source:'user', previousEditionId:null, cocreatorPolicy:policy });
+    const upcoming = row(EV, 'Shift night', '2026-10-20', ME, 'open');
+    upcoming.details = { blocks:[{ label:'Door', date:'2026-10-20', time:'18:00' }] };
+    const old = row(OLD, 'Old host night', '2026-08-01', ME, 'open');
+    const guest = row(OTHER, 'Old guest night', '2026-07-01', HOST2, 'request');
+    const crew = row(CREW, 'Old crew night', '2026-06-01', HOST2, 'open');
+    const lock = row(LOCK, 'Old locked night', '2026-05-01', HOST2, 'admins');
+    const quiet = row(QUIET, 'Old quiet night', '2026-04-01', HOST2, 'open');
+    const pastRows = [old, guest, crew, lock, quiet];
     const boot = { hypernet:1, me:person, login:null, people:[person], follows:[], promotions:[], horizons:[], hzFollows:[], callouts:[], replies:[], activity:[], chats:[],
-      events:[{ id:EV, slug:'shift-night', title:'Shift night', startsOn:'2026-10-20', endsOn:null, startTime:null, endTime:null,
-        timezone:'Europe/Prague', hostId:ME, hostName:'Hana Cerna', description:'x', kind:'meetup', privacy:'everyone', city:'Brno', region:null, country:'CZ', venue:null, access:null,
-        whatToBring:[], details:{ blocks:[{ label:'Door', date:'2026-10-20', time:'18:00' }] }, look:null, source:'user', previousEditionId:null }],
+      events:[upcoming].concat(pastRows),
       rsvps:[{ personId:ME, eventId:EV, status:'going', went:false, shiftIndex:null, role:'host', updatedAt:'2026-09-30T10:00:00Z' }] };
-    const filePast = async (c, role, title) => {
-      await c.evaluate(() => { openItem('person', 'self'); beginProfileEdit(); });
-      await c.waitForTimeout(300);
-      await c.evaluate(() => document.querySelector('[data-act="addpastevent"]').click());
-      await c.waitForTimeout(250);
-      await c.check('.dlg input[name="ch-role"][value="' + role + '"]');
-      await c.click('.dlg [data-act="chronicle-go"]');
-      await c.waitForTimeout(300);
-      await c.fill('#w-t', title);
-      await c.fill('#w-c', 'Brno');
-      await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]');
-      await c.waitForTimeout(200);
-      await c.fill('#w-desc', 'A night that already happened.');
-      await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]');
-      await c.waitForTimeout(200);
-      await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]');
-      await c.waitForTimeout(700);
+    const pickRole = async (c, title, label) => {
+      await c.fill('#ch-q', title);
+      await c.locator('.dlg .chhitrow').filter({ hasText: title }).locator('[data-act="chrolemenu"]').click();
+      await c.locator('.popmenu.chmenu [role="menuitem"]').filter({ hasText: label }).click();
     };
     for (const kind of ['desk', 'phone']){
       const c = await ctx(kind);
@@ -3155,9 +3166,25 @@ async function overflowEverywhere(p, label){
         const u = new (require('url').URL)(route.request().url()), req = route.request();
         const j = (code, b) => route.fulfill({ status:code, contentType:'application/json', body:JSON.stringify(b) });
         if (req.method() === 'PUT' && /\/rsvp$/.test(u.pathname)){
-          const body = req.postDataJSON(); puts.push(body);
+          const body = req.postDataJSON();
+          const eventId = u.pathname.split('/').filter(Boolean)[2];
+          puts.push(Object.assign({ eventId:eventId }, body));
+          const ev = pastRows.find(e => e.id === eventId);
+          if (body.role === 'cocreator' && ev && ev.cocreatorPolicy === 'admins'){
+            return j(200, { rsvp:{ status:body.status, went:!!body.went, shiftIndex:body.shiftIndex == null ? null : body.shiftIndex, role:'attendee', cocreatorPending:false } });
+          }
+          if (body.role === 'cocreator' && ev && ev.cocreatorPolicy === 'request'){
+            return j(200, { rsvp:{ status:body.status, went:!!body.went, shiftIndex:body.shiftIndex == null ? null : body.shiftIndex, role:'attendee', cocreatorPending:true } });
+          }
           const role = Object.prototype.hasOwnProperty.call(body, 'role') ? body.role : 'host';
           return j(200, { rsvp:{ status:body.status, went:!!body.went, shiftIndex:body.shiftIndex == null ? null : body.shiftIndex, role:role } });
+        }
+        if (req.method() === 'GET' && u.pathname === '/api/events'){
+          return j(200, { events: u.searchParams.get('past') === 'only' ? pastRows : [] });
+        }
+        if (req.method() === 'POST' && /\/chronicle$/.test(u.pathname)){
+          posts.push({ chronicle:u.pathname });
+          return j(200, { chronicle:{ went:true, role:'attendee', status:null } });
         }
         if (req.method() === 'POST' && u.pathname === '/api/events'){
           const body = req.postDataJSON(); posts.push(body);
@@ -3179,21 +3206,125 @@ async function overflowEverywhere(p, label){
       ok(before === 'host' && after.role === 'host' && toggles.length === 4 && toggles.every(b => !Object.prototype.hasOwnProperty.call(b, 'role')) &&
          after.status === 'going' && after.went && after.shift === 0,
          kind + ': Going, Interested, Went and a shift keep a stored host role and do not send role ' + JSON.stringify({ before, after, toggles }));
-      const filed = {};
-      for (const [role, title] of [['host', 'Old host night'], ['cocreator', 'Old crew night'], ['attendee', 'Old guest night']]){
-        const n = puts.length, pn = posts.length;
-        await filePast(c, role, title);
-        const got = await ev(c, title => {
-          const id = Object.keys(EVENTS).find(k => EVENTS[k] && EVENTS[k].title === title);
-          const sec = id && [...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].find(s => s.getAttribute('data-role') === ROLE[id] && s.textContent.indexOf(title) >= 0);
-          return { id:id || null, role:id ? ROLE[id] : null, went:!!(id && WENT[id]), mine:!!(id && MYEVENTS.indexOf(id) >= 0), host:!!(id && EVENTS[id].hostAcct === S.acct), shown:!!sec };
-        }, title);
-        filed[role] = { got, put:puts.slice(n), post:posts[pn] || null };
-      }
-      ok(['host', 'cocreator', 'attendee'].every(role => {
-        const f = filed[role];
-        return f.got.role === role && f.got.went && f.got.mine && f.got.host && f.got.shown && f.put.length === 1 && f.put[0].role === role && f.post && !('hostId' in f.post);
-      }), kind + ': Add past event files Host, Co-creator and Attendee on an event you host ' + JSON.stringify(filed));
+      await c.evaluate(() => { openItem('person', 'self'); beginProfileEdit(); });
+      await c.waitForTimeout(200);
+      await c.evaluate(() => document.querySelector('[data-act="addpastevent"]').click());
+      await c.waitForTimeout(500);
+      const offered = await ev(c, () => ({
+        pool:CHRONICLE_POOL || [],
+        foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).textContent || '',
+        off:!!(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).disabled,
+        shift:[...document.querySelectorAll('.dlg .chhitname')].some(b => /Shift night/.test(b.textContent))
+      }));
+      await c.fill('#ch-q', 'Shift');
+      const shift = await ev(c, () => [...document.querySelectorAll('.dlg .chhitname')].map(b => b.textContent));
+      await c.fill('#ch-q', 'Old host');
+      const hosted = await ev(c, () => {
+        const b = document.querySelector('.dlg .chrole');
+        return { label:b ? b.textContent : '', disabled:!!(b && b.disabled), act:b ? b.getAttribute('data-act') : '' };
+      });
+      ok(offered.pool.indexOf(EV) < 0 && offered.pool.indexOf(OLD) >= 0 && offered.pool.indexOf(CREW) >= 0 && !offered.shift && !shift.length &&
+         offered.foot === 'Add to Chronicle (0)' && offered.off && hosted.label === 'Hosted' && hosted.disabled && !hosted.act,
+         kind + ': Add past event search offers past events, hides an upcoming one, and shows a hosted row as Hosted ' + JSON.stringify({ offered, shift, hosted }));
+      await c.evaluate(id => { CHRONICLE_PICKS[id] = 'attendee'; paintChronicleHits(); }, EV);
+      await c.click('.dlg [data-act="chronicle-add"]');
+      await c.waitForTimeout(250);
+      const blocked = await ev(c, id => ({
+        err:(document.querySelector('#ch-err') || {}).textContent || '',
+        open:!!document.querySelector('.dlg'),
+        kept:CHRONICLE_PICKS[id] || null
+      }), EV);
+      ok(/Only a past event can be added to a chronicle/.test(blocked.err) && blocked.open && blocked.kept === 'attendee',
+         kind + ': an upcoming event shows the not-past message and stays selected ' + JSON.stringify(blocked));
+      await c.evaluate(id => { delete CHRONICLE_PICKS[id]; delete CHRONICLE_WHY[id]; paintChronicleHits(); }, EV);
+      const nPut = puts.length, nPost = posts.length;
+      await c.fill('#ch-q', 'Old quiet');
+      await c.click('.dlg [data-act="chrolemenu"]');
+      await c.keyboard.press('ArrowDown');
+      const opened = await ev(c, () => {
+        const menu = document.querySelector('.popmenu.chmenu');
+        const r = menu ? menu.getBoundingClientRect() : null;
+        const btn = document.querySelector('.dlg [data-act="chrolemenu"]');
+        return {
+          items: menu ? [...menu.querySelectorAll('[role="menuitem"]')].map(el => el.textContent.trim()) : [],
+          body: !!(menu && menu.parentElement === document.body),
+          inView: !!(r && r.top >= -1 && r.left >= -1 && r.bottom <= window.innerHeight + 1 && r.right <= window.innerWidth + 1),
+          expanded: btn ? btn.getAttribute('aria-expanded') : '',
+          label: btn ? btn.textContent : '',
+          focus: (document.activeElement && document.activeElement.textContent || '').trim(),
+          dlg: !!document.querySelector('.dlg')
+        };
+      });
+      await c.keyboard.press('Escape');
+      const escaped = await ev(c, () => ({ menu:!!document.querySelector('.popmenu'), dlg:!!document.querySelector('.dlg') }));
+      await c.click('.dlg [data-act="chrolemenu"]');
+      await c.click('.dlg .dtitle');
+      const outside = await ev(c, () => ({
+        menu:!!document.querySelector('.popmenu'),
+        label:(document.querySelector('.dlg [data-act="chrolemenu"]') || {}).textContent || '',
+        dlg:!!document.querySelector('.dlg')
+      }));
+      await pickRole(c, 'Old quiet', 'Attended');
+      const once = await ev(c, () => ({
+        label:(document.querySelector('.dlg .chrole') || {}).textContent || '',
+        n:chronicleSelection().length,
+        foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).textContent || '',
+        menu:!!document.querySelector('.popmenu')
+      }));
+      await c.fill('#ch-q', 'Old quiet');
+      await c.click('.dlg [data-act="chrolemenu"]');
+      const marked = await ev(c, () => [...document.querySelectorAll('.popmenu.chmenu [role="menuitem"]')].map(el => el.textContent.trim()));
+      await c.locator('.popmenu.chmenu [role="menuitem"]').filter({ hasText: 'Co-created' }).click();
+      const cocreated = await ev(c, () => ({ label:(document.querySelector('.dlg .chrole') || {}).textContent || '', menu:!!document.querySelector('.popmenu') }));
+      await pickRole(c, 'Old quiet', 'Remove');
+      const spun = await ev(c, () => ({
+        label:(document.querySelector('.dlg .chrole') || {}).textContent || '',
+        n:chronicleSelection().length,
+        foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).disabled,
+        menu:!!document.querySelector('.popmenu')
+      }));
+      await pickRole(c, 'Old quiet', 'Attended');
+      await pickRole(c, 'Old crew', 'Co-created');
+      const kept = await ev(c, id => ({ n:chronicleSelection().length, quiet:CHRONICLE_PICKS[id] || null }), QUIET);
+      await pickRole(c, 'Old guest', 'Co-created');
+      await pickRole(c, 'Old locked', 'Co-created');
+      const ready = await ev(c, () => ({
+        n:chronicleSelection().length,
+        foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).textContent || '',
+        count:(document.querySelector('#ch-count') || {}).textContent || ''
+      }));
+      ok(opened.items.join(',') === 'Attended,Co-created' && opened.body && opened.inView && opened.expanded === 'true' && opened.label === 'Add' && opened.focus === 'Co-created' && opened.dlg &&
+         !escaped.menu && escaped.dlg && !outside.menu && outside.label === 'Add' && outside.dlg &&
+         once.label === 'Attended' && once.n === 1 && once.foot === 'Add to Chronicle (1)' && !once.menu &&
+         marked.join(',') === 'Attended,Co-created,Remove' && cocreated.label === 'Co-created' && !cocreated.menu &&
+         spun.label === 'Add' && spun.n === 0 && spun.foot && !spun.menu && kept.n === 2 && kept.quiet === 'attendee' &&
+         ready.n === 4 && ready.foot === 'Add to Chronicle (4)' && ready.count === '4 selected',
+         kind + ': the role menu opens, picks Attended and Co-created, removes, and closes on Escape or an outside click ' + JSON.stringify({ opened, escaped, outside, once, marked, cocreated, spun, kept, ready }));
+      await c.click('.dlg [data-act="chronicle-add"]');
+      await c.waitForTimeout(500);
+      const mixed = await ev(c, spec => {
+        const cat = role => [...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role="' + role + '"]')];
+        return {
+          open:!!document.querySelector('.dlg'),
+          foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).textContent || '',
+          err:(document.querySelector('#ch-err') || {}).textContent || '',
+          quiet:{ role:ROLE[spec.quiet] || null, went:!!WENT[spec.quiet], shown:cat('attendee').some(s => s.textContent.indexOf('Old quiet night') >= 0), pick:CHRONICLE_PICKS[spec.quiet] || null },
+          crew:{ role:ROLE[spec.crew] || null, went:!!WENT[spec.crew], shown:cat('cocreator').some(s => s.textContent.indexOf('Old crew night') >= 0), pick:CHRONICLE_PICKS[spec.crew] || null },
+          guest:{ role:ROLE[spec.guest] || null, pending:!!(COREQUESTS[spec.guest] && COREQUESTS[spec.guest][meKey()]), shown:cat('cocreator').some(s => s.textContent.indexOf('Old guest night') >= 0), pick:CHRONICLE_PICKS[spec.guest] || null },
+          lock:{ role:ROLE[spec.lock] || null, pending:!!(COREQUESTS[spec.lock] && COREQUESTS[spec.lock][meKey()]), shown:cat('cocreator').some(s => s.textContent.indexOf('Old locked night') >= 0), pick:CHRONICLE_PICKS[spec.lock] || null }
+        };
+      }, { quiet:QUIET, crew:CREW, guest:OTHER, lock:LOCK });
+      const sentPut = puts.slice(nPut), sentPost = posts.slice(nPost);
+      ok(mixed.quiet.role === 'attendee' && mixed.quiet.went && mixed.quiet.shown && !mixed.quiet.pick &&
+         mixed.crew.role === 'cocreator' && mixed.crew.went && mixed.crew.shown && !mixed.crew.pick &&
+         mixed.guest.pick === 'cocreator' && mixed.guest.pending && mixed.guest.role !== 'cocreator' && !mixed.guest.shown &&
+         mixed.lock.pick === 'cocreator' && !mixed.lock.pending && !mixed.lock.role && !mixed.lock.shown &&
+         mixed.open && mixed.foot === 'Add to Chronicle (2)' &&
+         /Old guest night: Co-creator requested/.test(mixed.err) && /Old locked night: Only admins can add co-creators/.test(mixed.err) &&
+         sentPost.length === 1 && /\/chronicle$/.test(sentPost[0].chronicle) &&
+         sentPut.length === 3 && sentPut.some(b => b.eventId === CREW && b.role === 'cocreator') && sentPut.some(b => b.eventId === OTHER && b.role === 'cocreator') &&
+         sentPut.some(b => b.eventId === LOCK && b.role === 'cocreator'),
+         kind + ': mixed filing lands in the right categories and keeps a pending or refused row selected ' + JSON.stringify({ mixed, sentPut, sentPost }));
       ok(!c.errors.length, kind + ': no console errors (rsvp role) ' + c.errors.join(' '));
       await c.context().close();
     }
@@ -3549,6 +3680,141 @@ async function overflowEverywhere(p, label){
       'desk: the request link opens the list on that invite ' + JSON.stringify({ id: prov.id, opens }));
     ok(!c.errors.length, 'desk: no console errors (horizon request) ' + c.errors.join(' '));
     await c.context().close();
+  }
+
+  /* Add past event marks several demo past events offline. One is Attended, one is Co-created.
+     A later batch keeps a request and an admins-only refusal selected, and still files the one that succeeds. */
+  {
+    const pickRole = async (c, title, label) => {
+      await c.fill('#ch-q', title);
+      await c.locator('.dlg .chhitrow').filter({ hasText: title }).locator('[data-act="chrolemenu"]').click();
+      await c.locator('.popmenu.chmenu [role="menuitem"]').filter({ hasText: label }).click();
+    };
+    for (const kind of ['desk', 'phone', 'tab']){
+      const c = await ctx(kind);
+      const api = [];
+      c.on('request', r => { if (/\/api\//.test(r.url())) api.push(r.url()); });
+      await open(c, '', true);
+      await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+      await c.evaluate(() => {
+        delete ROLE['evt-chronicle-going'];
+        delete WENT['evt-chronicle-going'];
+        delete RSVP['evt-chronicle-going'];
+        delete ROLE['evt-world-burning-man-2026'];
+        delete WENT['evt-world-burning-man-2026'];
+        openItem('person', 'self');
+        beginProfileEdit();
+      });
+      await c.waitForTimeout(400);
+      const before = await ev(c, () => ({
+        quay:[...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].filter(s => s.textContent.indexOf('Late quay supper') >= 0).map(s => s.getAttribute('data-role')),
+        burn:[...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].filter(s => s.textContent.indexOf('Burning Man 2026') >= 0).map(s => s.getAttribute('data-role'))
+      }));
+      await c.evaluate(() => document.querySelector('[data-act="addpastevent"]').click());
+      await c.waitForTimeout(300);
+      await c.fill('#ch-q', 'Harbour');
+      const harbour = await ev(c, () => [...document.querySelectorAll('.dlg [data-act="chrolemenu"]')].map(b => b.getAttribute('data-id')));
+      await c.fill('#ch-q', 'zzzz-not-an-event');
+      const miss = await ev(c, () => ({
+        hits:document.querySelectorAll('.dlg [data-act="chrolemenu"]').length,
+        line:(document.querySelector('#ch-hits') || {}).textContent || '',
+        wiz:!!document.querySelector('#w-t'),
+        add:CHRONICLE_ADD,
+        create:!!document.querySelector('.dlg [data-act="new-event"], .dlg [data-act="chronicle-go"]'),
+        foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).textContent || '',
+        off:!!(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).disabled
+      }));
+      await c.fill('#ch-q', 'Midsummer');
+      const hosted = await ev(c, () => {
+        const b = document.querySelector('.dlg .chrole');
+        return { label:b ? b.textContent : '', disabled:!!(b && b.disabled) };
+      });
+      await c.fill('#ch-q', 'Late quay');
+      await c.click('.dlg [data-act="chrolemenu"]');
+      const opened = await ev(c, () => {
+        const menu = document.querySelector('.popmenu.chmenu');
+        const r = menu ? menu.getBoundingClientRect() : null;
+        return {
+          items: menu ? [...menu.querySelectorAll('[role="menuitem"]')].map(el => el.textContent.trim()) : [],
+          body: !!(menu && menu.parentElement === document.body),
+          inView: !!(r && r.top >= -1 && r.left >= -1 && r.bottom <= window.innerHeight + 1 && r.right <= window.innerWidth + 1)
+        };
+      });
+      await c.click('.dlg .dtitle');
+      const outside = await ev(c, () => ({ menu:!!document.querySelector('.popmenu'), label:(document.querySelector('.dlg [data-act="chrolemenu"]') || {}).textContent || '', dlg:!!document.querySelector('.dlg') }));
+      await pickRole(c, 'Late quay', 'Attended');
+      const attended = await ev(c, () => ({ label:(document.querySelector('.dlg .chrole') || {}).textContent || '', n:chronicleSelection().length, menu:!!document.querySelector('.popmenu') }));
+      await pickRole(c, 'Late quay', 'Co-created');
+      const cocreated = await ev(c, () => ({ label:(document.querySelector('.dlg .chrole') || {}).textContent || '', menu:!!document.querySelector('.popmenu') }));
+      await pickRole(c, 'Late quay', 'Remove');
+      const cleared = await ev(c, () => ({ label:(document.querySelector('.dlg .chrole') || {}).textContent || '', n:chronicleSelection().length, off:!!(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).disabled, menu:!!document.querySelector('.popmenu') }));
+      await pickRole(c, 'Late quay', 'Attended');
+      await pickRole(c, 'Burning Man', 'Co-created');
+      const ready = await ev(c, () => ({
+        n:chronicleSelection().length,
+        quay:CHRONICLE_PICKS['evt-chronicle-going'] || null,
+        burn:CHRONICLE_PICKS['evt-world-burning-man-2026'] || null,
+        foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).textContent || '',
+        count:(document.querySelector('#ch-count') || {}).textContent || ''
+      }));
+      await c.click('.dlg [data-act="chronicle-add"]');
+      await c.waitForTimeout(400);
+      const after = await ev(c, () => ({
+        open:!!document.querySelector('.dlg'),
+        quay:[...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].filter(s => s.textContent.indexOf('Late quay supper') >= 0).map(s => s.getAttribute('data-role')),
+        burn:[...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].filter(s => s.textContent.indexOf('Burning Man 2026') >= 0).map(s => s.getAttribute('data-role')),
+        quayRole:ROLE['evt-chronicle-going'] || null,
+        burnRole:ROLE['evt-world-burning-man-2026'] || null
+      }));
+      ok(!before.quay.length && before.burn.indexOf('attendee') < 0 && before.burn.indexOf('cocreator') < 0 && !harbour.length && !miss.hits && !miss.wiz && !miss.add && !miss.create &&
+         /New event/.test(miss.line) && /Already happened/.test(miss.line) && miss.foot === 'Add to Chronicle (0)' && miss.off &&
+         hosted.label === 'Hosted' && hosted.disabled &&
+         opened.items.join(',') === 'Attended,Co-created' && opened.body && opened.inView &&
+         !outside.menu && outside.label === 'Add' && outside.dlg &&
+         attended.label === 'Attended' && attended.n === 1 && !attended.menu &&
+         cocreated.label === 'Co-created' && !cocreated.menu &&
+         cleared.label === 'Add' && cleared.n === 0 && cleared.off && !cleared.menu &&
+         ready.n === 2 && ready.quay === 'attendee' && ready.burn === 'cocreator' && ready.foot === 'Add to Chronicle (2)' && ready.count === '2 selected' &&
+         !after.open && after.quay.length === 1 && after.quay[0] === 'attendee' && after.quayRole === 'attendee' &&
+         after.burn.length === 1 && after.burn[0] === 'cocreator' && after.burnRole === 'cocreator' && !api.length,
+         kind + ': Add past event files two demo events under Attended and Co-created ' + JSON.stringify({ before, harbour, miss, hosted, opened, outside, attended, cocreated, cleared, ready, after, api }));
+      await c.evaluate(() => {
+        delete ROLE['evt-chronicle-going']; delete WENT['evt-chronicle-going']; delete RSVP['evt-chronicle-going'];
+        delete ROLE['evt-world-borderland-2026']; delete WENT['evt-world-borderland-2026'];
+        delete ROLE['evt-world-hyperstition-2026']; delete WENT['evt-world-hyperstition-2026'];
+        EVENTS['evt-world-borderland-2026'].cocreatorPolicy = 'request';
+        EVENTS['evt-world-hyperstition-2026'].cocreatorPolicy = 'admins';
+        render();
+      });
+      await c.waitForTimeout(200);
+      await c.evaluate(() => document.querySelector('[data-act="addpastevent"]').click());
+      await c.waitForTimeout(250);
+      await pickRole(c, 'Late quay', 'Attended');
+      await pickRole(c, 'The Borderland', 'Co-created');
+      await pickRole(c, 'Hyperstition', 'Co-created');
+      await c.click('.dlg [data-act="chronicle-add"]');
+      await c.waitForTimeout(400);
+      const part = await ev(c, () => ({
+        open:!!document.querySelector('.dlg'),
+        foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).textContent || '',
+        err:(document.querySelector('#ch-err') || {}).textContent || '',
+        quay:[...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].filter(s => s.textContent.indexOf('Late quay supper') >= 0).map(s => s.getAttribute('data-role')),
+        quayPick:CHRONICLE_PICKS['evt-chronicle-going'] || null,
+        borderPick:CHRONICLE_PICKS['evt-world-borderland-2026'] || null,
+        hyperPick:CHRONICLE_PICKS['evt-world-hyperstition-2026'] || null,
+        borderCo:[...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role="cocreator"]')].some(s => s.textContent.indexOf('Borderland') >= 0),
+        hyperCo:[...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role="cocreator"]')].some(s => s.textContent.indexOf('Hyperstition') >= 0),
+        pending:!!(COREQUESTS['evt-world-borderland-2026'] && COREQUESTS['evt-world-borderland-2026'][meKey()]),
+        hyperRole:ROLE['evt-world-hyperstition-2026'] || null
+      }));
+      ok(part.open && part.foot === 'Add to Chronicle (2)' && part.quay.length === 1 && part.quay[0] === 'attendee' && !part.quayPick &&
+         part.borderPick === 'cocreator' && part.pending && !part.borderCo &&
+         part.hyperPick === 'cocreator' && !part.hyperRole && !part.hyperCo &&
+         /Borderland 2026: Co-creator requested/.test(part.err) && /Hyperstition 2026: Only admins can add co-creators/.test(part.err),
+         kind + ': a pending request and an admins-only refusal stay selected, and the attendee still files ' + JSON.stringify(part));
+      ok(!c.errors.length, kind + ': no console errors (chronicle search) ' + c.errors.join(' '));
+      await c.context().close();
+    }
   }
 
   /* ---------------- tablet ---------------- */

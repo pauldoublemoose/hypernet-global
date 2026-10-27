@@ -1719,6 +1719,7 @@ a.maplink:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
 <script src="_shared/hypernet-event-details.js"></script>
 <script src="_shared/chat-cards.js"></script>
 <script src="_shared/horizon-requests.js"></script>
+<script src="_shared/horizon-cog.js"></script>
 <script src="_shared/hypernet-api.js"></script>
 <script src="_shared/map-link.js"></script>
 <script>
@@ -3614,6 +3615,7 @@ function playlistHTML(hzId, withTracks){
     bar = toolbarHTML(vb('addevents', hzId, 'Add events', 'plus', { primary:true, cls:'plmain' }),
       vb('edithz', hzId, 'Edit', 'edit') + (hz.isPersonalDefault ? '' : vb('share', hzId, 'Share', 'share', { attrs:' data-type="horizon"' })) +
       (hz.isPersonalDefault ? '' : vb('addcollab', hzId, 'Invite', 'plus')) +
+      '<span class="hzcog" data-hzcog="'+esc(hzId)+'" hidden></span>' +
       vb('hzmore', hzId, '', 'dots', { aria:'More', attrs:' data-more="delete" aria-haspopup="menu"' }));
   } else if (edit) bar = toolbarHTML(vb('addevents', hzId, 'Add events', 'plus', { primary:true, cls:'plmain' }),
     vb('edithz', hzId, 'Edit', 'edit') + vb('followhz', hzId, fol ? 'Following' : 'Follow', fol ? 'check' : 'plus', { on:fol, pressed:!!fol }) +
@@ -4229,7 +4231,10 @@ function renderDetail(){
   var sc = $('dscroll'), keep = key === LASTDETAIL ? sc.scrollTop : 0;
   w.hidden = !it;
   if (!it){
-    if (LASTDETAIL !== 'none'){ sc.innerHTML = ''; $('dbar').innerHTML = ''; $('evbar').innerHTML = ''; }
+    if (LASTDETAIL !== 'none'){
+      if (window.HorizonCog) HorizonCog.release();
+      sc.innerHTML = ''; $('dbar').innerHTML = ''; $('evbar').innerHTML = '';
+    }
     LASTDETAIL = 'none'; LASTHTML = ''; WIN.x = WIN.y = null; WIN.max = false;
     $('app').classList.remove('has-evbar');
     return;
@@ -4241,8 +4246,10 @@ function renderDetail(){
      back */
   var html = detailHTML(it);
   if (key !== LASTDETAIL || html !== LASTHTML){
+    if (window.HorizonCog) HorizonCog.release();
     var f = document.activeElement, was = f && f.id && sc.contains(f) && /^(TEXTAREA|INPUT)$/.test(f.tagName) ? { id:f.id, a:f.selectionStart, b:f.selectionEnd } : null;
     sc.innerHTML = html; LASTHTML = html;
+    if (window.HorizonCog && it.type === 'horizon') HorizonCog.mount(it.id);
     sc.scrollTop = keep;
     var rb = $('coreply'); if (rb){ rb.value = REPLYDRAFT[rb.getAttribute('data-id')] || ''; if (rb.value) growBox(rb); }
     var nf = was && key === LASTDETAIL && $(was.id);

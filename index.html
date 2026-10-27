@@ -2638,7 +2638,10 @@ function folderSub(f){
   if (f.kind === 'explore' && f.id === 'people')   return n + ' people';
   if (f.kind === 'search')   return n + ' result' + (n === 1 ? '' : 's') + ' for “' + S.query + '”';
   if (f.kind === 'owncallouts') return n + ' call out' + (n === 1 ? '' : 's');
-  if (f.kind === 'yourhz'){ var hn = (f.id === 'following' ? followedHorizonItems() : myHorizonItems()).length; return hn + ' horizon' + (hn === 1 ? '' : 's'); }
+  if (f.kind === 'yourhz'){
+    var hn = (f.id === 'following' ? followedHorizonItems() : f.id === 'collaborating' ? collaboratedHorizonItems() : myHorizonItems()).length;
+    return hn + ' horizon' + (hn === 1 ? '' : 's');
+  }
   if (f.kind === 'horizon'){ var h = HORIZONS[f.id]; return h ? 'Event Horizon · ' + h.ownerName + ' · ' + hzEventIds(f.id).length + ' events' : ''; }
   return n + ' event' + (n === 1 ? '' : 's');
 }
@@ -2854,6 +2857,17 @@ function followedHorizonItems(){
     return { kind:'horizon', id:k, label:HORIZONS[k].name, count: hzEventIds(k).length };
   });
 }
+/* accepted collaborations, not ones you own. The Your horizons page lists them on the helper's Collaborating tab. */
+function collaboratedHorizonItems(){
+  var me = myPid();
+  if (!me) return [];
+  return Object.keys(HORIZONS).filter(function(k){
+    var hz = HORIZONS[k];
+    return hz && (hz.collaboratorIds || []).indexOf(me) >= 0 && !hzOwnedByMe(k);
+  }).sort(function(a, b){ return HORIZONS[a].name < HORIZONS[b].name ? -1 : 1; }).map(function(k){
+    return { kind:'horizon', id:k, label:HORIZONS[k].name, count: hzEventIds(k).length };
+  });
+}
 function hzCollRow(it){
   var sel = it.kind === 'horizon' && isSel({ type:'horizon', id:it.id });
   var act = it.kind === 'list'
@@ -2894,15 +2908,19 @@ function tabbedCollection(spec){
   return { html:'<div class="tcoll" data-store="'+esc(store)+'">'+bar+body+'</div>', items:items, view:view };
 }
 function renderYourHorizons(){
-  var tab = S.folder.id === 'following' ? 'following' : 'mine';
+  var collab = collaboratedHorizonItems();
+  var tab = S.folder.id === 'following' || (S.folder.id === 'collaborating' && collab.length) ? S.folder.id : 'mine';
+  if (S.folder.id === 'collaborating' && !collab.length) S.folder.id = 'mine';
+  var tabs = [
+    { id:'mine', label:'My horizons', items:myHorizonItems },
+    { id:'following', label:'Following', items:followedHorizonItems }
+  ];
+  if (collab.length) tabs.push({ id:'collaborating', label:'Collaborating', items:collaboratedHorizonItems });
   var built = tabbedCollection({
     store:'hypernet-hz-view',
     tab:tab,
-    empty: tab === 'following' ? 'You are not following any horizons yet.' : 'Nothing here yet.',
-    tabs:[
-      { id:'mine', label:'My horizons', items:myHorizonItems },
-      { id:'following', label:'Following', items:followedHorizonItems }
-    ],
+    empty: tab === 'following' ? 'You are not following any horizons yet.' : tab === 'collaborating' ? 'You are not collaborating on any horizons yet.' : 'Nothing here yet.',
+    tabs:tabs,
     renderRow:hzCollRow,
     renderSquare:hzCollSquare
   });
@@ -9692,7 +9710,7 @@ function itemPath(it){
            callout:'callout/' + coSlug(it.id), group:'group/' + it.id, chat:'chats/' + chatSlug(it.id) }[it.type] || 'home';
 }
 function folderPath(f){
-  if (f.kind === 'yourhz') return 'yourhz/' + (f.id === 'following' ? 'following' : 'mine');
+  if (f.kind === 'yourhz') return 'yourhz/' + (f.id === 'following' || f.id === 'collaborating' ? f.id : 'mine');
   return f.kind === 'shelf' ? 'explore/' + f.id : f.kind === 'explore' ? 'explore' + (f.id ? '/' + f.id : '') : f.kind === 'horizon' ? 'horizon/' + hzSlug(f.id) : f.kind;
 }
 /* the link to one thing, as anyone can open it */
@@ -9734,7 +9752,7 @@ function folderFrom(a, b){
   if (a === 'horizons' || a === 'people') return { kind:'explore', id:a };
   if (a === 'home' && b) return isExploreKind(b) && b !== 'people' ? { kind:'explore', id:b } : SHELFIDS.test(b) ? { kind:'shelf', id:b } : b === 'people' ? { kind:'shelf', id:'followed' } : { kind:'explore', id:null };
   if (a === 'horizon'){ var hz = hzBySlug(b); return hz ? { kind:'horizon', id:hz } : null; }
-  if (a === 'yourhz') return { kind:'yourhz', id: b === 'following' ? 'following' : 'mine' };
+  if (a === 'yourhz') return { kind:'yourhz', id: b === 'following' || b === 'collaborating' ? b : 'mine' };
   return FOLDERKINDS.test(a || '') ? { kind:a, id:null } : null;
 }
 function parseHash(h){

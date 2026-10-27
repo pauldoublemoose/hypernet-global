@@ -3288,6 +3288,42 @@ async function overflowEverywhere(p, label){
     await c.context().close();
   }
 
+  /* Your horizons: a horizon you collaborate on is a tab of the same collection, and it opens with edit controls */
+  {
+    const c = await ctx('desk');
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    const plugs = await ev(c, () => ['home','explore','manage','special'].reduce((acc, s) => acc.concat(HNNav.rows(s).map(it => s + '/' + it.id)), []));
+    ok(plugs.join() === 'manage/groups,special/inferno,special/moonwalk', 'desk: collaborator work adds no sidebar entry ' + plugs.join());
+    await c.click('#navbody .nrow[data-kind="yourhz"]'); await c.waitForTimeout(300);
+    ok(await ev(c, () => [...document.querySelectorAll('#listbody .tc-tab')].map(b => b.textContent).join('|') === 'My horizons|Following|Collaborating'),
+      'desk: Your horizons adds Collaborating beside My horizons and Following');
+    await c.click('#listbody [data-act="tctab"][data-id="collaborating"]'); await c.waitForTimeout(250);
+    const listed = await ev(c, () => [...document.querySelectorAll('#listbody .row[data-type="horizon"]')].map(r => r.getAttribute('data-id')));
+    ok(listed.indexOf('horizon-dust') >= 0 && listed.indexOf('horizon-ridge') < 0, 'desk: Collaborating lists Dust & Neon and not a horizon you own ' + listed.join());
+    await c.click('#listbody .row[data-id="horizon-dust"]'); await c.waitForTimeout(350);
+    const dust = await ev(c, () => ({
+      title:(document.querySelector('#dscroll h1') || {}).textContent,
+      acts:[...document.querySelectorAll('#dscroll .pg-horizon .actbar [data-act]')].map(b => b.getAttribute('data-act')).join(),
+      faces:!!document.querySelector('#dscroll .hzfaces'),
+      invite:!!document.querySelector('#dscroll [data-act="addcollab"]')
+    }));
+    ok(dust.title === 'Dust & Neon' && dust.acts === 'addevents,edithz,followhz,share' && dust.faces && !dust.invite,
+      'desk: a horizon you collaborate on opens with edit controls ' + JSON.stringify(dust));
+    await c.click('#dbar [data-act="closewin"]'); await c.waitForTimeout(200);
+    await c.click('#listbody [data-act="tctab"][data-id="mine"]'); await c.waitForTimeout(250);
+    await c.click('#listbody .row[data-id="horizon-ridge"]'); await c.waitForTimeout(350);
+    const ridge = await ev(c, () => ({
+      title:(document.querySelector('#dscroll h1') || {}).textContent,
+      faces:!!document.querySelector('#dscroll .hzfaces'),
+      invite:(document.querySelector('#dscroll [data-act="addcollab"]') || {}).textContent || ''
+    }));
+    ok(ridge.title === 'Ridge week' && ridge.faces && ridge.invite.trim() === 'Invite',
+      'desk: a horizon you own still shows the collaborators row and Invite ' + JSON.stringify(ridge));
+    ok(!c.errors.length, 'desk: no console errors (collaborating tab) ' + c.errors.join(' '));
+    await c.context().close();
+  }
+
   /* ?offline=1 only: Demo: new invites makes two fresh pending cards after both were accepted */
   {
     const c = await ctx('desk');

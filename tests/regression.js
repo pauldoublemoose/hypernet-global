@@ -380,8 +380,8 @@ async function overflowEverywhere(p, label){
   await join(o, 'Jonas Berg', 'jonas');
   await o.evaluate(() => runCmd('new-horizon')); await o.waitForTimeout(150);
   await o.fill('#nh-n', 'Driftwood crew season'); await o.click('#nh-go'); await o.waitForTimeout(300);
-  ok(await ev(o, () => S.stack[0].type === 'horizon' && !document.getElementById('win').hidden && document.querySelectorAll('#navbody .nrow.sel').length === 1 && document.querySelectorAll('#navbody .nrow.open').length === 1),
-     'R2: a new horizon opens in the window; one sidebar row lit (the list), its own row marked open');
+  ok(await ev(o, () => S.stack[0].type === 'horizon' && !document.getElementById('win').hidden && document.querySelectorAll('#navbody .nrow.sel').length === 1 && document.querySelectorAll('#navbody .nrow.open').length === 0),
+     'R2: a new horizon opens in the window; one sidebar row lit (the list). Owned horizons are not sidebar rows');
   /* 2026-10-05: no Publish button that turns into Share — Edit holds who can see it, Share is always Share */
   ok(await ev(o, () => !!document.querySelector('#dscroll [data-act="edithz"]') && !!document.querySelector('#dscroll [data-act="share"]') && !document.querySelector('#dscroll [data-act="publishhz"]')),
      'R2: a private horizon has Edit and Share, no Publish button');
@@ -724,7 +724,7 @@ async function overflowEverywhere(p, label){
     ok(pub.strip === 1 && pub.fof && pub.verbs, kind + ': one call out at a time in its band, people to follow, and Interested / Going on event cards');
     /* Explore: the four kinds; the old destinations land on them */
     if (kind === 'desk'){
-      ok(await ev(c, () => [...document.querySelectorAll('#navbody .nsubrow .nlab')].map(x => x.textContent).join('|') === 'Events|Event Horizons|Call outs|People' &&
+      ok(await ev(c, () => [...document.querySelectorAll('#navbody .nsubrow .nlab')].map(x => x.textContent).join('|') === 'Events|Horizons|Call outs|People' &&
          !document.querySelector('#navbody [data-kind="horizons"], #navbody [data-kind="people"]')), 'desk: Explore has its four kinds in the sidebar, the old Horizons / People rows are gone');
     } else {
       await c.tap('#tabbar [data-id="explore"]'); await c.waitForTimeout(350);
@@ -1283,7 +1283,7 @@ async function overflowEverywhere(p, label){
                rows:document.querySelectorAll('#listbody .row').length, titles:[...document.querySelectorAll('#listbody .shelf .shh h3')].map(h => h.firstChild.textContent.trim()) }; });
     ok(ov.shelves >= 4 && ov.cards >= 10 && ov.square && !ov.rows && ov.titles.indexOf('This week') === 0, kind + ': Explore\'s overview is shelves of squares, not rows ' + JSON.stringify(ov));
     if (kind === 'phone') ok(await ev(c, () => [...document.querySelectorAll('#chead .kinds .kind')].map(x => x.textContent).join('|') === 'All|Events|Horizons|Call outs|People'), 'phone: Explore keeps its kinds as tabs over the squares');
-    else ok(await ev(c, () => [...document.querySelectorAll('#navbody .nsubrow .nlab')].map(x => x.textContent).join('|') === 'Events|Event Horizons|Call outs|People' && !!document.querySelector('#navbody .nrow.sel .nlab') && document.querySelector('#navbody .nrow.sel').textContent.indexOf('Explore') >= 0),
+    else ok(await ev(c, () => [...document.querySelectorAll('#navbody .nsubrow .nlab')].map(x => x.textContent).join('|') === 'Events|Horizons|Call outs|People' && !!document.querySelector('#navbody .navh.on') && document.querySelector('#navbody .navh.on').textContent.indexOf('EXPLORE') >= 0),
        kind + ': Explore keeps its four kinds under it in the sidebar, Explore lit');
     if (kind !== 'phone'){
       /* 2026-10-04 (layout): on a desktop or tablet each section is one row of whole squares that fills the container —
@@ -2127,7 +2127,7 @@ async function overflowEverywhere(p, label){
       ok(await ev(c, () => S.tab === 'home' && !document.querySelector('#chats').offsetParent), 'phone: Home tab from a chat');
       await c.tap('#tabbar [data-id="chats"]'); await c.waitForTimeout(350);
     } else {
-      await c.click('#navbody .nrow[data-kind="explore"]'); await c.waitForTimeout(300);
+      await c.click('#navbody .navh[data-kind="explore"]'); await c.waitForTimeout(300);
       await c.click('#navbody .nrow[data-kind="home"]'); await c.waitForTimeout(300);
     }
     const p2 = await place();

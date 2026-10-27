@@ -1296,6 +1296,10 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .reqhit{ outline:1px dotted var(--ink); outline-offset:2px; }
 .reqstate{ color:var(--dim); white-space:nowrap; }
 .reqstate .btn{ margin-left:6px; }
+.hncog-unenforced{ margin:8px 0 0; color:var(--dim); font-size:var(--fs-s); line-height:16px; }
+.hncog-err{ margin:8px 0 0; color:var(--alert); font-size:var(--fs-s); line-height:16px; }
+.hncog-err[hidden]{ display:none; }
+.ctxmenu .ci.danger, .ctxsheet .sheetrow.danger{ color:var(--alert); }
 [data-theme="y2fresh"] .relacts .btn, [data-theme="y2fresh"] .relrow .btn, [data-theme="y2fresh"] .dlg.rel-dlg .btn, [data-theme="y2fresh"] .reqrow .btn{ border:3px solid var(--rule); }
 .relacts .btn:focus, .relcounts button:focus{ outline:1px dotted var(--ink); outline-offset:2px; }
 .audpick{ display:flex; flex-direction:column; gap:0; max-width:28rem; min-width:0; padding:0; background:transparent; color:var(--ink); }
@@ -1749,6 +1753,7 @@ a.maplink:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
 <script src="_shared/hypernet-themes.js"></script>
 <script src="_shared/hypernet-event-details.js"></script>
 <script src="_shared/hypernet-audience.js"></script>
+<script src="_shared/hypernet-cog.js"></script>
 <script src="_shared/hypernet-rel.js"></script>
 <script src="_shared/hypernet-api.js"></script>
 <script src="_shared/map-link.js"></script>
@@ -8764,7 +8769,15 @@ function openItemMenu(btn, id, items, opts){
   ctxFocus(root.querySelector('.ci'));
 }
 function openAddToMenu(btn, id){ openItemMenu(btn, id, addToMenuItems(id), { title:'Add to' }); }
-function openEventCog(btn, id){ openItemMenu(btn, id, eventCogItems(id), { title:'Admin controls' }); }
+function openEventCog(btn, id){
+  var e = EVENTS[id];
+  if (!e) return;
+  if (!window.HNCog){ openItemMenu(btn, id, eventCogItems(id), { title:'Admin controls' }); return; }
+  var aud = e.audience || (window.HNAudience ? HNAudience.fromPrivacy(e.privacy || 'everyone') : { include:['everyone'], exclude:[] });
+  var off = HNCog.mount(btn, { kind:'event', id:id, title:e.title, audience:aud, canEdit:true });
+  HNCog.open(btn);
+  off();
+}
 /* ---- the desktop menu ---- */
 var CTX = null;                /* { root, sub, subOf, target, back, tOpen, tClose } */
 function ctxMenuEl(items, level){

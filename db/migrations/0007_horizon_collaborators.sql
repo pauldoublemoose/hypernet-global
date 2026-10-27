@@ -1,6 +1,4 @@
 -- 0007_horizon_collaborators. A row is the invite onto one horizon.
--- Pending (accepted_at null) grants nothing. Accepted (accepted_at set) may edit the name,
--- the description, and the event list. Deleting the horizon stays with the owner.
 -- The invite is a chat message. Folded in here: 0001's messages_card_type_check, so that
 -- message can use card_type horizon_invite. NULL card_type stays a normal text message.
 
@@ -10,9 +8,11 @@ create table horizon_collaborators (
   added_by    uuid not null references people,
   created_at  timestamptz not null default now(),
   accepted_at timestamptz,
+  declined_at timestamptz,
   role        text,
   primary key (horizon_id, person_id),
-  constraint horizon_collaborators_role_check check (role is null or role in ('collaborator', 'follower'))
+  constraint horizon_collaborators_role_check check (role is null or role in ('collaborator', 'follower')),
+  constraint horizon_collaborators_answer_check check (declined_at is null or accepted_at is null)
 );
 create index horizon_collaborators_person on horizon_collaborators (person_id);
 

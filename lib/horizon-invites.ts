@@ -14,3 +14,13 @@ export function parseInviteBody(body: string): ParsedInvite | null {
   }
   return null;
 }
+
+export type InviteAnswer = "accept" | "decline" | "undo";
+
+export function respondInvite(current: ParsedInvite, answer: InviteAnswer): ParsedInvite | null {
+  if (current.state === "cancelled") return null;
+  if (answer === "accept" && current.state === "pending") return { state: "accepted", role: current.role };
+  if (answer === "decline" && current.state === "pending") return { state: "declined", role: current.role };
+  if (answer === "undo" && (current.state === "accepted" || current.state === "declined")) return { state: "pending", role: current.role };
+  return null;
+}

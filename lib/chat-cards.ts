@@ -9,6 +9,7 @@ export const chatCards = {
     linkType: "horizon",
     accept: { method: "POST" as const, path: (id: string) => `/api/horizons/${id}/invites` },
     decline: { method: "DELETE" as const, path: (id: string) => `/api/horizons/${id}/invites` },
+    undo: { method: "PATCH" as const, path: (id: string) => `/api/horizons/${id}/invites` },
   },
 } as const;
 

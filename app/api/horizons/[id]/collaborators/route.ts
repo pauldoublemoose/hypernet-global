@@ -29,7 +29,10 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
        select $1::uuid, $2::uuid, $3::uuid, $6::text
        where $6::text is distinct from 'follower'
           or not exists (select 1 from horizon_follows hf where hf.horizon_id = $1 and hf.person_id = $2)
-       on conflict (horizon_id, person_id) do nothing
+       on conflict (horizon_id, person_id) do update
+         set role = excluded.role, added_by = excluded.added_by, declined_at = null
+         where horizon_collaborators.declined_at is not null
+           and horizon_collaborators.accepted_at is null
        returning person_id
      ),
      new_thread as (

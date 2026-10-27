@@ -196,6 +196,7 @@ export const horizonCollaborators = pgTable(
     addedBy: uuid("added_by").notNull().references(() => people.id),
     createdAt: tstz("created_at").notNull().defaultNow(),
     acceptedAt: tstz("accepted_at"),
+    declinedAt: tstz("declined_at"),
     role: text("role"),
   },
   (t) => [

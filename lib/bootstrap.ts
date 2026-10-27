@@ -69,8 +69,8 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
                                     where he.horizon_id = h.id and can_see_event($1::uuid, e)), '[]'),
              'followers', (select count(*) from horizon_follows hf where hf.horizon_id = h.id),
              'collaboratorIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc where hc.horizon_id = h.id and hc.accepted_at is not null), '[]'),
-             'pendingCollaboratorIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc where hc.horizon_id = h.id and hc.accepted_at is null and (hc.role is null or hc.role = 'collaborator') and (h.owner_id = $1::uuid or hc.person_id = $1::uuid)), '[]'),
-             'pendingFollowerIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc where hc.horizon_id = h.id and hc.accepted_at is null and hc.role = 'follower' and (h.owner_id = $1::uuid or hc.person_id = $1::uuid)), '[]'))
+             'pendingCollaboratorIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc where hc.horizon_id = h.id and hc.accepted_at is null and hc.declined_at is null and (hc.role is null or hc.role = 'collaborator') and (h.owner_id = $1::uuid or hc.person_id = $1::uuid)), '[]'),
+             'pendingFollowerIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc where hc.horizon_id = h.id and hc.accepted_at is null and hc.declined_at is null and hc.role = 'follower' and (h.owner_id = $1::uuid or hc.person_id = $1::uuid)), '[]'))
              order by h.created_at), '[]') v
              from horizons h where ${horizonVisible("$1")}`),
       one(`select coalesce(json_agg(json_build_array(hf.person_id, hf.horizon_id)), '[]') v

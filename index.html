@@ -1523,6 +1523,7 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .mbody:has(.hzacts){ display:flex; flex-direction:column; align-items:stretch; gap:8px; width:100%; color:var(--ink); }
 .hzacts{ display:flex; flex-wrap:nowrap; gap:8px; min-width:0; }
 .hzacts .btn{ flex:1 1 0; width:0; min-width:0; white-space:nowrap; color:var(--ink); }
+.hzacts .hzundo{ flex:0 1 auto; width:auto; }
 .hzname{ display:inline; margin:0; padding:0; border:0; background:transparent; color:var(--ink); font:inherit; line-height:inherit; text-align:inherit; text-decoration:underline; text-underline-offset:2px; cursor:pointer; min-height:0; vertical-align:baseline; }
 .msg.me .hzname{ color:var(--white); }
 .hzname:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
@@ -6445,15 +6446,6 @@ function pickCollab(personId){
 function dmCid(pid){
   return Object.keys(CHATS).filter(function(k){ return CHATS[k].memberIds && CHATS[k].memberIds[0] === pid; })[0];
 }
-function pendingInvite(cid, hzId){
-  var c = cid && CHATS[cid];
-  if (!c) return null;
-  var hit = null;
-  (c.messages || []).forEach(function(m){
-    if (m.cardType === 'horizon_invite' && m.cardId === hzId && (m.invite === 'pending' || m.invite === 'pending follower') && m.from !== 'self') hit = m;
-  });
-  return hit;
-}
 /* offline only (?offline=1): a fresh pending collaborator invite and a fresh pending follower invite from Anna */
 var DEMOINV = 0;
 function demoNewInvites(){
@@ -6481,43 +6473,53 @@ function demoNewInvites(){
   delete CHATSCROLL['c-anna'];
   render();
 }
-function acceptHzInvite(cid, hzId){
-  var m = pendingInvite(cid, hzId), me = myPid();
-  if (!m) return;
-  var follower = m.invite === 'pending follower';
-  if (follower){
-    m.invite = 'accepted follower';
-    m.text = 'accepted follower';
-    var hzF = HORIZONS[hzId];
-    if (hzF && me) hzF.pendingFollowerIds = (hzF.pendingFollowerIds || []).filter(function(id){ return id !== me; });
-    HZFOLLOW[hzId] = true;
-  } else {
-    m.invite = 'accepted';
-    m.text = 'accepted';
-    var hz = HORIZONS[hzId];
-    if (hz && me){
-      hz.pendingCollaboratorIds = (hz.pendingCollaboratorIds || []).filter(function(id){ return id !== me; });
-      if (!hz.collaboratorIds) hz.collaboratorIds = [];
-      if (hz.collaboratorIds.indexOf(me) < 0) hz.collaboratorIds.push(me);
-    }
-  }
-  if (ONLINE) HNAPI.acceptInvite(hzId);
-  render();
+function inviteWord(m){ return String((m && m.invite) || 'pending').split(' ')[0]; }
+function inviteFollower(m){ return String((m && m.invite) || '').indexOf('follower') >= 0; }
+function lastInvite(cid, hzId, words, mid){
+  var c = cid && CHATS[cid];
+  if (!c) return null;
+  var hit = null;
+  (c.messages || []).forEach(function(m){
+    if (m.cardType !== 'horizon_invite' || m.cardId !== hzId || m.from === 'self') return;
+    if (words.indexOf(inviteWord(m)) < 0) return;
+    if (mid && m.id !== mid) return;
+    hit = m;
+  });
+  return hit;
 }
-function declineHzInvite(cid, hzId){
-  var m = pendingInvite(cid, hzId), me = myPid();
+function respondHzInvite(cid, hzId, answer, mid){
+  var words = answer === 'undo' ? ['accepted', 'declined'] : ['pending'];
+  var m = lastInvite(cid, hzId, words, mid), me = myPid();
   if (!m) return;
-  var follower = m.invite === 'pending follower';
-  m.invite = follower ? 'declined follower' : 'declined';
+  var state = inviteWord(m), follower = inviteFollower(m), next = null;
+  if (answer === 'accept' && state === 'pending') next = 'accepted';
+  else if (answer === 'decline' && state === 'pending') next = 'declined';
+  else if (answer === 'undo' && (state === 'accepted' || state === 'declined')) next = 'pending';
+  if (!next) return;
+  m.invite = follower ? next + ' follower' : next;
   m.text = m.invite;
   var hz = HORIZONS[hzId];
   if (hz && me){
-    if (follower) hz.pendingFollowerIds = (hz.pendingFollowerIds || []).filter(function(id){ return id !== me; });
-    else hz.pendingCollaboratorIds = (hz.pendingCollaboratorIds || []).filter(function(id){ return id !== me; });
+    var drop = function(key){ hz[key] = (hz[key] || []).filter(function(id){ return id !== me; }); };
+    var add = function(key){ if (!hz[key]) hz[key] = []; if (hz[key].indexOf(me) < 0) hz[key].push(me); };
+    if (answer === 'accept' && follower){ drop('pendingFollowerIds'); HZFOLLOW[hzId] = true; }
+    else if (answer === 'accept'){ drop('pendingCollaboratorIds'); add('collaboratorIds'); }
+    else if (answer === 'decline' && follower) drop('pendingFollowerIds');
+    else if (answer === 'decline') drop('pendingCollaboratorIds');
+    else if (follower && state === 'accepted'){ delete HZFOLLOW[hzId]; drop('collaboratorIds'); add('pendingFollowerIds'); }
+    else if (follower) add('pendingFollowerIds');
+    else if (state === 'accepted'){ drop('collaboratorIds'); add('pendingCollaboratorIds'); }
+    else add('pendingCollaboratorIds');
   }
-  if (ONLINE) HNAPI.declineInvite(hzId);
+  if (ONLINE){
+    if (answer === 'accept') HNAPI.acceptInvite(hzId);
+    else if (answer === 'decline') HNAPI.declineInvite(hzId);
+    else HNAPI.undoInvite(hzId);
+  }
   render();
 }
+function acceptHzInvite(cid, hzId){ respondHzInvite(cid, hzId, 'accept'); }
+function declineHzInvite(cid, hzId){ respondHzInvite(cid, hzId, 'decline'); }
 function stampInvite(hzId, personId, next){
   var c = CHATS[dmCid(personId)];
   if (!c) return;
@@ -9219,9 +9221,11 @@ document.addEventListener('click', function(ev){
     case 'rmcollab':     removeCollab(n.getAttribute('data-hz'), id); break;
     case 'demonewinv':   demoNewInvites(); break;
     case 'hzaccept':
-    case 'hzdecline': {
+    case 'hzdecline':
+    case 'hzundo': {
       var card = ChatCards.get(n.getAttribute('data-card'));
-      if (card) (act === 'hzaccept' ? card.accept : card.decline)(n.getAttribute('data-chat'), id);
+      var fn = act === 'hzaccept' ? 'accept' : act === 'hzdecline' ? 'decline' : 'undo';
+      if (card && card[fn]) card[fn](n.getAttribute('data-chat'), id, n.getAttribute('data-mid'));
       break;
     }
     case 'leavecollab':  leaveCollab(id); break;

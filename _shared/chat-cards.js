@@ -37,21 +37,33 @@ var ChatCards = (function(){
     phrase: horizonPhrase,
     link: function(m){ return m && m.cardId ? { type:'horizon', id:m.cardId } : null; },
     pending: function(m, me){ return !me && String((m && m.invite) || 'pending').split(' ')[0] === 'pending'; },
-    accept: function(cid, id){ acceptHzInvite(cid, id); },
-    decline: function(cid, id){ declineHzInvite(cid, id); },
+    answered: function(m, me){
+      if (me) return false;
+      var state = String((m && m.invite) || 'pending').split(' ')[0];
+      return state === 'accepted' || state === 'declined';
+    },
+    accept: function(cid, id){ respondHzInvite(cid, id, 'accept'); },
+    decline: function(cid, id){ respondHzInvite(cid, id, 'decline'); },
+    undo: function(cid, id, mid){ respondHzInvite(cid, id, 'undo', mid); },
     api: {
       accept: function(id){ return { method:'POST', path:'/api/horizons/' + id + '/invites' }; },
-      decline: function(id){ return { method:'DELETE', path:'/api/horizons/' + id + '/invites' }; }
+      decline: function(id){ return { method:'DELETE', path:'/api/horizons/' + id + '/invites' }; },
+      undo: function(id){ return { method:'PATCH', path:'/api/horizons/' + id + '/invites' }; }
     },
     read: function(row, m){
       row.invite = m.body;
       row.text = (m.body === 'pending' || m.body === 'pending follower') ? (m.cardName || m.body) : m.body;
     }
   };
+  function actBtn(act, label, m, cid){
+    var mid = m && m.id ? ' data-mid="'+esc(m.id)+'"' : '';
+    return '<button type="button" class="btn'+(act === 'hzundo' ? ' hzundo' : '')+'" data-act="'+act+'" data-card="horizon_invite" data-id="'+esc(m.cardId)+'" data-chat="'+esc(cid)+'"'+mid+'>'+label+'</button>';
+  }
   horizonInvite.render = function(m, me, cid){
     var html = phraseHTML(m, horizonInvite.phrase(m), horizonInvite.link(m));
-    if (!horizonInvite.pending(m, me)) return html;
-    return '<span class="hzinv">'+html+'</span><span class="hzacts"><button type="button" class="btn" data-act="hzaccept" data-card="horizon_invite" data-id="'+esc(m.cardId)+'" data-chat="'+esc(cid)+'">Accept</button><button type="button" class="btn" data-act="hzdecline" data-card="horizon_invite" data-id="'+esc(m.cardId)+'" data-chat="'+esc(cid)+'">Decline</button></span>';
+    if (horizonInvite.pending(m, me)) return '<span class="hzinv">'+html+'</span><span class="hzacts">'+actBtn('hzaccept', 'Accept', m, cid)+actBtn('hzdecline', 'Decline', m, cid)+'</span>';
+    if (horizonInvite.answered(m, me)) return '<span class="hzinv">'+html+'</span><span class="hzacts">'+actBtn('hzundo', 'Undo', m, cid)+'</span>';
+    return html;
   };
   var cards = { horizon_invite: horizonInvite };
   function get(type){ return type && Object.prototype.hasOwnProperty.call(cards, type) ? cards[type] : null; }

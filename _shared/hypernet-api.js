@@ -564,6 +564,17 @@
     var spec = ChatCards.get('horizon_invite').api.decline(hzId);
     return write('hz:' + hzId, spec.method, spec.path, undefined, (HORIZONS[hzId] || {}).name);
   };
+  HN.undoInvite = function(hzId){
+    var spec = ChatCards.get('horizon_invite').api.undo(hzId);
+    return write('hz:' + hzId, spec.method, spec.path, {}, (HORIZONS[hzId] || {}).name).then(function(r){
+      var h = HORIZONS[hzId];
+      if (!r || !r.horizon || !h) return;
+      h.collaboratorIds = (r.horizon.collaboratorIds || []).slice();
+      h.pendingCollaboratorIds = (r.horizon.pendingCollaboratorIds || []).slice();
+      h.pendingFollowerIds = (r.horizon.pendingFollowerIds || []).slice();
+      if (ROUTE.ready) render();
+    });
+  };
   HN.removeCollaborator = function(hzId, personId){
     return write('hz:' + hzId, 'DELETE', '/api/horizons/' + hzId + '/collaborators?personId=' + encodeURIComponent(personId), undefined, (HORIZONS[hzId] || {}).name);
   };

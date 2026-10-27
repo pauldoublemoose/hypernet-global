@@ -5,7 +5,7 @@ import { chatCard } from "../../lib/chat-cards";
 
 type CardApi = { method: string; path: string };
 type CardSpec = {
-  api: { accept: (id: string) => CardApi; decline: (id: string) => CardApi };
+  api: { accept: (id: string) => CardApi; decline: (id: string) => CardApi; undo: (id: string) => CardApi };
 };
 type Cards = {
   get: (type: string | null) => CardSpec | null;
@@ -57,7 +57,15 @@ describe("chat cards", () => {
     expect(cards.body(follow, false, "c-anna")).toContain('data-id="horizon-surface"');
     expect(cards.body({ ...quiet, from: "self" }, true, "c-anna")).not.toContain(">Accept<");
     expect(cards.phrase({ ...quiet, invite: "accepted" })).toBe("Accepted Quiet Rooms");
-    expect(cards.body({ ...quiet, invite: "accepted" }, false, "c-anna")).not.toContain(">Accept<");
+    const accepted = cards.body({ ...quiet, invite: "accepted" }, false, "c-anna");
+    expect(accepted).not.toContain(">Accept<");
+    expect(accepted).toContain(">Undo<");
+    expect(accepted).toContain('data-act="hzundo"');
+    expect(cards.body({ ...quiet, invite: "declined" }, false, "c-anna")).toContain(">Undo<");
+    expect(cards.body({ ...quiet, invite: "cancelled" }, false, "c-anna")).not.toContain(">Undo<");
+    expect(cards.body({ ...quiet, invite: "accepted", from: "self" }, true, "c-anna")).not.toContain(">Undo<");
+    expect(spec!.api.undo("hz-1")).toEqual({ method: "PATCH", path: "/api/horizons/hz-1/invites" });
+    expect({ method: server?.undo.method, path: server?.undo.path("hz-1") }).toEqual(spec!.api.undo("hz-1"));
   });
 
   it("an unknown card type renders as a plain message with no buttons", () => {

@@ -3383,6 +3383,55 @@ async function overflowEverywhere(p, label){
     await c.context().close();
   }
 
+  {
+    const c = await ctx('desk');
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right');
+    await c.click('.chrow[data-id="c-anna"]'); await c.waitForTimeout(250);
+    const quiet = () => ev(c, () => {
+      const btn = document.querySelector('#msgs [data-id="horizon-quiet"]');
+      const msg = btn && btn.closest('.msg');
+      const m = (CHATS['c-anna'].messages || []).filter(x => x.cardId === 'horizon-quiet').pop();
+      return {
+        text: msg ? msg.innerText.replace(/\s+/g, ' ').trim() : '',
+        invite: m && m.invite,
+        undo: !!document.querySelector('#msgs [data-act="hzundo"][data-id="horizon-quiet"]'),
+        accept: !!document.querySelector('#msgs [data-act="hzaccept"][data-id="horizon-quiet"]'),
+        decline: !!document.querySelector('#msgs [data-act="hzdecline"][data-id="horizon-quiet"]'),
+        collab: (HORIZONS['horizon-quiet'].collaboratorIds || []).indexOf('p-michal') >= 0,
+        pend: (HORIZONS['horizon-quiet'].pendingCollaboratorIds || []).indexOf('p-michal') >= 0
+      };
+    });
+    await c.click('#msgs [data-act="hzaccept"][data-id="horizon-quiet"]'); await c.waitForTimeout(200);
+    const accepted = await quiet();
+    ok(/Accepted Quiet Rooms/.test(accepted.text) && /Undo/.test(accepted.text) && accepted.invite === 'accepted' && accepted.undo && !accepted.accept && accepted.collab && !accepted.pend,
+      'desk: accepting Quiet Rooms shows Undo ' + JSON.stringify(accepted));
+    await c.click('#msgs [data-act="hzundo"][data-id="horizon-quiet"]'); await c.waitForTimeout(200);
+    const back = await quiet();
+    ok(/Collaborate on Quiet Rooms/.test(back.text) && back.invite === 'pending' && !back.undo && back.accept && back.decline && !back.collab && back.pend,
+      'desk: Undo after accept returns the pending card ' + JSON.stringify(back));
+    await c.click('#msgs [data-act="hzdecline"][data-id="horizon-quiet"]'); await c.waitForTimeout(200);
+    const declined = await quiet();
+    ok(/Declined Quiet Rooms/.test(declined.text) && /Undo/.test(declined.text) && declined.invite === 'declined' && declined.undo && !declined.accept && !declined.collab && !declined.pend,
+      'desk: declining Quiet Rooms shows Undo ' + JSON.stringify(declined));
+    await c.click('#msgs [data-act="hzundo"][data-id="horizon-quiet"]'); await c.waitForTimeout(200);
+    const again = await quiet();
+    ok(/Collaborate on Quiet Rooms/.test(again.text) && again.invite === 'pending' && !again.undo && again.accept && again.decline && !again.collab && again.pend,
+      'desk: Undo after decline returns the pending card ' + JSON.stringify(again));
+    await c.click('#msgs [data-act="hzaccept"][data-id="horizon-surface"]'); await c.waitForTimeout(200);
+    await c.click('#msgs [data-act="hzundo"][data-id="horizon-surface"]'); await c.waitForTimeout(200);
+    const follow = await ev(c, () => {
+      const m = (CHATS['c-anna'].messages || []).filter(x => x.cardId === 'horizon-surface').pop();
+      return { invite: m && m.invite, follow: !!HZFOLLOW['horizon-surface'], pend: (HORIZONS['horizon-surface'].pendingFollowerIds || []).indexOf('p-michal') >= 0,
+        undo: !!document.querySelector('#msgs [data-act="hzundo"][data-id="horizon-surface"]'), accept: !!document.querySelector('#msgs [data-act="hzaccept"][data-id="horizon-surface"]') };
+    });
+    ok(follow.invite === 'pending follower' && !follow.follow && follow.pend && !follow.undo && follow.accept,
+      'desk: Undo after accepting a follow invite restores the pending follow ' + JSON.stringify(follow));
+    ok(!c.errors.length, 'desk: no console errors (undo invite) ' + c.errors.join(' '));
+    await c.context().close();
+  }
+
   /* ---------------- tablet ---------------- */
   const t = await ctx('tab');
   await open(t, '', true);

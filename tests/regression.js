@@ -2796,13 +2796,14 @@ async function overflowEverywhere(p, label){
     await c.evaluate(() => runCmd('new-horizon')); await c.waitForTimeout(200);
     await c.fill('#nh-n', 'Zurich events'); await c.click('#nh-go'); await c.waitForTimeout(400);
     const hz = await ev(c, () => S.stack[0].id);
-    const bar = await ev(c, () => { const vs = [...document.querySelectorAll('#dscroll .pg-horizon .actbar .btn')];
+    const bar = await ev(c, () => { const vs = [...document.querySelectorAll('#dscroll .pg-horizon .actbar .btn')].filter(b => !b.hidden);
       const invite = document.querySelector('#dscroll [data-act="addcollab"]');
+      const more = document.querySelector('#dscroll [data-act="hzmore"]');
       return { acts:vs.map(b => b.getAttribute('data-act')).join(), tops:new Set(vs.map(b => Math.round(b.getBoundingClientRect().top))).size,
-               fit:vs.every(b => b.scrollWidth <= b.clientWidth + 1), more:(document.querySelector('#dscroll [data-act="hzmore"]') || {}).getAttribute('data-more'),
+               fit:vs.every(b => b.scrollWidth <= b.clientWidth + 1), moreHidden:!!(more && more.hidden),
                invite: invite ? invite.textContent.trim() : '' }; });
-    ok(bar.acts === 'addevents,edithz,share,addcollab,hzmore' && bar.invite === 'Invite' && bar.fit && bar.more === 'delete',
-       kind + ': your horizon\'s toolbar is Add events · Edit · Share · Invite · ⋯, ⋯ holds Delete only ' + JSON.stringify(bar));
+    ok(bar.acts === 'addevents,edithz,share,addcollab,hzcog' && bar.invite === 'Invite' && bar.fit && bar.moreHidden,
+       kind + ': your horizon\'s toolbar is Add events · Edit · Share · Invite · cog ' + JSON.stringify(bar));
     await c.click('#dscroll [data-act="addcollab"]'); await c.waitForTimeout(250);
     const inv = await ev(c, () => {
       const collab = document.querySelector('input[name="cc-role"][value="collaborator"]');
@@ -2811,8 +2812,8 @@ async function overflowEverywhere(p, label){
     });
     ok(inv.title === 'Invite' && inv.collab && inv.follower, kind + ': Invite opens with the title Invite, Collaborator checked, and Follower present ' + JSON.stringify(inv));
     await c.keyboard.press('Escape'); await c.waitForTimeout(150);
-    await c.click('#dscroll [data-act="hzmore"]'); await c.waitForTimeout(250);
-    ok(await ev(c, () => { const t = [...document.querySelectorAll('.ctxmenu .ci, .ctxsheet .sheetrow')].map(x => x.textContent.trim()); return t.length === 1 && /Delete/.test(t[0]); }), kind + ': ⋯ has no Published ✓, only Delete');
+    await c.click('#dscroll [data-act="hzcog"]'); await c.waitForTimeout(250);
+    ok(await ev(c, () => { const t = [...document.querySelectorAll('.ctxmenu .ci .clab, .ctxsheet .sheetrow')].map(x => x.textContent.trim()); return t.join('|') === 'Visibility|Invite collaborators/followers|Rename|Delete'; }), kind + ': the cog is Visibility, then invite, rename, and delete');
     await c.keyboard.press('Escape'); await ev(c, () => { closeCtx(); closeDialogs(); }); await c.waitForTimeout(150);
     /* Share on a private horizon says it is private and offers to make it public, then copies the link */
     await c.evaluate(() => { window.__exec = []; Object.defineProperty(navigator, 'clipboard', { value:undefined, configurable:true }); document.execCommand = function(cmd){ window.__exec.push(cmd); return true; }; });

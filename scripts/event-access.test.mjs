@@ -137,7 +137,9 @@ test("0011 adds cocreator_policy and a pending flag, and does not edit 0010", ()
   assert.match(html, /Are you the host\?/);
   assert.match(html, /Is this a new event or did it already happen\?/);
   assert.match(html, /Who can be listed as a co-creator\?/);
-  assert.equal(html.includes("Only admins can add co-creators"), false);
+  const policyUi = html.slice(html.indexOf("function cocreatorPolicyHTML"), html.indexOf("function cocreatorRequestRows"));
+  assert.equal(policyUi.includes("Only admins can add co-creators"), false);
+  assert.match(html, /function chronicleCrewDecision[\s\S]*Only admins can add co-creators/);
 });
 
 test("omitted role is not written and host is only the event host", () => {
@@ -375,7 +377,8 @@ test("the page shows Add to Chronicle without a help button, and search leaves p
   assert.equal(sheet.includes("helpTip("), false);
   assert.equal(html.includes("I was there"), false);
   assert.match(html, /function openPastEvent\(role, into\)/);
-  assert.match(html, /openPastEvent\(pastRole\)/);
+  assert.match(html, /data-act="chrolemenu"/);
+  assert.match(html, /chronicleCycleLabel\(role\)/);
   const ask = html.slice(html.indexOf("var newEventDialog"), html.indexOf("function adminInviteBanner"));
   assert.match(ask, /if \(CHRONICLE_ADD\)/);
   assert.equal(ask.includes("eventDraftDirty"), false);

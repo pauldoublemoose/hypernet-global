@@ -2108,7 +2108,7 @@ async function overflowEverywhere(p, label){
         fits: accept.scrollWidth <= accept.clientWidth + 1 && decline.scrollWidth <= decline.clientWidth + 1
       };
     }));
-    ok(inviteCards.length === 2 && inviteCards[0].text === 'Collaborate on Quiet Rooms' && inviteCards[1].text === 'Follow Surfaces & Projections' && inviteCards.every(x => x.sameRow && x.sameSize && x.textAbove && x.sideBySide && x.fits),
+    ok(inviteCards.length === 2 && inviteCards[0].text === 'Collaborate on horizon Quiet Rooms' && inviteCards[1].text === 'Follow horizon Surfaces & Projections' && inviteCards.every(x => x.sameRow && x.sameSize && x.textAbove && x.sideBySide && x.fits),
       kind + ': a horizon invite puts the role and the name above Accept and Decline, equal and on one row ' + JSON.stringify(inviteCards));
     await c.evaluate(() => { for (let i = 0; i < 24; i++) CHATS['c-anna'].messages.push({ from:i % 3 ? 'p-anna' : 'self', t:'09:' + String(10 + i), text:'Line ' + i + ' about the basement and the long tones' }); render(); });
     await c.waitForTimeout(200);
@@ -3385,7 +3385,7 @@ async function overflowEverywhere(p, label){
     }
     const decided = await lines();
     const has = (list, s) => list.some(t => t.indexOf(s) >= 0);
-    const pending = list => has(list, 'Collaborate on Quiet Rooms') && has(list, 'Follow Surfaces & Projections') && list.filter(t => /\bAccept\b/.test(t)).length === 2;
+    const pending = list => has(list, 'Collaborate on horizon Quiet Rooms') && has(list, 'Follow horizon Surfaces & Projections') && list.filter(t => /\bAccept\b/.test(t)).length === 2;
     ok(pending(fresh) && pending(sent) && has(sent, 'hi') && pending(back) && has(back, 'hi')
       && has(decided, 'Accepted Quiet Rooms') && has(decided, 'Declined to follow Surfaces & Projections') && has(decided, 'hi')
       && !decided.some(t => /\bAccept\b/.test(t)),
@@ -3533,7 +3533,7 @@ async function overflowEverywhere(p, label){
       && made.last.every(m => m.from === 'p-anna' && ids.indexOf(m.id) === ids.lastIndexOf(m.id) && before.indexOf(m.id) < 0 && /^hzinv-/.test(m.id) && m.ts)
       && made.last[0].ts < made.last[1].ts;
     ok(newest && made.accept.join() === 'horizon-quiet,horizon-surface' && !made.collab && !made.follow && made.pendC && made.pendF
-      && /Collaborate on Quiet Rooms/.test(made.bodies[0]) && /Follow Surfaces & Projections/.test(made.bodies[1]),
+      && /Collaborate on horizon Quiet Rooms/.test(made.bodies[0]) && /Follow horizon Surfaces & Projections/.test(made.bodies[1]),
       'desk: Demo: new invites adds two pending cards and clears the old membership ' + JSON.stringify(made));
     await c.click('#msgs [data-act="hzaccept"][data-id="horizon-quiet"]'); await c.waitForTimeout(200);
     await c.click('#msgs [data-act="hzaccept"][data-id="horizon-surface"]'); await c.waitForTimeout(200);
@@ -3578,7 +3578,7 @@ async function overflowEverywhere(p, label){
       'desk: accepting Quiet Rooms shows Undo ' + JSON.stringify(accepted));
     await c.click('#msgs [data-act="hzundo"][data-id="horizon-quiet"]'); await c.waitForTimeout(200);
     const back = await quiet();
-    ok(/Collaborate on Quiet Rooms/.test(back.text) && back.invite === 'pending' && !back.undo && back.accept && back.decline && !back.collab && back.pend,
+    ok(/Collaborate on horizon Quiet Rooms/.test(back.text) && back.invite === 'pending' && !back.undo && back.accept && back.decline && !back.collab && back.pend,
       'desk: Undo after accept returns the pending card ' + JSON.stringify(back));
     await c.click('#msgs [data-act="hzdecline"][data-id="horizon-quiet"]'); await c.waitForTimeout(200);
     const declined = await quiet();
@@ -3586,7 +3586,7 @@ async function overflowEverywhere(p, label){
       'desk: declining Quiet Rooms shows Undo ' + JSON.stringify(declined));
     await c.click('#msgs [data-act="hzundo"][data-id="horizon-quiet"]'); await c.waitForTimeout(200);
     const again = await quiet();
-    ok(/Collaborate on Quiet Rooms/.test(again.text) && again.invite === 'pending' && !again.undo && again.accept && again.decline && !again.collab && again.pend,
+    ok(/Collaborate on horizon Quiet Rooms/.test(again.text) && again.invite === 'pending' && !again.undo && again.accept && again.decline && !again.collab && again.pend,
       'desk: Undo after decline returns the pending card ' + JSON.stringify(again));
     await c.click('#msgs [data-act="hzaccept"][data-id="horizon-surface"]'); await c.waitForTimeout(200);
     await c.click('#msgs [data-act="hzundo"][data-id="horizon-surface"]'); await c.waitForTimeout(200);
@@ -3650,7 +3650,8 @@ async function overflowEverywhere(p, label){
       && prov.horizon && prov.horizon.id === 'horizon-quiet' && prov.horizon.name === 'Quiet Rooms'
       && prov.followRole === 'follower' && prov.followHz && prov.followHz.id === 'horizon-surface' && prov.followHz.name === 'Surfaces & Projections',
       'desk: the horizon invite provider is registered with two pending invites ' + JSON.stringify(prov));
-    ok(/invited you to collaborate on/.test(prov.html) && /data-act="open"/.test(prov.html) && /horizon-quiet/.test(prov.html)
+    ok(/Collaborate on horizon Quiet Rooms/.test(prov.html) && /data-act="open"/.test(prov.html) && /horizon-quiet/.test(prov.html)
+      && !/<button[^>]*>horizon/.test(prov.html)
       && !/Accept|Decline|Undo/.test(prov.html),
       'desk: the inbox row names the horizon and has no buttons ' + prov.html);
     ok(/Anna Vale sent you a request/.test(prov.text) && /request/.test(prov.text),

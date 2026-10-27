@@ -55,11 +55,19 @@
     return n;
   }
   function render(item){
-    var from = item && item.from || {};
     var hz = item && item.horizon || {};
-    var verb = item && item.role === 'follower' ? 'follow' : 'collaborate on';
-    var name = '<button type="button" class="hzname" data-act="open" data-type="horizon" data-id="'+esc(hz.id)+'">'+esc(hz.name)+'</button>';
-    return esc(from.name) + ' invited you to ' + verb + ' ' + name;
+    var card = typeof ChatCards !== 'undefined' && ChatCards && typeof ChatCards.get === 'function' && ChatCards.get('horizon_invite');
+    var phrase = card && typeof card.phrase === 'function' ? card.phrase({
+      cardId: hz.id,
+      cardName: hz.name || '',
+      invite: item && item.role === 'follower' ? 'pending follower' : 'pending',
+      from: 'other'
+    }) : '';
+    var name = hz.name || '';
+    var at = name ? String(phrase).lastIndexOf(name) : -1;
+    var button = '<button type="button" class="hzname" data-act="open" data-type="horizon" data-id="'+esc(hz.id)+'">'+esc(name)+'</button>';
+    if (at < 0) return esc(phrase);
+    return esc(phrase.slice(0, at)) + button + esc(phrase.slice(at + name.length));
   }
   function findInvite(id){
     var hit = null;

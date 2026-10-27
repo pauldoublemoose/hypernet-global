@@ -5,6 +5,7 @@ import { chatCard } from "../../lib/chat-cards";
 
 type CardApi = { method: string; path: string };
 type CardSpec = {
+  kind: string;
   api: { accept: (id: string) => CardApi; decline: (id: string) => CardApi; undo: (id: string) => CardApi };
 };
 type Cards = {
@@ -50,11 +51,15 @@ describe("chat cards", () => {
     const spec = cards.get("horizon_invite");
     const server = chatCard("horizon_invite");
     expect(spec).toBeTruthy();
+    expect(spec!.kind).toBe("horizon");
     expect(server?.type).toBe("horizon_invite");
+    expect(server?.kind).toBe("horizon");
     expect(server?.linkType).toBe("horizon");
-    expect(cards.phrase(quiet)).toBe("Collaborate on Quiet Rooms");
+    expect(cards.phrase(quiet)).toBe("Collaborate on horizon Quiet Rooms");
     const html = cards.body(quiet, false, "c-anna");
-    expect(html).toContain("Collaborate on ");
+    expect(html).toContain("Collaborate on horizon ");
+    expect(html).toContain(">Quiet Rooms</button>");
+    expect(html).not.toMatch(/<button[^>]*>horizon/);
     expect(html).toContain('data-act="open"');
     expect(html).toContain('data-type="horizon"');
     expect(html).toContain('data-id="horizon-quiet"');
@@ -65,7 +70,11 @@ describe("chat cards", () => {
     expect({ method: server?.accept.method, path: server?.accept.path("hz-1") }).toEqual(spec!.api.accept("hz-1"));
     expect({ method: server?.decline.method, path: server?.decline.path("hz-1") }).toEqual(spec!.api.decline("hz-1"));
     const follow = { ...quiet, cardId: "horizon-surface", cardName: "Surfaces & Projections", invite: "pending follower" };
-    expect(cards.phrase(follow)).toBe("Follow Surfaces & Projections");
+    expect(cards.phrase(follow)).toBe("Follow horizon Surfaces & Projections");
+    const followHtml = cards.body(follow, false, "c-anna");
+    expect(followHtml).toContain("Follow horizon ");
+    expect(followHtml).toContain(">Surfaces &amp; Projections</button>");
+    expect(followHtml).not.toMatch(/<button[^>]*>horizon/);
     expect(cards.body(follow, false, "c-anna")).toContain('data-id="horizon-surface"');
     expect(cards.body({ ...quiet, from: "self" }, true, "c-anna")).not.toContain(">Accept<");
     expect(cards.phrase({ ...quiet, invite: "accepted" })).toBe("Accepted Quiet Rooms");

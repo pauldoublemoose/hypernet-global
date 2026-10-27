@@ -144,6 +144,7 @@ function load(prep?: (sandbox: Sandbox) => void): Sandbox {
   }) as unknown as Sandbox;
   sandbox.window = sandbox;
   prep?.(sandbox);
+  runInContext(readFileSync(new URL("../../_shared/chat-cards.js", import.meta.url), "utf8"), sandbox);
   runInContext(readFileSync(new URL("../../_shared/horizon-requests.js", import.meta.url), "utf8"), sandbox);
   return sandbox;
 }
@@ -218,16 +219,19 @@ describe("horizon invite requests", () => {
     expect(provider!.count()).toBe(2);
     expect(provider!.count()).toBe(items.filter((item) => item.status === "pending").length);
     const row = provider!.render(items[0]);
-    expect(row).toContain("Anna Vale invited you to collaborate on ");
+    expect(row).toContain("Collaborate on horizon ");
+    expect(row).toContain(">Quiet Rooms</button>");
+    expect(row).not.toMatch(/<button[^>]*>horizon/);
     expect(row).toContain('data-act="open"');
     expect(row).toContain('data-type="horizon"');
     expect(row).toContain('data-id="horizon-quiet"');
-    expect(row).toContain("Quiet Rooms");
     expect(row).not.toContain("Accept");
     expect(row).not.toContain("Decline");
     expect(row).not.toContain("Undo");
-    expect(provider!.render(items[1])).toContain("Mira Chen invited you to follow ");
-    expect(provider!.render(items[1])).toContain("Surfaces &amp; Projections");
+    const followRow = provider!.render(items[1]);
+    expect(followRow).toContain("Follow horizon ");
+    expect(followRow).toContain(">Surfaces &amp; Projections</button>");
+    expect(followRow).not.toMatch(/<button[^>]*>horizon/);
     expect(box.HorizonRequests.idOf("c-anna", collabMsg)).toBe("inv-collab");
     expect(box.HorizonRequests.idOf("c-anna", { id: "", cardId: "horizon-quiet" })).toBe("c-anna:horizon-quiet");
     expect(box.HorizonRequests.idOf("c-x", { cardId: "horizon-quiet" })).toBe("c-x:horizon-quiet");

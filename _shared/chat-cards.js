@@ -8,6 +8,11 @@ var ChatCards = (function(){
   function nameOf(m){
     return (m && (m.cardName || (m.cardId && typeof HORIZONS !== 'undefined' && HORIZONS[m.cardId] && HORIZONS[m.cardId].name))) || '';
   }
+  var HORIZON_KIND = 'horizon';
+  function withKind(name){
+    if (!name) return '';
+    return HORIZON_KIND + ' ' + name;
+  }
   function horizonPhrase(m){
     var raw = (m && m.invite) || 'pending';
     var follower = raw.indexOf('follower') >= 0;
@@ -15,14 +20,14 @@ var ChatCards = (function(){
     var name = nameOf(m);
     var tail = name ? ' ' + name : '';
     if (follower){
-      if (state === 'pending' && m.from !== 'self') return 'Follow ' + name;
+      if (state === 'pending' && m.from !== 'self') return 'Follow ' + withKind(name);
       if (state === 'pending') return 'Invite sent to follow' + tail;
       if (state === 'accepted') return 'Following' + tail;
       if (state === 'declined') return 'Declined to follow' + tail;
       if (state === 'cancelled') return 'Cancelled' + tail;
       return raw;
     }
-    if (state === 'pending' && m.from !== 'self') return 'Collaborate on ' + name;
+    if (state === 'pending' && m.from !== 'self') return 'Collaborate on ' + withKind(name);
     if (state === 'pending') return 'Invite sent' + tail;
     var said = { accepted:'Accepted', declined:'Declined', cancelled:'Cancelled' }[state] || state;
     return said + tail;
@@ -34,6 +39,7 @@ var ChatCards = (function(){
     return esc(phrase.slice(0, at)) + '<button type="button" class="hzname" data-act="open" data-type="'+esc(link.type)+'" data-id="'+esc(link.id)+'">'+esc(name)+'</button>' + esc(phrase.slice(at + name.length));
   }
   var horizonInvite = {
+    kind: HORIZON_KIND,
     phrase: horizonPhrase,
     link: function(m){ return m && m.cardId ? { type:'horizon', id:m.cardId } : null; },
     pending: function(m, me){ return !me && String((m && m.invite) || 'pending').split(' ')[0] === 'pending'; },

@@ -3650,7 +3650,7 @@ async function overflowEverywhere(p, label){
       && prov.horizon && prov.horizon.id === 'horizon-quiet' && prov.horizon.name === 'Quiet Rooms'
       && prov.followRole === 'follower' && prov.followHz && prov.followHz.id === 'horizon-surface' && prov.followHz.name === 'Surfaces & Projections',
       'desk: the horizon invite provider is registered with two pending invites ' + JSON.stringify(prov));
-    ok(/Collaborate on horizon Quiet Rooms/.test(prov.html) && /data-act="open"/.test(prov.html) && /horizon-quiet/.test(prov.html)
+    ok(prov.html === 'Collaborate on horizon <button type="button" class="hzname" data-act="open" data-type="horizon" data-id="horizon-quiet">Quiet Rooms</button>'
       && !/<button[^>]*>horizon/.test(prov.html)
       && !/Accept|Decline|Undo/.test(prov.html),
       'desk: the inbox row names the horizon and has no buttons ' + prov.html);

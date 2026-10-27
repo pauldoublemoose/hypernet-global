@@ -1523,7 +1523,7 @@ async function overflowEverywhere(p, label){
         var sel = document.querySelector('[data-act="evpolicy"]');
         var invite = document.querySelector('[data-act="evinvitepolicy"]');
         return { value:sel && sel.value, options:sel ? [...sel.options].map(o => o.value).join(',') : '',
-          old:/Only admins can add co-creators/.test(document.body.textContent),
+          old:/Only admins can add co-creators/.test((document.querySelector('.dlg') || {}).textContent || ''),
           inviteOff:!!(invite && invite.disabled), why:!!document.querySelector('.ev-policy-why') };
       });
       ok(pol.value === 'open' && pol.options === 'open,request' && !pol.old && pol.inviteOff && pol.why, 'desk: the co-creator rule is a dropdown, and a public event disables invites ' + JSON.stringify(pol));

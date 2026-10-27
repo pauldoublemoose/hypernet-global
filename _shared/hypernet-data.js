@@ -846,6 +846,9 @@ window.HYPERNET = {
       "isPublished": true,
       "ownerName": "Rio Moss",
       "ownerId": "p-rio",
+      "collaboratorIds": [
+        "p-michal"
+      ],
       "eventIds": [
         "evt-world-burning-man-2026",
         "evt-fill-3",
@@ -865,6 +868,22 @@ window.HYPERNET = {
         "evt-deep-listening",
         "evt-fill-0",
         "evt-fill-7"
+      ]
+    },
+    {
+      "id": "horizon-ridge",
+      "name": "Ridge week",
+      "description": "Dawn stretches and the night kitchen, the week Michal keeps.",
+      "isPersonalDefault": false,
+      "isPublished": true,
+      "ownerName": "Michal",
+      "ownerId": "p-michal",
+      "collaboratorIds": [
+        "p-anna"
+      ],
+      "eventIds": [
+        "evt-fill-0",
+        "evt-fill-1"
       ]
     }
   ],
@@ -1176,6 +1195,24 @@ window.HYPERNET = {
           "from": "p-anna",
           "t": "yesterday",
           "text": "a basement. long tones. no phones."
+        },
+        {
+          "from": "p-anna",
+          "t": "09:40",
+          "text": "Quiet Rooms",
+          "cardType": "horizon_invite",
+          "cardId": "horizon-quiet",
+          "cardName": "Quiet Rooms",
+          "invite": "pending"
+        },
+        {
+          "from": "p-anna",
+          "t": "09:50",
+          "text": "Surfaces & Projections",
+          "cardType": "horizon_invite",
+          "cardId": "horizon-surface",
+          "cardName": "Surfaces & Projections",
+          "invite": "pending follower"
         }
       ]
     }

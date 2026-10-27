@@ -1,6 +1,7 @@
 import { canSeeEventSql } from "./audience";
+import { requireChatCard } from "./chat-cards";
 import { sqlx } from "./db";
-import { horizonJson } from "./horizons";
+import { horizonJson, horizonVisible } from "./horizons";
 
 // Everything the first screen needs, for one viewer, in ONE request to the database (one read-only transaction,
 // so every list agrees with the others). Privacy is decided here, in SQL, with can_see_event: an event the
@@ -42,15 +43,18 @@ export const CALLOUT_JSON = `json_build_object('id', c.id, 'authorId', c.author_
 const SEE = canSeeEventSql("$1");
 const VISIBLE_CALLOUT = `(c.event_id is null or exists (select 1 from events ce where ce.id = c.event_id and ${canSeeEventSql("$1", "ce")}))`;
 
+const HORIZON_INVITE_CARD = requireChatCard("horizon_invite").type;
+
 /** A chat card for an event the viewer cannot see carries no title, time, place, or image.
- *  horizon_invite is left as stored. event and chronicle cards are the invite cards. */
+ *  A horizon invite is left as stored and keeps the horizon name. Event and chronicle cards are the invite cards. */
 export function messagesJson(viewerParam = "$1"): string {
   const see = canSeeEventSql(viewerParam, "ev");
   return `coalesce((select json_agg(json_build_object('id', m.id, 'senderId', m.sender_id,
     'body', case when m.card_type in ('event', 'chronicle') and not exists (
       select 1 from events ev where ev.id = m.card_id and (${see}))
       then 'This event isn''t available' else m.body end,
-    'cardType', m.card_type, 'cardId', m.card_id, 'createdAt', m.created_at)
+    'cardType', m.card_type, 'cardId', m.card_id, 'createdAt', m.created_at,
+    'cardName', (select h.name from horizons h where m.card_type = '${HORIZON_INVITE_CARD}' and h.id = m.card_id))
     order by m.created_at) from messages m where m.thread_id = t.id), '[]')`;
 }
 
@@ -110,9 +114,9 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
       one(`select coalesce(json_agg(json_build_array(pr.person_id, pr.event_id)), '[]') v
              from promotions pr join events e on e.id = pr.event_id where ${SEE}`),
       one(`select coalesce(json_agg(${horizonJson("$1")} order by h.created_at), '[]') v
-             from horizons h where h.published_at is not null or (h.owner_id is not null and h.owner_id = $1::uuid)`),
+             from horizons h where ${horizonVisible("$1")}`),
       one(`select coalesce(json_agg(json_build_array(hf.person_id, hf.horizon_id)), '[]') v
-             from horizon_follows hf join horizons h on h.id = hf.horizon_id where h.published_at is not null or h.owner_id = $1::uuid`),
+             from horizon_follows hf join horizons h on h.id = hf.horizon_id where ${horizonVisible("$1")}`),
       one(`select coalesce(json_agg(${CALLOUT_JSON} order by c.created_at desc), '[]') v from callouts c where ${VISIBLE_CALLOUT}`),
       one(`select coalesce(json_agg(json_build_object('id', r.id, 'calloutId', r.callout_id, 'authorId', r.author_id, 'text', r.text,
              'createdAt', r.created_at) order by r.created_at), '[]') v
@@ -123,7 +127,7 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
              from (select * from activity a where a.ts > now() - interval '21 days' and a.actor is not null
                      and case a.obj_type
                            when 'event' then exists (select 1 from events e where e.id = a.obj_id and ${SEE})
-                           when 'horizon' then exists (select 1 from horizons h where h.id = a.obj_id and (h.published_at is not null or h.owner_id = $1::uuid))
+                           when 'horizon' then exists (select 1 from horizons h where h.id = a.obj_id and ${horizonVisible("$1")})
                            when 'callout' then exists (select 1 from callouts c where c.id = a.obj_id and ${VISIBLE_CALLOUT})
                            else true end
                    order by a.ts desc limit 600) a`),

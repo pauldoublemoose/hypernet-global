@@ -120,12 +120,14 @@
       var cid = 'c-dm-' + c.personId, last = c.messages[c.messages.length - 1];
       byId[cid] = { id:cid, name:PEOPLE[c.personId].displayName, kind:'dm', memberIds:[c.personId],
         messages: c.messages.map(function(m){
-          var msg = { id:m.id, from: m.senderId === me ? 'self' : m.senderId, t:clock(m.createdAt), ts:m.createdAt, text:m.body };
+          var row = { id:m.id, from: m.senderId === me ? 'self' : m.senderId, t:clock(m.createdAt), ts:m.createdAt, text:m.body, cardType:m.cardType, cardId:m.cardId, cardName:m.cardName };
+          var spec = m.cardType && ChatCards.get(m.cardType);
+          if (spec && spec.read) spec.read(row, m);
           if ((m.cardType === 'event' || m.cardType === 'chronicle') && m.cardId) {
-            msg.eventId = m.cardId;
-            if (m.cardType === 'chronicle') msg.chronicle = true;
+            row.eventId = m.cardId;
+            if (m.cardType === 'chronicle') row.chronicle = true;
           }
-          return msg;
+          return row;
         }) };
       order.push(cid);
       if (last && last.senderId !== me && (!c.lastReadAt || ms(last.createdAt) > ms(c.lastReadAt))) unread[cid] = true;
@@ -204,7 +206,8 @@
       var own = !!me && h.ownerId === me;
       HZ[h.id] = { id:h.id, slug:h.slug, name:h.name, description:h.description || '', isPersonalDefault:!!h.isPersonalDefault, isPublished:!!h.publishedAt,
         ownerName: own ? d.me.displayName : (h.ownerName || (h.ownerId && P[h.ownerId] ? P[h.ownerId].displayName : 'Hypernet')),
-        ownerId:h.ownerId, ownerAcct: own ? 'me' : undefined, eventIds:(h.eventIds || []).slice() };
+        ownerId:h.ownerId, ownerAcct: own ? 'me' : undefined, eventIds:(h.eventIds || []).slice(), collaboratorIds:(h.collaboratorIds || []).slice(),
+        pendingCollaboratorIds:(h.pendingCollaboratorIds || []).slice(), pendingFollowerIds:(h.pendingFollowerIds || []).slice() };
       HC[h.id] = Math.max(0, (h.followers || 0) - (HF[h.id] ? 1 : 0));
       if (h.look) HT[h.id] = asLook(h.look);
       if (own) mine.push(h.id);
@@ -583,11 +586,50 @@ function listResult(p){ return p.then(function(d){ return { ok:true, list:d && d
   };
   HN.saveHorizon = function(hzId){
     return write('hz:' + hzId, 'PATCH', '/api/horizons/' + hzId, function(){
-      var h = HORIZONS[hzId]; return h ? { name:h.name, description:h.description || '', published:!!h.isPublished, look: HZTHEME[hzId] ? lookOut(HZTHEME[hzId]) : null } : {};
+      var h = HORIZONS[hzId];
+      if (!h) return {};
+      var body = { name:h.name, description:h.description || '' };
+      if (hzOwnedByMe(hzId)){ body.published = !!h.isPublished; body.look = HZTHEME[hzId] ? lookOut(HZTHEME[hzId]) : null; }
+      return body;
     }, (HORIZONS[hzId] || {}).name);
   };
+  HN.addCollaborator = function(hzId, personId, role){
+    return write('hz:' + hzId, 'POST', '/api/horizons/' + hzId + '/collaborators', { personId:personId, role: role === 'follower' ? 'follower' : 'collaborator' }, (HORIZONS[hzId] || {}).name);
+  };
+  HN.acceptInvite = function(hzId){
+    var spec = ChatCards.get('horizon_invite').api.accept(hzId);
+    return write('hz:' + hzId, spec.method, spec.path, {}, (HORIZONS[hzId] || {}).name).then(function(r){
+      var h = HORIZONS[hzId];
+      if (!r || !r.horizon || !h) return;
+      h.collaboratorIds = (r.horizon.collaboratorIds || []).slice();
+      h.pendingCollaboratorIds = (r.horizon.pendingCollaboratorIds || []).slice();
+      h.pendingFollowerIds = (r.horizon.pendingFollowerIds || []).slice();
+      if (ROUTE.ready) render();
+    });
+  };
+  HN.declineInvite = function(hzId){
+    var spec = ChatCards.get('horizon_invite').api.decline(hzId);
+    return write('hz:' + hzId, spec.method, spec.path, undefined, (HORIZONS[hzId] || {}).name);
+  };
+  HN.undoInvite = function(hzId){
+    var spec = ChatCards.get('horizon_invite').api.undo(hzId);
+    return write('hz:' + hzId, spec.method, spec.path, {}, (HORIZONS[hzId] || {}).name).then(function(r){
+      var h = HORIZONS[hzId];
+      if (!r || !r.horizon || !h) return;
+      h.collaboratorIds = (r.horizon.collaboratorIds || []).slice();
+      h.pendingCollaboratorIds = (r.horizon.pendingCollaboratorIds || []).slice();
+      h.pendingFollowerIds = (r.horizon.pendingFollowerIds || []).slice();
+      if (ROUTE.ready) render();
+    });
+  };
+  HN.removeCollaborator = function(hzId, personId){
+    return write('hz:' + hzId, 'DELETE', '/api/horizons/' + hzId + '/collaborators?personId=' + encodeURIComponent(personId), undefined, (HORIZONS[hzId] || {}).name);
+  };
+  HN.leaveCollaborator = function(hzId){
+    return write('hz:' + hzId, 'DELETE', '/api/horizons/' + hzId + '/collaborators', undefined, (HORIZONS[hzId] || {}).name);
+  };
   HN.horizonEvents = function(hzId){
-    if (!HORIZONS[hzId] || !hzOwnedByMe(hzId)) return Promise.resolve();
+    if (!HORIZONS[hzId] || !hzCanEdit(hzId)) return Promise.resolve();
     /* an event made a moment ago (New event, From a link) must exist on the server before the horizon lists it */
     var waits = HORIZONS[hzId].eventIds.map(function(id){ return QUEUE['ev:' + id]; }).filter(Boolean);
     if (waits.length) QUEUE['hz:' + hzId] = Promise.all([QUEUE['hz:' + hzId] || Promise.resolve()].concat(waits)).catch(function(){});

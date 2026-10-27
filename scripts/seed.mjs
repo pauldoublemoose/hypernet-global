@@ -314,6 +314,16 @@ export function buildSeed(target, { now = Date.now(), only = null } = {}) {
       horizon_id: q(hid), event_id: q(eid), position: String(i), added_by: h.ownerFid ? q(pid(h.ownerFid)) : "null",
       added_at: qts(i >= ids.length - 2 ? addAt : (pub || now) - DAY),
     })));
+    if (h.id === "horizon-ridge" && h.ownerFid && PEOPLE[h.ownerFid]) {
+      for (const fid of h.collaboratorIds || []) {
+        if (!PEOPLE[fid] || fid === h.ownerFid) continue;
+        out.push(insert("horizon_collaborators", {
+          horizon_id: q(hid), person_id: q(pid(fid)), added_by: q(pid(h.ownerFid)),
+          created_at: qts(seedTs("hc|" + fid + "|" + h.id)),
+          accepted_at: qts(seedTs("hc|" + fid + "|" + h.id)),
+        }));
+      }
+    }
   }
 
   if (mock) {
@@ -417,7 +427,7 @@ export function buildSeed(target, { now = Date.now(), only = null } = {}) {
       const [a, b] = [pid("p-michal"), pid(other)].sort();
       const tid = seedUuid("thread:" + a + ":" + b);
       out.push(insert("dm_threads", { id: q(tid), a: q(a), b: q(b), created_at: qts(now - 3 * DAY) }));
-      const msgs = c.messages.filter((m) => m.from === other || m.from === "self");
+      const msgs = c.messages.filter((m) => (m.from === other || m.from === "self") && m.cardType !== "horizon_invite");
       msgs.forEach((m, i) => out.push(insert("messages", {
         id: q(seedUuid("message:" + c.id + ":" + i)), thread_id: q(tid), sender_id: q(pid(m.from === "self" ? "p-michal" : other)),
         body: q(m.text), created_at: qts(now - (msgs.length - i) * 47 * 60000),

@@ -3288,6 +3288,65 @@ async function overflowEverywhere(p, label){
     await c.context().close();
   }
 
+  /* ?offline=1 only: Demo: new invites makes two fresh pending cards after both were accepted */
+  {
+    const c = await ctx('desk');
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right');
+    await c.click('.chrow[data-id="c-anna"]'); await c.waitForTimeout(250);
+    ok(!(await ev(c, () => !!document.querySelector('[data-act="demonewinv"]'))), 'desk: the demo invite button is absent without ?offline=1');
+    await c.goto(URL + '?offline=1'); await c.waitForTimeout(500);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(300);
+    if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right');
+    if (!(await ev(c, () => document.querySelector('#msgs')))) await c.click('.chrow[data-id="c-anna"]');
+    await c.waitForTimeout(250);
+    ok(await ev(c, () => !!document.querySelector('#chats [data-act="demonewinv"]')), 'desk: ?offline=1 shows Demo: new invites in Anna’s chat');
+    await c.click('#msgs [data-act="hzaccept"][data-id="horizon-quiet"]'); await c.waitForTimeout(200);
+    await c.click('#msgs [data-act="hzaccept"][data-id="horizon-surface"]'); await c.waitForTimeout(200);
+    const spent = await ev(c, () => ({
+      accept: document.querySelectorAll('#msgs [data-act="hzaccept"]').length,
+      collab: (HORIZONS['horizon-quiet'].collaboratorIds || []).indexOf('p-michal') >= 0,
+      follow: !!HZFOLLOW['horizon-surface']
+    }));
+    ok(spent.accept === 0 && spent.collab && spent.follow, 'desk: accepting both fixture invites spends them ' + JSON.stringify(spent));
+    const before = await ev(c, () => CHATS['c-anna'].messages.map(m => m.id || ''));
+    await c.click('[data-act="demonewinv"]'); await c.waitForTimeout(300);
+    const made = await ev(c, () => {
+      const msgs = CHATS['c-anna'].messages, last = msgs.slice(-2);
+      const bodies = [...document.querySelectorAll('#msgs .mbody')].map(b => b.innerText.replace(/\s+/g, ' ').trim());
+      return {
+        last: last.map(m => ({ id:m.id, from:m.from, card:m.cardId, invite:m.invite, ts:m.ts })),
+        bodies: bodies.slice(-2),
+        accept: [...document.querySelectorAll('#msgs [data-act="hzaccept"]')].map(b => b.getAttribute('data-id')),
+        collab: (HORIZONS['horizon-quiet'].collaboratorIds || []).indexOf('p-michal') >= 0,
+        follow: !!HZFOLLOW['horizon-surface'],
+        pendC: (HORIZONS['horizon-quiet'].pendingCollaboratorIds || []).indexOf('p-michal') >= 0,
+        pendF: (HORIZONS['horizon-surface'].pendingFollowerIds || []).indexOf('p-michal') >= 0
+      };
+    });
+    const ids = made.last.map(m => m.id);
+    const newest = made.last.length === 2 && made.last[0].card === 'horizon-quiet' && made.last[0].invite === 'pending' && made.last[1].card === 'horizon-surface' && made.last[1].invite === 'pending follower'
+      && made.last.every(m => m.from === 'p-anna' && ids.indexOf(m.id) === ids.lastIndexOf(m.id) && before.indexOf(m.id) < 0 && /^hzinv-/.test(m.id) && m.ts)
+      && made.last[0].ts < made.last[1].ts;
+    ok(newest && made.accept.join() === 'horizon-quiet,horizon-surface' && !made.collab && !made.follow && made.pendC && made.pendF
+      && /Collaborate on Quiet Rooms/.test(made.bodies[0]) && /Follow Surfaces & Projections/.test(made.bodies[1]),
+      'desk: Demo: new invites adds two pending cards and clears the old membership ' + JSON.stringify(made));
+    await c.click('#msgs [data-act="hzaccept"][data-id="horizon-quiet"]'); await c.waitForTimeout(200);
+    await c.click('#msgs [data-act="hzaccept"][data-id="horizon-surface"]'); await c.waitForTimeout(200);
+    const again = await ev(c, () => {
+      const last = CHATS['c-anna'].messages.slice(-2).map(m => m.invite);
+      const bodies = [...document.querySelectorAll('#msgs .mbody')].slice(-2).map(b => b.innerText.replace(/\s+/g, ' ').trim());
+      return { last, bodies, accept: document.querySelectorAll('#msgs [data-act="hzaccept"]').length,
+        collab: (HORIZONS['horizon-quiet'].collaboratorIds || []).indexOf('p-michal') >= 0, follow: !!HZFOLLOW['horizon-surface'] };
+    });
+    ok(again.accept === 0 && again.collab && again.follow && again.last.join() === 'accepted,accepted follower'
+      && /Accepted Quiet Rooms/.test(again.bodies[0]) && /Following Surfaces & Projections/.test(again.bodies[1]),
+      'desk: the fresh invites can be accepted again ' + JSON.stringify(again));
+    ok(!c.errors.length, 'desk: no console errors (demo new invites) ' + c.errors.join(' '));
+    await c.context().close();
+  }
+
   /* ---------------- tablet ---------------- */
   const t = await ctx('tab');
   await open(t, '', true);

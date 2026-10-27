@@ -1507,6 +1507,10 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .hzname{ display:inline; margin:0; padding:0; border:0; background:transparent; color:var(--ink); font:inherit; line-height:inherit; text-align:inherit; text-decoration:underline; text-underline-offset:2px; cursor:pointer; min-height:0; vertical-align:baseline; }
 .msg.me .hzname{ color:var(--white); }
 .hzname:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+.demonewrow{ flex:0 0 auto; display:flex; padding:0 4px 8px; }
+.demonew{ height:28px; padding:0 8px; border:1px solid var(--rule); background:transparent; color:var(--ink2); font:inherit; font-size:12px; line-height:26px; cursor:pointer; }
+.demonew:hover{ color:var(--ink); border-color:var(--ink); }
+.demonew:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
 /* EVENT CONTROLS */
 .ev-constel:empty{ display:none; }
 /* EVENT BAR
@@ -4263,7 +4267,9 @@ function convHTML(cid){
     '<button type="button" class="ptitle ptbtn" data-act="chatprofile" data-id="'+pid+'">'+esc(c.name)+'<small>'+esc(sub)+'</small></button>' +
     '<button class="ib" data-act="chatprofile" data-id="'+pid+'" aria-label="Profile">'+ic('user')+'</button></div>';
   var lastDay = null;
-  h += '<div class="conv"><div class="msgs" id="msgs" data-chat="'+cid+'">' + (c.messages.length ? c.messages.map(function(m){
+  var demoInv = pid === 'p-anna' && S.acct === 'demo' && /[?&]offline=1(&|$)/.test(location.search)
+    ? '<div class="demonewrow"><button type="button" class="demonew" data-act="demonewinv">Demo: new invites</button></div>' : '';
+  h += '<div class="conv">'+demoInv+'<div class="msgs" id="msgs" data-chat="'+cid+'">' + (c.messages.length ? c.messages.map(function(m){
     var ms = msgTs(m), key = chatDayKey(ms), day = key !== lastDay ? '<div class="mday"><span>'+esc(chatDay(ms))+'</span></div>' : '';
     lastDay = key;
     if (m.from === 'sys') return day + '<div class="msg sys">'+esc(m.text)+'</div>';
@@ -6283,6 +6289,33 @@ function pendingInvite(cid, hzId){
     if (m.cardType === 'horizon_invite' && m.cardId === hzId && (m.invite === 'pending' || m.invite === 'pending follower') && m.from !== 'self') hit = m;
   });
   return hit;
+}
+/* offline only (?offline=1): a fresh pending collaborator invite and a fresh pending follower invite from Anna */
+var DEMOINV = 0;
+function demoNewInvites(){
+  if (!/[?&]offline=1(&|$)/.test(location.search) || S.acct !== 'demo') return;
+  var me = 'p-michal', chat = CHATS['c-anna'];
+  if (!chat) return;
+  if (!chat.messages) chat.messages = [];
+  var base = nowMs();
+  [
+    { id:'horizon-quiet', invite:'pending', follower:false },
+    { id:'horizon-surface', invite:'pending follower', follower:true }
+  ].forEach(function(spec, i){
+    var hz = HORIZONS[spec.id];
+    if (!hz) return;
+    hz.collaboratorIds = (hz.collaboratorIds || []).filter(function(id){ return id !== me; });
+    hz.pendingCollaboratorIds = (hz.pendingCollaboratorIds || []).filter(function(id){ return id !== me; });
+    hz.pendingFollowerIds = (hz.pendingFollowerIds || []).filter(function(id){ return id !== me; });
+    if (spec.follower){ delete HZFOLLOW[spec.id]; hz.pendingFollowerIds.push(me); }
+    else hz.pendingCollaboratorIds.push(me);
+    var ts = base + i;
+    DEMOINV += 1;
+    chat.messages.push({ id:'hzinv-' + ts + '-' + DEMOINV, from:'p-anna', t:nowClock(), ts:tsIso(ts),
+      text:hz.name, cardType:'horizon_invite', cardId:spec.id, cardName:hz.name, invite:spec.invite });
+  });
+  delete CHATSCROLL['c-anna'];
+  render();
 }
 function acceptHzInvite(cid, hzId){
   var m = pendingInvite(cid, hzId), me = myPid();
@@ -9014,6 +9047,7 @@ document.addEventListener('click', function(ev){
     case 'addcollab':    addCollabDialog(id); break;
     case 'ccpick':       pickCollab(id); break;
     case 'rmcollab':     removeCollab(n.getAttribute('data-hz'), id); break;
+    case 'demonewinv':   demoNewInvites(); break;
     case 'hzaccept':
     case 'hzdecline': {
       var card = ChatCards.get(n.getAttribute('data-card'));

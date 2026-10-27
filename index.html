@@ -1249,10 +1249,16 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .chh{ margin:0 0 8px; font:bold 14px/20px var(--sys); color:var(--ink); }
 .chempty{ margin:0; font:12px/16px var(--sys); color:var(--dim); }
 .chadd{ margin-top:16px; }
-.chhits{ display:flex; flex-direction:column; gap:4px; max-height:220px; overflow:auto; margin:8px 0 12px; }
-.chhit{ width:100%; height:auto; min-height:var(--ctl); justify-content:flex-start; text-align:left; white-space:normal; }
-.chhit.on{ background:var(--hover); }
-.chhit small{ color:var(--dim); font-weight:normal; }
+.chhits{ display:flex; flex-direction:column; gap:8px; max-height:280px; overflow:auto; margin:8px 0; }
+.chhitrow{ display:flex; align-items:center; gap:8px; min-width:0; }
+.chhitname{ flex:1; min-width:0; font:var(--fs)/1.45 var(--sys); color:var(--ink); }
+.chhitname small{ color:var(--dim); font-weight:normal; }
+.dlg .btn.chrole{ flex:0 0 auto; min-width:8.5em; height:auto; min-height:var(--ctl); font:var(--fs)/1.2 var(--sys); color:var(--ink); }
+.dlg .btn.chrole[disabled]{ color:var(--ink2); text-shadow:none; }
+.chwhy{ margin:0; font:var(--fs)/1.45 var(--sys); color:var(--ink); }
+.chcount{ margin:0 0 8px; font:var(--fs)/1.45 var(--sys); color:var(--ink); }
+.dlg .dfoot .btn[data-act="chronicle-add"]{ height:auto; min-height:var(--ctl); white-space:normal; text-align:center; line-height:1.2; }
+.dlg .dfoot .btn[data-act="chronicle-add"][disabled]{ color:var(--ink2); text-shadow:none; }
 .ptags{ display:flex; flex-direction:column; gap:16px; }
 .ptagadd{ margin-top:16px; }
 .ptagflow{ display:flex; flex-direction:column; gap:12px; }
@@ -3442,7 +3448,6 @@ function goingOf(pid){
    Went, or Going with no role, is attendee. Interested alone is not. Going is display only. */
 var CHRONICLE_ROLE = { host:1, cocreator:1, attendee:1 };
 var CHRONICLE_LABEL = { host:'Hosted', cocreator:'Co-created', attendee:'Attended' };
-var CHRONICLE_PICK = [['host','Host','You put it on.'], ['cocreator','Co-creator','You helped make it. A DJ, a volunteer, or other crew.'], ['attendee','Attendee','You were there.']];
 function isMe(pid){ return pid === 'self' || (S.loggedIn && pid === myActor()); }
 function knownRole(r){ return CHRONICLE_ROLE[r] ? r : null; }
 function explicitRole(pid, evId){
@@ -3551,22 +3556,33 @@ function chronicleSection(pid, asOther){
   if (profileEditing(pid, asOther)) body += '<div class="chadd"><button class="btn" data-act="addpastevent">'+ic('plus')+'Add past event</button></div>';
   return '<section class="sect" data-sect="chronicle"><h3>Chronicle</h3>'+body+'</section>';
 }
-var CHRONICLE_PICK_ID = null;
+var CHRONICLE_PICKS = {};
+var CHRONICLE_WHY = {};
 var CHRONICLE_POOL = null;
+var CHRONICLE_FILING = false;
 function chroniclePastMessage(){ return 'Only a past event can be added to a chronicle.'; }
 function chronicleCandidates(){
   return allEvents().filter(function(e){ return canSeeEvent(e) && isPast(lastDay(e)); });
 }
+function chronicleSelection(){
+  return Object.keys(CHRONICLE_PICKS).filter(function(id){
+    return CHRONICLE_PICKS[id] === 'attendee' || CHRONICLE_PICKS[id] === 'cocreator';
+  });
+}
+function chronicleCycleLabel(role){
+  if (role === 'attendee') return 'Attended';
+  if (role === 'cocreator') return 'Co-created';
+  return 'Add';
+}
 function addPastEventDialog(){
-  CHRONICLE_PICK_ID = null;
+  CHRONICLE_PICKS = {};
+  CHRONICLE_WHY = {};
   CHRONICLE_POOL = null;
-  var h = '<p class="fhelp">Search for a past event, pick the part you played, then add it to your Chronicle.</p>' +
+  CHRONICLE_FILING = false;
+  var h = '<p class="fhelp">Search past events. Tap a role to mark Attended or Co-created. Marked events stay marked while you search again.</p>' +
     '<div class="field"><label for="ch-q">Search past events</label><input id="ch-q" type="search" autocomplete="off"></div>' +
-    '<div id="ch-hits" class="chhits"></div><p id="ch-err" class="ferr" hidden></p>' +
-    '<div class="visopts" role="radiogroup" aria-label="Your role">' + CHRONICLE_PICK.map(function(o){
-      return '<label class="visopt"><input type="radio" name="ch-role" value="'+o[0]+'"><span><b>'+esc(o[1])+'</b><small>'+esc(o[2])+'</small></span></label>';
-    }).join('') + '</div>';
-  dialog('Add past event', h, '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="chronicle-add">Add to Chronicle</button>', 480);
+    '<div id="ch-hits" class="chhits"></div><p id="ch-count" class="chcount">0 selected</p><p id="ch-err" class="ferr" hidden></p>';
+  dialog('Add past event', h, '<button type="button" class="btn" data-act="closedlg">Cancel</button><button type="button" class="btn primary" data-act="chronicle-add" disabled>Add to Chronicle (0)</button>', 520);
   if (ONLINE && window.HNAPI && HNAPI.pastEvents){
     var box = $('ch-hits'); if (box) box.innerHTML = '<p class="chempty">Looking…</p>';
     HNAPI.pastEvents().then(function(list){
@@ -3581,16 +3597,53 @@ function addPastEventDialog(){
   }
   focusIn('ch-q');
 }
+function paintChronicleFoot(){
+  var n = chronicleSelection().length;
+  var b = document.querySelector('.dlg [data-act="chronicle-add"]');
+  if (b){ b.textContent = 'Add to Chronicle (' + n + ')'; b.disabled = n === 0 || CHRONICLE_FILING; }
+  var c = $('ch-count');
+  if (c) c.textContent = n === 1 ? '1 selected' : n + ' selected';
+  var err = $('ch-err');
+  if (err){
+    var lines = Object.keys(CHRONICLE_WHY).filter(function(id){ return CHRONICLE_PICKS[id] && CHRONICLE_WHY[id]; }).map(function(id){
+      return (EVENTS[id] ? EVENTS[id].title : 'Event') + ': ' + CHRONICLE_WHY[id];
+    });
+    err.hidden = !lines.length;
+    err.textContent = lines.join(' ');
+  }
+}
 function paintChronicleHits(){
-  var box = $('ch-hits'); if (!box || !CHRONICLE_POOL) return;
+  var box = $('ch-hits'); if (!box || !CHRONICLE_POOL){ paintChronicleFoot(); return; }
   var q = ($('ch-q') && $('ch-q').value || '').trim();
   var rows = CHRONICLE_POOL.map(function(id){ return EVENTS[id]; }).filter(function(e){
     return e && isPast(lastDay(e)) && (!q || matchAll([e.title, e.hostName, e.city, descOf(e)], q));
   }).sort(function(a, b){ return -byDate(a, b); });
-  box.innerHTML = rows.length ? rows.map(function(e){
-    var on = CHRONICLE_PICK_ID === e.id;
-    return '<button type="button" class="btn chhit'+(on ? ' on' : '')+'" data-act="chpick" data-id="'+e.id+'" aria-pressed="'+(on ? 'true' : 'false')+'">'+esc(e.title)+'<small> · '+esc(e.date)+'</small></button>';
-  }).join('') : '<p class="chempty">Past events you hosted can be added from New event, under Already happened.</p>';
+  Object.keys(CHRONICLE_WHY).forEach(function(id){
+    if (!CHRONICLE_PICKS[id] || !EVENTS[id]) return;
+    if (!rows.some(function(e){ return e.id === id; })) rows.unshift(EVENTS[id]);
+  });
+  box.innerHTML = rows.length ? rows.map(chronicleHitRow).join('') : '<p class="chempty">Past events you hosted can be added from New event, under Already happened.</p>';
+  paintChronicleFoot();
+}
+function chronicleHitRow(e){
+  var host = viewerIsHost(e.id);
+  var role = host ? null : (CHRONICLE_PICKS[e.id] || null);
+  var why = !host && CHRONICLE_WHY[e.id] ? CHRONICLE_WHY[e.id] : '';
+  var btn = host
+    ? '<button type="button" class="btn chrole" disabled>Hosted</button>'
+    : '<button type="button" class="btn chrole'+(role ? ' on' : '')+'" data-act="chcycle" data-id="'+e.id+'" aria-pressed="'+(role ? 'true' : 'false')+'">'+chronicleCycleLabel(role)+'</button>';
+  return '<div class="chhitrow"><div class="chhitname">'+esc(e.title)+'<small> · '+esc(e.date)+'</small></div>'+btn+'</div>' +
+    (why ? '<p class="chwhy">'+esc(why)+'</p>' : '');
+}
+function cycleChroniclePick(id){
+  if (!id || !EVENTS[id] || viewerIsHost(id) || CHRONICLE_FILING) return;
+  var order = [null, 'attendee', 'cocreator'];
+  var cur = CHRONICLE_PICKS[id] || null;
+  var next = order[(order.indexOf(cur) + 1) % order.length];
+  if (next) CHRONICLE_PICKS[id] = next;
+  else delete CHRONICLE_PICKS[id];
+  delete CHRONICLE_WHY[id];
+  paintChronicleHits();
 }
 function viewerIsHost(id){
   var e = EVENTS[id];
@@ -3598,45 +3651,118 @@ function viewerIsHost(id){
   if (e.hostId) return e.hostId === ((window.HNAPI && HNAPI.me && HNAPI.me.id) || myPid());
   return isMine(id);
 }
-function chroniclePickError(msg){
-  var el = $('ch-err');
-  if (el){ el.hidden = false; el.textContent = msg; }
-  toast(msg);
+/* open files the co-creator role. request stays pending. admins is refused. Host and admin seats file. */
+function chronicleCrewDecision(id){
+  var e = EVENTS[id];
+  if (viewerIsHost(id) || eventSeat(id) === 'admin') return { file:true };
+  if (e && e.cocreatorPolicy === 'admins') return { file:false, why:'Only admins can add co-creators.' };
+  if (cocreatorPolicyOf(id) === 'request') return { file:false, pending:true, why:'Co-creator requested' };
+  return { file:true };
 }
-/* Attendee is the chronicle claim. Host and co-creator still go through the RSVP role write. */
-function filePickedChronicle(){
-  var id = CHRONICLE_PICK_ID, e = id && EVENTS[id];
-  var picked = document.querySelector('.dlg input[name="ch-role"]:checked');
-  if (!e){ chroniclePickError('Pick a past event'); return; }
-  if (!picked){ toast('Pick a role', 'Host, co-creator or attendee'); return; }
-  if (!isPast(lastDay(e))){ chroniclePickError(chroniclePastMessage()); return; }
-  var role = picked.value, seat = eventSeat(id), host = viewerIsHost(id), policy = cocreatorPolicyOf(id);
-  closeDialogs();
-  if (role === 'host' || role === 'cocreator'){
-    if (role === 'cocreator' && !host && seat !== 'admin' && policy !== 'open'){
+function chronicleSend(id, kind){
+  if (!ONLINE || !window.HNAPI || !HNAPI.req || !HNAPI.isId || !HNAPI.isId(id)) return Promise.resolve({ offline:true });
+  if (kind === 'attendee') return HNAPI.req('POST', '/api/events/' + id + '/chronicle');
+  return HNAPI.req('PUT', '/api/events/' + id + '/rsvp', {
+    status: RSVP[id] || null,
+    went: !!WENT[id],
+    shiftIndex: SHIFT[id] == null ? null : SHIFT[id],
+    role: 'cocreator'
+  });
+}
+function applyChronicleRole(id, role){
+  ROLE[id] = role;
+  WENT[id] = true;
+  if (COREQUESTS[id]) delete COREQUESTS[id][meKey()];
+  schedulePersist();
+}
+function revertChronicleApply(id){
+  if (ROLE[id] === 'attendee' || ROLE[id] === 'cocreator') delete ROLE[id];
+  delete WENT[id];
+  schedulePersist();
+}
+function fileOneChronicle(id, role){
+  var e = EVENTS[id];
+  if (!e || !isPast(lastDay(e))) return Promise.resolve({ id:id, ok:false, why:chroniclePastMessage() });
+  if (viewerIsHost(id)) return Promise.resolve({ id:id, ok:false, why:'Hosted' });
+  if (role === 'cocreator'){
+    var decision = chronicleCrewDecision(id);
+    if (!decision.file && !decision.pending) return Promise.resolve({ id:id, ok:false, why:decision.why });
+    if (decision.pending){
       var bag = COREQUESTS[id] || (COREQUESTS[id] = {});
       bag[meKey()] = 1;
-      if (ONLINE) HNAPI.rsvp(id, { role:'cocreator' });
       schedulePersist();
-      render();
-      toast('Co-creator requested', e.title);
-      return;
+      return chronicleSend(id, 'cocreator').then(function(r){
+        var rs = r && r.rsvp;
+        if (rs && rs.role === 'cocreator' && !rs.cocreatorPending){
+          delete bag[meKey()];
+          applyChronicleRole(id, 'cocreator');
+          return { id:id, ok:true };
+        }
+        return { id:id, ok:false, why:'Co-creator requested' };
+      }, function(err){
+        return { id:id, ok:false, why:(err && err.message) || 'Co-creator requested' };
+      });
     }
-    if (role === 'host' && !host){
-      toast('Only the event host can set that role.');
-      return;
-    }
-    fileChronicle(id, role);
-    render();
-    toast('Added to your chronicle', e.title);
-    return;
+    applyChronicleRole(id, 'cocreator');
+    return chronicleSend(id, 'cocreator').then(function(r){
+      if (r && r.offline) return { id:id, ok:true };
+      var rs = r && r.rsvp;
+      if (rs && rs.cocreatorPending){
+        revertChronicleApply(id);
+        var pending = COREQUESTS[id] || (COREQUESTS[id] = {});
+        pending[meKey()] = 1;
+        return { id:id, ok:false, why:'Co-creator requested' };
+      }
+      if (rs && rs.role && rs.role !== 'cocreator'){
+        revertChronicleApply(id);
+        return { id:id, ok:false, why:'Only admins can add co-creators.' };
+      }
+      if (!r){ revertChronicleApply(id); return { id:id, ok:false, why:'Could not save this event.' }; }
+      return { id:id, ok:true };
+    }, function(err){
+      revertChronicleApply(id);
+      return { id:id, ok:false, why:(err && err.message) || 'Could not save this event.' };
+    });
   }
   WENT[id] = true;
-  if (!explicitRole('self', id) && !host) ROLE[id] = 'attendee';
-  if (ONLINE && window.HNAPI && HNAPI.addChronicle) HNAPI.addChronicle(id);
+  if (!explicitRole('self', id)) ROLE[id] = 'attendee';
   schedulePersist();
-  render();
-  toast('Added to your chronicle', e.title);
+  return chronicleSend(id, 'attendee').then(function(r){
+    if (r && r.offline) return { id:id, ok:true };
+    if (!r){ revertChronicleApply(id); return { id:id, ok:false, why:'Could not save this event.' }; }
+    return { id:id, ok:true };
+  }, function(err){
+    revertChronicleApply(id);
+    var why = err && err.message;
+    return { id:id, ok:false, why: why || chroniclePastMessage() };
+  });
+}
+/* Attended is the chronicle claim. Co-created follows the co-creator policy. Failures stay selected. */
+function filePickedChronicle(){
+  if (CHRONICLE_FILING) return;
+  var ids = chronicleSelection();
+  if (!ids.length) return;
+  CHRONICLE_FILING = true;
+  paintChronicleFoot();
+  Promise.all(ids.map(function(id){ return fileOneChronicle(id, CHRONICLE_PICKS[id]); })).then(function(results){
+    CHRONICLE_FILING = false;
+    var failed = [];
+    results.forEach(function(r){
+      if (r.ok){ delete CHRONICLE_PICKS[r.id]; delete CHRONICLE_WHY[r.id]; }
+      else { CHRONICLE_WHY[r.id] = r.why; failed.push(r); }
+    });
+    if (!failed.length){
+      closeDialogs();
+      render();
+      toast('Added to your chronicle');
+      return;
+    }
+    render();
+    paintChronicleHits();
+  }, function(){
+    CHRONICLE_FILING = false;
+    paintChronicleHits();
+  });
 }
 function chronicleUnblockDate(){
   if (!CHRONICLE_ADD) return;
@@ -8872,7 +8998,7 @@ document.addEventListener('click', function(ev){
     case 'ncdm':         closeDialogs(); NC = null; messagePerson(id); break;
     case 'new-event':    runCmd('new-event'); break;
     case 'addpastevent': gated(addPastEventDialog)(); break;
-    case 'chpick':       CHRONICLE_PICK_ID = id; paintChronicleHits(); break;
+    case 'chcycle':      cycleChroniclePick(id); break;
     case 'chronicle-add': filePickedChronicle(); break;
     case 'new-horizon':  runCmd('new-horizon', id); break;
     case 'login':        loginDialog(); break;
@@ -9073,13 +9199,6 @@ document.addEventListener('click', function(ev){
 });
 document.addEventListener('change', function(ev){
   var n = ev.target;
-  if (n.name === 'ch-role'){
-    document.querySelectorAll('.dlg .visopt').forEach(function(l){
-      var inp = l.querySelector('input[name="ch-role"]');
-      if (inp) l.classList.toggle('on', inp.checked);
-    });
-    return;
-  }
   if (n.getAttribute && n.getAttribute('data-sched')){ schedTouch(n); return; }
   if (n.getAttribute('data-czfile')){ var fl = n.files && n.files[0]; n.value = ''; if (n.getAttribute('data-czfile') === 'photo') pfTakePhoto(fl); else czTakeFile(fl); return; }
   if (n.closest('[data-cz]') && DRAFT){

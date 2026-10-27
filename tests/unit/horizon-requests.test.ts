@@ -15,21 +15,22 @@ type InviteMsg = {
 
 type HzItem = {
   id: string;
-  kind: "horizon_invite";
   role: "collaborator" | "follower";
   from: { id: string; name: string; avatar: string | null };
-  target: { type: "horizon"; id: string; name: string };
+  horizon: { id: string; name: string };
   createdAt: string | null;
   status: "pending" | "accepted" | "declined";
 };
 
 type Provider = {
-  kind: string;
+  type: string;
+  label: string;
   list: () => HzItem[];
-  accept: (id: string) => void;
-  decline: (id: string) => void;
-  undo: (id: string) => void;
-  pendingCount: () => number;
+  count: () => number;
+  render: (item: HzItem) => string;
+  accept: (item: HzItem) => Promise<void>;
+  decline: (item: HzItem) => Promise<void>;
+  undo: (item: HzItem) => Promise<void>;
 };
 
 type Respond = (cid: string, hzId: string, answer: string, mid: string | null) => void;
@@ -40,11 +41,15 @@ type Sandbox = {
   PEOPLE: Record<string, { displayName?: string; avatar?: string | null }>;
   HORIZONS: Record<string, { name?: string; collaboratorIds?: string[]; pendingCollaboratorIds?: string[] }>;
   respondHzInvite?: Respond;
-  HNRel?: { requests?: { register: (provider: Provider) => void } };
+  HNRel?: {
+    registerRequestProvider?: (provider: Provider) => (() => void) | void;
+    requestsChanged?: () => void;
+  };
   HorizonRequests: {
     idOf: (cid: string, m: InviteMsg) => string;
     registered: () => boolean;
     register: () => boolean;
+    changed: () => void;
   };
 };
 
@@ -114,19 +119,17 @@ function expectedItems(): HzItem[] {
   return [
     {
       id: "inv-collab",
-      kind: "horizon_invite",
       role: "collaborator",
       from: { id: "p-anna", name: "Anna Vale", avatar: "/default-avatars/anna.png" },
-      target: { type: "horizon", id: "horizon-quiet", name: "Quiet Rooms" },
+      horizon: { id: "horizon-quiet", name: "Quiet Rooms" },
       createdAt: "2026-10-01T09:40:00.000Z",
       status: "pending",
     },
     {
       id: "inv-follow",
-      kind: "horizon_invite",
       role: "follower",
       from: { id: "p-mira", name: "Mira Chen", avatar: null },
-      target: { type: "horizon", id: "horizon-surface", name: "Surfaces & Projections" },
+      horizon: { id: "horizon-surface", name: "Surfaces & Projections" },
       createdAt: null,
       status: "pending",
     },
@@ -153,11 +156,9 @@ describe("horizon invite requests", () => {
 
     let provider: Provider | undefined;
     box.HNRel = {
-      requests: {
-        register(p) {
-          provider = p;
-          throw new Error("down");
-        },
+      registerRequestProvider(p) {
+        provider = p;
+        throw new Error("down");
       },
     };
     expect(box.HorizonRequests.register()).toBe(false);
@@ -169,27 +170,31 @@ describe("horizon invite requests", () => {
     const seen: Provider[] = [];
     const box = load((sandbox) => {
       sandbox.HNRel = {
-        requests: {
-          register(p) { seen.push(p); },
-        },
+        registerRequestProvider(p) { seen.push(p); return function () {}; },
       };
     });
     expect(box.HorizonRequests.register.name).toBe("registerHorizonRequests");
     expect(seen).toHaveLength(1);
-    expect(seen[0].kind).toBe("horizon_invite");
-    expect(Object.keys(seen[0])).toEqual(["kind", "list", "accept", "decline", "undo", "pendingCount"]);
+    expect(seen[0].type).toBe("horizon_invite");
+    expect(seen[0].label).toBe("Horizon invites");
+    expect(Object.keys(seen[0])).toEqual(["type", "label", "list", "count", "render", "accept", "decline", "undo"]);
     expect(box.HorizonRequests.registered()).toBe(true);
+    let n = 0;
+    box.HNRel = { requestsChanged() { n += 1; } };
+    box.HorizonRequests.changed();
+    expect(n).toBe(1);
+    box.HNRel = {};
+    box.HorizonRequests.changed();
+    expect(n).toBe(1);
   });
 
   it("stays unregistered when requests.register throws", () => {
     let calls = 0;
     const box = load((sandbox) => {
       sandbox.HNRel = {
-        requests: {
-          register() {
-            calls += 1;
-            throw new Error("nope");
-          },
+        registerRequestProvider() {
+          calls += 1;
+          throw new Error("nope");
         },
       };
     });
@@ -204,14 +209,25 @@ describe("horizon invite requests", () => {
     let provider: Provider | undefined;
     const box = load((sandbox) => {
       seed(sandbox);
-      sandbox.HNRel = { requests: { register(p) { provider = p; } } };
+      sandbox.HNRel = { registerRequestProvider(p) { provider = p; } };
     });
     const items = provider!.list();
     expect(items).toEqual(expectedItems());
     expect(items.map((item) => item.id)).not.toContain("inv-out");
     expect(items.map((item) => item.id)).not.toContain("inv-cancel");
-    expect(provider!.pendingCount()).toBe(2);
-    expect(provider!.pendingCount()).toBe(items.filter((item) => item.status === "pending").length);
+    expect(provider!.count()).toBe(2);
+    expect(provider!.count()).toBe(items.filter((item) => item.status === "pending").length);
+    const row = provider!.render(items[0]);
+    expect(row).toContain("Anna Vale invited you to collaborate on ");
+    expect(row).toContain('data-act="open"');
+    expect(row).toContain('data-type="horizon"');
+    expect(row).toContain('data-id="horizon-quiet"');
+    expect(row).toContain("Quiet Rooms");
+    expect(row).not.toContain("Accept");
+    expect(row).not.toContain("Decline");
+    expect(row).not.toContain("Undo");
+    expect(provider!.render(items[1])).toContain("Mira Chen invited you to follow ");
+    expect(provider!.render(items[1])).toContain("Surfaces &amp; Projections");
     expect(box.HorizonRequests.idOf("c-anna", collabMsg)).toBe("inv-collab");
     expect(box.HorizonRequests.idOf("c-anna", { id: "", cardId: "horizon-quiet" })).toBe("c-anna:horizon-quiet");
     expect(box.HorizonRequests.idOf("c-x", { cardId: "horizon-quiet" })).toBe("c-x:horizon-quiet");
@@ -235,39 +251,41 @@ describe("horizon invite requests", () => {
         const next = answer === "accept" ? "accepted" : answer === "decline" ? "declined" : "pending";
         m.invite = follower ? `${next} follower` : next;
       };
-      sandbox.HNRel = { requests: { register(p) { provider = p; } } };
+      sandbox.HNRel = { registerRequestProvider(p) { provider = p; } };
     });
     const quiet = box.HORIZONS["horizon-quiet"];
     const membership = {
       collab: quiet.collaboratorIds?.slice(),
       pending: quiet.pendingCollaboratorIds?.slice(),
     };
-    expect(provider!.pendingCount()).toBe(2);
-    provider!.accept("inv-collab");
+    expect(provider!.count()).toBe(2);
+    const collab = provider!.list().find((item) => item.id === "inv-collab")!;
+    expect(typeof provider!.accept(collab).then).toBe("function");
     expect(calls[0]).toEqual(["c-anna", "horizon-quiet", "accept", "inv-collab"]);
     expect(box.CHATS["c-anna"].messages[0].invite).toBe("accepted");
     expect(provider!.list().find((item) => item.id === "inv-collab")?.status).toBe("accepted");
-    expect(provider!.pendingCount()).toBe(1);
+    expect(provider!.count()).toBe(1);
     expect(quiet.collaboratorIds).toEqual(membership.collab);
     expect(quiet.pendingCollaboratorIds).toEqual(membership.pending);
 
-    const beforeDecline = provider!.pendingCount();
-    provider!.decline("inv-follow");
+    const beforeDecline = provider!.count();
+    const follow = provider!.list().find((item) => item.id === "inv-follow")!;
+    provider!.decline(follow);
     expect(calls[1]).toEqual(["c-anna", "horizon-surface", "decline", "inv-follow"]);
     expect(box.CHATS["c-anna"].messages[1].invite).toBe("declined follower");
     expect(provider!.list().find((item) => item.id === "inv-follow")?.status).toBe("declined");
-    expect(provider!.pendingCount()).toBe(beforeDecline - 1);
+    expect(provider!.count()).toBe(beforeDecline - 1);
 
-    provider!.undo("inv-follow");
+    provider!.undo(provider!.list().find((item) => item.id === "inv-follow")!);
     expect(calls[2]).toEqual(["c-anna", "horizon-surface", "undo", "inv-follow"]);
     expect(box.CHATS["c-anna"].messages[1].invite).toBe("pending follower");
     expect(provider!.list().find((item) => item.id === "inv-follow")?.status).toBe("pending");
-    expect(provider!.pendingCount()).toBe(beforeDecline);
+    expect(provider!.count()).toBe(beforeDecline);
 
-    expect(() => provider!.accept("missing")).not.toThrow();
+    expect(() => provider!.accept({ ...collab, id: "missing" })).not.toThrow();
     expect(calls).toHaveLength(3);
     box.respondHzInvite = undefined;
-    expect(() => provider!.accept("inv-collab")).not.toThrow();
+    expect(() => provider!.accept(collab)).not.toThrow();
     expect(calls).toHaveLength(3);
   });
 
@@ -293,14 +311,14 @@ describe("horizon invite requests", () => {
         calls.push([cid, hzId, answer, mid]);
         sandbox.CHATS[cid].messages[0].invite = "accepted";
       };
-      sandbox.HNRel = { requests: { register(p) { provider = p; } } };
+      sandbox.HNRel = { registerRequestProvider(p) { provider = p; } };
     });
     const msg = box.CHATS["c-anna"].messages[0];
     expect(provider!.list()[0].id).toBe("c-anna:horizon-quiet");
     expect(provider!.list()[0].id).toBe(box.HorizonRequests.idOf("c-anna", msg));
-    provider!.accept("c-anna:horizon-quiet");
+    provider!.accept(provider!.list()[0]);
     expect(calls).toEqual([["c-anna", "horizon-quiet", "accept", null]]);
     expect(provider!.list()[0].status).toBe("accepted");
-    expect(provider!.pendingCount()).toBe(0);
+    expect(provider!.count()).toBe(0);
   });
 });

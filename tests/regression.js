@@ -3438,10 +3438,12 @@ async function overflowEverywhere(p, label){
     const c = await ctx('desk');
     await c.addInitScript(() => {
       window.__hzReqOpens = [];
+      window.__hzChanges = 0;
       window.HNRel = {
+        registerRequestProvider: function(p){ window.__hzProv = p; return function(){}; },
+        requestsChanged: function(){ window.__hzChanges += 1; },
         openRequests: function(arg){ window.__hzReqOpens.push(arg); },
-        incomingCount: function(){ return 0; },
-        requests: { register: function(p){ window.__hzProv = p; } }
+        incomingCount: function(){ return 0; }
       };
     });
     await open(c, '', true);
@@ -3450,32 +3452,64 @@ async function overflowEverywhere(p, label){
     await c.click('.chrow[data-id="c-anna"]'); await c.waitForTimeout(250);
     const prov = await ev(c, () => {
       const p = window.__hzProv;
-      const item = p && p.list().filter(it => it.target && it.target.id === 'horizon-quiet')[0];
+      const items = p ? p.list() : [];
+      const item = items.filter(it => it.horizon && it.horizon.id === 'horizon-quiet')[0];
+      const follow = items.filter(it => it.role === 'follower')[0];
+      const html = item ? p.render(item) : '';
       const btn = item && [...document.querySelectorAll('#msgs [data-act="hzreq"]')].find(b => b.getAttribute('data-id') === item.id);
       const body = btn && btn.closest('.mbody');
       return {
         ok: !!p,
-        kind: p && p.kind,
-        pending: p ? p.pendingCount() : null,
+        type: p && p.type,
+        label: p && p.label,
+        count: p ? p.count() : null,
         id: item && item.id,
+        role: item && item.role,
+        from: item && item.from,
+        horizon: item && item.horizon,
+        status: item && item.status,
+        followRole: follow && follow.role,
+        followHz: follow && follow.horizon,
+        html: html,
         text: body ? body.innerText.replace(/\s+/g, ' ').trim() : '',
         accept: !!document.querySelector('#msgs [data-act="hzaccept"]'),
         undo: !!document.querySelector('#msgs [data-act="hzundo"]'),
         req: !!document.querySelector('#msgs [data-act="hzreq"]')
       };
     });
-    ok(prov.ok && prov.kind === 'horizon_invite' && prov.pending === 2,
+    ok(prov.ok && prov.type === 'horizon_invite' && prov.label === 'Horizon invites' && prov.count === 2
+      && typeof prov.id === 'string' && prov.role === 'collaborator' && prov.status === 'pending'
+      && prov.from && prov.from.id === 'p-anna' && prov.from.name === 'Anna Vale'
+      && prov.horizon && prov.horizon.id === 'horizon-quiet' && prov.horizon.name === 'Quiet Rooms'
+      && prov.followRole === 'follower' && prov.followHz && prov.followHz.id === 'horizon-surface' && prov.followHz.name === 'Surfaces & Projections',
       'desk: the horizon invite provider is registered with two pending invites ' + JSON.stringify(prov));
+    ok(/invited you to collaborate on/.test(prov.html) && /data-act="open"/.test(prov.html) && /horizon-quiet/.test(prov.html)
+      && !/Accept|Decline|Undo/.test(prov.html),
+      'desk: the inbox row names the horizon and has no buttons ' + prov.html);
     ok(/Anna Vale sent you a request/.test(prov.text) && /request/.test(prov.text),
       'desk: Quiet Rooms reads as a request from Anna Vale ' + JSON.stringify(prov.text));
     ok(!prov.accept && !prov.undo && prov.req,
       'desk: the request link replaces Accept and Undo ' + JSON.stringify(prov));
+    const cycle = await ev(c, async () => {
+      const p = window.__hzProv;
+      const item = p.list().filter(it => it.horizon && it.horizon.id === 'horizon-quiet')[0];
+      const n0 = window.__hzChanges;
+      await p.accept(item);
+      const n1 = window.__hzChanges;
+      const accepted = p.list().filter(it => it.id === item.id)[0];
+      await p.undo(accepted);
+      const n2 = window.__hzChanges;
+      const back = p.list().filter(it => it.id === item.id)[0];
+      return { n0:n0, n1:n1, n2:n2, status:accepted && accepted.status, back:back && back.status };
+    });
+    ok(cycle.n1 === cycle.n0 + 1 && cycle.n2 === cycle.n0 + 2 && cycle.status === 'accepted' && cycle.back === 'pending',
+      'desk: accept and undo tell the inbox the list changed ' + JSON.stringify(cycle));
     if (prov.id){
       await c.click('#msgs [data-act="hzreq"][data-id="' + prov.id + '"]');
       await c.waitForTimeout(200);
     }
     const opens = await ev(c, () => window.__hzReqOpens);
-    ok(!!prov.id && JSON.stringify(opens) === JSON.stringify([{ focus: prov.id }]),
+    ok(!!prov.id && JSON.stringify(opens) === JSON.stringify([{ type:'horizon_invite', id:prov.id }]),
       'desk: the request link opens the list on that invite ' + JSON.stringify({ id: prov.id, opens }));
     ok(!c.errors.length, 'desk: no console errors (horizon request) ' + c.errors.join(' '));
     await c.context().close();

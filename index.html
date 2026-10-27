@@ -2127,13 +2127,14 @@ function fixtureChats(){
 }
 /* the account keeps its own copy of a chat, so a fixture invite added later is copied in once */
 function seedDemoInvites(){
-  var fresh = fixtureChats();
+  var fresh = fixtureChats(), added = false;
   fresh.order.forEach(function(id){
     var src = fresh.byId[id];
     if (!src) return;
     if (!CHATS[id]){
       CHATS[id] = src;
       if (CHATORDER.indexOf(id) < 0) CHATORDER.push(id);
+      if ((src.messages || []).some(function(m){ return m.cardType === 'horizon_invite'; })) added = true;
       return;
     }
     var chat = CHATS[id];
@@ -2147,8 +2148,10 @@ function seedDemoInvites(){
       });
       if (at >= 0) chat.messages.splice(at + 1, 0, m);
       else chat.messages.push(m);
+      added = true;
     });
   });
+  if (added) requestsChanged();
 }
 
 var HZPAST = {};               /* horizons whose past events you unfolded */
@@ -6445,6 +6448,7 @@ function pickCollab(personId){
     chat.messages.push({ from:'self', t:st.t, ts:st.ts, text:hz.name, cardType:'horizon_invite', cardId:hzId, cardName:hz.name, invite:invite });
   }
   if (ONLINE) HNAPI.addCollaborator(hzId, personId, role);
+  requestsChanged();
   render();
 }
 function dmCid(pid){
@@ -6475,6 +6479,7 @@ function demoNewInvites(){
       text:hz.name, cardType:'horizon_invite', cardId:spec.id, cardName:hz.name, invite:spec.invite });
   });
   delete CHATSCROLL['c-anna'];
+  requestsChanged();
   render();
 }
 function inviteWord(m){ return String((m && m.invite) || 'pending').split(' ')[0]; }
@@ -6520,7 +6525,11 @@ function respondHzInvite(cid, hzId, answer, mid){
     else if (answer === 'decline') HNAPI.declineInvite(hzId);
     else HNAPI.undoInvite(hzId);
   }
+  requestsChanged();
   render();
+}
+function requestsChanged(){
+  if (window.HorizonRequests && typeof HorizonRequests.changed === 'function') HorizonRequests.changed();
 }
 function acceptHzInvite(cid, hzId){ respondHzInvite(cid, hzId, 'accept'); }
 function declineHzInvite(cid, hzId){ respondHzInvite(cid, hzId, 'decline'); }
@@ -6545,6 +6554,7 @@ function removeCollab(hzId, personId){
     stampInvite(hzId, personId, 'cancelled');
   } else hz.collaboratorIds = (hz.collaboratorIds || []).filter(function(id){ return id !== personId; });
   if (ONLINE) HNAPI.removeCollaborator(hzId, personId);
+  requestsChanged();
   render();
 }
 function leaveCollab(hzId){
@@ -9225,7 +9235,7 @@ document.addEventListener('click', function(ev){
     case 'rmcollab':     removeCollab(n.getAttribute('data-hz'), id); break;
     case 'demonewinv':   demoNewInvites(); break;
     case 'hzreq':
-      if (window.HNRel && typeof window.HNRel.openRequests === 'function') window.HNRel.openRequests({ focus: id });
+      if (window.HNRel && typeof window.HNRel.openRequests === 'function') window.HNRel.openRequests({ type:'horizon_invite', id:id });
       break;
     case 'hzaccept':
     case 'hzdecline':

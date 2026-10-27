@@ -1527,6 +1527,9 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .hzname{ display:inline; margin:0; padding:0; border:0; background:transparent; color:var(--ink); font:inherit; line-height:inherit; text-align:inherit; text-decoration:underline; text-underline-offset:2px; cursor:pointer; min-height:0; vertical-align:baseline; }
 .msg.me .hzname{ color:var(--white); }
 .hzname:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+.hzreq{ display:inline; margin:0; padding:0; border:0; background:transparent; color:var(--ink); font:inherit; line-height:inherit; text-align:inherit; text-decoration:underline; text-underline-offset:2px; cursor:pointer; min-height:0; vertical-align:baseline; }
+.msg.me .hzreq{ color:var(--white); }
+.hzreq:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
 .demonewrow{ flex:0 0 auto; display:flex; padding:0 4px 8px; }
 .demonew{ height:28px; padding:0 8px; border:1px solid var(--rule); background:transparent; color:var(--ink2); font:inherit; font-size:12px; line-height:26px; cursor:pointer; }
 .demonew:hover{ color:var(--ink); border-color:var(--ink); }
@@ -1690,6 +1693,7 @@ a.maplink:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
 <script src="_shared/hypernet-themes.js"></script>
 <script src="_shared/hypernet-event-details.js"></script>
 <script src="_shared/chat-cards.js"></script>
+<script src="_shared/horizon-requests.js"></script>
 <script src="_shared/hypernet-api.js"></script>
 <script src="_shared/map-link.js"></script>
 <script>
@@ -9220,6 +9224,9 @@ document.addEventListener('click', function(ev){
     case 'ccpick':       pickCollab(id); break;
     case 'rmcollab':     removeCollab(n.getAttribute('data-hz'), id); break;
     case 'demonewinv':   demoNewInvites(); break;
+    case 'hzreq':
+      if (window.HNRel && typeof window.HNRel.openRequests === 'function') window.HNRel.openRequests({ focus: id });
+      break;
     case 'hzaccept':
     case 'hzdecline':
     case 'hzundo': {

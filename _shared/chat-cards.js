@@ -59,7 +59,18 @@ var ChatCards = (function(){
     var mid = m && m.id ? ' data-mid="'+esc(m.id)+'"' : '';
     return '<button type="button" class="btn'+(act === 'hzundo' ? ' hzundo' : '')+'" data-act="'+act+'" data-card="horizon_invite" data-id="'+esc(m.cardId)+'" data-chat="'+esc(cid)+'"'+mid+'>'+label+'</button>';
   }
+  function requestReady(m){
+    if (!m || m.from === 'self') return false;
+    if (typeof HorizonRequests === 'undefined' || !HorizonRequests || typeof HorizonRequests.registered !== 'function' || !HorizonRequests.registered()) return false;
+    return !!(window.HNRel && typeof window.HNRel.openRequests === 'function');
+  }
+  function requestHTML(m, cid){
+    var person = typeof PEOPLE !== 'undefined' && PEOPLE && PEOPLE[m.from];
+    var name = (person && person.displayName) || '';
+    return '<span class="hzinv">'+esc(name)+' sent you a <button type="button" class="hzreq" data-act="hzreq" data-id="'+esc(HorizonRequests.idOf(cid, m))+'">request</button></span>';
+  }
   horizonInvite.render = function(m, me, cid){
+    if (requestReady(m)) return requestHTML(m, cid);
     var html = phraseHTML(m, horizonInvite.phrase(m), horizonInvite.link(m));
     if (horizonInvite.pending(m, me)) return '<span class="hzinv">'+html+'</span><span class="hzacts">'+actBtn('hzaccept', 'Accept', m, cid)+actBtn('hzdecline', 'Decline', m, cid)+'</span>';
     if (horizonInvite.answered(m, me)) return '<span class="hzinv">'+html+'</span><span class="hzacts">'+actBtn('hzundo', 'Undo', m, cid)+'</span>';

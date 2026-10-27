@@ -505,6 +505,20 @@
   };
   HN.saveEventLook = function(id){ return write('ev:' + id, 'PATCH', '/api/events/' + id, function(){ return { look: lookOut(window.HYPERNET_THEMES.themes[id] || null) }; }, title(id)); };
   HN.deleteEvent = function(id){ return write('ev:' + id, 'DELETE', '/api/events/' + id, undefined, 'the event'); };
+  /* Past events are out of the default list. The Chronicle picker is the place that asks for them. */
+  HN.pastEvents = function(opts){
+    opts = opts || {};
+    var q = ['past=only'];
+    if (opts.from) q.push('from=' + encodeURIComponent(opts.from));
+    if (opts.to) q.push('to=' + encodeURIComponent(opts.to));
+    if (opts.host) q.push('host=' + encodeURIComponent(opts.host));
+    if (opts.limit) q.push('limit=' + encodeURIComponent(opts.limit));
+    return req('GET', '/api/events?' + q.join('&')).then(function(r){
+      var list = r && r.events || [];
+      list.forEach(HN.takeEvent);
+      return list;
+    });
+  };
   /* Add to Chronicle. The self-claim and a past invite's accept both call this. No body. */
   HN.addChronicle = function(id){
     if (!HN.isId(id)) return Promise.resolve();

@@ -1286,6 +1286,9 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .chhitname small{ color:var(--dim); font-weight:normal; }
 .dlg .btn.chrole{ flex:0 0 auto; min-width:8.5em; height:auto; min-height:var(--ctl); font:var(--fs)/1.2 var(--sys); color:var(--ink); }
 .dlg .btn.chrole[disabled]{ color:var(--ink2); text-shadow:none; }
+body .popmenu.chmenu{ min-width:8.5em; background:var(--face); color:var(--ink); box-shadow:var(--out); font:var(--fs)/1.2 var(--sys); }
+body .popmenu.chmenu .pi{ min-height:var(--ctl); padding:0 12px; color:var(--ink); font:var(--fs)/1.2 var(--sys); cursor:pointer; }
+body .popmenu.chmenu .pi:hover, body .popmenu.chmenu .pi:focus{ background:var(--sel); color:var(--sel-text, #fff); outline:0; }
 .chwhy{ margin:0; font:var(--fs)/1.45 var(--sys); color:var(--ink); }
 .chcount{ margin:0 0 8px; font:var(--fs)/1.45 var(--sys); color:var(--ink); }
 .dlg .dfoot .btn[data-act="chronicle-add"]{ height:auto; min-height:var(--ctl); white-space:normal; text-align:center; line-height:1.2; }
@@ -3689,7 +3692,7 @@ function addPastEventDialog(){
   CHRONICLE_WHY = {};
   CHRONICLE_POOL = null;
   CHRONICLE_FILING = false;
-  var h = '<p class="fhelp">Search past events. Tap a role to mark Attended or Co-created. Marked events stay marked while you search again.</p>' +
+  var h = '<p class="fhelp">Search past events. Choose Attended or Co-created from the menu. Marked events stay marked while you search again.</p>' +
     '<div class="field"><label for="ch-q">Search past events</label><input id="ch-q" type="search" autocomplete="off"></div>' +
     '<div id="ch-hits" class="chhits"></div><p id="ch-count" class="chcount">0 selected</p><p id="ch-err" class="ferr" hidden></p>';
   dialog('Add past event', h, '<button type="button" class="btn" data-act="closedlg">Cancel</button><button type="button" class="btn primary" data-act="chronicle-add" disabled>Add to Chronicle (0)</button>', 520);
@@ -3739,21 +3742,43 @@ function chronicleHitRow(e){
   var host = viewerIsHost(e.id);
   var role = host ? null : (CHRONICLE_PICKS[e.id] || null);
   var why = !host && CHRONICLE_WHY[e.id] ? CHRONICLE_WHY[e.id] : '';
+  var open = chronicleRoleOpen() === e.id;
   var btn = host
     ? '<button type="button" class="btn chrole" disabled>Hosted</button>'
-    : '<button type="button" class="btn chrole'+(role ? ' on' : '')+'" data-act="chcycle" data-id="'+e.id+'" aria-pressed="'+(role ? 'true' : 'false')+'">'+chronicleCycleLabel(role)+'</button>';
+    : '<button type="button" class="btn chrole'+(role ? ' on' : '')+'" data-act="chrolemenu" data-id="'+e.id+'" aria-haspopup="menu" aria-expanded="'+(open ? 'true' : 'false')+'">'+chronicleCycleLabel(role)+'</button>';
   return '<div class="chhitrow"><div class="chhitname">'+esc(e.title)+'<small> · '+esc(e.date)+'</small></div>'+btn+'</div>' +
     (why ? '<p class="chwhy">'+esc(why)+'</p>' : '');
 }
-function cycleChroniclePick(id){
+function chronicleRoleOpen(){
+  return POP && POP.classList.contains('chmenu') ? (POP.getAttribute('data-for') || '') : '';
+}
+function setChroniclePick(id, role){
   if (!id || !EVENTS[id] || viewerIsHost(id) || CHRONICLE_FILING) return;
-  var order = [null, 'attendee', 'cocreator'];
-  var cur = CHRONICLE_PICKS[id] || null;
-  var next = order[(order.indexOf(cur) + 1) % order.length];
-  if (next) CHRONICLE_PICKS[id] = next;
+  if (role === 'attendee' || role === 'cocreator') CHRONICLE_PICKS[id] = role;
   else delete CHRONICLE_PICKS[id];
   delete CHRONICLE_WHY[id];
   paintChronicleHits();
+  var btns = document.querySelectorAll('.btn.chrole[data-act="chrolemenu"]'), i;
+  for (i = 0; i < btns.length; i++) if (btns[i].getAttribute('data-id') === id){ btns[i].focus(); break; }
+}
+/* the menu is fixed on the body, above the dialog, so the hit list cannot clip it */
+function openChronicleRoleMenu(btn){
+  if (!btn || CHRONICLE_FILING) return;
+  var id = btn.getAttribute('data-id');
+  if (!id || !EVENTS[id] || viewerIsHost(id)) return;
+  var items = [
+    { label:'Attended', cmd:'chrole', arg:id + '|attendee' },
+    { label:'Co-created', cmd:'chrole', arg:id + '|cocreator' }
+  ];
+  if (CHRONICLE_PICKS[id]) items.push({ label:'Remove', cmd:'chrole', arg:id + '|' });
+  popup(btn, items);
+  if (!POP) return;
+  POP.classList.add('chmenu');
+  POP.setAttribute('data-for', id);
+  btn.setAttribute('aria-expanded', 'true');
+  var r = btn.getBoundingClientRect(), h = POP.offsetHeight, top = r.bottom + 3;
+  if (top + h > window.innerHeight - 6 && r.top - h - 3 >= 6) top = r.top - h - 3;
+  POP.style.top = top + 'px';
 }
 function viewerIsHost(id){
   var e = EVENTS[id];
@@ -5741,7 +5766,13 @@ function layoutCentre(){
    11. MENUS AND DIALOGS
    ========================================================================= */
 var POP = null;
-function closePopup(){ if (POP){ POP.remove(); POP = null; } }
+function closePopup(){
+  if (!POP) return;
+  var backs = document.querySelectorAll('.btn.chrole[aria-expanded="true"]'), i;
+  for (i = 0; i < backs.length; i++) backs[i].setAttribute('aria-expanded', 'false');
+  POP.remove();
+  POP = null;
+}
 function popup(anchor, items){
   closePopup();
   var d = document.createElement('div');
@@ -9114,6 +9145,11 @@ function runCmd(cmd, arg){
     case 'new-callout': closeDialogs(); gated(newCalloutDialog)(arg ? { eventId:arg } : null); break;
     case 'profile':     openItem('person', 'self'); break;
     case 'editprofile': beginProfileEdit(); break;
+    case 'chrole': {
+      var bits = String(arg || '').split('|');
+      setChroniclePick(bits[0], bits[1] || '');
+      break;
+    }
     case 'logout':      doLogout(); break;
   }
 }
@@ -9132,7 +9168,7 @@ document.addEventListener('click', function(ev){
   }
   if (n.tagName === 'SELECT' || (n.tagName === 'INPUT' && n.type !== 'checkbox')) return;
   var act = n.getAttribute('data-act'), id = n.getAttribute('data-id');
-  if (act !== 'newmenu' && act !== 'acctmenu') closePopup();
+  if (act !== 'newmenu' && act !== 'acctmenu' && act !== 'chrolemenu') closePopup();
   if (act !== 'helptip' && !(ev.target.closest && ev.target.closest('.helptip'))) closeHelpTips();
   if (n.tagName === 'A') ev.preventDefault();
   switch (act){
@@ -9210,7 +9246,10 @@ document.addEventListener('click', function(ev){
     case 'ncdm':         closeDialogs(); NC = null; messagePerson(id); break;
     case 'new-event':    runCmd('new-event'); break;
     case 'addpastevent': gated(addPastEventDialog)(); break;
-    case 'chcycle':      cycleChroniclePick(id); break;
+    case 'chrolemenu':
+      if (POP && POP.getAttribute('data-for') === id){ closePopup(); break; }
+      openChronicleRoleMenu(n);
+      break;
     case 'chronicle-add': filePickedChronicle(); break;
     case 'new-horizon':  runCmd('new-horizon', id); break;
     case 'login':        loginDialog(); break;
@@ -9451,7 +9490,7 @@ document.addEventListener('change', function(ev){
 document.addEventListener('input', function(ev){
   var n = ev.target;
   if (n.id === 'q' || n.id === 'pq'){ doSearch(n.value); return; }
-  if (n.id === 'ch-q'){ paintChronicleHits(); return; }
+  if (n.id === 'ch-q'){ if (POP && POP.classList.contains('chmenu')) closePopup(); paintChronicleHits(); return; }
   if (n.classList && n.classList.contains('pfind')){
     PFILT[n.getAttribute('data-id')] = n.value; render(); return;
   }
@@ -9486,7 +9525,7 @@ document.addEventListener('input', function(ev){
   if (document.querySelector('.dlg [data-czlook]')) czPreviews();
 });
 document.addEventListener('mousedown', function(ev){
-  if (!ev.target.closest('.popmenu, [data-act="newmenu"], [data-act="acctmenu"]')) closePopup();
+  if (!ev.target.closest('.popmenu, [data-act="newmenu"], [data-act="acctmenu"], [data-act="chrolemenu"]')) closePopup();
   var panel = document.getElementById('w-tagpanel');
   if (panel && !panel.hidden && !ev.target.closest('.tagfield')) tagSetOpen(false);
 });
@@ -9605,8 +9644,8 @@ document.addEventListener('keydown', function(ev){
       ev.stopPropagation();
       return;
     }
+    if (POP){ closePopup(); ev.preventDefault(); return; }
     if (DLGS.length){ dismissDialog(); return; }
-    if (POP){ closePopup(); return; }
     if (ae && ae.id === 'q' && S.folder.kind === 'search'){ leaveSearch(); render(); ae.blur(); return; }
     if (inField){ ae.blur(); return; }
     /* the window closes (a phone's sheet steps back, as its back gesture does) */
@@ -9628,6 +9667,7 @@ document.addEventListener('keydown', function(ev){
     if (ae.id === 'nh-n'){ var go = $('nh-go'); if (go && !go.disabled) go.click(); ev.preventDefault(); return; }
     if (ae.classList.contains('pi')){ ae.click(); ev.preventDefault(); return; }
   }
+  if (POP && ev.key === ' ' && ae && ae.classList && ae.classList.contains('pi')){ ae.click(); ev.preventDefault(); return; }
   if (POP && (ev.key === 'ArrowDown' || ev.key === 'ArrowUp')){
     var its = Array.prototype.slice.call(POP.querySelectorAll('.pi[tabindex]')), ix = its.indexOf(ae);
     its[(ix + (ev.key === 'ArrowDown' ? 1 : its.length - 1)) % its.length].focus(); ev.preventDefault(); return;

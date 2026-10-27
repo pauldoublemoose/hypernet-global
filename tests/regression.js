@@ -1593,7 +1593,7 @@ async function overflowEverywhere(p, label){
         q:(document.querySelector('.hostask-q') || {}).textContent || '',
         wiz:!!document.querySelector('#w-t'),
         role:!!document.querySelector('input[name="ch-role"]'),
-        cycle:!!document.querySelector('.dlg .chrole'),
+        cycle:!!document.querySelector('.dlg [data-act="chrolemenu"][aria-haspopup="menu"]'),
         search:!!document.querySelector('#ch-q'),
         yes:yes ? yes.textContent : '',
         off:!!(yes && yes.disabled)
@@ -3106,7 +3106,7 @@ async function overflowEverywhere(p, label){
   }
 
   /* RSVP role: Going, Interested, Went and a shift must not send role, or a stored role is cleared.
-     Add past event marks several past events from the row button, then files them together. */
+     Add past event marks several past events from the role menu, then files them together. */
   {
     const ME = '00000000-0000-4000-8000-000000000001', EV = '00000000-0000-4000-8000-000000000101';
     const OLD = '00000000-0000-4000-8000-000000000102', OTHER = '00000000-0000-4000-8000-000000000103';
@@ -3128,10 +3128,10 @@ async function overflowEverywhere(p, label){
     const boot = { hypernet:1, me:person, login:null, people:[person], follows:[], promotions:[], horizons:[], hzFollows:[], callouts:[], replies:[], activity:[], chats:[],
       events:[upcoming].concat(pastRows),
       rsvps:[{ personId:ME, eventId:EV, status:'going', went:false, shiftIndex:null, role:'host', updatedAt:'2026-09-30T10:00:00Z' }] };
-    const mark = async (c, title, times) => {
+    const pickRole = async (c, title, label) => {
       await c.fill('#ch-q', title);
-      const btn = c.locator('.dlg .chhitrow').filter({ hasText: title }).locator('[data-act="chcycle"]');
-      for (let i = 0; i < times; i++) await btn.click();
+      await c.locator('.dlg .chhitrow').filter({ hasText: title }).locator('[data-act="chrolemenu"]').click();
+      await c.locator('.popmenu.chmenu [role="menuitem"]').filter({ hasText: label }).click();
     };
     for (const kind of ['desk', 'phone']){
       const c = await ctx(kind);
@@ -3213,33 +3213,68 @@ async function overflowEverywhere(p, label){
          kind + ': an upcoming event shows the not-past message and stays selected ' + JSON.stringify(blocked));
       await c.evaluate(id => { delete CHRONICLE_PICKS[id]; delete CHRONICLE_WHY[id]; paintChronicleHits(); }, EV);
       const nPut = puts.length, nPost = posts.length;
-      await mark(c, 'Old quiet', 1);
+      await c.fill('#ch-q', 'Old quiet');
+      await c.click('.dlg [data-act="chrolemenu"]');
+      await c.keyboard.press('ArrowDown');
+      const opened = await ev(c, () => {
+        const menu = document.querySelector('.popmenu.chmenu');
+        const r = menu ? menu.getBoundingClientRect() : null;
+        const btn = document.querySelector('.dlg [data-act="chrolemenu"]');
+        return {
+          items: menu ? [...menu.querySelectorAll('[role="menuitem"]')].map(el => el.textContent.trim()) : [],
+          body: !!(menu && menu.parentElement === document.body),
+          inView: !!(r && r.top >= -1 && r.left >= -1 && r.bottom <= window.innerHeight + 1 && r.right <= window.innerWidth + 1),
+          expanded: btn ? btn.getAttribute('aria-expanded') : '',
+          label: btn ? btn.textContent : '',
+          focus: (document.activeElement && document.activeElement.textContent || '').trim(),
+          dlg: !!document.querySelector('.dlg')
+        };
+      });
+      await c.keyboard.press('Escape');
+      const escaped = await ev(c, () => ({ menu:!!document.querySelector('.popmenu'), dlg:!!document.querySelector('.dlg') }));
+      await c.click('.dlg [data-act="chrolemenu"]');
+      await c.click('.dlg .dtitle');
+      const outside = await ev(c, () => ({
+        menu:!!document.querySelector('.popmenu'),
+        label:(document.querySelector('.dlg [data-act="chrolemenu"]') || {}).textContent || '',
+        dlg:!!document.querySelector('.dlg')
+      }));
+      await pickRole(c, 'Old quiet', 'Attended');
       const once = await ev(c, () => ({
         label:(document.querySelector('.dlg .chrole') || {}).textContent || '',
         n:chronicleSelection().length,
-        foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).textContent || ''
+        foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).textContent || '',
+        menu:!!document.querySelector('.popmenu')
       }));
-      await c.click('.dlg [data-act="chcycle"]');
-      await c.click('.dlg [data-act="chcycle"]');
+      await c.fill('#ch-q', 'Old quiet');
+      await c.click('.dlg [data-act="chrolemenu"]');
+      const marked = await ev(c, () => [...document.querySelectorAll('.popmenu.chmenu [role="menuitem"]')].map(el => el.textContent.trim()));
+      await c.locator('.popmenu.chmenu [role="menuitem"]').filter({ hasText: 'Co-created' }).click();
+      const cocreated = await ev(c, () => ({ label:(document.querySelector('.dlg .chrole') || {}).textContent || '', menu:!!document.querySelector('.popmenu') }));
+      await pickRole(c, 'Old quiet', 'Remove');
       const spun = await ev(c, () => ({
         label:(document.querySelector('.dlg .chrole') || {}).textContent || '',
         n:chronicleSelection().length,
-        foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).disabled
+        foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).disabled,
+        menu:!!document.querySelector('.popmenu')
       }));
-      await mark(c, 'Old quiet', 1);
-      await mark(c, 'Old crew', 2);
+      await pickRole(c, 'Old quiet', 'Attended');
+      await pickRole(c, 'Old crew', 'Co-created');
       const kept = await ev(c, id => ({ n:chronicleSelection().length, quiet:CHRONICLE_PICKS[id] || null }), QUIET);
-      await mark(c, 'Old guest', 2);
-      await mark(c, 'Old locked', 2);
+      await pickRole(c, 'Old guest', 'Co-created');
+      await pickRole(c, 'Old locked', 'Co-created');
       const ready = await ev(c, () => ({
         n:chronicleSelection().length,
         foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).textContent || '',
         count:(document.querySelector('#ch-count') || {}).textContent || ''
       }));
-      ok(once.label === 'Attended' && once.n === 1 && once.foot === 'Add to Chronicle (1)' &&
-         spun.label === 'Add' && spun.n === 0 && spun.foot && kept.n === 2 && kept.quiet === 'attendee' &&
+      ok(opened.items.join(',') === 'Attended,Co-created' && opened.body && opened.inView && opened.expanded === 'true' && opened.label === 'Add' && opened.focus === 'Co-created' && opened.dlg &&
+         !escaped.menu && escaped.dlg && !outside.menu && outside.label === 'Add' && outside.dlg &&
+         once.label === 'Attended' && once.n === 1 && once.foot === 'Add to Chronicle (1)' && !once.menu &&
+         marked.join(',') === 'Attended,Co-created,Remove' && cocreated.label === 'Co-created' && !cocreated.menu &&
+         spun.label === 'Add' && spun.n === 0 && spun.foot && !spun.menu && kept.n === 2 && kept.quiet === 'attendee' &&
          ready.n === 4 && ready.foot === 'Add to Chronicle (4)' && ready.count === '4 selected',
-         kind + ': the role button cycles, the count survives a new search, and the footer shows it ' + JSON.stringify({ once, spun, kept, ready }));
+         kind + ': the role menu opens, picks Attended and Co-created, removes, and closes on Escape or an outside click ' + JSON.stringify({ opened, escaped, outside, once, marked, cocreated, spun, kept, ready }));
       await c.click('.dlg [data-act="chronicle-add"]');
       await c.waitForTimeout(500);
       const mixed = await ev(c, spec => {
@@ -3301,10 +3336,10 @@ async function overflowEverywhere(p, label){
   /* Add past event marks several demo past events offline. One is Attended, one is Co-created.
      A later batch keeps a request and an admins-only refusal selected, and still files the one that succeeds. */
   {
-    const mark = async (c, title, times) => {
+    const pickRole = async (c, title, label) => {
       await c.fill('#ch-q', title);
-      const btn = c.locator('.dlg .chhitrow').filter({ hasText: title }).locator('[data-act="chcycle"]');
-      for (let i = 0; i < times; i++) await btn.click();
+      await c.locator('.dlg .chhitrow').filter({ hasText: title }).locator('[data-act="chrolemenu"]').click();
+      await c.locator('.popmenu.chmenu [role="menuitem"]').filter({ hasText: label }).click();
     };
     for (const kind of ['desk', 'phone', 'tab']){
       const c = await ctx(kind);
@@ -3329,10 +3364,10 @@ async function overflowEverywhere(p, label){
       await c.evaluate(() => document.querySelector('[data-act="addpastevent"]').click());
       await c.waitForTimeout(300);
       await c.fill('#ch-q', 'Harbour');
-      const harbour = await ev(c, () => [...document.querySelectorAll('.dlg [data-act="chcycle"]')].map(b => b.getAttribute('data-id')));
+      const harbour = await ev(c, () => [...document.querySelectorAll('.dlg [data-act="chrolemenu"]')].map(b => b.getAttribute('data-id')));
       await c.fill('#ch-q', 'zzzz-not-an-event');
       const miss = await ev(c, () => ({
-        hits:document.querySelectorAll('.dlg [data-act="chcycle"]').length,
+        hits:document.querySelectorAll('.dlg [data-act="chrolemenu"]').length,
         line:(document.querySelector('#ch-hits') || {}).textContent || '',
         wiz:!!document.querySelector('#w-t'),
         add:CHRONICLE_ADD,
@@ -3345,13 +3380,27 @@ async function overflowEverywhere(p, label){
         const b = document.querySelector('.dlg .chrole');
         return { label:b ? b.textContent : '', disabled:!!(b && b.disabled) };
       });
-      await mark(c, 'Late quay', 1);
-      const attended = await ev(c, () => ({ label:(document.querySelector('.dlg .chrole') || {}).textContent || '', n:chronicleSelection().length }));
-      await c.click('.dlg [data-act="chcycle"]');
-      await c.click('.dlg [data-act="chcycle"]');
-      const cleared = await ev(c, () => ({ label:(document.querySelector('.dlg .chrole') || {}).textContent || '', n:chronicleSelection().length, off:!!(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).disabled }));
-      await mark(c, 'Late quay', 1);
-      await mark(c, 'Burning Man', 2);
+      await c.fill('#ch-q', 'Late quay');
+      await c.click('.dlg [data-act="chrolemenu"]');
+      const opened = await ev(c, () => {
+        const menu = document.querySelector('.popmenu.chmenu');
+        const r = menu ? menu.getBoundingClientRect() : null;
+        return {
+          items: menu ? [...menu.querySelectorAll('[role="menuitem"]')].map(el => el.textContent.trim()) : [],
+          body: !!(menu && menu.parentElement === document.body),
+          inView: !!(r && r.top >= -1 && r.left >= -1 && r.bottom <= window.innerHeight + 1 && r.right <= window.innerWidth + 1)
+        };
+      });
+      await c.click('.dlg .dtitle');
+      const outside = await ev(c, () => ({ menu:!!document.querySelector('.popmenu'), label:(document.querySelector('.dlg [data-act="chrolemenu"]') || {}).textContent || '', dlg:!!document.querySelector('.dlg') }));
+      await pickRole(c, 'Late quay', 'Attended');
+      const attended = await ev(c, () => ({ label:(document.querySelector('.dlg .chrole') || {}).textContent || '', n:chronicleSelection().length, menu:!!document.querySelector('.popmenu') }));
+      await pickRole(c, 'Late quay', 'Co-created');
+      const cocreated = await ev(c, () => ({ label:(document.querySelector('.dlg .chrole') || {}).textContent || '', menu:!!document.querySelector('.popmenu') }));
+      await pickRole(c, 'Late quay', 'Remove');
+      const cleared = await ev(c, () => ({ label:(document.querySelector('.dlg .chrole') || {}).textContent || '', n:chronicleSelection().length, off:!!(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).disabled, menu:!!document.querySelector('.popmenu') }));
+      await pickRole(c, 'Late quay', 'Attended');
+      await pickRole(c, 'Burning Man', 'Co-created');
       const ready = await ev(c, () => ({
         n:chronicleSelection().length,
         quay:CHRONICLE_PICKS['evt-chronicle-going'] || null,
@@ -3371,11 +3420,15 @@ async function overflowEverywhere(p, label){
       ok(!before.quay.length && before.burn.indexOf('attendee') < 0 && before.burn.indexOf('cocreator') < 0 && !harbour.length && !miss.hits && !miss.wiz && !miss.add && !miss.create &&
          /New event/.test(miss.line) && /Already happened/.test(miss.line) && miss.foot === 'Add to Chronicle (0)' && miss.off &&
          hosted.label === 'Hosted' && hosted.disabled &&
-         attended.label === 'Attended' && attended.n === 1 && cleared.label === 'Add' && cleared.n === 0 && cleared.off &&
+         opened.items.join(',') === 'Attended,Co-created' && opened.body && opened.inView &&
+         !outside.menu && outside.label === 'Add' && outside.dlg &&
+         attended.label === 'Attended' && attended.n === 1 && !attended.menu &&
+         cocreated.label === 'Co-created' && !cocreated.menu &&
+         cleared.label === 'Add' && cleared.n === 0 && cleared.off && !cleared.menu &&
          ready.n === 2 && ready.quay === 'attendee' && ready.burn === 'cocreator' && ready.foot === 'Add to Chronicle (2)' && ready.count === '2 selected' &&
          !after.open && after.quay.length === 1 && after.quay[0] === 'attendee' && after.quayRole === 'attendee' &&
          after.burn.length === 1 && after.burn[0] === 'cocreator' && after.burnRole === 'cocreator' && !api.length,
-         kind + ': Add past event files two demo events under Attended and Co-created ' + JSON.stringify({ before, harbour, miss, hosted, attended, cleared, ready, after, api }));
+         kind + ': Add past event files two demo events under Attended and Co-created ' + JSON.stringify({ before, harbour, miss, hosted, opened, outside, attended, cocreated, cleared, ready, after, api }));
       await c.evaluate(() => {
         delete ROLE['evt-chronicle-going']; delete WENT['evt-chronicle-going']; delete RSVP['evt-chronicle-going'];
         delete ROLE['evt-world-borderland-2026']; delete WENT['evt-world-borderland-2026'];
@@ -3387,9 +3440,9 @@ async function overflowEverywhere(p, label){
       await c.waitForTimeout(200);
       await c.evaluate(() => document.querySelector('[data-act="addpastevent"]').click());
       await c.waitForTimeout(250);
-      await mark(c, 'Late quay', 1);
-      await mark(c, 'The Borderland', 2);
-      await mark(c, 'Hyperstition', 2);
+      await pickRole(c, 'Late quay', 'Attended');
+      await pickRole(c, 'The Borderland', 'Co-created');
+      await pickRole(c, 'Hyperstition', 'Co-created');
       await c.click('.dlg [data-act="chronicle-add"]');
       await c.waitForTimeout(400);
       const part = await ev(c, () => ({

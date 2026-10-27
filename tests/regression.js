@@ -1667,23 +1667,20 @@ async function overflowEverywhere(p, label){
         edit:labels.indexOf('Edit') === 0, boost:labels.some(t => /Boost/.test(t)),
         horizon:labels.some(t => /Horizon|horizon/.test(t)), themes:themes };
     });
-    ok(co.q === 0 && co.eye && co.head && co.last && co.plain && co.perm && co.edit && !co.boost && !co.horizon && co.order === 'Edit,Visibility,Permissions,New call out,Delete' && co.themes.every(t => t.ink >= 4.5),
-       kind + ': the cog is titled Admin controls, then Edit, Visibility, Permissions, New call out, and a plain Delete ' + JSON.stringify(co));
-    await c.click(kind === 'phone' ? '.ctxsheet [data-icon="key"]' : '.ctxmenu [data-icon="key"]'); await c.waitForTimeout(250);
+    ok(co.q === 0 && co.head && co.last && co.plain && co.edit && !co.boost && !co.horizon && co.order === 'Edit,Visibility and Permissions,New call out,Delete' && co.themes.every(t => t.ink >= 4.5),
+       kind + ': the cog is titled Admin controls, then Edit, Visibility and Permissions, New call out, and a plain Delete ' + JSON.stringify(co));
+    await c.click(kind === 'phone' ? '.ctxsheet [data-icon="eye"]' : '.ctxmenu [data-icon="eye"]'); await c.waitForTimeout(250);
     const perm = await ev(c, () => {
       const d = document.querySelector('.dlg.permissions');
       if (!d) return null;
-      return { title:(d.querySelector('.dtitle') || {}).textContent, done:(d.querySelector('.dfoot [data-act="closedlg"]') || {}).textContent,
+      return { title:(d.querySelector('.dtitle') || {}).textContent, save:!!d.querySelector('.dfoot [data-act="evprivacy-save"]'),
         admin:!!d.querySelector('[data-act="evadmin-invite"]'), invites:/Who can invite guests\?/.test(d.innerText),
+        see:/Who can see it/.test(d.innerText),
         rule:/Who can be listed as a co-creator\?/.test(d.innerText), edit:!!d.querySelector('[data-act="editevent"]') };
     });
-    ok(perm && perm.title === 'Permissions' && perm.done === 'Done' && perm.admin && perm.invites && perm.rule && !perm.edit,
-       kind + ': Permissions opens the admin settings, and Done closes it ' + JSON.stringify(perm));
+    ok(perm && perm.title === 'Visibility and Permissions' && perm.save && perm.admin && perm.invites && perm.see && perm.rule && !perm.edit,
+       kind + ': Visibility and Permissions opens the picker and the admin settings ' + JSON.stringify(perm));
     await c.click('.dlg.permissions [data-act="closedlg"]'); await c.waitForTimeout(150);
-    await c.click(bar + '[data-act="evcog"]'); await c.waitForTimeout(250);
-    await c.click(kind === 'phone' ? '.ctxsheet [data-icon="eye"]' : '.ctxmenu [data-icon="eye"]'); await c.waitForTimeout(250);
-    ok(await ev(c, () => (document.querySelector('.dlg .dtitle') || {}).textContent === 'Who can see it'), kind + ': Visibility opens Who can see it');
-    await c.keyboard.press('Escape'); await c.waitForTimeout(150);
     await c.click(bar + '[data-act="evcog"]'); await c.waitForTimeout(250);
     await c.click(kind === 'phone' ? '.ctxsheet [data-icon="trash"]' : '.ctxmenu [data-icon="trash"]'); await c.waitForTimeout(250);
     const doomed = await ev(c, () => S.stack[0].id);
@@ -2862,7 +2859,7 @@ async function overflowEverywhere(p, label){
     const controls = await ev(c, () => (document.querySelector('.ctxmenu, .ctxsheet') || {}).innerText || '');
     ok(/New call out/.test(controls) && !/Boost/.test(controls) && !/Add to horizon/.test(controls) && /Admin controls/.test(controls) && /Visibility/.test(controls) && /Permissions/.test(controls) && !/Invite admin/.test(controls) && !/Guests can invite friends/.test(controls) && /Delete/.test(controls),
        kind + ': the cog holds Edit, Visibility, Permissions, New call out, and Delete ' + controls);
-    await c.click(kind === 'phone' ? '.ctxsheet [data-icon="key"]' : '.ctxmenu [data-icon="key"]'); await c.waitForTimeout(250);
+    await c.click(kind === 'phone' ? '.ctxsheet [data-icon="eye"]' : '.ctxmenu [data-icon="eye"]'); await c.waitForTimeout(250);
     const permBox = await ev(c, () => {
       const d = document.querySelector('.dlg.permissions'); if (!d) return null;
       const kids = [...d.querySelector('.ev-controls').children];
@@ -2882,30 +2879,30 @@ async function overflowEverywhere(p, label){
       document.documentElement.setAttribute('data-theme', was || 'win2k');
       const text = d.innerText;
       const ia = text.indexOf('Invite admin'), ad = text.indexOf('Admins'), co = text.indexOf('Who can be listed as a co-creator?'), iv = text.indexOf('Who can invite guests?');
-      return { title:d.querySelector('.dtitle').textContent, done:d.querySelector('.dfoot').textContent.trim(),
+      return { title:d.querySelector('.dtitle').textContent, save:!!d.querySelector('.dfoot [data-act="evprivacy-save"]'),
         first:kids[0] && kids[0].textContent.trim(), order:ia >= 0 && ia < ad && ad < co && co < iv,
         coOpts:rule ? [...rule.options].map(o => o.textContent).join('|') : '', coValue:rule && rule.value,
         opts:invite ? [...invite.options].map(o => o.textContent).join('|') : '', value:invite && invite.value,
         disabled:!!(invite && invite.disabled), why:why && why.textContent, themes:themes };
     });
-    ok(permBox && permBox.title === 'Permissions' && permBox.done === 'Done' && permBox.first === 'Invite admin' && permBox.order && permBox.coValue === 'open' && permBox.coOpts === 'Open – anyone can list themselves as a co-creator|On request – admins must approve requests' && permBox.opts === 'Admins only|Admins and co-creators|Anyone with an invite' && permBox.value === 'invited' && permBox.disabled && permBox.why === 'This event is public, so anyone can already see it.' && permBox.themes.every(t => t.dim && t.why),
-       kind + ': Permissions is Invite admin, the admin list, the co-creator dropdown, then Who can invite guests, disabled on a public event ' + JSON.stringify(permBox));
+    ok(permBox && permBox.title === 'Visibility and Permissions' && permBox.save && permBox.first === 'Invite admin' && permBox.order && permBox.coValue === 'open' && permBox.coOpts === 'Open – anyone can list themselves as a co-creator|On request – admins must approve requests' && permBox.opts === 'Admins only|Admins and co-creators|Anyone with an invite' && permBox.value === 'invited' && permBox.disabled && permBox.why === 'This event is public, so anyone can already see it.' && permBox.themes.every(t => t.dim && t.why),
+       kind + ': Visibility and Permissions is the picker, Invite admin, the admin list, the co-creator dropdown, then Who can invite guests, disabled on a public event ' + JSON.stringify(permBox));
     await c.selectOption('.dlg.permissions [data-act="evpolicy"]', 'request'); await c.waitForTimeout(250);
-    const coSaved = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evpolicy"]'); const id = sel && sel.getAttribute('data-id'); return { value:sel && sel.value, saved:id && cocreatorPolicyOf(id) }; });
-    ok(coSaved.value === 'request' && coSaved.saved === 'request', kind + ': the co-creator dropdown saves ' + JSON.stringify(coSaved));
+    const coSaved = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evpolicy"]'); return { value:sel && sel.value, draft:DRAFT && DRAFT.cocreatorPolicy }; });
+    ok(coSaved.value === 'request' && coSaved.draft === 'request', kind + ': the co-creator dropdown stays in the draft until Save ' + JSON.stringify(coSaved));
     await c.evaluate(() => { var sel = document.querySelector('[data-act="evinvitepolicy"]'); var id = sel.getAttribute('data-id'); EVENTS[id].privacy = 'only_me'; settleEventControl(id); });
     await c.waitForTimeout(250);
     const opened = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { disabled:!!(sel && sel.disabled), why:!!document.querySelector('.ev-policy-why'), value:sel && sel.value }; });
     ok(opened && !opened.disabled && !opened.why && opened.value === 'invited', kind + ': a private event enables Who can invite guests ' + JSON.stringify(opened));
     await c.selectOption('.dlg.permissions [data-act="evinvitepolicy"]', 'admins'); await c.waitForTimeout(250);
-    const asAdmins = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { value:sel && sel.value, saved:invitePolicyOf(sel.getAttribute('data-id')) }; });
-    ok(asAdmins.value === 'admins' && asAdmins.saved === 'admins', kind + ': Admins only saves ' + JSON.stringify(asAdmins));
+    const asAdmins = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { value:sel && sel.value, draft:DRAFT && DRAFT.invitePolicy }; });
+    ok(asAdmins.value === 'admins' && asAdmins.draft === 'admins', kind + ': Admins only stays in the draft ' + JSON.stringify(asAdmins));
     await c.selectOption('.dlg.permissions [data-act="evinvitepolicy"]', 'cocreators'); await c.waitForTimeout(250);
-    const asCo = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { value:sel && sel.value, saved:invitePolicyOf(sel.getAttribute('data-id')) }; });
-    ok(asCo.value === 'cocreators' && asCo.saved === 'cocreators', kind + ': Admins and co-creators saves ' + JSON.stringify(asCo));
+    const asCo = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { value:sel && sel.value, draft:DRAFT && DRAFT.invitePolicy }; });
+    ok(asCo.value === 'cocreators' && asCo.draft === 'cocreators', kind + ': Admins and co-creators stays in the draft ' + JSON.stringify(asCo));
     await c.selectOption('.dlg.permissions [data-act="evinvitepolicy"]', 'invited'); await c.waitForTimeout(250);
-    const asInvited = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { value:sel && sel.value, saved:invitePolicyOf(sel.getAttribute('data-id')) }; });
-    ok(asInvited.value === 'invited' && asInvited.saved === 'invited', kind + ': Anyone with an invite saves ' + JSON.stringify(asInvited));
+    const asInvited = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { value:sel && sel.value, draft:DRAFT && DRAFT.invitePolicy }; });
+    ok(asInvited.value === 'invited' && asInvited.draft === 'invited', kind + ': Anyone with an invite stays in the draft ' + JSON.stringify(asInvited));
     await c.keyboard.press('Escape'); await c.waitForTimeout(150);
     await c.evaluate(() => { window.__copied = []; Object.defineProperty(navigator, 'clipboard', { configurable:true, value:{ writeText:t => { window.__copied.push(t); return Promise.resolve(); } } }); });
     await c.click(barSel + '[data-act="share"]'); await c.waitForTimeout(250);

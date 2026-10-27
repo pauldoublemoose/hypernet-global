@@ -336,6 +336,7 @@
   var PROVIDER_ORDER = [];
   var REQ = null;
   var LISTCACHE = {};
+  var CONTACT_REMOTE = null;
 
   function registerRequestProvider(provider) {
     if (!provider || !provider.type) return function () {};
@@ -365,11 +366,19 @@
     badge.textContent = String(n);
   }
 
+  function refreshRequests() {
+    if (root.S && root.S.folder && root.S.folder.kind === "requests" && typeof root.render === "function") {
+      root.render();
+      return;
+    }
+    if (RELDLG && RELDLG.mode === "requests") refreshDlg();
+  }
+
   function requestsChanged() {
     if (typeof root.dispatchEvent === "function" && typeof root.Event === "function") {
       root.dispatchEvent(new root.Event("hn:requests-changed"));
     }
-    if (RELDLG && RELDLG.mode === "requests") refreshDlg();
+    refreshRequests();
   }
 
   function incomingFriendCount() {
@@ -386,6 +395,7 @@
   }
 
   function incomingCount() {
+    ensureOfflineFixtures();
     var n = 0;
     PROVIDER_ORDER.forEach(function (type) {
       var p = PROVIDERS[type];
@@ -482,10 +492,10 @@
           LISTCACHE[type] = { items: (LISTCACHE[type] && LISTCACHE[type].items) || [], flight: true };
           value.then(function (items) {
             LISTCACHE[type] = { items: items || [] };
-            if (RELDLG && RELDLG.mode === "requests") refreshDlg();
+            refreshRequests();
           }, function () {
             LISTCACHE[type] = { error: true };
-            if (RELDLG && RELDLG.mode === "requests") refreshDlg();
+            refreshRequests();
           });
         }
         return LISTCACHE[type].error ? { error: true } : { items: LISTCACHE[type].items || [] };
@@ -535,55 +545,73 @@
     return html;
   }
 
+  function requestBody(rendered) {
+    var html = requestNode(rendered);
+    if (html.indexOf("r-main") >= 0) return html;
+    return '<span class="r-ic"></span><div class="r-main"><div class="r-title">' + html + "</div></div>";
+  }
+
   function requestRow(provider, item) {
     var key = reqKey(provider.type, item.id);
     var pending = REQ && REQ.pending && REQ.pending[key];
     var settled = REQ && REQ.settled && REQ.settled[key];
     var hit = REQ && REQ.highlight && REQ.highlight.type === provider.type && String(REQ.highlight.id) === String(item.id);
-    var cls = "relrow" + (hit ? " reqhit" : "");
-    var body = requestNode(provider.render(item));
+    var cls = "row reqrow" + (hit ? " reqhit" : "");
+    var body = requestBody(provider.render(item));
     var side;
     if (settled) {
       var word = settled.verb === "accept" ? "Accepted" : "Declined";
       var undoDis = pending ? " disabled" : "";
-      side = '<span class="reqstate">' + word + ' · <button type="button" class="btn" data-rel-act="req-undo" data-type="' + root.esc(provider.type) + '" data-id="' + root.esc(item.id) + '"' + undoDis + ">Undo</button></span>";
+      side = '<div class="r-side"><span class="reqstate">' + word + ' · <button type="button" class="btn" data-rel-act="req-undo" data-type="' + root.esc(provider.type) + '" data-id="' + root.esc(item.id) + '"' + undoDis + ">Undo</button></span></div>";
     } else {
-      side = requestButtons(provider, item, !!pending);
+      side = '<div class="r-side">' + requestButtons(provider, item, !!pending) + "</div>";
     }
-    return '<div class="' + cls + '" data-req-type="' + root.esc(provider.type) + '" data-req-id="' + root.esc(item.id) + '"><span>' + body + "</span>" + side + "</div>";
+    return '<div class="' + cls + '" data-req-type="' + root.esc(provider.type) + '" data-req-id="' + root.esc(item.id) + '">' + body + side + "</div>";
+  }
+
+  var REQUEST_ORDER = ["friend_request", "event_invite", "admin_invite", "cocreator_request", "horizon_invite", "did_you_go"];
+
+  function orderedRequestTypes() {
+    var known = REQUEST_ORDER.filter(function (type) { return PROVIDERS[type]; });
+    var rest = PROVIDER_ORDER.filter(function (type) { return REQUEST_ORDER.indexOf(type) < 0 && PROVIDERS[type]; });
+    return known.concat(rest);
+  }
+
+  function providerCount(provider) {
+    try {
+      var n = provider.count();
+      if (typeof n === "number" && isFinite(n) && n > 0) return n;
+    } catch (e) {}
+    return 0;
   }
 
   function providerSection(provider) {
     try { return providerSectionBody(provider); }
     catch (e) {
-      return '<section class="reqsec" data-req-type="' + root.esc(provider.type) + '"><h3>' + root.esc(provider.label || provider.type) + '</h3><p class="relempty">Couldn\'t load</p></section>';
+      return '<div class="band">' + root.esc(provider.label || provider.type) + ' <span class="cnt">0</span></div><div class="empty">Couldn\'t load</div>';
     }
   }
 
   function providerSectionBody(provider) {
     var pack = readProviderList(provider);
-    var h = '<section class="reqsec" data-req-type="' + root.esc(provider.type) + '"><h3>' + root.esc(provider.label || provider.type) + "</h3>";
-    if (pack.error) return h + '<p class="relempty">Couldn\'t load</p></section>';
+    var label = root.esc(provider.label || provider.type);
+    if (pack.error) return '<div class="band">' + label + ' <span class="cnt">0</span></div><div class="empty">Couldn\'t load</div>';
     var items = (pack.items || []).concat(heldRequestItems(provider.type, pack.items || [])).filter(function (item) {
       return item && !(REQ && REQ.dropped && REQ.dropped[reqKey(provider.type, item.id)]);
     });
-    if (!items.length && provider.hideEmpty) return "";
-    if (provider.buckets) {
-      h += provider.buckets.map(function (bucket) {
-        var mine = items.filter(function (item) { return item && item.bucket === bucket.id; });
-        return "<h4>" + root.esc(bucket.label) + "</h4>" + (mine.length ? mine.map(function (item) { return requestRow(provider, item); }).join("") : '<p class="relempty">' + root.esc(bucket.empty || "Nothing here.") + "</p>");
-      }).join("");
-      return h + "</section>";
-    }
-    if (!items.length) return h + '<p class="relempty">' + root.esc(provider.empty || "Nothing here.") + "</p></section>";
-    return h + items.map(function (item) { return requestRow(provider, item); }).join("") + "</section>";
+    if (!items.length) return "";
+    return '<div class="band">' + label + ' <span class="cnt">' + providerCount(provider) + "</span></div>" +
+      items.map(function (item) { return requestRow(provider, item); }).join("");
   }
 
   function requestsHTML() {
-    return PROVIDER_ORDER.map(function (type) {
+    ensureOfflineFixtures();
+    var parts = orderedRequestTypes().map(function (type) {
       var provider = PROVIDERS[type];
       return provider ? providerSection(provider) : "";
-    }).join("");
+    }).filter(Boolean);
+    if (!incomingCount()) return '<div class="empty">Nothing to answer.</div>' + parts.join("");
+    return parts.join("");
   }
 
   function findRequestItem(type, id) {
@@ -613,21 +641,21 @@
     if (act === "req-undo") {
       if (typeof provider.undo !== "function") return;
       rememberRequest("pending", type, id, item, { undo: true });
-      refreshDlg();
+      refreshRequests();
       Promise.resolve(provider.undo(item)).then(function () {
         delete REQ.pending[key];
         delete REQ.settled[key];
         requestsChanged();
       }, function () {
         delete REQ.pending[key];
-        refreshDlg();
+        refreshRequests();
       });
       return;
     }
     var verb = act === "req-accept" ? "accept" : "decline";
     var job = verb === "accept" ? provider.accept(item) : provider.decline(item);
     rememberRequest("pending", type, id, item);
-    refreshDlg();
+    refreshRequests();
     Promise.resolve(job).then(function () {
       delete REQ.pending[key];
       if (keepsRow(provider, verb)) rememberRequest("settled", type, id, item, { verb: verb });
@@ -635,13 +663,13 @@
       requestsChanged();
     }, function () {
       delete REQ.pending[key];
-      refreshDlg();
+      refreshRequests();
     });
   }
 
   function focusRequest(type, id) {
     if (typeof document === "undefined" || !document.querySelector) return;
-    var row = document.querySelector('.dlg.rel-dlg [data-req-type="' + type + '"][data-req-id="' + id + '"]');
+    var row = document.querySelector('#listbody [data-req-type="' + type + '"][data-req-id="' + id + '"]');
     if (row && row.scrollIntoView) row.scrollIntoView({ block: "center" });
   }
 
@@ -736,6 +764,25 @@
     }
   }
 
+  function showFolder(kind, id) {
+    var folder = { kind: kind, id: id || null };
+    if (!root.S) return;
+    if (typeof root.goFolder === "function") root.goFolder(folder, true);
+    else root.S.folder = folder;
+    if (typeof root.render === "function") root.render();
+  }
+
+  function mountIntoList(html) {
+    if (typeof document === "undefined" || !document.getElementById) return;
+    var lb = document.getElementById("listbody");
+    if (!lb) return;
+    var top = lb.scrollTop;
+    lb.innerHTML = html;
+    lb.scrollTop = top;
+  }
+
+  function mountRequests() { mountIntoList(requestsHTML()); }
+
   function openRequests(opts) {
     if (!root.S || !root.S.loggedIn) { if (root.loginDialog) root.loginDialog(); return; }
     REQ = {
@@ -744,7 +791,7 @@
       pending: {},
       dropped: {}
     };
-    openDialog("Requests", requestsHTML(), { mode: "requests" }, '<button class="btn" data-act="closedlg">Close</button>', 480);
+    showFolder("requests", null);
     if (REQ.highlight) focusRequest(REQ.highlight.type, REQ.highlight.id);
   }
 
@@ -772,13 +819,22 @@
   }
 
   function contactNames() {
+    if (CONTACT_REMOTE) return CONTACT_REMOTE;
     var me = typeof root.myPid === "function" ? root.myPid() : null;
     var pid = me || "self";
+    var friends = namesFromGraph(pid, "friends");
     return {
-      friends: namesFromGraph(pid, "friends") || [],
+      friends: friends,
       followers: namesFromGraph(pid, "followers") || [],
-      following: namesFromGraph(pid, "following") || []
+      following: namesFromGraph(pid, "following") || [],
+      friendsHidden: friends == null
     };
+  }
+
+  function contactTab() {
+    var id = root.S && root.S.folder && root.S.folder.kind === "contacts" ? root.S.folder.id : "";
+    if (id === "friends" || id === "following" || id === "follows") return id;
+    return "lists";
   }
 
   function contactPersonAct(it, tab) {
@@ -793,9 +849,18 @@
     return html;
   }
 
+  function contactNewRow() {
+    return '<div class="row" data-rel-act="rel-new-list" role="button"><span class="r-ic">' + glyph("plus") + '</span><div class="r-main"><div class="r-title">New list</div></div></div>';
+  }
+
+  function contactNewSquare() {
+    return '<div class="card2" data-rel-act="rel-new-list" role="button"><div class="cart tc-tile">' + glyph("plus", 40) + '</div><div class="ct2">New list</div></div>';
+  }
+
   function contactListRow(it) {
-    return '<div class="linkrow" data-rel-act="rel-open-list" data-id="' + root.esc(it.id) + '" role="button"><div class="lr"><b>' +
-      root.esc(it.label) + '</b><div class="fhelp">' + peopleCount(it.count) + "</div></div></div>";
+    return '<div class="row" data-rel-act="rel-open-list" data-id="' + root.esc(it.id) + '" role="button"><span class="r-ic">' + glyph("user") + '</span>' +
+      '<div class="r-main"><div class="r-title">' + root.esc(it.label) + '</div><div class="r-meta">' + peopleCount(it.count) + '</div></div>' +
+      '<div class="r-side"><div class="r-date">' + it.count + "</div></div></div>";
   }
 
   function contactListSquare(it) {
@@ -804,8 +869,10 @@
   }
 
   function contactPersonRow(it, tab) {
-    return '<div class="relrow"><button type="button" class="btn" data-act="row" data-type="person" data-id="' + root.esc(it.id) + '">' +
-      root.esc(it.label) + "</button><small>@" + root.esc(it.handle) + "</small>" + contactPersonAct(it, tab) + "</div>";
+    var av = typeof root.avHTML === "function" ? root.avHTML(it.id, "a48") : "";
+    return '<div class="row" data-act="row" data-type="person" data-id="' + root.esc(it.id) + '" role="button">' + av +
+      '<div class="r-main"><div class="r-title">' + root.esc(it.label) + '</div><div class="r-meta">@' + root.esc(it.handle) + "</div></div>" +
+      '<div class="r-side">' + contactPersonAct(it, tab) + "</div></div>";
   }
 
   function contactPersonSquare(it, tab) {
@@ -813,66 +880,64 @@
       contactPersonAct(it, tab) + "</div>";
   }
 
-  function contactsHTML(names) {
-    var n = names || {};
-    var tab = (RELDLG && RELDLG.tab) || "lists";
+  function contactsHTML() {
+    var n = contactNames();
+    var tab = contactTab();
     var helper = root.tabbedCollection;
     if (typeof helper !== "function") return "";
+    var person = function (p) { return { kind: "person", id: p.id, label: p.displayName, handle: p.handle || "" }; };
     var built = helper({
       store: "hypernet-contacts-view",
       tab: tab,
-      empty: tab === "friends" && n.friendsHidden ? "Friend lists are on your own page." : (tab === "lists" ? "No lists yet." : "No one here."),
-      lead: tab === "lists" ? '<div class="linkrow" data-rel-act="rel-new-list" role="button"><div class="lr"><b>New list</b></div></div>' : "",
-      onTab: function (id) {
-        if (!RELDLG || RELDLG.mode !== "contacts") return;
-        RELDLG.tab = id;
-        refreshDlg();
-      },
-      onView: function () { refreshDlg(); },
+      empty: tab === "friends" && n.friendsHidden ? "Friend lists are on your own page." : "No one here.",
       tabs: [
         { id: "lists", label: "Lists", items: function () {
-          return LISTS.map(function (l) { return { kind: "list", id: l.id, label: l.name, count: (l.memberIds || []).length }; });
+          return [{ kind: "new", id: "new", label: "New list" }].concat(LISTS.map(function (l) {
+            return { kind: "list", id: l.id, label: l.name, count: (l.memberIds || []).length };
+          }));
         } },
         { id: "friends", label: "Friends", items: function () {
-          return (n.friendsHidden ? [] : (n.friends || [])).map(function (p) { return { kind: "person", id: p.id, label: p.displayName, handle: p.handle || "" }; });
+          return (n.friendsHidden ? [] : (n.friends || [])).map(person);
         } },
         { id: "following", label: "Following", items: function () {
-          return (n.following || []).map(function (p) { return { kind: "person", id: p.id, label: p.displayName, handle: p.handle || "" }; });
+          return (n.following || []).map(person);
         } },
         { id: "follows", label: "Follows me", items: function () {
-          return (n.followers || []).map(function (p) { return { kind: "person", id: p.id, label: p.displayName, handle: p.handle || "" }; });
+          return (n.followers || []).map(person);
         } }
       ],
-      renderRow: function (it) { return it.kind === "list" ? contactListRow(it) : contactPersonRow(it, tab); },
-      renderSquare: function (it) { return it.kind === "list" ? contactListSquare(it) : contactPersonSquare(it, tab); }
+      renderRow: function (it) { return it.kind === "new" ? contactNewRow() : it.kind === "list" ? contactListRow(it) : contactPersonRow(it, tab); },
+      renderSquare: function (it) { return it.kind === "new" ? contactNewSquare() : it.kind === "list" ? contactListSquare(it) : contactPersonSquare(it, tab); }
     });
     return built.html;
   }
 
+  function contactSub(tab) {
+    var n = contactNames();
+    var which = tab === "friends" || tab === "following" || tab === "follows" ? tab : "lists";
+    if (which === "lists") return LISTS.length + (LISTS.length === 1 ? " list" : " lists");
+    var arr = which === "friends" ? (n.friendsHidden ? [] : (n.friends || [])) : which === "following" ? (n.following || []) : (n.followers || []);
+    return arr.length + (arr.length === 1 ? " person" : " people");
+  }
+
+  function mountContacts() { mountIntoList(contactsHTML()); }
+
   function openContacts(tab) {
     if (!root.S || !root.S.loggedIn) { if (root.loginDialog) root.loginDialog(); return; }
     var which = tab || "lists";
-    var top = topRelDlg();
-    if (top && RELDLG && RELDLG.mode === "contacts") {
-      RELDLG.tab = which;
-      refreshDlg();
-      return;
-    }
-    var names = contactNames();
-    var meta = { mode: "contacts", tab: which, names: names };
-    RELDLG = meta;
-    openDialog("Contacts", contactsHTML(names), meta, '<button class="btn" data-act="closedlg">Close</button>', 560);
+    CONTACT_REMOTE = null;
+    showFolder("contacts", which);
     var me = typeof root.myPid === "function" ? root.myPid() : null;
     if (!(root.ONLINE && root.HNAPI && root.HNAPI.relations) || !me) return;
     root.HNAPI.relations(me).then(function (d) {
-      if (!RELDLG || RELDLG.mode !== "contacts" || !d) return;
-      RELDLG.names = {
+      if (!root.S || root.S.folder.kind !== "contacts" || !d) return;
+      CONTACT_REMOTE = {
         friends: d.friends == null ? null : (d.friends || []),
         followers: d.followers || [],
         following: d.following || [],
         friendsHidden: d.friends == null
       };
-      refreshDlg();
+      if (typeof root.render === "function") root.render();
     });
   }
 
@@ -1392,38 +1457,40 @@
     ingestRows(H.bonds || []);
   }
 
+  function requestFace(pid, primary, secondary) {
+    var av = typeof root.avHTML === "function" ? root.avHTML(pid, "a48") : "";
+    return av + '<div class="r-main"><div class="r-title">' + root.esc(primary) + "</div>" +
+      (secondary ? '<div class="r-meta">' + root.esc(secondary) + "</div>" : "") + "</div>";
+  }
+
+  function eventWhen(id) {
+    var e = (root.EVENTS || {})[id] || {};
+    var when = typeof root.fmtShort === "function" && e.date ? root.fmtShort(e.date) : (e.date || "");
+    return [when, e.city || ""].filter(Boolean).join(" · ");
+  }
+
   registerRequestProvider({
     type: "friend_request",
     label: "Friend requests",
-    buckets: [
-      { id: "in", label: "Incoming", empty: "No incoming requests." },
-      { id: "out", label: "Outgoing", empty: "No outgoing requests." }
-    ],
     list: function () {
       var me = typeof root.myPid === "function" ? root.myPid() : null;
       if (!me) return [];
-      var inn = [], out = [];
+      var inn = [];
       Object.keys(FRIENDGRAPH).forEach(function (k) {
         var row = FRIENDGRAPH[k];
-        if (!row || row.status !== "pending") return;
+        if (!row || row.status !== "pending" || low(row.requestedBy) === low(me)) return;
         var parts = k.split("|");
         if (parts.indexOf(low(me)) < 0 && low(row.a) !== low(me) && low(row.b) !== low(me)) return;
-        var other = otherOf(row, me);
-        if (low(row.requestedBy) === low(me)) out.push(other); else inn.push(other);
+        inn.push(otherOf(row, me));
       });
-      function item(pid, bucket) {
-        var base = { id: bucket + ":" + pid, personId: pid, bucket: bucket };
-        if (bucket === "out") { base.accept = false; base.declineLabel = "Cancel"; }
-        return base;
-      }
-      return inn.map(function (pid) { return item(pid, "in"); }).concat(out.map(function (pid) { return item(pid, "out"); }));
+      return inn.map(function (pid) {
+        var p = typeof root.person === "function" ? root.person(pid) : null;
+        p = p || { displayName: pid, handle: "" };
+        return { id: "in:" + pid, personId: pid, primary: p.displayName + " sent a friend request", secondary: p.handle ? "@" + p.handle : "" };
+      });
     },
     count: incomingFriendCount,
-    render: function (item) {
-      var p = typeof root.person === "function" ? root.person(item.personId) : null;
-      p = p || { displayName: item.personId, handle: "" };
-      return root.esc(p.displayName) + " <small>@" + root.esc(p.handle) + "</small>";
-    },
+    render: function (item) { return requestFace(item.personId, item.primary, item.secondary); },
     accept: function (item) { acceptFriend(item.personId); return Promise.resolve(); },
     decline: function (item) { deleteFriend(item.personId); return Promise.resolve(); }
   });
@@ -1431,22 +1498,78 @@
   registerRequestProvider({
     type: "did_you_go",
     label: "Did you go?",
-    hideEmpty: true,
     acceptLabel: "Yes",
     declineLabel: "No",
     undoAccept: false,
     list: function () {
       return chronicleAskIds().map(function (id) {
         var e = (root.EVENTS || {})[id] || {};
-        return { id: id, title: e.title || "Event" };
+        var title = e.title || "Event";
+        return { id: id, personId: "self", title: title, primary: "Did you go to " + title + "?", secondary: eventWhen(id) || title };
       });
     },
     count: function () { return chronicleAskIds().length; },
-    render: function (item) { return "Did you go? " + root.esc(item.title || "Event"); },
+    render: function (item) { return requestFace(item.personId, item.primary, item.secondary); },
     accept: function (item) { return answerWent(item.id, true); },
     decline: function (item) { return answerWent(item.id, false); },
     undo: function (item) { undismissWent(item.id); return Promise.resolve(); }
   });
+
+  var FIXTURE_STATE = {};
+  function offlineQuery() {
+    try {
+      return typeof location !== "undefined" && location && /(?:\?|&)offline=1(?:&|$)/.test(String(location.search || ""));
+    } catch (e) { return false; }
+  }
+  function demoReady() {
+    var me = typeof root.myPid === "function" ? root.myPid() : null;
+    if (me && String(me).toLowerCase() === "p-michal") return true;
+    return !!(root.S && root.S.acct === "demo");
+  }
+  function fixturePending(type, rows) {
+    if (!demoReady()) return [];
+    return rows.filter(function (row) { return !FIXTURE_STATE[type + "\n" + row.id]; });
+  }
+  function fixtureAct(type, item, verb) {
+    FIXTURE_STATE[type + "\n" + item.id] = verb;
+    return Promise.resolve();
+  }
+  function fixtureUndo(type, item) {
+    delete FIXTURE_STATE[type + "\n" + item.id];
+    return Promise.resolve();
+  }
+  function fixtureProvider(spec) {
+    return {
+      type: spec.type,
+      label: spec.label,
+      list: function () { return fixturePending(spec.type, spec.rows); },
+      count: function () { return fixturePending(spec.type, spec.rows).length; },
+      render: function (item) { return requestFace(item.personId, item.primary, item.secondary); },
+      accept: function (item) { return fixtureAct(spec.type, item, "accept"); },
+      decline: function (item) { return fixtureAct(spec.type, item, "decline"); },
+      undo: function (item) { return fixtureUndo(spec.type, item); }
+    };
+  }
+  function ensureOfflineFixtures() {
+    if (!offlineQuery()) return;
+    [
+      { type: "event_invite", label: "Event invites", rows: [
+        { id: "fx-event", personId: "p-anna", primary: "Anna Vale invited you to Harbour night walk", secondary: eventWhen("evt-harbour-walk") }
+      ] },
+      { type: "admin_invite", label: "Admin invites", rows: [
+        { id: "fx-admin", personId: "p-rio", primary: "Rio Moss invited you to be an admin of West stage set", secondary: eventWhen("evt-dj-night") }
+      ] },
+      { type: "cocreator_request", label: "Co-creator requests", rows: [
+        { id: "fx-coco", personId: "p-kai", primary: "Kai Okonkwo asked to be a co-creator of Midsummer supper", secondary: eventWhen("evt-chronicle-supper") }
+      ] },
+      { type: "horizon_invite", label: "Horizon invites", rows: [
+        { id: "fx-hz", personId: "p-sasha", primary: "Sasha Reed invited you to follow Winter Choir", secondary: "Event Horizon" }
+      ] }
+    ].forEach(function (spec) {
+      if (PROVIDERS[spec.type]) return;
+      registerRequestProvider(fixtureProvider(spec));
+    });
+  }
 
   if (typeof root.addEventListener === "function") root.addEventListener("hn:requests-changed", paintRequestBadge);
 
@@ -1455,9 +1578,9 @@
     relActionsHTML: relActionsHTML, controlOf: controlOf, listPageHTML: listPageHTML, mount: mount, toggleFollow: toggleFollow,
     requestFriend: requestFriend, acceptFriend: acceptFriend, deleteFriend: deleteFriend,
     incomingCount: incomingCount, registerRequestProvider: registerRequestProvider, requestsChanged: requestsChanged,
-    openRequests: openRequests, requestsHTML: requestsHTML,
+    openRequests: openRequests, requestsHTML: requestsHTML, mountRequests: mountRequests,
     chronicleAskIds: chronicleAskIds, answerWent: answerWent, openList: openList,
-    openLists: openLists, openContacts: openContacts, contactsHTML: contactsHTML,
+    openLists: openLists, openContacts: openContacts, contactsHTML: contactsHTML, mountContacts: mountContacts, contactSub: contactSub,
     ingest: ingest, ingestFixtures: ingestFixtures, ingestLists: ingestLists, lists: listsSnapshot,
     nameProblem: nameProblem, planDelete: planDelete, memberToggle: memberToggle, knownIds: knownIds
   };

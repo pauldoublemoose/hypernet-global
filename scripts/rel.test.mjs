@@ -44,7 +44,7 @@ test("follow and friendship are independent", () => {
   assert.equal(follow[`${me}|${mira}`], false);
 });
 
-test("openContacts is one tabbed dialog for Lists, Friends, Following, and Follows me", () => {
+test("openContacts is the tabbed page for Lists, Friends, Following, and Follows me", () => {
   const htmlSrc = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   const start = htmlSrc.indexOf("function tabbedCollection(spec){");
   const end = htmlSrc.indexOf("\nfunction tabbedHosted");
@@ -95,15 +95,15 @@ test("openContacts is one tabbed dialog for Lists, Friends, Following, and Follo
     { id: "22222222-2222-4222-8222-222222222222", name: "Close", memberIds: ["p-mira", "p-kai"] },
   ]);
   let opened = null;
-  global.dialog = (title, html, foot, w, cls) => {
-    opened = { title, html, foot, w, cls };
-    return { setAttribute() {}, _rel: null };
-  };
+  global.goFolder = (f) => { global.S.folder = { kind: f.kind, id: f.id || null }; };
+  global.render = () => { opened = { folder: global.S.folder, html: global.HNRel.contactsHTML() }; };
   const tabIds = (html) => [...html.matchAll(/data-act="tctab" data-id="([^"]+)"/g)].map((m) => m[1]);
   openContacts();
-  assert.equal(opened.title, "Contacts");
-  assert.equal(opened.cls, "rel-dlg");
-  assert.equal(opened.w, 560);
+  assert.equal(opened.folder.kind, "contacts");
+  assert.equal(opened.folder.id, "lists");
+  assert.match(opened.html, /class="tcoll"/);
+  assert.match(opened.html, /class="tc-bar"/);
+  assert.match(opened.html, /class="row"/);
   assert.deepEqual(tabIds(opened.html), ["lists", "friends", "following", "follows"]);
   assert.match(opened.html, /Lists/);
   assert.match(opened.html, /Friends/);
@@ -172,7 +172,7 @@ test("Did you go lists a past Going with no chronicle, and No makes no request",
   let posts = 0;
   global.HNAPI = { addChronicle() { posts += 1; return Promise.resolve({ chronicle: { went: true } }); } };
   assert.deepEqual(chronicleAskIds(), ["past"]);
-  assert.match(requestsHTML(), /Did you go\? Late quay supper/);
+  assert.match(requestsHTML(), /Did you go to Late quay supper/);
   answerWent("past", false);
   assert.equal(posts, 0);
   assert.deepEqual(chronicleAskIds(), []);

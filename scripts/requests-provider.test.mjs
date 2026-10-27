@@ -80,16 +80,13 @@ global.ONLINE = false;
 global.myPid = () => null;
 global.person = (id) => ({ displayName: String(id), handle: String(id) });
 global.toast = () => {};
-global.dialog = (title, html, foot) => {
-  const dlg = makeDlg();
-  dlg.title.textContent = title;
-  dlg.body.innerHTML = html;
-  dlg.foot = { innerHTML: foot || "" };
-  return dlg;
-};
+let pageHtml = "";
+global.S = { loggedIn: true, folder: { kind: "home", id: null } };
+global.goFolder = (f) => { global.S.folder = { kind: f.kind, id: f.id || null }; };
+global.render = () => { pageHtml = HNRel.requestsHTML(); };
 
 function body() {
-  return dialogs.length ? dialogs[dialogs.length - 1].body.innerHTML : "";
+  return pageHtml;
 }
 
 function click(act, type, id) {
@@ -176,12 +173,12 @@ test("a throwing provider stays in its own section", () => {
 test("openRequests highlights a matching item and still opens when it is missing", () => {
   const reg = provider({ type: "spot", label: "Spot", items: [{ id: "hit", label: "Here" }] });
   HNRel.openRequests({ type: "spot", id: "hit" });
-  assert.equal(dialogs.at(-1).title.textContent, "Requests");
+  assert.equal(global.S.folder.kind, "requests");
   assert.match(body(), /reqhit/);
   assert.match(body(), /data-req-id="hit"/);
   assert.match(body(), /Here/);
   HNRel.openRequests({ type: "spot", id: "missing" });
-  assert.equal(dialogs.at(-1).title.textContent, "Requests");
+  assert.equal(global.S.folder.kind, "requests");
   assert.doesNotMatch(body(), /reqhit/);
   assert.match(body(), /Here/);
   reg.off();
@@ -291,7 +288,7 @@ test("did_you_go undoes No and not Yes", async () => {
   global.HNAPI = { addChronicle() { throw new Error("offline"); } };
   assert.deepEqual(HNRel.chronicleAskIds(), ["past"]);
   HNRel.openRequests();
-  assert.match(body(), /Did you go\? Late quay supper/);
+  assert.match(body(), /Did you go to Late quay supper/);
   assert.match(body(), />Yes</);
   assert.match(body(), />No</);
   click("req-decline", "did_you_go", "past");
@@ -314,6 +311,39 @@ test("did_you_go undoes No and not Yes", async () => {
   assert.doesNotMatch(body(), /Undo/);
 });
 
+test("categories stay in inbox order, with a count, and outgoing stays out", () => {
+  global.myPid = () => "p-michal";
+  global.person = (id) => ({ displayName: id === "p-tomas" ? "Tomas Berg" : id, handle: "tomas" });
+  global.EVENTS = { past: { id: "past", title: "Late quay supper", date: "2026-08-02" } };
+  global.RSVP = { past: "going" };
+  global.WENT = {};
+  global.isPast = () => true;
+  global.lastDay = (e) => e.date;
+  global.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
+  HNRel.ingest({
+    friendships: [
+      { a: "p-michal", b: "p-tomas", requestedBy: "p-tomas", status: "pending" },
+      { a: "p-jon", b: "p-michal", requestedBy: "p-michal", status: "pending" },
+    ],
+  });
+  const made = [];
+  made.push(provider({ type: "extra", label: "Extras", items: [{ id: "x", label: "Extra row" }] }));
+  ["horizon_invite", "cocreator_request", "admin_invite", "event_invite"].forEach((type) => {
+    made.push(provider({ type, label: type, items: [{ id: type, label: type }] }));
+  });
+  HNRel.openRequests();
+  const html = body();
+  const bands = [...html.matchAll(/class="band">([^<]+)/g)].map((m) => m[1].trim());
+  assert.deepEqual(bands, ["Friend requests", "event_invite", "admin_invite", "cocreator_request", "horizon_invite", "Did you go?", "Extras"]);
+  const counts = [...html.matchAll(/class="cnt">(\d+)/g)].map((m) => m[1]);
+  assert.deepEqual(counts, ["1", "1", "1", "1", "1", "1", "1"]);
+  assert.equal(HNRel.incomingCount(), 7);
+  assert.doesNotMatch(html, /Outgoing/);
+  assert.doesNotMatch(html, /Cancel/);
+  assert.doesNotMatch(html, /p-jon/);
+  made.forEach((reg) => reg.off());
+});
+
 test("friend_request has no undo after accept or cancel", async () => {
   global.myPid = () => "p-michal";
   global.person = (id) => ({ "p-tomas": { displayName: "Tomas Berg", handle: "tomas" }, "p-jon": { displayName: "Jon Hale", handle: "jon" } }[id] || { displayName: id, handle: id });
@@ -326,21 +356,18 @@ test("friend_request has no undo after accept or cancel", async () => {
   });
   HNRel.openRequests();
   assert.match(body(), /Friend requests/);
-  assert.match(body(), /Incoming/);
-  assert.match(body(), /Outgoing/);
-  assert.match(body(), /Tomas Berg/);
+  assert.match(body(), /<span class="cnt">1<\/span>/);
+  assert.doesNotMatch(body(), /Outgoing/);
+  assert.doesNotMatch(body(), /Cancel/);
+  assert.doesNotMatch(body(), /Jon Hale/);
+  assert.match(body(), /Tomas Berg sent a friend request/);
   assert.match(body(), />Accept</);
   assert.match(body(), />Decline</);
-  assert.match(body(), /Jon Hale/);
-  assert.match(body(), />Cancel</);
   click("req-accept", "friend_request", "in:p-tomas");
   await flush();
   assert.doesNotMatch(body(), /Tomas Berg/);
   assert.doesNotMatch(body(), /Accepted · /);
-  assert.match(body(), /No incoming requests/);
-  click("req-decline", "friend_request", "out:p-jon");
-  await flush();
+  assert.doesNotMatch(body(), /Friend requests/);
   assert.doesNotMatch(body(), /Jon Hale/);
-  assert.doesNotMatch(body(), /Declined · /);
-  assert.match(body(), /No outgoing requests/);
+  assert.doesNotMatch(body(), /Outgoing/);
 });

@@ -1279,10 +1279,12 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .dlg.rel-dlg h3, .dlg.rel-dlg h4{ margin:12px 0 6px; color:var(--ink); font-size:inherit; }
 .dlg.rel-dlg h3:first-child{ margin-top:0; }
 .dlg.rel-dlg h4{ margin-top:10px; }
+.reqrow .r-title{ white-space:normal; }
+.reqrow .r-side{ flex-direction:row; align-items:center; }
 .reqhit{ outline:1px dotted var(--ink); outline-offset:2px; }
-.reqstate{ color:var(--dim); }
+.reqstate{ color:var(--dim); white-space:nowrap; }
 .reqstate .btn{ margin-left:6px; }
-[data-theme="y2fresh"] .relacts .btn, [data-theme="y2fresh"] .relrow .btn, [data-theme="y2fresh"] .dlg.rel-dlg .btn{ border:3px solid var(--rule); }
+[data-theme="y2fresh"] .relacts .btn, [data-theme="y2fresh"] .relrow .btn, [data-theme="y2fresh"] .dlg.rel-dlg .btn, [data-theme="y2fresh"] .reqrow .btn{ border:3px solid var(--rule); }
 .relacts .btn:focus, .relcounts button:focus{ outline:1px dotted var(--ink); outline-offset:2px; }
 .audpick{ display:flex; flex-direction:column; gap:0; max-width:28rem; min-width:0; padding:0; background:transparent; color:var(--ink); }
 .audrow{ display:flex; align-items:center; gap:12px; min-height:32px; }
@@ -2634,7 +2636,7 @@ function folderName(f){
   f = f || S.folder;
   if (f.kind === 'explore') return f.id ? (EXPLOREKINDS.filter(function(k){ return k[0] === f.id; })[0] || [0, 'Explore'])[1] : 'Explore';
   return { home:'Home', interested:'Interested', going:'Going', hosting:'Hosting', promoted:'Boosted',
-           owncallouts:'Your call outs', yourhz:'Your horizons',
+           owncallouts:'Your call outs', yourhz:'Your horizons', contacts:'Contacts', requests:'Requests',
            search:'Search', you:'You', chats:'Chats', shelf: shelfTitle(f.id) }[f.kind] || (f.kind === 'horizon' && HORIZONS[f.id] ? HORIZONS[f.id].name : 'Home');
 }
 function folderSub(f){
@@ -2649,6 +2651,8 @@ function folderSub(f){
   if (f.kind === 'search')   return n + ' result' + (n === 1 ? '' : 's') + ' for “' + S.query + '”';
   if (f.kind === 'owncallouts') return n + ' call out' + (n === 1 ? '' : 's');
   if (f.kind === 'yourhz'){ var hn = (f.id === 'following' ? followedHorizonItems() : myHorizonItems()).length; return hn + ' horizon' + (hn === 1 ? '' : 's'); }
+  if (f.kind === 'contacts') return window.HNRel && HNRel.contactSub ? HNRel.contactSub(f.id) : '';
+  if (f.kind === 'requests'){ var rq = window.HNRel && HNRel.incomingCount ? HNRel.incomingCount() : 0; return rq ? rq + ' to answer' : 'Nothing to answer'; }
   if (f.kind === 'horizon'){ var h = HORIZONS[f.id]; return h ? 'Event Horizon · ' + h.ownerName + ' · ' + hzEventIds(f.id).length + ' events' : ''; }
   return n + ' event' + (n === 1 ? '' : 's');
 }
@@ -2943,6 +2947,8 @@ function renderList(){
   if (S.folder.kind === 'home'){ renderHome(); return; }
   if (isOverview()){ renderShelves(); return; }
   if (S.folder.kind === 'yourhz'){ renderYourHorizons(); return; }
+  if (S.folder.kind === 'contacts' && window.HNRel && HNRel.mountContacts){ HNRel.mountContacts(); return; }
+  if (S.folder.kind === 'requests' && window.HNRel && HNRel.mountRequests){ HNRel.mountRequests(); return; }
   var items = sortItems(folderItems());
   var g = groupItems(items), h = '', rows = [];
   if (S.folder.kind === 'search' && !S.query.trim()){
@@ -5435,7 +5441,8 @@ function renderCHead(){
   var kinds = L.phone && S.folder.kind === 'explore' && !S.phoneSearch;
   if (kinds) tools = exploreKindsHTML();
   if (L.phone && S.phoneSearch && S.folder.kind !== 'search') tools = '';
-  el.className = (tools || S.folder.kind === 'yourhz' ? '' : 'none') + (kinds ? ' kindhead' : '');
+  var pageHead = S.folder.kind === 'yourhz' || S.folder.kind === 'contacts' || S.folder.kind === 'requests';
+  el.className = (tools || pageHead ? '' : 'none') + (kinds ? ' kindhead' : '');
   el.innerHTML = '<div class="ct"><h2>'+esc(folderName())+'</h2><div class="csub">'+esc(folderSub())+'</div></div>' + (tools ? '<div class="ctools">'+tools+'</div>' : '');
 }
 function exploreKindsHTML(){
@@ -8727,11 +8734,11 @@ function phoneBack(){
 /* logged out there is no Home (2026-10-04): Explore is where a visitor lands, and the root of what was Home's tab */
 function landingFolder(){ return S.loggedIn ? { kind:'home', id:null } : { kind:'explore', id:null }; }
 /* the places that are an account's own: a visitor is never in them (2026-10-05) */
-var ACCTPLACES = /^(you|chats|going|interested|hosting|promoted|owncallouts|yourhz)$/;
+var ACCTPLACES = /^(you|chats|going|interested|hosting|promoted|owncallouts|yourhz|contacts|requests)$/;
 function tabRootFolder(t){ return t === 'explore' || t === 'chats' || t === 'you' ? { kind:t, id:null } : landingFolder(); }
 function tabOfFolder(f){
   var k = (f || S.folder).kind;
-  return /^(explore|shelf|horizon)$/.test(k) ? 'explore' : k === 'chats' ? 'chats' : /^(you|going|interested|hosting|promoted|owncallouts|yourhz)$/.test(k) ? 'you' : S.loggedIn ? 'home' : 'explore';
+  return /^(explore|shelf|horizon)$/.test(k) ? 'explore' : k === 'chats' ? 'chats' : /^(you|going|interested|hosting|promoted|owncallouts|yourhz|contacts|requests)$/.test(k) ? 'you' : S.loggedIn ? 'home' : 'explore';
 }
 /* each tab keeps its own place: switching back returns you there; tapping the tab you are on goes to its top */
 var TABMEM = {};
@@ -9653,6 +9660,8 @@ function itemPath(it){
 }
 function folderPath(f){
   if (f.kind === 'yourhz') return 'yourhz/' + (f.id === 'following' ? 'following' : 'mine');
+  if (f.kind === 'contacts') return 'contacts/' + (f.id === 'friends' || f.id === 'following' || f.id === 'follows' ? f.id : 'lists');
+  if (f.kind === 'requests') return 'requests';
   return f.kind === 'shelf' ? 'explore/' + f.id : f.kind === 'explore' ? 'explore' + (f.id ? '/' + f.id : '') : f.kind === 'horizon' ? 'horizon/' + hzSlug(f.id) : f.kind;
 }
 /* the link to one thing, as anyone can open it */
@@ -9695,6 +9704,8 @@ function folderFrom(a, b){
   if (a === 'home' && b) return isExploreKind(b) && b !== 'people' ? { kind:'explore', id:b } : SHELFIDS.test(b) ? { kind:'shelf', id:b } : b === 'people' ? { kind:'shelf', id:'followed' } : { kind:'explore', id:null };
   if (a === 'horizon'){ var hz = hzBySlug(b); return hz ? { kind:'horizon', id:hz } : null; }
   if (a === 'yourhz') return { kind:'yourhz', id: b === 'following' ? 'following' : 'mine' };
+  if (a === 'contacts') return { kind:'contacts', id: b === 'friends' || b === 'following' || b === 'follows' ? b : 'lists' };
+  if (a === 'requests') return { kind:'requests', id:null };
   return FOLDERKINDS.test(a || '') ? { kind:a, id:null } : null;
 }
 function parseHash(h){

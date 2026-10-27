@@ -724,7 +724,7 @@ async function overflowEverywhere(p, label){
     ok(pub.strip === 1 && pub.fof && pub.verbs, kind + ': one call out at a time in its band, people to follow, and Interested / Going on event cards');
     /* Explore: the four kinds; the old destinations land on them */
     if (kind === 'desk'){
-      ok(await ev(c, () => [...document.querySelectorAll('#navbody .nsubrow .nlab')].map(x => x.textContent).join('|') === 'Events|Horizons|Call outs|People' &&
+      ok(await ev(c, () => [...document.querySelectorAll('#navbody .nrow.nsubrow[data-kind="explore"] .nlab')].map(x => x.textContent).join('|') === 'Events|Horizons|Call outs|People' &&
          !document.querySelector('#navbody [data-kind="horizons"], #navbody [data-kind="people"]')), 'desk: Explore has its four kinds in the sidebar, the old Horizons / People rows are gone');
     } else {
       await c.tap('#tabbar [data-id="explore"]'); await c.waitForTimeout(350);
@@ -1283,7 +1283,7 @@ async function overflowEverywhere(p, label){
                rows:document.querySelectorAll('#listbody .row').length, titles:[...document.querySelectorAll('#listbody .shelf .shh h3')].map(h => h.firstChild.textContent.trim()) }; });
     ok(ov.shelves >= 4 && ov.cards >= 10 && ov.square && !ov.rows && ov.titles.indexOf('This week') === 0, kind + ': Explore\'s overview is shelves of squares, not rows ' + JSON.stringify(ov));
     if (kind === 'phone') ok(await ev(c, () => [...document.querySelectorAll('#chead .kinds .kind')].map(x => x.textContent).join('|') === 'All|Events|Horizons|Call outs|People'), 'phone: Explore keeps its kinds as tabs over the squares');
-    else ok(await ev(c, () => [...document.querySelectorAll('#navbody .nsubrow .nlab')].map(x => x.textContent).join('|') === 'Events|Horizons|Call outs|People' && !!document.querySelector('#navbody .navh.on') && document.querySelector('#navbody .navh.on').textContent.indexOf('EXPLORE') >= 0),
+    else ok(await ev(c, () => [...document.querySelectorAll('#navbody .nrow.nsubrow[data-kind="explore"] .nlab')].map(x => x.textContent).join('|') === 'Events|Horizons|Call outs|People' && !!document.querySelector('#navbody .navh.on') && document.querySelector('#navbody .navh.on').textContent.indexOf('EXPLORE') >= 0),
        kind + ': Explore keeps its four kinds under it in the sidebar, Explore lit');
     if (kind !== 'phone'){
       /* 2026-10-04 (layout): on a desktop or tablet each section is one row of whole squares that fills the container —
@@ -2255,13 +2255,13 @@ async function overflowEverywhere(p, label){
     await open(c, '', true);
     await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
     await c.evaluate(() => { S.rightOpen = false; render(); }); await c.waitForTimeout(200);
-    const want = { '#/home':640, '#/explore/events':720, '#/explore/people':720, '#/explore/callouts':720, '#/search?q=burn':720, '#/explore/soon':720, '#/going':720,
-                   '#/explore':1120, '#/explore/events?view=calendar':1120 };
+    const want = { '#/home':640, '#/explore/events':720, '#/explore/people':720, '#/explore/callouts':720, '#/search?q=burn':720, '#/explore/soon':720, '#/going?view=list':720,
+                   '#/explore':1120, '#/going':1120, '#/explore/events?view=calendar':1120 };
     const got = {};
     for (const hh of Object.keys(want)){ await c.goto(URL + hh); await c.waitForTimeout(350); got[hh] = await geoOf(c); }
     /* 2026-10-05 (v5-calendar): a list that also has a calendar keeps the calendar's slot — its 720 sits at the slot's left,
        where the calendar's 1120 starts — so the heading (and the List / Calendar switch at its right) stays put */
-    const slotted = ['#/explore/events', '#/explore/soon', '#/going'], calCl = got['#/explore/events?view=calendar'].cl;
+    const slotted = ['#/explore/events', '#/explore/soon', '#/going?view=list'], calCl = got['#/explore/events?view=calendar'].cl;
     const bad = Object.keys(want).filter(k => { const g = got[k];
       /* 2026-10-05 (v5-shell): every container (and a list's calendar slot) at the white's left, the heading on its edge */
       const placed = g.cl === 0 && (slotted.indexOf(k) < 0 || g.cl === calCl);
@@ -2633,12 +2633,48 @@ async function overflowEverywhere(p, label){
          w + ': the List / Calendar switch is at the top right ' + (kind === 'phone' ? '(the app bar, compact)' : '(the heading\'s right end)') + ' and keeps its place in List and Calendar ' + JSON.stringify([g, gc, e, ec]));
       /* ‹ Today ›: before the title, in the same place for a long and a short month, and (wide) in week and day too */
       const bars = [];
-      for (const hh of ['#/going?view=calendar&at=2026-09-01', '#/going?view=calendar&at=2026-05-01', '#/going?view=calendar&at=2026-10-01'].concat(kind === 'desk' ? ['#/going?view=calendar&at=2026-09-30&cal=week', '#/going?view=calendar&at=2026-09-30&cal=day'] : [])){
+      for (const hh of ['#/going?view=calendar&at=2026-09-01', '#/going?view=calendar&at=2026-05-01', '#/going?view=calendar&at=2026-10-01'].concat(kind === 'desk' ? ['#/going?view=calendar&at=2026-09-30&cal=week', '#/going?view=calendar&at=2026-09-30&cal=year'] : [])){
         await c.goto(URL + hh); await c.waitForTimeout(300);
         bars.push(Object.assign({ prev:await box(c, '[data-act="calnav"][data-id="-1"]'), today:await box(c, '[data-act="caltoday"]'), next:await box(c, '[data-act="calnav"][data-id="1"]'), ttl:await box(c, '#calcol .calbar .ttl') }));
       }
       ok(bars.every(b => same(b.prev, bars[0].prev) && same(b.today, bars[0].today) && same(b.next, bars[0].next) && b.next.r < b.ttl.x),
-         w + ': ‹ Today › lead the calendar bar and never move (September, May, October' + (kind === 'desk' ? ', week, day' : '') + ') ' + JSON.stringify(bars.map(b => [b.today, b.ttl])));
+         w + ': ‹ Today › lead the calendar bar and never move (September, May, October' + (kind === 'desk' ? ', week, year' : '') + ') ' + JSON.stringify(bars.map(b => [b.today, b.ttl])));
+      /* the bar checks leave a wide screen on Year; Home applies the default month, then Calendar opens it */
+      await c.goto(URL + '#/home'); await c.waitForTimeout(250);
+      if (kind === 'phone'){ await c.tap('#tabbar [data-id="you"]'); await c.waitForTimeout(250); }
+      const spec = await ev(c, () => {
+        const special = [...document.querySelectorAll('#navbody .navh')].find(h => h.textContent === 'SPECIAL');
+        const after = [];
+        let n = special && special.nextElementSibling;
+        while (n && !n.classList.contains('navh') && !n.classList.contains('navdiv')){
+          if (n.classList.contains('nrow')) after.push(n.querySelector('.nlab').textContent.trim());
+          n = n.nextElementSibling;
+        }
+        const pad = sel => { const el = document.querySelector(sel); return el ? getComputedStyle(el).paddingLeft : ''; };
+        return { after, about:pad('#navbody [data-act="aboutapp"]'), explore:pad('#navbody .nrow.nsubrow[data-kind="explore"]'), home:pad('#navbody .nrow[data-kind="home"]'), host:pad('#navbody .nrow[data-kind="hosting"]'),
+          act:(document.querySelector('#navbody [data-act="aboutapp"]') || {}).getAttribute && document.querySelector('#navbody [data-act="aboutapp"]').getAttribute('data-act'),
+          locked:document.querySelector('#navbody [data-act="aboutapp"]').getAttribute('aria-disabled') };
+      });
+      ok(spec.after[0] === 'About Hypernet' && spec.after[1] === 'Inferno' && spec.after[2] === 'Moonwalk' && spec.about === spec.explore && spec.home === spec.host && spec.about !== spec.home && spec.act === 'aboutapp' && !spec.locked,
+         w + ': About Hypernet leads SPECIAL, indented like Explore; HOME and MANAGE stay flush ' + JSON.stringify(spec));
+      if (kind === 'phone') await c.tap('#navbody .nrow[data-kind="going"]'); else await c.click('#navbody .nrow[data-kind="going"]');
+      await c.waitForTimeout(300);
+      const opened = await ev(c, () => ({
+        kind:S.folder.kind, cal:!!document.querySelector('#calcol .calrow') && !document.querySelector('#calcol .calyear'),
+        on:[...document.querySelectorAll('#calcol [data-act="calmode"].on')].map(b => b.textContent).join('|'),
+        modes:[...document.querySelectorAll('#calcol [data-act="calmode"]')].map(b => b.textContent).join('|'),
+        go:document.querySelectorAll('#calcol .calcell.mine-go').length, host:document.querySelectorAll('#calcol .calcell.mine-host').length,
+        overlap:[...document.querySelectorAll('#calcol .calcell.mine-host')].some(el => el.classList.contains('mine-go'))
+      }));
+      ok(opened.kind === 'going' && opened.cal && opened.on === 'Month' && opened.modes.indexOf('Day') < 0 && opened.modes.indexOf('Year') >= 0 && opened.go > 0 && opened.host > 0 && !opened.overlap,
+         w + ': Calendar opens on Month, with going and hosting days and no Day mode ' + JSON.stringify(opened));
+      if (kind === 'phone') await c.tap('#calcol [data-act="calmode"][data-id="year"]'); else await c.click('#calcol [data-act="calmode"][data-id="year"]');
+      await c.waitForTimeout(250);
+      const year = await ev(c, () => ({ grid:!!document.querySelector('#calcol .calyear'), months:document.querySelectorAll('#calcol .calminit').length, go:document.querySelectorAll('#calcol .d.mine-go').length, host:document.querySelectorAll('#calcol .d.mine-host').length }));
+      ok(year.grid && year.months === 12 && year.go > 0 && year.host > 0, w + ': Year is twelve months with the same day marks ' + JSON.stringify(year));
+      if (kind === 'phone') await c.tap('#calcol .d.mine-go'); else await c.click('#calcol .d.mine-go');
+      await c.waitForTimeout(250);
+      ok(await ev(c, () => S.calMode === 'month' && !!document.querySelector('#calcol .calrow') && !document.querySelector('#calcol .calyear')), w + ': a year day opens that month');
       if (kind === 'desk'){ ok(!c.errors.length, w + ': no console errors (calendar)' + c.errors.join(' ')); continue; }
       /* narrow: the month's events are lines in their own look, each readable, its title in it; today is marked */
       await c.goto(URL + '#/explore/events?view=calendar'); await c.waitForTimeout(400);
@@ -2703,7 +2739,7 @@ async function overflowEverywhere(p, label){
       const c1 = await cold.evaluate(() => ({ page:!!document.querySelector('#calcol .dayhead'), idx:history.state.idx }));
       await cold.tap('#calcol [data-act="calback"]'); await cold.waitForTimeout(400);
       const c2 = await cold.evaluate(() => ({ hash:location.hash, grid:!!document.querySelector('#calcol .calgrid') }));
-      ok(c1.page && c2.hash === '#/going?view=calendar' && c2.grid && !cold.errors.length, w + ': a day\'s link opened cold has its month underneath ' + JSON.stringify([c1, c2]));
+      ok(c1.page && c2.hash === '#/going' && c2.grid && !cold.errors.length, w + ': a day\'s link opened cold has its month underneath ' + JSON.stringify([c1, c2]));
       await cold.close();
       ok(!c.errors.length && (await overflow(c)) <= 0, w + ': no console errors, no overflow (narrow calendar) ' + c.errors.join(' '));
     }
@@ -3005,7 +3041,7 @@ async function overflowEverywhere(p, label){
       await c.evaluate(() => { S.rightOpen = false; render(); }); await c.waitForTimeout(200);
       /* no space above the first band, or the first entry where there is no band, in every list */
       const tops = {}, looks = {};
-      for (const hh of ['#/home', '#/going', '#/interested', '#/hosting', '#/explore/events', '#/explore/callouts', '#/explore/people', '#/search?q=burn', '#/search?q=']){
+      for (const hh of ['#/home', '#/going?view=list', '#/interested', '#/hosting', '#/explore/events', '#/explore/callouts', '#/explore/people', '#/search?q=burn', '#/search?q=']){
         await c.goto(URL + hh); await c.waitForTimeout(400); tops[hh] = await firstTop(c); looks[hh] = await bandLook(c);
       }
       const gaps = Object.keys(tops).filter(k => tops[k].gap !== 0 || (tops[k].bandGap != null && tops[k].bandGap !== 0));

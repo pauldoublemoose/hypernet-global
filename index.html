@@ -630,6 +630,18 @@ span.chip{ border-color:transparent; background:var(--face-lt); box-shadow:var(-
 .calcell[data-act]:hover{ background:var(--hover); }
 /* the day you just came back from: the month shows where you were */
 .calcell.picked{ outline:2px solid #000; outline-offset:-2px; }
+#calcol .calcell.mine-go{ background:var(--ink); color:var(--sel-text, var(--white)); }
+#calcol .calcell.mine-host{ background:var(--alert); color:var(--sel-text, var(--white)); }
+#calcol .calcell.mine-go .dn, #calcol .calcell.mine-host .dn{ background:transparent; color:inherit; }
+#calcol .calcell.mine-go:hover{ background:var(--ink); }
+#calcol .calcell.mine-host:hover{ background:var(--alert); }
+.calyear{ display:grid; grid-template-columns:repeat(auto-fill, minmax(148px, 1fr)); gap:12px; padding:4px 0 12px; }
+.calmini .calminit{ display:block; width:100%; margin:0 0 4px; padding:0; border:0; background:transparent; color:var(--ink); font:bold 12px/16px var(--sys); text-align:left; cursor:pointer; }
+.calmini .mdow, .calmini .mrow{ display:grid; grid-template-columns:repeat(7, 1fr); }
+.calmini .mdow div, .calmini .d{ min-height:18px; font:11px/18px var(--sys); text-align:center; color:var(--dim); }
+.calmini .d[data-act]{ cursor:pointer; color:var(--ink); }
+#calcol .calmini .d.mine-go{ background:var(--ink); color:var(--sel-text, var(--white)); }
+#calcol .calmini .d.mine-host{ background:var(--alert); color:var(--sel-text, var(--white)); }
 .weekcol .wh[data-act]{ cursor:pointer; }
 .agenda{ border-top:1px solid #b9b4a8; }
 /* a narrow screen's day is a page of its own: its events as the list's rows, on the container's edges like a list */
@@ -2498,7 +2510,7 @@ function overviewItems(){
   return out;
 }
 /* Home is the activity and only that; lists of events keep a calendar */
-var VIEWS = { going:['list','calendar'], interested:['list','calendar'], hosting:['list','calendar'], promoted:['list','calendar'] };
+var VIEWS = { going:['calendar','list'], interested:['list','calendar'], hosting:['list','calendar'], promoted:['list','calendar'] };
 function destKey(f){ f = f || S.folder; return f.kind + (f.id ? ':' + f.id : ''); }
 function viewsOf(f){
   f = f || S.folder;
@@ -4084,7 +4096,21 @@ function renderShelves(){
 /* =========================================================================
    8. CALENDAR — a view of the destination you are in
    ========================================================================= */
-function calEvents(){ return destEvents().filter(function(e){ return (S.calMine && S.loggedIn) ? !!RSVP[e.id] || MYEVENTS.indexOf(e.id) >= 0 : true; }); }
+function calEvents(){
+  var evs = destEvents();
+  /* Calendar is the going list plus the events you host, so a month can mark both */
+  if (S.loggedIn && S.folder.kind === 'going'){
+    var seen = {};
+    evs.forEach(function(e){ seen[e.id] = 1; });
+    var extra = [];
+    MYEVENTS.forEach(function(id){
+      var e = EVENTS[id];
+      if (e && !seen[id] && canSeeEvent(e)){ seen[id] = 1; extra.push(e); }
+    });
+    if (extra.length) evs = evs.concat(extra).sort(byDate);
+  }
+  return evs.filter(function(e){ return (S.calMine && S.loggedIn) ? !!RSVP[e.id] || MYEVENTS.indexOf(e.id) >= 0 : true; });
+}
 function eventsOn(iso){
   return calEvents().filter(function(e){
     var end = endOf(e);
@@ -4098,6 +4124,15 @@ function calBlock(e){
     (S.loggedIn && RSVP[e.id]==='going' ? '<span style="margin-left:auto">'+ic('check',12)+'</span>' : '') + '</div>';
 }
 function narrowCal(){ return L.phone || L.cw < 640; }
+function dayTone(iso){
+  if (!S.loggedIn) return '';
+  var evs = eventsOn(iso), host = false, go = false, i;
+  for (i = 0; i < evs.length; i++){
+    if (ownEvent(evs[i])) host = true;
+    else if (RSVP[evs[i].id] === 'going') go = true;
+  }
+  return host ? ' mine-host' : go ? ' mine-go' : '';
+}
 /* a narrow screen's day page is open (?day=): the day you tapped, in place of its month */
 function dayOpen(){ return !!S.calDay && isCal() && narrowCal(); }
 /* the day you last opened from a narrow month, outlined when you come back to it (not part of the route; moving to
@@ -4116,7 +4151,7 @@ function monthGrid(anchorIso){
     for (var d = 0; d < 7; d++){
       var day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + w*7 + d, 18);
       var iso = isoOf(day), evs = eventsOn(iso);
-      var cls = 'calcell'+(day.getMonth()!==m?' oth':'')+(iso===TODAY_ISO?' today':'');
+      var cls = 'calcell'+(day.getMonth()!==m?' oth':'')+(iso===TODAY_ISO?' today':'')+dayTone(iso);
       if (narrow){
         /* the whole day is the target: one event opens it, several open the day's own page; a day with nothing on it is
            just a date (2026-10-05). Its events are lines in their own look, the title as far as it fits */
@@ -4167,6 +4202,27 @@ function weekGrid(anchorIso){
   }
   return h + '</div>';
 }
+function yearGrid(anchorIso){
+  var y = dOf(anchorIso).getFullYear(), h = '<div class="calyear">';
+  for (var m = 0; m < 12; m++){
+    var first = new Date(y, m, 1, 18), start = new Date(first);
+    start.setDate(1 - ((first.getDay() + 6) % 7));
+    var head = y + '-' + ('0' + (m + 1)).slice(-2) + '-01';
+    h += '<section class="calmini"><button type="button" class="calminit" data-act="calday" data-id="'+head+'">'+esc(MONFULL[m])+'</button>' +
+      '<div class="mdow">' + ['M','T','W','T','F','S','S'].map(function(d){ return '<div>'+d+'</div>'; }).join('') + '</div>';
+    for (var w = 0; w < 6; w++){
+      h += '<div class="mrow">';
+      for (var d = 0; d < 7; d++){
+        var day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + w * 7 + d, 18);
+        var iso = isoOf(day), oth = day.getMonth() !== m;
+        h += '<div class="d'+(oth?' oth':'')+(iso===TODAY_ISO?' today':'')+dayTone(iso)+'" data-act="calday" data-id="'+iso+'" role="button">'+day.getDate()+'</div>';
+      }
+      h += '</div>';
+    }
+    h += '</section>';
+  }
+  return h + '</div>';
+}
 function dayGrid(anchorIso){
   var evs = eventsOn(anchorIso), h = '<div class="calgrid">';
   if (!evs.length) h += '<div class="empty">Nothing on '+fmtDate(anchorIso)+'.</div>';
@@ -4177,14 +4233,16 @@ function dayGrid(anchorIso){
 }
 function renderCalendar(){
   var narrow = narrowCal();
-  /* a narrow screen's day (a ?day= link) on a wide one is that day in the day view */
-  if (!narrow && S.calDay){ S.calMode = 'day'; S.calAnchor = S.calDay; S.calDay = null; }
-  if (narrow && S.calDay){ CALLAST = S.calDay; $('calcol').innerHTML = dayPage(S.calDay); return; }
-  var mode = narrow ? 'month' : S.calMode;
+  if (S.calMode === 'day') S.calMode = 'month';
+  /* a narrow screen's day (a ?day= link) on a wide one is that month */
+  if (!narrow && S.calDay){ S.calMode = 'month'; S.calAnchor = S.calDay; S.calDay = null; }
+  if (narrow && S.calDay && S.calMode !== 'year'){ CALLAST = S.calDay; $('calcol').innerHTML = dayPage(S.calDay); return; }
+  var mode = narrow && S.calMode !== 'year' ? 'month' : S.calMode;
+  if (mode !== 'week' && mode !== 'month' && mode !== 'year') mode = 'month';
   var a = dOf(S.calAnchor);
-  var title = mode === 'month' ? MONFULL[a.getMonth()] + ' ' + a.getFullYear() : mode === 'week' ? 'Week of ' + fmtShort(S.calAnchor) : fmtDate(S.calAnchor);
-  /* on a narrow screen a day opens its own page, so month is the only mode */
-  var modes = narrow ? [] : ['day','week','month'];
+  var title = mode === 'year' ? String(a.getFullYear()) : mode === 'month' ? MONFULL[a.getMonth()] + ' ' + a.getFullYear() : 'Week of ' + fmtShort(S.calAnchor);
+  /* a narrow week does not fit; Month and Year do. Day is not a mode. */
+  var modes = narrow ? ['month','year'] : ['week','month','year'];
   /* ‹ Today › lead the bar and the title follows: the controls never move with the length of a month's name */
   var bar = '<div class="calbar"><span class="calctl">' +
     '<button class="ib" data-act="calnav" data-id="-1" aria-label="Previous">'+ic('back')+'</button>' +
@@ -4193,7 +4251,7 @@ function renderCalendar(){
     '<span class="ttl">'+esc(title)+'</span><span class="spring"></span>' +
     (modes.length ? '<span class="seg">' + modes.map(function(m){ return '<button class="'+(mode===m?'on':'')+'" data-act="calmode" data-id="'+m+'">'+titleCase(m)+'</button>'; }).join('') + '</span>' : '') +
     (S.loggedIn ? '<label><input type="checkbox" data-act="calmine"'+(S.calMine?' checked':'')+'> Only mine</label>' : '') + '</div>';
-  var body = mode === 'month' ? monthGrid(S.calAnchor) : mode === 'week' ? weekGrid(S.calAnchor) : dayGrid(S.calAnchor);
+  var body = mode === 'year' ? yearGrid(S.calAnchor) : mode === 'month' ? monthGrid(S.calAnchor) : weekGrid(S.calAnchor);
   $('calcol').innerHTML = bar + '<div class="panel calpanel">' + body + '</div>';
 }
 
@@ -5261,7 +5319,7 @@ function renderNav(){
   if (S.loggedIn){
     h += navHead('HOME');
     h += navRow({kind:'home'}, ic('home'), 'Feed');
-    h += navRow({kind:'going'}, ic('check'), 'Going', { count: rsvpList('going').length || '' });
+    h += navRow({kind:'going'}, ic('cal'), 'Calendar', { count: rsvpList('going').length || '' });
     h += relRow('Requests', 'chat', 'openRequests', 'incomingCount');
     h += plugRows('home');
   }
@@ -5280,11 +5338,13 @@ function renderNav(){
     h += relRow('Contacts', 'user', 'openContacts');
     h += plugRows('manage');
   }
-  var special = plugRows('special');
-  if (special) h += navHead('SPECIAL') + special;
-  h += '<div class="navdiv" role="separator"></div>';
-  h += '<div class="nrow" role="button" data-act="aboutapp">'+ic('dots', 16)+'<span class="nlab">About</span></div>';
-  if (S.loggedIn && L.phone) h += '<div style="padding:24px 18px"><button class="btn" data-act="logout" style="width:100%">Log out</button></div>';
+  h += navHead('SPECIAL');
+  h += '<div class="nrow nsubrow" role="button" data-act="aboutapp">'+ic('dots', 16)+'<span class="nlab">About Hypernet</span></div>';
+  h += plugRows('special', 'nsubrow');
+  if (S.loggedIn && L.phone){
+    h += '<div class="navdiv" role="separator"></div>';
+    h += '<div style="padding:24px 18px"><button class="btn" data-act="logout" style="width:100%">Log out</button></div>';
+  }
   $('navbody').innerHTML = h;
 }
 function renderToolbar(){
@@ -9122,10 +9182,14 @@ document.addEventListener('click', function(ev){
       toast('Draft discarded', '', function(){ FORMDRAFTS[id] = kept; schedulePersist(); toast('Draft restored', ''); });
       break;
     }
-    case 'calmode':      S.calMode = id; render(); break;
+    case 'calmode':      S.calMode = id === 'day' ? 'month' : id; render(); break;
     case 'caltoday':     S.calAnchor = TODAY_ISO; S.calDay = null; CALLAST = null; render(); break;
     case 'calday': {
-      if (!narrowCal()){ S.calMode = 'day'; S.calAnchor = id; S.calDay = null; render(); break; }
+      if (!narrowCal()){
+        if (S.calMode === 'year'){ S.calMode = 'month'; S.calAnchor = id; S.calDay = null; render(); }
+        break;
+      }
+      if (S.calMode === 'year'){ S.calMode = 'month'; S.calAnchor = id; S.calDay = null; render(); break; }
       /* narrow: one event opens straight away, several open the day's own page (its own history entry, so back is the month) */
       var dEvs = eventsOn(id);
       CALLAST = id;
@@ -9135,9 +9199,11 @@ document.addEventListener('click', function(ev){
     }
     case 'calback':      navBack(); break;
     case 'calnav': {
-      /* a narrow calendar is always a month, whatever mode a wider screen left behind */
-      var a = dOf(S.calAnchor), step = +id, mode = narrowCal() ? 'month' : S.calMode;
-      if (mode === 'month'){ a.setDate(1); a.setMonth(a.getMonth() + step); }
+      /* a narrow week does not fit; a narrow year still steps by a year */
+      var a = dOf(S.calAnchor), step = +id, mode = S.calMode === 'day' ? 'month' : S.calMode;
+      if (narrowCal() && mode !== 'year') mode = 'month';
+      if (mode === 'year') a.setFullYear(a.getFullYear() + step);
+      else if (mode === 'month'){ a.setDate(1); a.setMonth(a.getMonth() + step); }
       else if (mode === 'week') a.setDate(a.getDate() + 7*step);
       else a.setDate(a.getDate() + step);
       S.calAnchor = isoOf(a); S.calDay = null; CALLAST = null; render();

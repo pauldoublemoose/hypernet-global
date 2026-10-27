@@ -174,22 +174,41 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 
 /* ---------- 4. left: navigation -------------------------------------- */
 #navbody{ padding:8px 0 16px; }
-.navh{ padding:16px 16px 8px; font:bold 12px/16px var(--sys); color:var(--dim); }
+/* === SIDEBAR (Sidebar Contractor) === */
+.navh{ margin:8px 0 2px; padding:6px 12px 4px; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule); background:var(--face); font:bold 12px/16px var(--sys); letter-spacing:.08em; color:var(--ink); }
+.navh.navgo{ cursor:pointer; }
+.navh.navgo:hover{ background:var(--hover); }
+.navh.on{ box-shadow:inset 3px 0 0 var(--sel); }
 .nrow{ display:flex; align-items:center; gap:8px; min-height:32px; margin:0 4px; padding:0 8px 0 12px; white-space:nowrap; color:var(--ink); }
 .nrow .ic{ color:var(--ink2); }
 .nrow .nlab{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
 .nrow .nsub{ color:var(--dim); font-size:12px; }
 .nrow .ncnt{ font:12px var(--sys); color:var(--dim); }
 .nrow:hover{ background:var(--hover); }
-.nrow.sel{ background:var(--sel); color:#fff; }
+.nrow.sel{ background:var(--sel); color:var(--sel-text, var(--white)); }
 .nrow.open{ background:var(--face-lt); box-shadow:inset 3px 0 0 var(--ink); font-weight:bold; }
 .nrow.sel .ic, .nrow.sel .ncnt, .nrow.sel .nsub{ color:var(--seldim); }
 .nrow.search{ cursor:default; padding-right:4px; margin-bottom:8px; }
-.nrow .nx{ width:36px; height:32px; display:grid; place-items:center; border:0; padding:0; background:transparent; color:#fff; }
-.nrow .nx:hover{ background:#444; }
-.nrow.drop{ outline:2px dashed #000; outline-offset:-2px; background:#f4f2ec; }
+.nrow .nx{ width:36px; height:32px; display:grid; place-items:center; border:0; padding:0; background:transparent; color:var(--sel-text, var(--white)); }
+.nrow .nx:hover{ background:var(--ink2); }
+.nrow.drop{ outline:2px dashed var(--ink); outline-offset:-2px; background:var(--hover); }
 .nrow .sq, .nrow .av{ width:20px; height:20px; flex-basis:20px; font-size:9px; }
 .nrow .sq{ font-size:12px; }
+.nrow.locked, .nrow.locked .ic, .nrow.locked .nlab{ color:var(--dim); }
+#nav .nrow.locked, #nav .nrow.locked:hover{ cursor:default; background:transparent; }
+.nrow .nlock{ display:flex; color:var(--dim); }
+.navdiv{ height:1px; margin:12px 12px 8px; background:var(--rule); }
+#app.phone #nav .navh{ padding:10px 16px 6px; }
+#app.phone .nrow.nsubrow{ padding-left:44px; }
+.tc-bar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 16px; border-bottom:1px solid var(--rule); background:var(--face); }
+.tc-tabs, .tc-views{ display:flex; gap:4px; }
+.tc-views{ margin-left:auto; }
+.tc-tab, .tc-view{ min-height:32px; padding:0 12px; border:1px solid var(--rule); background:var(--face); color:var(--ink); font:bold 12px/16px var(--sys); cursor:pointer; }
+.tc-tab.on, .tc-view.on{ background:var(--sel); color:var(--sel-text, var(--white)); border-color:var(--sel); }
+.tc-squares{ padding:8px 16px 16px; }
+.tc-tile{ display:grid; place-items:center; background:var(--face); color:var(--ink2); }
+.row.drop{ outline:2px dashed var(--ink); outline-offset:-2px; background:var(--hover); }
+/* === END SIDEBAR === */
 .acctcard{ display:none; }
 
 /* ---------- 5. centre: the white spans it, the view's container sits at its left, the window lies over it ---------- */
@@ -611,6 +630,18 @@ span.chip{ border-color:transparent; background:var(--face-lt); box-shadow:var(-
 .calcell[data-act]:hover{ background:var(--hover); }
 /* the day you just came back from: the month shows where you were */
 .calcell.picked{ outline:2px solid #000; outline-offset:-2px; }
+#calcol .calcell.mine-go{ background:var(--ink); color:var(--sel-text, var(--white)); }
+#calcol .calcell.mine-host{ background:var(--alert); color:var(--sel-text, var(--white)); }
+#calcol .calcell.mine-go .dn, #calcol .calcell.mine-host .dn{ background:transparent; color:inherit; }
+#calcol .calcell.mine-go:hover{ background:var(--ink); }
+#calcol .calcell.mine-host:hover{ background:var(--alert); }
+.calyear{ display:grid; grid-template-columns:repeat(auto-fill, minmax(148px, 1fr)); gap:12px; padding:4px 0 12px; }
+.calmini .calminit{ display:block; width:100%; margin:0 0 4px; padding:0; border:0; background:transparent; color:var(--ink); font:bold 12px/16px var(--sys); text-align:left; cursor:pointer; }
+.calmini .mdow, .calmini .mrow{ display:grid; grid-template-columns:repeat(7, 1fr); }
+.calmini .mdow div, .calmini .d{ min-height:18px; font:11px/18px var(--sys); text-align:center; color:var(--dim); }
+.calmini .d[data-act]{ cursor:pointer; color:var(--ink); }
+#calcol .calmini .d.mine-go{ background:var(--ink); color:var(--sel-text, var(--white)); }
+#calcol .calmini .d.mine-host{ background:var(--alert); color:var(--sel-text, var(--white)); }
 .weekcol .wh[data-act]{ cursor:pointer; }
 .agenda{ border-top:1px solid #b9b4a8; }
 /* a narrow screen's day is a page of its own: its events as the list's rows, on the container's edges like a list */
@@ -2489,7 +2520,7 @@ function overviewItems(){
   return out;
 }
 /* Home is the activity and only that; lists of events keep a calendar */
-var VIEWS = { going:['list','calendar'], interested:['list','calendar'], hosting:['list','calendar'], promoted:['list','calendar'] };
+var VIEWS = { going:['calendar','list'], interested:['list','calendar'], hosting:['list','calendar'], promoted:['list','calendar'] };
 function destKey(f){ f = f || S.folder; return f.kind + (f.id ? ':' + f.id : ''); }
 function viewsOf(f){
   f = f || S.folder;
@@ -2529,6 +2560,8 @@ function folderItems(f){
   else if (k === 'promoted') evs = S.loggedIn ? allEvents().filter(function(e){ return PROMOTED[e.id] && canSeeEvent(e); }).sort(byDate) : [];
   else if (k === 'hosting') evs = (S.loggedIn ? MYEVENTS : []).map(function(id){ return EVENTS[id]; }).filter(Boolean).sort(byDate);
   else if (k === 'horizon') evs = hzEventIds(f.id).map(function(id){ return EVENTS[id]; }).sort(byDate);
+  else if (k === 'owncallouts') return CALLOUTS.filter(isOwnCallout).map(function(c){ return { type:'callout', id:c.id }; });
+  else if (k === 'yourhz') return [];
   return evs.map(function(e){ return { type:'event', id:e.id }; });
 }
 function destEvents(f){
@@ -2545,6 +2578,7 @@ function folderName(f){
   f = f || S.folder;
   if (f.kind === 'explore') return f.id ? (EXPLOREKINDS.filter(function(k){ return k[0] === f.id; })[0] || [0, 'Explore'])[1] : 'Explore';
   return { home:'Home', interested:'Interested', going:'Going', hosting:'Hosting', promoted:'Boosted',
+           owncallouts:'Your call outs', yourhz:'Your horizons',
            search:'Search', you:'You', chats:'Chats', shelf: shelfTitle(f.id) }[f.kind] || (f.kind === 'horizon' && HORIZONS[f.id] ? HORIZONS[f.id].name : 'Home');
 }
 function folderSub(f){
@@ -2557,6 +2591,8 @@ function folderSub(f){
   if (f.kind === 'explore' && f.id === 'callouts') return n + ' open';
   if (f.kind === 'explore' && f.id === 'people')   return n + ' people';
   if (f.kind === 'search')   return n + ' result' + (n === 1 ? '' : 's') + ' for “' + S.query + '”';
+  if (f.kind === 'owncallouts') return n + ' call out' + (n === 1 ? '' : 's');
+  if (f.kind === 'yourhz'){ var hn = (f.id === 'following' ? followedHorizonItems() : myHorizonItems()).length; return hn + ' horizon' + (hn === 1 ? '' : 's'); }
   if (f.kind === 'horizon'){ var h = HORIZONS[f.id]; return h ? 'Event Horizon · ' + h.ownerName + ' · ' + hzEventIds(f.id).length + ' events' : ''; }
   return n + ' event' + (n === 1 ? '' : 's');
 }
@@ -2650,7 +2686,7 @@ function sortItems(items){
 var SEARCHBAND = { event:'Events', horizon:'Event Horizons', callout:'Call outs', person:'People' };
 function bandOf(it){
   var k = S.folder.kind;
-  if (k === 'shelf') return null;
+  if (k === 'shelf' || k === 'owncallouts') return null;
   if (k === 'search') return SEARCHBAND[it.type];
   var x = k === 'explore' ? S.folder.id : '';
   if (x === 'horizons') return hzOwnedByMe(it.id) ? 'Yours' : (S.loggedIn && HZFOLLOW[it.id]) ? 'Following' : 'Popular';
@@ -2756,10 +2792,84 @@ function browseHTML(){
       '<div class="r-meta">'+esc(folderSub({ kind:'explore', id:k[0] }))+'</div></div></div>';
   }).join('');
 }
+function myHorizonItems(){
+  var npro = Object.keys(PROMOTED).filter(function(k){ return PROMOTED[k] && EVENTS[k]; }).length;
+  var builtins = [
+    { kind:'list', id:'interested', label:'Interested', icon:'heart', count: rsvpList('interested').length },
+    { kind:'list', id:'promoted', label:'Boosted', icon:'promote', count: npro }
+  ];
+  var owned = MYHORIZONS.filter(function(k){ return HORIZONS[k]; }).map(function(k){
+    return { kind:'horizon', id:k, label:HORIZONS[k].name, count: hzEventIds(k).length, drop:true };
+  });
+  return builtins.concat(owned);
+}
+function followedHorizonItems(){
+  return Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k] && HORIZONS[k] && MYHORIZONS.indexOf(k) < 0; }).map(function(k){
+    return { kind:'horizon', id:k, label:HORIZONS[k].name, count: hzEventIds(k).length };
+  });
+}
+function hzCollRow(it){
+  var sel = it.kind === 'horizon' && isSel({ type:'horizon', id:it.id });
+  var act = it.kind === 'list'
+    ? 'data-act="folder" data-kind="'+it.id+'"'
+    : 'data-act="row" data-type="horizon" data-id="'+esc(it.id)+'"';
+  var lead = it.kind === 'horizon' ? hzArt(it.id, 32) : ic(it.icon);
+  var drop = it.drop ? ' data-drop="'+esc(it.id)+'"' : '';
+  return '<div class="row'+(sel?' sel':'')+'" '+act+drop+' role="button"><span class="r-ic">'+lead+'</span>' +
+    '<div class="r-main"><div class="r-title">'+esc(it.label)+'</div></div>' +
+    '<div class="r-side"><div class="r-date">'+it.count+'</div></div></div>';
+}
+function hzCollSquare(it){
+  if (it.kind === 'horizon') return cardHTML({ type:'horizon', id:it.id });
+  return '<div class="card2" data-act="folder" data-kind="'+it.id+'" role="button"><div class="cart tc-tile">'+ic(it.icon, 40)+'</div>' +
+    '<div class="ct2">'+esc(it.label)+'</div><div class="cs2">'+it.count+'</div></div>';
+}
+function tabbedCollection(spec){
+  var tabs = spec.tabs || [];
+  var tab = spec.tab;
+  if (!tabs.some(function(t){ return t.id === tab; })) tab = tabs.length ? tabs[0].id : '';
+  var store = spec.store || 'hypernet-tabbed-view';
+  var view = 'rows';
+  try { var saved = localStorage.getItem(store); if (saved === 'rows' || saved === 'squares') view = saved; } catch (e) {}
+  var cur = null;
+  tabs.forEach(function(t){ if (t.id === tab) cur = t; });
+  var items = cur && typeof cur.items === 'function' ? cur.items() : [];
+  var bar = '<div class="tc-bar"><div class="tc-tabs" role="tablist">' + tabs.map(function(t){
+    var on = t.id === tab;
+    return '<button type="button" class="tc-tab'+(on?' on':'')+'" role="tab" aria-selected="'+(on?'true':'false')+'" data-act="tctab" data-id="'+esc(t.id)+'">'+esc(t.label)+'</button>';
+  }).join('') + '</div><div class="tc-views" role="group" aria-label="View">' +
+    [['rows','Rows'],['squares','Squares']].map(function(v){
+      var on = v[0] === view;
+      return '<button type="button" class="tc-view'+(on?' on':'')+'" aria-pressed="'+(on?'true':'false')+'" data-act="tcview" data-id="'+v[0]+'">'+v[1]+'</button>';
+    }).join('') + '</div></div>';
+  var body = !items.length ? '<div class="empty">'+(spec.empty || 'Nothing here yet.')+'</div>'
+    : view === 'squares' ? '<div class="cards tc-squares">'+items.map(spec.renderSquare).join('')+'</div>'
+    : items.map(spec.renderRow).join('');
+  return { html:'<div class="tcoll" data-store="'+esc(store)+'">'+bar+body+'</div>', items:items, view:view };
+}
+function renderYourHorizons(){
+  var tab = S.folder.id === 'following' ? 'following' : 'mine';
+  var built = tabbedCollection({
+    store:'hypernet-hz-view',
+    tab:tab,
+    empty: tab === 'following' ? 'You are not following any horizons yet.' : 'Nothing here yet.',
+    tabs:[
+      { id:'mine', label:'My horizons', items:myHorizonItems },
+      { id:'following', label:'Following', items:followedHorizonItems }
+    ],
+    renderRow:hzCollRow,
+    renderSquare:hzCollSquare
+  });
+  S.rows = built.items.filter(function(it){ return it.kind === 'horizon'; }).map(function(it){ return { type:'horizon', id:it.id }; });
+  var lb = $('listbody'), top = lb.scrollTop;
+  lb.innerHTML = built.html;
+  lb.scrollTop = top;
+}
 function renderList(){
   if (L.phone && S.phoneSearch && S.folder.kind !== 'search'){ $('listbody').innerHTML = browseHTML(); S.rows = []; return; }
   if (S.folder.kind === 'home'){ renderHome(); return; }
   if (isOverview()){ renderShelves(); return; }
+  if (S.folder.kind === 'yourhz'){ renderYourHorizons(); return; }
   var items = sortItems(folderItems());
   var g = groupItems(items), h = '', rows = [];
   if (S.folder.kind === 'search' && !S.query.trim()){
@@ -4196,7 +4306,21 @@ function renderShelves(){
 /* =========================================================================
    8. CALENDAR — a view of the destination you are in
    ========================================================================= */
-function calEvents(){ return destEvents().filter(function(e){ return (S.calMine && S.loggedIn) ? !!RSVP[e.id] || MYEVENTS.indexOf(e.id) >= 0 : true; }); }
+function calEvents(){
+  var evs = destEvents();
+  /* Calendar is the going list plus the events you host, so a month can mark both */
+  if (S.loggedIn && S.folder.kind === 'going'){
+    var seen = {};
+    evs.forEach(function(e){ seen[e.id] = 1; });
+    var extra = [];
+    MYEVENTS.forEach(function(id){
+      var e = EVENTS[id];
+      if (e && !seen[id] && canSeeEvent(e)){ seen[id] = 1; extra.push(e); }
+    });
+    if (extra.length) evs = evs.concat(extra).sort(byDate);
+  }
+  return evs.filter(function(e){ return (S.calMine && S.loggedIn) ? !!RSVP[e.id] || MYEVENTS.indexOf(e.id) >= 0 : true; });
+}
 function eventsOn(iso){
   return calEvents().filter(function(e){
     var end = endOf(e);
@@ -4210,6 +4334,15 @@ function calBlock(e){
     (S.loggedIn && RSVP[e.id]==='going' ? '<span style="margin-left:auto">'+ic('check',12)+'</span>' : '') + '</div>';
 }
 function narrowCal(){ return L.phone || L.cw < 640; }
+function dayTone(iso){
+  if (!S.loggedIn) return '';
+  var evs = eventsOn(iso), host = false, go = false, i;
+  for (i = 0; i < evs.length; i++){
+    if (ownEvent(evs[i])) host = true;
+    else if (RSVP[evs[i].id] === 'going') go = true;
+  }
+  return host ? ' mine-host' : go ? ' mine-go' : '';
+}
 /* a narrow screen's day page is open (?day=): the day you tapped, in place of its month */
 function dayOpen(){ return !!S.calDay && isCal() && narrowCal(); }
 /* the day you last opened from a narrow month, outlined when you come back to it (not part of the route; moving to
@@ -4228,7 +4361,7 @@ function monthGrid(anchorIso){
     for (var d = 0; d < 7; d++){
       var day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + w*7 + d, 18);
       var iso = isoOf(day), evs = eventsOn(iso);
-      var cls = 'calcell'+(day.getMonth()!==m?' oth':'')+(iso===TODAY_ISO?' today':'');
+      var cls = 'calcell'+(day.getMonth()!==m?' oth':'')+(iso===TODAY_ISO?' today':'')+dayTone(iso);
       if (narrow){
         /* the whole day is the target: one event opens it, several open the day's own page; a day with nothing on it is
            just a date (2026-10-05). Its events are lines in their own look, the title as far as it fits */
@@ -4279,6 +4412,27 @@ function weekGrid(anchorIso){
   }
   return h + '</div>';
 }
+function yearGrid(anchorIso){
+  var y = dOf(anchorIso).getFullYear(), h = '<div class="calyear">';
+  for (var m = 0; m < 12; m++){
+    var first = new Date(y, m, 1, 18), start = new Date(first);
+    start.setDate(1 - ((first.getDay() + 6) % 7));
+    var head = y + '-' + ('0' + (m + 1)).slice(-2) + '-01';
+    h += '<section class="calmini"><button type="button" class="calminit" data-act="calday" data-id="'+head+'">'+esc(MONFULL[m])+'</button>' +
+      '<div class="mdow">' + ['M','T','W','T','F','S','S'].map(function(d){ return '<div>'+d+'</div>'; }).join('') + '</div>';
+    for (var w = 0; w < 6; w++){
+      h += '<div class="mrow">';
+      for (var d = 0; d < 7; d++){
+        var day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + w * 7 + d, 18);
+        var iso = isoOf(day), oth = day.getMonth() !== m;
+        h += '<div class="d'+(oth?' oth':'')+(iso===TODAY_ISO?' today':'')+dayTone(iso)+'" data-act="calday" data-id="'+iso+'" role="button">'+day.getDate()+'</div>';
+      }
+      h += '</div>';
+    }
+    h += '</section>';
+  }
+  return h + '</div>';
+}
 function dayGrid(anchorIso){
   var evs = eventsOn(anchorIso), h = '<div class="calgrid">';
   if (!evs.length) h += '<div class="empty">Nothing on '+fmtDate(anchorIso)+'.</div>';
@@ -4289,14 +4443,16 @@ function dayGrid(anchorIso){
 }
 function renderCalendar(){
   var narrow = narrowCal();
-  /* a narrow screen's day (a ?day= link) on a wide one is that day in the day view */
-  if (!narrow && S.calDay){ S.calMode = 'day'; S.calAnchor = S.calDay; S.calDay = null; }
-  if (narrow && S.calDay){ CALLAST = S.calDay; $('calcol').innerHTML = dayPage(S.calDay); return; }
-  var mode = narrow ? 'month' : S.calMode;
+  if (S.calMode === 'day') S.calMode = 'month';
+  /* a narrow screen's day (a ?day= link) on a wide one is that month */
+  if (!narrow && S.calDay){ S.calMode = 'month'; S.calAnchor = S.calDay; S.calDay = null; }
+  if (narrow && S.calDay && S.calMode !== 'year'){ CALLAST = S.calDay; $('calcol').innerHTML = dayPage(S.calDay); return; }
+  var mode = narrow && S.calMode !== 'year' ? 'month' : S.calMode;
+  if (mode !== 'week' && mode !== 'month' && mode !== 'year') mode = 'month';
   var a = dOf(S.calAnchor);
-  var title = mode === 'month' ? MONFULL[a.getMonth()] + ' ' + a.getFullYear() : mode === 'week' ? 'Week of ' + fmtShort(S.calAnchor) : fmtDate(S.calAnchor);
-  /* on a narrow screen a day opens its own page, so month is the only mode */
-  var modes = narrow ? [] : ['day','week','month'];
+  var title = mode === 'year' ? String(a.getFullYear()) : mode === 'month' ? MONFULL[a.getMonth()] + ' ' + a.getFullYear() : 'Week of ' + fmtShort(S.calAnchor);
+  /* a narrow week does not fit; Month and Year do. Day is not a mode. */
+  var modes = narrow ? ['month','year'] : ['week','month','year'];
   /* ‹ Today › lead the bar and the title follows: the controls never move with the length of a month's name */
   var bar = '<div class="calbar"><span class="calctl">' +
     '<button class="ib" data-act="calnav" data-id="-1" aria-label="Previous">'+ic('back')+'</button>' +
@@ -4305,7 +4461,7 @@ function renderCalendar(){
     '<span class="ttl">'+esc(title)+'</span><span class="spring"></span>' +
     (modes.length ? '<span class="seg">' + modes.map(function(m){ return '<button class="'+(mode===m?'on':'')+'" data-act="calmode" data-id="'+m+'">'+titleCase(m)+'</button>'; }).join('') + '</span>' : '') +
     (S.loggedIn ? '<label><input type="checkbox" data-act="calmine"'+(S.calMine?' checked':'')+'> Only mine</label>' : '') + '</div>';
-  var body = mode === 'month' ? monthGrid(S.calAnchor) : mode === 'week' ? weekGrid(S.calAnchor) : dayGrid(S.calAnchor);
+  var body = mode === 'year' ? yearGrid(S.calAnchor) : mode === 'month' ? monthGrid(S.calAnchor) : weekGrid(S.calAnchor);
   $('calcol').innerHTML = bar + '<div class="panel calpanel">' + body + '</div>';
 }
 
@@ -5304,6 +5460,57 @@ function navRow(f, icon, label, opts){
     icon + '<span class="nlab">'+esc(label)+(opts.sub ? ' <span class="nsub">'+esc(opts.sub)+'</span>' : '')+'</span>' +
     (cnt !== '' ? '<span class="ncnt">'+cnt+'</span>' : '') + '</div>';
 }
+window.HNNav = (function(){
+  var bag = {};
+  function register(it){
+    if (!it || !it.id) return;
+    if (it.section !== 'home' && it.section !== 'explore' && it.section !== 'manage' && it.section !== 'special') return;
+    bag[it.section + '/' + it.id] = it;
+  }
+  function rows(section){
+    var out = [];
+    Object.keys(bag).forEach(function(k){
+      var it = bag[k];
+      if (it.section !== section) return;
+      if (typeof it.when === 'function' && !it.when()) return;
+      out.push(it);
+    });
+    out.sort(function(a, b){ return (a.order || 0) - (b.order || 0); });
+    return out;
+  }
+  return { register:register, rows:rows };
+})();
+window.HNNav.register({ section:'manage', id:'groups', label:'Groups', icon:'people', order:10, locked:true });
+window.HNNav.register({ section:'special', id:'inferno', label:'Inferno', icon:'star', order:10, locked:true });
+window.HNNav.register({ section:'special', id:'moonwalk', label:'Moonwalk', icon:'explore', order:20, locked:true });
+function navHead(label, opts){
+  opts = opts || {};
+  var cls = 'navh' + (opts.sub ? ' sub' : '') + (opts.on ? ' on' : '') + (opts.go ? ' navgo' : '');
+  var act = opts.go ? ' role="button" data-act="folder" data-kind="'+opts.go+'"' : '';
+  return '<div class="'+cls+'"'+act+'>'+esc(label)+'</div>';
+}
+function navIcon(icon){ return icon && String(icon).indexOf('<') >= 0 ? icon : ic(icon || 'dots', 16); }
+function lockedRow(icon, label, cls){
+  return '<div class="nrow locked'+(cls ? ' '+cls : '')+'" role="button" aria-disabled="true" title="Coming soon">'+
+    icon+'<span class="nlab">'+esc(label)+'</span><span class="nlock" aria-hidden="true">'+ic('lock', 12)+'</span></div>';
+}
+function plugRows(section, cls){
+  return window.HNNav.rows(section).map(function(it){
+    var icon = navIcon(it.icon);
+    if (it.locked) return lockedRow(icon, it.label, cls);
+    var badge = typeof it.badge === 'function' ? it.badge() : it.badge, cnt = badge != null && badge !== '' ? badge : '';
+    return '<div class="nrow'+(cls ? ' '+cls : '')+'" role="button" data-act="navplug" data-section="'+esc(it.section)+'" data-id="'+esc(it.id)+'">'+
+      icon+'<span class="nlab">'+esc(it.label)+'</span>'+(cnt !== '' ? '<span class="ncnt">'+cnt+'</span>' : '')+'</div>';
+  }).join('');
+}
+function relRow(label, iconName, openName, countName){
+  var api = window.HNRel, open = api && typeof api[openName] === 'function';
+  if (!open) return lockedRow(ic(iconName, 16), label);
+  var cnt = '';
+  if (countName && typeof api[countName] === 'function'){ var c = api[countName](); if (c != null && c !== '') cnt = c; }
+  return '<div class="nrow" role="button" data-act="navrel" data-id="'+openName+'">'+
+    ic(iconName, 16)+'<span class="nlab">'+esc(label)+'</span>'+(cnt !== '' ? '<span class="ncnt">'+cnt+'</span>' : '')+'</div>';
+}
 function renderNav(){
   var h = '';
   if (S.loggedIn){
@@ -5318,37 +5525,36 @@ function renderNav(){
     h += '<div class="nrow sel search">'+ic('search')+'<span class="nlab">“'+esc(S.query)+'”</span>' +
          '<button class="nx" data-act="clearsearch" aria-label="Clear search">'+ic('close',14)+'</button></div>';
   }
-  /* Home, then Explore with its four kinds under it (a Show all list lights the kind it belongs to) */
   var f = S.folder, shelfKind = f.kind === 'shelf' ? (EVENTSHELVES.test(f.id || '') ? 'events' : null) : null;
-  if (S.loggedIn) h += navRow({kind:'home'}, ic('home'), 'Home', { cls:'dup-tab' });
-  h += navRow({kind:'explore'}, ic('explore'), 'Explore', { cls:'dup-tab', sel: isOverview() || (f.kind === 'shelf' && !shelfKind) });
+  if (S.loggedIn){
+    h += navHead('HOME');
+    h += navRow({kind:'home'}, ic('home'), 'Feed');
+    h += navRow({kind:'going'}, ic('cal'), 'Calendar', { count: rsvpList('going').length || '' });
+    h += relRow('Requests', 'chat', 'openRequests', 'incomingCount');
+    h += plugRows('home');
+  }
+  h += navHead('EXPLORE', { go:'explore', on: isOverview() || (f.kind === 'shelf' && !shelfKind) });
   EXPLOREKINDS.forEach(function(k){
-    h += navRow({kind:'explore', id:k[0]}, ic(k[2], 16), k[1], { cls:'dup-tab nsubrow', sel: (f.kind === 'explore' && f.id === k[0]) || shelfKind === k[0] });
+    var label = k[0] === 'horizons' ? 'Horizons' : k[1];
+    h += navRow({kind:'explore', id:k[0]}, ic(k[2], 16), label, { cls:'nsubrow', sel: (f.kind === 'explore' && f.id === k[0]) || shelfKind === k[0] });
   });
-  if (!S.loggedIn){
-    h += '<p class="navnote">Join to keep the events you’re going to, your Event Horizons and the people you follow here.</p>';
-    $('navbody').innerHTML = h;
-    return;
+  h += plugRows('explore', 'nsubrow');
+  if (!S.loggedIn) h += '<p class="navnote">Join to keep the events you’re going to, your Event Horizons and the people you follow here.</p>';
+  else {
+    h += navHead('MANAGE');
+    h += navRow({kind:'hosting'}, ic('star'), 'Hosting', { count: MYEVENTS.length || '' });
+    h += navRow({kind:'yourhz', id:'mine'}, ic('horizon'), 'Your horizons', { count: MYHORIZONS.length || '', sel: S.folder.kind === 'yourhz' });
+    h += navRow({kind:'owncallouts'}, ic('callout'), 'Your call outs');
+    h += relRow('Contacts', 'user', 'openContacts');
+    h += plugRows('manage');
   }
-  h += '<div class="navh">Your events</div>';
-  h += navRow({kind:'going'}, ic('check'), 'Going', { count: rsvpList('going').length || '' });
-  h += navRow({kind:'interested'}, ic('heart'), 'Interested', { count: rsvpList('interested').length || '' });
-  h += navRow({kind:'hosting'}, ic('star'), 'Hosting', { count: MYEVENTS.length || '' });
-  var npro = Object.keys(PROMOTED).filter(function(k){ return PROMOTED[k] && EVENTS[k]; }).length;
-  if (npro) h += navRow({kind:'promoted'}, ic('promote'), 'Boosted', { count: npro });
-  if (MYHORIZONS.length) h += '<div class="navh">Your horizons</div>';
-  MYHORIZONS.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { count: hzEventIds(k).length || '', drop:true, hz:true }); });
-  var followed = Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k] && HORIZONS[k]; });
-  if (followed.length){
-    h += '<div class="navh">Following</div>';
-    followed.forEach(function(k){ h += navRow({kind:'horizon', id:k}, hzIconHTML(k), HORIZONS[k].name, { sub: HORIZONS[k].ownerName !== HORIZONS[k].name ? HORIZONS[k].ownerName : '', hz:true }); });
+  h += navHead('SPECIAL');
+  h += '<div class="nrow nsubrow" role="button" data-act="aboutapp">'+ic('dots', 16)+'<span class="nlab">About Hypernet</span></div>';
+  h += plugRows('special', 'nsubrow');
+  if (S.loggedIn && L.phone){
+    h += '<div class="navdiv" role="separator"></div>';
+    h += '<div style="padding:24px 18px"><button class="btn" data-act="logout" style="width:100%">Log out</button></div>';
   }
-  var ppl = networkPeople().filter(function(p){ return PFOLLOW[p]; });
-  if (ppl.length){
-    h += '<div class="navh">People you follow</div>';
-    ppl.forEach(function(p){ h += navRow({kind:'person'}, avHTML(p), person(p).displayName, { person:p, sub: PRESENCE[p] === 'online' ? '· online' : '' }); });
-  }
-  if (L.phone) h += '<div style="padding:24px 18px"><button class="btn" data-act="logout" style="width:100%">Log out</button></div>';
   $('navbody').innerHTML = h;
 }
 function renderToolbar(){
@@ -5387,7 +5593,7 @@ function renderCHead(){
   var kinds = L.phone && S.folder.kind === 'explore' && !S.phoneSearch;
   if (kinds) tools = exploreKindsHTML();
   if (L.phone && S.phoneSearch && S.folder.kind !== 'search') tools = '';
-  el.className = (tools ? '' : 'none') + (kinds ? ' kindhead' : '');
+  el.className = (tools || S.folder.kind === 'yourhz' ? '' : 'none') + (kinds ? ' kindhead' : '');
   el.innerHTML = '<div class="ct"><h2>'+esc(folderName())+'</h2><div class="csub">'+esc(folderSub())+'</div></div>' + (tools ? '<div class="ctools">'+tools+'</div>' : '');
 }
 function exploreKindsHTML(){
@@ -8571,11 +8777,11 @@ function phoneBack(){
 /* logged out there is no Home (2026-10-04): Explore is where a visitor lands, and the root of what was Home's tab */
 function landingFolder(){ return S.loggedIn ? { kind:'home', id:null } : { kind:'explore', id:null }; }
 /* the places that are an account's own: a visitor is never in them (2026-10-05) */
-var ACCTPLACES = /^(you|chats|going|interested|hosting|promoted)$/;
+var ACCTPLACES = /^(you|chats|going|interested|hosting|promoted|owncallouts|yourhz)$/;
 function tabRootFolder(t){ return t === 'explore' || t === 'chats' || t === 'you' ? { kind:t, id:null } : landingFolder(); }
 function tabOfFolder(f){
   var k = (f || S.folder).kind;
-  return /^(explore|shelf|horizon)$/.test(k) ? 'explore' : k === 'chats' ? 'chats' : /^(you|going|interested|hosting|promoted)$/.test(k) ? 'you' : S.loggedIn ? 'home' : 'explore';
+  return /^(explore|shelf|horizon)$/.test(k) ? 'explore' : k === 'chats' ? 'chats' : /^(you|going|interested|hosting|promoted|owncallouts|yourhz)$/.test(k) ? 'you' : S.loggedIn ? 'home' : 'explore';
 }
 /* each tab keeps its own place: switching back returns you there; tapping the tab you are on goes to its top */
 var TABMEM = {};
@@ -8940,7 +9146,13 @@ document.addEventListener('click', function(ev){
     case 'acctmenu': if (POP){ closePopup(); break; } popup(n, [{ label:'Your profile', cmd:'profile', icon:'user' }, { label:'Edit profile', cmd:'editprofile', icon:'edit' }, '-', { label:'Log out', cmd:'logout', icon:'back' }]); break;
     case 'newsheet': newSheet(); break;
     case 'runcmd':   runCmd(id); break;
-    case 'folder':   goFolder({ kind:n.getAttribute('data-kind'), id:id || null }, true); render(); $('listbody').scrollTop = 0; break;
+    case 'folder':   if (L.phone){ var fk = n.getAttribute('data-kind'); if (fk === 'home') S.tab = 'home'; else if (fk === 'explore') S.tab = 'explore'; }
+                        goFolder({ kind:n.getAttribute('data-kind'), id:id || null }, true); render(); $('listbody').scrollTop = 0; break;
+    case 'tctab':    goFolder({ kind:S.folder.kind, id:id || null }, true); render(); $('listbody').scrollTop = 0; break;
+    case 'tcview':   { var tc = n.closest('.tcoll'), tk = tc && tc.getAttribute('data-store'); if (tk && (id === 'rows' || id === 'squares')){ try { localStorage.setItem(tk, id); } catch (e) {} } render(); break; }
+    case 'navplug':  { var plug = window.HNNav.rows(n.getAttribute('data-section')).filter(function(it){ return it.id === id && !it.locked; })[0]; if (plug && typeof plug.onOpen === 'function') plug.onOpen(); break; }
+    case 'navrel':   if (window.HNRel && typeof window.HNRel[id] === 'function') window.HNRel[id](); break;
+    case 'aboutapp': dialog('About Hypernet Global', '', '<button class="btn" data-act="closedlg">Close</button>'); break;
     case 'shelfall':    goFolder(isExploreKind(id) ? { kind:'explore', id:id } : { kind:'shelf', id:id }); render(); $('listbody').scrollTop = 0; break;
     case 'explorekind': if (L.phone && S.tab !== 'explore') setTab('explore'); else if (L.phone && S.folder.kind === 'explore') ROUTE.replace = true;
                         goFolder({ kind:'explore', id:id || null }); render(); $('listbody').scrollTop = 0; break;
@@ -9174,10 +9386,14 @@ document.addEventListener('click', function(ev){
       toast('Draft discarded', '', function(){ FORMDRAFTS[id] = kept; schedulePersist(); toast('Draft restored', ''); });
       break;
     }
-    case 'calmode':      S.calMode = id; render(); break;
+    case 'calmode':      S.calMode = id === 'day' ? 'month' : id; render(); break;
     case 'caltoday':     S.calAnchor = TODAY_ISO; S.calDay = null; CALLAST = null; render(); break;
     case 'calday': {
-      if (!narrowCal()){ S.calMode = 'day'; S.calAnchor = id; S.calDay = null; render(); break; }
+      if (!narrowCal()){
+        if (S.calMode === 'year'){ S.calMode = 'month'; S.calAnchor = id; S.calDay = null; render(); }
+        break;
+      }
+      if (S.calMode === 'year'){ S.calMode = 'month'; S.calAnchor = id; S.calDay = null; render(); break; }
       /* narrow: one event opens straight away, several open the day's own page (its own history entry, so back is the month) */
       var dEvs = eventsOn(id);
       CALLAST = id;
@@ -9187,9 +9403,11 @@ document.addEventListener('click', function(ev){
     }
     case 'calback':      navBack(); break;
     case 'calnav': {
-      /* a narrow calendar is always a month, whatever mode a wider screen left behind */
-      var a = dOf(S.calAnchor), step = +id, mode = narrowCal() ? 'month' : S.calMode;
-      if (mode === 'month'){ a.setDate(1); a.setMonth(a.getMonth() + step); }
+      /* a narrow week does not fit; a narrow year still steps by a year */
+      var a = dOf(S.calAnchor), step = +id, mode = S.calMode === 'day' ? 'month' : S.calMode;
+      if (narrowCal() && mode !== 'year') mode = 'month';
+      if (mode === 'year') a.setFullYear(a.getFullYear() + step);
+      else if (mode === 'month'){ a.setDate(1); a.setMonth(a.getMonth() + step); }
       else if (mode === 'week') a.setDate(a.getDate() + 7*step);
       else a.setDate(a.getDate() + step);
       S.calAnchor = isoOf(a); S.calDay = null; CALLAST = null; render();
@@ -9337,14 +9555,14 @@ document.addEventListener('dragstart', function(ev){
   ev.dataTransfer.effectAllowed = 'copy';
   try { ev.dataTransfer.setData('text/plain', DRAGID); } catch(e){}
 });
-document.addEventListener('dragend', function(){ DRAGID = null; document.querySelectorAll('.nrow.drop').forEach(function(n){ n.classList.remove('drop'); }); });
+document.addEventListener('dragend', function(){ DRAGID = null; document.querySelectorAll('[data-drop].drop').forEach(function(n){ n.classList.remove('drop'); }); });
 document.addEventListener('dragover', function(ev){
-  var f = ev.target.closest && ev.target.closest('.nrow[data-drop]');
+  var f = ev.target.closest && ev.target.closest('[data-drop]');
   if (f && DRAGID){ ev.preventDefault(); ev.dataTransfer.dropEffect = 'copy'; f.classList.add('drop'); }
 });
-document.addEventListener('dragleave', function(ev){ var f = ev.target.closest && ev.target.closest('.nrow[data-drop]'); if (f) f.classList.remove('drop'); });
+document.addEventListener('dragleave', function(ev){ var f = ev.target.closest && ev.target.closest('[data-drop]'); if (f) f.classList.remove('drop'); });
 document.addEventListener('drop', function(ev){
-  var f = ev.target.closest && ev.target.closest('.nrow[data-drop]');
+  var f = ev.target.closest && ev.target.closest('[data-drop]');
   if (f && DRAGID){ ev.preventDefault(); addToHorizonDrop(DRAGID, f.getAttribute('data-drop')); DRAGID = null; }
 });
 
@@ -9467,6 +9685,7 @@ function itemPath(it){
            callout:'callout/' + coSlug(it.id), group:'group/' + it.id, chat:'chats/' + chatSlug(it.id) }[it.type] || 'home';
 }
 function folderPath(f){
+  if (f.kind === 'yourhz') return 'yourhz/' + (f.id === 'following' ? 'following' : 'mine');
   return f.kind === 'shelf' ? 'explore/' + f.id : f.kind === 'explore' ? 'explore' + (f.id ? '/' + f.id : '') : f.kind === 'horizon' ? 'horizon/' + hzSlug(f.id) : f.kind;
 }
 /* the link to one thing, as anyone can open it */
@@ -9500,7 +9719,7 @@ function hashOf(s){
   }
   return '#/' + path + (p.length ? '?' + p.map(function(x){ return x[0] + '=' + encodeURIComponent(x[1]).replace(/%2F/g, '/'); }).join('&') : '');
 }
-var FOLDERKINDS = /^(home|explore|going|interested|hosting|promoted|you|search|chats)$/;
+var FOLDERKINDS = /^(home|explore|going|interested|hosting|promoted|owncallouts|you|search|chats)$/;
 var SHELFIDS = /^(week|soon|announced|followed|yourhz)$/;
 function folderFrom(a, b){
   /* Explore and its kinds; the old Horizons and People destinations, and Home's old Show all lists, land there too */
@@ -9508,6 +9727,7 @@ function folderFrom(a, b){
   if (a === 'horizons' || a === 'people') return { kind:'explore', id:a };
   if (a === 'home' && b) return isExploreKind(b) && b !== 'people' ? { kind:'explore', id:b } : SHELFIDS.test(b) ? { kind:'shelf', id:b } : b === 'people' ? { kind:'shelf', id:'followed' } : { kind:'explore', id:null };
   if (a === 'horizon'){ var hz = hzBySlug(b); return hz ? { kind:'horizon', id:hz } : null; }
+  if (a === 'yourhz') return { kind:'yourhz', id: b === 'following' ? 'following' : 'mine' };
   return FOLDERKINDS.test(a || '') ? { kind:a, id:null } : null;
 }
 function parseHash(h){

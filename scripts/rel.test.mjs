@@ -1,6 +1,7 @@
 // node --test scripts/rel.test.mjs — relOf is a follow boolean plus one friendship row.
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
@@ -43,7 +44,18 @@ test("follow and friendship are independent", () => {
   assert.equal(follow[`${me}|${mira}`], false);
 });
 
-test("openContacts is one dialog with Friends, Followers, Following, then Lists", () => {
+test("openContacts is one tabbed dialog for Lists, Friends, Following, and Follows me", () => {
+  const htmlSrc = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const start = htmlSrc.indexOf("function tabbedCollection(spec){");
+  const end = htmlSrc.indexOf("\nfunction tabbedHosted");
+  assert.ok(start >= 0 && end > start);
+  global.tabbedCollection = eval("(" + htmlSrc.slice(start, end) + ")");
+  const mem = {};
+  global.localStorage = {
+    getItem: (k) => (Object.prototype.hasOwnProperty.call(mem, k) ? mem[k] : null),
+    setItem: (k, v) => { mem[k] = String(v); },
+    removeItem: (k) => { delete mem[k]; },
+  };
   const prev = {
     esc: global.esc, S: global.S, myPid: global.myPid, PEOPLE: global.PEOPLE, person: global.person,
     PFOLLOW: global.PFOLLOW, NETFOLLOWS: global.NETFOLLOWS, dialog: global.dialog, loginDialog: global.loginDialog, ONLINE: global.ONLINE,
@@ -87,19 +99,41 @@ test("openContacts is one dialog with Friends, Followers, Following, then Lists"
     opened = { title, html, foot, w, cls };
     return { setAttribute() {}, _rel: null };
   };
+  const tabIds = (html) => [...html.matchAll(/data-act="tctab" data-id="([^"]+)"/g)].map((m) => m[1]);
   openContacts();
   assert.equal(opened.title, "Contacts");
   assert.equal(opened.cls, "rel-dlg");
-  const html = opened.html;
-  const at = (label) => html.indexOf('<div class="band">' + label + "</div>");
-  const friends = at("Friends");
-  const followers = at("Followers");
-  const following = at("Following");
-  const lists = at("Lists");
-  assert.ok(friends >= 0 && friends < followers && followers < following && following < lists);
-  for (const name of ["Anna Vale", "Mira Chen", "Oskar Lind", "Yuki Sato", "Lena Brandt", "Priya Raman", "Rio Moss", "Kai Okonkwo", "Sasha Reed", "Work", "Close", "New list"]) {
-    assert.ok(html.includes(name), name);
-  }
+  assert.equal(opened.w, 560);
+  assert.deepEqual(tabIds(opened.html), ["lists", "friends", "following", "follows"]);
+  assert.match(opened.html, /Lists/);
+  assert.match(opened.html, /Friends/);
+  assert.match(opened.html, /Following/);
+  assert.match(opened.html, /Follows me/);
+  assert.match(opened.html, />Rows</);
+  assert.match(opened.html, />Squares</);
+  assert.match(opened.html, /New list/);
+  assert.match(opened.html, /Work/);
+  assert.match(opened.html, /Close/);
+  assert.match(opened.html, /2 people/);
+  assert.doesNotMatch(opened.html, /Anna Vale/);
+  openContacts("friends");
+  for (const name of ["Anna Vale", "Mira Chen", "Oskar Lind", "Yuki Sato"]) assert.match(opened.html, new RegExp(name));
+  assert.match(opened.html, /Unfriend/);
+  assert.doesNotMatch(opened.html, /Work/);
+  openContacts("following");
+  for (const name of ["Anna Vale", "Rio Moss", "Kai Okonkwo", "Sasha Reed"]) assert.match(opened.html, new RegExp(name));
+  assert.match(opened.html, /Unfollow/);
+  assert.doesNotMatch(opened.html, /Lena Brandt/);
+  openContacts("follows");
+  assert.match(opened.html, /Lena Brandt/);
+  assert.match(opened.html, /Priya Raman/);
+  assert.doesNotMatch(opened.html, /Unfriend/);
+  mem["hypernet-contacts-view"] = "squares";
+  openContacts("friends");
+  assert.match(opened.html, /tc-squares/);
+  assert.match(opened.html, /card2/);
+  assert.match(opened.html, /Anna Vale/);
+  delete mem["hypernet-contacts-view"];
   opened = null;
   let asked = 0;
   global.S = { loggedIn: false };

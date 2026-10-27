@@ -1266,8 +1266,6 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .relcounts{ display:flex; flex-wrap:wrap; gap:10px; color:var(--dim); }
 .relcounts button{ border:0; padding:0; background:transparent; color:var(--ink2); font:inherit; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
 .relcounts span{ color:var(--ink2); }
-.relbar{ display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:0 0 8px; }
-.rel-badge{ display:inline-block; min-width:1.2em; margin-left:6px; padding:0 4px; border:1px solid var(--alert); color:var(--alert); font-weight:bold; text-align:center; }
 .profile-actions{ min-width:0; max-width:100%; }
 #chats > .profile-actions{ padding:0 4px 8px; }
 .relrow{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; min-height:36px; color:var(--ink); }
@@ -1278,10 +1276,14 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .relcreate .field{ flex:1 1 10em; min-width:0; margin:0; }
 .relcheck{ display:flex; align-items:center; gap:8px; width:100%; min-height:36px; padding:4px 0; border:0; background:transparent; color:var(--ink); font:inherit; cursor:pointer; text-align:left; overflow-wrap:anywhere; }
 .relcheck .ic{ flex:0 0 auto; }
-.dlg.rel-dlg h3{ margin:12px 0 6px; color:var(--ink); font-size:inherit; }
+.dlg.rel-dlg h3, .dlg.rel-dlg h4{ margin:12px 0 6px; color:var(--ink); font-size:inherit; }
 .dlg.rel-dlg h3:first-child{ margin-top:0; }
-[data-theme="y2fresh"] .relacts .btn, [data-theme="y2fresh"] .relrow .btn, [data-theme="y2fresh"] .relbar .btn, [data-theme="y2fresh"] .dlg.rel-dlg .btn{ border:3px solid var(--rule); }
-.relacts .btn:focus, .relcounts button:focus, .relbar .btn:focus{ outline:1px dotted var(--ink); outline-offset:2px; }
+.dlg.rel-dlg h4{ margin-top:10px; }
+.reqhit{ outline:1px dotted var(--ink); outline-offset:2px; }
+.reqstate{ color:var(--dim); }
+.reqstate .btn{ margin-left:6px; }
+[data-theme="y2fresh"] .relacts .btn, [data-theme="y2fresh"] .relrow .btn, [data-theme="y2fresh"] .dlg.rel-dlg .btn{ border:3px solid var(--rule); }
+.relacts .btn:focus, .relcounts button:focus{ outline:1px dotted var(--ink); outline-offset:2px; }
 .audpick{ display:flex; flex-direction:column; gap:0; max-width:28rem; min-width:0; padding:0; background:transparent; color:var(--ink); }
 .audrow{ display:flex; align-items:center; gap:12px; min-height:32px; }
 .audhead{ min-height:0; }
@@ -2888,6 +2890,8 @@ function tabbedCollection(spec){
   var cur = null;
   tabs.forEach(function(t){ if (t.id === tab) cur = t; });
   var items = cur && typeof cur.items === 'function' ? cur.items() : [];
+  var hosts = tabbedCollection.hosts || (tabbedCollection.hosts = {});
+  if (spec.onTab || spec.onView) hosts[store] = { onTab:spec.onTab || null, onView:spec.onView || null };
   var bar = '<div class="tc-bar"><div class="tc-tabs" role="tablist">' + tabs.map(function(t){
     var on = t.id === tab;
     return '<button type="button" class="tc-tab'+(on?' on':'')+'" role="tab" aria-selected="'+(on?'true':'false')+'" data-act="tctab" data-id="'+esc(t.id)+'">'+esc(t.label)+'</button>';
@@ -2896,10 +2900,25 @@ function tabbedCollection(spec){
       var on = v[0] === view;
       return '<button type="button" class="tc-view'+(on?' on':'')+'" aria-pressed="'+(on?'true':'false')+'" data-act="tcview" data-id="'+v[0]+'">'+v[1]+'</button>';
     }).join('') + '</div></div>';
-  var body = !items.length ? '<div class="empty">'+(spec.empty || 'Nothing here yet.')+'</div>'
-    : view === 'squares' ? '<div class="cards tc-squares">'+items.map(spec.renderSquare).join('')+'</div>'
-    : items.map(spec.renderRow).join('');
+  var lead = spec.lead || '';
+  var body = !items.length ? lead + '<div class="empty">'+(spec.empty || 'Nothing here yet.')+'</div>'
+    : view === 'squares' ? lead + '<div class="cards tc-squares">'+items.map(spec.renderSquare).join('')+'</div>'
+    : lead + items.map(spec.renderRow).join('');
   return { html:'<div class="tcoll" data-store="'+esc(store)+'">'+bar+body+'</div>', items:items, view:view };
+}
+function tabbedHosted(act, id, node){
+  var tc = node && node.closest ? node.closest('.tcoll') : null;
+  if (!tc || !tabbedCollection.hosts) return false;
+  var host = tabbedCollection.hosts[tc.getAttribute('data-store')];
+  if (!host) return false;
+  if (act === 'tctab' && host.onTab){ host.onTab(id); return true; }
+  if (act === 'tcview' && host.onView){
+    var store = tc.getAttribute('data-store');
+    if (store && (id === 'rows' || id === 'squares')){ try { localStorage.setItem(store, id); } catch (e) {} }
+    host.onView(id);
+    return true;
+  }
+  return false;
 }
 function renderYourHorizons(){
   var tab = S.folder.id === 'following' ? 'following' : 'mine';
@@ -2953,7 +2972,6 @@ function renderList(){
   /* an Explore kind says in a line what it is */
   var kd = S.folder.kind === 'explore' && KINDDESC[S.folder.id];
   if (kd && items.length) h = '<p class="kdesc">' + esc(kd) + '</p>' + h;
-  if (S.loggedIn && S.folder.kind === 'explore' && S.folder.id === 'people' && window.HNRel) h = HNRel.requestsButton() + h;
   /* on a phone Sort sits above the list it sorts, so FEED / LIST / CALENDAR never move */
   if (L.phone && viewOf() === 'list' && items.length && items.every(function(it){ return it.type === 'event'; }) && S.folder.kind !== 'search')
     h = '<label class="sortrow">Sort <select data-act="sort" aria-label="Sort">' +
@@ -4341,7 +4359,7 @@ function chatsEmptyHTML(){
 function chatListHTML(){
   var list = chatList();
   return '<div class="phead"><div class="ptitle">Chats</div><button class="btn primary" data-act="newchat">'+ic('edit')+'New chat</button></div>' +
-    '<div class="panel">' + (window.HNRel ? HNRel.requestsButton() : '') + (list.length ? '' : chatsEmptyHTML()) + list.map(function(k){
+    '<div class="panel">' + (list.length ? '' : chatsEmptyHTML()) + list.map(function(k){
       var c = CHATS[k], m = lastMsg(c), un = UNREADCHAT[k];
       return '<div class="chrow'+(un?' unread':'')+'" data-act="chatsel" data-id="'+k+'" role="button">' + chatAv(c) +
         '<div class="cmn"><div class="cnm">'+esc(c.name)+'</div><div class="cpv">'+(CHATDRAFT[k] ? '<b>Draft:</b> '+esc(CHATDRAFT[k]) : esc(msgPreview(m, c)))+'</div></div>' +
@@ -9074,8 +9092,8 @@ document.addEventListener('click', function(ev){
     case 'runcmd':   runCmd(id); break;
     case 'folder':   if (L.phone){ var fk = n.getAttribute('data-kind'); if (fk === 'home') S.tab = 'home'; else if (fk === 'explore') S.tab = 'explore'; }
                         goFolder({ kind:n.getAttribute('data-kind'), id:id || null }, true); render(); $('listbody').scrollTop = 0; break;
-    case 'tctab':    goFolder({ kind:S.folder.kind, id:id || null }, true); render(); $('listbody').scrollTop = 0; break;
-    case 'tcview':   { var tc = n.closest('.tcoll'), tk = tc && tc.getAttribute('data-store'); if (tk && (id === 'rows' || id === 'squares')){ try { localStorage.setItem(tk, id); } catch (e) {} } render(); break; }
+    case 'tctab':    if (tabbedHosted('tctab', id, n)) break; goFolder({ kind:S.folder.kind, id:id || null }, true); render(); $('listbody').scrollTop = 0; break;
+    case 'tcview':   if (tabbedHosted('tcview', id, n)) break; { var tc = n.closest('.tcoll'), tk = tc && tc.getAttribute('data-store'); if (tk && (id === 'rows' || id === 'squares')){ try { localStorage.setItem(tk, id); } catch (e) {} } render(); break; }
     case 'navplug':  { var plug = window.HNNav.rows(n.getAttribute('data-section')).filter(function(it){ return it.id === id && !it.locked; })[0]; if (plug && typeof plug.onOpen === 'function') plug.onOpen(); break; }
     case 'navrel':   if (window.HNRel && typeof window.HNRel[id] === 'function') window.HNRel[id](); break;
     case 'aboutapp': dialog('About Hypernet Global', '', '<button class="btn" data-act="closedlg">Close</button>'); break;

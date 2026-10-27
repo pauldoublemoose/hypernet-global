@@ -332,7 +332,47 @@
     root.toast(root.PFOLLOW[pid] ? "Following" : "Unfollowed", root.person(pid).displayName);
   }
 
-  function incomingCount() {
+  var PROVIDERS = {};
+  var PROVIDER_ORDER = [];
+  var REQ = null;
+  var LISTCACHE = {};
+
+  function registerRequestProvider(provider) {
+    if (!provider || !provider.type) return function () {};
+    var type = String(provider.type);
+    if (PROVIDER_ORDER.indexOf(type) < 0) PROVIDER_ORDER.push(type);
+    PROVIDERS[type] = provider;
+    return function off() {
+      if (PROVIDERS[type] !== provider) return;
+      delete PROVIDERS[type];
+      PROVIDER_ORDER = PROVIDER_ORDER.filter(function (t) { return t !== type; });
+    };
+  }
+
+  function reqKey(type, id) { return String(type) + "\n" + String(id); }
+
+  function paintRequestBadge() {
+    if (typeof document === "undefined" || !document.querySelector) return;
+    var row = document.querySelector('.nrow[data-act="navrel"][data-id="openRequests"]');
+    if (!row) return;
+    var n = incomingCount();
+    var badge = row.querySelector(".ncnt");
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "ncnt";
+      row.appendChild(badge);
+    }
+    badge.textContent = String(n);
+  }
+
+  function requestsChanged() {
+    if (typeof root.dispatchEvent === "function" && typeof root.Event === "function") {
+      root.dispatchEvent(new root.Event("hn:requests-changed"));
+    }
+    if (RELDLG && RELDLG.mode === "requests") refreshDlg();
+  }
+
+  function incomingFriendCount() {
     var me = typeof root.myPid === "function" ? root.myPid() : null;
     if (!me) return 0;
     var n = 0;
@@ -345,15 +385,17 @@
     return n;
   }
 
-  function requestsButton() {
-    if (!root.S || !root.S.loggedIn) return "";
-    var me = typeof root.myPid === "function" ? root.myPid() : "";
-    var n = incomingCount();
-    return '<div class="relbar"><button type="button" class="btn" data-rel-act="rel-requests">Requests' +
-      (n ? '<span class="rel-badge">' + n + "</span>" : "") + "</button>" +
-      '<button type="button" class="btn" data-rel-act="rel-list" data-id="' + me + '" data-list="friends">Friends</button>' +
-      '<button type="button" class="btn" data-rel-act="rel-list" data-id="' + me + '" data-list="followers">Followers</button>' +
-      '<button type="button" class="btn" data-rel-act="rel-lists-home">Lists</button></div>';
+  function incomingCount() {
+    var n = 0;
+    PROVIDER_ORDER.forEach(function (type) {
+      var p = PROVIDERS[type];
+      if (!p || typeof p.count !== "function") return;
+      try {
+        var c = p.count();
+        if (typeof c === "number" && isFinite(c) && c > 0) n += c;
+      } catch (e) {}
+    });
+    return n;
   }
 
   function otherOf(row, me) {
@@ -385,20 +427,29 @@
       return da < db ? -1 : da > db ? 1 : 0;
     });
   }
-  function dismissWent(id) {
-    var m = wentDismissMap();
-    m[id] = 1;
+  function writeWentHide(m) {
     WENT_HIDE = m;
     try {
       if (typeof localStorage !== "undefined" && localStorage && typeof localStorage.setItem === "function") {
         localStorage.setItem("hn-went-dismiss", JSON.stringify(m));
       }
     } catch (e) {}
+  }
+  function dismissWent(id) {
+    var m = wentDismissMap();
+    m[id] = 1;
+    writeWentHide(m);
+    refreshDlg();
+  }
+  function undismissWent(id) {
+    var m = wentDismissMap();
+    delete m[id];
+    writeWentHide(m);
     refreshDlg();
   }
   function answerWent(id, yes) {
-    if (!id) return;
-    if (!yes) { dismissWent(id); return; }
+    if (!id) return Promise.resolve();
+    if (!yes) { dismissWent(id); return Promise.resolve(); }
     var finish = function () {
       if (root.WENT) root.WENT[id] = true;
       refreshDlg();
@@ -406,49 +457,192 @@
     };
     if (root.ONLINE && root.HNAPI && typeof root.HNAPI.addChronicle === "function") {
       var p = root.HNAPI.addChronicle(id);
-      if (p && typeof p.then === "function") p.then(finish, function () {});
-      else finish();
-      return;
+      if (p && typeof p.then === "function") return p.then(finish, function () {});
+      finish();
+      return Promise.resolve();
     }
     finish();
+    return Promise.resolve();
+  }
+
+  function keepsRow(provider, verb) {
+    if (!provider || typeof provider.undo !== "function") return false;
+    if (verb === "accept" && provider.undoAccept === false) return false;
+    if (verb === "decline" && provider.undoDecline === false) return false;
+    return true;
+  }
+
+  function readProviderList(provider) {
+    var type = provider.type;
+    if (LISTCACHE[type] && LISTCACHE[type].flight) return { items: LISTCACHE[type].items || [] };
+    try {
+      var value = provider.list();
+      if (value && typeof value.then === "function") {
+        if (!LISTCACHE[type] || !LISTCACHE[type].flight) {
+          LISTCACHE[type] = { items: (LISTCACHE[type] && LISTCACHE[type].items) || [], flight: true };
+          value.then(function (items) {
+            LISTCACHE[type] = { items: items || [] };
+            if (RELDLG && RELDLG.mode === "requests") refreshDlg();
+          }, function () {
+            LISTCACHE[type] = { error: true };
+            if (RELDLG && RELDLG.mode === "requests") refreshDlg();
+          });
+        }
+        return LISTCACHE[type].error ? { error: true } : { items: LISTCACHE[type].items || [] };
+      }
+      var pack = { items: value || [] };
+      LISTCACHE[type] = pack;
+      return pack;
+    } catch (e) {
+      return { error: true };
+    }
+  }
+
+  function heldRequestItems(type, listed) {
+    var seen = {};
+    (listed || []).forEach(function (item) { if (item) seen[String(item.id)] = true; });
+    var extra = [];
+    ["pending", "settled"].forEach(function (slot) {
+      var bag = REQ && REQ[slot];
+      if (!bag) return;
+      Object.keys(bag).forEach(function (key) {
+        var row = bag[key];
+        if (!row || row.type !== type || seen[String(row.id)]) return;
+        if (REQ.dropped && REQ.dropped[reqKey(type, row.id)]) return;
+        seen[String(row.id)] = true;
+        extra.push(row.item);
+      });
+    });
+    return extra;
+  }
+
+  function requestNode(rendered) {
+    if (rendered == null) return "";
+    if (typeof rendered === "string") return rendered;
+    if (rendered.outerHTML) return rendered.outerHTML;
+    return "";
+  }
+
+  function requestButtons(provider, item, pending) {
+    var dis = pending ? " disabled" : "";
+    var acceptLabel = item.acceptLabel || provider.acceptLabel || "Accept";
+    var declineLabel = item.declineLabel || provider.declineLabel || "Decline";
+    var html = '<span class="relbtns">';
+    if (item.accept !== false) {
+      html += '<button type="button" class="btn primary" data-rel-act="req-accept" data-type="' + root.esc(provider.type) + '" data-id="' + root.esc(item.id) + '"' + dis + ">" + root.esc(acceptLabel) + "</button>";
+    }
+    html += '<button type="button" class="btn" data-rel-act="req-decline" data-type="' + root.esc(provider.type) + '" data-id="' + root.esc(item.id) + '"' + dis + ">" + root.esc(declineLabel) + "</button></span>";
+    return html;
+  }
+
+  function requestRow(provider, item) {
+    var key = reqKey(provider.type, item.id);
+    var pending = REQ && REQ.pending && REQ.pending[key];
+    var settled = REQ && REQ.settled && REQ.settled[key];
+    var hit = REQ && REQ.highlight && REQ.highlight.type === provider.type && String(REQ.highlight.id) === String(item.id);
+    var cls = "relrow" + (hit ? " reqhit" : "");
+    var body = requestNode(provider.render(item));
+    var side;
+    if (settled) {
+      var word = settled.verb === "accept" ? "Accepted" : "Declined";
+      var undoDis = pending ? " disabled" : "";
+      side = '<span class="reqstate">' + word + ' · <button type="button" class="btn" data-rel-act="req-undo" data-type="' + root.esc(provider.type) + '" data-id="' + root.esc(item.id) + '"' + undoDis + ">Undo</button></span>";
+    } else {
+      side = requestButtons(provider, item, !!pending);
+    }
+    return '<div class="' + cls + '" data-req-type="' + root.esc(provider.type) + '" data-req-id="' + root.esc(item.id) + '"><span>' + body + "</span>" + side + "</div>";
+  }
+
+  function providerSection(provider) {
+    try { return providerSectionBody(provider); }
+    catch (e) {
+      return '<section class="reqsec" data-req-type="' + root.esc(provider.type) + '"><h3>' + root.esc(provider.label || provider.type) + '</h3><p class="relempty">Couldn\'t load</p></section>';
+    }
+  }
+
+  function providerSectionBody(provider) {
+    var pack = readProviderList(provider);
+    var h = '<section class="reqsec" data-req-type="' + root.esc(provider.type) + '"><h3>' + root.esc(provider.label || provider.type) + "</h3>";
+    if (pack.error) return h + '<p class="relempty">Couldn\'t load</p></section>';
+    var items = (pack.items || []).concat(heldRequestItems(provider.type, pack.items || [])).filter(function (item) {
+      return item && !(REQ && REQ.dropped && REQ.dropped[reqKey(provider.type, item.id)]);
+    });
+    if (!items.length && provider.hideEmpty) return "";
+    if (provider.buckets) {
+      h += provider.buckets.map(function (bucket) {
+        var mine = items.filter(function (item) { return item && item.bucket === bucket.id; });
+        return "<h4>" + root.esc(bucket.label) + "</h4>" + (mine.length ? mine.map(function (item) { return requestRow(provider, item); }).join("") : '<p class="relempty">' + root.esc(bucket.empty || "Nothing here.") + "</p>");
+      }).join("");
+      return h + "</section>";
+    }
+    if (!items.length) return h + '<p class="relempty">' + root.esc(provider.empty || "Nothing here.") + "</p></section>";
+    return h + items.map(function (item) { return requestRow(provider, item); }).join("") + "</section>";
   }
 
   function requestsHTML() {
-    var me = root.myPid();
-    var inn = [], out = [];
-    Object.keys(FRIENDGRAPH).forEach(function (k) {
-      var row = FRIENDGRAPH[k];
-      if (!row || row.status !== "pending") return;
-      var parts = k.split("|");
-      if (parts.indexOf(low(me)) < 0 && low(row.a) !== low(me) && low(row.b) !== low(me)) return;
-      var other = otherOf(row, me);
-      if (low(row.requestedBy) === low(me)) out.push(other); else inn.push(other);
-    });
-    var line = function (pid, buttons) {
-      var p = root.person(pid);
-      return '<div class="relrow"><span>' + root.esc(p.displayName) + " <small>@" + root.esc(p.handle) + "</small></span>" + buttons + "</div>";
-    };
-    var h = "";
-    h += "<h3>Incoming</h3>";
-    h += inn.length ? inn.map(function (pid) {
-      return line(pid, '<span class="relbtns"><button type="button" class="btn primary" data-rel-act="rel-accept" data-id="' + pid + '">Accept</button>' +
-        '<button type="button" class="btn" data-rel-act="rel-decline" data-id="' + pid + '">Decline</button></span>');
-    }).join("") : '<p class="relempty">No incoming requests.</p>';
-    h += "<h3>Outgoing</h3>";
-    h += out.length ? out.map(function (pid) {
-      return line(pid, '<button type="button" class="btn" data-rel-act="rel-cancel" data-id="' + pid + '">Cancel</button>');
-    }).join("") : '<p class="relempty">No outgoing requests.</p>';
-    var asks = chronicleAskIds();
-    if (asks.length) {
-      h += asks.map(function (id) {
-        var e = (root.EVENTS || {})[id] || {};
-        return '<div class="relrow" data-went="' + id + '"><span>Did you go? ' + root.esc(e.title || "Event") + "</span>" +
-          '<span class="relbtns"><button type="button" class="btn primary" data-rel-act="rel-went-yes" data-id="' + id + '">Yes</button>' +
-          '<button type="button" class="btn" data-rel-act="rel-went-no" data-id="' + id + '">No</button>' +
-          '<button type="button" class="btn" data-rel-act="rel-went-dismiss" data-id="' + id + '">Dismiss</button></span></div>';
-      }).join("");
+    return PROVIDER_ORDER.map(function (type) {
+      var provider = PROVIDERS[type];
+      return provider ? providerSection(provider) : "";
+    }).join("");
+  }
+
+  function findRequestItem(type, id) {
+    var pack = LISTCACHE[type];
+    var items = (pack && pack.items) || [];
+    for (var i = 0; i < items.length; i++) if (items[i] && String(items[i].id) === String(id)) return items[i];
+    if (!REQ) return null;
+    var key = reqKey(type, id);
+    var settled = REQ.settled && REQ.settled[key];
+    if (settled) return settled.item;
+    var pending = REQ.pending && REQ.pending[key];
+    return pending ? pending.item : null;
+  }
+
+  function rememberRequest(slot, type, id, item, extra) {
+    var key = reqKey(type, id);
+    REQ[slot][key] = Object.assign({ type: type, id: String(id), item: item }, extra || {});
+  }
+
+  function runRequest(act, type, id) {
+    var provider = PROVIDERS[type];
+    if (!provider || !REQ) return;
+    var key = reqKey(type, id);
+    if (REQ.pending[key]) return;
+    var item = findRequestItem(type, id);
+    if (!item) return;
+    if (act === "req-undo") {
+      if (typeof provider.undo !== "function") return;
+      rememberRequest("pending", type, id, item, { undo: true });
+      refreshDlg();
+      Promise.resolve(provider.undo(item)).then(function () {
+        delete REQ.pending[key];
+        delete REQ.settled[key];
+        requestsChanged();
+      }, function () {
+        delete REQ.pending[key];
+        refreshDlg();
+      });
+      return;
     }
-    return h;
+    var verb = act === "req-accept" ? "accept" : "decline";
+    var job = verb === "accept" ? provider.accept(item) : provider.decline(item);
+    rememberRequest("pending", type, id, item);
+    refreshDlg();
+    Promise.resolve(job).then(function () {
+      delete REQ.pending[key];
+      if (keepsRow(provider, verb)) rememberRequest("settled", type, id, item, { verb: verb });
+      else REQ.dropped[reqKey(type, id)] = true;
+      requestsChanged();
+    }, function () {
+      delete REQ.pending[key];
+      refreshDlg();
+    });
+  }
+
+  function focusRequest(type, id) {
+    if (typeof document === "undefined" || !document.querySelector) return;
+    var row = document.querySelector('.dlg.rel-dlg [data-req-type="' + type + '"][data-req-id="' + id + '"]');
+    if (row && row.scrollIntoView) row.scrollIntoView({ block: "center" });
   }
 
   function namesFromGraph(pid, list) {
@@ -542,9 +736,16 @@
     }
   }
 
-  function openRequests() {
-    if (!root.S.loggedIn) { root.loginDialog(); return; }
-    openDialog("Requests", requestsHTML(), { mode: "requests" });
+  function openRequests(opts) {
+    if (!root.S || !root.S.loggedIn) { if (root.loginDialog) root.loginDialog(); return; }
+    REQ = {
+      highlight: opts && opts.type && opts.id != null ? { type: String(opts.type), id: String(opts.id) } : null,
+      settled: {},
+      pending: {},
+      dropped: {}
+    };
+    openDialog("Requests", requestsHTML(), { mode: "requests" }, '<button class="btn" data-act="closedlg">Close</button>', 480);
+    if (REQ.highlight) focusRequest(REQ.highlight.type, REQ.highlight.id);
   }
 
   function openList(pid, list) {
@@ -580,24 +781,87 @@
     };
   }
 
-  function contactsHTML(names) {
-    var n = names || {};
-    var band = function (label, body) {
-      return '<div class="band">' + root.esc(label) + "</div>" + body;
-    };
-    var friends = n.friendsHidden ? listHTML(null, true) : listHTML(n.friends || [], false);
-    return band("Friends", friends) +
-      band("Followers", listHTML(n.followers || [], false)) +
-      band("Following", listHTML(n.following || [], false)) +
-      band("Lists", listsHomeHTML());
+  function contactPersonAct(it, tab) {
+    var unfriend = '<button type="button" class="btn" data-rel-act="rel-unfriend" data-id="' + root.esc(it.id) + '">Unfriend</button>';
+    var unfollow = '<button type="button" class="btn" data-rel-act="rel-unfollow" data-id="' + root.esc(it.id) + '">Unfollow</button>';
+    if (tab === "friends") return unfriend;
+    if (tab === "following") return unfollow;
+    var html = "";
+    var me = typeof root.myPid === "function" ? root.myPid() : null;
+    if (me && friendIds(me).indexOf(it.id) >= 0) html += unfriend;
+    if (root.PFOLLOW && root.PFOLLOW[it.id]) html += unfollow;
+    return html;
   }
 
-  function openContacts() {
+  function contactListRow(it) {
+    return '<div class="linkrow" data-rel-act="rel-open-list" data-id="' + root.esc(it.id) + '" role="button"><div class="lr"><b>' +
+      root.esc(it.label) + '</b><div class="fhelp">' + peopleCount(it.count) + "</div></div></div>";
+  }
+
+  function contactListSquare(it) {
+    return '<div class="card2" data-rel-act="rel-open-list" data-id="' + root.esc(it.id) + '" role="button"><div class="ct2">' +
+      root.esc(it.label) + '</div><div class="cs2">' + peopleCount(it.count) + "</div></div>";
+  }
+
+  function contactPersonRow(it, tab) {
+    return '<div class="relrow"><button type="button" class="btn" data-act="row" data-type="person" data-id="' + root.esc(it.id) + '">' +
+      root.esc(it.label) + "</button><small>@" + root.esc(it.handle) + "</small>" + contactPersonAct(it, tab) + "</div>";
+  }
+
+  function contactPersonSquare(it, tab) {
+    return '<div class="card2"><div class="ct2">' + root.esc(it.label) + '</div><div class="cs2">@' + root.esc(it.handle) + "</div>" +
+      contactPersonAct(it, tab) + "</div>";
+  }
+
+  function contactsHTML(names) {
+    var n = names || {};
+    var tab = (RELDLG && RELDLG.tab) || "lists";
+    var helper = root.tabbedCollection;
+    if (typeof helper !== "function") return "";
+    var built = helper({
+      store: "hypernet-contacts-view",
+      tab: tab,
+      empty: tab === "friends" && n.friendsHidden ? "Friend lists are on your own page." : (tab === "lists" ? "No lists yet." : "No one here."),
+      lead: tab === "lists" ? '<div class="linkrow" data-rel-act="rel-new-list" role="button"><div class="lr"><b>New list</b></div></div>' : "",
+      onTab: function (id) {
+        if (!RELDLG || RELDLG.mode !== "contacts") return;
+        RELDLG.tab = id;
+        refreshDlg();
+      },
+      onView: function () { refreshDlg(); },
+      tabs: [
+        { id: "lists", label: "Lists", items: function () {
+          return LISTS.map(function (l) { return { kind: "list", id: l.id, label: l.name, count: (l.memberIds || []).length }; });
+        } },
+        { id: "friends", label: "Friends", items: function () {
+          return (n.friendsHidden ? [] : (n.friends || [])).map(function (p) { return { kind: "person", id: p.id, label: p.displayName, handle: p.handle || "" }; });
+        } },
+        { id: "following", label: "Following", items: function () {
+          return (n.following || []).map(function (p) { return { kind: "person", id: p.id, label: p.displayName, handle: p.handle || "" }; });
+        } },
+        { id: "follows", label: "Follows me", items: function () {
+          return (n.followers || []).map(function (p) { return { kind: "person", id: p.id, label: p.displayName, handle: p.handle || "" }; });
+        } }
+      ],
+      renderRow: function (it) { return it.kind === "list" ? contactListRow(it) : contactPersonRow(it, tab); },
+      renderSquare: function (it) { return it.kind === "list" ? contactListSquare(it) : contactPersonSquare(it, tab); }
+    });
+    return built.html;
+  }
+
+  function openContacts(tab) {
     if (!root.S || !root.S.loggedIn) { if (root.loginDialog) root.loginDialog(); return; }
+    var which = tab || "lists";
+    var top = topRelDlg();
+    if (top && RELDLG && RELDLG.mode === "contacts") {
+      RELDLG.tab = which;
+      refreshDlg();
+      return;
+    }
     var names = contactNames();
-    var meta = { mode: "contacts", names: names };
+    var meta = { mode: "contacts", tab: which, names: names };
     RELDLG = meta;
-    openDialog("Contacts", contactsHTML(names), meta);
+    openDialog("Contacts", contactsHTML(names), meta, '<button class="btn" data-act="closedlg">Close</button>', 560);
     var me = typeof root.myPid === "function" ? root.myPid() : null;
     if (!(root.ONLINE && root.HNAPI && root.HNAPI.relations) || !me) return;
     root.HNAPI.relations(me).then(function (d) {
@@ -878,16 +1142,7 @@
   }
 
   function openLists() {
-    if (!root.S || !root.S.loggedIn) { if (root.loginDialog) root.loginDialog(); return; }
-    var top = topRelDlg();
-    if (top && top.getAttribute("data-rel-dlg") === "lists") {
-      RELDLG = { mode: "lists" };
-      top._rel = RELDLG;
-      refreshDlg();
-      return;
-    }
-    RELDLG = { mode: "lists" };
-    openDialog("Lists", listsHomeHTML(), RELDLG);
+    openContacts("lists");
   }
 
   function stampList(l, name, desc) {
@@ -1056,8 +1311,11 @@
     var pid = b.getAttribute("data-id");
     var go = function (fn) { (root.gated ? root.gated(fn) : fn)(pid); };
     if (act === "rel-requests") openRequests();
+    else if (act === "req-accept" || act === "req-decline" || act === "req-undo") runRequest(act, b.getAttribute("data-type"), pid);
     else if (act === "rel-went-yes") answerWent(pid, true);
     else if (act === "rel-went-no" || act === "rel-went-dismiss") answerWent(pid, false);
+    else if (act === "rel-unfollow") { if (typeof root.followP === "function") root.followP(pid); else toggleFollow(pid); }
+    else if (act === "rel-unfriend") go(deleteFriend);
     else if (act === "rel-list") openList(pid, b.getAttribute("data-list"));
     else if (act === "rel-menu") {
       var me = typeof root.myPid === "function" ? root.myPid() : null;
@@ -1134,11 +1392,70 @@
     ingestRows(H.bonds || []);
   }
 
+  registerRequestProvider({
+    type: "friend_request",
+    label: "Friend requests",
+    buckets: [
+      { id: "in", label: "Incoming", empty: "No incoming requests." },
+      { id: "out", label: "Outgoing", empty: "No outgoing requests." }
+    ],
+    list: function () {
+      var me = typeof root.myPid === "function" ? root.myPid() : null;
+      if (!me) return [];
+      var inn = [], out = [];
+      Object.keys(FRIENDGRAPH).forEach(function (k) {
+        var row = FRIENDGRAPH[k];
+        if (!row || row.status !== "pending") return;
+        var parts = k.split("|");
+        if (parts.indexOf(low(me)) < 0 && low(row.a) !== low(me) && low(row.b) !== low(me)) return;
+        var other = otherOf(row, me);
+        if (low(row.requestedBy) === low(me)) out.push(other); else inn.push(other);
+      });
+      function item(pid, bucket) {
+        var base = { id: bucket + ":" + pid, personId: pid, bucket: bucket };
+        if (bucket === "out") { base.accept = false; base.declineLabel = "Cancel"; }
+        return base;
+      }
+      return inn.map(function (pid) { return item(pid, "in"); }).concat(out.map(function (pid) { return item(pid, "out"); }));
+    },
+    count: incomingFriendCount,
+    render: function (item) {
+      var p = typeof root.person === "function" ? root.person(item.personId) : null;
+      p = p || { displayName: item.personId, handle: "" };
+      return root.esc(p.displayName) + " <small>@" + root.esc(p.handle) + "</small>";
+    },
+    accept: function (item) { acceptFriend(item.personId); return Promise.resolve(); },
+    decline: function (item) { deleteFriend(item.personId); return Promise.resolve(); }
+  });
+
+  registerRequestProvider({
+    type: "did_you_go",
+    label: "Did you go?",
+    hideEmpty: true,
+    acceptLabel: "Yes",
+    declineLabel: "No",
+    undoAccept: false,
+    list: function () {
+      return chronicleAskIds().map(function (id) {
+        var e = (root.EVENTS || {})[id] || {};
+        return { id: id, title: e.title || "Event" };
+      });
+    },
+    count: function () { return chronicleAskIds().length; },
+    render: function (item) { return "Did you go? " + root.esc(item.title || "Event"); },
+    accept: function (item) { return answerWent(item.id, true); },
+    decline: function (item) { return answerWent(item.id, false); },
+    undo: function (item) { undismissWent(item.id); return Promise.resolve(); }
+  });
+
+  if (typeof root.addEventListener === "function") root.addEventListener("hn:requests-changed", paintRequestBadge);
+
   var api = {
     relOf: relOf, kind: kind, rowMark: rowMark, graph: graph, audienceGraph: audienceGraph, friendIds: friendIds, countsOf: countsOf,
     relActionsHTML: relActionsHTML, controlOf: controlOf, listPageHTML: listPageHTML, mount: mount, toggleFollow: toggleFollow,
     requestFriend: requestFriend, acceptFriend: acceptFriend, deleteFriend: deleteFriend,
-    incomingCount: incomingCount, requestsButton: requestsButton, openRequests: openRequests, requestsHTML: requestsHTML,
+    incomingCount: incomingCount, registerRequestProvider: registerRequestProvider, requestsChanged: requestsChanged,
+    openRequests: openRequests, requestsHTML: requestsHTML,
     chronicleAskIds: chronicleAskIds, answerWent: answerWent, openList: openList,
     openLists: openLists, openContacts: openContacts, contactsHTML: contactsHTML,
     ingest: ingest, ingestFixtures: ingestFixtures, ingestLists: ingestLists, lists: listsSnapshot,

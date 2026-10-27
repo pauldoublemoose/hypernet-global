@@ -1,4 +1,6 @@
 import { sqlx } from "./db";
+import { requireChatCard } from "./chat-cards";
+import { horizonVisible } from "./horizons";
 
 // Everything the first screen needs, for one viewer, in ONE request to the database (one read-only transaction,
 // so every list agrees with the others). Privacy is decided here, in SQL, with can_see_event: an event the
@@ -23,6 +25,10 @@ export const CALLOUT_JSON = `json_build_object('id', c.id, 'authorId', c.author_
   'skill', c.skill, 'expiresOn', c.expires_on, 'closedAt', c.closed_at, 'createdAt', c.created_at)`;
 
 const VISIBLE_CALLOUT = `(c.event_id is null or exists (select 1 from events ce where ce.id = c.event_id and can_see_event($1::uuid, ce)))`;
+
+const CHAT_MESSAGE_JSON = `json_build_object('id', m.id, 'senderId', m.sender_id, 'body', m.body, 'createdAt', m.created_at,
+  'cardType', m.card_type, 'cardId', m.card_id,
+  'cardName', (select h.name from horizons h where m.card_type = '${requireChatCard("horizon_invite").type}' and h.id = m.card_id))`;
 
 export type Bootstrap = {
   hypernet: 1;
@@ -61,11 +67,14 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
              'coverEventId', h.cover_event_id, 'createdAt', h.created_at,
              'eventIds', coalesce((select json_agg(he.event_id order by he.position, he.added_at) from horizon_events he join events e on e.id = he.event_id
                                     where he.horizon_id = h.id and can_see_event($1::uuid, e)), '[]'),
-             'followers', (select count(*) from horizon_follows hf where hf.horizon_id = h.id))
+             'followers', (select count(*) from horizon_follows hf where hf.horizon_id = h.id),
+             'collaboratorIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc where hc.horizon_id = h.id and hc.accepted_at is not null), '[]'),
+             'pendingCollaboratorIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc where hc.horizon_id = h.id and hc.accepted_at is null and hc.declined_at is null and (hc.role is null or hc.role = 'collaborator') and (h.owner_id = $1::uuid or hc.person_id = $1::uuid)), '[]'),
+             'pendingFollowerIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc where hc.horizon_id = h.id and hc.accepted_at is null and hc.declined_at is null and hc.role = 'follower' and (h.owner_id = $1::uuid or hc.person_id = $1::uuid)), '[]'))
              order by h.created_at), '[]') v
-             from horizons h where h.published_at is not null or (h.owner_id is not null and h.owner_id = $1::uuid)`),
+             from horizons h where ${horizonVisible("$1")}`),
       one(`select coalesce(json_agg(json_build_array(hf.person_id, hf.horizon_id)), '[]') v
-             from horizon_follows hf join horizons h on h.id = hf.horizon_id where h.published_at is not null or h.owner_id = $1::uuid`),
+             from horizon_follows hf join horizons h on h.id = hf.horizon_id where ${horizonVisible("$1")}`),
       one(`select coalesce(json_agg(${CALLOUT_JSON} order by c.created_at desc), '[]') v from callouts c where ${VISIBLE_CALLOUT}`),
       one(`select coalesce(json_agg(json_build_object('id', r.id, 'calloutId', r.callout_id, 'authorId', r.author_id, 'text', r.text,
              'createdAt', r.created_at) order by r.created_at), '[]') v
@@ -76,15 +85,13 @@ export async function loadBootstrap(viewer: string | null): Promise<Bootstrap> {
              from (select * from activity a where a.ts > now() - interval '21 days' and a.actor is not null
                      and case a.obj_type
                            when 'event' then exists (select 1 from events e where e.id = a.obj_id and can_see_event($1::uuid, e))
-                           when 'horizon' then exists (select 1 from horizons h where h.id = a.obj_id and (h.published_at is not null or h.owner_id = $1::uuid))
+                           when 'horizon' then exists (select 1 from horizons h where h.id = a.obj_id and ${horizonVisible("$1")})
                            when 'callout' then exists (select 1 from callouts c where c.id = a.obj_id and ${VISIBLE_CALLOUT})
                            else true end
                    order by a.ts desc limit 600) a`),
       one(`select coalesce(json_agg(json_build_object('threadId', t.id, 'personId', case when t.a = $1::uuid then t.b else t.a end,
              'lastReadAt', (select tr.last_read_at from thread_reads tr where tr.thread_id = t.id and tr.person_id = $1::uuid),
-             'messages', coalesce((select json_agg(json_build_object('id', m.id, 'senderId', m.sender_id, 'body', m.body,
-                                   'cardType', m.card_type, 'cardId', m.card_id, 'createdAt', m.created_at)
-                                   order by m.created_at) from messages m where m.thread_id = t.id), '[]'))), '[]') v
+             'messages', coalesce((select json_agg(${CHAT_MESSAGE_JSON} order by m.created_at) from messages m where m.thread_id = t.id), '[]'))), '[]') v
              from dm_threads t where $1::uuid is not null and (t.a = $1::uuid or t.b = $1::uuid)`),
     ],
     { readOnly: true, isolationLevel: "RepeatableRead" },
@@ -118,9 +125,7 @@ export async function loadChats(viewer: string): Promise<unknown[]> {
   const rows = (await sqlx().query(
     `select coalesce(json_agg(json_build_object('threadId', t.id, 'personId', case when t.a = $1::uuid then t.b else t.a end,
        'lastReadAt', (select tr.last_read_at from thread_reads tr where tr.thread_id = t.id and tr.person_id = $1::uuid),
-       'messages', coalesce((select json_agg(json_build_object('id', m.id, 'senderId', m.sender_id, 'body', m.body,
-                             'cardType', m.card_type, 'cardId', m.card_id, 'createdAt', m.created_at)
-                             order by m.created_at) from messages m where m.thread_id = t.id), '[]'))), '[]') v
+       'messages', coalesce((select json_agg(${CHAT_MESSAGE_JSON} order by m.created_at) from messages m where m.thread_id = t.id), '[]'))), '[]') v
        from dm_threads t where t.a = $1::uuid or t.b = $1::uuid`,
     [viewer],
   )) as { v: unknown[] }[];

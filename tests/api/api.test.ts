@@ -39,8 +39,9 @@ class Client {
 const anon = new Client("anon");
 const a = new Client("a");
 const b = new Client("b");
+const s = new Client("s");
 const ids = { pub: randomUUID(), fri: randomUUID(), me: randomUUID(), hz: randomUUID(), co: randomUUID(), re: randomUUID() };
-let aId = "", bId = "";
+let aId = "", bId = "", sId = "";
 
 async function signUp(c: Client, who: string) {
   const r = await c.post("/api/auth/sign-up/email", { email: `hn-vitest-${RUN}-${who}@example.com`, password: `vitest-${RUN}-${who}-pw`, name: `Vitest ${who}` });
@@ -54,7 +55,8 @@ beforeAll(async () => {
   expect(h.body.branch, "these tests write data: run them against dev only").toBe("dev");
   await signUp(a, "a");
   await signUp(b, "b");
-}, 60_000);
+  await signUp(s, "s");
+}, 90_000);
 
 describe("login and join", () => {
   it("logged out is nobody, and cannot write", async () => {
@@ -192,6 +194,334 @@ describe("horizons", () => {
   });
 });
 
+describe("horizon collaborators", () => {
+  const hzP = randomUUID();
+  const eventId = randomUUID();
+  const hzName = `Vitest private ${RUN}`;
+  const idsOf = (body: { horizons: { id: string }[] }) => body.horizons.map((h) => h.id);
+  async function invites(who: Client, otherId: string, hzId: string) {
+    const chats = (await who.get("/api/chats")).body.chats as {
+      personId: string;
+      lastReadAt: string | null;
+      messages: { body: string; cardType?: string; cardId?: string; cardName?: string | null }[];
+    }[];
+    const thread = chats.find((c) => c.personId === otherId);
+    return { thread, messages: (thread?.messages ?? []).filter((m) => m.cardType === "horizon_invite" && m.cardId === hzId) };
+  }
+
+  beforeAll(async () => {
+    const joined = await s.post("/api/me", { handle: `vs${RUN}`, displayName: "Vitest S" });
+    expect(joined.status, JSON.stringify(joined.body)).toBe(201);
+    sId = joined.body.person.id;
+    const ev = await a.post("/api/events", { id: eventId, title: `Vitest collab ${RUN}`, startsOn: "2030-08-01", privacy: "everyone" });
+    expect(ev.status, JSON.stringify(ev.body)).toBe(201);
+    const hz = await a.post("/api/horizons", { id: hzP, name: hzName, description: "First", eventIds: [eventId] });
+    expect(hz.status, JSON.stringify(hz.body)).toBe(201);
+    expect(hz.body.horizon.publishedAt).toBeNull();
+    expect(hz.body.horizon.collaboratorIds).toEqual([]);
+    expect(hz.body.horizon.pendingCollaboratorIds).toEqual([]);
+    expect(hz.body.horizon.pendingFollowerIds).toEqual([]);
+  });
+
+  it("a private horizon stays hidden from a stranger and from a logged-out reader", async () => {
+    expect((await s.get(`/api/horizons/${hzP}`)).status).toBe(404);
+    expect((await anon.get(`/api/horizons/${hzP}`)).status).toBe(404);
+    expect(idsOf((await s.get("/api/bootstrap")).body)).not.toContain(hzP);
+    expect(idsOf((await anon.get("/api/bootstrap")).body)).not.toContain(hzP);
+  });
+
+  it("the owner cannot add themselves", async () => {
+    const r = await a.post(`/api/horizons/${hzP}/collaborators`, { personId: aId });
+    expect(r.status, JSON.stringify(r.body)).toBe(400);
+    expect(r.body.message).toBe("The owner is already on this horizon.");
+    const hz = (await a.get(`/api/horizons/${hzP}`)).body.horizon;
+    expect(hz.collaboratorIds).toEqual([]);
+    expect(hz.pendingCollaboratorIds).toEqual([]);
+    expect(hz.pendingFollowerIds).toEqual([]);
+  });
+
+  it("the owner invites someone, who can read the private horizon and still cannot follow or edit it", async () => {
+    const r = await a.post(`/api/horizons/${hzP}/collaborators`, { personId: bId });
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.horizon.collaboratorIds).toEqual([]);
+    expect(r.body.horizon.pendingCollaboratorIds).toEqual([bId]);
+    expect(r.body.horizon.pendingFollowerIds).toEqual([]);
+    const got = (await a.get(`/api/horizons/${hzP}`)).body.horizon;
+    const mine = (await a.get("/api/bootstrap")).body.horizons.find((h: { id: string }) => h.id === hzP);
+    expect(got.collaboratorIds).toEqual([]);
+    expect(got.pendingCollaboratorIds).toEqual([bId]);
+    expect(got.pendingFollowerIds).toEqual([]);
+    expect(mine.collaboratorIds).toEqual(got.collaboratorIds);
+    expect(mine.pendingCollaboratorIds).toEqual(got.pendingCollaboratorIds);
+    expect(mine.pendingFollowerIds).toEqual(got.pendingFollowerIds);
+    const seen = await b.get(`/api/horizons/${hzP}`);
+    expect(seen.status).toBe(200);
+    expect(seen.body.horizon.collaboratorIds).toEqual([]);
+    expect(seen.body.horizon.pendingCollaboratorIds).toEqual([bId]);
+    expect(idsOf((await b.get("/api/bootstrap")).body)).toContain(hzP);
+    expect((await s.get(`/api/horizons/${hzP}`)).status).toBe(404);
+    expect((await s.put(`/api/horizons/${hzP}/follow`)).status).toBe(404);
+    expect((await b.put(`/api/horizons/${hzP}/follow`)).status).toBe(404);
+    expect((await b.patch(`/api/horizons/${hzP}`, { name: "nope" })).status).not.toBe(200);
+    expect((await b.put(`/api/horizons/${hzP}/events`, { eventIds: [] })).status).not.toBe(200);
+  });
+
+  it("inviting the same person again stays pending and sends one message", async () => {
+    const r = await a.post(`/api/horizons/${hzP}/collaborators`, { personId: bId });
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.horizon.collaboratorIds).toEqual([]);
+    expect(r.body.horizon.pendingCollaboratorIds).toEqual([bId]);
+    expect(r.body.horizon.pendingFollowerIds).toEqual([]);
+    const chat = await invites(b, aId, hzP);
+    expect(chat.messages).toHaveLength(1);
+    expect(chat.messages[0]).toMatchObject({ cardType: "horizon_invite", cardId: hzP, body: "pending", cardName: hzName });
+    expect(chat.thread?.lastReadAt).toBeNull();
+  });
+
+  it("only the invited person can accept", async () => {
+    const owner = await a.post(`/api/horizons/${hzP}/invites`);
+    expect(owner.status, JSON.stringify(owner.body)).toBe(403);
+    expect(owner.body.message).toBe("Only the invited person can answer this.");
+    expect((await s.post(`/api/horizons/${hzP}/invites`)).status).toBe(404);
+  });
+
+  it("the invited person accepts, and then both see the message as accepted", async () => {
+    const r = await b.post(`/api/horizons/${hzP}/invites`);
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.horizon.collaboratorIds).toEqual([bId]);
+    expect(r.body.horizon.pendingCollaboratorIds).toEqual([]);
+    expect(r.body.horizon.pendingFollowerIds).toEqual([]);
+    expect((await invites(a, bId, hzP)).messages.map((m) => m.body)).toEqual(["accepted"]);
+    expect((await invites(b, aId, hzP)).messages.map((m) => m.body)).toEqual(["accepted"]);
+  });
+
+  it("a collaborator renames it and rewrites the description", async () => {
+    const r = await b.patch(`/api/horizons/${hzP}`, { name: `Vitest renamed ${RUN}`, description: "Shared notes" });
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.horizon).toMatchObject({ name: `Vitest renamed ${RUN}`, description: "Shared notes" });
+  });
+
+  it("a collaborator cannot publish it", async () => {
+    const r = await b.patch(`/api/horizons/${hzP}`, { published: true });
+    expect(r.status, JSON.stringify(r.body)).toBe(403);
+    expect(r.body.message).toBe("Only the owner can change who can see this, its look, or its cover.");
+    expect((await a.get(`/api/horizons/${hzP}`)).body.horizon.publishedAt).toBeNull();
+  });
+
+  it("a collaborator cannot change its look", async () => {
+    const r = await b.patch(`/api/horizons/${hzP}`, { look: { bg: "#000000", ink: "#ffffff", accent: "#ff2fd0" } });
+    expect(r.status, JSON.stringify(r.body)).toBe(403);
+    expect(r.body.message).toBe("Only the owner can change who can see this, its look, or its cover.");
+    expect((await a.get(`/api/horizons/${hzP}`)).body.horizon.look).toBeNull();
+  });
+
+  it("a collaborator cannot set its cover", async () => {
+    const r = await b.patch(`/api/horizons/${hzP}`, { coverEventId: eventId });
+    expect(r.status, JSON.stringify(r.body)).toBe(403);
+    expect(r.body.message).toBe("Only the owner can change who can see this, its look, or its cover.");
+    expect((await a.get(`/api/horizons/${hzP}`)).body.horizon.coverEventId).toBeNull();
+  });
+
+  it("a collaborator sets the event list, in that order", async () => {
+    const other = randomUUID();
+    const ev = await a.post("/api/events", { id: other, title: `Vitest collab two ${RUN}`, startsOn: "2030-08-02", privacy: "everyone" });
+    expect(ev.status, JSON.stringify(ev.body)).toBe(201);
+    const r = await b.put(`/api/horizons/${hzP}/events`, { eventIds: [other, eventId] });
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.horizon.eventIds).toEqual([other, eventId]);
+  });
+
+  it("a collaborator save keeps an event they cannot see", async () => {
+    const secret = randomUUID();
+    const pub = randomUUID();
+    const id = randomUUID();
+    const hidden = await a.post("/api/events", { id: secret, title: `Vitest secret ${RUN}`, startsOn: "2030-08-03", privacy: "only_me" });
+    expect(hidden.status, JSON.stringify(hidden.body)).toBe(201);
+    const shown = await a.post("/api/events", { id: pub, title: `Vitest shown ${RUN}`, startsOn: "2030-08-04", privacy: "everyone" });
+    expect(shown.status, JSON.stringify(shown.body)).toBe(201);
+    const created = await a.post("/api/horizons", { id, name: `Vitest keep ${RUN}`, eventIds: [pub, secret] });
+    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    expect((await a.post(`/api/horizons/${id}/collaborators`, { personId: bId })).status).toBe(200);
+    expect((await b.post(`/api/horizons/${id}/invites`)).status).toBe(200);
+    const saved = await b.put(`/api/horizons/${id}/events`, { eventIds: [pub] });
+    expect(saved.status, JSON.stringify(saved.body)).toBe(200);
+    expect(saved.body.horizon.eventIds).toEqual([pub]);
+    expect((await a.get(`/api/horizons/${id}`)).body.horizon.eventIds).toEqual([pub, secret]);
+  });
+
+  it("a collaborator cannot delete the horizon", async () => {
+    const r = await b.del(`/api/horizons/${hzP}`);
+    expect(r.status, JSON.stringify(r.body)).toBe(403);
+    expect((await a.get(`/api/horizons/${hzP}`)).status).toBe(200);
+  });
+
+  it("a collaborator cannot add or remove someone else", async () => {
+    expect((await b.post(`/api/horizons/${hzP}/collaborators`, { personId: sId })).status).toBe(403);
+    expect((await b.del(`/api/horizons/${hzP}/collaborators?personId=${sId}`)).status).toBe(403);
+    expect((await a.get(`/api/horizons/${hzP}`)).body.horizon.collaboratorIds).toEqual([bId]);
+  });
+
+  it("the owner has to name which collaborator to remove", async () => {
+    const r = await a.del(`/api/horizons/${hzP}/collaborators`);
+    expect(r.status, JSON.stringify(r.body)).toBe(400);
+    expect(r.body.message).toBe("Say which collaborator to remove.");
+    expect((await a.get(`/api/horizons/${hzP}`)).body.horizon.collaboratorIds).toEqual([bId]);
+  });
+
+  it("the owner removes an accepted collaborator", async () => {
+    const id = randomUUID();
+    const created = await a.post("/api/horizons", { id, name: `Vitest remove ${RUN}` });
+    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    expect((await a.post(`/api/horizons/${id}/collaborators`, { personId: bId })).status).toBe(200);
+    const accepted = await b.post(`/api/horizons/${id}/invites`);
+    expect(accepted.status, JSON.stringify(accepted.body)).toBe(200);
+    expect(accepted.body.horizon.collaboratorIds).toEqual([bId]);
+    const r = await a.del(`/api/horizons/${id}/collaborators?personId=${bId}`);
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.horizon.collaboratorIds).toEqual([]);
+    expect((await b.get(`/api/horizons/${id}`)).status).toBe(404);
+    expect((await invites(a, bId, id)).messages.map((m) => m.body)).toEqual(["accepted"]);
+  });
+
+  it("a collaborator sees the private horizon, and a stranger does not", async () => {
+    expect((await b.get(`/api/horizons/${hzP}`)).status).toBe(200);
+    expect(idsOf((await b.get("/api/bootstrap")).body)).toContain(hzP);
+    expect((await s.get(`/api/horizons/${hzP}`)).status).toBe(404);
+    expect(idsOf((await s.get("/api/bootstrap")).body)).not.toContain(hzP);
+    expect((await anon.get(`/api/horizons/${hzP}`)).status).toBe(404);
+  });
+
+  it("a collaborator follows the private horizon, and a stranger does not", async () => {
+    const followed = await b.put(`/api/horizons/${hzP}/follow`);
+    expect(followed.status, JSON.stringify(followed.body)).toBe(200);
+    expect(followed.body.following).toBe(true);
+    expect((await s.put(`/api/horizons/${hzP}/follow`)).status).toBe(404);
+  });
+
+  it("inviting someone who already accepted does not open a second invite", async () => {
+    const r = await a.post(`/api/horizons/${hzP}/collaborators`, { personId: bId });
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.horizon.collaboratorIds).toEqual([bId]);
+    expect(r.body.horizon.pendingCollaboratorIds).toEqual([]);
+    expect(r.body.horizon.pendingFollowerIds).toEqual([]);
+    expect((await invites(a, bId, hzP)).messages.map((m) => m.body)).toEqual(["accepted"]);
+    expect((await invites(b, aId, hzP)).messages.map((m) => m.body)).toEqual(["accepted"]);
+  });
+
+  it("a collaborator leaves, and then the private horizon is gone for them", async () => {
+    const r = await b.del(`/api/horizons/${hzP}/collaborators`);
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.horizon.collaboratorIds).toEqual([]);
+    expect((await b.get(`/api/horizons/${hzP}`)).status).toBe(404);
+    expect(idsOf((await b.get("/api/bootstrap")).body)).not.toContain(hzP);
+  });
+
+  it("the invited person declines, and the private horizon stays hidden", async () => {
+    const id = randomUUID();
+    const created = await a.post("/api/horizons", { id, name: `Vitest decline ${RUN}` });
+    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    expect((await a.post(`/api/horizons/${id}/collaborators`, { personId: bId })).status).toBe(200);
+    const declined = await b.del(`/api/horizons/${id}/invites`);
+    expect(declined.status, JSON.stringify(declined.body)).toBe(200);
+    expect(declined.body.ok).toBe(true);
+    expect((await b.get(`/api/horizons/${id}`)).status).toBe(404);
+    expect((await a.get(`/api/horizons/${id}`)).body.horizon.collaboratorIds).toEqual([]);
+    expect((await a.get(`/api/horizons/${id}`)).body.horizon.pendingCollaboratorIds).toEqual([]);
+    expect((await a.get(`/api/horizons/${id}`)).body.horizon.pendingFollowerIds).toEqual([]);
+    expect((await invites(a, bId, id)).messages.map((m) => m.body)).toEqual(["declined"]);
+    expect((await invites(b, aId, id)).messages.map((m) => m.body)).toEqual(["declined"]);
+    const owner = await a.post(`/api/horizons/${id}/invites`);
+    expect(owner.status, JSON.stringify(owner.body)).toBe(403);
+    expect(owner.body.message).toBe("Only the invited person can answer this.");
+    expect((await s.post(`/api/horizons/${id}/invites`)).status).toBe(404);
+  });
+
+  it("the owner cancels a pending invite", async () => {
+    const id = randomUUID();
+    const created = await a.post("/api/horizons", { id, name: `Vitest cancel ${RUN}` });
+    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    expect((await a.post(`/api/horizons/${id}/collaborators`, { personId: bId })).status).toBe(200);
+    const r = await a.del(`/api/horizons/${id}/collaborators?personId=${bId}`);
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.horizon.pendingCollaboratorIds).toEqual([]);
+    expect(r.body.horizon.pendingFollowerIds).toEqual([]);
+    expect(r.body.horizon.collaboratorIds).toEqual([]);
+    expect((await b.get(`/api/horizons/${id}`)).status).toBe(404);
+    expect((await invites(a, bId, id)).messages.map((m) => m.body)).toEqual(["cancelled"]);
+    expect((await invites(b, aId, id)).messages.map((m) => m.body)).toEqual(["cancelled"]);
+    const again = await b.post(`/api/horizons/${id}/invites`);
+    expect(again.status, JSON.stringify(again.body)).toBe(404);
+    expect(again.body.message).toBe("No invite to answer.");
+  });
+
+  it("a personal list cannot have collaborators", async () => {
+    const id = randomUUID();
+    const created = await a.post("/api/horizons", { id, name: `Vitest personal ${RUN}`, isPersonalDefault: true });
+    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    expect(created.body.horizon.collaboratorIds).toEqual([]);
+    const r = await a.post(`/api/horizons/${id}/collaborators`, { personId: bId });
+    expect(r.status, JSON.stringify(r.body)).toBe(400);
+    expect(r.body.message).toBe("A personal list cannot have collaborators.");
+    const after = (await a.get(`/api/horizons/${id}`)).body.horizon;
+    expect(after.collaboratorIds).toEqual([]);
+    expect(after.pendingCollaboratorIds).toEqual([]);
+    expect(after.pendingFollowerIds).toEqual([]);
+  });
+
+  it("a follower invite becomes a follow, and an omitted role stays a collaborator invite", async () => {
+    const id = randomUUID();
+    const created = await a.post("/api/horizons", { id, name: `Vitest follow invite ${RUN}`, published: true });
+    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    const invited = await a.post(`/api/horizons/${id}/collaborators`, { personId: bId, role: "follower" });
+    expect(invited.status, JSON.stringify(invited.body)).toBe(200);
+    expect(invited.body.horizon.pendingFollowerIds).toEqual([bId]);
+    expect(invited.body.horizon.pendingCollaboratorIds).toEqual([]);
+    expect(invited.body.horizon.collaboratorIds).toEqual([]);
+    const chat = await invites(b, aId, id);
+    expect(chat.messages).toHaveLength(1);
+    expect(chat.messages[0].body).toBe("pending follower");
+    const again = await a.post(`/api/horizons/${id}/collaborators`, { personId: bId, role: "collaborator" });
+    expect(again.status, JSON.stringify(again.body)).toBe(200);
+    expect(again.body.horizon.pendingFollowerIds).toEqual([bId]);
+    expect(again.body.horizon.pendingCollaboratorIds).toEqual([]);
+    const stayed = await invites(b, aId, id);
+    expect(stayed.messages).toHaveLength(1);
+    expect(stayed.messages[0].body).toBe("pending follower");
+    const accepted = await b.post(`/api/horizons/${id}/invites`);
+    expect(accepted.status, JSON.stringify(accepted.body)).toBe(200);
+    expect(accepted.body.horizon.collaboratorIds).toEqual([]);
+    expect(accepted.body.horizon.pendingFollowerIds).toEqual([]);
+    expect((await invites(b, aId, id)).messages.map((m) => m.body)).toEqual(["accepted follower"]);
+    const boot = await b.get("/api/bootstrap");
+    expect(boot.body.hzFollows).toContainEqual([bId, id]);
+    const patch = await b.patch(`/api/horizons/${id}`, { name: "nope" });
+    expect(patch.status, JSON.stringify(patch.body)).toBe(403);
+    expect(patch.body.message).toBe("Only its owner can change this.");
+    const events = await b.put(`/api/horizons/${id}/events`, { eventIds: [] });
+    expect(events.status, JSON.stringify(events.body)).toBe(403);
+    expect(events.body.message).toBe("Only its owner can change this.");
+    const other = randomUUID();
+    const created2 = await a.post("/api/horizons", { id: other, name: `Vitest omitted role ${RUN}`, published: true });
+    expect(created2.status, JSON.stringify(created2.body)).toBe(201);
+    const collab = await a.post(`/api/horizons/${other}/collaborators`, { personId: bId });
+    expect(collab.status, JSON.stringify(collab.body)).toBe(200);
+    expect(collab.body.horizon.pendingCollaboratorIds).toEqual([bId]);
+    expect(collab.body.horizon.pendingFollowerIds).toEqual([]);
+    expect((await invites(b, aId, other)).messages.map((m) => m.body)).toEqual(["pending"]);
+    const repeat = await a.post(`/api/horizons/${id}/collaborators`, { personId: bId, role: "follower" });
+    expect(repeat.status, JSON.stringify(repeat.body)).toBe(200);
+    expect(repeat.body.horizon.pendingFollowerIds).toEqual([]);
+    expect(repeat.body.horizon.collaboratorIds).toEqual([]);
+    expect((await invites(b, aId, id)).messages.map((m) => m.body)).toEqual(["accepted follower"]);
+    const alongside = await a.post(`/api/horizons/${id}/collaborators`, { personId: bId });
+    expect(alongside.status, JSON.stringify(alongside.body)).toBe(200);
+    expect(alongside.body.horizon.pendingCollaboratorIds).toEqual([bId]);
+    expect(alongside.body.horizon.collaboratorIds).toEqual([]);
+    expect(alongside.body.horizon.pendingFollowerIds).toEqual([]);
+    expect((await invites(b, aId, id)).messages.map((m) => m.body)).toEqual(["accepted follower", "pending"]);
+  });
+});
+
 describe("call outs and replies", () => {
   it("post, reply in public, delete replies, close", async () => {
     const c = await a.post("/api/callouts", { id: ids.co, title: "Vitest sound", eventId: ids.pub, skill: "SOUND/DJING", expiresOn: "2030-05-01" });
@@ -210,16 +540,18 @@ describe("call outs and replies", () => {
 
 describe("direct messages", () => {
   it("one conversation per pair, unread until read", async () => {
+    const earlier = (await a.get("/api/chats")).body.chats.find((c: any) => c.personId === bId);
+    const prior = earlier ? earlier.messages.length : 0;
     const m = await b.post(`/api/chats/${aId}/messages`, { body: "Hi A" });
     expect(m.status, JSON.stringify(m.body)).toBe(201);
     const chatsA = (await a.get("/api/chats")).body.chats;
     const t = chatsA.find((c: any) => c.personId === bId);
-    expect(t.messages.map((x: any) => x.body)).toEqual(["Hi A"]);
+    expect(t.messages.slice(prior).map((x: any) => x.body)).toEqual(["Hi A"]);
     expect(t.lastReadAt).toBeNull();
     await a.post(`/api/chats/${bId}/messages`, { body: "Hi B" });
     const t2 = (await b.get("/api/chats")).body.chats.find((c: any) => c.personId === aId);
     expect(t2.threadId).toBe(t.threadId);
-    expect(t2.messages).toHaveLength(2);
+    expect(t2.messages).toHaveLength(prior + 2);
     expect((await a.put(`/api/chats/${bId}/read`)).status).toBe(200);
     expect((await anon.get("/api/chats")).status).toBe(401);
   });

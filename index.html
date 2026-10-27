@@ -1532,6 +1532,33 @@ body .popmenu.chmenu .pi:hover, body .popmenu.chmenu .pi:focus{ background:var(-
   [data-theme="y2fresh"]{ --dur:0ms; }
   [data-theme="y2fresh"] :is(.btn, .ib, .row, .nrow){ transition:none; }
 }
+/* COLLABORATORS */
+.hzfaces{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; padding:8px 16px; color:var(--ink); border-bottom:1px solid var(--rule); }
+.hzface{ display:inline-flex; align-items:center; gap:6px; }
+.hzface .hzx{ display:inline-flex; align-items:center; justify-content:center; min-height:28px; padding:0 8px; border:1px solid var(--rule); background:transparent; color:var(--ink); font:inherit; }
+.hzface .hzx:hover{ border-color:var(--ink); }
+.hzface .hzx:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+.hzface.invited{ color:var(--dim); }
+.hzface.invited .av{ opacity:0.55; }
+.hzface.invited .hzx{ color:var(--ink); }
+.ccrole{ display:flex; flex-wrap:wrap; gap:8px 16px; margin:0 0 16px; color:var(--ink); }
+.ccrole label{ display:inline-flex; align-items:center; gap:6px; color:var(--ink); }
+.ccrole input{ accent-color:var(--sel); }
+.msg:has(.hzacts){ width:86%; }
+.mbody:has(.hzacts){ display:flex; flex-direction:column; align-items:stretch; gap:8px; width:100%; color:var(--ink); }
+.hzacts{ display:flex; flex-wrap:nowrap; gap:8px; min-width:0; }
+.hzacts .btn{ flex:1 1 0; width:0; min-width:0; white-space:nowrap; color:var(--ink); }
+.hzacts .hzundo{ flex:0 1 auto; width:auto; }
+.hzname{ display:inline; margin:0; padding:0; border:0; background:transparent; color:var(--ink); font:inherit; line-height:inherit; text-align:inherit; text-decoration:underline; text-underline-offset:2px; cursor:pointer; min-height:0; vertical-align:baseline; }
+.msg.me .hzname{ color:var(--white); }
+.hzname:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+.hzreq{ display:inline; margin:0; padding:0; border:0; background:transparent; color:var(--ink); font:inherit; line-height:inherit; text-align:inherit; text-decoration:underline; text-underline-offset:2px; cursor:pointer; min-height:0; vertical-align:baseline; }
+.msg.me .hzreq{ color:var(--white); }
+.hzreq:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+.demonewrow{ flex:0 0 auto; display:flex; padding:0 4px 8px; }
+.demonew{ height:28px; padding:0 8px; border:1px solid var(--rule); background:transparent; color:var(--ink2); font:inherit; font-size:12px; line-height:26px; cursor:pointer; }
+.demonew:hover{ color:var(--ink); border-color:var(--ink); }
+.demonew:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
 /* EVENT CONTROLS */
 .ev-constel:empty{ display:none; }
 /* EVENT BAR
@@ -1690,6 +1717,9 @@ a.maplink:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
 <script src="_shared/hypernet-palette.js"></script>
 <script src="_shared/hypernet-themes.js"></script>
 <script src="_shared/hypernet-event-details.js"></script>
+<script src="_shared/chat-cards.js"></script>
+<script src="_shared/horizon-requests.js"></script>
+<script src="_shared/horizon-cog.js"></script>
 <script src="_shared/hypernet-api.js"></script>
 <script src="_shared/map-link.js"></script>
 <script>
@@ -1761,12 +1791,8 @@ HORIZONS['horizon-feed'] = { id:'horizon-feed', name:'Feeding the Ridge',
 HORIZONS['horizon-surface'] = { id:'horizon-surface', name:'Surfaces & Projections',
   description:'Anything you can throw light at after dark.',
   isPersonalDefault:false, isPublished:true, ownerName:'Mira Chen', ownerId:'p-mira',
+  pendingFollowerIds:['p-michal'],
   eventIds:['evt-fill-3','evt-fill-9','evt-world-hyperstition-2026'] };
-/* the demo's public Horizon. My Horizon stays private, so Created would be empty without this. */
-HORIZONS['horizon-ridge'] = { id:'horizon-ridge', name:'Ridge season',
-  description:'The builds and the nights on the ridge this year.',
-  isPersonalDefault:false, isPublished:true, ownerName:'Michal', ownerId:'p-michal',
-  eventIds:['evt-fill-0','evt-fill-6','evt-deep-listening'] };
 /* Enough public Horizons that the demo's Following list folds and can be filtered. */
 [
   ['horizon-north','North Shore','p-anna'], ['horizon-market','Night Market','p-kai'], ['horizon-river','River Lights','p-rio'],
@@ -2113,10 +2139,45 @@ function fixtureChats(){
     if (!pid || !PEOPLE[pid] || Object.keys(byId).some(function(k){ return byId[k].memberIds[0] === pid; })) return;
     var id = c.kind === 'dm' ? c.id : 'c-' + pid.replace(/^p-/, '');
     byId[id] = { id:id, name:person(pid).displayName, kind:'dm', memberIds:[pid],
-      messages: c.messages.filter(function(m){ return m.from === pid || m.from === 'self'; }).map(function(m){ return { from:m.from, t:m.t, text:m.text }; }) };
+      messages: c.messages.filter(function(m){ return m.from === pid || m.from === 'self'; }).map(function(m){
+        var row = { from:m.from, t:m.t, text:m.text };
+        if (m.cardType) row.cardType = m.cardType;
+        if (m.cardId) row.cardId = m.cardId;
+        if (m.cardName) row.cardName = m.cardName;
+        if (m.invite) row.invite = m.invite;
+        return row;
+      }) };
     order.push(id);
   });
   return { byId:byId, order:order };
+}
+/* the account keeps its own copy of a chat, so a fixture invite added later is copied in once */
+function seedDemoInvites(){
+  var fresh = fixtureChats(), added = false;
+  fresh.order.forEach(function(id){
+    var src = fresh.byId[id];
+    if (!src) return;
+    if (!CHATS[id]){
+      CHATS[id] = src;
+      if (CHATORDER.indexOf(id) < 0) CHATORDER.push(id);
+      if ((src.messages || []).some(function(m){ return m.cardType === 'horizon_invite'; })) added = true;
+      return;
+    }
+    var chat = CHATS[id];
+    if (!chat.messages) chat.messages = [];
+    src.messages.forEach(function(m, i){
+      if (m.cardType !== 'horizon_invite' || !m.cardId) return;
+      if (chat.messages.some(function(x){ return x.cardType === 'horizon_invite' && x.cardId === m.cardId; })) return;
+      var prev = src.messages[i - 1], at = -1;
+      if (prev) at = chat.messages.findIndex(function(x){
+        return x.from === prev.from && x.t === prev.t && (prev.cardId ? x.cardId === prev.cardId : x.text === prev.text);
+      });
+      if (at >= 0) chat.messages.splice(at + 1, 0, m);
+      else chat.messages.push(m);
+      added = true;
+    });
+  });
+  if (added) requestsChanged();
 }
 
 var HZPAST = {};               /* horizons whose past events you unfolded */
@@ -2193,7 +2254,7 @@ function hostPersonOf(e){
 }
 function byDate(a,b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }
 function rsvpList(mode){ if (!S.loggedIn) return []; return allEvents().filter(function(e){ return RSVP[e.id] === mode && canSeeEvent(e); }).sort(byDate); }
-function horizonsOf(evId){ return Object.keys(HORIZONS).filter(function(k){ return HORIZONS[k].eventIds.indexOf(evId) >= 0 && (HORIZONS[k].isPublished || hzOwnedByMe(k)); }); }
+function horizonsOf(evId){ return Object.keys(HORIZONS).filter(function(k){ return HORIZONS[k].eventIds.indexOf(evId) >= 0 && (HORIZONS[k].isPublished || hzCanEdit(k)); }); }
 function hzCover(hzId){
   var hz = HORIZONS[hzId];
   if (!hz) return null;
@@ -2231,6 +2292,22 @@ function hzWhen(hzId){
   return 'Ended ' + fmtShort(evs.map(lastDay).sort().pop());
 }
 function hzOwnedByMe(hzId){ return S.loggedIn && MYHORIZONS.indexOf(hzId) >= 0; }
+function hzCanEdit(hzId){
+  var ids = (HORIZONS[hzId] && HORIZONS[hzId].collaboratorIds) || [];
+  return S.loggedIn && (hzOwnedByMe(hzId) || ids.indexOf(myPid()) >= 0);
+}
+/* a pending invite opens the horizon and grants no edit */
+function hzPendingInvite(hzId){
+  if (!S.loggedIn || !hzId) return false;
+  var me = myPid(), hz = HORIZONS[hzId];
+  var ids = hz ? (hz.pendingCollaboratorIds || []).concat(hz.pendingFollowerIds || []) : [];
+  if (me && ids.indexOf(me) >= 0) return true;
+  return Object.keys(CHATS).some(function(cid){
+    return ((CHATS[cid] && CHATS[cid].messages) || []).some(function(m){
+      return m.cardType === 'horizon_invite' && m.cardId === hzId && m.from !== 'self' && String(m.invite || 'pending').split(' ')[0] === 'pending';
+    });
+  });
+}
 /* PRIVACY — who can see an event. One rule, used by every list, search, calendar, horizon and activity row:
      everyone  anyone, logged out too
      friends   its host, and the people its host follows
@@ -2476,7 +2553,7 @@ function feedEvents(){
   });
 }
 function browsableHorizons(){
-  return Object.keys(HORIZONS).filter(function(k){ return HORIZONS[k].isPublished || hzOwnedByMe(k); });
+  return Object.keys(HORIZONS).filter(function(k){ return HORIZONS[k].isPublished || hzCanEdit(k); });
 }
 /* THE NETWORK — everyone on Hypernet here: the fixture people, then every account made in this browser
    (Michal, the demo, and whoever joined), newest last. You are never in your own network list.
@@ -2595,7 +2672,10 @@ function folderSub(f){
   if (f.kind === 'explore' && f.id === 'people')   return n + ' people';
   if (f.kind === 'search')   return n + ' result' + (n === 1 ? '' : 's') + ' for “' + S.query + '”';
   if (f.kind === 'owncallouts') return n + ' call out' + (n === 1 ? '' : 's');
-  if (f.kind === 'yourhz'){ var hn = (f.id === 'following' ? followedHorizonItems() : myHorizonItems()).length; return hn + ' horizon' + (hn === 1 ? '' : 's'); }
+  if (f.kind === 'yourhz'){
+    var hn = (f.id === 'following' ? followedHorizonItems() : f.id === 'collaborating' ? collaboratedHorizonItems() : myHorizonItems()).length;
+    return hn + ' horizon' + (hn === 1 ? '' : 's');
+  }
   if (f.kind === 'horizon'){ var h = HORIZONS[f.id]; return h ? 'Event Horizon · ' + h.ownerName + ' · ' + hzEventIds(f.id).length + ' events' : ''; }
   return n + ' event' + (n === 1 ? '' : 's');
 }
@@ -2661,7 +2741,7 @@ function searchItems(q){
   });
   Object.keys(HORIZONS).forEach(function(k){
     var hz = HORIZONS[k];
-    if ((hz.isPublished || hzOwnedByMe(k)) && matchAll([hz.name, hz.description, hz.ownerName], q)) out.push({ type:'horizon', id:k });
+    if ((hz.isPublished || hzCanEdit(k)) && matchAll([hz.name, hz.description, hz.ownerName], q)) out.push({ type:'horizon', id:k });
   });
   CALLOUTS.forEach(function(c){ if (matchAll([c.title, c.body, c.hostName], q)) out.push({ type:'callout', id:c.id }); });
   searchPeople(q, out);
@@ -2811,6 +2891,17 @@ function followedHorizonItems(){
     return { kind:'horizon', id:k, label:HORIZONS[k].name, count: hzEventIds(k).length };
   });
 }
+/* accepted collaborations, not ones you own. The Your horizons page lists them on the helper's Collaborating tab. */
+function collaboratedHorizonItems(){
+  var me = myPid();
+  if (!me) return [];
+  return Object.keys(HORIZONS).filter(function(k){
+    var hz = HORIZONS[k];
+    return hz && (hz.collaboratorIds || []).indexOf(me) >= 0 && !hzOwnedByMe(k);
+  }).sort(function(a, b){ return HORIZONS[a].name < HORIZONS[b].name ? -1 : 1; }).map(function(k){
+    return { kind:'horizon', id:k, label:HORIZONS[k].name, count: hzEventIds(k).length };
+  });
+}
 function hzCollRow(it){
   var sel = it.kind === 'horizon' && isSel({ type:'horizon', id:it.id });
   var act = it.kind === 'list'
@@ -2851,15 +2942,19 @@ function tabbedCollection(spec){
   return { html:'<div class="tcoll" data-store="'+esc(store)+'">'+bar+body+'</div>', items:items, view:view };
 }
 function renderYourHorizons(){
-  var tab = S.folder.id === 'following' ? 'following' : 'mine';
+  var collab = collaboratedHorizonItems();
+  var tab = S.folder.id === 'following' || (S.folder.id === 'collaborating' && collab.length) ? S.folder.id : 'mine';
+  if (S.folder.id === 'collaborating' && !collab.length) S.folder.id = 'mine';
+  var tabs = [
+    { id:'mine', label:'My horizons', items:myHorizonItems },
+    { id:'following', label:'Following', items:followedHorizonItems }
+  ];
+  if (collab.length) tabs.push({ id:'collaborating', label:'Collaborating', items:collaboratedHorizonItems });
   var built = tabbedCollection({
     store:'hypernet-hz-view',
     tab:tab,
-    empty: tab === 'following' ? 'You are not following any horizons yet.' : 'Nothing here yet.',
-    tabs:[
-      { id:'mine', label:'My horizons', items:myHorizonItems },
-      { id:'following', label:'Following', items:followedHorizonItems }
-    ],
+    empty: tab === 'following' ? 'You are not following any horizons yet.' : tab === 'collaborating' ? 'You are not collaborating on any horizons yet.' : 'Nothing here yet.',
+    tabs:tabs,
     renderRow:hzCollRow,
     renderSquare:hzCollSquare
   });
@@ -3489,20 +3584,44 @@ function eventCRow(e, withVerbs){
 /* ---- Event Horizon: its events are the page's track list. No event verbs on the horizon itself;
    the events inside it carry them, per row. ---- */
 function hzTheme(hzId){ return HZTHEME[hzId] || plainTheme('◗'); }
+function hzFacesHTML(hzId){
+  var hz = HORIZONS[hzId], ids = (hz && hz.collaboratorIds) || [], pending = (hz && hz.pendingCollaboratorIds) || [], followers = (hz && hz.pendingFollowerIds) || [];
+  if (!ids.length && !pending.length && !followers.length) return '';
+  var mine = hzOwnedByMe(hzId), me = myPid(), pids = [];
+  if (hz.ownerId) pids.push(hz.ownerId);
+  ids.forEach(function(pid){ if (pids.indexOf(pid) < 0) pids.push(pid); });
+  pending.forEach(function(pid){ if (pids.indexOf(pid) < 0) pids.push(pid); });
+  followers.forEach(function(pid){ if (pids.indexOf(pid) < 0) pids.push(pid); });
+  return '<div class="hzfaces">' + pids.map(function(pid){
+    var invited = ids.indexOf(pid) < 0 && pending.indexOf(pid) >= 0;
+    var follower = ids.indexOf(pid) < 0 && followers.indexOf(pid) >= 0;
+    var show = PEOPLE[pid] ? pid : (pid === me ? 'self' : pid), name = person(show).displayName, ctrl = '';
+    if (mine && pid !== hz.ownerId) ctrl = (invited || follower)
+      ? '<button type="button" class="hzx" data-act="rmcollab" data-id="'+pid+'" data-hz="'+hzId+'" aria-label="Cancel">Cancel</button>'
+      : '<button type="button" class="hzx" data-act="rmcollab" data-id="'+pid+'" data-hz="'+hzId+'" aria-label="Remove '+esc(name)+'">Remove</button>';
+    else if (!mine && pid === me && !invited && !follower) ctrl = '<button type="button" class="hzx" data-act="leavecollab" data-id="'+hzId+'">Leave</button>';
+    var label = invited ? '<span>Invited</span>' : (follower ? '<span>Follower</span>' : '');
+    return '<span class="hzface'+((invited || follower) ? ' invited' : '')+'" title="'+esc(name)+'">'+avHTML(show, 'a32', 32)+label+ctrl+'</span>';
+  }).join('') + '</div>';
+}
 function playlistHTML(hzId, withTracks){
-  var hz = HORIZONS[hzId], mine = hzOwnedByMe(hzId), fol = S.loggedIn && HZFOLLOW[hzId];
+  var hz = HORIZONS[hzId], mine = hzOwnedByMe(hzId), edit = hzCanEdit(hzId), fol = S.loggedIn && HZFOLLOW[hzId];
   var evs = hzEventIds(hzId).map(function(id){ return EVENTS[id]; }).sort(byDate);
   var t = hzTheme(hzId), bar;
-  if (!mine) bar = toolbarHTML(vb('followhz', hzId, fol ? 'Following' : 'Follow', fol ? 'check' : 'plus', { on:fol, primary:!fol, pressed:!!fol, cls:'plmain' }),
-                               vb('share', hzId, 'Share', 'share', { attrs:' data-type="horizon"' }));
-  else {
+  if (mine){
     /* your own horizon: filling it is the job, so Add events leads; Edit holds everything else about it — its name, who
        can see it, its look — and Share is always Share (a private one says so when pressed, and offers to make it
        public). ⋯ keeps Delete. Your personal list is never public, so it has no Share */
     bar = toolbarHTML(vb('addevents', hzId, 'Add events', 'plus', { primary:true, cls:'plmain' }),
       vb('edithz', hzId, 'Edit', 'edit') + (hz.isPersonalDefault ? '' : vb('share', hzId, 'Share', 'share', { attrs:' data-type="horizon"' })) +
+      (hz.isPersonalDefault ? '' : vb('addcollab', hzId, 'Invite', 'plus')) +
+      '<span class="hzcog" data-hzcog="'+esc(hzId)+'" hidden></span>' +
       vb('hzmore', hzId, '', 'dots', { aria:'More', attrs:' data-more="delete" aria-haspopup="menu"' }));
-  }
+  } else if (edit) bar = toolbarHTML(vb('addevents', hzId, 'Add events', 'plus', { primary:true, cls:'plmain' }),
+    vb('edithz', hzId, 'Edit', 'edit') + vb('followhz', hzId, fol ? 'Following' : 'Follow', fol ? 'check' : 'plus', { on:fol, pressed:!!fol }) +
+    vb('share', hzId, 'Share', 'share', { attrs:' data-type="horizon"' }));
+  else bar = toolbarHTML(vb('followhz', hzId, fol ? 'Following' : 'Follow', fol ? 'check' : 'plus', { on:fol, primary:!fol, pressed:!!fol, cls:'plmain' }),
+                               vb('share', hzId, 'Share', 'share', { attrs:' data-type="horizon"' }));
   var owner = mine ? 'You' : hz.ownerName, ownerLink = !mine && hz.ownerId && PEOPLE[hz.ownerId] && hz.ownerId !== 'self' ? { type:'person', id:hz.ownerId } : null;
   var facts = factGrid([['By', owner, '', ownerLink], ['Events', String(evs.length)], ['Followers', String(hzFollowers(hzId))], ['When', hzRange(hzId) || '—']]);
   var body = '';
@@ -3515,16 +3634,16 @@ function playlistHTML(hzId, withTracks){
         sqPx(e.id, 48) +
         '<span class="tm"><span class="tt">'+esc(e.title)+'</span><span class="ts">'+esc([fmtShort(e.date), whereOf(e), hostLabel(e)].filter(Boolean).join(' · '))+'</span>' +
         (tag ? tag.replace('ctag', 'ctag inline') : '') + '</span>' +
-        (mine ? '<button class="ib trm" data-act="unfile" data-id="'+e.id+'" data-hz="'+hzId+'" aria-label="Remove '+esc(e.title)+' from '+esc(hz.name)+'">'+ic('close',16)+'</button>' : '') + '</li>';
+        (edit ? '<button class="ib trm" data-act="unfile" data-id="'+e.id+'" data-hz="'+hzId+'" aria-label="Remove '+esc(e.title)+' from '+esc(hz.name)+'">'+ic('close',16)+'</button>' : '') + '</li>';
     };
     var open = !!HZPAST[hzId] || !up.length;
     body = sect('Events', '<ol class="tracks">' + (evs.length ? up.map(track).join('') +
         (past.length ? (up.length ? '<li class="trpast" data-act="hzpast" data-id="'+hzId+'" role="button" aria-expanded="'+open+'">'+ic(open ? 'down' : 'back', 16).replace('class="ic"', 'class="ic"'+(open ? '' : ' style="transform:scaleX(-1)"'))+'Past · '+past.length+'</li>' : '') +
           (open ? past.map(track).join('') : '') : '')
-      : (mine ? '' : '<li class="empty">No events in this horizon yet.</li>')) + '</ol>') || sect('Events', '<ol class="tracks"></ol>');
+      : (edit ? '' : '<li class="empty">No events in this horizon yet.</li>')) + '</ol>') || sect('Events', '<ol class="tracks"></ol>');
   }
   return pageHTML({ kind:'horizon', t:t, cover:hzMosaic(hzId, 96), eyebrow:'Event Horizon' + (hz.isPublished ? '' : ' · Private'), title:hz.name,
-    sub:hz.description ? esc(hz.description) : '', note:KINDDESC.horizons, toolbar:bar, facts:facts, body:body });
+    sub:hz.description ? esc(hz.description) : '', note:KINDDESC.horizons, toolbar:bar, pre:hzFacesHTML(hzId), facts:facts, body:body });
 }
 
 function horizonHTML(hzId, withContents){
@@ -4112,7 +4231,10 @@ function renderDetail(){
   var sc = $('dscroll'), keep = key === LASTDETAIL ? sc.scrollTop : 0;
   w.hidden = !it;
   if (!it){
-    if (LASTDETAIL !== 'none'){ sc.innerHTML = ''; $('dbar').innerHTML = ''; $('evbar').innerHTML = ''; }
+    if (LASTDETAIL !== 'none'){
+      if (window.HorizonCog) HorizonCog.release();
+      sc.innerHTML = ''; $('dbar').innerHTML = ''; $('evbar').innerHTML = '';
+    }
     LASTDETAIL = 'none'; LASTHTML = ''; WIN.x = WIN.y = null; WIN.max = false;
     $('app').classList.remove('has-evbar');
     return;
@@ -4124,8 +4246,10 @@ function renderDetail(){
      back */
   var html = detailHTML(it);
   if (key !== LASTDETAIL || html !== LASTHTML){
+    if (window.HorizonCog) HorizonCog.release();
     var f = document.activeElement, was = f && f.id && sc.contains(f) && /^(TEXTAREA|INPUT)$/.test(f.tagName) ? { id:f.id, a:f.selectionStart, b:f.selectionEnd } : null;
     sc.innerHTML = html; LASTHTML = html;
+    if (window.HorizonCog && it.type === 'horizon') HorizonCog.mount(it.id);
     sc.scrollTop = keep;
     var rb = $('coreply'); if (rb){ rb.value = REPLYDRAFT[rb.getAttribute('data-id')] || ''; if (rb.value) growBox(rb); }
     var nf = was && key === LASTDETAIL && $(was.id);
@@ -4532,6 +4656,8 @@ function chatList(){
 }
 function msgPreview(m, c){
   if (!m) return 'No messages yet';
+  var phrase = ChatCards.phrase(m);
+  if (phrase != null) return phrase;
   var who = m.from === 'self' ? 'You: ' : '';
   if (m.from === 'sys') return m.text;
   return who + m.text;
@@ -4565,15 +4691,18 @@ function convHTML(cid){
     '<button type="button" class="ptitle ptbtn" data-act="chatprofile" data-id="'+pid+'">'+esc(c.name)+'<small>'+esc(sub)+'</small></button>' +
     '<button class="ib" data-act="chatprofile" data-id="'+pid+'" aria-label="Profile">'+ic('user')+'</button></div>';
   var lastDay = null;
-  h += '<div class="conv"><div class="msgs" id="msgs" data-chat="'+cid+'">' + (c.messages.length ? c.messages.map(function(m){
+  var demoInv = pid === 'p-anna' && S.acct === 'demo' && /[?&]offline=1(&|$)/.test(location.search)
+    ? '<div class="demonewrow"><button type="button" class="demonew" data-act="demonewinv">Demo: new invites</button></div>' : '';
+  h += '<div class="conv">'+demoInv+'<div class="msgs" id="msgs" data-chat="'+cid+'">' + (c.messages.length ? c.messages.map(function(m){
     var ms = msgTs(m), key = chatDayKey(ms), day = key !== lastDay ? '<div class="mday"><span>'+esc(chatDay(ms))+'</span></div>' : '';
     lastDay = key;
     if (m.from === 'sys') return day + '<div class="msg sys">'+esc(m.text)+'</div>';
     var me = m.from === 'self';
     var head = '<div class="mfrom">'+(me ? '' : '<button type="button" class="mwho" data-act="chatprofile" data-id="'+esc(m.from)+'">'+esc(person(m.from).displayName)+'</button>')+'<span class="mt">'+esc(/^\d{1,2}:\d{2}$/.test(m.t || '') ? m.t : '')+'</span></div>';
+    var body = ChatCards.body(m, me, cid);
     var card = m.eventId && EVENTS[m.eventId] ? '<a class="evcard" href="#/event/'+esc(m.eventId)+'">'+esc(EVENTS[m.eventId].title)+'</a>' : '';
     var accept = m.chronicle && !me && m.eventId ? '<span class="chclaim">' + vb('chaccept', m.eventId, 'Add to Chronicle', 'scroll') + '</span>' : '';
-    return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+esc(m.text)+card+accept+'</div></div>';
+    return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+body+card+accept+'</div></div>';
   }).join('') : '<div class="msg sys">No messages yet</div>') + '</div>';
   /* the box grows with what you write: Enter sends, Shift+Enter starts a new line */
   h += '<div class="composer"><textarea id="chatbox" rows="1" placeholder="Message '+esc(c.name.split(' ')[0])+'" autocomplete="off" aria-label="Message" aria-describedby="chathint">'+esc(CHATDRAFT[cid] || '')+'</textarea>' +
@@ -4804,7 +4933,7 @@ function actVisible(a){
   var id = a.objId, mine = actIsMe(a), hz = HORIZONS[id];
   if (!mine && !PEOPLE[a.actor]) return false;
   if (a.objType === 'event' && !canSee(id)) return false;
-  if (a.objType === 'horizon' && !(hz && (hz.isPublished || (mine && hzOwnedByMe(id))))) return false;
+  if (a.objType === 'horizon' && !(hz && (hz.isPublished || (mine && hzCanEdit(id))))) return false;
   if (a.objType === 'callout' && !calloutOpen(calloutOf(id))) return false;
   /* a reply row lasts while its author still has a reply under the call out */
   if (a.verb === 'replied_callout' && !repliesOf(id).some(function(r){ return r.author === a.actor; })) return false;
@@ -6470,6 +6599,7 @@ function captureAcct(){
            chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT, drafts:{ forms:FORMDRAFTS, chat:CHATDRAFT }, shift:SHIFT, read:READ,
            look:PTHEME['self'] || null, joinedAt:(ACCTS[S.acct] || {}).joinedAt || 0 };
 }
+function keptChatMessage(m){ return m.from === 'sys' || m.text || m.cardType === 'horizon_invite'; }
 function loadAcct(a){
   a = a || blankAcct({ displayName:'', handle:'', bio:'', skills:[], cities:[], city:'' });
   var p = PEOPLE['self'], pr = a.profile || {};
@@ -6482,8 +6612,7 @@ function loadAcct(a){
   CHATS = (a.chats && a.chats.byId) || {};
   /* group chats kept from before chat was person to person are put away */
   Object.keys(CHATS).forEach(function(k){ if (CHATS[k].kind !== 'dm') delete CHATS[k]; });
-  /* chat is words only: cards sent into chats before (a shared event, horizon or call out) are put away */
-  Object.keys(CHATS).forEach(function(k){ CHATS[k].messages = (CHATS[k].messages || []).filter(function(m){ return m.from === 'sys' || m.text; }); delete CHATS[k].pin; });
+  Object.keys(CHATS).forEach(function(k){ CHATS[k].messages = (CHATS[k].messages || []).filter(keptChatMessage); delete CHATS[k].pin; });
   CHATORDER = ((a.chats && a.chats.order) || Object.keys(CHATS)).filter(function(k){ return CHATS[k]; });
   UNREADCHAT = a.unread || {};
   FORMDRAFTS = (a.drafts && a.drafts.forms) || {}; CHATDRAFT = (a.drafts && a.drafts.chat) || {};
@@ -6507,6 +6636,7 @@ function useAcct(k){
   if (!ACCTS[k]){ ACCTS[k] = k === 'demo' ? demoAcct() : blankAcct({ displayName:'', handle:'' }); if (k !== 'demo') ACCTS[k].joinedAt = Date.now(); }
   S.acct = k;
   loadAcct(ACCTS[k]);
+  if (k === 'demo') seedDemoInvites();
   S.loggedIn = true;
   syncAcctPeople();
   if (!WELCOME) WELCOME = k === 'demo' ? 'Demo account' : 'Welcome back, ' + PEOPLE['self'].displayName.split(' ')[0];
@@ -6551,6 +6681,7 @@ function addToDialog(evId){
 }
 /* ---- new chat: a chat is with one person. Pick them and you are in the conversation. ---- */
 var NC = null;
+var CC = null;
 function newChatDialog(){
   NC = { q:'' };
   dialog('New chat', '<div class="field"><label for="nc-q">To</label><input type="search" id="nc-q" placeholder="Search people" autocomplete="off"></div>' +
@@ -6574,6 +6705,172 @@ function paintNewChat(){
       (PFOLLOW[k] ? '<span class="lstate">Following</span>' : '') + ic('chat') + '</div>';
   }).join('') || '<div class="empty">Nobody matches.</div>';
   placeDlg();
+}
+var addCollabDialog = gated(function(hzId){
+  var hz = HORIZONS[hzId];
+  if (!hz || !hzOwnedByMe(hzId) || hz.isPersonalDefault) return;
+  CC = { hzId:hzId, q:'' };
+  dialog('Invite', '<div class="field"><label for="cc-q">Person</label><input type="search" id="cc-q" placeholder="Search people" autocomplete="off"></div>' +
+    '<div class="ccrole" role="radiogroup" aria-label="Role"><label><input type="radio" name="cc-role" value="collaborator" checked> Collaborator</label><label><input type="radio" name="cc-role" value="follower"> Follower</label></div>' +
+    '<div class="picklist" id="cc-list"></div>', '<button class="btn" data-act="closedlg">Cancel</button>', 480);
+  paintCollab();
+  focusIn('cc-q');
+});
+function paintCollab(){
+  var el = $('cc-list'); if (!CC || !el) return;
+  var hz = HORIZONS[CC.hzId]; if (!hz){ el.innerHTML = ''; return; }
+  var q = String(CC.q || '').trim(), banned = (hz.collaboratorIds || []).concat(hz.pendingCollaboratorIds || [], hz.pendingFollowerIds || [], [hz.ownerId, myPid(), 'self']);
+  var ids = networkPeople().filter(function(k){
+    if (banned.indexOf(k) >= 0) return false;
+    if (!q) return true;
+    var p = person(k);
+    return matches(p.displayName, q) || matches(p.handle, q) || matches((p.skills || []).join(' '), q);
+  });
+  el.innerHTML = ids.map(function(k){
+    var p = person(k);
+    return '<div class="linkrow" data-act="ccpick" data-id="'+k+'" role="button">'+avHTML(k, 'a40') +
+      '<div class="lr">'+esc(p.displayName)+'<div class="fhelp">@'+esc(p.handle)+'</div></div></div>';
+  }).join('') || '<div class="empty">Nobody matches.</div>';
+  placeDlg();
+}
+function pickCollab(personId){
+  if (!CC) return;
+  var hzId = CC.hzId, hz = HORIZONS[hzId];
+  var picked = document.querySelector('input[name="cc-role"]:checked');
+  var role = picked && picked.value === 'follower' ? 'follower' : 'collaborator';
+  closeDialogs(); CC = null;
+  if (!hz || (hz.pendingCollaboratorIds || []).indexOf(personId) >= 0 || (hz.pendingFollowerIds || []).indexOf(personId) >= 0 || (hz.collaboratorIds || []).indexOf(personId) >= 0){ render(); return; }
+  if (role === 'follower' && HZFOLLOWBY[personId] && HZFOLLOWBY[personId][hzId]){ render(); return; }
+  var invite = role === 'follower' ? 'pending follower' : 'pending';
+  if (role === 'follower'){
+    if (!hz.pendingFollowerIds) hz.pendingFollowerIds = [];
+    hz.pendingFollowerIds.push(personId);
+  } else {
+    if (!hz.pendingCollaboratorIds) hz.pendingCollaboratorIds = [];
+    hz.pendingCollaboratorIds.push(personId);
+  }
+  var cid = openDM(personId), chat = CHATS[cid];
+  var has = (chat.messages || []).some(function(m){ return m.cardType === 'horizon_invite' && m.cardId === hzId && m.invite === invite; });
+  if (!has){
+    var st = stamp();
+    chat.messages.push({ from:'self', t:st.t, ts:st.ts, text:hz.name, cardType:'horizon_invite', cardId:hzId, cardName:hz.name, invite:invite });
+  }
+  if (ONLINE) HNAPI.addCollaborator(hzId, personId, role);
+  requestsChanged();
+  render();
+}
+function dmCid(pid){
+  return Object.keys(CHATS).filter(function(k){ return CHATS[k].memberIds && CHATS[k].memberIds[0] === pid; })[0];
+}
+/* offline only (?offline=1): a fresh pending collaborator invite and a fresh pending follower invite from Anna */
+var DEMOINV = 0;
+function demoNewInvites(){
+  if (!/[?&]offline=1(&|$)/.test(location.search) || S.acct !== 'demo') return;
+  var me = 'p-michal', chat = CHATS['c-anna'];
+  if (!chat) return;
+  if (!chat.messages) chat.messages = [];
+  var base = nowMs();
+  [
+    { id:'horizon-quiet', invite:'pending', follower:false },
+    { id:'horizon-surface', invite:'pending follower', follower:true }
+  ].forEach(function(spec, i){
+    var hz = HORIZONS[spec.id];
+    if (!hz) return;
+    hz.collaboratorIds = (hz.collaboratorIds || []).filter(function(id){ return id !== me; });
+    hz.pendingCollaboratorIds = (hz.pendingCollaboratorIds || []).filter(function(id){ return id !== me; });
+    hz.pendingFollowerIds = (hz.pendingFollowerIds || []).filter(function(id){ return id !== me; });
+    if (spec.follower){ delete HZFOLLOW[spec.id]; hz.pendingFollowerIds.push(me); }
+    else hz.pendingCollaboratorIds.push(me);
+    var ts = base + i;
+    DEMOINV += 1;
+    chat.messages.push({ id:'hzinv-' + ts + '-' + DEMOINV, from:'p-anna', t:nowClock(), ts:tsIso(ts),
+      text:hz.name, cardType:'horizon_invite', cardId:spec.id, cardName:hz.name, invite:spec.invite });
+  });
+  delete CHATSCROLL['c-anna'];
+  requestsChanged();
+  render();
+}
+function inviteWord(m){ return String((m && m.invite) || 'pending').split(' ')[0]; }
+function inviteFollower(m){ return String((m && m.invite) || '').indexOf('follower') >= 0; }
+function lastInvite(cid, hzId, words, mid){
+  var c = cid && CHATS[cid];
+  if (!c) return null;
+  var hit = null;
+  (c.messages || []).forEach(function(m){
+    if (m.cardType !== 'horizon_invite' || m.cardId !== hzId || m.from === 'self') return;
+    if (words.indexOf(inviteWord(m)) < 0) return;
+    if (mid && m.id !== mid) return;
+    hit = m;
+  });
+  return hit;
+}
+function respondHzInvite(cid, hzId, answer, mid){
+  var words = answer === 'undo' ? ['accepted', 'declined'] : ['pending'];
+  var m = lastInvite(cid, hzId, words, mid), me = myPid();
+  if (!m) return;
+  var state = inviteWord(m), follower = inviteFollower(m), next = null;
+  if (answer === 'accept' && state === 'pending') next = 'accepted';
+  else if (answer === 'decline' && state === 'pending') next = 'declined';
+  else if (answer === 'undo' && (state === 'accepted' || state === 'declined')) next = 'pending';
+  if (!next) return;
+  m.invite = follower ? next + ' follower' : next;
+  m.text = m.invite;
+  var hz = HORIZONS[hzId];
+  if (hz && me){
+    var drop = function(key){ hz[key] = (hz[key] || []).filter(function(id){ return id !== me; }); };
+    var add = function(key){ if (!hz[key]) hz[key] = []; if (hz[key].indexOf(me) < 0) hz[key].push(me); };
+    if (answer === 'accept' && follower){ drop('pendingFollowerIds'); HZFOLLOW[hzId] = true; }
+    else if (answer === 'accept'){ drop('pendingCollaboratorIds'); add('collaboratorIds'); }
+    else if (answer === 'decline' && follower) drop('pendingFollowerIds');
+    else if (answer === 'decline') drop('pendingCollaboratorIds');
+    else if (follower && state === 'accepted'){ delete HZFOLLOW[hzId]; drop('collaboratorIds'); add('pendingFollowerIds'); }
+    else if (follower) add('pendingFollowerIds');
+    else if (state === 'accepted'){ drop('collaboratorIds'); add('pendingCollaboratorIds'); }
+    else add('pendingCollaboratorIds');
+  }
+  if (ONLINE){
+    if (answer === 'accept') HNAPI.acceptInvite(hzId);
+    else if (answer === 'decline') HNAPI.declineInvite(hzId);
+    else HNAPI.undoInvite(hzId);
+  }
+  requestsChanged();
+  render();
+}
+function requestsChanged(){
+  if (window.HorizonRequests && typeof HorizonRequests.changed === 'function') HorizonRequests.changed();
+}
+function acceptHzInvite(cid, hzId){ respondHzInvite(cid, hzId, 'accept'); }
+function declineHzInvite(cid, hzId){ respondHzInvite(cid, hzId, 'decline'); }
+function stampInvite(hzId, personId, next){
+  var c = CHATS[dmCid(personId)];
+  if (!c) return;
+  (c.messages || []).forEach(function(m){
+    if (m.cardType !== 'horizon_invite' || m.cardId !== hzId) return;
+    if (m.invite !== 'pending' && m.invite !== 'pending follower') return;
+    m.invite = m.invite === 'pending follower' ? next + ' follower' : next;
+    m.text = m.invite;
+  });
+}
+function removeCollab(hzId, personId){
+  var hz = HORIZONS[hzId];
+  if (!hz || !hzOwnedByMe(hzId)) return;
+  if ((hz.pendingCollaboratorIds || []).indexOf(personId) >= 0){
+    hz.pendingCollaboratorIds = hz.pendingCollaboratorIds.filter(function(id){ return id !== personId; });
+    stampInvite(hzId, personId, 'cancelled');
+  } else if ((hz.pendingFollowerIds || []).indexOf(personId) >= 0){
+    hz.pendingFollowerIds = hz.pendingFollowerIds.filter(function(id){ return id !== personId; });
+    stampInvite(hzId, personId, 'cancelled');
+  } else hz.collaboratorIds = (hz.collaboratorIds || []).filter(function(id){ return id !== personId; });
+  if (ONLINE) HNAPI.removeCollaborator(hzId, personId);
+  requestsChanged();
+  render();
+}
+function leaveCollab(hzId){
+  var hz = HORIZONS[hzId], me = myPid();
+  if (!hz || hzOwnedByMe(hzId) || (hz.collaboratorIds || []).indexOf(me) < 0) return;
+  hz.collaboratorIds = hz.collaboratorIds.filter(function(id){ return id !== me; });
+  if (ONLINE) HNAPI.leaveCollaborator(hzId);
+  render();
 }
 /* the small create forms keep what you typed as a draft, field by field */
 var FORMFIELDS = { callout:['co-t','co-b','co-x','co-e','co-s'], horizon:['nh-n','nh-d','nh-p'] };
@@ -6726,6 +7023,7 @@ function pickerFoot(){
 }
 var addEventsDialog = gated(function(hzId){
   var hz = HORIZONS[hzId];
+  if (!hz || !hzCanEdit(hzId)) return;
   PK = { hz:hzId, q:'', f:'upcoming', sel:hz.eventIds.slice(), start:hz.eventIds.slice(), fresh:[] };
   dialog('Add events to ' + hz.name, pickerBodyHTML(), '<span id="pkfoot" style="display:contents"></span>', 520);
   pickerFoot();
@@ -8223,7 +8521,7 @@ var editEventDialog = gated(function(evId){
    profile). Your personal list of interested events is always private. */
 var editHorizonDialog = gated(function(hzId){
   var hz = HORIZONS[hzId];
-  if (!hz || !hzOwnedByMe(hzId)) return;
+  if (!hz || !hzCanEdit(hzId)) return;
   DRAFT = Object.assign({ form:'horizon', kind:'horizon', editing:hzId, name:hz.name, desc:hz.description || '', published:!!hz.isPublished, lookTouched:false },
                         lookDraft(HZTHEME[hzId] ? asLook(HZTHEME[hzId]) : plainTheme('◗')));
   dialog('Edit Event Horizon', wizBodyHTML(), wizFootHTML(), 900, 'edlg');
@@ -8233,15 +8531,16 @@ var VISOPTS = [['private', 'Private', 'Only you. It isn’t listed anywhere, and
                ['public', 'Public', 'Anyone can find it, open its link and follow it. It shows on your profile.']];
 function editHorizonBodyHTML(){
   var d = DRAFT, hz = HORIZONS[d.editing];
+  var details = edSec('Details', '<div class="field"><label for="ed-n">Name</label><input type="text" id="ed-n" data-cz="name" value="'+esc(d.name)+'" autocomplete="off" aria-required="true" aria-describedby="err-name">' +
+        '<span class="ferr" id="err-name" role="alert"'+(d.showErr && !String(d.name || '').trim() ? '' : ' hidden')+'>Add a name</span></div>' +
+      '<div class="field"><label for="ed-d">Description'+WZOPT+'</label><textarea id="ed-d" data-cz="desc" rows="3" placeholder="Every build weekend on the ridge this autumn">'+esc(d.desc)+'</textarea></div>');
+  if (!hzOwnedByMe(d.editing)) return details;
   var vis = hz.isPersonalDefault ? '<p class="fhelp edfix">Private: your own list of the events you’re interested in. It can’t be made public — make a new Event Horizon to share a list.</p>'
     : '<div class="visopts" role="radiogroup" aria-label="Who can see it">' + VISOPTS.map(function(o){
         var on = (o[0] === 'public') === !!d.published;
         return '<label class="visopt'+(on ? ' on' : '')+'"><input type="radio" name="ed-vis" value="'+o[0]+'" data-cz="vis"'+(on ? ' checked' : '')+'><span><b>'+o[1]+'</b><small>'+o[2]+'</small></span></label>';
       }).join('') + '</div>';
-  return edWrap(edSec('Details', '<div class="field"><label for="ed-n">Name</label><input type="text" id="ed-n" data-cz="name" value="'+esc(d.name)+'" autocomplete="off" aria-required="true" aria-describedby="err-name">' +
-        '<span class="ferr" id="err-name" role="alert"'+(d.showErr && !String(d.name || '').trim() ? '' : ' hidden')+'>Add a name</span></div>' +
-      '<div class="field"><label for="ed-d">Description'+WZOPT+'</label><textarea id="ed-d" data-cz="desc" rows="3" placeholder="Every build weekend on the ridge this autumn">'+esc(d.desc)+'</textarea></div>') +
-    edSec('Who can see it', vis) + edSec('Look', czControlsHTML(d)), customizePreviewHTML());
+  return edWrap(details + edSec('Who can see it', vis) + edSec('Look', czControlsHTML(d)), customizePreviewHTML());
 }
 /* a horizon goes public or private: its activity row says what is true now */
 function setHzPublished(hzId, on){
@@ -8253,16 +8552,18 @@ function saveHorizonEdit(){
   if (!hz) return;
   if (!nm){ d.showErr = true; var e0 = $('err-name'); if (e0) e0.hidden = false; var n0 = $('ed-n'); if (n0){ n0.setAttribute('aria-invalid', 'true'); n0.focus(); } return; }
   hz.name = nm; hz.description = String(d.desc || '').trim();
-  var was = !!hz.isPublished;
-  if (!hz.isPersonalDefault && !!d.published !== was) setHzPublished(id, !!d.published);
-  if (d.lookTouched){
-    var t = draftLook(d);
-    if (t) HZTHEME[id] = t; else delete HZTHEME[id];
-    if (hzOwnsSquare(id, HZTHEME[id])) HZCOVER[id] = 'own'; else if (HZCOVER[id] === 'own') delete HZCOVER[id];
+  var was = !!hz.isPublished, owner = hzOwnedByMe(id);
+  if (owner){
+    if (!hz.isPersonalDefault && !!d.published !== was) setHzPublished(id, !!d.published);
+    if (d.lookTouched){
+      var t = draftLook(d);
+      if (t) HZTHEME[id] = t; else delete HZTHEME[id];
+      if (hzOwnsSquare(id, HZTHEME[id])) HZCOVER[id] = 'own'; else if (HZCOVER[id] === 'own') delete HZCOVER[id];
+    }
   }
   if (ONLINE) HNAPI.saveHorizon(id);
   closeDialogs(); render();
-  toast(!hz.isPersonalDefault && was !== !!hz.isPublished ? (hz.isPublished ? 'Public now' : 'Private now') : 'Saved', nm);
+  toast(owner && !hz.isPersonalDefault && was !== !!hz.isPublished ? (hz.isPublished ? 'Public now' : 'Private now') : 'Saved', nm);
 }
 /* Customize is part of Edit now; the old entry points open Edit */
 var customizeDialog = function(evId){ editEventDialog(evId); };
@@ -8331,7 +8632,7 @@ function wizAct(which){
   if (t){ t.glyph = PLAINGLYPH[REC[id].kind] || '◆'; window.HYPERNET_THEMES.themes[id] = t; }
   MYEVENTS.push(id); PROMOCOUNT[id] = 0; READ[id] = true;
   if (ONLINE) HNAPI.createEvent(id);
-  var into = DRAFT.into && HORIZONS[DRAFT.into] && hzOwnedByMe(DRAFT.into) ? DRAFT.into : null;
+  var into = DRAFT.into && HORIZONS[DRAFT.into] && hzCanEdit(DRAFT.into) ? DRAFT.into : null;
   if (into){
     HORIZONS[into].eventIds.push(id);
     logAct('added_to_horizon', 'horizon', into, { eventIds:[id] });
@@ -8428,8 +8729,7 @@ function ctxItems(t, only){
   /* people, call outs and chats answer the same gesture with their own verbs */
   if (t.type === 'person' || t.type === 'callout' || t.type === 'chat') return ctxOtherItems(t, only);
   var out = [{ code:'open', label:'Open', def:true, lead: t.type === 'event' ? sqPx(id, 32) : hzIconHTML(id, 32), run:function(){ ctxOpen(t); } }, '-'];
-  /* on a track of your own horizon, taking it out is the first thing you might want */
-  if (t.type === 'event' && t.hz && hzOwnedByMe(t.hz) && HORIZONS[t.hz].eventIds.indexOf(id) >= 0)
+  if (t.type === 'event' && t.hz && hzCanEdit(t.hz) && HORIZONS[t.hz].eventIds.indexOf(id) >= 0)
     out.push({ code:'unfile', label:'Remove from ' + HORIZONS[t.hz].name, icon:'close', run:function(){ unfile(id, t.hz); } }, '-');
   if (t.type === 'event'){
     var st = S.loggedIn ? RSVP[id] : '', mine = isMine(id), past = isPast(lastDay(EVENTS[id]));
@@ -8453,11 +8753,10 @@ function ctxItems(t, only){
     if (!mine && addedByMe(id)) out.push('-', { code:'edit', label:'Edit…', icon:'edit', run:function(){ editEventDialog(id); } });
     if (mine || addedByMe(id)) out.push('-', { code:'delete', label:'Delete…', icon:'trash', run:function(){ deleteEventDialog(id); } });
   } else {
-    var hmine = hzOwnedByMe(id), fol = S.loggedIn && HZFOLLOW[id], hz = HORIZONS[id];
+    var hmine = hzOwnedByMe(id), edit = hzCanEdit(id), fol = S.loggedIn && HZFOLLOW[id], hz = HORIZONS[id];
+    if (edit) out.push({ code:'edit', label:'Edit…', icon:'edit', run:function(){ editHorizonDialog(id); } });
     if (!hmine) out.push({ code:'follow', label: fol ? 'Unfollow' : 'Follow', icon: fol ? 'close' : 'plus',
       run: ctxVerb(function(){ followHz(id); }, function(){ return !!HZFOLLOW[id]; }, 'Following', HORIZONS[id].name) });
-    /* who can see it is in Edit, not a checkbox here (2026-10-05) */
-    else out.push({ code:'edit', label:'Edit…', icon:'edit', run:function(){ editHorizonDialog(id); } });
     if (hz.isPublished || (hmine && !hz.isPersonalDefault)) out.push({ code:'share', label:'Share', icon:'share', run:function(){ shareHorizon(id); } });
     if (hmine) out.push('-', { code:'delete', label:'Delete…', icon:'trash', run:function(){ deleteHorizonDialog(id); } });
   }
@@ -8911,7 +9210,7 @@ function unfile(evId, hzId){
   });
 }
 var removeFromHorizon = gated(function(evId, hzId){
-  if (!hzOwnedByMe(hzId)) return;
+  if (!hzCanEdit(hzId)) return;
   unfile(evId, hzId);
 });
 /* ---- deleting what you own: one confirmation, then it is gone from everywhere ---- */
@@ -9244,6 +9543,22 @@ document.addEventListener('click', function(ev){
     case 'sendchat':     sendChat(); break;
     case 'newchat':      runCmd('newchat'); break;
     case 'ncdm':         closeDialogs(); NC = null; messagePerson(id); break;
+    case 'addcollab':    addCollabDialog(id); break;
+    case 'ccpick':       pickCollab(id); break;
+    case 'rmcollab':     removeCollab(n.getAttribute('data-hz'), id); break;
+    case 'demonewinv':   demoNewInvites(); break;
+    case 'hzreq':
+      if (window.HNRel && typeof window.HNRel.openRequests === 'function') window.HNRel.openRequests({ type:'horizon_invite', id:id });
+      break;
+    case 'hzaccept':
+    case 'hzdecline':
+    case 'hzundo': {
+      var card = ChatCards.get(n.getAttribute('data-card'));
+      var fn = act === 'hzaccept' ? 'accept' : act === 'hzdecline' ? 'decline' : 'undo';
+      if (card && card[fn]) card[fn](n.getAttribute('data-chat'), id, n.getAttribute('data-mid'));
+      break;
+    }
+    case 'leavecollab':  leaveCollab(id); break;
     case 'new-event':    runCmd('new-event'); break;
     case 'addpastevent': gated(addPastEventDialog)(); break;
     case 'chrolemenu':
@@ -9327,7 +9642,7 @@ document.addEventListener('click', function(ev){
       FORMDRAFTS.horizon = null;
       var withEv = id && EVENTS[id] ? id : null;
       HORIZONS[hid] = { id:hid, name:nm, description:(($('nh-d')||{}).value||'').trim(), isPersonalDefault:false,
-                        isPublished:!!($('nh-p')||{}).checked, ownerName:S.me.name, ownerId:acctPid(S.acct), ownerAcct:S.acct, eventIds: withEv ? [withEv] : [] };
+                        isPublished:!!($('nh-p')||{}).checked, ownerName:S.me.name, ownerId:acctPid(S.acct), ownerAcct:S.acct, eventIds: withEv ? [withEv] : [], collaboratorIds:[], pendingCollaboratorIds:[], pendingFollowerIds:[] };
       MYHORIZONS.push(hid); HZCOUNT[hid] = 0;
       if (HORIZONS[hid].isPublished) logAct('published_horizon', 'horizon', hid); else logAct('created_horizon', 'horizon', hid);
       if (withEv) logAct('added_to_horizon', 'horizon', hid, { eventIds:[withEv] });
@@ -9495,6 +9810,7 @@ document.addEventListener('input', function(ev){
     PFILT[n.getAttribute('data-id')] = n.value; render(); return;
   }
   if (n.id === 'nc-q' && NC){ NC.q = n.value; paintNewChat(); return; }
+  if (n.id === 'cc-q' && CC){ CC.q = n.value; paintCollab(); return; }
   if (n.id === 'iv-q' && INVITE){ INVITE.q = n.value; paintInvite(); return; }
   if (n.id === 'pf-handle' && PF) PF.handleTouched = true;
   if (n.id === 'pf-name' && PF && PF.mode === 'signup' && !PF.handleTouched){ var hi0 = $('pf-handle'); if (hi0) hi0.value = suggestHandle(n.value); }
@@ -9664,6 +9980,7 @@ document.addEventListener('keydown', function(ev){
       ev.preventDefault(); return;
     }
     if (ae.id === 'nc-q'){ var nf = document.querySelector('#nc-list [data-act="ncdm"]'); if (nf) nf.click(); ev.preventDefault(); return; }
+    if (ae.id === 'cc-q'){ var cf = document.querySelector('#cc-list [data-act="ccpick"]'); if (cf) cf.click(); ev.preventDefault(); return; }
     if (ae.id === 'nh-n'){ var go = $('nh-go'); if (go && !go.disabled) go.click(); ev.preventDefault(); return; }
     if (ae.classList.contains('pi')){ ae.click(); ev.preventDefault(); return; }
   }
@@ -9725,7 +10042,7 @@ function itemPath(it){
            callout:'callout/' + coSlug(it.id), group:'group/' + it.id, chat:'chats/' + chatSlug(it.id) }[it.type] || 'home';
 }
 function folderPath(f){
-  if (f.kind === 'yourhz') return 'yourhz/' + (f.id === 'following' ? 'following' : 'mine');
+  if (f.kind === 'yourhz') return 'yourhz/' + (f.id === 'following' || f.id === 'collaborating' ? f.id : 'mine');
   return f.kind === 'shelf' ? 'explore/' + f.id : f.kind === 'explore' ? 'explore' + (f.id ? '/' + f.id : '') : f.kind === 'horizon' ? 'horizon/' + hzSlug(f.id) : f.kind;
 }
 /* the link to one thing, as anyone can open it */
@@ -9767,7 +10084,7 @@ function folderFrom(a, b){
   if (a === 'horizons' || a === 'people') return { kind:'explore', id:a };
   if (a === 'home' && b) return isExploreKind(b) && b !== 'people' ? { kind:'explore', id:b } : SHELFIDS.test(b) ? { kind:'shelf', id:b } : b === 'people' ? { kind:'shelf', id:'followed' } : { kind:'explore', id:null };
   if (a === 'horizon'){ var hz = hzBySlug(b); return hz ? { kind:'horizon', id:hz } : null; }
-  if (a === 'yourhz') return { kind:'yourhz', id: b === 'following' ? 'following' : 'mine' };
+  if (a === 'yourhz') return { kind:'yourhz', id: b === 'following' || b === 'collaborating' ? b : 'mine' };
   return FOLDERKINDS.test(a || '') ? { kind:a, id:null } : null;
 }
 function parseHash(h){
@@ -9801,7 +10118,7 @@ function validItem(it){
   if (!it) return false;
   if (it.type === 'missing') return true;
   if (it.type === 'event') return canSee(it.id);
-  if (it.type === 'horizon') return !!HORIZONS[it.id] && (HORIZONS[it.id].isPublished || hzOwnedByMe(it.id));
+  if (it.type === 'horizon') return !!HORIZONS[it.id] && (HORIZONS[it.id].isPublished || hzCanEdit(it.id) || hzPendingInvite(it.id));
   if (it.type === 'person') return !!PEOPLE[it.id];
   if (it.type === 'callout') return !!calloutOf(it.id);
   if (it.type === 'chat') return S.loggedIn && !!CHATS[it.id];
@@ -10087,7 +10404,7 @@ function restore(){
   if (d.ui){ S.rightOpen = !!d.ui.rightOpen; S.chatOpen = d.ui.chatOpen || null; RECENTQ = d.ui.recent || []; }
   ACCTS = d.accounts || {};
   var k = d.session && d.session.acct;
-  if (k && ACCTS[k]){ S.acct = k; S.loggedIn = true; loadAcct(ACCTS[k]); }
+  if (k && ACCTS[k]){ S.acct = k; S.loggedIn = true; loadAcct(ACCTS[k]); if (k === 'demo') seedDemoInvites(); }
   syncAcctPeople();
 }
 var PERSISTT = null;

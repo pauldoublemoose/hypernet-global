@@ -188,6 +188,23 @@ export const horizonFollows = pgTable(
   (t) => [primaryKey({ columns: [t.personId, t.horizonId] })],
 );
 
+export const horizonCollaborators = pgTable(
+  "horizon_collaborators",
+  {
+    horizonId: uuid("horizon_id").notNull().references(() => horizons.id, { onDelete: "cascade" }),
+    personId: uuid("person_id").notNull().references(() => people.id, { onDelete: "cascade" }),
+    addedBy: uuid("added_by").notNull().references(() => people.id),
+    createdAt: tstz("created_at").notNull().defaultNow(),
+    acceptedAt: tstz("accepted_at"),
+    declinedAt: tstz("declined_at"),
+    role: text("role"),
+  },
+  (t) => [
+    primaryKey({ columns: [t.horizonId, t.personId] }),
+    index("horizon_collaborators_person").on(t.personId),
+  ],
+);
+
 export const callouts = pgTable("callouts", {
   id: uuid("id").primaryKey().defaultRandom(),
   authorId: uuid("author_id").notNull().references(() => people.id),

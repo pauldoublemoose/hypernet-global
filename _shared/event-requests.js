@@ -75,7 +75,7 @@
   function fixtureEvent(id, personId, eventId, past, name, title){
     return {
       id: id, eventId: eventId, personId: personId, direction: 'invite', past: !!past,
-      eventTitle: title, primary: eventLine(name, title, past), secondary: past ? title : eventSecondary(eventId) || title
+      eventTitle: title, primary: eventLine(name, title, past), secondary: eventSecondary(eventId) || title
     };
   }
   function fixtureAdmin(id, personId, eventId, name, title){

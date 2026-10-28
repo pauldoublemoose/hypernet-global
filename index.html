@@ -1730,6 +1730,11 @@ a.maplink:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
 /* INVITE ROW — one button per person. The sent state stays readable on both themes. */
 .linkrow .ivbtn{ flex:0 0 auto; }
 .linkrow .ivbtn[disabled], .linkrow .ivbtn[aria-disabled="true"]{ color:var(--ink2); text-shadow:none; }
+/* EVENT REQUESTS + CALLOUT ACTIONS */
+.pg-callout > .actbar .verbs{ flex-wrap:wrap; align-items:center; gap:4px; }
+.pg-callout > .actbar .verbs > .vb{ flex:0 0 auto; }
+.pg-callout > .actbar .verbs > .vsec{ margin-left:auto; }
+/* END */
 </style>
 </head>
 <body>
@@ -1784,6 +1789,8 @@ a.maplink:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
 <script src="_shared/hypernet-rel.js"></script>
 <script src="_shared/chat-cards.js"></script>
 <script src="_shared/horizon-requests.js"></script>
+<script src="_shared/event-requests.js"></script>
+<script src="_shared/callout-actions.js"></script>
 <script src="_shared/horizon-cog.js"></script>
 <script src="_shared/hypernet-api.js"></script>
 <script src="_shared/map-link.js"></script>
@@ -2478,6 +2485,9 @@ var EVENT_PERMS = {
 };
 var EVENT_ADMINS = {};
 var EVENT_INVITES = {};
+var COINVITES = {};
+var COBOOST = {};
+var COMARK = {};
 function adminRows(evId){ return EVENT_ADMINS[evId] || []; }
 function adminStatus(evId, pid){
   if (!pid) return '';
@@ -3517,6 +3527,32 @@ function boostLabel(evId){
   var n = promoCount(evId);
   return (on ? 'Boosted' : 'Boost') + (n ? ' ' + n : '');
 }
+function calloutEventUpcoming(id){
+  var c = calloutOf(id), evId = c && calloutEventId(c);
+  return evId && EVENTS[evId] && !isPast(lastDay(EVENTS[evId])) ? evId : '';
+}
+function calloutBoostOn(id){
+  var evId = calloutEventUpcoming(id);
+  if (evId) return !!(S.loggedIn && PROMOTED[evId]);
+  return !!(S.loggedIn && COBOOST[id]);
+}
+function calloutBoostBookmark(id){
+  var marked = !!(S.loggedIn && COMARK[id]);
+  var evId = calloutEventUpcoming(id);
+  var label = evId ? boostLabel(evId) : (calloutBoostOn(id) ? 'Boosted' : 'Boost');
+  return vb('co-boost', id, label, 'promote', { on: calloutBoostOn(id), pressed: calloutBoostOn(id) }) +
+    vb('co-bookmark', id, marked ? 'Bookmarked' : 'Bookmark', 'star', { on: marked, pressed: marked });
+}
+function syncCalloutBoost(evId){
+  var on = !!PROMOTED[evId];
+  CALLOUTS.forEach(function(c){
+    if (calloutEventId(c) !== evId) return;
+    if (on){ if (!COBOOST[c.id]) COBOOST[c.id] = Date.now(); }
+    else delete COBOOST[c.id];
+  });
+  if (window.HNCalloutStore) HNCalloutStore.save();
+  if (window.HNCalloutsPing) HNCalloutsPing();
+}
 function paneControls(evId){
   return '<span class="ev-constel" data-slot="constellation" data-id="'+evId+'"></span>';
 }
@@ -4242,9 +4278,11 @@ function calloutPostedMs(id){
 function calloutHTML(id){
   var c = calloutOf(id), mine = isOwnCallout(c), open = calloutOpen(c), n = repliesOf(id).length, evId = calloutEventId(c), sk = calloutSkill(c);
   var share = open ? vb('share', id, 'Share', 'share', { attrs:' data-type="callout"' }) : '';
-  /* yours: Edit, Close; someone else's: Answer, which puts you in the box under the thread */
-  var bar = mine ? toolbarHTML(vb('editcallout', id, 'Edit', 'edit', { primary:true }) + vb('closecallout', id, c.closed ? 'Reopen' : 'Close call out', ''), share)
-    : canReply(c) ? toolbarHTML(vb('answercallout', id, 'Answer', 'chat', { primary:true }), share) : share ? toolbarHTML('', share) : '';
+  /* yours: Edit, Close; someone else's: Answer, which puts you in the box under the thread.
+     Boost and Bookmark sit with those actions. Boost uses the event boost path when the call out has an upcoming event. */
+  var head = mine ? vb('editcallout', id, 'Edit', 'edit', { primary:true }) + vb('closecallout', id, c.closed ? 'Reopen' : 'Close call out', '')
+    : (canReply(c) ? vb('answercallout', id, 'Answer', 'chat', { primary:true }) : '');
+  var bar = toolbarHTML(head + calloutBoostBookmark(id), share);
   var who = mine ? 'self' : c.hostId && PEOPLE[c.hostId] ? c.hostId : null, posted = calloutPostedMs(id);
   var until = c.closed ? 'closed' : !open ? 'ended ' + fmtShort(c.expiresAt) : 'open until ' + fmtShort(c.expiresAt);
   var band = '<header class="banner coband"><div class="bin"><div class="btxt">' +
@@ -6759,6 +6797,7 @@ function loadAcct(a){
   if (a.read) Object.keys(a.read).forEach(function(k){ READ[k] = true; });
   if (a.look) PTHEME['self'] = a.look = asLook(a.look); else delete PTHEME['self'];
   if (window.HNRel) HNRel.ingestLists(a.lists || []);
+  if (window.HNCalloutStore) HNCalloutStore.load();
   S.me = { name:p.displayName || 'You', handle:p.handle || 'you' };
 }
 /* an account that is not logged in is, to everyone else, just a person on the network */
@@ -8636,12 +8675,25 @@ function inviteDialog(evId, kind){
   var foot = kind === 'admin'
     ? '<button class="btn" data-act="closedlg">Cancel</button>'
     : '<button class="btn" data-act="closedlg">Done</button>';
+  var roles = kind === 'admin' || !window.EventRequests ? '' : EventRequests.rolePickerHTML(canManageEvent(evId));
   dialog(kind === 'admin' ? 'Invite admin' : (pastInvite ? 'Add people' : 'Invite'),
     '<div class="field"><label for="iv-q">To</label><input type="search" id="iv-q" placeholder="Search people" autocomplete="off"></div>' +
+    roles +
     '<div class="picklist" id="iv-list"></div>',
     foot, 480);
   paintInvite();
   focusIn('iv-q');
+}
+function inviteRolePicked(){
+  var picked = document.querySelector('input[name="iv-role"]:checked');
+  if (!picked) return 'guest';
+  if ((picked.value === 'admin' || picked.value === 'cocreator') && INVITE && !canManageEvent(INVITE.evId)) return 'guest';
+  return picked.value === 'admin' || picked.value === 'cocreator' ? picked.value : 'guest';
+}
+function roleInviteSent(evId, pid, role){
+  if (role === 'admin') return (EVENT_ADMINS[evId] || []).some(function(a){ return a.userId === pid; });
+  if (role === 'cocreator') return (COINVITES[evId] || []).some(function(r){ return r.inviteeId === pid; });
+  return guestInvited(evId, pid);
 }
 function guestInvited(evId, pid){
   return (EVENT_INVITES[evId] || []).some(function(r){ return r.inviteeId === pid; });
@@ -8662,8 +8714,11 @@ function paintInvite(){
     if (INVITE.kind === 'admin'){
       return '<div class="linkrow" data-act="ivpick" data-id="'+INVITE.evId+'" data-user="'+esc(k)+'" role="button">'+avHTML(k,'a40')+who+'</div>';
     }
-    var sent = guestInvited(INVITE.evId, k);
-    var label = sent ? (past ? 'Added' : 'Invited') : (past ? 'Add' : 'Invite');
+    var role = inviteRolePicked();
+    var sent = roleInviteSent(INVITE.evId, k, role);
+    var label = role === 'guest'
+      ? (sent ? (past ? 'Added' : 'Invited') : (past ? 'Add' : 'Invite'))
+      : (sent ? 'Invited' : 'Invite');
     return '<div class="linkrow static">'+avHTML(k,'a40')+who+
       '<button type="button" class="btn ivbtn" data-act="ivsend" data-id="'+INVITE.evId+'" data-user="'+esc(k)+'"'+(sent ? ' disabled' : '')+'>'+esc(label)+'</button></div>';
   }).join('') || '<div class="empty">Nobody matches.</div>';
@@ -8692,6 +8747,38 @@ function sendEventInvite(evId, pid){
   render();
   if (INVITE && INVITE.evId === evId) paintInvite();
   toast(past ? 'Added' : 'Invited', person(pid).displayName);
+}
+function deliverEventInvite(type, evId, pid){
+  if (type === 'admin_invite'){ placeAdminInvite(evId, pid); return; }
+  if (type === 'cocreator_request'){ placeCocreatorInvite(evId, pid); return; }
+  sendEventInvite(evId, pid);
+}
+function placeAdminInvite(evId, pid){
+  if (!pid || !canManageEvent(evId)) return;
+  var e = EVENTS[evId];
+  if (e && eventHostPid(e) === pid){ toast('Already the host', person(pid).displayName); return; }
+  var rows = EVENT_ADMINS[evId] || (EVENT_ADMINS[evId] = []);
+  if (rows.some(function(a){ return a.userId === pid; })){ toast('Already invited', person(pid).displayName); return; }
+  rows.push({ userId:pid, invitedBy:myActor(), status:'pending' });
+  if (ONLINE) HNAPI.inviteAdmin(evId, pid);
+  render();
+  if (INVITE && INVITE.evId === evId) paintInvite();
+  toast('Admin invited', person(pid).displayName);
+  if (window.EventRequests) EventRequests.changed();
+}
+function placeCocreatorInvite(evId, pid){
+  if (!pid || !canManageEvent(evId) || pid === myActor()) return;
+  var rows = COINVITES[evId] || (COINVITES[evId] = []);
+  if (rows.some(function(r){ return r.inviteeId === pid; })){ if (INVITE && INVITE.evId === evId) paintInvite(); return; }
+  rows.push({ inviteeId:pid, invitedBy:myActor(), at:Date.now() });
+  var dm = openDM(pid), st = stamp(), e = EVENTS[evId], title = e ? e.title : 'an event';
+  var who = person(myActor() || 'self').displayName || 'Someone';
+  /* TODO: no POST for a co-creator invite. Guest invites use POST /api/events/:id/invites. Admin invites use POST /api/events/:id/admins. */
+  CHATS[dm].messages.push({ from:'self', t:st.t, ts:st.ts, text: who + ' invited you to co-create ' + title + '.' });
+  render();
+  if (INVITE && INVITE.evId === evId) paintInvite();
+  toast('Co-creator invited', person(pid).displayName);
+  if (window.EventRequests) EventRequests.changed();
 }
 function sendAdminInvite(evId, pid){
   if (!pid || !canManageEvent(evId)) return;
@@ -9420,14 +9507,39 @@ function toggleHelpTip(btn){
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
 var doPromote = gated(function(evId){
-  if (RESUMING && PROMOTED[evId]){ render(); toast('Boosted', EVENTS[evId].title); return; }
+  if (RESUMING && PROMOTED[evId]){ syncCalloutBoost(evId); render(); toast('Boosted', EVENTS[evId].title); return; }
   PROMOTED[evId] = !PROMOTED[evId];
   if (PROMOTED[evId]) logAct('promoted', 'event', evId);
   if (ONLINE) HNAPI.promote(evId);
+  syncCalloutBoost(evId);
   render();
   /* nothing here knows who follows you, so the toast doesn't claim an audience */
   toast(PROMOTED[evId] ? 'Boosted' : 'Not boosted', EVENTS[evId].title,
-    PROMOTED[evId] ? function(){ PROMOTED[evId] = false; if (ONLINE) HNAPI.promote(evId); render(); toast('Not boosted', EVENTS[evId].title); } : null);
+    PROMOTED[evId] ? function(){ PROMOTED[evId] = false; if (ONLINE) HNAPI.promote(evId); syncCalloutBoost(evId); render(); toast('Not boosted', EVENTS[evId].title); } : null);
+});
+var toggleCalloutBoost = gated(function(id){
+  var c = calloutOf(id); if (!c) return;
+  var evId = calloutEventUpcoming(id);
+  if (evId){ doPromote(evId); return; }
+  /* TODO: no /api/callouts/:id/promote. Event boost is doPromote, which writes /api/events/:id/promote. */
+  if (COBOOST[id]) delete COBOOST[id]; else COBOOST[id] = Date.now();
+  if (window.HNCalloutStore) HNCalloutStore.save();
+  render();
+  var on = !!COBOOST[id];
+  toast(on ? 'Boosted' : 'Not boosted', c.title,
+    on ? function(){ delete COBOOST[id]; if (window.HNCalloutStore) HNCalloutStore.save(); render(); toast('Not boosted', c.title); if (window.HNCalloutsPing) HNCalloutsPing(); } : null);
+  if (window.HNCalloutsPing) HNCalloutsPing();
+});
+var toggleCalloutBookmark = gated(function(id){
+  var c = calloutOf(id); if (!c) return;
+  /* TODO: no call-out bookmark endpoint. The toggle is kept in this browser, per account. */
+  if (COMARK[id]) delete COMARK[id]; else COMARK[id] = Date.now();
+  if (window.HNCalloutStore) HNCalloutStore.save();
+  render();
+  var on = !!COMARK[id];
+  toast(on ? 'Bookmarked' : 'Bookmark removed', c.title,
+    on ? function(){ delete COMARK[id]; if (window.HNCalloutStore) HNCalloutStore.save(); render(); toast('Bookmark removed', c.title); if (window.HNCalloutsPing) HNCalloutsPing(); } : null);
+  if (window.HNCalloutsPing) HNCalloutsPing();
 });
 var toggleInHorizon = gated(function(evId, hzId){
   var hz = HORIZONS[hzId], i = hz.eventIds.indexOf(evId);
@@ -9594,6 +9706,7 @@ var postReply = gated(function(coId){
   REPLIES.push(r); delete REPLYDRAFT[coId];
   if (ONLINE) HNAPI.postReply(r);
   logAct('replied_callout', 'callout', coId, { replyId:r.id });
+  if (window.HNCalloutsPing) HNCalloutsPing();
   /* on a phone the keyboard goes once it is posted, so you see your reply: the redraw would otherwise keep you in the box */
   if (L.phone && box && document.activeElement === box) box.blur();
   render();
@@ -9605,6 +9718,7 @@ function deleteReply(id){
   if (!r || REPLYGONE[id] || !canDeleteReply(r)) return;
   REPLYGONE[id] = true;
   if (ONLINE) HNAPI.deleteReply(id);
+  if (window.HNCalloutsPing) HNCalloutsPing();
   render();
   toast('Reply deleted', '', function(){ delete REPLYGONE[id]; if (ONLINE) HNAPI.replyBack(id); render(); });
 }
@@ -9964,7 +10078,15 @@ document.addEventListener('click', function(ev){
     case 'coleave':      leaveCocreator(id); break;
     case 'evcoreview':   reviewCocreator(id, n.getAttribute('data-user'), n.getAttribute('data-key')); break;
     case 'ivpick':       if (INVITE && INVITE.kind === 'admin') sendAdminInvite(id, n.getAttribute('data-user')); break;
-    case 'ivsend':       sendEventInvite(id, n.getAttribute('data-user')); break;
+    case 'ivsend':
+      if (window.EventRequests) EventRequests.send({ eventId:id, personId:n.getAttribute('data-user'), role:inviteRolePicked(), canManage:INVITE && canManageEvent(INVITE.evId), canInvite:INVITE && canInviteToEvent(INVITE.evId) });
+      else sendEventInvite(id, n.getAttribute('data-user'));
+      break;
+    case 'openreq':
+      if (window.HNRel && typeof HNRel.openRequests === 'function') HNRel.openRequests({ type:n.getAttribute('data-type'), id:id });
+      break;
+    case 'co-boost':     toggleCalloutBoost(id); break;
+    case 'co-bookmark':  toggleCalloutBookmark(id); break;
     case 'evadmin-accept': answerAdminInvite(id, true); break;
     case 'evadmin-decline': answerAdminInvite(id, false); break;
     case 'evadmin-remove': removeAdmin(id, n.getAttribute('data-user')); break;
@@ -10010,6 +10132,7 @@ document.addEventListener('click', function(ev){
 });
 document.addEventListener('change', function(ev){
   var n = ev.target;
+  if (n.name === 'iv-role' && INVITE){ paintInvite(); return; }
   if (n.getAttribute && n.getAttribute('data-sched')){ schedTouch(n); return; }
   if (n.getAttribute('data-czfile')){ var fl = n.files && n.files[0]; n.value = ''; if (n.getAttribute('data-czfile') === 'photo') pfTakePhoto(fl); else czTakeFile(fl); return; }
   if (n.getAttribute && n.getAttribute('data-aud') && DRAFT && window.HNAudience){

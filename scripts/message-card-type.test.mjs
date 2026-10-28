@@ -35,7 +35,12 @@ function writtenCardTypes() {
       const slice = text.slice(text.indexOf("card_type"));
       const end = slice.indexOf(");");
       const region = slice.slice(0, end === -1 ? slice.length : end);
-      for (const m of region.matchAll(/["']([a-z][a-z_]*)["']/g)) found.add(m[1]);
+      for (const m of region.matchAll(/["']([a-z][a-z_]*)["']/g)) {
+        // inviteBody("pending", …) is the message text, not card_type.
+        const before = region.slice(Math.max(0, m.index - 24), m.index);
+        if (/inviteBody\(\s*$/.test(before)) continue;
+        found.add(m[1]);
+      }
     }
   }
   return found;

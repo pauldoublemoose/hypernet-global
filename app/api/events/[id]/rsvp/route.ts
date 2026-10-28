@@ -2,9 +2,9 @@ import { requirePerson } from "@/lib/auth";
 import { pgCode, sqlx } from "@/lib/db";
 import { rsvpRoleDecision, seatOf } from "@/lib/event-access";
 import { roleGate } from "@/lib/event-gate";
-import { canSeeEvent } from "@/lib/events";
+import { canSeeEvent, EVENT_GONE, eventGone } from "@/lib/events";
 import { json, readJson, route } from "@/lib/http";
-import { forbidden, idParam, notFound, type Ctx } from "@/lib/ids";
+import { forbidden, idParam, type Ctx } from "@/lib/ids";
 import { rsvpPut } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
@@ -19,10 +19,10 @@ export const dynamic = "force-dynamic";
  * admins refuses it. Setting attendee or null clears a pending request, so the person can cancel or leave.
  */
 export const PUT = route(async (req: Request, ctx: Ctx) => {
-  const id = await idParam(ctx.params);
+  const id = await idParam(ctx.params, "id", EVENT_GONE);
   const me = await requirePerson();
   const b = rsvpPut.parse(await readJson(req));
-  if (!(await canSeeEvent(id, me.id))) throw notFound();
+  if (!(await canSeeEvent(id, me.id))) throw eventGone();
   const role = await rsvpRoleWrite(me.id, id, b.role);
   const params = [me.id, id, b.status, b.went ?? null, b.shiftIndex ?? null, b.went !== undefined, b.shiftIndex !== undefined, role.value, role.write, role.pending !== null, role.pending === true];
   let rows: { v: unknown }[];

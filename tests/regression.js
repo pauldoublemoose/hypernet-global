@@ -216,7 +216,11 @@ async function newEvent(c, o){
   await answerHost(c, 'mine', 'upcoming');
   await c.fill('#w-t', o.title); await c.fill('#w-d', o.date);
   if (o.online) await c.check('#w-on'); else await c.fill('#w-c', o.city || 'Brno');
-  if (o.privacy) await c.selectOption('#w-p', o.privacy);
+  if (o.privacy === 'only_me') await c.click('#w-p input[data-aud="include"][data-tok="everyone"]');
+  else if (o.privacy === 'friends'){
+    await c.click('#w-p input[data-aud="include"][data-tok="everyone"]');
+    await c.click('#w-p input[data-aud="include"][data-tok="friends"]');
+  }
   await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]'); await c.waitForTimeout(200);
   await c.fill('#w-desc', o.desc || 'A slow evening with friends.');
   /* 2026-10-05: Publish event is the Look step's one primary (Next, Next, Publish event) */
@@ -683,8 +687,11 @@ async function overflowEverywhere(p, label){
     await c.fill('#nh-n', 'Plain places'); await c.click('#nh-go'); await c.waitForTimeout(500);
     const ph = await ev(c, () => { const k = MYHORIZONS[MYHORIZONS.length - 1]; return { stored:!!HZTHEME[k], page:!!document.querySelector('.pg-horizon.plain') }; });
     ok(!ph.stored && ph.page, kind + ': a new horizon wears the plain default');
-    /* your profile: its colours from Edit profile on your page, kept across reload; nobody else's page offers it */
+    /* your profile: its colours from the Edit profile dialog, kept across reload; nobody else's page offers Edit */
     await c.evaluate(() => { openItem('person', 'self'); }); await c.waitForTimeout(400);
+    await c.evaluate(() => profileDialog('edit')); await c.waitForTimeout(250);
+    await c.click('.dlg [data-czact="start"][data-i="1"]'); await c.waitForTimeout(150);
+    await c.click('#pfsave'); await c.waitForTimeout(500);
     await c.click('.pg-person .actbar [data-act="editprofile"]'); await c.waitForTimeout(250);
     await c.click('#dscroll [data-czact="start"][data-i="1"]'); await c.waitForTimeout(150);
     await c.click('#dscroll [data-act="profiledone"]'); await c.waitForTimeout(500);
@@ -712,7 +719,7 @@ async function overflowEverywhere(p, label){
       return { n:its.length, sorted:ts.every((t, i) => !i || ts[i - 1] >= t), bands:[...document.querySelectorAll('#listbody > .band, #listbody > .costrip > .band')].map(b => b.firstChild.textContent.trim()),
                co:!!co, coBg:st && st.backgroundColor, coFg:st && st.color, coSize:co && parseFloat(getComputedStyle(co.querySelector('.fcoa')).fontSize),
                bodySize:parseFloat(getComputedStyle(document.querySelector('#listbody .fsent')).fontSize), listBg:lb.backgroundColor, cards,
-               strip:document.querySelectorAll('#listbody .costrip .cotile').length, fof:!!document.querySelector('#listbody .ffof .fcard.fp [data-act="followp"]'),
+               strip:document.querySelectorAll('#listbody .costrip .cotile').length, fof:!!document.querySelector('#listbody .ffof .fcard.fp [data-rel-act="rel-menu"]'),
                verbs:!!document.querySelector('#listbody .fev [data-act="v-going"]') && !!document.querySelector('#listbody .fev [data-act="v-interested"]'),
                times:[...document.querySelectorAll('#listbody .fitem .ftime')].slice(0, 6).map(t => t.textContent) };
     });
@@ -857,6 +864,7 @@ async function overflowEverywhere(p, label){
     await c.evaluate(() => { closeDialogs(); S.tab = 'home'; goFolder({ kind:'home' }); S.stack = []; doLogout(); }); await c.waitForTimeout(200);
     await c.evaluate(() => loginDialog()); await c.waitForTimeout(150);
     await c.fill('#pf-name', 'Cora Pan'); await c.fill('#pf-handle', 'cora' + kind);
+    await c.evaluate(() => { PF.skills = (PF.skills || []).concat(['CAMP OPERATIONS/KITCHEN & COOKING']); });
     /* Join's tags replaced the old skill chips. Kitchen is the same label the call out matches. */
     await c.click('.dlg [data-act="ptagopen"]'); await c.waitForTimeout(150);
     await c.click('.dlg [data-act="ptagcat"][data-id="skill"]'); await c.waitForTimeout(100);
@@ -1097,7 +1105,8 @@ async function overflowEverywhere(p, label){
     }
     /* Friends = the people the host follows */
     await c.evaluate(() => doLogout()); await c.waitForTimeout(200);
-    await c.evaluate(id => { useAcct('me'); EVENTS[id].privacy = 'friends'; followP('p-michal'); doLogout(); useAcct('demo'); }, sid); await c.waitForTimeout(300);
+    /* legacy privacy, so the follow rule still applies */
+    await c.evaluate(id => { useAcct('me'); EVENTS[id].privacy = 'friends'; delete EVENTS[id].audience; followP('p-michal'); doLogout(); useAcct('demo'); }, sid); await c.waitForTimeout(300);
     ok(await ev(c, id => canSee(id) && feedEvents().some(e => e.id === id), sid), 'trust: Friends: someone the host follows sees it');
     await c.evaluate(id => { doLogout(); }, sid); await c.waitForTimeout(200);
     ok(await ev(c, id => !canSee(id), sid), 'trust: Friends: logged out does not');
@@ -1513,7 +1522,7 @@ async function overflowEverywhere(p, label){
       const went = await ev(c, () => { const id = ADDEDBYME[ADDEDBYME.length - 1]; return { kind:EVENTS[id].kind, went:!!WENT[id], role:ROLE[id], mine:MYEVENTS.indexOf(id) >= 0 }; });
       ok(went.kind === 'link' && went.went && went.role === 'attendee' && !went.mine, 'desk: someone else and already happened is a past link you went to ' + JSON.stringify(went));
       await c.evaluate(() => { closeDialogs(); addPastEventDialog(); }); await c.waitForTimeout(200);
-      ok(await ev(c, () => !document.querySelector('[data-act="hostask"]') && !!document.querySelector('input[name="ch-role"]')),
+      ok(await ev(c, () => !document.querySelector('[data-act="hostask"]') && !!document.querySelector('.dlg .chrole') && !document.querySelector('input[name="ch-role"]')),
          'desk: Add past event skips the two questions');
       const pol = await ev(c, () => {
         closeDialogs();
@@ -1523,7 +1532,7 @@ async function overflowEverywhere(p, label){
         var sel = document.querySelector('[data-act="evpolicy"]');
         var invite = document.querySelector('[data-act="evinvitepolicy"]');
         return { value:sel && sel.value, options:sel ? [...sel.options].map(o => o.value).join(',') : '',
-          old:/Only admins can add co-creators/.test(document.body.textContent),
+          old:/Only admins can add co-creators/.test((document.querySelector('.dlg') || {}).textContent || ''),
           inviteOff:!!(invite && invite.disabled), why:!!document.querySelector('.ev-policy-why') };
       });
       ok(pol.value === 'open' && pol.options === 'open,request' && !pol.old && pol.inviteOff && pol.why, 'desk: the co-creator rule is a dropdown, and a public event disables invites ' + JSON.stringify(pol));
@@ -1587,9 +1596,20 @@ async function overflowEverywhere(p, label){
     await c.evaluate(() => { closeDialogs(); PEDIT = true; if (L.phone){ S.tab = 'you'; goFolder({ kind:'you' }); } S.stack = [{ type:'person', id:'self' }]; render(); });
     await c.waitForTimeout(300);
     await c.click('[data-act="addpastevent"]'); await c.waitForTimeout(200);
-    await c.click('.dlg input[name="ch-role"]'); await c.click('.dlg [data-act="chronicle-go"]'); await c.waitForTimeout(250);
-    const past = await asked();
-    ok(!past.q && past.wiz && !past.role, kind + ': Add past event still skips the question ' + JSON.stringify(past));
+    const past = await ev(c, () => {
+      const yes = document.querySelector('.dlg [data-act="chronicle-add"]');
+      return {
+        q:(document.querySelector('.hostask-q') || {}).textContent || '',
+        wiz:!!document.querySelector('#w-t'),
+        role:!!document.querySelector('input[name="ch-role"]'),
+        cycle:!!document.querySelector('.dlg [data-act="chrolemenu"][aria-haspopup="menu"]'),
+        search:!!document.querySelector('#ch-q'),
+        yes:yes ? yes.textContent : '',
+        off:!!(yes && yes.disabled)
+      };
+    });
+    ok(!past.q && !past.wiz && !past.role && past.cycle && past.search && past.yes === 'Add to Chronicle (0)' && past.off,
+       kind + ': Add past event searches past events and does not open the wizard ' + JSON.stringify(past));
     await c.evaluate(() => { closeDialogs(); CHRONICLE_ADD = null; });
     await c.keyboard.press('n'); await c.waitForTimeout(100);
     ok(!(await c.$('.dlg')), kind + ': no keyboard shortcut starts a new event');
@@ -1647,23 +1667,20 @@ async function overflowEverywhere(p, label){
         edit:labels.indexOf('Edit') === 0, boost:labels.some(t => /Boost/.test(t)),
         horizon:labels.some(t => /Horizon|horizon/.test(t)), themes:themes };
     });
-    ok(co.q === 0 && co.eye && co.head && co.last && co.plain && co.perm && co.edit && !co.boost && !co.horizon && co.order === 'Edit,Visibility,Permissions,New call out,Delete' && co.themes.every(t => t.ink >= 4.5),
-       kind + ': the cog is titled Admin controls, then Edit, Visibility, Permissions, New call out, and a plain Delete ' + JSON.stringify(co));
-    await c.click(kind === 'phone' ? '.ctxsheet [data-icon="key"]' : '.ctxmenu [data-icon="key"]'); await c.waitForTimeout(250);
+    ok(co.q === 0 && co.head && co.last && co.plain && co.edit && !co.boost && !co.horizon && co.order === 'Edit,Visibility and Permissions,New call out,Delete' && co.themes.every(t => t.ink >= 4.5),
+       kind + ': the cog is titled Admin controls, then Edit, Visibility and Permissions, New call out, and a plain Delete ' + JSON.stringify(co));
+    await c.click(kind === 'phone' ? '.ctxsheet [data-icon="eye"]' : '.ctxmenu [data-icon="eye"]'); await c.waitForTimeout(250);
     const perm = await ev(c, () => {
       const d = document.querySelector('.dlg.permissions');
       if (!d) return null;
-      return { title:(d.querySelector('.dtitle') || {}).textContent, done:(d.querySelector('.dfoot [data-act="closedlg"]') || {}).textContent,
+      return { title:(d.querySelector('.dtitle') || {}).textContent, save:!!d.querySelector('.dfoot [data-act="evprivacy-save"]'),
         admin:!!d.querySelector('[data-act="evadmin-invite"]'), invites:/Who can invite guests\?/.test(d.innerText),
+        see:/Who can see it/.test(d.innerText),
         rule:/Who can be listed as a co-creator\?/.test(d.innerText), edit:!!d.querySelector('[data-act="editevent"]') };
     });
-    ok(perm && perm.title === 'Permissions' && perm.done === 'Done' && perm.admin && perm.invites && perm.rule && !perm.edit,
-       kind + ': Permissions opens the admin settings, and Done closes it ' + JSON.stringify(perm));
+    ok(perm && perm.title === 'Visibility and Permissions' && perm.save && perm.admin && perm.invites && perm.see && perm.rule && !perm.edit,
+       kind + ': Visibility and Permissions opens the picker and the admin settings ' + JSON.stringify(perm));
     await c.click('.dlg.permissions [data-act="closedlg"]'); await c.waitForTimeout(150);
-    await c.click(bar + '[data-act="evcog"]'); await c.waitForTimeout(250);
-    await c.click(kind === 'phone' ? '.ctxsheet [data-icon="eye"]' : '.ctxmenu [data-icon="eye"]'); await c.waitForTimeout(250);
-    ok(await ev(c, () => (document.querySelector('.dlg .dtitle') || {}).textContent === 'Who can see it'), kind + ': Visibility opens Who can see it');
-    await c.keyboard.press('Escape'); await c.waitForTimeout(150);
     await c.click(bar + '[data-act="evcog"]'); await c.waitForTimeout(250);
     await c.click(kind === 'phone' ? '.ctxsheet [data-icon="trash"]' : '.ctxmenu [data-icon="trash"]'); await c.waitForTimeout(250);
     const doomed = await ev(c, () => S.stack[0].id);
@@ -2083,6 +2100,9 @@ async function overflowEverywhere(p, label){
     if (kind === 'phone'){ await c.tap('#tabbar [data-id="chats"]'); await c.waitForTimeout(300); await c.tap('.chrow[data-id="c-anna"]'); }
     else { if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right'); await c.waitForTimeout(200); await c.click('.chrow[data-id="c-anna"]'); }
     await c.waitForTimeout(300);
+    const inviteCards = await ev(c, () => [...document.querySelectorAll('#msgs [data-act="hzreq"]')].map(b => b.closest('.mbody').innerText.replace(/\s+/g, ' ').trim()));
+    ok(inviteCards.length === 2 && inviteCards.every(t => t === 'Anna Vale sent you a request'),
+      kind + ': a horizon invite in chat is a request link ' + JSON.stringify(inviteCards));
     await c.evaluate(() => { for (let i = 0; i < 24; i++) CHATS['c-anna'].messages.push({ from:i % 3 ? 'p-anna' : 'self', t:'09:' + String(10 + i), text:'Line ' + i + ' about the basement and the long tones' }); render(); });
     await c.waitForTimeout(200);
     await c.fill('#chatbox', 'see you there'); await c.waitForTimeout(100);
@@ -2116,9 +2136,13 @@ async function overflowEverywhere(p, label){
     }
     /* following from the window updates it in place; an event opened from it stacks in the same window, the chat stays */
     await c.click(opener[0]); await c.waitForTimeout(300);
-    await c.click('#dscroll [data-act="followp"]'); await c.waitForTimeout(250);
-    ok(await ev(c, () => !document.getElementById('win').hidden && !PFOLLOW['p-anna'] && /Follow/.test(document.querySelector('#dscroll [data-act="followp"]').textContent)), kind + ': Follow in the window works in place');
-    await c.evaluate(() => { followP('p-anna'); document.querySelector('#dscroll .crow .cm[data-type="event"]').click(); }); await c.waitForTimeout(350);
+    await c.click('#dscroll .profile-actions [data-rel-act="rel-menu"]'); await c.waitForTimeout(150);
+    const fol = await ev(c, () => { const b = document.querySelector('#dscroll .profile-actions [data-rel-act="rel-menu"]');
+      const items = [...document.querySelectorAll('.popmenu .pi')].map(x => x.textContent.replace(/\s+/g, ' ').trim());
+      return { open:!document.getElementById('win').hidden, text:b ? b.textContent.replace(/\s+/g, ' ').trim() : '', items:items }; });
+    ok(fol.open && fol.text === 'Friends' && fol.items.indexOf('Unfriend') >= 0 && fol.items.indexOf('Add to list') >= 0, kind + ': the profile relationship control is the Friends menu ' + JSON.stringify(fol));
+    await c.keyboard.press('Escape'); await c.waitForTimeout(100);
+    await c.evaluate(() => { document.querySelector('#dscroll .crow .cm[data-type="event"]').click(); }); await c.waitForTimeout(350);
     ok(await ev(c, () => S.stack.length === 2 && S.stack[1].type === 'event' && S.stack[0].type === 'person' && S.chatOpen === 'c-anna' && !!document.querySelector('#dbar [data-act="back"]')), kind + ': an event opened from the profile stacks in the window (‹ back to it); the chat stays open');
     await c.click('#dbar [data-act="closewin"]'); await c.waitForTimeout(350);
     /* go elsewhere and come back: the same conversation, draft and place */
@@ -2537,7 +2561,7 @@ async function overflowEverywhere(p, label){
       ok(mainTs.every((t, i) => !i || mainTs[i - 1] >= t) && !items.some((x, i) => i && x.verb === 'you' && items[i - 1].verb === 'you'), kind + ': the stream is newest first, your lines among everyone\'s, never two of yours in a row');
       /* people joined: one entry per band, never you, the one in your city first (with Follow), faces for the rest */
       const jn = await ev(c, () => [...document.querySelectorAll('#listbody .fitem[data-verb="joined"]')].map(x => ({ s:x.querySelector('.fsent').textContent, t:x.querySelector('.ftime').textContent,
-        cards:[...x.querySelectorAll('.fcard[data-type="person"]')].map(k => k.getAttribute('data-id')), follow:!!x.querySelector('.fcard [data-act="followp"]'),
+        cards:[...x.querySelectorAll('.fcard[data-type="person"]')].map(k => k.getAttribute('data-id')), follow:!!x.querySelector('.fcard [data-rel-act="rel-menu"]'),
         faces:x.querySelectorAll('.fface').length, more:!!x.querySelector('[data-act="explorekind"][data-id="people"]'), sq:[...x.querySelectorAll('.fface .av')].every(a => a.offsetWidth === 32) })));
       ok(jn.length === 2 && jn[0].s === 'Lena, Tom and 3 others joined Hypernet' && jn[0].t === '50m ago' && jn[0].cards[0] === U(3) && jn[0].follow && jn[0].faces === 4 && jn[0].sq && jn[0].more &&
          jn[1].s === 'Ivo and Eva joined Hypernet' && jn.every(x => !/Michal/.test(x.s)),
@@ -2762,17 +2786,27 @@ async function overflowEverywhere(p, label){
     const c = await ctx(kind);
     await open(c, '', true);
     await join(c, 'Edda Lund', 'edda' + kind);
-    /* an Event Horizon of yours: Add events, Edit, Share, ⋯ — nothing that turns into something else */
     await c.evaluate(() => runCmd('new-horizon')); await c.waitForTimeout(200);
     await c.fill('#nh-n', 'Zurich events'); await c.click('#nh-go'); await c.waitForTimeout(400);
     const hz = await ev(c, () => S.stack[0].id);
-    const bar = await ev(c, () => { const vs = [...document.querySelectorAll('#dscroll .pg-horizon .actbar .btn')];
+    const bar = await ev(c, () => { const vs = [...document.querySelectorAll('#dscroll .pg-horizon .actbar .btn')].filter(b => !b.hidden);
+      const invite = document.querySelector('#dscroll [data-act="addcollab"]');
+      const more = document.querySelector('#dscroll [data-act="hzmore"]');
       return { acts:vs.map(b => b.getAttribute('data-act')).join(), tops:new Set(vs.map(b => Math.round(b.getBoundingClientRect().top))).size,
-               fit:vs.every(b => b.scrollWidth <= b.clientWidth + 1), more:(document.querySelector('#dscroll [data-act="hzmore"]') || {}).getAttribute('data-more') }; });
-    ok(bar.acts === 'addevents,edithz,share,hzmore' && bar.tops === 1 && bar.fit && bar.more === 'delete',
-       kind + ': your horizon\'s toolbar is Add events · Edit · Share · ⋯ in one row, ⋯ holds Delete only ' + JSON.stringify(bar));
-    await c.click('#dscroll [data-act="hzmore"]'); await c.waitForTimeout(250);
-    ok(await ev(c, () => { const t = [...document.querySelectorAll('.ctxmenu .ci, .ctxsheet .sheetrow')].map(x => x.textContent.trim()); return t.length === 1 && /Delete/.test(t[0]); }), kind + ': ⋯ has no Published ✓, only Delete');
+               fit:vs.every(b => b.scrollWidth <= b.clientWidth + 1), moreHidden:!!(more && more.hidden),
+               invite: invite ? invite.textContent.trim() : '' }; });
+    ok(bar.acts === 'addevents,edithz,share,addcollab,hzcog' && bar.invite === 'Invite' && bar.fit && bar.moreHidden,
+       kind + ': your horizon\'s toolbar is Add events · Edit · Share · Invite · cog ' + JSON.stringify(bar));
+    await c.click('#dscroll [data-act="addcollab"]'); await c.waitForTimeout(250);
+    const inv = await ev(c, () => {
+      const collab = document.querySelector('input[name="cc-role"][value="collaborator"]');
+      return { title:(document.querySelector('.dlg .dtitle') || {}).textContent || '',
+        collab:!!(collab && collab.checked), follower:!!document.querySelector('input[name="cc-role"][value="follower"]') };
+    });
+    ok(inv.title === 'Invite' && inv.collab && inv.follower, kind + ': Invite opens with the title Invite, Collaborator checked, and Follower present ' + JSON.stringify(inv));
+    await c.keyboard.press('Escape'); await c.waitForTimeout(150);
+    await c.click('#dscroll [data-act="hzcog"]'); await c.waitForTimeout(250);
+    ok(await ev(c, () => { const t = [...document.querySelectorAll('.ctxmenu .ci .clab, .ctxsheet .sheetrow')].map(x => x.textContent.trim()); return t.join('|') === 'Visibility|Invite collaborators/followers|Rename|Delete'; }), kind + ': the cog is Visibility, then invite, rename, and delete');
     await c.keyboard.press('Escape'); await ev(c, () => { closeCtx(); closeDialogs(); }); await c.waitForTimeout(150);
     /* Share on a private horizon says it is private and offers to make it public, then copies the link */
     await c.evaluate(() => { window.__exec = []; Object.defineProperty(navigator, 'clipboard', { value:undefined, configurable:true }); document.execCommand = function(cmd){ window.__exec.push(cmd); return true; }; });
@@ -2821,7 +2855,7 @@ async function overflowEverywhere(p, label){
     const controls = await ev(c, () => (document.querySelector('.ctxmenu, .ctxsheet') || {}).innerText || '');
     ok(/New call out/.test(controls) && !/Boost/.test(controls) && !/Add to horizon/.test(controls) && /Admin controls/.test(controls) && /Visibility/.test(controls) && /Permissions/.test(controls) && !/Invite admin/.test(controls) && !/Guests can invite friends/.test(controls) && /Delete/.test(controls),
        kind + ': the cog holds Edit, Visibility, Permissions, New call out, and Delete ' + controls);
-    await c.click(kind === 'phone' ? '.ctxsheet [data-icon="key"]' : '.ctxmenu [data-icon="key"]'); await c.waitForTimeout(250);
+    await c.click(kind === 'phone' ? '.ctxsheet [data-icon="eye"]' : '.ctxmenu [data-icon="eye"]'); await c.waitForTimeout(250);
     const permBox = await ev(c, () => {
       const d = document.querySelector('.dlg.permissions'); if (!d) return null;
       const kids = [...d.querySelector('.ev-controls').children];
@@ -2841,30 +2875,30 @@ async function overflowEverywhere(p, label){
       document.documentElement.setAttribute('data-theme', was || 'win2k');
       const text = d.innerText;
       const ia = text.indexOf('Invite admin'), ad = text.indexOf('Admins'), co = text.indexOf('Who can be listed as a co-creator?'), iv = text.indexOf('Who can invite guests?');
-      return { title:d.querySelector('.dtitle').textContent, done:d.querySelector('.dfoot').textContent.trim(),
+      return { title:d.querySelector('.dtitle').textContent, save:!!d.querySelector('.dfoot [data-act="evprivacy-save"]'),
         first:kids[0] && kids[0].textContent.trim(), order:ia >= 0 && ia < ad && ad < co && co < iv,
         coOpts:rule ? [...rule.options].map(o => o.textContent).join('|') : '', coValue:rule && rule.value,
         opts:invite ? [...invite.options].map(o => o.textContent).join('|') : '', value:invite && invite.value,
         disabled:!!(invite && invite.disabled), why:why && why.textContent, themes:themes };
     });
-    ok(permBox && permBox.title === 'Permissions' && permBox.done === 'Done' && permBox.first === 'Invite admin' && permBox.order && permBox.coValue === 'open' && permBox.coOpts === 'Open – anyone can list themselves as a co-creator|On request – admins must approve requests' && permBox.opts === 'Admins only|Admins and co-creators|Anyone with an invite' && permBox.value === 'invited' && permBox.disabled && permBox.why === 'This event is public, so anyone can already see it.' && permBox.themes.every(t => t.dim && t.why),
-       kind + ': Permissions is Invite admin, the admin list, the co-creator dropdown, then Who can invite guests, disabled on a public event ' + JSON.stringify(permBox));
+    ok(permBox && permBox.title === 'Visibility and Permissions' && permBox.save && permBox.first === 'Invite admin' && permBox.order && permBox.coValue === 'open' && permBox.coOpts === 'Open – anyone can list themselves as a co-creator|On request – admins must approve requests' && permBox.opts === 'Admins only|Admins and co-creators|Anyone with an invite' && permBox.value === 'invited' && permBox.disabled && permBox.why === 'This event is public, so anyone can already see it.' && permBox.themes.every(t => t.dim && t.why),
+       kind + ': Visibility and Permissions is the picker, Invite admin, the admin list, the co-creator dropdown, then Who can invite guests, disabled on a public event ' + JSON.stringify(permBox));
     await c.selectOption('.dlg.permissions [data-act="evpolicy"]', 'request'); await c.waitForTimeout(250);
-    const coSaved = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evpolicy"]'); const id = sel && sel.getAttribute('data-id'); return { value:sel && sel.value, saved:id && cocreatorPolicyOf(id) }; });
-    ok(coSaved.value === 'request' && coSaved.saved === 'request', kind + ': the co-creator dropdown saves ' + JSON.stringify(coSaved));
-    await c.evaluate(() => { var sel = document.querySelector('[data-act="evinvitepolicy"]'); var id = sel.getAttribute('data-id'); EVENTS[id].privacy = 'only_me'; settleEventControl(id); });
+    const coSaved = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evpolicy"]'); return { value:sel && sel.value, draft:DRAFT && DRAFT.cocreatorPolicy }; });
+    ok(coSaved.value === 'request' && coSaved.draft === 'request', kind + ': the co-creator dropdown stays in the draft until Save ' + JSON.stringify(coSaved));
+    await c.evaluate(() => { var sel = document.querySelector('[data-act="evinvitepolicy"]'); var id = sel.getAttribute('data-id'); EVENTS[id].privacy = 'friends'; EVENTS[id].audience = { include:['friends'], exclude:[] }; settleEventControl(id); });
     await c.waitForTimeout(250);
     const opened = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { disabled:!!(sel && sel.disabled), why:!!document.querySelector('.ev-policy-why'), value:sel && sel.value }; });
     ok(opened && !opened.disabled && !opened.why && opened.value === 'invited', kind + ': a private event enables Who can invite guests ' + JSON.stringify(opened));
     await c.selectOption('.dlg.permissions [data-act="evinvitepolicy"]', 'admins'); await c.waitForTimeout(250);
-    const asAdmins = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { value:sel && sel.value, saved:invitePolicyOf(sel.getAttribute('data-id')) }; });
-    ok(asAdmins.value === 'admins' && asAdmins.saved === 'admins', kind + ': Admins only saves ' + JSON.stringify(asAdmins));
+    const asAdmins = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { value:sel && sel.value, draft:DRAFT && DRAFT.invitePolicy }; });
+    ok(asAdmins.value === 'admins' && asAdmins.draft === 'admins', kind + ': Admins only stays in the draft ' + JSON.stringify(asAdmins));
     await c.selectOption('.dlg.permissions [data-act="evinvitepolicy"]', 'cocreators'); await c.waitForTimeout(250);
-    const asCo = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { value:sel && sel.value, saved:invitePolicyOf(sel.getAttribute('data-id')) }; });
-    ok(asCo.value === 'cocreators' && asCo.saved === 'cocreators', kind + ': Admins and co-creators saves ' + JSON.stringify(asCo));
+    const asCo = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { value:sel && sel.value, draft:DRAFT && DRAFT.invitePolicy }; });
+    ok(asCo.value === 'cocreators' && asCo.draft === 'cocreators', kind + ': Admins and co-creators stays in the draft ' + JSON.stringify(asCo));
     await c.selectOption('.dlg.permissions [data-act="evinvitepolicy"]', 'invited'); await c.waitForTimeout(250);
-    const asInvited = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { value:sel && sel.value, saved:invitePolicyOf(sel.getAttribute('data-id')) }; });
-    ok(asInvited.value === 'invited' && asInvited.saved === 'invited', kind + ': Anyone with an invite saves ' + JSON.stringify(asInvited));
+    const asInvited = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { value:sel && sel.value, draft:DRAFT && DRAFT.invitePolicy }; });
+    ok(asInvited.value === 'invited' && asInvited.draft === 'invited', kind + ': Anyone with an invite stays in the draft ' + JSON.stringify(asInvited));
     await c.keyboard.press('Escape'); await c.waitForTimeout(150);
     await c.evaluate(() => { window.__copied = []; Object.defineProperty(navigator, 'clipboard', { configurable:true, value:{ writeText:t => { window.__copied.push(t); return Promise.resolve(); } } }); });
     await c.click(barSel + '[data-act="share"]'); await c.waitForTimeout(250);
@@ -2882,9 +2916,9 @@ async function overflowEverywhere(p, label){
     const hidden = await ev(c, () => {
       var e = EVENTS['evt-dj-closed'];
       EVENT_INVITES[e.id] = [{ inviteeId: myActor(), invitedBy: 'p-anna' }];
-      return e.privacy === 'only_me' && !canSeeEvent(e);
+      return e.privacy === 'only_me' && canSeeEvent(e);
     });
-    ok(hidden, kind + ': an invite does not open a private event yet in this build');
+    ok(hidden, kind + ': an invite lets the viewer see a private event ' + JSON.stringify(hidden));
     await c.evaluate(() => { EVENT_ADMINS['evt-deep-listening'] = [{ userId: myActor(), invitedBy: 'p-anna', status: 'pending' }]; render(); });
     await c.waitForTimeout(200);
     ok(await ev(c, () => !!document.querySelector('[data-act="evadmin-accept"]') && !!document.querySelector('[data-act="evadmin-decline"]')),
@@ -2892,6 +2926,23 @@ async function overflowEverywhere(p, label){
     /* your profile: one Edit profile; its look controls save with Done, and the picks survive a reload */
     await c.evaluate(() => openItem('person', 'self')); await c.waitForTimeout(350);
     ok(await ev(c, () => [...document.querySelectorAll('#dscroll .pg-person .actbar .btn')].map(b => b.getAttribute('data-act')).join() === 'editprofile'), kind + ': your page has one Edit profile');
+    await c.evaluate(() => profileDialog('edit')); await c.waitForTimeout(300);
+    await c.fill('#pf-name', 'Edda Preview'); await c.click('.dlg [data-czact="start"][data-i="5"]'); await c.waitForTimeout(250);
+    let pv;
+    if (kind === 'phone'){
+      ok(await ev(c, () => !document.querySelector('.dlg .custprev') && !!document.querySelector('.dlg .dfoot [data-act="pfpreview"]')), 'phone: Edit profile has Preview instead of a squeezed side preview');
+      await c.click('.dlg [data-act="pfpreview"]'); await c.waitForTimeout(300);
+      await shot(c, 'editlook-profile-preview-phone');
+    }
+    pv = await ev(c, () => { const pg = document.querySelector('.dlg .pvpage .pg-person'); return pg && { name:pg.querySelector('.hl').textContent, plain:pg.classList.contains('plain'),
+      bg:getComputedStyle(pg).backgroundColor, other:!!pg.querySelector('[data-act="followp"]') && !pg.querySelector('[data-act="editprofile"]'), inert:pg.closest('[inert]') !== null, saved:PEOPLE.self.displayName }; });
+    ok(pv && pv.name === 'Edda Preview' && !pv.plain && pv.bg === 'rgb(0, 0, 0)' && pv.other && pv.inert && pv.saved === 'Edda Lund',
+       kind + ': the preview is your page as others see it, with the unsaved name and colours ' + JSON.stringify(pv));
+    if (kind === 'phone'){
+      await c.click('.dlg [data-act="pfpreview"][data-id="off"]'); await c.waitForTimeout(250);
+      ok(await ev(c, () => document.getElementById('pf-name').value === 'Edda Preview' && DRAFT.c1 === '#000000'), 'phone: Back to editing keeps what you typed and picked');
+    } else await shot(c, 'editlook-edit-profile-desk');
+    await c.click('#pfsave'); await c.waitForTimeout(400);
     await c.click('#dscroll [data-act="editprofile"]'); await c.waitForTimeout(300);
     await c.fill('#pedit-name', 'Edda Preview'); await c.click('#dscroll [data-czact="start"][data-i="5"]'); await c.waitForTimeout(250);
     const editing = await ev(c, () => ({ preview:!!document.querySelector('#dscroll [data-act="pfpreview"], #dscroll .pvpage'),
@@ -3104,32 +3155,32 @@ async function overflowEverywhere(p, label){
   }
 
   /* RSVP role: Going, Interested, Went and a shift must not send role, or a stored role is cleared.
-     Add past event still sends Host, Co-creator and Attendee. The new event is yours, so the host check allows it. */
+     Add past event marks several past events from the role menu, then files them together. */
   {
     const ME = '00000000-0000-4000-8000-000000000001', EV = '00000000-0000-4000-8000-000000000101';
+    const OLD = '00000000-0000-4000-8000-000000000102', OTHER = '00000000-0000-4000-8000-000000000103';
+    const CREW = '00000000-0000-4000-8000-000000000104', LOCK = '00000000-0000-4000-8000-000000000105';
+    const QUIET = '00000000-0000-4000-8000-000000000106';
+    const HOST2 = '00000000-0000-4000-8000-000000000099';
     const person = { id:ME, handle:'hana', displayName:'Hana Cerna', bio:'', skills:[], cities:['Brno'], look:null, lastSeenAt:null, createdAt:'2026-09-01T10:00:00Z' };
+    const row = (id, title, startsOn, hostId, policy) => ({ id:id, slug:id.slice(0, 8), title:title, startsOn:startsOn, endsOn:null, startTime:null, endTime:null,
+      timezone:'Europe/Prague', hostId:hostId, hostName:hostId === ME ? 'Hana Cerna' : 'Anna Vale', description:'x', kind:'meetup', privacy:'everyone', city:'Brno', region:null, country:'CZ', venue:null, access:null,
+      whatToBring:[], details:{}, look:null, source:'user', previousEditionId:null, cocreatorPolicy:policy });
+    const upcoming = row(EV, 'Shift night', '2026-10-20', ME, 'open');
+    upcoming.details = { blocks:[{ label:'Door', date:'2026-10-20', time:'18:00' }] };
+    const old = row(OLD, 'Old host night', '2026-08-01', ME, 'open');
+    const guest = row(OTHER, 'Old guest night', '2026-07-01', HOST2, 'request');
+    const crew = row(CREW, 'Old crew night', '2026-06-01', HOST2, 'open');
+    const lock = row(LOCK, 'Old locked night', '2026-05-01', HOST2, 'admins');
+    const quiet = row(QUIET, 'Old quiet night', '2026-04-01', HOST2, 'open');
+    const pastRows = [old, guest, crew, lock, quiet];
     const boot = { hypernet:1, me:person, login:null, people:[person], follows:[], promotions:[], horizons:[], hzFollows:[], callouts:[], replies:[], activity:[], chats:[],
-      events:[{ id:EV, slug:'shift-night', title:'Shift night', startsOn:'2026-10-20', endsOn:null, startTime:null, endTime:null,
-        timezone:'Europe/Prague', hostId:ME, hostName:'Hana Cerna', description:'x', kind:'meetup', privacy:'everyone', city:'Brno', region:null, country:'CZ', venue:null, access:null,
-        whatToBring:[], details:{ blocks:[{ label:'Door', date:'2026-10-20', time:'18:00' }] }, look:null, source:'user', previousEditionId:null }],
+      events:[upcoming].concat(pastRows),
       rsvps:[{ personId:ME, eventId:EV, status:'going', went:false, shiftIndex:null, role:'host', updatedAt:'2026-09-30T10:00:00Z' }] };
-    const filePast = async (c, role, title) => {
-      await c.evaluate(() => { openItem('person', 'self'); beginProfileEdit(); });
-      await c.waitForTimeout(300);
-      await c.evaluate(() => document.querySelector('[data-act="addpastevent"]').click());
-      await c.waitForTimeout(250);
-      await c.check('.dlg input[name="ch-role"][value="' + role + '"]');
-      await c.click('.dlg [data-act="chronicle-go"]');
-      await c.waitForTimeout(300);
-      await c.fill('#w-t', title);
-      await c.fill('#w-c', 'Brno');
-      await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]');
-      await c.waitForTimeout(200);
-      await c.fill('#w-desc', 'A night that already happened.');
-      await c.click('.dlg .dfoot [data-act="wiz"][data-id="next"]');
-      await c.waitForTimeout(200);
-      await c.click('.dlg .dfoot [data-act="wiz"][data-id="finish"]');
-      await c.waitForTimeout(700);
+    const pickRole = async (c, title, label) => {
+      await c.fill('#ch-q', title);
+      await c.locator('.dlg .chhitrow').filter({ hasText: title }).locator('[data-act="chrolemenu"]').click();
+      await c.locator('.popmenu.chmenu [role="menuitem"]').filter({ hasText: label }).click();
     };
     for (const kind of ['desk', 'phone']){
       const c = await ctx(kind);
@@ -3139,9 +3190,25 @@ async function overflowEverywhere(p, label){
         const u = new (require('url').URL)(route.request().url()), req = route.request();
         const j = (code, b) => route.fulfill({ status:code, contentType:'application/json', body:JSON.stringify(b) });
         if (req.method() === 'PUT' && /\/rsvp$/.test(u.pathname)){
-          const body = req.postDataJSON(); puts.push(body);
+          const body = req.postDataJSON();
+          const eventId = u.pathname.split('/').filter(Boolean)[2];
+          puts.push(Object.assign({ eventId:eventId }, body));
+          const ev = pastRows.find(e => e.id === eventId);
+          if (body.role === 'cocreator' && ev && ev.cocreatorPolicy === 'admins'){
+            return j(200, { rsvp:{ status:body.status, went:!!body.went, shiftIndex:body.shiftIndex == null ? null : body.shiftIndex, role:'attendee', cocreatorPending:false } });
+          }
+          if (body.role === 'cocreator' && ev && ev.cocreatorPolicy === 'request'){
+            return j(200, { rsvp:{ status:body.status, went:!!body.went, shiftIndex:body.shiftIndex == null ? null : body.shiftIndex, role:'attendee', cocreatorPending:true } });
+          }
           const role = Object.prototype.hasOwnProperty.call(body, 'role') ? body.role : 'host';
           return j(200, { rsvp:{ status:body.status, went:!!body.went, shiftIndex:body.shiftIndex == null ? null : body.shiftIndex, role:role } });
+        }
+        if (req.method() === 'GET' && u.pathname === '/api/events'){
+          return j(200, { events: u.searchParams.get('past') === 'only' ? pastRows : [] });
+        }
+        if (req.method() === 'POST' && /\/chronicle$/.test(u.pathname)){
+          posts.push({ chronicle:u.pathname });
+          return j(200, { chronicle:{ went:true, role:'attendee', status:null } });
         }
         if (req.method() === 'POST' && u.pathname === '/api/events'){
           const body = req.postDataJSON(); posts.push(body);
@@ -3163,21 +3230,125 @@ async function overflowEverywhere(p, label){
       ok(before === 'host' && after.role === 'host' && toggles.length === 4 && toggles.every(b => !Object.prototype.hasOwnProperty.call(b, 'role')) &&
          after.status === 'going' && after.went && after.shift === 0,
          kind + ': Going, Interested, Went and a shift keep a stored host role and do not send role ' + JSON.stringify({ before, after, toggles }));
-      const filed = {};
-      for (const [role, title] of [['host', 'Old host night'], ['cocreator', 'Old crew night'], ['attendee', 'Old guest night']]){
-        const n = puts.length, pn = posts.length;
-        await filePast(c, role, title);
-        const got = await ev(c, title => {
-          const id = Object.keys(EVENTS).find(k => EVENTS[k] && EVENTS[k].title === title);
-          const sec = id && [...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].find(s => s.getAttribute('data-role') === ROLE[id] && s.textContent.indexOf(title) >= 0);
-          return { id:id || null, role:id ? ROLE[id] : null, went:!!(id && WENT[id]), mine:!!(id && MYEVENTS.indexOf(id) >= 0), host:!!(id && EVENTS[id].hostAcct === S.acct), shown:!!sec };
-        }, title);
-        filed[role] = { got, put:puts.slice(n), post:posts[pn] || null };
-      }
-      ok(['host', 'cocreator', 'attendee'].every(role => {
-        const f = filed[role];
-        return f.got.role === role && f.got.went && f.got.mine && f.got.host && f.got.shown && f.put.length === 1 && f.put[0].role === role && f.post && !('hostId' in f.post);
-      }), kind + ': Add past event files Host, Co-creator and Attendee on an event you host ' + JSON.stringify(filed));
+      await c.evaluate(() => { openItem('person', 'self'); beginProfileEdit(); });
+      await c.waitForTimeout(200);
+      await c.evaluate(() => document.querySelector('[data-act="addpastevent"]').click());
+      await c.waitForTimeout(500);
+      const offered = await ev(c, () => ({
+        pool:CHRONICLE_POOL || [],
+        foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).textContent || '',
+        off:!!(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).disabled,
+        shift:[...document.querySelectorAll('.dlg .chhitname')].some(b => /Shift night/.test(b.textContent))
+      }));
+      await c.fill('#ch-q', 'Shift');
+      const shift = await ev(c, () => [...document.querySelectorAll('.dlg .chhitname')].map(b => b.textContent));
+      await c.fill('#ch-q', 'Old host');
+      const hosted = await ev(c, () => {
+        const b = document.querySelector('.dlg .chrole');
+        return { label:b ? b.textContent : '', disabled:!!(b && b.disabled), act:b ? b.getAttribute('data-act') : '' };
+      });
+      ok(offered.pool.indexOf(EV) < 0 && offered.pool.indexOf(OLD) >= 0 && offered.pool.indexOf(CREW) >= 0 && !offered.shift && !shift.length &&
+         offered.foot === 'Add to Chronicle (0)' && offered.off && hosted.label === 'Hosted' && hosted.disabled && !hosted.act,
+         kind + ': Add past event search offers past events, hides an upcoming one, and shows a hosted row as Hosted ' + JSON.stringify({ offered, shift, hosted }));
+      await c.evaluate(id => { CHRONICLE_PICKS[id] = 'attendee'; paintChronicleHits(); }, EV);
+      await c.click('.dlg [data-act="chronicle-add"]');
+      await c.waitForTimeout(250);
+      const blocked = await ev(c, id => ({
+        err:(document.querySelector('#ch-err') || {}).textContent || '',
+        open:!!document.querySelector('.dlg'),
+        kept:CHRONICLE_PICKS[id] || null
+      }), EV);
+      ok(/Only a past event can be added to a chronicle/.test(blocked.err) && blocked.open && blocked.kept === 'attendee',
+         kind + ': an upcoming event shows the not-past message and stays selected ' + JSON.stringify(blocked));
+      await c.evaluate(id => { delete CHRONICLE_PICKS[id]; delete CHRONICLE_WHY[id]; paintChronicleHits(); }, EV);
+      const nPut = puts.length, nPost = posts.length;
+      await c.fill('#ch-q', 'Old quiet');
+      await c.click('.dlg [data-act="chrolemenu"]');
+      await c.keyboard.press('ArrowDown');
+      const opened = await ev(c, () => {
+        const menu = document.querySelector('.popmenu.chmenu');
+        const r = menu ? menu.getBoundingClientRect() : null;
+        const btn = document.querySelector('.dlg [data-act="chrolemenu"]');
+        return {
+          items: menu ? [...menu.querySelectorAll('[role="menuitem"]')].map(el => el.textContent.trim()) : [],
+          body: !!(menu && menu.parentElement === document.body),
+          inView: !!(r && r.top >= -1 && r.left >= -1 && r.bottom <= window.innerHeight + 1 && r.right <= window.innerWidth + 1),
+          expanded: btn ? btn.getAttribute('aria-expanded') : '',
+          label: btn ? btn.textContent : '',
+          focus: (document.activeElement && document.activeElement.textContent || '').trim(),
+          dlg: !!document.querySelector('.dlg')
+        };
+      });
+      await c.keyboard.press('Escape');
+      const escaped = await ev(c, () => ({ menu:!!document.querySelector('.popmenu'), dlg:!!document.querySelector('.dlg') }));
+      await c.click('.dlg [data-act="chrolemenu"]');
+      await c.click('.dlg .dtitle');
+      const outside = await ev(c, () => ({
+        menu:!!document.querySelector('.popmenu'),
+        label:(document.querySelector('.dlg [data-act="chrolemenu"]') || {}).textContent || '',
+        dlg:!!document.querySelector('.dlg')
+      }));
+      await pickRole(c, 'Old quiet', 'Attended');
+      const once = await ev(c, () => ({
+        label:(document.querySelector('.dlg .chrole') || {}).textContent || '',
+        n:chronicleSelection().length,
+        foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).textContent || '',
+        menu:!!document.querySelector('.popmenu')
+      }));
+      await c.fill('#ch-q', 'Old quiet');
+      await c.click('.dlg [data-act="chrolemenu"]');
+      const marked = await ev(c, () => [...document.querySelectorAll('.popmenu.chmenu [role="menuitem"]')].map(el => el.textContent.trim()));
+      await c.locator('.popmenu.chmenu [role="menuitem"]').filter({ hasText: 'Co-created' }).click();
+      const cocreated = await ev(c, () => ({ label:(document.querySelector('.dlg .chrole') || {}).textContent || '', menu:!!document.querySelector('.popmenu') }));
+      await pickRole(c, 'Old quiet', 'Remove');
+      const spun = await ev(c, () => ({
+        label:(document.querySelector('.dlg .chrole') || {}).textContent || '',
+        n:chronicleSelection().length,
+        foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).disabled,
+        menu:!!document.querySelector('.popmenu')
+      }));
+      await pickRole(c, 'Old quiet', 'Attended');
+      await pickRole(c, 'Old crew', 'Co-created');
+      const kept = await ev(c, id => ({ n:chronicleSelection().length, quiet:CHRONICLE_PICKS[id] || null }), QUIET);
+      await pickRole(c, 'Old guest', 'Co-created');
+      await pickRole(c, 'Old locked', 'Co-created');
+      const ready = await ev(c, () => ({
+        n:chronicleSelection().length,
+        foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).textContent || '',
+        count:(document.querySelector('#ch-count') || {}).textContent || ''
+      }));
+      ok(opened.items.join(',') === 'Attended,Co-created' && opened.body && opened.inView && opened.expanded === 'true' && opened.label === 'Add' && opened.focus === 'Co-created' && opened.dlg &&
+         !escaped.menu && escaped.dlg && !outside.menu && outside.label === 'Add' && outside.dlg &&
+         once.label === 'Attended' && once.n === 1 && once.foot === 'Add to Chronicle (1)' && !once.menu &&
+         marked.join(',') === 'Attended,Co-created,Remove' && cocreated.label === 'Co-created' && !cocreated.menu &&
+         spun.label === 'Add' && spun.n === 0 && spun.foot && !spun.menu && kept.n === 2 && kept.quiet === 'attendee' &&
+         ready.n === 4 && ready.foot === 'Add to Chronicle (4)' && ready.count === '4 selected',
+         kind + ': the role menu opens, picks Attended and Co-created, removes, and closes on Escape or an outside click ' + JSON.stringify({ opened, escaped, outside, once, marked, cocreated, spun, kept, ready }));
+      await c.click('.dlg [data-act="chronicle-add"]');
+      await c.waitForTimeout(500);
+      const mixed = await ev(c, spec => {
+        const cat = role => [...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role="' + role + '"]')];
+        return {
+          open:!!document.querySelector('.dlg'),
+          foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).textContent || '',
+          err:(document.querySelector('#ch-err') || {}).textContent || '',
+          quiet:{ role:ROLE[spec.quiet] || null, went:!!WENT[spec.quiet], shown:cat('attendee').some(s => s.textContent.indexOf('Old quiet night') >= 0), pick:CHRONICLE_PICKS[spec.quiet] || null },
+          crew:{ role:ROLE[spec.crew] || null, went:!!WENT[spec.crew], shown:cat('cocreator').some(s => s.textContent.indexOf('Old crew night') >= 0), pick:CHRONICLE_PICKS[spec.crew] || null },
+          guest:{ role:ROLE[spec.guest] || null, pending:!!(COREQUESTS[spec.guest] && COREQUESTS[spec.guest][meKey()]), shown:cat('cocreator').some(s => s.textContent.indexOf('Old guest night') >= 0), pick:CHRONICLE_PICKS[spec.guest] || null },
+          lock:{ role:ROLE[spec.lock] || null, pending:!!(COREQUESTS[spec.lock] && COREQUESTS[spec.lock][meKey()]), shown:cat('cocreator').some(s => s.textContent.indexOf('Old locked night') >= 0), pick:CHRONICLE_PICKS[spec.lock] || null }
+        };
+      }, { quiet:QUIET, crew:CREW, guest:OTHER, lock:LOCK });
+      const sentPut = puts.slice(nPut), sentPost = posts.slice(nPost);
+      ok(mixed.quiet.role === 'attendee' && mixed.quiet.went && mixed.quiet.shown && !mixed.quiet.pick &&
+         mixed.crew.role === 'cocreator' && mixed.crew.went && mixed.crew.shown && !mixed.crew.pick &&
+         mixed.guest.pick === 'cocreator' && mixed.guest.pending && mixed.guest.role !== 'cocreator' && !mixed.guest.shown &&
+         mixed.lock.pick === 'cocreator' && !mixed.lock.pending && !mixed.lock.role && !mixed.lock.shown &&
+         mixed.open && mixed.foot === 'Add to Chronicle (2)' &&
+         /Old guest night: Co-creator requested/.test(mixed.err) && /Old locked night: Only admins can add co-creators/.test(mixed.err) &&
+         sentPost.length === 1 && /\/chronicle$/.test(sentPost[0].chronicle) &&
+         sentPut.length === 3 && sentPut.some(b => b.eventId === CREW && b.role === 'cocreator') && sentPut.some(b => b.eventId === OTHER && b.role === 'cocreator') &&
+         sentPut.some(b => b.eventId === LOCK && b.role === 'cocreator'),
+         kind + ': mixed filing lands in the right categories and keeps a pending or refused row selected ' + JSON.stringify({ mixed, sentPut, sentPost }));
       ok(!c.errors.length, kind + ': no console errors (rsvp role) ' + c.errors.join(' '));
       await c.context().close();
     }
@@ -3234,6 +3405,29 @@ async function overflowEverywhere(p, label){
     const idle = await ev(c, () => ({ hash:location.hash, empty:(document.querySelector('#listbody .empty') || {}).textContent || '', rows:document.querySelectorAll('#listbody .row').length }));
     ok(idle.hash === '#/owncallouts/interacted' && /not interacted/.test(idle.empty) && idle.rows === 0,
        'call outs: Interacted is empty without the API, not built from replies ' + JSON.stringify(idle));
+    const apiHtml = await ev(c, () => {
+      window.HNCallouts = { mine:'nope' };
+      goFolder({ kind:'owncallouts' });
+      render();
+      var html = window.HNNav.collectionPage({
+        kind:'contacts', title:'Contacts', tab:'lists', store:'hypernet-ct-view',
+        tabs:[
+          { id:'lists', label:'Lists', items:[{ title:'Crew' }] },
+          { id:'friends', label:'Friends', getItems:function(){ return []; } }
+        ],
+        renderRow:function(it){ return '<div class="row"><div class="r-title">'+it.title+'</div></div>'; },
+        renderSquare:function(it){ return '<div class="card2"><div class="ct2">'+it.title+'</div></div>'; },
+        empty:'Nobody yet.'
+      });
+      return {
+        titles:[...document.querySelectorAll('#listbody .r-title')].map(t => t.textContent),
+        empty:(document.querySelector('#listbody .empty') || {}).textContent || '',
+        html:html
+      };
+    });
+    ok(apiHtml.titles.indexOf('Ridge hands') >= 0 && apiHtml.empty === '' && apiHtml.html.indexOf('Contacts') >= 0 && apiHtml.html.indexOf('Lists') >= 0 && apiHtml.html.indexOf('Rows') >= 0 && apiHtml.html.indexOf('Squares') >= 0 && apiHtml.html.indexOf('Crew') >= 0,
+       'call outs: mine must be a function, and collectionPage returns the title, tabs, and both views ' + JSON.stringify({ titles:apiHtml.titles, empty:apiHtml.empty, has:apiHtml.html.indexOf('Crew') }));
+    await c.evaluate(() => { delete window.HNCallouts; goFolder({ kind:'owncallouts', id:'interacted' }); render(); });
     await c.evaluate(() => {
       var mine = [{ id:'co-remote', title:'Need a rigger', author:'You', created_at:'2026-10-20T12:00:00Z' }];
       var inter = [{ callout:{ id:'co-other', text:'Lights for the quay', author:{ displayName:'Anna Vale' }, created_at:'2026-10-01T00:00:00Z' }, kinds:['boost','bookmark','reply','nope'], at:'2026-10-21T00:00:00Z' }];
@@ -3264,6 +3458,460 @@ async function overflowEverywhere(p, label){
     ok(await ev(c, () => window.__co.n === 0 && !window.__co.fn), 'call outs: leaving the page unsubscribes');
     ok(!c.errors.length, 'call outs: no console errors ' + c.errors.join(' '));
     await c.context().close();
+  }
+
+  /* a demo chat saved before the invite fixtures (then a message sent in it) reloads without those cards */
+  {
+    const c = await ctx('desk');
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right');
+    await c.click('.chrow[data-id="c-anna"]'); await c.waitForTimeout(250);
+    const lines = () => ev(c, () => [...document.querySelectorAll('#msgs .mbody')].map(b => b.innerText.replace(/\s+/g, ' ').trim()));
+    const fresh = await lines();
+    await c.fill('#chatbox', 'hi'); await c.click('[data-act="sendchat"]'); await c.waitForTimeout(300);
+    const sent = await lines();
+    await c.evaluate(() => { CHATS['c-anna'].messages = CHATS['c-anna'].messages.filter(m => m.cardType !== 'horizon_invite'); persist(); });
+    await c.reload(); await c.waitForTimeout(600);
+    if (!(await ev(c, () => document.querySelector('#msgs')))){
+      if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right');
+      await c.click('.chrow[data-id="c-anna"]'); await c.waitForTimeout(250);
+    }
+    const back = await lines();
+    await c.evaluate(() => { acceptHzInvite('c-anna', 'horizon-quiet'); declineHzInvite('c-anna', 'horizon-surface'); });
+    await c.waitForTimeout(250);
+    await c.reload(); await c.waitForTimeout(600);
+    if (!(await ev(c, () => document.querySelector('#msgs')))){
+      if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right');
+      await c.click('.chrow[data-id="c-anna"]'); await c.waitForTimeout(250);
+    }
+    const decided = await lines();
+    const has = (list, s) => list.some(t => t.indexOf(s) >= 0);
+    const pending = list => list.filter(t => t.indexOf('sent you a request') >= 0).length >= 2;
+    const stored = await ev(c, () => CHATS['c-anna'].messages.filter(m => m.cardType === 'horizon_invite').map(m => m.cardId + ':' + m.invite));
+    ok(pending(fresh) && pending(sent) && has(sent, 'hi') && pending(back) && has(back, 'hi')
+      && stored.indexOf('horizon-quiet:accepted') >= 0 && stored.indexOf('horizon-surface:declined follower') >= 0 && has(decided, 'hi'),
+      'desk: a saved demo chat that predates the invites shows both request links again, and an answer sticks ' + JSON.stringify({ fresh, sent, back, decided, stored }));
+    await c.context().close();
+  }
+
+  /* the horizon's name on a pending invite opens that horizon, and a private one stays readable */
+  {
+    const c = await ctx('desk');
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right');
+    await c.click('.chrow[data-id="c-anna"]'); await c.waitForTimeout(250);
+    await c.evaluate(() => HNRel.openRequests()); await c.waitForTimeout(300);
+    const links = await ev(c, () => [...document.querySelectorAll('#listbody .hzname')].map(b => ({ name:b.textContent, act:b.getAttribute('data-act'), type:b.getAttribute('data-type'), id:b.getAttribute('data-id') })));
+    const named = links.filter(l => l.id === 'horizon-quiet' || l.id === 'horizon-surface');
+    ok(named.some(l => l.id === 'horizon-quiet' && l.name === 'Quiet Rooms' && l.act === 'open' && l.type === 'horizon')
+      && named.some(l => l.id === 'horizon-surface' && l.name === 'Surfaces & Projections'),
+      'desk: the requests page names each horizon invite ' + JSON.stringify(links));
+    const tone = theme => ev(c, theme => {
+      document.documentElement.setAttribute('data-theme', theme);
+      const b = document.querySelector('#listbody .hzname');
+      if (!b) return { missing:true };
+      const s = getComputedStyle(b), bubble = getComputedStyle(b.closest('.row') || b.parentElement);
+      const sum = rgb => (rgb.match(/\d+/g) || []).slice(0, 3).map(Number).reduce((a, n) => a + n, 0);
+      const parts = (bubble.backgroundColor.match(/\d+/g) || []).map(Number);
+      const clear = parts.length >= 4 && parts[3] === 0;
+      return { color:s.color, bg:bubble.backgroundColor, deco:s.textDecorationLine, dark:sum(s.color) < 180, light:clear || sum(bubble.backgroundColor) > 500 };
+    }, theme);
+    const win = await tone('win2k'), fresh = await tone('y2fresh');
+    ok(win.dark && win.light && win.deco === 'underline' && fresh.dark && fresh.light && fresh.deco === 'underline',
+      'desk: the horizon name stays an underlined link in win2k and y2fresh ' + JSON.stringify({ win, fresh }));
+    await c.evaluate(() => document.documentElement.setAttribute('data-theme', 'win2k'));
+    const gate = await ev(c, () => {
+      HORIZONS['horizon-quiet'].isPublished = false;
+      HORIZONS['horizon-surface'].isPublished = false;
+      HORIZONS['horizon-quiet'].pendingCollaboratorIds = [];
+      HORIZONS['horizon-quiet'].pendingFollowerIds = [];
+      return { quiet:validItem({ type:'horizon', id:'horizon-quiet' }), surface:validItem({ type:'horizon', id:'horizon-surface' }), editQuiet:hzCanEdit('horizon-quiet'), editSurface:hzCanEdit('horizon-surface') };
+    });
+    ok(gate.quiet && gate.surface && !gate.editQuiet && !gate.editSurface,
+      'desk: a pending invitee can open a private horizon and still cannot edit it ' + JSON.stringify(gate));
+    if (named.length >= 2){
+      await c.click('#listbody .hzname[data-id="horizon-quiet"]'); await c.waitForTimeout(350);
+      const opened = await winState(c);
+      const page = await ev(c, () => ({ h1:(document.querySelector('#dscroll h1') || {}).textContent, missing:!!document.querySelector('#dscroll .missing'), edit:!!document.querySelector('#dscroll [data-act="edithz"], #dscroll [data-act="addevents"]'), invite:(CHATS['c-anna'].messages.find(m => m.cardId === 'horizon-quiet') || {}).invite }));
+      ok(opened.open && opened.top === 'horizon:horizon-quiet' && opened.title.indexOf('Quiet Rooms') === 0 && page.h1 === 'Quiet Rooms' && !page.missing && !page.edit && page.invite === 'pending',
+        'desk: Quiet Rooms on the invite opens that horizon read-only ' + JSON.stringify({ opened, page }));
+      await c.evaluate(() => { applySnap(history.state); render(); }); await c.waitForTimeout(200);
+      const kept = await ev(c, () => { const it = S.stack[S.stack.length - 1]; return { type:it && it.type, id:it && it.id, missing:!!document.querySelector('#dscroll .missing') }; });
+      ok(kept.type === 'horizon' && kept.id === 'horizon-quiet' && !kept.missing, 'desk: reopening the private horizon from the address keeps it ' + JSON.stringify(kept));
+      await c.click('#dbar [data-act="closewin"]'); await c.waitForTimeout(200);
+      await c.click('#listbody .hzname[data-id="horizon-surface"]'); await c.waitForTimeout(350);
+      const surface = await ev(c, () => ({ top:S.stack.map(t => t.type + ':' + t.id).join('>'), h1:(document.querySelector('#dscroll h1') || {}).textContent, edit:hzCanEdit('horizon-surface'), editBtn:!!document.querySelector('#dscroll [data-act="edithz"]'), invite:(CHATS['c-anna'].messages.find(m => m.cardId === 'horizon-surface') || {}).invite }));
+      ok(surface.top === 'horizon:horizon-surface' && surface.h1 === 'Surfaces & Projections' && !surface.edit && !surface.editBtn && surface.invite === 'pending follower',
+        'desk: Surfaces & Projections on the invite opens that horizon read-only ' + JSON.stringify(surface));
+    } else {
+      ok(false, 'desk: Quiet Rooms on the invite opens that horizon read-only');
+      ok(false, 'desk: reopening the private horizon from the address keeps it');
+      ok(false, 'desk: Surfaces & Projections on the invite opens that horizon read-only');
+    }
+    ok(!c.errors.length, 'desk: no console errors (invite horizon link) ' + c.errors.join(' '));
+    await c.context().close();
+  }
+
+  /* Your horizons: a horizon you collaborate on is a tab of the same collection, and it opens with edit controls */
+  {
+    const c = await ctx('desk');
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    const plugs = await ev(c, () => ['home','explore','manage','special'].reduce((acc, s) => acc.concat(HNNav.rows(s).map(it => s + '/' + it.id)), []));
+    ok(plugs.join() === 'manage/groups,special/inferno,special/moonwalk', 'desk: collaborator work adds no sidebar entry ' + plugs.join());
+    await c.click('#navbody .nrow[data-kind="yourhz"]'); await c.waitForTimeout(300);
+    ok(await ev(c, () => [...document.querySelectorAll('#listbody .tc-tab')].map(b => b.textContent).join('|') === 'My horizons|Following|Collaborating'),
+      'desk: Your horizons adds Collaborating beside My horizons and Following');
+    await c.click('#listbody [data-act="tctab"][data-id="collaborating"]'); await c.waitForTimeout(250);
+    const listed = await ev(c, () => [...document.querySelectorAll('#listbody .row[data-type="horizon"]')].map(r => r.getAttribute('data-id')));
+    ok(listed.indexOf('horizon-dust') >= 0 && listed.indexOf('horizon-ridge') < 0, 'desk: Collaborating lists Dust & Neon and not a horizon you own ' + listed.join());
+    await c.click('#listbody .row[data-id="horizon-dust"]'); await c.waitForTimeout(350);
+    const dust = await ev(c, () => ({
+      title:(document.querySelector('#dscroll h1') || {}).textContent,
+      acts:[...document.querySelectorAll('#dscroll .pg-horizon .actbar [data-act]')].map(b => b.getAttribute('data-act')).join(),
+      faces:!!document.querySelector('#dscroll .hzfaces'),
+      invite:!!document.querySelector('#dscroll [data-act="addcollab"]')
+    }));
+    ok(dust.title === 'Dust & Neon' && dust.acts === 'addevents,edithz,followhz,share' && dust.faces && !dust.invite,
+      'desk: a horizon you collaborate on opens with edit controls ' + JSON.stringify(dust));
+    await c.click('#dbar [data-act="closewin"]'); await c.waitForTimeout(200);
+    await c.click('#listbody [data-act="tctab"][data-id="mine"]'); await c.waitForTimeout(250);
+    await c.click('#listbody .row[data-id="horizon-ridge"]'); await c.waitForTimeout(350);
+    const ridge = await ev(c, () => ({
+      title:(document.querySelector('#dscroll h1') || {}).textContent,
+      faces:!!document.querySelector('#dscroll .hzfaces'),
+      invite:(document.querySelector('#dscroll [data-act="addcollab"]') || {}).textContent || ''
+    }));
+    ok(ridge.title === 'Ridge week' && ridge.faces && ridge.invite.trim() === 'Invite',
+      'desk: a horizon you own still shows the collaborators row and Invite ' + JSON.stringify(ridge));
+    ok(!c.errors.length, 'desk: no console errors (collaborating tab) ' + c.errors.join(' '));
+    await c.context().close();
+  }
+
+  /* ?offline=1 only: Demo: new invites makes two fresh pending cards after both were accepted */
+  {
+    const c = await ctx('desk');
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right');
+    await c.click('.chrow[data-id="c-anna"]'); await c.waitForTimeout(250);
+    ok(!(await ev(c, () => !!document.querySelector('[data-act="demonewinv"]'))), 'desk: the demo invite button is absent without ?offline=1');
+    await c.goto(URL + '?offline=1'); await c.waitForTimeout(500);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(300);
+    if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right');
+    if (!(await ev(c, () => document.querySelector('#msgs')))) await c.click('.chrow[data-id="c-anna"]');
+    await c.waitForTimeout(250);
+    ok(await ev(c, () => !!document.querySelector('#chats [data-act="demonewinv"]')), 'desk: ?offline=1 shows Demo: new invites in Anna’s chat');
+    await c.evaluate(() => { acceptHzInvite('c-anna', 'horizon-quiet'); acceptHzInvite('c-anna', 'horizon-surface'); }); await c.waitForTimeout(200);
+    const spent = await ev(c, () => ({
+      accept: document.querySelectorAll('#msgs [data-act="hzaccept"]').length,
+      collab: (HORIZONS['horizon-quiet'].collaboratorIds || []).indexOf('p-michal') >= 0,
+      follow: !!HZFOLLOW['horizon-surface']
+    }));
+    ok(spent.accept === 0 && spent.collab && spent.follow, 'desk: accepting both fixture invites spends them ' + JSON.stringify(spent));
+    const before = await ev(c, () => CHATS['c-anna'].messages.map(m => m.id || ''));
+    await c.click('[data-act="demonewinv"]'); await c.waitForTimeout(300);
+    const made = await ev(c, () => {
+      const msgs = CHATS['c-anna'].messages, last = msgs.slice(-2);
+      const bodies = [...document.querySelectorAll('#msgs .mbody')].map(b => b.innerText.replace(/\s+/g, ' ').trim());
+      return {
+        last: last.map(m => ({ id:m.id, from:m.from, card:m.cardId, invite:m.invite, ts:m.ts })),
+        bodies: bodies.slice(-2),
+        accept: [...document.querySelectorAll('#msgs [data-act="hzaccept"]')].map(b => b.getAttribute('data-id')),
+        collab: (HORIZONS['horizon-quiet'].collaboratorIds || []).indexOf('p-michal') >= 0,
+        follow: !!HZFOLLOW['horizon-surface'],
+        pendC: (HORIZONS['horizon-quiet'].pendingCollaboratorIds || []).indexOf('p-michal') >= 0,
+        pendF: (HORIZONS['horizon-surface'].pendingFollowerIds || []).indexOf('p-michal') >= 0
+      };
+    });
+    const ids = made.last.map(m => m.id);
+    const newest = made.last.length === 2 && made.last[0].card === 'horizon-quiet' && made.last[0].invite === 'pending' && made.last[1].card === 'horizon-surface' && made.last[1].invite === 'pending follower'
+      && made.last.every(m => m.from === 'p-anna' && ids.indexOf(m.id) === ids.lastIndexOf(m.id) && before.indexOf(m.id) < 0 && /^hzinv-/.test(m.id) && m.ts)
+      && made.last[0].ts < made.last[1].ts;
+    ok(newest && made.accept.length === 0 && !made.collab && !made.follow && made.pendC && made.pendF
+      && made.bodies.filter(t => /sent you a request/.test(t)).length >= 2,
+      'desk: Demo: new invites adds two pending cards and clears the old membership ' + JSON.stringify(made));
+    await c.evaluate(() => { acceptHzInvite('c-anna', 'horizon-quiet'); acceptHzInvite('c-anna', 'horizon-surface'); }); await c.waitForTimeout(200);
+    const again = await ev(c, () => {
+      const last = CHATS['c-anna'].messages.slice(-2).map(m => m.invite);
+      const bodies = [...document.querySelectorAll('#msgs .mbody')].slice(-2).map(b => b.innerText.replace(/\s+/g, ' ').trim());
+      return { last, bodies, accept: document.querySelectorAll('#msgs [data-act="hzaccept"]').length,
+        collab: (HORIZONS['horizon-quiet'].collaboratorIds || []).indexOf('p-michal') >= 0, follow: !!HZFOLLOW['horizon-surface'] };
+    });
+    ok(again.accept === 0 && again.collab && again.follow && again.last.join() === 'accepted,accepted follower',
+      'desk: the fresh invites can be accepted again ' + JSON.stringify(again));
+    ok(!c.errors.length, 'desk: no console errors (demo new invites) ' + c.errors.join(' '));
+    await c.context().close();
+  }
+
+  {
+    const c = await ctx('desk');
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right');
+    await c.click('.chrow[data-id="c-anna"]'); await c.waitForTimeout(250);
+    ok(await ev(c, () => !!document.querySelector('#msgs [data-act="hzreq"]') && !document.querySelector('#msgs [data-act="hzaccept"]')),
+      'desk: the inbox replaces Accept with a request link');
+    const quiet = () => ev(c, () => {
+      const btn = document.querySelector('#msgs [data-id="horizon-quiet"]');
+      const msg = btn && btn.closest('.msg');
+      const m = (CHATS['c-anna'].messages || []).filter(x => x.cardId === 'horizon-quiet').pop();
+      return {
+        text: msg ? msg.innerText.replace(/\s+/g, ' ').trim() : '',
+        invite: m && m.invite,
+        undo: !!document.querySelector('#msgs [data-act="hzundo"][data-id="horizon-quiet"]'),
+        accept: !!document.querySelector('#msgs [data-act="hzaccept"][data-id="horizon-quiet"]'),
+        decline: !!document.querySelector('#msgs [data-act="hzdecline"][data-id="horizon-quiet"]'),
+        collab: (HORIZONS['horizon-quiet'].collaboratorIds || []).indexOf('p-michal') >= 0,
+        pend: (HORIZONS['horizon-quiet'].pendingCollaboratorIds || []).indexOf('p-michal') >= 0
+      };
+    });
+    await c.evaluate(() => acceptHzInvite('c-anna', 'horizon-quiet')); await c.waitForTimeout(200);
+    const accepted = await quiet();
+    ok(accepted.invite === 'accepted' && accepted.collab && !accepted.pend,
+      'desk: accepting Quiet Rooms records the collaborator ' + JSON.stringify(accepted));
+    await c.evaluate(() => respondHzInvite('c-anna', 'horizon-quiet', 'undo')); await c.waitForTimeout(200);
+    const back = await quiet();
+    ok(back.invite === 'pending' && !back.collab && back.pend,
+      'desk: Undo after accept returns the pending invite ' + JSON.stringify(back));
+    await c.evaluate(() => declineHzInvite('c-anna', 'horizon-quiet')); await c.waitForTimeout(200);
+    const declined = await quiet();
+    ok(declined.invite === 'declined' && !declined.collab && !declined.pend,
+      'desk: declining Quiet Rooms clears the collaborator ' + JSON.stringify(declined));
+    await c.evaluate(() => respondHzInvite('c-anna', 'horizon-quiet', 'undo')); await c.waitForTimeout(200);
+    const again = await quiet();
+    ok(again.invite === 'pending' && !again.collab && again.pend,
+      'desk: Undo after decline returns the pending invite ' + JSON.stringify(again));
+    await c.evaluate(() => acceptHzInvite('c-anna', 'horizon-surface')); await c.waitForTimeout(200);
+    await c.evaluate(() => respondHzInvite('c-anna', 'horizon-surface', 'undo')); await c.waitForTimeout(200);
+    const follow = await ev(c, () => {
+      const m = (CHATS['c-anna'].messages || []).filter(x => x.cardId === 'horizon-surface').pop();
+      return { invite: m && m.invite, follow: !!HZFOLLOW['horizon-surface'], pend: (HORIZONS['horizon-surface'].pendingFollowerIds || []).indexOf('p-michal') >= 0,
+        undo: !!document.querySelector('#msgs [data-act="hzundo"][data-id="horizon-surface"]'), accept: !!document.querySelector('#msgs [data-act="hzaccept"][data-id="horizon-surface"]') };
+    });
+    ok(follow.invite === 'pending follower' && !follow.follow && follow.pend,
+      'desk: Undo after accepting a follow invite restores the pending follow ' + JSON.stringify(follow));
+    ok(!c.errors.length, 'desk: no console errors (undo invite) ' + c.errors.join(' '));
+    await c.context().close();
+  }
+
+  {
+    const c = await ctx('desk');
+    await c.addInitScript(() => {
+      window.__hzReqOpens = [];
+      window.__hzChanges = 0;
+      window.HNRel = {
+        registerRequestProvider: function(p){ window.__hzProv = p; return function(){}; },
+        requestsChanged: function(){ window.__hzChanges += 1; },
+        openRequests: function(arg){ window.__hzReqOpens.push(arg); },
+        incomingCount: function(){ return 0; }
+      };
+    });
+    await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right');
+    await c.click('.chrow[data-id="c-anna"]'); await c.waitForTimeout(250);
+    const prov = await ev(c, () => {
+      const p = window.__hzProv;
+      const items = p ? p.list() : [];
+      const item = items.filter(it => it.horizon && it.horizon.id === 'horizon-quiet')[0];
+      const follow = items.filter(it => it.role === 'follower')[0];
+      const html = item ? p.render(item) : '';
+      const btn = item && [...document.querySelectorAll('#msgs [data-act="hzreq"]')].find(b => b.getAttribute('data-id') === item.id);
+      const body = btn && btn.closest('.mbody');
+      return {
+        ok: !!p,
+        type: p && p.type,
+        label: p && p.label,
+        count: p ? p.count() : null,
+        id: item && item.id,
+        role: item && item.role,
+        from: item && item.from,
+        horizon: item && item.horizon,
+        status: item && item.status,
+        followRole: follow && follow.role,
+        followHz: follow && follow.horizon,
+        html: html,
+        text: body ? body.innerText.replace(/\s+/g, ' ').trim() : '',
+        accept: !!document.querySelector('#msgs [data-act="hzaccept"]'),
+        undo: !!document.querySelector('#msgs [data-act="hzundo"]'),
+        req: !!document.querySelector('#msgs [data-act="hzreq"]')
+      };
+    });
+    ok(prov.ok && prov.type === 'horizon_invite' && prov.label === 'Horizon invites' && prov.count === 2
+      && typeof prov.id === 'string' && prov.role === 'collaborator' && prov.status === 'pending'
+      && prov.from && prov.from.id === 'p-anna' && prov.from.name === 'Anna Vale'
+      && prov.horizon && prov.horizon.id === 'horizon-quiet' && prov.horizon.name === 'Quiet Rooms'
+      && prov.followRole === 'follower' && prov.followHz && prov.followHz.id === 'horizon-surface' && prov.followHz.name === 'Surfaces & Projections',
+      'desk: the horizon invite provider is registered with two pending invites ' + JSON.stringify(prov));
+    ok(prov.html === 'Collaborate on horizon <button type="button" class="hzname" data-act="open" data-type="horizon" data-id="horizon-quiet">Quiet Rooms</button>'
+      && !/<button[^>]*>horizon/.test(prov.html)
+      && !/Accept|Decline|Undo/.test(prov.html),
+      'desk: the inbox row names the horizon and has no buttons ' + prov.html);
+    ok(/Anna Vale sent you a request/.test(prov.text) && /request/.test(prov.text),
+      'desk: Quiet Rooms reads as a request from Anna Vale ' + JSON.stringify(prov.text));
+    ok(!prov.accept && !prov.undo && prov.req,
+      'desk: the request link replaces Accept and Undo ' + JSON.stringify(prov));
+    const cycle = await ev(c, async () => {
+      const p = window.__hzProv;
+      const item = p.list().filter(it => it.horizon && it.horizon.id === 'horizon-quiet')[0];
+      const n0 = window.__hzChanges;
+      await p.accept(item);
+      const n1 = window.__hzChanges;
+      const accepted = p.list().filter(it => it.id === item.id)[0];
+      await p.undo(accepted);
+      const n2 = window.__hzChanges;
+      const back = p.list().filter(it => it.id === item.id)[0];
+      return { n0:n0, n1:n1, n2:n2, status:accepted && accepted.status, back:back && back.status };
+    });
+    ok(cycle.n1 === cycle.n0 + 1 && cycle.n2 === cycle.n0 + 2 && cycle.status === 'accepted' && cycle.back === 'pending',
+      'desk: accept and undo tell the inbox the list changed ' + JSON.stringify(cycle));
+    if (prov.id){
+      await c.click('#msgs [data-act="hzreq"][data-id="' + prov.id + '"]');
+      await c.waitForTimeout(200);
+    }
+    const opens = await ev(c, () => window.__hzReqOpens);
+    ok(!!prov.id && JSON.stringify(opens) === JSON.stringify([{ type:'horizon_invite', id:prov.id }]),
+      'desk: the request link opens the list on that invite ' + JSON.stringify({ id: prov.id, opens }));
+    ok(!c.errors.length, 'desk: no console errors (horizon request) ' + c.errors.join(' '));
+    await c.context().close();
+  }
+
+  /* Add past event marks several demo past events offline. One is Attended, one is Co-created.
+     A later batch keeps a request and an admins-only refusal selected, and still files the one that succeeds. */
+  {
+    const pickRole = async (c, title, label) => {
+      await c.fill('#ch-q', title);
+      await c.locator('.dlg .chhitrow').filter({ hasText: title }).locator('[data-act="chrolemenu"]').click();
+      await c.locator('.popmenu.chmenu [role="menuitem"]').filter({ hasText: label }).click();
+    };
+    for (const kind of ['desk', 'phone', 'tab']){
+      const c = await ctx(kind);
+      const api = [];
+      c.on('request', r => { if (/\/api\//.test(r.url())) api.push(r.url()); });
+      await open(c, '', true);
+      await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+      await c.evaluate(() => {
+        delete ROLE['evt-chronicle-going'];
+        delete WENT['evt-chronicle-going'];
+        delete RSVP['evt-chronicle-going'];
+        delete ROLE['evt-world-burning-man-2026'];
+        delete WENT['evt-world-burning-man-2026'];
+        openItem('person', 'self');
+        beginProfileEdit();
+      });
+      await c.waitForTimeout(400);
+      const before = await ev(c, () => ({
+        quay:[...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].filter(s => s.textContent.indexOf('Late quay supper') >= 0).map(s => s.getAttribute('data-role')),
+        burn:[...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].filter(s => s.textContent.indexOf('Burning Man 2026') >= 0).map(s => s.getAttribute('data-role'))
+      }));
+      await c.evaluate(() => document.querySelector('[data-act="addpastevent"]').click());
+      await c.waitForTimeout(300);
+      await c.fill('#ch-q', 'Harbour');
+      const harbour = await ev(c, () => [...document.querySelectorAll('.dlg [data-act="chrolemenu"]')].map(b => b.getAttribute('data-id')));
+      await c.fill('#ch-q', 'zzzz-not-an-event');
+      const miss = await ev(c, () => ({
+        hits:document.querySelectorAll('.dlg [data-act="chrolemenu"]').length,
+        line:(document.querySelector('#ch-hits') || {}).textContent || '',
+        wiz:!!document.querySelector('#w-t'),
+        add:CHRONICLE_ADD,
+        create:!!document.querySelector('.dlg [data-act="new-event"], .dlg [data-act="chronicle-go"]'),
+        foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).textContent || '',
+        off:!!(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).disabled
+      }));
+      await c.fill('#ch-q', 'Midsummer');
+      const hosted = await ev(c, () => {
+        const b = document.querySelector('.dlg .chrole');
+        return { label:b ? b.textContent : '', disabled:!!(b && b.disabled) };
+      });
+      await c.fill('#ch-q', 'Late quay');
+      await c.click('.dlg [data-act="chrolemenu"]');
+      const opened = await ev(c, () => {
+        const menu = document.querySelector('.popmenu.chmenu');
+        const r = menu ? menu.getBoundingClientRect() : null;
+        return {
+          items: menu ? [...menu.querySelectorAll('[role="menuitem"]')].map(el => el.textContent.trim()) : [],
+          body: !!(menu && menu.parentElement === document.body),
+          inView: !!(r && r.top >= -1 && r.left >= -1 && r.bottom <= window.innerHeight + 1 && r.right <= window.innerWidth + 1)
+        };
+      });
+      await c.click('.dlg .dtitle');
+      const outside = await ev(c, () => ({ menu:!!document.querySelector('.popmenu'), label:(document.querySelector('.dlg [data-act="chrolemenu"]') || {}).textContent || '', dlg:!!document.querySelector('.dlg') }));
+      await pickRole(c, 'Late quay', 'Attended');
+      const attended = await ev(c, () => ({ label:(document.querySelector('.dlg .chrole') || {}).textContent || '', n:chronicleSelection().length, menu:!!document.querySelector('.popmenu') }));
+      await pickRole(c, 'Late quay', 'Co-created');
+      const cocreated = await ev(c, () => ({ label:(document.querySelector('.dlg .chrole') || {}).textContent || '', menu:!!document.querySelector('.popmenu') }));
+      await pickRole(c, 'Late quay', 'Remove');
+      const cleared = await ev(c, () => ({ label:(document.querySelector('.dlg .chrole') || {}).textContent || '', n:chronicleSelection().length, off:!!(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).disabled, menu:!!document.querySelector('.popmenu') }));
+      await pickRole(c, 'Late quay', 'Attended');
+      await pickRole(c, 'Burning Man', 'Co-created');
+      const ready = await ev(c, () => ({
+        n:chronicleSelection().length,
+        quay:CHRONICLE_PICKS['evt-chronicle-going'] || null,
+        burn:CHRONICLE_PICKS['evt-world-burning-man-2026'] || null,
+        foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).textContent || '',
+        count:(document.querySelector('#ch-count') || {}).textContent || ''
+      }));
+      await c.click('.dlg [data-act="chronicle-add"]');
+      await c.waitForTimeout(400);
+      const after = await ev(c, () => ({
+        open:!!document.querySelector('.dlg'),
+        quay:[...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].filter(s => s.textContent.indexOf('Late quay supper') >= 0).map(s => s.getAttribute('data-role')),
+        burn:[...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].filter(s => s.textContent.indexOf('Burning Man 2026') >= 0).map(s => s.getAttribute('data-role')),
+        quayRole:ROLE['evt-chronicle-going'] || null,
+        burnRole:ROLE['evt-world-burning-man-2026'] || null
+      }));
+      ok(!before.quay.length && before.burn.indexOf('attendee') < 0 && before.burn.indexOf('cocreator') < 0 && !harbour.length && !miss.hits && !miss.wiz && !miss.add && !miss.create &&
+         /New event/.test(miss.line) && /Already happened/.test(miss.line) && miss.foot === 'Add to Chronicle (0)' && miss.off &&
+         hosted.label === 'Hosted' && hosted.disabled &&
+         opened.items.join(',') === 'Attended,Co-created' && opened.body && opened.inView &&
+         !outside.menu && outside.label === 'Add' && outside.dlg &&
+         attended.label === 'Attended' && attended.n === 1 && !attended.menu &&
+         cocreated.label === 'Co-created' && !cocreated.menu &&
+         cleared.label === 'Add' && cleared.n === 0 && cleared.off && !cleared.menu &&
+         ready.n === 2 && ready.quay === 'attendee' && ready.burn === 'cocreator' && ready.foot === 'Add to Chronicle (2)' && ready.count === '2 selected' &&
+         !after.open && after.quay.length === 1 && after.quay[0] === 'attendee' && after.quayRole === 'attendee' &&
+         after.burn.length === 1 && after.burn[0] === 'cocreator' && after.burnRole === 'cocreator' && !api.length,
+         kind + ': Add past event files two demo events under Attended and Co-created ' + JSON.stringify({ before, harbour, miss, hosted, opened, outside, attended, cocreated, cleared, ready, after, api }));
+      await c.evaluate(() => {
+        delete ROLE['evt-chronicle-going']; delete WENT['evt-chronicle-going']; delete RSVP['evt-chronicle-going'];
+        delete ROLE['evt-world-borderland-2026']; delete WENT['evt-world-borderland-2026'];
+        delete ROLE['evt-world-hyperstition-2026']; delete WENT['evt-world-hyperstition-2026'];
+        EVENTS['evt-world-borderland-2026'].cocreatorPolicy = 'request';
+        EVENTS['evt-world-hyperstition-2026'].cocreatorPolicy = 'admins';
+        render();
+      });
+      await c.waitForTimeout(200);
+      await c.evaluate(() => document.querySelector('[data-act="addpastevent"]').click());
+      await c.waitForTimeout(250);
+      await pickRole(c, 'Late quay', 'Attended');
+      await pickRole(c, 'The Borderland', 'Co-created');
+      await pickRole(c, 'Hyperstition', 'Co-created');
+      await c.click('.dlg [data-act="chronicle-add"]');
+      await c.waitForTimeout(400);
+      const part = await ev(c, () => ({
+        open:!!document.querySelector('.dlg'),
+        foot:(document.querySelector('.dlg [data-act="chronicle-add"]') || {}).textContent || '',
+        err:(document.querySelector('#ch-err') || {}).textContent || '',
+        quay:[...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role]')].filter(s => s.textContent.indexOf('Late quay supper') >= 0).map(s => s.getAttribute('data-role')),
+        quayPick:CHRONICLE_PICKS['evt-chronicle-going'] || null,
+        borderPick:CHRONICLE_PICKS['evt-world-borderland-2026'] || null,
+        hyperPick:CHRONICLE_PICKS['evt-world-hyperstition-2026'] || null,
+        borderCo:[...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role="cocreator"]')].some(s => s.textContent.indexOf('Borderland') >= 0),
+        hyperCo:[...document.querySelectorAll('#dscroll [data-sect="chronicle"] [data-role="cocreator"]')].some(s => s.textContent.indexOf('Hyperstition') >= 0),
+        pending:!!(COREQUESTS['evt-world-borderland-2026'] && COREQUESTS['evt-world-borderland-2026'][meKey()]),
+        hyperRole:ROLE['evt-world-hyperstition-2026'] || null
+      }));
+      ok(part.open && part.foot === 'Add to Chronicle (2)' && part.quay.length === 1 && part.quay[0] === 'attendee' && !part.quayPick &&
+         part.borderPick === 'cocreator' && part.pending && !part.borderCo &&
+         part.hyperPick === 'cocreator' && !part.hyperRole && !part.hyperCo &&
+         /Borderland 2026: Co-creator requested/.test(part.err) && /Hyperstition 2026: Only admins can add co-creators/.test(part.err),
+         kind + ': a pending request and an admins-only refusal stay selected, and the attendee still files ' + JSON.stringify(part));
+      ok(!c.errors.length, kind + ': no console errors (chronicle search) ' + c.errors.join(' '));
+      await c.context().close();
+    }
   }
 
   /* ---------------- tablet ---------------- */

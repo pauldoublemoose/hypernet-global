@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
  * GET /api/bootstrap — what the app needs to draw its first screen, for whoever is looking:
  *   { hypernet: 1, branch, login: {email} | null, me: person | null,
  *     people, follows, events, rsvps, promotions, horizons, hzFollows, callouts, replies, activity, chats }
- * Logged out (or logged in but not joined yet) it is the public network.
+ * Logged out (or logged in but not joined yet) the shell still loads, and every list is empty.
  */
 export const GET = route(async () => {
   const { user, person } = await currentPerson();

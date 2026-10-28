@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { requirePerson } from "@/lib/auth";
 import { pgCode, sqlx } from "@/lib/db";
+import { canSeeEvent, eventGone } from "@/lib/events";
 import { horizonFor, hzSlug, setHorizonEvents } from "@/lib/horizons";
 import { HttpError, json, readJson, route } from "@/lib/http";
 import { j } from "@/lib/ids";
@@ -13,6 +14,7 @@ export const POST = route(async (req: Request) => {
   const me = await requirePerson();
   const b = horizonCreate.parse(await readJson(req));
   const id = b.id ?? randomUUID();
+  if (b.coverEventId && !(await canSeeEvent(b.coverEventId, me.id))) throw eventGone();
   const sql = sqlx();
   try {
     await sql.transaction([

@@ -38,7 +38,7 @@
         var j = null; try { j = t ? JSON.parse(t) : null; } catch(e){}
         if (!r.ok){
           var err = new Error((j && (j.message || (j.issues && j.issues[0] && j.issues[0].message) || j.error)) || ('Server answered ' + r.status));
-          err.status = r.status; err.code = j && (j.error || j.code); throw err;
+          err.status = r.status; err.code = j && (j.error || j.code); err.body = j; throw err;
         }
         return j;
       });
@@ -85,8 +85,13 @@
   function personRow(p){
     var cities = p.cities || [];
     /* joinedAt: when the account was made (Home's "N people joined Hypernet", Explore → People newest first) */
-    return { id:p.id, displayName:p.displayName, handle:p.handle, bio:p.bio || '', skills:(p.skills || []).slice(), cities:cities.slice(),
+    var row = { id:p.id, displayName:p.displayName, handle:p.handle, bio:p.bio || '', skills:(p.skills || []).slice(), cities:cities.slice(),
              city: cities[0] ? String(cities[0]).toUpperCase() : '', joinedAt: ms(p.createdAt) };
+    if (typeof p.followerCount === 'number') row.followerCount = p.followerCount;
+    if (typeof p.followingCount === 'number') row.followingCount = p.followingCount;
+    if (typeof p.friendCount === 'number') row.friendCount = p.friendCount;
+    if (Array.isArray(p.followedBy)) row.followedBy = p.followedBy.slice();
+    return row;
   }
   function eventRows(e){
     var det = e.details || {}, r = Object.assign({}, det);
@@ -103,6 +108,9 @@
     var ev = { id:e.id, slug:e.slug, title:e.title, date:e.startsOn, description:e.description, hostName:e.hostName, hostId:e.hostId,
                privacy:e.privacy, city:e.city || '', kind: det._kind || (e.source === 'import' ? 'real' : e.source === 'link' ? 'link' : 'own'), ownerIds:[], source:e.source,
                sourceUrl:e.sourceUrl || undefined, addedBy:e.addedBy || undefined };
+    if (e.audience) ev.audience = e.audience;
+    if (e.cocreatorPolicy === 'open' || e.cocreatorPolicy === 'request') ev.cocreatorPolicy = e.cocreatorPolicy;
+    if (e.invitePolicy === 'admins' || e.invitePolicy === 'cocreators' || e.invitePolicy === 'invited') ev.invitePolicy = e.invitePolicy;
     return { ev:ev, rec:r };
   }
   function chatRows(list, me){
@@ -111,7 +119,16 @@
       if (!PEOPLE[c.personId]) return;
       var cid = 'c-dm-' + c.personId, last = c.messages[c.messages.length - 1];
       byId[cid] = { id:cid, name:PEOPLE[c.personId].displayName, kind:'dm', memberIds:[c.personId],
-        messages: c.messages.map(function(m){ return { id:m.id, from: m.senderId === me ? 'self' : m.senderId, t:clock(m.createdAt), ts:m.createdAt, text:m.body }; }) };
+        messages: c.messages.map(function(m){
+          var row = { id:m.id, from: m.senderId === me ? 'self' : m.senderId, t:clock(m.createdAt), ts:m.createdAt, text:m.body, cardType:m.cardType, cardId:m.cardId, cardName:m.cardName };
+          var spec = m.cardType && ChatCards.get(m.cardType);
+          if (spec && spec.read) spec.read(row, m);
+          if ((m.cardType === 'event' || m.cardType === 'chronicle') && m.cardId) {
+            row.eventId = m.cardId;
+            if (m.cardType === 'chronicle') row.chronicle = true;
+          }
+          return row;
+        }) };
       order.push(cid);
       if (last && last.senderId !== me && (!c.lastReadAt || ms(last.createdAt) > ms(c.lastReadAt))) unread[cid] = true;
     });
@@ -140,7 +157,9 @@
     /* who follows whom */
     var NF = {}, PF = {};
     d.follows.forEach(function(f){ (NF[f[0]] = NF[f[0]] || []).push(f[1]); if (f[0] === me) PF[f[1]] = true; });
+    (d.friendFollows || []).forEach(function(f){ (NF[f[0]] = NF[f[0]] || []).push(f[1]); });
     window.NETFOLLOWS = NF; window.PFOLLOW = PF;
+    if (window.HNRel) { HNRel.ingest(d); if (HNRel.ingestLists) HNRel.ingestLists(d.lists); }
     /* events */
     var E = {}, R = {}, T = window.HYPERNET_THEMES.themes, NX = {}, real = [];
     fill(T, {});
@@ -160,8 +179,9 @@
     /* RSVPs and promotions */
     var RS = {}, WT = {}, SH = {}, PM = {}, PC = {};
     EVP = {}; HAS = {};
-    var RO = {}, CH = {}, WB = {};
+    var RO = {}, CH = {}, WB = {}, CQ = {};
     d.rsvps.forEach(function(r){
+      if (r.cocreatorPending) (CQ[r.eventId] = CQ[r.eventId] || {})[r.personId] = 1;
       if (r.personId === me){
         if (r.status) RS[r.eventId] = r.status;
         if (r.went) WT[r.eventId] = true;
@@ -173,7 +193,7 @@
         else if (r.went) (WB[r.personId] = WB[r.personId] || {})[r.eventId] = true;
       }
     });
-    window.ROLE = RO; window.CHRON = CH; window.WENTBY = WB;
+    window.ROLE = RO; window.CHRON = CH; window.WENTBY = WB; window.COREQUESTS = CQ;
     d.promotions.forEach(function(p){ if (p[0] === me) PM[p[1]] = true; else PC[p[1]] = (PC[p[1]] || 0) + 1; });
     window.RSVP = RS; window.WENT = WT; window.SHIFT = SH; window.PROMOTED = PM; window.PROMOCOUNT = PC;
     /* horizons */
@@ -186,7 +206,8 @@
       var own = !!me && h.ownerId === me;
       HZ[h.id] = { id:h.id, slug:h.slug, name:h.name, description:h.description || '', isPersonalDefault:!!h.isPersonalDefault, isPublished:!!h.publishedAt,
         ownerName: own ? d.me.displayName : (h.ownerName || (h.ownerId && P[h.ownerId] ? P[h.ownerId].displayName : 'Hypernet')),
-        ownerId:h.ownerId, ownerAcct: own ? 'me' : undefined, eventIds:(h.eventIds || []).slice() };
+        ownerId:h.ownerId, ownerAcct: own ? 'me' : undefined, eventIds:(h.eventIds || []).slice(), collaboratorIds:(h.collaboratorIds || []).slice(),
+        pendingCollaboratorIds:(h.pendingCollaboratorIds || []).slice(), pendingFollowerIds:(h.pendingFollowerIds || []).slice() };
       HC[h.id] = Math.max(0, (h.followers || 0) - (HF[h.id] ? 1 : 0));
       if (h.look) HT[h.id] = asLook(h.look);
       if (own) mine.push(h.id);
@@ -439,7 +460,7 @@
       startTime:r.startTime || null, endTime:r.endTime || null, kind:r.kind || 'meetup',
       tags: Array.isArray(r.tags) ? r.tags.filter(function(id, i, a){ return typeof id === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id) && a.indexOf(id) === i; }).slice(0, 60) : null,
       schedule: scheduleOut(r.schedule),
-      privacy:e.privacy || 'everyone',
+      privacy:e.privacy || 'everyone', audience:e.audience || undefined,
       city: r.venueKind === 'virtual' ? null : (city || null), venue: r.venue || null, access: r.access || null,
       whatToBring: Array.isArray(r.whatToBring) ? r.whatToBring : [], details:details,
       look: lookOut(window.HYPERNET_THEMES.themes[id] || null) };
@@ -447,7 +468,7 @@
   /* an event from a link: the same fields, plus where it came from and who puts it on (never who can see it: it is public) */
   function linkBody(id){
     var b = eventBody(id), e = EVENTS[id], r = REC[id] || {};
-    delete b.privacy;
+    delete b.privacy; delete b.audience;
     ['externalUrl', 'sourceSite'].forEach(function(k){ delete b.details[k]; });
     return Object.assign(b, { sourceUrl:e.sourceUrl, hostName:e.hostName, timezone:r.timezone || undefined, region:r.region || null, country:r.country || null });
   }
@@ -463,12 +484,14 @@
   HN.saveEvent = function(id){
     return write('ev:' + id, 'PATCH', '/api/events/' + id, function(){
       var b = eventBody(id);
-      if (EVENTS[id] && EVENTS[id].kind === 'link'){ b.hostName = EVENTS[id].hostName; delete b.privacy; }
+      if (EVENTS[id] && EVENTS[id].kind === 'link'){ b.hostName = EVENTS[id].hostName; delete b.privacy; delete b.audience; }
       return b;
     }, title(id));
   };
   /* Autofill: what the page says (nothing is saved), or the event this link already is */
   HN.autofill = function(url){ return req('POST', '/api/events/autofill', { url:url }); };
+  /* a short map link: the server follows it and returns the address it opened. The page parses that. */
+  HN.resolveMap = function(url){ return req('POST', '/api/maps/resolve', { url:url }); };
   /* add an event from a link; the server copies its picture. The same link added a moment ago by someone else answers
      with their event: this one is put away and theirs takes its place (in your horizon too) */
   HN.createLinkEvent = function(id, imageUrl){
@@ -493,6 +516,27 @@
   };
   HN.saveEventLook = function(id){ return write('ev:' + id, 'PATCH', '/api/events/' + id, function(){ return { look: lookOut(window.HYPERNET_THEMES.themes[id] || null) }; }, title(id)); };
   HN.deleteEvent = function(id){ return write('ev:' + id, 'DELETE', '/api/events/' + id, undefined, 'the event'); };
+  /* Past events are out of the default list. The Chronicle picker is the place that asks for them. */
+  HN.pastEvents = function(opts){
+    opts = opts || {};
+    var q = ['past=only'];
+    if (opts.from) q.push('from=' + encodeURIComponent(opts.from));
+    if (opts.to) q.push('to=' + encodeURIComponent(opts.to));
+    if (opts.host) q.push('host=' + encodeURIComponent(opts.host));
+    if (opts.limit) q.push('limit=' + encodeURIComponent(opts.limit));
+    return req('GET', '/api/events?' + q.join('&')).then(function(r){
+      var list = r && r.events || [];
+      list.forEach(HN.takeEvent);
+      return list;
+    });
+  };
+  /* Add to Chronicle. The self-claim and a past invite's accept both call this. No body. */
+  HN.addChronicle = function(id){
+    if (!HN.isId(id)) return Promise.resolve();
+    var ev = QUEUE['ev:' + id];
+    if (ev) QUEUE['rsvp:' + id] = Promise.all([QUEUE['rsvp:' + id] || Promise.resolve(), ev]).catch(function(){});
+    return write('rsvp:' + id, 'POST', '/api/events/' + id + '/chronicle', undefined, title(id));
+  };
   /* role is sent only when the caller passes it (Chronicle filing). A Going, Interested, Went or shift toggle leaves it out, so the server keeps the stored role. */
   HN.rsvp = function(id, fields){
     var ev = QUEUE['ev:' + id];
@@ -509,6 +553,31 @@
     if (!HN.isId(pid)) return Promise.resolve();
     return write('pf:' + pid, PFOLLOW[pid] ? 'PUT' : 'DELETE', '/api/people/' + pid + '/follow', undefined, person(pid).displayName);
   };
+  HN.friendWrite = function(pid, method){
+    if (!HN.isId(pid)) return Promise.resolve();
+    delete RELCACHE[pid];
+    if (HN.me) delete RELCACHE[HN.me.id];
+    return write('fr:' + pid, method, '/api/people/' + pid + '/friend', undefined, person(pid).displayName);
+  };
+  var RELCACHE = {};
+  /* a refused delete is 409 {events} and no message. write() would toast and reload, so these stay on req() */
+function listResult(p){ return p.then(function(d){ return { ok:true, list:d && d.list, body:d }; }, function(err){ return { ok:false, status:err.status, message:err.message, events:err.body && err.body.events }; }); }
+  HN.listCreate = function(list){ return listResult(req('POST', '/api/lists', { id:list.id, name:list.name, description:list.description || '' })); };
+  HN.listRename = function(id, name, description){
+    var body = { name:name };
+    if (arguments.length > 2) body.description = description || '';
+    return listResult(req('PATCH', '/api/lists/' + id, body));
+  };
+  HN.listDelete = function(id){ return listResult(req('DELETE', '/api/lists/' + id)); };
+  HN.listMember = function(listId, personId, on){
+    if (!HN.isId(listId) || !HN.isId(personId)) return Promise.resolve({ ok:true });
+    return listResult(req(on ? 'PUT' : 'DELETE', '/api/lists/' + listId + '/members/' + personId));
+  };
+  HN.relations = function(pid){
+    if (!HN.isId(pid)) return Promise.resolve({ followers:[], following:[], friends:null });
+    if (RELCACHE[pid]) return Promise.resolve(RELCACHE[pid]);
+    return req('GET', '/api/people/' + pid + '/relations').then(function(d){ RELCACHE[pid] = d; return d; });
+  };
   HN.followHorizon = function(hzId){ return write('hf:' + hzId, HZFOLLOW[hzId] ? 'PUT' : 'DELETE', '/api/horizons/' + hzId + '/follow', undefined, (HORIZONS[hzId] || {}).name); };
   HN.createHorizon = function(hzId){
     var h = HORIZONS[hzId];
@@ -517,11 +586,50 @@
   };
   HN.saveHorizon = function(hzId){
     return write('hz:' + hzId, 'PATCH', '/api/horizons/' + hzId, function(){
-      var h = HORIZONS[hzId]; return h ? { name:h.name, description:h.description || '', published:!!h.isPublished, look: HZTHEME[hzId] ? lookOut(HZTHEME[hzId]) : null } : {};
+      var h = HORIZONS[hzId];
+      if (!h) return {};
+      var body = { name:h.name, description:h.description || '' };
+      if (hzOwnedByMe(hzId)){ body.published = !!h.isPublished; body.look = HZTHEME[hzId] ? lookOut(HZTHEME[hzId]) : null; }
+      return body;
     }, (HORIZONS[hzId] || {}).name);
   };
+  HN.addCollaborator = function(hzId, personId, role){
+    return write('hz:' + hzId, 'POST', '/api/horizons/' + hzId + '/collaborators', { personId:personId, role: role === 'follower' ? 'follower' : 'collaborator' }, (HORIZONS[hzId] || {}).name);
+  };
+  HN.acceptInvite = function(hzId){
+    var spec = ChatCards.get('horizon_invite').api.accept(hzId);
+    return write('hz:' + hzId, spec.method, spec.path, {}, (HORIZONS[hzId] || {}).name).then(function(r){
+      var h = HORIZONS[hzId];
+      if (!r || !r.horizon || !h) return;
+      h.collaboratorIds = (r.horizon.collaboratorIds || []).slice();
+      h.pendingCollaboratorIds = (r.horizon.pendingCollaboratorIds || []).slice();
+      h.pendingFollowerIds = (r.horizon.pendingFollowerIds || []).slice();
+      if (ROUTE.ready) render();
+    });
+  };
+  HN.declineInvite = function(hzId){
+    var spec = ChatCards.get('horizon_invite').api.decline(hzId);
+    return write('hz:' + hzId, spec.method, spec.path, undefined, (HORIZONS[hzId] || {}).name);
+  };
+  HN.undoInvite = function(hzId){
+    var spec = ChatCards.get('horizon_invite').api.undo(hzId);
+    return write('hz:' + hzId, spec.method, spec.path, {}, (HORIZONS[hzId] || {}).name).then(function(r){
+      var h = HORIZONS[hzId];
+      if (!r || !r.horizon || !h) return;
+      h.collaboratorIds = (r.horizon.collaboratorIds || []).slice();
+      h.pendingCollaboratorIds = (r.horizon.pendingCollaboratorIds || []).slice();
+      h.pendingFollowerIds = (r.horizon.pendingFollowerIds || []).slice();
+      if (ROUTE.ready) render();
+    });
+  };
+  HN.removeCollaborator = function(hzId, personId){
+    return write('hz:' + hzId, 'DELETE', '/api/horizons/' + hzId + '/collaborators?personId=' + encodeURIComponent(personId), undefined, (HORIZONS[hzId] || {}).name);
+  };
+  HN.leaveCollaborator = function(hzId){
+    return write('hz:' + hzId, 'DELETE', '/api/horizons/' + hzId + '/collaborators', undefined, (HORIZONS[hzId] || {}).name);
+  };
   HN.horizonEvents = function(hzId){
-    if (!HORIZONS[hzId] || !hzOwnedByMe(hzId)) return Promise.resolve();
+    if (!HORIZONS[hzId] || !hzCanEdit(hzId)) return Promise.resolve();
     /* an event made a moment ago (New event, From a link) must exist on the server before the horizon lists it */
     var waits = HORIZONS[hzId].eventIds.map(function(id){ return QUEUE['ev:' + id]; }).filter(Boolean);
     if (waits.length) QUEUE['hz:' + hzId] = Promise.all([QUEUE['hz:' + hzId] || Promise.resolve()].concat(waits)).catch(function(){});
@@ -544,6 +652,35 @@
   HN.replyBack = function(id){
     var r = allReplies().filter(function(x){ return x.id === id; })[0]; if (!r) return Promise.resolve();
     return write('re:' + id, 'POST', '/api/callouts/' + r.calloutId + '/replies', { id:id, text:r.text }, 'the reply');
+  };
+  HN.patchEvent = function(id, body){ return write('ev:' + id, 'PATCH', '/api/events/' + id, body, title(id)); };
+  HN.inviteGuest = function(evId, pid){
+    if (!HN.isId(evId) || !HN.isId(pid)) return Promise.resolve();
+    return write('inv:' + evId + ':' + pid, 'POST', '/api/events/' + evId + '/invites', { personId: pid }, 'the invite');
+  };
+  HN.inviteAdmin = function(evId, pid){
+    if (!HN.isId(evId) || !HN.isId(pid)) return Promise.resolve();
+    return write('adm:' + evId + ':' + pid, 'POST', '/api/events/' + evId + '/admins', { userId: pid }, 'the admin invite');
+  };
+  HN.answerAdmin = function(evId, status){
+    var me = meId(); if (!HN.isId(evId) || !HN.isId(me)) return Promise.resolve();
+    return write('adm:' + evId + ':' + me, 'POST', '/api/events/' + evId + '/admins/' + me, { status: status }, 'the admin invite');
+  };
+  HN.removeAdmin = function(evId, pid){
+    if (!HN.isId(evId) || !HN.isId(pid)) return Promise.resolve();
+    return write('adm:' + evId + ':' + pid, 'DELETE', '/api/events/' + evId + '/admins/' + pid, undefined, 'the admin');
+  };
+  HN.demote = function(evId, pid){
+    if (!HN.isId(evId) || !HN.isId(pid)) return Promise.resolve();
+    return write('dem:' + evId + ':' + pid, 'POST', '/api/events/' + evId + '/demote', { userId: pid }, 'the role');
+  };
+  HN.cocreatorRequests = function(evId){
+    if (!HN.isId(evId)) return Promise.resolve({ requests:[] });
+    return req('GET', '/api/events/' + evId + '/cocreators');
+  };
+  HN.reviewCocreator = function(evId, pid, action){
+    if (!HN.isId(evId) || !HN.isId(pid)) return Promise.resolve();
+    return write('coreq:' + evId + ':' + pid, 'POST', '/api/events/' + evId + '/cocreators', { userId: pid, action: action }, 'the request');
   };
   HN.sendMessage = function(cid, m){
     var pid = CHATS[cid] && CHATS[cid].memberIds[0]; if (!HN.isId(pid)) return Promise.resolve();

@@ -71,7 +71,7 @@ function privateIp(ip: string): boolean {
     (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 198 && (b === 18 || b === 19)) || a >= 224;
 }
 
-async function assertPublic(url: URL): Promise<void> {
+export async function assertPublic(url: URL): Promise<void> {
   const host = url.hostname.replace(/^\[|\]$/g, "");
   if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) {
     throw new HttpError(400, "bad_url", "That link points inside a network.");

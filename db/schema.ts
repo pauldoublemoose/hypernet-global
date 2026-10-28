@@ -1,6 +1,7 @@
 // Drizzle's view of the tables in db/migrations/*.sql. The SQL files are the source of truth (they also hold the
 // CHECK constraints, the privacy functions and the views); this file only gives TypeScript the column names and
 // types. When a migration changes a table, change it here in the same commit.
+import { sql } from "drizzle-orm";
 import {
   boolean,
   customType,
@@ -12,6 +13,8 @@ import {
   pgTable,
   primaryKey,
   text,
+  unique,
+  uniqueIndex,
   time,
   timestamp,
   uuid,
@@ -25,6 +28,9 @@ const tstz = (name: string) => timestamp(name, { withTimezone: true });
 export type Look = { bg: string; ink: string; accent: string; image?: string | null; glyph?: string | null; colors?: (string | null)[] | null };
 
 export const privacy = pgEnum("privacy", ["everyone", "friends", "only_me"]);
+
+/** Who may see an event. privacy is derived from this. list tokens are list:<uuid>. group tokens are group:<uuid> and match nobody until is_group_member is replaced. */
+export type Audience = { include: string[]; exclude: string[] };
 export const rsvpStatus = pgEnum("rsvp", ["going", "interested"]);
 
 export const people = pgTable("people", {
@@ -72,6 +78,7 @@ export const events = pgTable(
     // null means no time table. Blocks are in start order: { title, start, end? } as wall-clock YYYY-MM-DDTHH:MM.
     schedule: jsonb("schedule").$type<{ title: string; start: string; end?: string }[] | null>(),
     privacy: privacy("privacy").notNull().default("everyone"),
+    audience: jsonb("audience").$type<Audience>().notNull().default({ include: ["everyone"], exclude: [] }),
     city: text("city"),
     region: text("region"),
     country: text("country"),
@@ -87,8 +94,34 @@ export const events = pgTable(
     createdAt: tstz("created_at").notNull().defaultNow(),
     updatedAt: tstz("updated_at").notNull().defaultNow(),
     deletedAt: tstz("deleted_at"),
+    onlyAdminsAddCocreators: boolean("only_admins_add_cocreators").notNull().default(false),
+    cocreatorPolicy: text("cocreator_policy").notNull().default("open"),
+    invitePolicy: text("invite_policy").notNull().default("invited"),
   },
   (t) => [index().on(t.hostId)],
+);
+
+export const eventAdmins = pgTable(
+  "event_admins",
+  {
+    eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull().references(() => people.id, { onDelete: "cascade" }),
+    invitedBy: uuid("invited_by").notNull().references(() => people.id),
+    status: text("status").notNull(),
+    createdAt: tstz("created_at").notNull().defaultNow(),
+  },
+  (t) => [unique("event_admins_event_user").on(t.eventId, t.userId), index("event_admins_user").on(t.userId)],
+);
+
+export const eventInvites = pgTable(
+  "event_invites",
+  {
+    eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+    inviteeId: uuid("invitee_id").notNull().references(() => people.id, { onDelete: "cascade" }),
+    invitedBy: uuid("invited_by").notNull().references(() => people.id),
+    createdAt: tstz("created_at").notNull().defaultNow(),
+  },
+  (t) => [unique("event_invites_event_invitee").on(t.eventId, t.inviteeId)],
 );
 
 export const horizons = pgTable("horizons", {
@@ -125,6 +158,7 @@ export const rsvps = pgTable(
     went: boolean("went").notNull().default(false),
     shiftIndex: integer("shift_index"),
     role: text("role"),
+    cocreatorPending: boolean("cocreator_pending").notNull().default(false),
     updatedAt: tstz("updated_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.personId, t.eventId] })],
@@ -138,6 +172,41 @@ export const promotions = pgTable(
     createdAt: tstz("created_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.personId, t.eventId] })],
+);
+
+export const friendships = pgTable(
+  "friendships",
+  {
+    a: uuid("a").notNull().references(() => people.id, { onDelete: "cascade" }),
+    b: uuid("b").notNull().references(() => people.id, { onDelete: "cascade" }),
+    requestedBy: uuid("requested_by").notNull().references(() => people.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("pending"),
+    createdAt: tstz("created_at").notNull().defaultNow(),
+    acceptedAt: tstz("accepted_at"),
+  },
+  (t) => [primaryKey({ columns: [t.a, t.b] }), index().on(t.b)],
+);
+
+export const contactLists = pgTable(
+  "contact_lists",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: uuid("owner_id").notNull().references(() => people.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    createdAt: tstz("created_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("contact_lists_owner_lower_name").on(t.ownerId, sql`lower(${t.name})`)],
+);
+
+export const contactListMembers = pgTable(
+  "contact_list_members",
+  {
+    listId: uuid("list_id").notNull().references(() => contactLists.id, { onDelete: "cascade" }),
+    personId: uuid("person_id").notNull().references(() => people.id, { onDelete: "cascade" }),
+    addedAt: tstz("added_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.listId, t.personId] }), index().on(t.personId)],
 );
 
 export const personFollows = pgTable(
@@ -158,6 +227,23 @@ export const horizonFollows = pgTable(
     createdAt: tstz("created_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.personId, t.horizonId] })],
+);
+
+export const horizonCollaborators = pgTable(
+  "horizon_collaborators",
+  {
+    horizonId: uuid("horizon_id").notNull().references(() => horizons.id, { onDelete: "cascade" }),
+    personId: uuid("person_id").notNull().references(() => people.id, { onDelete: "cascade" }),
+    addedBy: uuid("added_by").notNull().references(() => people.id),
+    createdAt: tstz("created_at").notNull().defaultNow(),
+    acceptedAt: tstz("accepted_at"),
+    declinedAt: tstz("declined_at"),
+    role: text("role"),
+  },
+  (t) => [
+    primaryKey({ columns: [t.horizonId, t.personId] }),
+    index("horizon_collaborators_person").on(t.personId),
+  ],
 );
 
 export const callouts = pgTable("callouts", {

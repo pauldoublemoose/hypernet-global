@@ -41,7 +41,7 @@ test("a fresh main seed gives each real event and its next edition its picture, 
   const stmts = buildSeed("main", { now: NOW }).filter((s) => s.startsWith("insert into events "));
   const withPic = stmts.filter((s) => s.includes("/images/real-events/"));
   assert.equal(withPic.length, 16); // 11 pictures, 5 of them burns with a next edition
-  for (const s of withPic) assert.match(s, /"bg":"#f8f7f3","ink":"#161616","accent":"#262626","image":"https:\/\/br-holy-dawn-b2fwcldg\.storage\.[^"]+","glyph":"."/);
+  for (const s of withPic) assert.match(s, /"bg":"#f8f7f3","ink":"#161616","accent":"#262626","image":"https:\/\/br-young-credit-b9t2vyjm\.storage\.[^"]+","glyph":"."/);
   // Čarodění has no site of its own with a picture: no look at all
   assert.ok(stmts.some((s) => s.includes("'Čarodění 2026'") && /, null, 'import'/.test(s)));
   // the file path stays out of the event's details
@@ -50,7 +50,7 @@ test("a fresh main seed gives each real event and its next edition its picture, 
 
 test("on dev a fixture's own look keeps its colours and gains the picture", () => {
   const bm = buildSeed("dev", { now: NOW }).find((s) => s.startsWith("insert into events ") && s.includes("'Burning Man 2026'"));
-  assert.match(bm, /"bg":"#3a2a12","ink":"#fdf3df","accent":"#e6b23c","image":"https:\/\/br-rapid-butterfly-b2sgym8n\.storage\.[^"]+\/burning-man-[0-9a-f]{8}\.jpg"/);
+  assert.match(bm, /"bg":"#3a2a12","ink":"#fdf3df","accent":"#e6b23c","image":"https:\/\/br-fragrant-shape-b9dk55gf\.storage\.[^"]+\/burning-man-[0-9a-f]{8}\.jpg"/);
 });
 
 test("the pictures patch: one guarded update per event, then its _migrations row", () => {
@@ -58,7 +58,7 @@ test("the pictures patch: one guarded update per event, then its _migrations row
   const ups = stmts.slice(0, -1);
   assert.equal(ups.length, 16);
   for (const s of ups) {
-    assert.match(s, /^update events set look = case when look is null then '\{.*\}'::jsonb else jsonb_set\(look, '\{image\}', to_jsonb\('https:\/\/br-holy-dawn-b2fwcldg[^']+'::text\)\) end where id = '[0-9a-f-]{36}' /);
+    assert.match(s, /^update events set look = case when look is null then '\{.*\}'::jsonb else jsonb_set\(look, '\{image\}', to_jsonb\('https:\/\/br-young-credit-b9t2vyjm[^']+'::text\)\) end where id = '[0-9a-f-]{36}' /);
     // idempotent and never over someone's own picture
     assert.match(s, /and look->>'image' is distinct from '[^']+' and \(look->>'image' is null or look->>'image' like '%\/images\/real-events\/%'\)$/);
   }

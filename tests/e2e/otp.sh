@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Prints the newest Hypernet / Neon Auth login code sent to ONE plus-address of the owner's Gmail, e.g.
-#   tests/e2e/otp.sh michal.kucera04+hn1@gmail.com [after-epoch-seconds]
+# Prints the newest Hypernet / Neon Auth login code sent to ONE plus-address of the owner's mailbox (Google Workspace), e.g.
+#   tests/e2e/otp.sh paul+hn1@doublemoose.com [after-epoch-seconds]
 # It searches only for that exact recipient and the auth sender, reads only the newest match, prints only the code.
 set -euo pipefail
 to="${1:?usage: otp.sh <plus-address> [after-epoch-seconds]}"
 after="${2:-$(( $(date +%s) - 900 ))}"
-case "$to" in michal.kucera04+hn*@gmail.com) ;; *) echo "only +hn test addresses" >&2; exit 2 ;; esac
+case "$to" in paul+hn*@doublemoose.com) ;; *) echo "only +hn test addresses" >&2; exit 2 ;; esac
 q="to:$to after:$after (from:auth@mail.myneon.app OR subject:\"Hypernet code\")"
 id=$(gws gmail users messages list --params "$(python3 -c 'import json,sys; print(json.dumps({"userId":"me","q":sys.argv[1],"maxResults":1}))' "$q")" 2>/dev/null \
   | python3 -c 'import sys,json; d=json.load(sys.stdin); m=d.get("messages") or []; print(m[0]["id"] if m else "")')

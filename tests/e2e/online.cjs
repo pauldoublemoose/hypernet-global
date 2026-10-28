@@ -1,5 +1,5 @@
 /* End-to-end, as people use it: two real logins by emailed code, against a running deployment.
-     HN_URL=https://… HN_EMAIL_A=michal.kucera04+hn1@gmail.com HN_EMAIL_B=michal.kucera04+hn2@gmail.com \
+     HN_URL=https://… HN_EMAIL_A=paul+hn1@doublemoose.com HN_EMAIL_B=paul+hn2@doublemoose.com \
      HN_OTP_DIR=/tmp/otp [HN_BYPASS=<vercel automation bypass secret>] node tests/e2e/online.cjs
    When it needs a code it prints "WAITING_FOR_CODE <email>" and waits for the file $HN_OTP_DIR/<email>.txt
    (tests/e2e/otp.sh reads it from Gmail). Covers: join by code, profile, a Friends event with a picture, a public

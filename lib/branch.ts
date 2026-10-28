@@ -10,18 +10,18 @@
 
 export type BranchName = "dev" | "main";
 
-export const NEON_PROJECT_ID = "billowing-rice-20515821";
+export const NEON_PROJECT_ID = "holy-bonus-89610570";
 
 export const BRANCHES: Record<BranchName, { id: string; authBaseUrl: string; storageEndpoint: string }> = {
   dev: {
-    id: "br-rapid-butterfly-b2sgym8n",
-    authBaseUrl: "https://ep-tiny-morning-b26xe7lf.neonauth.c-6.eu-central-1.aws.neon.tech/hypernet/auth",
-    storageEndpoint: "https://br-rapid-butterfly-b2sgym8n.storage.c-6.eu-central-1.aws.neon.tech",
+    id: "br-fragrant-shape-b9dk55gf",
+    authBaseUrl: "https://ep-green-cell-b97k9i3t.neonauth.c-7.eu-central-1.aws.neon.tech/hypernet/auth",
+    storageEndpoint: "https://br-fragrant-shape-b9dk55gf.storage.c-7.eu-central-1.aws.neon.tech",
   },
   main: {
-    id: "br-holy-dawn-b2fwcldg",
-    authBaseUrl: "https://ep-soft-thunder-b2xv95gy.neonauth.c-6.eu-central-1.aws.neon.tech/hypernet/auth",
-    storageEndpoint: "https://br-holy-dawn-b2fwcldg.storage.c-6.eu-central-1.aws.neon.tech",
+    id: "br-young-credit-b9t2vyjm",
+    authBaseUrl: "https://ep-holy-smoke-b93npjx9.neonauth.c-7.eu-central-1.aws.neon.tech/hypernet/auth",
+    storageEndpoint: "https://br-young-credit-b9t2vyjm.storage.c-7.eu-central-1.aws.neon.tech",
   },
 };
 

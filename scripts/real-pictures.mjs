@@ -19,8 +19,8 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** Each branch's storage host — the same as lib/branch.ts (scripts/real-pictures.test.mjs checks they agree). */
 export const STORAGE = {
-  dev: "https://br-rapid-butterfly-b2sgym8n.storage.c-6.eu-central-1.aws.neon.tech",
-  main: "https://br-holy-dawn-b2fwcldg.storage.c-6.eu-central-1.aws.neon.tech",
+  dev: "https://br-fragrant-shape-b9dk55gf.storage.c-7.eu-central-1.aws.neon.tech",
+  main: "https://br-young-credit-b9t2vyjm.storage.c-7.eu-central-1.aws.neon.tech",
 };
 export const BUCKET = "images";
 export const PREFIX = "real-events/";

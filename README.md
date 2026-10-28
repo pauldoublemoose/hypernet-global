@@ -11,7 +11,7 @@ to be developed toward a real product. Upstream product repo is Sebastian's `pau
 - `docs/reference/` — IA rules and briefs carried over from the exploration repo (IA-v2 wins over IA).
 - `docs/research/` — event-data and backend research. `docs/email/` — the login email.
 
-Run on the database (dev branch): `npm install`, then `with-secrets --dir . -- ./node_modules/.bin/next dev --port 3000`
+Run on the database (dev branch): `npm install`, then `scripts/with-env ./node_modules/.bin/next dev --port 3000`
 and open http://localhost:3000 (add `?offline=1` for the fixtures).
 
 Run on the fixtures only: `python3 -m http.server 8080` then open http://localhost:8080

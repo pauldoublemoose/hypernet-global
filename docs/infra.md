@@ -1,6 +1,6 @@
 # Infra — how Hypernet runs (runbook)
 
-Updated **2026-10-04** (phase 2: the prototype runs on the database). Plain words first; commands at the end of
+Updated **2026-10-19** (moved to Paul's accounts: new Neon project, GitHub `pauldoublemoose/hypernet-feed`). Plain words first; commands at the end of
 each part.
 
 ## The moving parts
@@ -18,9 +18,9 @@ each part.
    └─ /api/hooks/neon-auth  (ready, off) the Hypernet-styled login email, sent through Resend
    │
    ▼
- Neon project "hypernet" (billowing-rice-20515821, org "Michal", Frankfurt, Postgres 17, database hypernet)
-   ├─ main  br-holy-dawn-b2fwcldg       production: real events only, real people
-   └─ dev   br-rapid-butterfly-b2sgym8n your laptop and previews: the mock cast + fixtures + test accounts
+ Neon project "hypernet" (holy-bonus-89610570, org "hypernet", Frankfurt, Postgres 17, database hypernet)
+   ├─ main  br-young-credit-b9t2vyjm     production: real events only, real people
+   └─ dev   br-fragrant-shape-b9dk55gf   your laptop and previews: the mock cast + fixtures + test accounts
 ```
 
 Think of a venue: Vercel is the building and the staff, Postgres the archive, Neon Auth the front desk that
@@ -75,7 +75,7 @@ source tables (going, interested, promoted, created, published, followed, added 
 
 ## Secrets: what, where from, where they go
 
-Values live only in the encrypted `.env.enc` (`sops-edit` to change). Nothing is ever written in plain text.
+Values live in the git-ignored `.env.local` (mode 600; copy `.env.example`) and, for the app's keys, on Vercel as sensitive variables. Nothing is committed.
 
 | Key | Where it comes from | Vercel |
 |---|---|---|
@@ -93,11 +93,10 @@ set on Vercel as of 2026-10-04.
 ## Commands
 
 ```bash
-cd ~/Documents/CODE/hypernet-feed
-npm install
+npm ci --legacy-peer-deps
 
-# run it (prototype + API, on the dev branch). Use --port: with-secrets refuses -p.
-with-secrets --dir . -- ./node_modules/.bin/next dev --port 3000
+# run it (prototype + API, on the dev branch). scripts/with-env loads .env.local for any command.
+scripts/with-env ./node_modules/.bin/next dev --port 3000
 #   http://localhost:3000            online (the database)
 #   http://localhost:3000/?offline=1 the fixtures, as before
 
@@ -109,9 +108,9 @@ HN_ROOT=. npx -y -p playwright node tests/regression.js      # the prototype's o
 HN_API=http://localhost:3000 npx vitest run
 
 # end to end, two real logins by emailed code (+hn plus-addresses of the owner's Gmail)
-HN_URL=http://localhost:3000 HN_EMAIL_A=michal.kucera04+hn1@gmail.com HN_EMAIL_B=michal.kucera04+hn2@gmail.com \
+HN_URL=http://localhost:3000 HN_EMAIL_A=paul+hn1@doublemoose.com HN_EMAIL_B=paul+hn2@doublemoose.com \
   HN_OTP_DIR=/tmp/hn-otp node tests/e2e/online.cjs            # prints WAITING_FOR_CODE <email> …
-tests/e2e/otp.sh michal.kucera04+hn1@gmail.com > "/tmp/hn-otp/michal.kucera04+hn1@gmail.com.txt"   # … feed it
+tests/e2e/otp.sh paul+hn1@doublemoose.com > "/tmp/hn-otp/paul+hn1@doublemoose.com.txt"   # … feed it
 
 # env to Vercel (values over stdin, never printed; production gets the main-branch database)
 node scripts/env-push.mjs production --dry-run
@@ -129,19 +128,19 @@ on better-auth's optional peers (a vitest 4 beside our 5). With the flag npm ins
 
 **Migrations and seeds.** `db/migrations/*.sql` is the source of truth (`db/schema.ts` mirrors it for TypeScript).
 Each file runs as one transaction over Neon's SQL-over-HTTP endpoint, with the connection string added by curl
-inside `with-secrets` (nothing prints it):
+inside `scripts/with-env` (nothing prints it):
 
 ```bash
 node scripts/sql-payload.mjs db/migrations/0003_….sql > /tmp/q.json      # or: seed:dev, seed:main
-with-secrets --dir . -- curl -sS --fail-with-body \
+scripts/with-env curl -sS --fail-with-body \
   --variable %DATABASE_URL_UNPOOLED --expand-header 'Neon-Connection-String: {{DATABASE_URL_UNPOOLED}}' \
   -H 'Content-Type: application/json' -H 'Neon-Batch-Isolation-Level: Serializable' \
-  --data-binary @/tmp/q.json https://api.c-6.eu-central-1.aws.neon.tech/sql
-# production: DATABASE_URL_MAIN_UNPOOLED. The project is on Neon cell c-6; api.eu-central-1 alone says
+  --data-binary @/tmp/q.json https://api.c-7.eu-central-1.aws.neon.tech/sql
+# production: DATABASE_URL_MAIN_UNPOOLED. The project is on Neon cell c-7; api.eu-central-1 alone says
 # "password authentication failed".
 ```
 
-Applied: `0001_init`, `0002_v2_api` on both branches, `0003_link_events` on both branches (2026-10-16); `seed-dev` on dev, `seed-main` on main (the `_migrations`
+Applied: `0001_init`, `0002_v2_api`, `0003_link_events` on both branches; `seed-dev` on dev (2026-10-19), and on main the restored production data from the handoff (`docs/handoff.md`), which lists `seed-main` and `pictures-real-events` (the `_migrations`
 table lists them; `GET /api/health` shows the last). Seeds are idempotent (`on conflict do nothing`).
 
 **Real events' pictures** (2026-10-05). The files are committed in `data/pictures/` (offline the page shows them
@@ -155,7 +154,7 @@ scripts/real-pictures.sh dev              # applied 2026-10-05 ("rows changed: 1
 scripts/real-pictures.sh main             # production — only when the owner says so
 ```
 
-Run it from a normal terminal (inside Claude's sandbox the nested `with-secrets` can't decrypt). A new or replaced
+A new or replaced
 picture: put the file in `data/pictures/`, name it in `data/real-events.json` (`picture`), run the script per branch.
 Provenance: `docs/research/real-event-pictures.md`.
 
@@ -166,7 +165,7 @@ Provenance: `docs/research/real-event-pictures.md`.
 | Email code sign-in (sign-up open) | on | on |
 | Email + password | **on** (only so `tests/api` can make throwaway logins) | **off** — otherwise anyone could register someone else's email with a password; codes still work (tested) |
 | Localhost allowed | yes | no |
-| Trusted domains | localhost; each preview URL you log in on (Neon MCP `add_auth_trusted_domain`) | `https://hypernet-feed.vercel.app`, `https://hypernet-feed-michal-kueras-projects-732d66fe.vercel.app` |
+| Trusted domains | localhost; each preview URL you log in on (Neon API `POST …/branches/<id>/auth/domains`) | `https://feed.hyperstition.cloud`, `https://hypernet-feed-nine.vercel.app`, `https://hypernet-feed-pauls-projects-d313c243.vercel.app` |
 | Application name (in the email) | Hypernet | Hypernet |
 | Login email | Neon's shared sender (`auth@mail.myneon.app`, "Your Sign-In Code - Hypernet") | same |
 
@@ -178,20 +177,20 @@ refused). A custom domain later goes into main's.
 Built and waiting: `lib/email/login-code.ts` (preview: `docs/email/login-code.html`, `login-code.png`,
 `login-code-phone.png`) and `app/api/hooks/neon-auth` (verifies Neon's Ed25519 signature, sends through Resend,
 logs a plain line if Resend refuses with 403). Neon calls it instead of sending its own email once the
-`send.otp` webhook is on. **Not on yet**: it needs a sender domain verified in Resend — only
-`help.psychovlozka.cz` is, and `EMAIL_FROM` points at the unverified `mail.psychovlozka.cz`. Switching it on
-before the domain is verified would stop all login emails. To switch on:
+`send.otp` webhook is on. **Not on yet**: it needs a sender domain verified in Paul's Resend
+account and `EMAIL_FROM` on that domain. Switching it on before the domain is verified would stop all login
+emails. To switch on:
 
 1. resend.com → Domains → add the domain to send from (ideally a Hypernet one), add its DNS records, wait for
    "Verified".
-2. `sops-edit` → `EMAIL_FROM=Hypernet <login@that-domain>`; `node scripts/env-push.mjs production` (and
+2. In `.env.local`: `EMAIL_FROM=Hypernet <login@that-domain>`; `node scripts/env-push.mjs production` (and
    `preview`); redeploy.
 3. Turn the webhook on, per branch (main shown):
    ```bash
-   with-secrets --dir . -- curl -sS -X PUT --variable %NEON_API_KEY --expand-header 'Authorization: Bearer {{NEON_API_KEY}}' \
+   scripts/with-env curl -sS -X PUT --variable %NEON_API_KEY --expand-header 'Authorization: Bearer {{NEON_API_KEY}}' \
      -H 'Content-Type: application/json' \
-     -d '{"enabled":true,"webhook_url":"https://hypernet-feed.vercel.app/api/hooks/neon-auth","enabled_events":["send.otp"],"timeout_seconds":5}' \
-     https://console.neon.tech/api/v2/projects/billowing-rice-20515821/branches/br-holy-dawn-b2fwcldg/auth/webhooks
+     -d '{"enabled":true,"webhook_url":"https://feed.hyperstition.cloud/api/hooks/neon-auth","enabled_events":["send.otp"],"timeout_seconds":5}' \
+     https://console.neon.tech/api/v2/projects/holy-bonus-89610570/branches/br-young-credit-b9t2vyjm/auth/webhooks
    ```
    Back to Neon's email: the same with `{"enabled":false}`.
 

@@ -1584,7 +1584,31 @@
     ingest: ingest, ingestFixtures: ingestFixtures, ingestLists: ingestLists, lists: listsSnapshot,
     nameProblem: nameProblem, planDelete: planDelete, memberToggle: memberToggle, knownIds: knownIds
   };
+  var prior = root.HNRel;
   root.HNRel = api;
+  if (prior && prior !== api) {
+    if (typeof prior.registerRequestProvider === "function") {
+      var realRegister = api.registerRequestProvider;
+      api.registerRequestProvider = function (provider) {
+        prior.registerRequestProvider(provider);
+        return realRegister(provider);
+      };
+    }
+    if (typeof prior.requestsChanged === "function") {
+      var realChanged = api.requestsChanged;
+      api.requestsChanged = function () {
+        prior.requestsChanged();
+        return realChanged();
+      };
+    }
+    if (typeof prior.openRequests === "function") {
+      var realOpen = api.openRequests;
+      api.openRequests = function (arg) {
+        prior.openRequests(arg);
+        return realOpen(arg);
+      };
+    }
+  }
   if (typeof module === "object" && module.exports) module.exports = api;
   if (typeof document !== "undefined") {
     document.addEventListener("click", onClick, true);

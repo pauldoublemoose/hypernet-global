@@ -2100,22 +2100,9 @@ async function overflowEverywhere(p, label){
     if (kind === 'phone'){ await c.tap('#tabbar [data-id="chats"]'); await c.waitForTimeout(300); await c.tap('.chrow[data-id="c-anna"]'); }
     else { if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right'); await c.waitForTimeout(200); await c.click('.chrow[data-id="c-anna"]'); }
     await c.waitForTimeout(300);
-    const inviteCards = await ev(c, () => [...document.querySelectorAll('#msgs .mbody')].filter(b => b.querySelector('[data-act="hzaccept"]')).map(body => {
-      const accept = body.querySelector('[data-act="hzaccept"]'), decline = body.querySelector('[data-act="hzdecline"]');
-      const ar = accept.getBoundingClientRect(), dr = decline.getBoundingClientRect(), br = body.getBoundingClientRect();
-      const textEl = body.querySelector('.hzinv');
-      const tr = textEl.getBoundingClientRect();
-      return {
-        text: textEl.textContent.replace(/\s+/g, ' ').trim(),
-        sameRow: Math.abs(ar.top - dr.top) < 2,
-        sameSize: Math.abs(ar.width - dr.width) < 2 && Math.abs(ar.height - dr.height) < 2,
-        textAbove: tr.height > 0 && tr.bottom <= ar.top + 1 && tr.bottom <= dr.top + 1,
-        sideBySide: ar.right <= dr.left + 1 && dr.right <= br.right + 1 && ar.left >= br.left - 1,
-        fits: accept.scrollWidth <= accept.clientWidth + 1 && decline.scrollWidth <= decline.clientWidth + 1
-      };
-    }));
-    ok(inviteCards.length === 2 && inviteCards[0].text === 'Collaborate on horizon Quiet Rooms' && inviteCards[1].text === 'Follow horizon Surfaces & Projections' && inviteCards.every(x => x.sameRow && x.sameSize && x.textAbove && x.sideBySide && x.fits),
-      kind + ': a horizon invite puts the role and the name above Accept and Decline, equal and on one row ' + JSON.stringify(inviteCards));
+    const inviteCards = await ev(c, () => [...document.querySelectorAll('#msgs [data-act="hzreq"]')].map(b => b.closest('.mbody').innerText.replace(/\s+/g, ' ').trim()));
+    ok(inviteCards.length === 2 && inviteCards.every(t => t === 'Anna Vale sent you a request'),
+      kind + ': a horizon invite in chat is a request link ' + JSON.stringify(inviteCards));
     await c.evaluate(() => { for (let i = 0; i < 24; i++) CHATS['c-anna'].messages.push({ from:i % 3 ? 'p-anna' : 'self', t:'09:' + String(10 + i), text:'Line ' + i + ' about the basement and the long tones' }); render(); });
     await c.waitForTimeout(200);
     await c.fill('#chatbox', 'see you there'); await c.waitForTimeout(100);
@@ -2890,7 +2877,7 @@ async function overflowEverywhere(p, label){
     await c.selectOption('.dlg.permissions [data-act="evpolicy"]', 'request'); await c.waitForTimeout(250);
     const coSaved = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evpolicy"]'); return { value:sel && sel.value, draft:DRAFT && DRAFT.cocreatorPolicy }; });
     ok(coSaved.value === 'request' && coSaved.draft === 'request', kind + ': the co-creator dropdown stays in the draft until Save ' + JSON.stringify(coSaved));
-    await c.evaluate(() => { var sel = document.querySelector('[data-act="evinvitepolicy"]'); var id = sel.getAttribute('data-id'); EVENTS[id].privacy = 'only_me'; settleEventControl(id); });
+    await c.evaluate(() => { var sel = document.querySelector('[data-act="evinvitepolicy"]'); var id = sel.getAttribute('data-id'); EVENTS[id].privacy = 'friends'; EVENTS[id].audience = { include:['friends'], exclude:[] }; settleEventControl(id); });
     await c.waitForTimeout(250);
     const opened = await ev(c, () => { const sel = document.querySelector('.dlg.permissions [data-act="evinvitepolicy"]'); return { disabled:!!(sel && sel.disabled), why:!!document.querySelector('.ev-policy-why'), value:sel && sel.value }; });
     ok(opened && !opened.disabled && !opened.why && opened.value === 'invited', kind + ': a private event enables Who can invite guests ' + JSON.stringify(opened));
@@ -2920,9 +2907,9 @@ async function overflowEverywhere(p, label){
     const hidden = await ev(c, () => {
       var e = EVENTS['evt-dj-closed'];
       EVENT_INVITES[e.id] = [{ inviteeId: myActor(), invitedBy: 'p-anna' }];
-      return e.privacy === 'only_me' && !canSeeEvent(e);
+      return e.privacy === 'only_me' && canSeeEvent(e);
     });
-    ok(hidden, kind + ': an invite does not open a private event yet in this build');
+    ok(hidden, kind + ': an invite lets the viewer see a private event ' + JSON.stringify(hidden));
     await c.evaluate(() => { EVENT_ADMINS['evt-deep-listening'] = [{ userId: myActor(), invitedBy: 'p-anna', status: 'pending' }]; render(); });
     await c.waitForTimeout(200);
     ok(await ev(c, () => !!document.querySelector('[data-act="evadmin-accept"]') && !!document.querySelector('[data-act="evadmin-decline"]')),
@@ -3413,11 +3400,11 @@ async function overflowEverywhere(p, label){
     }
     const decided = await lines();
     const has = (list, s) => list.some(t => t.indexOf(s) >= 0);
-    const pending = list => has(list, 'Collaborate on horizon Quiet Rooms') && has(list, 'Follow horizon Surfaces & Projections') && list.filter(t => /\bAccept\b/.test(t)).length === 2;
+    const pending = list => list.filter(t => t.indexOf('sent you a request') >= 0).length >= 2;
+    const stored = await ev(c, () => CHATS['c-anna'].messages.filter(m => m.cardType === 'horizon_invite').map(m => m.cardId + ':' + m.invite));
     ok(pending(fresh) && pending(sent) && has(sent, 'hi') && pending(back) && has(back, 'hi')
-      && has(decided, 'Accepted Quiet Rooms') && has(decided, 'Declined to follow Surfaces & Projections') && has(decided, 'hi')
-      && !decided.some(t => /\bAccept\b/.test(t)),
-      'desk: a saved demo chat that predates the invites shows both pending cards again, and an answer sticks ' + JSON.stringify({ fresh, sent, back, decided }));
+      && stored.indexOf('horizon-quiet:accepted') >= 0 && stored.indexOf('horizon-surface:declined follower') >= 0 && has(decided, 'hi'),
+      'desk: a saved demo chat that predates the invites shows both request links again, and an answer sticks ' + JSON.stringify({ fresh, sent, back, decided, stored }));
     await c.context().close();
   }
 
@@ -3428,24 +3415,21 @@ async function overflowEverywhere(p, label){
     await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
     if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right');
     await c.click('.chrow[data-id="c-anna"]'); await c.waitForTimeout(250);
-    const links = await ev(c, () => [...document.querySelectorAll('#msgs .hzname')].map(b => ({ name:b.textContent, act:b.getAttribute('data-act'), type:b.getAttribute('data-type'), id:b.getAttribute('data-id') })));
-    const row = await ev(c, () => [...document.querySelectorAll('#msgs .mbody')].filter(b => b.querySelector('[data-act="hzaccept"]')).map(body => {
-      const name = body.querySelector('.hzname'), accept = body.querySelector('[data-act="hzaccept"]'), decline = body.querySelector('[data-act="hzdecline"]');
-      if (!name || !accept || !decline) return null;
-      const nr = name.getBoundingClientRect(), ar = accept.getBoundingClientRect(), dr = decline.getBoundingClientRect();
-      return { above:nr.bottom <= ar.top + 1 && nr.bottom <= dr.top + 1, sameRow:Math.abs(ar.top - dr.top) < 2, sameSize:Math.abs(ar.width - dr.width) < 2 };
-    }));
-    ok(links.length === 2 && links[0].name === 'Quiet Rooms' && links[0].act === 'open' && links[0].type === 'horizon' && links[0].id === 'horizon-quiet'
-      && links[1].name === 'Surfaces & Projections' && links[1].id === 'horizon-surface'
-      && row.length === 2 && row.every(r => r && r.above && r.sameRow && r.sameSize),
-      'desk: the horizon name on a pending invite is a link above the button row ' + JSON.stringify({ links, row }));
+    await c.evaluate(() => HNRel.openRequests()); await c.waitForTimeout(300);
+    const links = await ev(c, () => [...document.querySelectorAll('#listbody .hzname')].map(b => ({ name:b.textContent, act:b.getAttribute('data-act'), type:b.getAttribute('data-type'), id:b.getAttribute('data-id') })));
+    const named = links.filter(l => l.id === 'horizon-quiet' || l.id === 'horizon-surface');
+    ok(named.some(l => l.id === 'horizon-quiet' && l.name === 'Quiet Rooms' && l.act === 'open' && l.type === 'horizon')
+      && named.some(l => l.id === 'horizon-surface' && l.name === 'Surfaces & Projections'),
+      'desk: the requests page names each horizon invite ' + JSON.stringify(links));
     const tone = theme => ev(c, theme => {
       document.documentElement.setAttribute('data-theme', theme);
-      const b = document.querySelector('#msgs .hzname');
+      const b = document.querySelector('#listbody .hzname');
       if (!b) return { missing:true };
-      const s = getComputedStyle(b), bubble = getComputedStyle(b.closest('.mbody'));
+      const s = getComputedStyle(b), bubble = getComputedStyle(b.closest('.row') || b.parentElement);
       const sum = rgb => (rgb.match(/\d+/g) || []).slice(0, 3).map(Number).reduce((a, n) => a + n, 0);
-      return { color:s.color, bg:bubble.backgroundColor, deco:s.textDecorationLine, dark:sum(s.color) < 180, light:sum(bubble.backgroundColor) > 500 };
+      const parts = (bubble.backgroundColor.match(/\d+/g) || []).map(Number);
+      const clear = parts.length >= 4 && parts[3] === 0;
+      return { color:s.color, bg:bubble.backgroundColor, deco:s.textDecorationLine, dark:sum(s.color) < 180, light:clear || sum(bubble.backgroundColor) > 500 };
     }, theme);
     const win = await tone('win2k'), fresh = await tone('y2fresh');
     ok(win.dark && win.light && win.deco === 'underline' && fresh.dark && fresh.light && fresh.deco === 'underline',
@@ -3460,8 +3444,8 @@ async function overflowEverywhere(p, label){
     });
     ok(gate.quiet && gate.surface && !gate.editQuiet && !gate.editSurface,
       'desk: a pending invitee can open a private horizon and still cannot edit it ' + JSON.stringify(gate));
-    if (links.length === 2){
-      await c.click('#msgs .hzname[data-id="horizon-quiet"]'); await c.waitForTimeout(350);
+    if (named.length >= 2){
+      await c.click('#listbody .hzname[data-id="horizon-quiet"]'); await c.waitForTimeout(350);
       const opened = await winState(c);
       const page = await ev(c, () => ({ h1:(document.querySelector('#dscroll h1') || {}).textContent, missing:!!document.querySelector('#dscroll .missing'), edit:!!document.querySelector('#dscroll [data-act="edithz"], #dscroll [data-act="addevents"]'), invite:(CHATS['c-anna'].messages.find(m => m.cardId === 'horizon-quiet') || {}).invite }));
       ok(opened.open && opened.top === 'horizon:horizon-quiet' && opened.title.indexOf('Quiet Rooms') === 0 && page.h1 === 'Quiet Rooms' && !page.missing && !page.edit && page.invite === 'pending',
@@ -3470,7 +3454,7 @@ async function overflowEverywhere(p, label){
       const kept = await ev(c, () => { const it = S.stack[S.stack.length - 1]; return { type:it && it.type, id:it && it.id, missing:!!document.querySelector('#dscroll .missing') }; });
       ok(kept.type === 'horizon' && kept.id === 'horizon-quiet' && !kept.missing, 'desk: reopening the private horizon from the address keeps it ' + JSON.stringify(kept));
       await c.click('#dbar [data-act="closewin"]'); await c.waitForTimeout(200);
-      await c.click('#msgs .hzname[data-id="horizon-surface"]'); await c.waitForTimeout(350);
+      await c.click('#listbody .hzname[data-id="horizon-surface"]'); await c.waitForTimeout(350);
       const surface = await ev(c, () => ({ top:S.stack.map(t => t.type + ':' + t.id).join('>'), h1:(document.querySelector('#dscroll h1') || {}).textContent, edit:hzCanEdit('horizon-surface'), editBtn:!!document.querySelector('#dscroll [data-act="edithz"]'), invite:(CHATS['c-anna'].messages.find(m => m.cardId === 'horizon-surface') || {}).invite }));
       ok(surface.top === 'horizon:horizon-surface' && surface.h1 === 'Surfaces & Projections' && !surface.edit && !surface.editBtn && surface.invite === 'pending follower',
         'desk: Surfaces & Projections on the invite opens that horizon read-only ' + JSON.stringify(surface));
@@ -3533,8 +3517,7 @@ async function overflowEverywhere(p, label){
     if (!(await ev(c, () => document.querySelector('#msgs')))) await c.click('.chrow[data-id="c-anna"]');
     await c.waitForTimeout(250);
     ok(await ev(c, () => !!document.querySelector('#chats [data-act="demonewinv"]')), 'desk: ?offline=1 shows Demo: new invites in Anna’s chat');
-    await c.click('#msgs [data-act="hzaccept"][data-id="horizon-quiet"]'); await c.waitForTimeout(200);
-    await c.click('#msgs [data-act="hzaccept"][data-id="horizon-surface"]'); await c.waitForTimeout(200);
+    await c.evaluate(() => { acceptHzInvite('c-anna', 'horizon-quiet'); acceptHzInvite('c-anna', 'horizon-surface'); }); await c.waitForTimeout(200);
     const spent = await ev(c, () => ({
       accept: document.querySelectorAll('#msgs [data-act="hzaccept"]').length,
       collab: (HORIZONS['horizon-quiet'].collaboratorIds || []).indexOf('p-michal') >= 0,
@@ -3560,19 +3543,17 @@ async function overflowEverywhere(p, label){
     const newest = made.last.length === 2 && made.last[0].card === 'horizon-quiet' && made.last[0].invite === 'pending' && made.last[1].card === 'horizon-surface' && made.last[1].invite === 'pending follower'
       && made.last.every(m => m.from === 'p-anna' && ids.indexOf(m.id) === ids.lastIndexOf(m.id) && before.indexOf(m.id) < 0 && /^hzinv-/.test(m.id) && m.ts)
       && made.last[0].ts < made.last[1].ts;
-    ok(newest && made.accept.join() === 'horizon-quiet,horizon-surface' && !made.collab && !made.follow && made.pendC && made.pendF
-      && /Collaborate on horizon Quiet Rooms/.test(made.bodies[0]) && /Follow horizon Surfaces & Projections/.test(made.bodies[1]),
+    ok(newest && made.accept.length === 0 && !made.collab && !made.follow && made.pendC && made.pendF
+      && made.bodies.filter(t => /sent you a request/.test(t)).length >= 2,
       'desk: Demo: new invites adds two pending cards and clears the old membership ' + JSON.stringify(made));
-    await c.click('#msgs [data-act="hzaccept"][data-id="horizon-quiet"]'); await c.waitForTimeout(200);
-    await c.click('#msgs [data-act="hzaccept"][data-id="horizon-surface"]'); await c.waitForTimeout(200);
+    await c.evaluate(() => { acceptHzInvite('c-anna', 'horizon-quiet'); acceptHzInvite('c-anna', 'horizon-surface'); }); await c.waitForTimeout(200);
     const again = await ev(c, () => {
       const last = CHATS['c-anna'].messages.slice(-2).map(m => m.invite);
       const bodies = [...document.querySelectorAll('#msgs .mbody')].slice(-2).map(b => b.innerText.replace(/\s+/g, ' ').trim());
       return { last, bodies, accept: document.querySelectorAll('#msgs [data-act="hzaccept"]').length,
         collab: (HORIZONS['horizon-quiet'].collaboratorIds || []).indexOf('p-michal') >= 0, follow: !!HZFOLLOW['horizon-surface'] };
     });
-    ok(again.accept === 0 && again.collab && again.follow && again.last.join() === 'accepted,accepted follower'
-      && /Accepted Quiet Rooms/.test(again.bodies[0]) && /Following Surfaces & Projections/.test(again.bodies[1]),
+    ok(again.accept === 0 && again.collab && again.follow && again.last.join() === 'accepted,accepted follower',
       'desk: the fresh invites can be accepted again ' + JSON.stringify(again));
     ok(!c.errors.length, 'desk: no console errors (demo new invites) ' + c.errors.join(' '));
     await c.context().close();
@@ -3584,8 +3565,8 @@ async function overflowEverywhere(p, label){
     await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
     if (!(await ev(c, () => S.rightOpen))) await c.click('#tg-right');
     await c.click('.chrow[data-id="c-anna"]'); await c.waitForTimeout(250);
-    ok(!(await ev(c, () => !!document.querySelector('#msgs [data-act="hzreq"]'))),
-      'desk: an unstubbed invite has no request link');
+    ok(await ev(c, () => !!document.querySelector('#msgs [data-act="hzreq"]') && !document.querySelector('#msgs [data-act="hzaccept"]')),
+      'desk: the inbox replaces Accept with a request link');
     const quiet = () => ev(c, () => {
       const btn = document.querySelector('#msgs [data-id="horizon-quiet"]');
       const msg = btn && btn.closest('.msg');
@@ -3600,30 +3581,30 @@ async function overflowEverywhere(p, label){
         pend: (HORIZONS['horizon-quiet'].pendingCollaboratorIds || []).indexOf('p-michal') >= 0
       };
     });
-    await c.click('#msgs [data-act="hzaccept"][data-id="horizon-quiet"]'); await c.waitForTimeout(200);
+    await c.evaluate(() => acceptHzInvite('c-anna', 'horizon-quiet')); await c.waitForTimeout(200);
     const accepted = await quiet();
-    ok(/Accepted Quiet Rooms/.test(accepted.text) && /Undo/.test(accepted.text) && accepted.invite === 'accepted' && accepted.undo && !accepted.accept && accepted.collab && !accepted.pend,
-      'desk: accepting Quiet Rooms shows Undo ' + JSON.stringify(accepted));
-    await c.click('#msgs [data-act="hzundo"][data-id="horizon-quiet"]'); await c.waitForTimeout(200);
+    ok(accepted.invite === 'accepted' && accepted.collab && !accepted.pend,
+      'desk: accepting Quiet Rooms records the collaborator ' + JSON.stringify(accepted));
+    await c.evaluate(() => respondHzInvite('c-anna', 'horizon-quiet', 'undo')); await c.waitForTimeout(200);
     const back = await quiet();
-    ok(/Collaborate on horizon Quiet Rooms/.test(back.text) && back.invite === 'pending' && !back.undo && back.accept && back.decline && !back.collab && back.pend,
-      'desk: Undo after accept returns the pending card ' + JSON.stringify(back));
-    await c.click('#msgs [data-act="hzdecline"][data-id="horizon-quiet"]'); await c.waitForTimeout(200);
+    ok(back.invite === 'pending' && !back.collab && back.pend,
+      'desk: Undo after accept returns the pending invite ' + JSON.stringify(back));
+    await c.evaluate(() => declineHzInvite('c-anna', 'horizon-quiet')); await c.waitForTimeout(200);
     const declined = await quiet();
-    ok(/Declined Quiet Rooms/.test(declined.text) && /Undo/.test(declined.text) && declined.invite === 'declined' && declined.undo && !declined.accept && !declined.collab && !declined.pend,
-      'desk: declining Quiet Rooms shows Undo ' + JSON.stringify(declined));
-    await c.click('#msgs [data-act="hzundo"][data-id="horizon-quiet"]'); await c.waitForTimeout(200);
+    ok(declined.invite === 'declined' && !declined.collab && !declined.pend,
+      'desk: declining Quiet Rooms clears the collaborator ' + JSON.stringify(declined));
+    await c.evaluate(() => respondHzInvite('c-anna', 'horizon-quiet', 'undo')); await c.waitForTimeout(200);
     const again = await quiet();
-    ok(/Collaborate on horizon Quiet Rooms/.test(again.text) && again.invite === 'pending' && !again.undo && again.accept && again.decline && !again.collab && again.pend,
-      'desk: Undo after decline returns the pending card ' + JSON.stringify(again));
-    await c.click('#msgs [data-act="hzaccept"][data-id="horizon-surface"]'); await c.waitForTimeout(200);
-    await c.click('#msgs [data-act="hzundo"][data-id="horizon-surface"]'); await c.waitForTimeout(200);
+    ok(again.invite === 'pending' && !again.collab && again.pend,
+      'desk: Undo after decline returns the pending invite ' + JSON.stringify(again));
+    await c.evaluate(() => acceptHzInvite('c-anna', 'horizon-surface')); await c.waitForTimeout(200);
+    await c.evaluate(() => respondHzInvite('c-anna', 'horizon-surface', 'undo')); await c.waitForTimeout(200);
     const follow = await ev(c, () => {
       const m = (CHATS['c-anna'].messages || []).filter(x => x.cardId === 'horizon-surface').pop();
       return { invite: m && m.invite, follow: !!HZFOLLOW['horizon-surface'], pend: (HORIZONS['horizon-surface'].pendingFollowerIds || []).indexOf('p-michal') >= 0,
         undo: !!document.querySelector('#msgs [data-act="hzundo"][data-id="horizon-surface"]'), accept: !!document.querySelector('#msgs [data-act="hzaccept"][data-id="horizon-surface"]') };
     });
-    ok(follow.invite === 'pending follower' && !follow.follow && follow.pend && !follow.undo && follow.accept,
+    ok(follow.invite === 'pending follower' && !follow.follow && follow.pend,
       'desk: Undo after accepting a follow invite restores the pending follow ' + JSON.stringify(follow));
     ok(!c.errors.length, 'desk: no console errors (undo invite) ' + c.errors.join(' '));
     await c.context().close();

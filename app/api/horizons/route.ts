@@ -19,8 +19,9 @@ export const POST = route(async (req: Request) => {
   try {
     await sql.transaction([
       sql.query(
-        `insert into horizons (id, slug, owner_id, owner_name, name, description, is_personal_default, published_at, look, cover_event_id)
-           values ($1, $2, $3, $4, $5, $6, $7, case when $8 then now() end, $9::jsonb, $10)`,
+        `insert into horizons (id, slug, owner_id, owner_name, name, description, is_personal_default, published_at, look, cover_event_id, audience)
+           values ($1, $2, $3, $4, $5, $6, $7, case when $8 then now() end, $9::jsonb, $10,
+             case when $8 then '{"include":["everyone"],"exclude":[]}'::jsonb else '{"include":[],"exclude":[]}'::jsonb end)`,
         [id, hzSlug(b.name, id), me.id, me.displayName, b.name, b.description, b.isPersonalDefault, b.published, j(b.look), b.coverEventId ?? null],
       ),
       ...setHorizonEvents(sql, id, b.eventIds, me.id),

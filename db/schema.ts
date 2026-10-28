@@ -133,6 +133,7 @@ export const horizons = pgTable("horizons", {
   description: text("description").notNull().default(""),
   isPersonalDefault: boolean("is_personal_default").notNull().default(false),
   publishedAt: tstz("published_at"),
+  audience: jsonb("audience").$type<Audience>().notNull().default({ include: ["everyone"], exclude: [] }),
   look: jsonb("look").$type<Look | null>(),
   createdAt: tstz("created_at").notNull().defaultNow(),
 });

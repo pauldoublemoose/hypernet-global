@@ -311,7 +311,7 @@ export const horizonCreate = z
             eventIds: z.array(z.uuid()).max(500).default([]) })
   .strict();
 export const horizonPatch = z
-  .object(hzFields)
+  .object({ ...hzFields, audience: audience.optional() })
   .partial()
   .strict()
   .refine((p) => Object.keys(p).length > 0, { message: "nothing to change" });

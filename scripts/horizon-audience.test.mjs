@@ -14,7 +14,10 @@ test("0015 adds horizon audience and can_see_horizon, and is not a rewrite of 00
   assert.equal(migration.includes("alter table events"), false);
   const see = html.slice(html.indexOf("function canSeeHorizon"), html.indexOf("function hzCanEdit"));
   assert.match(see, /collaboratorIds/);
+  assert.match(see, /if \(!me\) return false/);
   assert.match(see, /HNAudience\.canSee/);
+  const fn = migration.slice(migration.indexOf("create or replace function can_see_horizon"), migration.indexOf("insert into _migrations"));
+  assert.equal(fn.includes("viewer is null"), false);
   assert.equal(html.includes("Not enforced yet"), false);
   assert.match(html, /h\[0\] === 'horizon-north' \? \{ include:\['everyone'\], exclude:\['friends'\] \}/);
   const patch = route.slice(route.indexOf('access.role === "collaborator"'), route.indexOf("Only the owner can change who can see this"));

@@ -657,6 +657,7 @@ async function overflowEverywhere(p, label){
   for (const kind of ['desk', 'phone']){
     const c = await ctx(kind);
     await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(300);
     const sigs = {};
     for (const [type, h] of [['event', '#/event/ridge-dawn-stretch'], ['event', '#/event/afrikaburn-2027'], ['horizon', '#/horizon/season?pane=closed'], ['person', '#/person/anna'], ['person', '#/person/kai']]){
       await c.goto(URL + h); await c.waitForTimeout(500);
@@ -1174,10 +1175,11 @@ async function overflowEverywhere(p, label){
   for (const kind of ['phone', 'tab', 'desk']){
     const c = await ctx(kind);
     await open(c, '#/horizon/baltic', true);
-    const hz = await ev(c, () => { const h1 = document.querySelector('.pg-horizon h1.hl'), sc = h1 && h1.closest('.panel');
-      const r = h1 && h1.getBoundingClientRect(), pr = sc && sc.getBoundingClientRect();
-      return { title:!!h1 && r.top >= pr.top - 1 && r.bottom <= pr.bottom, note:/list of events someone curates/.test((document.querySelector('.pg-horizon .pgnote') || {}).textContent || '') }; });
-    ok(hz.title && hz.note, kind + ': a shared horizon link opens at its title, with what a horizon is ' + JSON.stringify(hz));
+    const hz = await ev(c, () => ({
+      page:!!document.querySelector('.pg-horizon h1.hl'),
+      missing:/This Event Horizon is private or no longer here/.test((document.querySelector('#dscroll') || {}).innerText || '')
+    }));
+    ok(!hz.page && hz.missing, kind + ': a logged-out horizon link does not open ' + JSON.stringify(hz));
     ok((await overflow(c)) <= 0, kind + ': horizon page, no horizontal overflow');
     await c.evaluate(() => loginDialog()); await c.waitForTimeout(200);
     ok((await overflow(c)) <= 0, kind + ': Join dialog, no horizontal overflow');
@@ -2177,6 +2179,7 @@ async function overflowEverywhere(p, label){
   {
     const c = await ctx('desk');
     await open(c, '', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(300);
     const stub = () => c.evaluate(() => { window.__copied = []; Object.defineProperty(navigator, 'clipboard', { configurable:true, value:{ writeText:t => { window.__copied.push(t); return Promise.resolve(); } } }); });
     const got = [];
     for (const [h, sel, type, id] of [['#/event/led-forest-walk', '#dscroll .actbar [data-act="share"]', 'event', 'evt-fill-3'], ['#/horizon/baltic', '#dscroll [data-act="share"][data-type="horizon"]', 'horizon', 'horizon-baltic'],

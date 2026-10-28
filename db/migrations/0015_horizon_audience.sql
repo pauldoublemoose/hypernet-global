@@ -3,6 +3,7 @@
 -- A published horizon starts as everyone. A private one starts as nobody.
 -- The owner always sees it. An accepted collaborator always sees it.
 -- An exclude hides everyone else. Otherwise an include match is enough.
+-- A logged-out viewer matches nothing, including everyone.
 -- A pending invite is not an include. This file is not applied.
 
 alter table horizons
@@ -31,13 +32,6 @@ create or replace function can_see_horizon(viewer uuid, h horizons) returns bool
       and exists (
         select 1 from jsonb_array_elements_text(h.audience->'include') tok
         where in_audience(viewer, h.owner_id, tok)
-      )
-    )
-    or (
-      viewer is null
-      and exists (
-        select 1 from jsonb_array_elements_text(h.audience->'include') tok
-        where tok = 'everyone'
       )
     )
 $$;

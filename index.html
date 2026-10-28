@@ -2376,7 +2376,7 @@ function canSeeHorizon(hzId){
   var cols = hz.collaboratorIds || [];
   if (me && cols.indexOf(me) >= 0) return true;
   var aud = horizonAudience(hz);
-  if (!me) return aud.include.indexOf('everyone') >= 0;
+  if (!me) return false;
   if (window.HNAudience && window.HNRel && typeof HNRel.audienceGraph === 'function')
     return HNAudience.canSee(me, hz.ownerId || null, aud, HNRel.audienceGraph());
   return !!(hz.isPublished || hzCanEdit(hzId));

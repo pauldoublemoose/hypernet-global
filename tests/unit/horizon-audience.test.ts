@@ -20,9 +20,19 @@ describe("can_see_horizon", () => {
     expect(fn).toMatch(/h\.audience->'exclude'/);
     expect(fn).toMatch(/in_audience\(viewer, h\.owner_id, tok\)/);
     expect(fn).toMatch(/h\.audience->'include'/);
-    expect(fn).toMatch(/viewer is null/);
-    expect(fn).toMatch(/tok = 'everyone'/);
+    expect(fn).not.toMatch(/viewer is null/);
     expect(fn).not.toMatch(/event_invites/);
+  });
+
+  it("a logged-out viewer sees no horizon, even when include is everyone", () => {
+    const fn = migration.slice(migration.indexOf("create or replace function can_see_horizon"), migration.indexOf("insert into _migrations"));
+    expect(fn).not.toMatch(/viewer is null/);
+    const branches = fn.split(" or ").filter((part) => part.includes("viewer"));
+    expect(branches.length).toBeGreaterThan(0);
+    for (const part of branches) expect(part).toMatch(/viewer is not null/);
+    const html = readFileSync(new URL("../../index.html", import.meta.url), "utf8");
+    const see = html.slice(html.indexOf("function canSeeHorizon"), html.indexOf("function hzCanEdit"));
+    expect(see).toMatch(/if \(!me\) return false/);
   });
 
   it("lists and opens through can_see_horizon, and a pending invite can still read", () => {

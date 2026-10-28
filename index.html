@@ -258,6 +258,8 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 #win > #dscroll{ flex:1; min-height:0; margin-top:4px; container:detail / inline-size; }
 #win.dragging{ user-select:none; }
 #win.dragging #dscroll{ pointer-events:none; }
+/* maximised: the viewport, over the header and the toolbar (and a dock that was in front). Dialogs stay above it. */
+#win.max{ position:fixed; z-index:55; }
 #dscroll{ position:relative; }
 .panempty{ display:none; }
 
@@ -4337,8 +4339,9 @@ function detailHTML(it){
 /* ---- THE WINDOW ----
    One window, over the list: whatever you open shows in it, and opening something else from the list replaces it.
    Inside it, going on to another thing stacks (‹ in its title bar steps back). On a desktop or tablet it is a
-   Windows 2000 window you can drag by its title bar (kept inside the app's main area), maximise (□, or a double-click
-   on the title bar) and close (×, Esc). The URL names what is open, so reload, back and forward work; back closes it.
+   Windows 2000 window you can drag by its title bar (freely, so long as 40px of that bar stays in the viewport),
+   maximise (□, or a double-click on the title bar — the whole viewport, over the header) and close (×, Esc).
+   The URL names what is open, so reload, back and forward work; back closes it.
    On a phone it is a sheet over the whole screen with × in its title bar; behind it the list keeps its place. */
 var WIN = { x:null, y:null, max:false };   /* where you put it: kept while it is open, forgotten when it closes */
 function winIcon(it){
@@ -4402,21 +4405,43 @@ function renderDetail(){
   placeWin();
   if (it.type === 'person') fitProfileTags();
 }
-/* where the window sits: by default over the right of the white, the list's left part in view beside it (layoutCentre);
-   where there is no such room, over the centre. Once you drag it, where you put it — always inside the main area */
+/* where the window sits. By default it lies over the right of the white (layoutCentre), or over the centre where
+   both cannot fit: 8 under the toolbar and 8 above the bottom of the main area. A drag is not held to that box or
+   to the toolbar. It follows the pointer like a desktop window. The one limit (clampWinGrab) is the title bar:
+   40px of it stays inside the viewport, horizontally too, so it can always be grabbed back. Maximised, the window
+   is the viewport, from the top edge down, over the header and the toolbar; restore puts back where it was. */
+var WINGRAB = 40;
 function placeWin(){
   var w = $('win'); if (!w || w.hidden) return;
   if (L.phone){ ['left','top','width','height'].forEach(function(k){ w.style[k] = ''; }); w.classList.remove('max'); return; }
   var m = $('main'), mw = m.clientWidth, mh = m.clientHeight, pad = 8;
   w.classList.toggle('max', !!WIN.max);
-  if (WIN.max){ w.style.left = pad + 'px'; w.style.top = pad + 'px'; w.style.width = (mw - 2 * pad) + 'px'; w.style.height = (mh - 2 * pad) + 'px'; return; }
+  if (WIN.max){
+    w.style.left = '0px'; w.style.top = '0px';
+    w.style.width = window.innerWidth + 'px'; w.style.height = window.innerHeight + 'px';
+    return;
+  }
   var g = L.wg || { x:pad, y:pad, w:Math.min(WINW.max, mw - 2 * pad), h:mh - 2 * pad };
   var ww = Math.min(g.w, mw), wh = Math.max(240, Math.min(g.h, mh));
   var x = WIN.x != null ? WIN.x : g.x;
   var y = WIN.y != null ? WIN.y : g.y;
-  x = Math.max(0, Math.min(mw - ww, x)); y = Math.max(0, Math.min(mh - wh, y));
-  if (WIN.x != null){ WIN.x = x; WIN.y = y; }
+  if (WIN.x != null){ var p = clampWinGrab(m, w, x, y, ww); x = p.x; y = p.y; WIN.x = x; WIN.y = y; }
   w.style.left = x + 'px'; w.style.top = y + 'px'; w.style.width = ww + 'px'; w.style.height = wh + 'px';
+}
+/* 40px of the title (the handle, not the buttons at its right) stays inside the viewport. Vertically that is the
+   top of the window: it may cover the header, and it may hang off the bottom, but not off the top of the screen
+   and not so far down that the grab leaves. */
+function clampWinGrab(m, w, x, y, ww){
+  var mr = m.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight, keep = WINGRAB;
+  var vx = mr.left + x, vy = mr.top + y, title = w.querySelector('#dbar .dtitle');
+  var hangRight = keep, hangLeft = keep;
+  if (title && title.offsetParent){
+    hangRight = Math.min(ww, title.offsetLeft + keep);
+    hangLeft = Math.min(ww, (w.offsetWidth - title.offsetLeft - title.offsetWidth) + keep);
+  }
+  vx = Math.max(hangLeft - ww, Math.min(vw - hangRight, vx));
+  vy = Math.max(0, Math.min(Math.max(0, vh - Math.min(keep, vh)), vy));
+  return { x: vx - mr.left, y: vy - mr.top };
 }
 function toggleMaxWin(){ if (L.phone || !S.stack.length) return; WIN.max = !WIN.max; renderDetail(); }
 /* drag by the title bar (not by its buttons) */
@@ -5984,9 +6009,9 @@ function computeLayout(){
    is open, closed or replaced. The window lies over the right of the white, clear of the
    list's scrollbar, as wide as it can be (440 to 720) while the list's first LKEEP stay in view — avatars, who did
    what, titles, the call out's Answer. Its default height is the main area under the toolbar: #main starts at the
-   toolbar's bottom, and the same WEDGE insets the top and the bottom (a maximised window uses that inset too), so the
-   pane rises with the heading instead of starting under it. Where the centre has no room for both (a tablet, 1280 with
-   the chat dock open) the window is the centre, at that same height: one thing at a time. */
+   toolbar's bottom, and the same WEDGE insets the top and the bottom, so the pane rises with the heading instead of
+   starting under it. Maximised is not that inset: the window then covers the viewport. Where the centre has no room
+   for both (a tablet, 1280 with the chat dock open) the window is the centre, at that same height: one thing at a time. */
 var CW = { read:640, list:720, wide:1120 };
 var WINW = { min:440, max:720 }, WEDGE = 8, LKEEP = 320;
 function centreKind(){

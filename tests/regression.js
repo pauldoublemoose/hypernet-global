@@ -42,7 +42,7 @@
    phone: same chat, draft and scroll after Home and after a reload), and Share copies the item's link;
    2026-10-04 (B2, "windows"): no reading pane — the list is one centred 680 column, and whatever you open is one window
    over it (a pick opens it, another pick replaces it, ×, Esc and back close it, forward and reload bring it back, the
-   title bar drags it inside the main area, □ / double-click maximise and restore, things opened inside it stack with ‹),
+   title bar drags it freely (40px of the title stays in the viewport), □ / double-click maximise over the whole viewport and restore, things opened inside it stack with ‹),
    it fits between the sidebar and the chat dock and whichever was touched last is in front, a phone's window is a
    full-screen sheet whose × and back gesture return to the feed where it was; Home steps its call outs one at a time in
    their band, Coming up rows are 48 squares with the date at the right, the social line is words, and an event's call
@@ -564,21 +564,23 @@ async function overflowEverywhere(p, label){
     await c.goto(URL + '#/event/borderland-2027'); await c.waitForTimeout(500);
     await c.reload(); await c.waitForTimeout(700);
     ok((await winState(c)).top === 'event:evt-world-borderland-2026--next', 'window: a reload restores the open item');
-    /* drag by the title bar: it moves, and stays inside the main area however far you pull */
+    /* drag by the title bar: it moves, past the main area. The 40px grab is checked below. */
     const w0 = await winState(c);
     const bar = await c.locator('#dbar .dtitle').boundingBox();
     await c.mouse.move(bar.x + 20, bar.y + 8); await c.mouse.down(); await c.mouse.move(bar.x - 180, bar.y + 20, { steps:6 }); await c.mouse.up(); await c.waitForTimeout(150);
     const w1 = await winState(c);
-    await c.mouse.move(bar.x - 160, bar.y + 20); await c.mouse.down(); await c.mouse.move(bar.x + 2000, bar.y + 2000, { steps:6 }); await c.mouse.up(); await c.waitForTimeout(150);
-    const w2 = await winState(c);
-    ok(w1.x === w0.x - 200 && w1.y >= w0.y && w1.inside && w2.inside && w2.x > w1.x, 'window: dragging the title bar moves it, kept inside the main area ' + JSON.stringify([w0.x, w1.x, w2.x, w2.y]));
-    /* a button on the title bar is not a handle */
+    ok(w1.x === w0.x - 200 && w1.y === w0.y + 12, 'window: dragging the title bar moves it, vertically as well as across ' + JSON.stringify([w0.x, w1.x, w0.y, w1.y]));
+    /* a button on the title bar is not a handle. □ covers the viewport, over the header; a double-click restores position and size */
     await c.mouse.move((await c.locator('#dbar [data-act="maxwin"]').boundingBox()).x + 5, (await c.locator('#dbar [data-act="maxwin"]').boundingBox()).y + 5);
     await c.click('#dbar [data-act="maxwin"]'); await c.waitForTimeout(200);
-    const mx = await ev(c, () => { const r = document.getElementById('win').getBoundingClientRect(), m = document.getElementById('main').getBoundingClientRect(); return r.width >= m.width - 20 && r.height >= m.height - 20; });
+    const mx = await ev(c, () => {
+      const r = document.getElementById('win').getBoundingClientRect(), tb = document.getElementById('titlebar').getBoundingClientRect();
+      const hit = document.elementFromPoint(tb.left + 80, tb.top + tb.height / 2);
+      return Math.round(r.top) === 0 && Math.round(r.left) === 0 && Math.round(r.right) === innerWidth && Math.round(r.bottom) === innerHeight && !!(hit && hit.closest('#win'));
+    });
     await c.dblclick('#dbar .dtitle'); await c.waitForTimeout(200);
     const rs = await winState(c);
-    ok(mx && rs.w === w2.w && rs.x === w2.x, 'window: □ maximises it, a double-click on the title bar restores it where it was ' + JSON.stringify([mx, rs.x, w2.x]));
+    ok(mx && rs.w === w1.w && rs.h === w1.h && rs.x === w1.x && rs.y === w1.y, 'window: □ maximises it over the viewport, a double-click on the title bar restores it where it was ' + JSON.stringify([mx, rs.x, w1.x, rs.y, w1.y]));
     /* inside the window things stack: a horizon's event opens over it, ‹ steps back */
     await c.goto(URL + '#/horizon/season'); await c.waitForTimeout(450);
     await c.click('#dscroll .track >> nth=0'); await c.waitForTimeout(350);
@@ -605,6 +607,109 @@ async function overflowEverywhere(p, label){
     /* the reading pane is gone, not hidden */
     ok(await ev(c, () => !document.getElementById('detailcol') && typeof closePane === 'undefined' && typeof fitStrip === 'undefined' && !document.querySelector('.panempty')), 'window: the old reading pane, its empty state and the call-out strip code are removed');
     ok(!c.errors.length, 'window: no console errors ' + c.errors.join(' '));
+  }
+  /* ---------------- the detail window drags freely, and maximise covers the viewport (header and toolbar too) ----------------
+     Both themes: each paints the window itself. Phone widths have no maximise; the sheet already starts at the top. */
+  {
+    const maxCover = p => p.evaluate(() => {
+      const w = document.getElementById('win'), r = w.getBoundingClientRect();
+      const hit = (el, dx, dy) => {
+        if (!el || !el.offsetParent) return true;
+        const b = el.getBoundingClientRect(), n = document.elementFromPoint(b.left + dx, b.top + dy);
+        return !!(n && n.closest && n.closest('#win'));
+      };
+      return {
+        top:Math.round(r.top), left:Math.round(r.left), right:Math.round(innerWidth - r.right), bottom:Math.round(innerHeight - r.bottom),
+        header:hit(document.getElementById('titlebar'), 70, 10), toolbar:hit(document.getElementById('toolbar'), 140, 12),
+        preview:hit(document.getElementById('previewbar'), 40, 8),
+        fixed:getComputedStyle(w).position === 'fixed', z:+getComputedStyle(w).zIndex
+      };
+    });
+    const grabOf = p => p.evaluate(() => {
+      const t = document.querySelector('#dbar .dtitle').getBoundingClientRect(), w = document.getElementById('win').getBoundingClientRect(), m = document.getElementById('main').getBoundingClientRect();
+      return { tw:Math.round(Math.max(0, Math.min(t.right, innerWidth) - Math.max(t.left, 0))),
+               th:Math.round(Math.max(0, Math.min(t.bottom, innerHeight) - Math.max(t.top, 0))),
+               top:Math.round(w.top), left:Math.round(w.left), right:Math.round(w.right), bottom:Math.round(w.bottom),
+               mainTop:Math.round(m.top), mainBottom:Math.round(m.bottom), mainLeft:Math.round(m.left), mainRight:Math.round(m.right),
+               iw:innerWidth, ih:innerHeight };
+    });
+    async function dragTitle(p, dx, dy){
+      const b = await p.locator('#dbar .dtitle').boundingBox();
+      const x = b.x + Math.min(24, b.width / 2), y = b.y + Math.max(2, Math.min(8, b.height / 2));
+      await p.mouse.move(x, y); await p.mouse.down(); await p.mouse.move(x + dx, y + dy, { steps:8 }); await p.mouse.up();
+      await p.waitForTimeout(80);
+    }
+    for (const kind of ['desk', 'tab']){
+      const c = await ctx(kind);
+      await open(c, '#/event/borderland-2027', true);
+      for (const theme of ['win2k', 'y2fresh']){
+        await c.evaluate(t => { hnSetTheme(t); render(); }, theme); await c.waitForTimeout(250);
+        const before = await winState(c);
+        await c.click('#dbar [data-act="maxwin"]'); await c.waitForTimeout(200);
+        const mx = await maxCover(c);
+        ok(mx.top === 0 && mx.left === 0 && Math.abs(mx.right) <= 1 && Math.abs(mx.bottom) <= 1 && mx.header && mx.toolbar && mx.preview && mx.fixed && mx.z >= 55,
+           kind + ' ' + theme + ': maximise covers the viewport from the top, over the header, the toolbar and the preview bar ' + JSON.stringify(mx));
+        await c.dblclick('#dbar .dtitle'); await c.waitForTimeout(200);
+        const rs = await winState(c);
+        ok(!await ev(c, () => WIN.max) && rs.x === before.x && rs.y === before.y && rs.w === before.w && rs.h === before.h,
+           kind + ' ' + theme + ': restore returns the previous position and size ' + JSON.stringify([before.x, rs.x, before.y, rs.y, before.w, rs.w, before.h, rs.h]));
+      }
+      /* a dock that was in front still sits under a maximised window. On a tablet the dock covers the
+         maximise button, so maximise goes through the same control the button calls. */
+      await c.evaluate(() => { hnSetTheme('win2k'); S.rightOpen = true; render(); document.getElementById('app').classList.add('dock-front'); toggleMaxWin(); });
+      await c.waitForTimeout(250);
+      const overDock = await ev(c, () => { const d = document.getElementById('chats').getBoundingClientRect(), n = document.elementFromPoint(d.left + 30, d.top + 40); return !!(n && n.closest('#win')); });
+      ok(overDock, kind + ': a maximised window is above the chat dock');
+      await c.dblclick('#dbar .dtitle'); await c.waitForTimeout(150);
+      await c.evaluate(() => { S.rightOpen = false; render(); }); await c.waitForTimeout(200);
+      if (kind === 'desk'){
+        for (const theme of ['y2fresh', 'win2k']){
+          /* a fresh document: the previous drag may have parked the window off screen */
+          await c.reload(); await c.waitForTimeout(550);
+          await c.evaluate(t => hnSetTheme(t), theme); await c.waitForTimeout(120);
+          const w0 = await grabOf(c);
+          await dragTitle(c, 0, -70);
+          const up = await grabOf(c);
+          ok(up.top === w0.top - 70 && up.top < up.mainTop, theme + ': dragging up passes the toolbar, it is not held at the main area ' + JSON.stringify([w0.top, up.top, up.mainTop]));
+          await dragTitle(c, 0, -2000);
+          const ceil = await grabOf(c);
+          const covered = await ev(c, () => { const w = document.getElementById('win').getBoundingClientRect(), n = document.elementFromPoint(w.left + 40, 8); return !!(n && n.closest('#win')); });
+          ok(ceil.top === 0 && ceil.th >= 16 && covered, theme + ': dragging up stops at the top of the screen, the title bar still in hand, over the header ' + JSON.stringify(ceil));
+          await dragTitle(c, 0, 5000);
+          const floor = await grabOf(c);
+          ok(floor.top === floor.ih - 40 && floor.bottom > floor.mainBottom + 20 && floor.th >= 16, theme + ': dragging down passes the bottom of the main area and keeps 40px of the title on screen ' + JSON.stringify(floor));
+          await dragTitle(c, 4000, 0);
+          const right = await grabOf(c);
+          ok(right.tw >= 40 && right.right > right.iw && right.th >= 16, theme + ': dragging right keeps at least 40px of the title inside the viewport ' + JSON.stringify(right));
+          await dragTitle(c, -8000, 0);
+          const left = await grabOf(c);
+          ok(left.tw >= 40 && left.left < left.mainLeft && left.th >= 16, theme + ': dragging left keeps at least 40px of the title inside the viewport ' + JSON.stringify(left));
+        }
+      } else {
+        await c.evaluate(() => { hnSetTheme('y2fresh'); }); await c.waitForTimeout(80);
+        const w0 = await grabOf(c);
+        await dragTitle(c, 0, -70);
+        const up = await grabOf(c);
+        ok(up.top === w0.top - 70 && up.top < up.mainTop, 'tab y2fresh: dragging up passes the toolbar ' + JSON.stringify([w0.top, up.top, up.mainTop]));
+      }
+      await c.keyboard.press('Escape'); await c.waitForTimeout(200);
+      ok((await overflow(c)) <= 0 && !c.errors.length, kind + ': no overflow, no console errors (free drag, maximise) ' + c.errors.join(' '));
+    }
+    const c = await ctx('phone');
+    await open(c, '#/event/borderland-2027', true);
+    await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(400);
+    for (const theme of ['y2fresh', 'win2k']){
+      await c.evaluate(t => hnSetTheme(t), theme); await c.waitForTimeout(200);
+      const sh = await ev(c, () => {
+        const w = document.getElementById('win').getBoundingClientRect(), ab = document.getElementById('appbar').getBoundingClientRect();
+        const n = document.elementFromPoint(Math.min(ab.right - 8, ab.left + 28), ab.top + ab.height / 2);
+        return { top:Math.round(w.top), left:Math.round(w.left), right:Math.round(innerWidth - w.right), bottom:Math.round(innerHeight - w.bottom),
+                 covers:!!(n && n.closest('#win')), noMax:!document.querySelector('#dbar [data-act="maxwin"]'), theme:document.documentElement.getAttribute('data-theme') };
+      });
+      ok(sh.top === 0 && sh.left === 0 && Math.abs(sh.right) <= 1 && Math.abs(sh.bottom) <= 1 && sh.covers && sh.noMax,
+         'phone ' + theme + ': the sheet covers the viewport from the top, over the app bar, and has no maximise button ' + JSON.stringify(sh));
+    }
+    ok(!c.errors.length, 'phone: no console errors (sheet covers the top) ' + c.errors.join(' '));
   }
   /* tablet and 1440 + dock: the window fits what the dock leaves; phone: the sheet closes back to the same scroll */
   for (const kind of ['tab', 'desk']){

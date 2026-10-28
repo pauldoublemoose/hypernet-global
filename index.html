@@ -1868,7 +1868,8 @@ HORIZONS['horizon-surface'] = { id:'horizon-surface', name:'Surfaces & Projectio
 ].forEach(function(h){
   var who = PEOPLE[h[2]];
   HORIZONS[h[0]] = { id:h[0], name:h[1], description:'', isPersonalDefault:false, isPublished:true,
-    ownerName: who ? who.displayName : '', ownerId:h[2], eventIds:[] };
+    ownerName: who ? who.displayName : '', ownerId:h[2], eventIds:[],
+    audience: h[0] === 'horizon-north' ? { include:['everyone'], exclude:['friends'] } : undefined };
 });
 
 var GROUPS = {};  H.groups.forEach(function(g){ GROUPS[g.id] = g; });
@@ -2324,7 +2325,7 @@ function hostPersonOf(e){
 }
 function byDate(a,b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }
 function rsvpList(mode){ if (!S.loggedIn) return []; return allEvents().filter(function(e){ return RSVP[e.id] === mode && canSeeEvent(e); }).sort(byDate); }
-function horizonsOf(evId){ return Object.keys(HORIZONS).filter(function(k){ return HORIZONS[k].eventIds.indexOf(evId) >= 0 && (HORIZONS[k].isPublished || hzCanEdit(k)); }); }
+function horizonsOf(evId){ return Object.keys(HORIZONS).filter(function(k){ return HORIZONS[k].eventIds.indexOf(evId) >= 0 && canSeeHorizon(k); }); }
 function hzCover(hzId){
   var hz = HORIZONS[hzId];
   if (!hz) return null;
@@ -2362,6 +2363,26 @@ function hzWhen(hzId){
   return 'Ended ' + fmtShort(evs.map(lastDay).sort().pop());
 }
 function hzOwnedByMe(hzId){ return S.loggedIn && MYHORIZONS.indexOf(hzId) >= 0; }
+function horizonAudience(hz){
+  var a = hz && hz.audience;
+  if (a && Array.isArray(a.include)) return { include:a.include, exclude:Array.isArray(a.exclude) ? a.exclude : [] };
+  return { include: hz && hz.isPublished ? ['everyone'] : [], exclude:[] };
+}
+/* The same rule as can_see_horizon. A pending invite is not an include. */
+function canSeeHorizon(hzId){
+  var hz = HORIZONS[hzId];
+  if (!hz) return false;
+  var me = typeof myPid === 'function' ? myPid() : null;
+  if (me && hz.ownerId && me === hz.ownerId) return true;
+  if (hzOwnedByMe(hzId)) return true;
+  var cols = hz.collaboratorIds || [];
+  if (me && cols.indexOf(me) >= 0) return true;
+  var aud = horizonAudience(hz);
+  if (!me) return false;
+  if (window.HNAudience && window.HNRel && typeof HNRel.audienceGraph === 'function')
+    return HNAudience.canSee(me, hz.ownerId || null, aud, HNRel.audienceGraph());
+  return !!(hz.isPublished || hzCanEdit(hzId));
+}
 function hzCanEdit(hzId){
   var ids = (HORIZONS[hzId] && HORIZONS[hzId].collaboratorIds) || [];
   return S.loggedIn && (hzOwnedByMe(hzId) || ids.indexOf(myPid()) >= 0);
@@ -2612,7 +2633,7 @@ function gated(fn){
   };
 }
 /* a camp (group) is met through the Event Horizon it publishes */
-function groupHorizon(g){ return Object.keys(HORIZONS).filter(function(k){ return HORIZONS[k].ownerGroupId === g && HORIZONS[k].isPublished; })[0] || null; }
+function groupHorizon(g){ return Object.keys(HORIZONS).filter(function(k){ return HORIZONS[k].ownerGroupId === g && canSeeHorizon(k); })[0] || null; }
 function itemName(it){
   if (!it) return '';
   if (it.type === 'event') return EVENTS[it.id] ? EVENTS[it.id].title : '';
@@ -2640,7 +2661,7 @@ function feedEvents(){
   });
 }
 function browsableHorizons(){
-  return Object.keys(HORIZONS).filter(function(k){ return HORIZONS[k].isPublished || hzCanEdit(k); });
+  return Object.keys(HORIZONS).filter(canSeeHorizon);
 }
 /* THE NETWORK — everyone on Hypernet here: the fixture people, then every account made in this browser
    (Michal, the demo, and whoever joined), newest last. You are never in your own network list.
@@ -2830,7 +2851,7 @@ function searchItems(q){
   });
   Object.keys(HORIZONS).forEach(function(k){
     var hz = HORIZONS[k];
-    if ((hz.isPublished || hzCanEdit(k)) && matchAll([hz.name, hz.description, hz.ownerName], q)) out.push({ type:'horizon', id:k });
+    if (canSeeHorizon(k) && matchAll([hz.name, hz.description, hz.ownerName], q)) out.push({ type:'horizon', id:k });
   });
   CALLOUTS.forEach(function(c){ if (matchAll([c.title, c.body, c.hostName], q)) out.push({ type:'callout', id:c.id }); });
   searchPeople(q, out);
@@ -2976,7 +2997,7 @@ function myHorizonItems(){
   return builtins.concat(owned);
 }
 function followedHorizonItems(){
-  return Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k] && HORIZONS[k] && MYHORIZONS.indexOf(k) < 0; }).map(function(k){
+  return Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k] && canSeeHorizon(k) && MYHORIZONS.indexOf(k) < 0; }).map(function(k){
     return { kind:'horizon', id:k, label:HORIZONS[k].name, count: hzEventIds(k).length };
   });
 }
@@ -4531,7 +4552,7 @@ function shelfItems(id){
   if (id === 'soon') return ev(up.filter(function(e){ return dayDiff(e.date) > 6; }).slice(0, 12));
   if (id === 'announced') return ev(Object.keys(NEXTED).map(function(k){ return EVENTS[NEXTED[k]]; }).filter(canSeeEvent).sort(byDate));
   if (id === 'horizons') return popularHorizons().filter(function(k){ return !(S.loggedIn && (HZFOLLOW[k] || MYHORIZONS.indexOf(k) >= 0)); }).map(function(k){ return { type:'horizon', id:k }; });
-  if (id === 'yourhz') return !S.loggedIn ? [] : MYHORIZONS.slice().reverse().concat(Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k] && MYHORIZONS.indexOf(k) < 0; })).filter(function(k){ return HORIZONS[k]; }).map(function(k){ return { type:'horizon', id:k }; });
+  if (id === 'yourhz') return !S.loggedIn ? [] : MYHORIZONS.slice().reverse().concat(Object.keys(HZFOLLOW).filter(function(k){ return HZFOLLOW[k] && canSeeHorizon(k) && MYHORIZONS.indexOf(k) < 0; })).filter(function(k){ return HORIZONS[k]; }).map(function(k){ return { type:'horizon', id:k }; });
   if (id === 'callouts') return openCallouts().map(function(c){ return { type:'callout', id:c.id }; });
   if (id === 'followed'){
     if (!S.loggedIn) return [];
@@ -10400,7 +10421,7 @@ function validItem(it){
   if (!it) return false;
   if (it.type === 'missing') return true;
   if (it.type === 'event') return canSee(it.id);
-  if (it.type === 'horizon') return !!HORIZONS[it.id] && (HORIZONS[it.id].isPublished || hzCanEdit(it.id) || hzPendingInvite(it.id));
+  if (it.type === 'horizon') return !!HORIZONS[it.id] && (canSeeHorizon(it.id) || hzPendingInvite(it.id));
   if (it.type === 'person') return !!PEOPLE[it.id];
   if (it.type === 'callout') return !!calloutOf(it.id);
   if (it.type === 'chat') return S.loggedIn && !!CHATS[it.id];

@@ -12,6 +12,7 @@ export const PUT = route(async (req: Request, ctx: Ctx) => {
   const id = await idParam(ctx.params);
   const me = await requirePerson();
   const { eventIds } = horizonEvents.parse(await readJson(req));
+  if (!(await horizonFor(id, me.id))) throw notFound();
   const access = await horizonAccess(id, me.id);
   if (!access || access.role === "stranger") {
     if (access?.role === "stranger" && (await horizonFollowed(id, me.id))) throw forbidden();

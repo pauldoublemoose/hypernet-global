@@ -1,0 +1,296 @@
+// node --test scripts/event-requests.test.mjs — event request providers and the invite role picker.
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { createContext, runInContext, runInThisContext } from "node:vm";
+import { fileURLToPath } from "node:url";
+
+const source = readFileSync(fileURLToPath(new URL("../_shared/event-requests.js", import.meta.url)), "utf8");
+
+function boot(opts){
+  opts = opts || {};
+  const calls = { changed: 0, rsvp: [], chronicle: [], admin: [], review: [] };
+  const providers = [];
+  const sandbox = {
+    location: { search: opts.search == null ? "?offline=1" : opts.search },
+    RSVP: {},
+    ROLE: {},
+    WENT: {},
+    EVENT_INVITES: {},
+    EVENT_ADMINS: {},
+    COREQUESTS: {},
+    COINVITES: {},
+    CHRON: {},
+    EVENTS: {
+      "evt-harbour-walk": { title: "Harbour night walk", date: "2026-11-01", city: "Stockholm" },
+      "evt-chronicle-supper": { title: "Midsummer supper", date: "2026-06-20", city: "Stockholm" },
+      "evt-dj-night": { title: "West stage set", date: "2026-11-02", city: "Malmö" },
+      "evt-deep-listening": { title: "Deep Listening Lab", date: "2026-11-04", city: "Stockholm" },
+    },
+    ONLINE: !!opts.online,
+    HNAPI: {
+      rsvp(id, fields){ calls.rsvp.push({ id, fields }); return Promise.resolve(); },
+      addChronicle(id){ calls.chronicle.push(id); return Promise.resolve(); },
+      answerAdmin(id, status){ calls.admin.push({ id, status }); return Promise.resolve(); },
+      reviewCocreator(id, pid, action){ calls.review.push({ id, pid, action }); return Promise.resolve(); },
+    },
+    myActor: () => opts.me || "p-michal",
+    person: (id) => ({ displayName: id }),
+    isPast: (day) => day < "2026-10-01",
+    lastDay: (e) => e && e.date,
+    fmtShort: (iso) => iso,
+    canManageEvent: (id) => !!opts.manage && opts.manage[id],
+    cocreatorPolicyOf: (id) => (opts.policy && opts.policy[id]) || "open",
+  };
+  sandbox.window = sandbox;
+  if (opts.hnrel !== false){
+    sandbox.HNRel = {
+      registerRequestProvider(p){ providers.push(p); return function off(){ const i = providers.indexOf(p); if (i >= 0) providers.splice(i, 1); }; },
+      requestsChanged(){ calls.changed += 1; },
+      openRequests(arg){ calls.open = arg; },
+    };
+  }
+  if (opts.before) opts.before(sandbox);
+  runInContext(source, createContext(sandbox), { filename: "event-requests.js" });
+  return { sandbox, providers, calls };
+}
+
+function byType(providers, type){
+  return providers.filter((p) => p.type === type)[0];
+}
+
+test("providers register in order and replace the inbox with two offline rows each", () => {
+  const { providers } = boot();
+  assert.deepEqual(providers.map((p) => p.type), ["event_invite", "admin_invite", "cocreator_request"]);
+  const event = byType(providers, "event_invite");
+  const admin = byType(providers, "admin_invite");
+  const coco = byType(providers, "cocreator_request");
+  assert.equal(event.list().length, 2);
+  assert.equal(admin.list().length, 2);
+  assert.equal(coco.list().length, 2);
+  assert.equal(event.count(), 2);
+  const past = event.list().filter((item) => item.past)[0];
+  const upcoming = event.list().filter((item) => !item.past)[0];
+  assert.match(past.primary, /added you to a past event/);
+  assert.equal(past.primary.includes("invited to attend"), false);
+  assert.match(upcoming.primary, /invited you to attend/);
+  assert.equal(admin.count(), admin.list().length);
+  assert.equal(coco.count(), coco.list().length);
+  assert.equal(admin.count(), 2);
+  assert.equal(coco.count(), 2);
+  const dirs = JSON.parse(JSON.stringify(coco.list().map((item) => item.direction).sort()));
+  assert.deepEqual(dirs, ["invite", "request"]);
+  for (const [prov, item] of [[event, past], [event, upcoming], [admin, admin.list()[0]], [coco, coco.list()[0]]]){
+  const rendered = prov.render(item);
+  const title = String(item.eventTitle);
+  const head = rendered.slice(rendered.indexOf("r-title"), rendered.indexOf("r-meta") === -1 ? rendered.length : rendered.indexOf("r-meta"));
+  const meta = rendered.includes("r-meta") ? rendered.slice(rendered.indexOf("r-meta")) : "";
+  assert.match(head, new RegExp('data-act="openreq"[^>]*>' + title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "</button>"));
+  assert.match(head, new RegExp('data-type="' + prov.type + '"'));
+  assert.equal(meta.includes(title), false);
+  assert.equal((head.match(new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || []).length, 1);
+}
+});
+
+test("a provider registers when HNRel arrives later", () => {
+  const { sandbox, providers } = boot({ hnrel: false });
+  assert.equal(providers.length, 0);
+  const seen = [];
+  sandbox.HNRel = {
+    registerRequestProvider(p){ seen.push(p.type); return function(){}; },
+    requestsChanged(){},
+  };
+  assert.deepEqual(seen, ["event_invite", "admin_invite", "cocreator_request"]);
+});
+
+test("accept, decline and undo an event invite through the stub", async () => {
+  const { sandbox, providers, calls } = boot({ online: true });
+  const event = byType(providers, "event_invite");
+  const upcoming = event.list().filter((item) => !item.past)[0];
+  const past = event.list().filter((item) => item.past)[0];
+  await event.accept(upcoming);
+  assert.equal(sandbox.RSVP[upcoming.eventId], "going");
+  assert.equal(sandbox.ROLE[upcoming.eventId], "attendee");
+  assert.equal(calls.rsvp.at(-1).fields.role, "attendee");
+  assert.equal(event.list().some((item) => item.id === upcoming.id), false);
+  await event.undo(upcoming);
+  assert.equal(sandbox.RSVP[upcoming.eventId], undefined);
+  assert.equal(sandbox.ROLE[upcoming.eventId], undefined);
+  assert.equal(event.list().some((item) => item.id === upcoming.id), true);
+  await event.accept(past);
+  assert.equal(sandbox.WENT[past.eventId], true);
+  assert.equal(sandbox.ROLE[past.eventId], "attendee");
+  assert.deepEqual(calls.chronicle, [past.eventId]);
+  await event.undo(past);
+  assert.equal(sandbox.WENT[past.eventId], undefined);
+  await event.decline(upcoming);
+  assert.equal(event.list().some((item) => item.id === upcoming.id), false);
+  await event.undo(upcoming);
+  assert.equal(event.list().some((item) => item.id === upcoming.id), true);
+  assert.ok(calls.changed > 0);
+});
+
+test("accept, decline and undo an admin invite", async () => {
+  const { sandbox, providers, calls } = boot({ online: true });
+  const admin = byType(providers, "admin_invite");
+  const item = admin.list()[0];
+  const adminBefore = calls.changed;
+  await admin.accept(item);
+  assert.equal(calls.admin.at(-1).status, "accepted");
+  assert.equal(admin.list().some((row) => row.id === item.id), false);
+  assert.equal(admin.count(), admin.list().length);
+  assert.equal(admin.count(), 1);
+  assert.ok(calls.changed > adminBefore);
+  const adminUndo = calls.changed;
+  await admin.undo(item);
+  assert.equal(admin.list().some((row) => row.id === item.id), true);
+  assert.equal(admin.count(), 2);
+  assert.ok(calls.changed > adminUndo);
+  const again = admin.list().filter((row) => row.id === item.id)[0];
+  await admin.decline(again);
+  assert.equal(calls.admin.at(-1).status, "declined");
+  assert.equal(admin.list().some((row) => row.id === again.id), false);
+  await admin.undo(again);
+  assert.equal(admin.list().some((row) => row.id === again.id), true);
+  assert.equal(admin.count(), 2);
+});
+
+test("co-creator request and invite accept, decline and undo", async () => {
+  const { sandbox, providers, calls } = boot({ online: true, manage: { "evt-chronicle-supper": true }, policy: { "evt-harbour-walk": "open" } });
+  const coco = byType(providers, "cocreator_request");
+  const request = coco.list().filter((item) => item.direction === "request")[0];
+  const invite = coco.list().filter((item) => item.direction === "invite")[0];
+  await coco.accept(request);
+  assert.equal(calls.review.at(-1).action, "approve");
+  assert.equal(sandbox.CHRON[request.personId][request.eventId], "cocreator");
+  await coco.undo(request);
+  assert.equal(sandbox.CHRON[request.personId][request.eventId], undefined);
+  assert.equal(coco.list().some((item) => item.id === request.id), true);
+  const request2 = coco.list().filter((item) => item.id === request.id)[0];
+  await coco.decline(request2);
+  assert.equal(calls.review.at(-1).action, "decline");
+  await coco.undo(request2);
+  await coco.accept(invite);
+  assert.equal(sandbox.ROLE[invite.eventId], "cocreator");
+  assert.equal(calls.rsvp.at(-1).fields.role, "cocreator");
+  await coco.undo(invite);
+  assert.equal(sandbox.ROLE[invite.eventId], undefined);
+  const cocoBefore = calls.changed;
+  await coco.decline(invite);
+  assert.equal(coco.list().some((item) => item.id === invite.id), false);
+  assert.equal(coco.count(), coco.list().length);
+  assert.ok(calls.changed > cocoBefore);
+  const cocoUndo = calls.changed;
+  await coco.undo(invite);
+  assert.equal(coco.list().some((item) => item.id === invite.id), true);
+  assert.equal(coco.count(), 2);
+  assert.ok(calls.changed > cocoUndo);
+});
+
+test("the Requests bands count the same pending rows they show", async () => {
+  global.location = { search: "?offline=1" };
+  global.esc = (s) => String(s == null ? "" : s);
+  global.myPid = () => "p-michal";
+  global.myActor = () => "p-michal";
+  global.S = { loggedIn: true, acct: "demo", folder: { kind: "requests", id: null } };
+  global.person = (id) => ({ displayName: id, handle: id });
+  global.avHTML = () => "";
+  global.fmtShort = (iso) => iso;
+  global.EVENTS = {
+    "evt-harbour-walk": { title: "Harbour night walk", date: "2026-11-18", city: "Stockholm" },
+    "evt-dj-night": { title: "West stage set", date: "2026-11-09", city: "Malmö" },
+    "evt-chronicle-supper": { title: "Midsummer supper", date: "2026-06-20", city: "Stockholm" },
+    "evt-deep-listening": { title: "Deep Listening Lab", date: "2026-11-11", city: "Stockholm" },
+  };
+  global.isPast = (day) => day < "2026-10-28";
+  global.lastDay = (e) => e && e.date;
+  global.EVENT_ADMINS = {};
+  global.EVENT_INVITES = {};
+  global.COREQUESTS = {};
+  global.COINVITES = {};
+  global.RSVP = {};
+  global.ROLE = {};
+  global.WENT = {};
+  global.CHRON = {};
+  global.canManageEvent = () => false;
+  const require = createRequire(import.meta.url);
+  require("../_shared/hypernet-audience.js");
+  const HNRel = require("../_shared/hypernet-rel.js");
+  let changes = 0;
+  const realChanged = HNRel.requestsChanged;
+  HNRel.requestsChanged = function () {
+    changes += 1;
+    return realChanged.apply(this, arguments);
+  };
+  const captured = {};
+  const realReg = HNRel.registerRequestProvider;
+  HNRel.registerRequestProvider = function (provider) {
+    captured[provider.type] = provider;
+    return realReg.call(HNRel, provider);
+  };
+  runInThisContext(readFileSync(fileURLToPath(new URL("../_shared/event-requests.js", import.meta.url)), "utf8"));
+  function counts(html) {
+    return Object.fromEntries([...html.matchAll(/class="band">([^<]*)<span class="cnt">(\d+)/g)].map((m) => [m[1].trim(), Number(m[2])]));
+  }
+  const open = counts(HNRel.requestsHTML());
+  assert.equal(open["Event invites"], 2);
+  assert.equal(open["Admin invites"], 2);
+  assert.equal(open["Co-creator requests"], 2);
+  assert.equal(captured.admin_invite.count(), captured.admin_invite.list().length);
+  assert.equal(captured.cocreator_request.count(), captured.cocreator_request.list().length);
+  const past = captured.event_invite.list().filter((item) => item.past)[0];
+  const row = captured.event_invite.render(past);
+  assert.match(row, /added you to a past event: <button type="button" class="hzreq"[^>]*>Midsummer supper<\/button>/);
+  assert.equal(row.slice(row.indexOf("r-meta")).includes("Midsummer supper"), false);
+  assert.match(row, /2026-06-20 · Stockholm/);
+  const adminItem = captured.admin_invite.list()[0];
+  const cocoItem = captured.cocreator_request.list()[0];
+  const seen = changes;
+  await captured.admin_invite.decline(adminItem);
+  assert.ok(changes > seen);
+  assert.equal(captured.admin_invite.count(), 1);
+  assert.equal(counts(HNRel.requestsHTML())["Admin invites"], 1);
+  const afterAdmin = changes;
+  await captured.admin_invite.undo(adminItem);
+  assert.ok(changes > afterAdmin);
+  assert.equal(counts(HNRel.requestsHTML())["Admin invites"], 2);
+  const afterCoco = changes;
+  await captured.cocreator_request.accept(cocoItem);
+  assert.ok(changes > afterCoco);
+  assert.equal(counts(HNRel.requestsHTML())["Co-creator requests"], 1);
+  await captured.cocreator_request.undo(cocoItem);
+  assert.equal(captured.cocreator_request.count(), 2);
+  assert.equal(counts(HNRel.requestsHTML())["Co-creator requests"], 2);
+});
+
+test("managers see three invite roles and each sends its type", () => {
+  const { sandbox } = boot({ search: "" });
+  const html = sandbox.EventRequests.rolePickerHTML(true);
+  assert.match(html, /class="ccrole"/);
+  assert.match(html, /role="radiogroup"/);
+  assert.match(html, /> Guest</);
+  assert.match(html, /> Co-creator</);
+  assert.match(html, /> Admin</);
+  assert.deepEqual(JSON.parse(JSON.stringify(sandbox.EventRequests.inviteRoles(true))), ["guest", "cocreator", "admin"]);
+  const guestOnly = sandbox.EventRequests.rolePickerHTML(false);
+  assert.match(guestOnly, /> Guest</);
+  assert.equal(guestOnly.includes("Co-creator"), false);
+  assert.equal(guestOnly.includes("Admin"), false);
+  const base = { eventId: "evt-harbour-walk", personId: "p-anna", canInvite: true };
+  assert.equal(sandbox.EventRequests.send({ ...base, role: "guest", canManage: true }).type, "event_invite");
+  assert.equal(sandbox.EventRequests.send({ ...base, role: "cocreator", canManage: true }).type, "cocreator_request");
+  assert.equal(sandbox.COINVITES["evt-harbour-walk"][0].inviteeId, "p-anna");
+  assert.equal(sandbox.EventRequests.send({ ...base, role: "admin", canManage: true }).type, "admin_invite");
+  assert.equal(sandbox.EVENT_ADMINS["evt-harbour-walk"][0].status, "pending");
+  assert.equal(sandbox.EventRequests.send({ ...base, role: "admin", canManage: false }).type, "event_invite");
+  assert.equal(sandbox.EventRequests.send({ ...base, role: "guest", canManage: false, canInvite: false }), null);
+  assert.equal(sandbox.EventRequests.send({ ...base, role: "admin", canManage: true, canInvite: false }).type, "admin_invite");
+});
+
+test("offline fixtures stay out when the page is not offline", () => {
+  const { providers } = boot({ search: "" });
+  assert.equal(byType(providers, "event_invite").list().length, 0);
+  assert.equal(byType(providers, "admin_invite").list().length, 0);
+  assert.equal(byType(providers, "cocreator_request").list().length, 0);
+});

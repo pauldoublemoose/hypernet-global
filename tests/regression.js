@@ -2130,13 +2130,13 @@ async function overflowEverywhere(p, label){
     const own = await pg();
     ok(own.band && own.title === 'Sauna master' && own.ev === evId && own.by === 'You' && /posted .* · open until /.test(own.meta) && own.bandFirst && !own.card,
        kind + ': your call out’s page is the call out — its band holds the ask, the event it is for, you and until when; no card inside the page ' + JSON.stringify(own));
-    ok(own.lines === 1 && own.note === 'No replies yet.' && own.bar === 'editcallout,closecallout,share' && own.fits && own.even && own.overflow <= 0 && !own.out.length,
+    ok(own.lines === 1 && own.note === 'No replies yet.' && own.bar === 'editcallout,closecallout,co-boost,co-bookmark,share' && own.fits && own.even && own.overflow <= 0 && !own.out.length,
        kind + ': one short line ("No replies yet."), Edit · Close call out · Share, the box and Post fit, even padding, nothing spills ' + JSON.stringify(own));
     await shot(c, 'callout-' + kind + '-own-page');
     /* someone else's, with replies: Answer in the toolbar puts you in the box; no line at all around the thread */
     await c.evaluate(() => openItem('callout', 'co-sound')); await c.waitForTimeout(350);
     const g = await pg();
-    ok(g.by === 'Anna Vale' && g.bar === 'answercallout,share' && g.lines === 0 && g.fits && g.overflow <= 0 && !g.out.length && !g.card,
+    ok(g.by === 'Anna Vale' && g.bar === 'answercallout,co-boost,co-bookmark,share' && g.lines === 0 && g.fits && g.overflow <= 0 && !g.out.length && !g.card,
        kind + ': someone’s call out: who asked in the band, Answer · Share, the thread with no explanations around it ' + JSON.stringify(g));
     await c.click('#dscroll .actbar [data-act="answercallout"]'); await c.waitForTimeout(250);
     ok(await ev(c, () => document.activeElement && document.activeElement.id === 'coreply' && S.stack.length === 1), kind + ': Answer in the call out’s toolbar puts you in its box');
@@ -3499,6 +3499,7 @@ async function overflowEverywhere(p, label){
     await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(300);
     await c.goto(URL + '#/owncallouts'); await c.waitForTimeout(300);
     const local = await ev(c, () => {
+      delete window.HNCallouts;
       CALLOUTS.unshift({ id:'co-local-test', title:'Ridge hands', body:'Need two', hostName:'Michal', hostAcct:S.acct, expiresAt:'2026-12-01' });
       render();
       return {

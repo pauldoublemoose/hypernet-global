@@ -205,6 +205,7 @@
     d.horizons.forEach(function(h){
       var own = !!me && h.ownerId === me;
       HZ[h.id] = { id:h.id, slug:h.slug, name:h.name, description:h.description || '', isPersonalDefault:!!h.isPersonalDefault, isPublished:!!h.publishedAt,
+        audience: h.audience || (h.publishedAt ? { include:['everyone'], exclude:[] } : { include:[], exclude:[] }),
         ownerName: own ? d.me.displayName : (h.ownerName || (h.ownerId && P[h.ownerId] ? P[h.ownerId].displayName : 'Hypernet')),
         ownerId:h.ownerId, ownerAcct: own ? 'me' : undefined, eventIds:(h.eventIds || []).slice(), collaboratorIds:(h.collaboratorIds || []).slice(),
         pendingCollaboratorIds:(h.pendingCollaboratorIds || []).slice(), pendingFollowerIds:(h.pendingFollowerIds || []).slice() };
@@ -589,7 +590,11 @@ function listResult(p){ return p.then(function(d){ return { ok:true, list:d && d
       var h = HORIZONS[hzId];
       if (!h) return {};
       var body = { name:h.name, description:h.description || '' };
-      if (hzOwnedByMe(hzId)){ body.published = !!h.isPublished; body.look = HZTHEME[hzId] ? lookOut(HZTHEME[hzId]) : null; }
+      if (hzOwnedByMe(hzId)){
+        body.published = !!h.isPublished;
+        body.look = HZTHEME[hzId] ? lookOut(HZTHEME[hzId]) : null;
+        if (h.audience && Array.isArray(h.audience.include)) body.audience = { include:h.audience.include.slice(), exclude:(h.audience.exclude || []).slice() };
+      }
       return body;
     }, (HORIZONS[hzId] || {}).name);
   };

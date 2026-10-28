@@ -16,6 +16,7 @@ export function horizonJson(viewerParam: string): string {
   'createdAt', h.created_at,
   'eventIds', coalesce((select json_agg(he.event_id order by he.position, he.added_at) from horizon_events he join events e on e.id = he.event_id
                          where he.horizon_id = h.id and ${see}), '[]'),
+  'audience', h.audience,
   'followers', (select count(*) from horizon_follows hf where hf.horizon_id = h.id),
   'collaboratorIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc where hc.horizon_id = h.id and hc.accepted_at is not null), '[]'),
   'pendingCollaboratorIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc
@@ -31,8 +32,16 @@ export function horizonFollowable(viewer: "$1" | "$2"): string {
   return `(h.published_at is not null or h.owner_id = ${viewer}::uuid or exists (select 1 from horizon_collaborators hc where hc.horizon_id = h.id and hc.person_id = ${viewer}::uuid and hc.accepted_at is not null))`;
 }
 
+/** Owner, an accepted collaborator, or an include that an exclude does not hide. */
+export function canSeeHorizonSql(viewer: "$1" | "$2"): string {
+  return `can_see_horizon(${viewer}::uuid, h)`;
+}
+
 export function horizonVisible(viewer: "$1" | "$2"): string {
-  return `(h.published_at is not null or h.owner_id = ${viewer}::uuid or exists (select 1 from horizon_collaborators hc where hc.horizon_id = h.id and hc.person_id = ${viewer}::uuid and hc.declined_at is null))`;
+  return `(${canSeeHorizonSql(viewer)} or exists (
+    select 1 from horizon_collaborators hc
+    where hc.horizon_id = h.id and hc.person_id = ${viewer}::uuid
+      and hc.accepted_at is null and hc.declined_at is null))`;
 }
 
 async function selectHorizon(id: string, viewer: string | null, visibleOnly: boolean): Promise<unknown | null> {

@@ -1,5 +1,6 @@
 import { currentPerson, requirePerson } from "@/lib/auth";
 import { pgCode, sqlx } from "@/lib/db";
+import { resolveAudience } from "@/lib/audience";
 import { canSeeEvent, eventGone } from "@/lib/events";
 import { horizonAccess, horizonFollowed, horizonFor } from "@/lib/horizons";
 import { HttpError, json, readJson, route } from "@/lib/http";
@@ -17,7 +18,7 @@ export const GET = route(async (_req: Request, ctx: Ctx) => {
   return json({ horizon });
 });
 
-/** PATCH /api/horizons/:id {name?, description?, published?, look?, coverEventId?}. The owner edits all of it. A collaborator edits the name and the description. A follower cannot. */
+/** PATCH /api/horizons/:id {name?, description?, published?, audience?, look?, coverEventId?}. The owner edits all of it. A collaborator edits the name and the description. A follower cannot. */
 export const PATCH = route(async (req: Request, ctx: Ctx) => {
   const id = await idParam(ctx.params);
   const me = await requirePerson();
@@ -28,10 +29,11 @@ export const PATCH = route(async (req: Request, ctx: Ctx) => {
     throw notFound("No horizon of yours with that id.");
   }
   const has = (k: string) => k in b;
-  if (access.role === "collaborator" && (has("published") || has("look") || has("coverEventId"))) {
+  if (access.role === "collaborator" && (has("published") || has("audience") || has("look") || has("coverEventId"))) {
     throw forbidden("Only the owner can change who can see this, its look, or its cover.");
   }
   if (has("coverEventId") && b.coverEventId && !(await canSeeEvent(b.coverEventId, me.id))) throw eventGone();
+  const audienceUpdate = has("audience") && b.audience ? await resolveAudience(me.id, { audience: b.audience }) : undefined;
   try {
     const rows = (await sqlx().query(
       `update horizons set
@@ -39,12 +41,13 @@ export const PATCH = route(async (req: Request, ctx: Ctx) => {
          description = case when $5 then $6 else description end,
          published_at = case when not $7 then published_at when $8 then coalesce(published_at, now()) else null end,
          look = case when $9 then $10::jsonb else look end,
-         cover_event_id = case when $11 then $12::uuid else cover_event_id end
+         cover_event_id = case when $11 then $12::uuid else cover_event_id end,
+         audience = case when $13 then $14::jsonb else audience end
        where id = $1 and (owner_id = $2 or exists (
          select 1 from horizon_collaborators hc where hc.horizon_id = $1 and hc.person_id = $2 and hc.accepted_at is not null
        )) returning id`,
       [id, me.id, has("name"), b.name ?? null, has("description"), b.description ?? "", has("published"), !!b.published,
-       has("look"), j(b.look), has("coverEventId"), b.coverEventId ?? null],
+       has("look"), j(b.look), has("coverEventId"), b.coverEventId ?? null, !!audienceUpdate, audienceUpdate ? j(audienceUpdate) : null],
     )) as unknown[];
     if (!rows.length) throw notFound("No horizon of yours with that id.");
   } catch (err) {

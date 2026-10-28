@@ -1,6 +1,6 @@
 /* Mounts Friends & Privacy's cog on a horizon the viewer owns.
-   Horizons store published_at, not an audience. The include/exclude list stays on the horizon
-   in the offline store. "everyone" still flips isPublished through the existing save.
+   The include/exclude list is the horizon's audience. "everyone" still flips isPublished
+   so the public eyebrow stays in step. Online, saveHorizon writes the audience column.
    HNCog.mount does not draw a control. When it is present, the "..." button stays in the
    page and a cog button in [data-hzcog] takes its place. Clicking that button calls
    HNCog.open. When HNCog is missing, the "..." button is the menu. */

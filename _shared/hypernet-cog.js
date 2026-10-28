@@ -84,7 +84,7 @@
     };
     var picker = root.HNAudience.pickerHTML(aud, namedRows(), { hostNote: false });
     var body = '<div class="field"><label for="w-p">Who can see it</label>' + picker + "</div>" +
-      '<p class="hncog-unenforced">Not enforced yet</p><p class="hncog-err" hidden></p>';
+      '<p class="hncog-err" hidden></p>';
     root.dialog("Visibility", body,
       '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="hncog-save">Save</button>',
       480, "hncog");

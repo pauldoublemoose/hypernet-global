@@ -3497,6 +3497,7 @@ async function overflowEverywhere(p, label){
     await c.evaluate(() => useAcct('demo')); await c.waitForTimeout(300);
     await c.goto(URL + '#/owncallouts'); await c.waitForTimeout(300);
     const local = await ev(c, () => {
+      delete window.HNCallouts;
       CALLOUTS.unshift({ id:'co-local-test', title:'Ridge hands', body:'Need two', hostName:'Michal', hostAcct:S.acct, expiresAt:'2026-12-01' });
       render();
       return {

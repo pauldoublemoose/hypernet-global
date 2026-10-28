@@ -3120,6 +3120,16 @@ function syncCalloutPage(){
     return;
   }
   var api = window.HNCallouts;
+  if (!COWATCH || COWATCH.api !== api){
+    if (COWATCH) COWATCH();
+    COWATCH = null;
+    if (COPAGE.posted || COPAGE.interacted || COPAGE.loading){
+      COPAGE.seq++;
+      COPAGE.posted = null;
+      COPAGE.interacted = null;
+      COPAGE.loading = false;
+    }
+  }
   if (!api) return;
   if (!COWATCH && typeof api.onChange === 'function'){
     var off = api.onChange(function(){
@@ -3129,6 +3139,7 @@ function syncCalloutPage(){
       if (S.folder.kind === 'owncallouts') pullCallouts();
     });
     COWATCH = typeof off === 'function' ? off : function(){};
+    COWATCH.api = api;
   }
   var mine = calloutMethod('mine'), inter = calloutMethod('interacted');
   if ((!mine || COPAGE.posted) && (!inter || COPAGE.interacted)) return;

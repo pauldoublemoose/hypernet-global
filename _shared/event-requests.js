@@ -286,6 +286,7 @@
     return e && e.cocreatorPolicy === 'request' ? 'request' : 'open';
   }
   function acceptCocreator(item){
+    if (!item || !item.eventId) return Promise.resolve();
     var snap = { direction: item.direction, requests: null, chron: null, role: bag('ROLE')[item.eventId], rsvp: bag('RSVP')[item.eventId] };
     if (item.direction === 'request'){
       var reqs = bag('COREQUESTS');
@@ -306,6 +307,7 @@
     return Promise.resolve();
   }
   function declineCocreator(item){
+    if (!item || !item.eventId) return Promise.resolve();
     var snap = { direction: item.direction };
     if (item.direction === 'request'){
       var reqs = bag('COREQUESTS');
@@ -319,6 +321,7 @@
     return Promise.resolve();
   }
   function undoCocreator(item){
+    if (!item || !item.id) return Promise.resolve();
     var row = done[item.id], snap = row && row.snap || {};
     if (item.direction === 'request'){
       if (snap.had || snap.requests){

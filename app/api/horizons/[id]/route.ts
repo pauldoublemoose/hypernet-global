@@ -1,6 +1,6 @@
-import { requirePerson } from "@/lib/auth";
-import { currentPerson } from "@/lib/auth";
+import { currentPerson, requirePerson } from "@/lib/auth";
 import { pgCode, sqlx } from "@/lib/db";
+import { canSeeEvent, eventGone } from "@/lib/events";
 import { horizonAccess, horizonFollowed, horizonFor } from "@/lib/horizons";
 import { HttpError, json, readJson, route } from "@/lib/http";
 import { forbidden, idParam, j, notFound, type Ctx } from "@/lib/ids";
@@ -31,6 +31,7 @@ export const PATCH = route(async (req: Request, ctx: Ctx) => {
   if (access.role === "collaborator" && (has("published") || has("look") || has("coverEventId"))) {
     throw forbidden("Only the owner can change who can see this, its look, or its cover.");
   }
+  if (has("coverEventId") && b.coverEventId && !(await canSeeEvent(b.coverEventId, me.id))) throw eventGone();
   try {
     const rows = (await sqlx().query(
       `update horizons set

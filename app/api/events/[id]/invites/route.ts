@@ -12,7 +12,8 @@ export const dynamic = "force-dynamic";
 
 /**
  * POST /api/events/:id/invites {personId} — record an invite and send a DM card.
- * The row does not make a private event visible. can_see_event is unchanged.
+ * An invite does not reveal a person the audience excludes. The response matches a
+ * normal invite, and no row or chat card is written.
  */
 export const POST = route(async (req: Request, ctx: Ctx) => {
   const id = await idParam(ctx.params);
@@ -46,6 +47,15 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
       ? "Only events hosted here can take an invite."
       : "You can’t send an invite to this event.");
   }
+  const hidden = (await sqlx().query(
+    `select exists (
+       select 1 from jsonb_array_elements_text(e.audience->'exclude') tok
+       where in_audience($2, e.host_id, tok)
+     ) as hidden
+     from events e where e.id = $1`,
+    [id, b.personId],
+  )) as { hidden: boolean }[];
+  if (hidden[0]?.hidden) return json({ ok: true }, 201);
   await sqlx().query(
     `insert into event_invites (event_id, invitee_id, invited_by) values ($1, $2, $3) on conflict (event_id, invitee_id) do nothing`,
     [id, b.personId, me.id],

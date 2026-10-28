@@ -436,6 +436,39 @@ window.HYPERNET = {
       "p-anna"
     ]
   ],
+  "bonds": [
+    { "a": "p-anna", "b": "p-rio", "requestedBy": "p-anna", "status": "accepted" },
+    { "a": "p-kai", "b": "p-rio", "requestedBy": "p-rio", "status": "accepted" },
+    { "a": "p-mira", "b": "p-sasha", "requestedBy": "p-mira", "status": "accepted" },
+    { "a": "p-anna", "b": "p-jon", "requestedBy": "p-jon", "status": "accepted" },
+    { "a": "p-anna", "b": "p-michal", "requestedBy": "p-michal", "status": "accepted" },
+    { "a": "p-michal", "b": "p-mira", "requestedBy": "p-mira", "status": "accepted" },
+    { "a": "p-michal", "b": "p-oskar", "requestedBy": "p-oskar", "status": "accepted" },
+    { "a": "p-michal", "b": "p-yuki", "requestedBy": "p-michal", "status": "accepted" },
+    { "a": "p-jon", "b": "p-michal", "requestedBy": "p-michal", "status": "pending" },
+    { "a": "p-michal", "b": "p-tomas", "requestedBy": "p-tomas", "status": "pending" }
+  ],
+  "follows": [
+    ["p-anna", "p-mira"],
+    ["p-rio", "p-mira"],
+    ["p-kai", "p-jon"],
+    ["p-sasha", "p-kai"],
+    ["p-sasha", "p-jon"],
+    ["p-jon", "p-kai"],
+    ["p-michal", "p-anna"],
+    ["p-michal", "p-rio"],
+    ["p-michal", "p-kai"],
+    ["p-michal", "p-sasha"],
+    ["p-anna", "p-lena"],
+    ["p-kai", "p-priya"],
+    ["p-mira", "p-ines"],
+    ["p-lena", "p-michal"],
+    ["p-priya", "p-michal"]
+  ],
+  "lists": [
+    { "id": "11111111-1111-4111-8111-111111111111", "name": "Work", "memberIds": ["p-anna", "p-rio"] },
+    { "id": "22222222-2222-4222-8222-222222222222", "name": "Close", "memberIds": ["p-mira", "p-kai"] }
+  ],
   "events": [
     {
       "id": "evt-world-borderland-2026",
@@ -656,6 +689,94 @@ window.HYPERNET = {
         "self"
       ],
       "kind": "fill"
+    },
+    {
+      "id": "evt-aud-everyone",
+      "title": "Lane circle",
+      "date": "2026-01-10",
+      "description": "Open to anyone with an account.",
+      "hostName": "You",
+      "privacy": "everyone",
+      "audience": { "include": ["everyone"], "exclude": [] },
+      "ownerIds": ["self"],
+      "kind": "seed"
+    },
+    {
+      "id": "evt-aud-friends",
+      "title": "Lane friends",
+      "date": "2026-01-11",
+      "description": "Accepted friends of the host.",
+      "hostName": "You",
+      "privacy": "friends",
+      "audience": { "include": ["friends"], "exclude": [] },
+      "ownerIds": ["self"],
+      "kind": "seed"
+    },
+    {
+      "id": "evt-aud-fof",
+      "title": "Lane second ring",
+      "date": "2026-01-12",
+      "description": "Friends of friends. A direct friend is not in this set.",
+      "hostName": "You",
+      "privacy": "friends",
+      "audience": { "include": ["fof"], "exclude": [] },
+      "ownerIds": ["self"],
+      "kind": "seed"
+    },
+    {
+      "id": "evt-aud-followers",
+      "title": "Lane followers",
+      "date": "2026-01-13",
+      "description": "People who follow the host.",
+      "hostName": "You",
+      "privacy": "friends",
+      "audience": { "include": ["followers"], "exclude": [] },
+      "ownerIds": ["self"],
+      "kind": "seed"
+    },
+    {
+      "id": "evt-aud-close",
+      "title": "Lane close",
+      "date": "2026-01-14",
+      "description": "The Close list.",
+      "hostName": "You",
+      "privacy": "friends",
+      "audience": { "include": ["list:22222222-2222-4222-8222-222222222222"], "exclude": [] },
+      "ownerIds": ["self"],
+      "kind": "seed"
+    },
+    {
+      "id": "evt-aud-except-work",
+      "title": "Lane open except work",
+      "date": "2026-01-15",
+      "description": "Everyone, except the Work list.",
+      "hostName": "You",
+      "privacy": "friends",
+      "audience": { "include": ["everyone"], "exclude": ["list:11111111-1111-4111-8111-111111111111"] },
+      "ownerIds": ["self"],
+      "kind": "seed"
+    },
+    {
+      "id": "evt-aud-friends-except-work",
+      "title": "Lane friends except work",
+      "date": "2026-01-16",
+      "description": "Friends, except the Work list.",
+      "hostName": "You",
+      "privacy": "friends",
+      "audience": { "include": ["friends"], "exclude": ["list:11111111-1111-4111-8111-111111111111"] },
+      "ownerIds": ["self"],
+      "kind": "seed"
+    },
+    {
+      "id": "evt-aud-hidden",
+      "title": "Sasha closed table",
+      "date": "2026-01-17",
+      "description": "Sasha's friends only. Michal is not one of them.",
+      "hostName": "Sasha Reed",
+      "privacy": "friends",
+      "audience": { "include": ["friends"], "exclude": [] },
+      "ownerIds": ["p-sasha"],
+      "kind": "seed"
     }
   ],
   "groups": [

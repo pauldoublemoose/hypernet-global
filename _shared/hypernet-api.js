@@ -38,7 +38,7 @@
         var j = null; try { j = t ? JSON.parse(t) : null; } catch(e){}
         if (!r.ok){
           var err = new Error((j && (j.message || (j.issues && j.issues[0] && j.issues[0].message) || j.error)) || ('Server answered ' + r.status));
-          err.status = r.status; err.code = j && (j.error || j.code); throw err;
+          err.status = r.status; err.code = j && (j.error || j.code); err.body = j; throw err;
         }
         return j;
       });
@@ -85,8 +85,13 @@
   function personRow(p){
     var cities = p.cities || [];
     /* joinedAt: when the account was made (Home's "N people joined Hypernet", Explore → People newest first) */
-    return { id:p.id, displayName:p.displayName, handle:p.handle, bio:p.bio || '', skills:(p.skills || []).slice(), cities:cities.slice(),
+    var row = { id:p.id, displayName:p.displayName, handle:p.handle, bio:p.bio || '', skills:(p.skills || []).slice(), cities:cities.slice(),
              city: cities[0] ? String(cities[0]).toUpperCase() : '', joinedAt: ms(p.createdAt) };
+    if (typeof p.followerCount === 'number') row.followerCount = p.followerCount;
+    if (typeof p.followingCount === 'number') row.followingCount = p.followingCount;
+    if (typeof p.friendCount === 'number') row.friendCount = p.friendCount;
+    if (Array.isArray(p.followedBy)) row.followedBy = p.followedBy.slice();
+    return row;
   }
   function eventRows(e){
     var det = e.details || {}, r = Object.assign({}, det);
@@ -103,6 +108,7 @@
     var ev = { id:e.id, slug:e.slug, title:e.title, date:e.startsOn, description:e.description, hostName:e.hostName, hostId:e.hostId,
                privacy:e.privacy, city:e.city || '', kind: det._kind || (e.source === 'import' ? 'real' : e.source === 'link' ? 'link' : 'own'), ownerIds:[], source:e.source,
                sourceUrl:e.sourceUrl || undefined, addedBy:e.addedBy || undefined };
+    if (e.audience) ev.audience = e.audience;
     if (e.cocreatorPolicy === 'open' || e.cocreatorPolicy === 'request') ev.cocreatorPolicy = e.cocreatorPolicy;
     if (e.invitePolicy === 'admins' || e.invitePolicy === 'cocreators' || e.invitePolicy === 'invited') ev.invitePolicy = e.invitePolicy;
     return { ev:ev, rec:r };
@@ -151,7 +157,9 @@
     /* who follows whom */
     var NF = {}, PF = {};
     d.follows.forEach(function(f){ (NF[f[0]] = NF[f[0]] || []).push(f[1]); if (f[0] === me) PF[f[1]] = true; });
+    (d.friendFollows || []).forEach(function(f){ (NF[f[0]] = NF[f[0]] || []).push(f[1]); });
     window.NETFOLLOWS = NF; window.PFOLLOW = PF;
+    if (window.HNRel) { HNRel.ingest(d); if (HNRel.ingestLists) HNRel.ingestLists(d.lists); }
     /* events */
     var E = {}, R = {}, T = window.HYPERNET_THEMES.themes, NX = {}, real = [];
     fill(T, {});
@@ -452,7 +460,7 @@
       startTime:r.startTime || null, endTime:r.endTime || null, kind:r.kind || 'meetup',
       tags: Array.isArray(r.tags) ? r.tags.filter(function(id, i, a){ return typeof id === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id) && a.indexOf(id) === i; }).slice(0, 60) : null,
       schedule: scheduleOut(r.schedule),
-      privacy:e.privacy || 'everyone',
+      privacy:e.privacy || 'everyone', audience:e.audience || undefined,
       city: r.venueKind === 'virtual' ? null : (city || null), venue: r.venue || null, access: r.access || null,
       whatToBring: Array.isArray(r.whatToBring) ? r.whatToBring : [], details:details,
       look: lookOut(window.HYPERNET_THEMES.themes[id] || null) };
@@ -460,7 +468,7 @@
   /* an event from a link: the same fields, plus where it came from and who puts it on (never who can see it: it is public) */
   function linkBody(id){
     var b = eventBody(id), e = EVENTS[id], r = REC[id] || {};
-    delete b.privacy;
+    delete b.privacy; delete b.audience;
     ['externalUrl', 'sourceSite'].forEach(function(k){ delete b.details[k]; });
     return Object.assign(b, { sourceUrl:e.sourceUrl, hostName:e.hostName, timezone:r.timezone || undefined, region:r.region || null, country:r.country || null });
   }
@@ -476,7 +484,7 @@
   HN.saveEvent = function(id){
     return write('ev:' + id, 'PATCH', '/api/events/' + id, function(){
       var b = eventBody(id);
-      if (EVENTS[id] && EVENTS[id].kind === 'link'){ b.hostName = EVENTS[id].hostName; delete b.privacy; }
+      if (EVENTS[id] && EVENTS[id].kind === 'link'){ b.hostName = EVENTS[id].hostName; delete b.privacy; delete b.audience; }
       return b;
     }, title(id));
   };
@@ -544,6 +552,31 @@
   HN.followPerson = function(pid){
     if (!HN.isId(pid)) return Promise.resolve();
     return write('pf:' + pid, PFOLLOW[pid] ? 'PUT' : 'DELETE', '/api/people/' + pid + '/follow', undefined, person(pid).displayName);
+  };
+  HN.friendWrite = function(pid, method){
+    if (!HN.isId(pid)) return Promise.resolve();
+    delete RELCACHE[pid];
+    if (HN.me) delete RELCACHE[HN.me.id];
+    return write('fr:' + pid, method, '/api/people/' + pid + '/friend', undefined, person(pid).displayName);
+  };
+  var RELCACHE = {};
+  /* a refused delete is 409 {events} and no message. write() would toast and reload, so these stay on req() */
+function listResult(p){ return p.then(function(d){ return { ok:true, list:d && d.list, body:d }; }, function(err){ return { ok:false, status:err.status, message:err.message, events:err.body && err.body.events }; }); }
+  HN.listCreate = function(list){ return listResult(req('POST', '/api/lists', { id:list.id, name:list.name, description:list.description || '' })); };
+  HN.listRename = function(id, name, description){
+    var body = { name:name };
+    if (arguments.length > 2) body.description = description || '';
+    return listResult(req('PATCH', '/api/lists/' + id, body));
+  };
+  HN.listDelete = function(id){ return listResult(req('DELETE', '/api/lists/' + id)); };
+  HN.listMember = function(listId, personId, on){
+    if (!HN.isId(listId) || !HN.isId(personId)) return Promise.resolve({ ok:true });
+    return listResult(req(on ? 'PUT' : 'DELETE', '/api/lists/' + listId + '/members/' + personId));
+  };
+  HN.relations = function(pid){
+    if (!HN.isId(pid)) return Promise.resolve({ followers:[], following:[], friends:null });
+    if (RELCACHE[pid]) return Promise.resolve(RELCACHE[pid]);
+    return req('GET', '/api/people/' + pid + '/relations').then(function(d){ RELCACHE[pid] = d; return d; });
   };
   HN.followHorizon = function(hzId){ return write('hf:' + hzId, HZFOLLOW[hzId] ? 'PUT' : 'DELETE', '/api/horizons/' + hzId + '/follow', undefined, (HORIZONS[hzId] || {}).name); };
   HN.createHorizon = function(hzId){

@@ -3,6 +3,7 @@
 // sqlx is a stand-in that applies the statement the route sends:
 //   role = case when $9 then excluded.role else r.role end
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { HttpError } from "@/lib/http";
 
 const EVENT = "00000000-0000-4000-8000-0000000000e1";
 const HOST = "00000000-0000-4000-8000-0000000000aa";
@@ -25,6 +26,8 @@ vi.mock("@/lib/auth", () => ({
 }));
 vi.mock("@/lib/events", () => ({
   canSeeEvent: async () => h.state.see,
+  EVENT_GONE: "This event is private or no longer here.",
+  eventGone: () => new HttpError(404, "not_found", "This event is private or no longer here."),
 }));
 vi.mock("@/lib/db", () => ({
   sqlx: () => ({

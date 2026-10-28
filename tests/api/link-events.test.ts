@@ -107,13 +107,19 @@ describe("adding an event from a link", () => {
     expect(r.body.event.hostName).toBe("Vitest link a");
     await a.del(`/api/events/${own}`);
   });
-  it("goes on a horizon, and everyone sees it", async () => {
+  it("goes on a horizon, and a logged-in person sees it", async () => {
     const hz = randomUUID();
     expect((await a.post("/api/horizons", { id: hz, name: `Vitest link horizon ${RUN}`, published: true, eventIds: [id] })).status).toBe(201);
-    const boot = (await anon.get("/api/bootstrap")).body;
+    const boot = (await b.get("/api/bootstrap")).body;
     expect(boot.events.some((e: { id: string }) => e.id === id)).toBe(true);
     expect(boot.horizons.find((h: { id: string }) => h.id === hz).eventIds).toEqual([id]);
     expect(boot.activity.some((x: { verb: string; objId: string }) => x.verb === "added_to_horizon" && x.objId === hz)).toBe(true);
+    const anonBoot = (await anon.get("/api/bootstrap")).body;
+    expect(anonBoot.events).toEqual([]);
+    expect(anonBoot.horizons).toEqual([]);
+    expect(anonBoot.people).toEqual([]);
+    expect(anonBoot.activity).toEqual([]);
+    expect((await anon.get(`/api/horizons/${hz}`)).status).toBe(404);
     await a.del(`/api/horizons/${hz}`);
   });
   it("whoever added it may delete it", async () => {

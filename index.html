@@ -1272,6 +1272,68 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .ttwhat{ min-width:0; }
 @media (pointer:coarse){ .schedend{ min-height:44px; } }
 
+/* FRIENDS & PRIVACY */
+.relacts{ display:flex; flex-direction:column; align-items:flex-start; gap:6px; color:var(--ink); }
+.relbtns{ display:flex; flex-wrap:wrap; gap:6px; }
+.relcounts{ display:flex; flex-wrap:wrap; gap:10px; color:var(--dim); }
+.relcounts button{ border:0; padding:0; background:transparent; color:var(--ink2); font:inherit; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+.relcounts span{ color:var(--ink2); }
+.profile-actions{ min-width:0; max-width:100%; }
+#chats > .profile-actions{ padding:0 4px 8px; }
+.relrow{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; min-height:36px; color:var(--ink); }
+.relrow > .btn{ min-width:0; max-width:100%; white-space:normal; overflow-wrap:anywhere; text-align:left; }
+.relrow small, .relempty{ color:var(--dim); }
+.relerr{ margin:0 0 8px; color:var(--alert); }
+.relcreate{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:8px; margin-top:12px; }
+.relcreate .field{ flex:1 1 10em; min-width:0; margin:0; }
+.relcheck{ display:flex; align-items:center; gap:8px; width:100%; min-height:36px; padding:4px 0; border:0; background:transparent; color:var(--ink); font:inherit; cursor:pointer; text-align:left; overflow-wrap:anywhere; }
+.relcheck .ic{ flex:0 0 auto; }
+.dlg.rel-dlg h3, .dlg.rel-dlg h4{ margin:12px 0 6px; color:var(--ink); font-size:inherit; }
+.dlg.rel-dlg h3:first-child{ margin-top:0; }
+.dlg.rel-dlg h4{ margin-top:10px; }
+.reqrow .r-title{ white-space:normal; }
+.reqrow .r-side{ flex-direction:row; align-items:center; }
+.reqhit{ outline:1px dotted var(--ink); outline-offset:2px; }
+.reqstate{ color:var(--dim); white-space:nowrap; }
+.reqstate .btn{ margin-left:6px; }
+.hncog-unenforced{ margin:8px 0 0; color:var(--dim); font-size:var(--fs-s); line-height:16px; }
+.hncog-err{ margin:8px 0 0; color:var(--alert); font-size:var(--fs-s); line-height:16px; }
+.hncog-err[hidden]{ display:none; }
+.ctxmenu .ci.danger, .ctxsheet .sheetrow.danger{ color:var(--alert); }
+[data-theme="y2fresh"] .relacts .btn, [data-theme="y2fresh"] .relrow .btn, [data-theme="y2fresh"] .dlg.rel-dlg .btn, [data-theme="y2fresh"] .reqrow .btn{ border:3px solid var(--rule); }
+.relacts .btn:focus, .relcounts button:focus{ outline:1px dotted var(--ink); outline-offset:2px; }
+.audpick{ display:flex; flex-direction:column; gap:0; max-width:28rem; min-width:0; padding:0; background:transparent; color:var(--ink); }
+.audrow{ display:flex; align-items:center; gap:12px; min-height:32px; }
+.audhead{ min-height:0; }
+.audname{ flex:1 1 auto; min-width:0; overflow-wrap:anywhere; }
+.audboxes{ display:grid; grid-template-columns:28px 28px; column-gap:8px; flex:0 0 auto; }
+.audh{ width:28px; text-align:center; color:var(--dim); font-size:11px; line-height:16px; }
+.audph{ width:28px; height:28px; }
+.audbox{ position:relative; display:grid; place-items:center; width:28px; height:28px; background:transparent; color:var(--dim); }
+.audbox input{ position:absolute; inset:0; margin:0; opacity:0; cursor:pointer; }
+.audbox:focus-within{ outline:1px dotted var(--ink); outline-offset:2px; }
+.audbox.on, .audbox.ex.on{ background:var(--sel); color:#fff; box-shadow:inset 1px 1px 0 #000, inset -1px -1px 0 #777; }
+[data-theme="y2fresh"] .audbox.on, [data-theme="y2fresh"] .audbox.ex.on{ box-shadow:var(--in); }
+.auddiv{ height:0; margin:8px 0; border:0; border-top:1px solid var(--line); }
+.audmanage{ align-self:flex-start; margin:2px 0 0; padding:0; border:0; background:transparent; color:var(--ink2); font:inherit; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+.audmanage:focus{ outline:1px dotted var(--ink); outline-offset:2px; }
+.audsum{ margin:8px 0 0; color:var(--ink2); }
+.audnote{ margin:8px 0 0; color:var(--alert); font-size:var(--fs-s); line-height:16px; }
+.audnote[hidden]{ display:none; }
+.msg .evcard.gone{
+  display:block; margin-top:6px; padding:8px; border:1px solid var(--line);
+  color:var(--dim); background:transparent; text-decoration:none; cursor:default;
+}
+[data-theme="y2fresh"] .audbox .ic{ stroke-width:1.6; }
+.dlg.rel-dlg .band{ margin-left:-20px; margin-right:-20px; padding-left:20px; }
+body.is-phone .dlg.rel-dlg .band{ margin-left:-16px; margin-right:-16px; padding-left:16px; }
+@media (pointer:coarse){
+  .audboxes{ grid-template-columns:44px 44px; }
+  .audbox{ width:44px; height:44px; }
+  .audh{ width:44px; }
+  .audph{ width:44px; height:44px; }
+}
+
 /* PROFILE — Chronicle, Event Horizons and tags on a person's page. Uses the theme tokens only.
    Horizons and tag categories reuse the category layout below. */
 .chcats{ display:flex; flex-direction:column; gap:16px; }
@@ -1340,8 +1402,8 @@ body .popmenu.chmenu .pi:hover, body .popmenu.chmenu .pi:focus{ background:var(-
 .pmore{ margin-top:8px; }
 .peditname, .peditbio, .pfind, .prow .addcity input{ color:var(--ink); background:#fff; }
 .pfind{ display:block; width:100%; max-width:280px; margin:0 0 8px; box-sizing:border-box; height:auto; padding:4px 8px; font:12px/16px var(--sys); }
-/* The slot stays empty until Friends & Privacy mounts there. The Follow bar is not a sibling of the slot, so :has watches it. */
-.pg-person:has(.profile-actions:not(:empty)) > .actbar:has([data-act="followp"]){ display:none; }
+/* The slot stays empty until Friends & Privacy mounts there. Follow is not a sibling of the slot, so :has watches it. Message stays in the bar. */
+.pg-person:has(.profile-actions:not(:empty)) > .actbar [data-act="followp"]{ display:none; }
 
 /* ---------- themes ---------------------------------------------------
    Windows (data-theme="win2k") is :root above, unchanged.
@@ -1717,6 +1779,9 @@ a.maplink:focus-visible{ outline:2px solid var(--sel); outline-offset:2px; }
 <script src="_shared/hypernet-palette.js"></script>
 <script src="_shared/hypernet-themes.js"></script>
 <script src="_shared/hypernet-event-details.js"></script>
+<script src="_shared/hypernet-audience.js"></script>
+<script src="_shared/hypernet-cog.js"></script>
+<script src="_shared/hypernet-rel.js"></script>
 <script src="_shared/chat-cards.js"></script>
 <script src="_shared/horizon-requests.js"></script>
 <script src="_shared/horizon-cog.js"></script>
@@ -1890,6 +1955,7 @@ function makeNextEditions(){
     var title = /\b(19|20)\d\d\b/.test(e.title) ? e.title.replace(/\b(19|20)\d\d\b/, ny) : e.title + ' ' + ny;
     EVENTS[nid] = { id:nid, title:title, date:nd, description:e.description, hostName:e.hostName, privacy:e.privacy,
                     ownerIds:e.ownerIds || [], kind:e.kind, city:e.city };
+    if (e.audience) EVENTS[nid].audience = { include:(e.audience.include || []).slice(), exclude:(e.audience.exclude || []).slice() };
     var nr = JSON.parse(JSON.stringify(r));
     nr.id = nid; nr.date = nd; nr.endDate = isoDate(b.nextEdition.endDate) || undefined;
     nr.theme = b.nextEdition.theme ? (typeof b.nextEdition.theme === 'object' ? b.nextEdition.theme : { name:b.nextEdition.theme }) : undefined;
@@ -2058,8 +2124,8 @@ var IC = {
   lock:'<path d="M5 9h10v8H5zM7 9V6.5a3 3 0 0 1 6 0V9"/>',
   ext:'<path d="M8 4.5h7.5V12M15.5 4.5 5 15"/>',
   dots:'<path d="M4 10h.01M10 10h.01M16 10h.01" stroke-width="3"/>',
-  /* Friends & Privacy does not ship an icon in this page, so Visibility uses this eye. */
-  eye:'<path d="M1.8 10S4.8 5.2 10 5.2 18.2 10 18.2 10 15.2 14.8 10 14.8 1.8 10 1.8 10z"/><circle cx="10" cy="10" r="2.1"/>',
+  /* The include eye from the audience picker, filled with currentColor. */
+  eye:'<path fill="currentColor" fill-rule="evenodd" d="M1.2 10C3.4 6.4 6.3 4.5 10 4.5s6.6 1.9 8.8 5.5c-2.2 3.6-5.1 5.5-8.8 5.5S3.4 13.6 1.2 10zm6 0a2.8 2.8 0 1 0 5.6 0 2.8 2.8 0 0 0-5.6 0z"/>',
   /* a rolled parchment: a curl at each end, the Chronicle mark */
   scroll:'<path d="M7.2 4.4h7c1.3 0 2.2.9 2.2 2.1M7.2 4.4C5.6 4.4 4.4 5.5 4.4 7s1.2 2.6 2.8 2.6h7.2M7.2 9.6V15c0 1.4 1.1 2.5 2.6 2.5h6.4M16.2 4.4v10.8c0 1.3 1 2.3 2.2 2.3"/>',
   /* a toothed ring and a centre hole, so the bar button reads as a gear */
@@ -2069,6 +2135,7 @@ var IC = {
 };
 function ic(n, sz){
   sz = sz || 18;
+  if (n === 'eye') return '<svg class="ic" viewBox="0 0 20 20" width="'+sz+'" height="'+sz+'" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M1.2 10C3.4 6.4 6.3 4.5 10 4.5s6.6 1.9 8.8 5.5c-2.2 3.6-5.1 5.5-8.8 5.5S3.4 13.6 1.2 10zm6 0a2.8 2.8 0 1 0 5.6 0 2.8 2.8 0 0 0-5.6 0z"/></svg>';
   return '<svg class="ic" viewBox="0 0 20 20" width="'+sz+'" height="'+sz+'" aria-hidden="true" fill="none" stroke="currentColor" '+
          'stroke-width="1.7" stroke-linecap="square" stroke-linejoin="miter">'+IC[n]+'</svg>';
 }
@@ -2103,7 +2170,8 @@ var PFOLLOW  = {};
 EVENTS['evt-chronicle-supper'] = { id:'evt-chronicle-supper', title:'Midsummer supper', date:'2026-06-20',
   description:'A long table after the last light, the year the ridge stayed warm.', hostName:'You', privacy:'only_me',
   ownerIds:['self'], kind:'seed', city:'Stockholm' };
-/* A past Going with no stored role. Anna hosts it, so it is Attended, not Hosted. The date is fixed, past the fixture shift. */
+/* A past Going with no stored role. Anna hosts it, so it is Attended, not Hosted. The date is fixed, past the fixture shift.
+   Requests uses this row for Did you go. The demo RSVP is going and a.went does not list it. */
 EVENTS['evt-chronicle-going'] = { id:'evt-chronicle-going', title:'Late quay supper', date:'2026-08-02',
   description:'One long table on the quay after the boats were in.', hostName:'Anna Vale', privacy:'everyone',
   ownerIds:['p-anna'], kind:'seed', city:'Stockholm' };
@@ -2308,11 +2376,13 @@ function hzPendingInvite(hzId){
     });
   });
 }
-/* PRIVACY — who can see an event. One rule, used by every list, search, calendar, horizon and activity row:
+/* PRIVACY — who can see an event. One rule, used by every list, search, calendar, horizon and activity row.
+   Online, the server already applied can_see_event, and a logged-out viewer sees no events.
+   Offline, the fixture rule stays so the demo still shows public events while logged out:
      everyone  anyone, logged out too
      friends   its host, and the people its host follows
      only_me   its host alone
-   Any other value counts as only_me (closed by default). With Neon this is the same predicate in SQL (a view or RLS). */
+   Any other value counts as only_me (closed by default). */
 var PRIVACY = { everyone:'Everyone', friends:'Friends', only_me:'Only me' };
 /* the person who hosts an event: an account's own, a fixture person by name, else its fixture owner ("self" there is the demo) */
 function eventHostPid(e){
@@ -2335,17 +2405,31 @@ function followsOf(pid){
 }
 /* the person you are on the network while logged in (null logged out) */
 function myPid(){ return S.loggedIn && S.acct && typeof acctPid === 'function' ? acctPid(S.acct) : null; }
-/* Invitees are not included yet. Friends & Privacy will add an event_invites clause in a later migration.
-   An invite does not open a private event in this build. */
+/* Same rule as can_see_event in 0014. The host, an accepted admin, and an accepted co-creator always see it.
+   An exclude hides everyone else, even with an invite. Otherwise an include match or an invite is enough. */
 function canSeeEvent(e){
   if (!e) return false;
+  var me = myPid();
+  var invited = !!(me && typeof EVENT_INVITES !== 'undefined' && EVENT_INVITES[e.id] && EVENT_INVITES[e.id].some(function(r){ return r && r.inviteeId === me; }));
+  if (ownEvent(e) || (me && eventHostPid(e) === me)) return true;
+  if (me && adminStatus(e.id, me) === 'accepted') return true;
+  if (me && ROLE[e.id] === 'cocreator' && !cocreatorPendingMine(e.id)) return true;
+  if (e.audience && window.HNAudience && window.HNRel) {
+    var graph = HNRel.audienceGraph(), host = eventHostPid(e);
+    if (HNAudience.matchesExclude(me, host, e.audience, graph)) return false;
+    if (invited) return true;
+    if (ONLINE) return !!me;
+    return HNAudience.canSee(me, host, e.audience, graph);
+  }
+  if (invited) return true;
+  if (ONLINE) return !!me;
   var pv = e.privacy || 'everyone';
   if (pv === 'everyone') return true;
-  if (ownEvent(e)) return true;
-  var me = myPid(), host = eventHostPid(e);
-  if (!me || !host) return false;
-  if (host === me) return true;
-  return pv === 'friends' && followsOf(host).indexOf(me) >= 0;
+  if (!me) return false;
+  var hostOnly = eventHostPid(e);
+  if (!hostOnly) return false;
+  if (hostOnly === me) return true;
+  return pv === 'friends' && followsOf(hostOnly).indexOf(me) >= 0;
 }
 function canSee(evId){ return canSeeEvent(EVENTS[evId]); }
 /* a horizon's events as the one looking may see them */
@@ -2534,6 +2618,7 @@ function itemName(it){
   if (it.type === 'person') return person(it.id).displayName;
   if (it.type === 'callout') return (calloutOf(it.id) || {}).title || '';
   if (it.type === 'chat') return CHATS[it.id] ? CHATS[it.id].name : '';
+  if (it.type === 'list' && window.HNRel){ var lrows = HNRel.lists(), li; for (li = 0; li < lrows.length; li++) if (lrows[li].id === it.id) return lrows[li].name; }
   if (it.type === 'missing') return 'Not here';
   return '';
 }
@@ -2658,7 +2743,7 @@ function folderName(f){
   f = f || S.folder;
   if (f.kind === 'explore') return f.id ? (EXPLOREKINDS.filter(function(k){ return k[0] === f.id; })[0] || [0, 'Explore'])[1] : 'Explore';
   return { home:'Home', interested:'Interested', going:'Going', hosting:'Hosting', promoted:'Boosted',
-           owncallouts:'Your call outs', yourhz:'Your horizons',
+           owncallouts:'Your call outs', yourhz:'Your horizons', contacts:'Contacts', requests:'Requests',
            search:'Search', you:'You', chats:'Chats', shelf: shelfTitle(f.id) }[f.kind] || (f.kind === 'horizon' && HORIZONS[f.id] ? HORIZONS[f.id].name : 'Home');
 }
 function folderSub(f){
@@ -2676,6 +2761,8 @@ function folderSub(f){
     var hn = (f.id === 'following' ? followedHorizonItems() : f.id === 'collaborating' ? collaboratedHorizonItems() : myHorizonItems()).length;
     return hn + ' horizon' + (hn === 1 ? '' : 's');
   }
+  if (f.kind === 'contacts') return window.HNRel && HNRel.contactSub ? HNRel.contactSub(f.id) : '';
+  if (f.kind === 'requests'){ var rq = window.HNRel && HNRel.incomingCount ? HNRel.incomingCount() : 0; return rq ? rq + ' to answer' : 'Nothing to answer'; }
   if (f.kind === 'horizon'){ var h = HORIZONS[f.id]; return h ? 'Event Horizon · ' + h.ownerName + ' · ' + hzEventIds(f.id).length + ' events' : ''; }
   return n + ' event' + (n === 1 ? '' : 's');
 }
@@ -2844,7 +2931,7 @@ function rowHTML(it){
     /* new on Hypernet (the last three weeks): when they joined */
     var jt = joinedAt(it.id);
     if (jt && appNow() - jt < ACTWINDOW * 86400000) date = 'joined ' + agoLabel(jt);
-    side = (it.id !== 'self' && S.loggedIn && PFOLLOW[it.id]) ? '<span class="pill going">'+ic('check',11)+'<span>Following</span></span>' : '';
+    side = (window.HNRel && HNRel.rowMark(it.id)) || '';
   } else if (it.type === 'callout'){
     var c = calloutOf(it.id);
     lead = '<span class="r-ic">'+ic('callout')+'</span>';
@@ -2928,6 +3015,8 @@ function tabbedCollection(spec){
   var cur = null;
   tabs.forEach(function(t){ if (t.id === tab) cur = t; });
   var items = cur && typeof cur.items === 'function' ? cur.items() : [];
+  var hosts = tabbedCollection.hosts || (tabbedCollection.hosts = {});
+  if (spec.onTab || spec.onView) hosts[store] = { onTab:spec.onTab || null, onView:spec.onView || null };
   var bar = '<div class="tc-bar"><div class="tc-tabs" role="tablist">' + tabs.map(function(t){
     var on = t.id === tab;
     return '<button type="button" class="tc-tab'+(on?' on':'')+'" role="tab" aria-selected="'+(on?'true':'false')+'" data-act="tctab" data-id="'+esc(t.id)+'">'+esc(t.label)+'</button>';
@@ -2936,10 +3025,25 @@ function tabbedCollection(spec){
       var on = v[0] === view;
       return '<button type="button" class="tc-view'+(on?' on':'')+'" aria-pressed="'+(on?'true':'false')+'" data-act="tcview" data-id="'+v[0]+'">'+v[1]+'</button>';
     }).join('') + '</div></div>';
-  var body = !items.length ? '<div class="empty">'+(spec.empty || 'Nothing here yet.')+'</div>'
-    : view === 'squares' ? '<div class="cards tc-squares">'+items.map(spec.renderSquare).join('')+'</div>'
-    : items.map(spec.renderRow).join('');
+  var lead = spec.lead || '';
+  var body = !items.length ? lead + '<div class="empty">'+(spec.empty || 'Nothing here yet.')+'</div>'
+    : view === 'squares' ? lead + '<div class="cards tc-squares">'+items.map(spec.renderSquare).join('')+'</div>'
+    : lead + items.map(spec.renderRow).join('');
   return { html:'<div class="tcoll" data-store="'+esc(store)+'">'+bar+body+'</div>', items:items, view:view };
+}
+function tabbedHosted(act, id, node){
+  var tc = node && node.closest ? node.closest('.tcoll') : null;
+  if (!tc || !tabbedCollection.hosts) return false;
+  var host = tabbedCollection.hosts[tc.getAttribute('data-store')];
+  if (!host) return false;
+  if (act === 'tctab' && host.onTab){ host.onTab(id); return true; }
+  if (act === 'tcview' && host.onView){
+    var store = tc.getAttribute('data-store');
+    if (store && (id === 'rows' || id === 'squares')){ try { localStorage.setItem(store, id); } catch (e) {} }
+    host.onView(id);
+    return true;
+  }
+  return false;
 }
 function renderYourHorizons(){
   var collab = collaboratedHorizonItems();
@@ -2968,6 +3072,8 @@ function renderList(){
   if (S.folder.kind === 'home'){ renderHome(); return; }
   if (isOverview()){ renderShelves(); return; }
   if (S.folder.kind === 'yourhz'){ renderYourHorizons(); return; }
+  if (S.folder.kind === 'contacts' && window.HNRel && HNRel.mountContacts){ HNRel.mountContacts(); return; }
+  if (S.folder.kind === 'requests' && window.HNRel && HNRel.mountRequests){ HNRel.mountRequests(); return; }
   var items = sortItems(folderItems());
   var g = groupItems(items), h = '', rows = [];
   if (S.folder.kind === 'search' && !S.query.trim()){
@@ -3166,7 +3272,7 @@ function eyebrowOf(e){
   if (b.edition && b.edition.year) parts.push(b.edition.year + (b.edition.number ? ' · No. ' + b.edition.number : ''));
   if (REGLAB[b.regionalStatus]) parts.push(REGLAB[b.regionalStatus]);
   if (r.venueKind === 'virtual') parts.push('Online');
-  parts.push({ everyone:'Public', friends:'Friends' }[e.privacy || 'everyone'] || 'Private');
+  parts.push(audienceWords(e));
   if (isPast(lastDay(e))) parts.push('Past');
   if (r._prev) parts.push('Announced');
   return parts.map(esc).join(' · ');
@@ -4196,7 +4302,7 @@ function missingHTML(path){
   h += '<button class="btn'+(kind === 'chats' && !S.loggedIn ? '' : ' primary')+'" data-act="gohome">'+(S.loggedIn ? ic('home')+'Home' : ic('explore')+'Explore')+'</button>';
   return h + '</div></div>';
 }
-var KINDNAME = { event:'Event', horizon:'Event Horizon', person:'Person', callout:'Call out', missing:'' };
+var KINDNAME = { event:'Event', horizon:'Event Horizon', person:'Person', callout:'Call out', list:'List', missing:'' };
 function detailHTML(it){
   if (it && it.type === 'missing') return missingHTML(it.id);
   if (!it) return '';
@@ -4204,6 +4310,7 @@ function detailHTML(it){
   if (it.type === 'horizon')                     return horizonHTML(it.id, true);
   if (it.type === 'person')                      return personHTML(it.id);
   if (it.type === 'callout' && calloutOf(it.id)) return calloutHTML(it.id);
+  if (it.type === 'list' && window.HNRel && HNRel.listPageHTML) return HNRel.listPageHTML(it.id);
   return '<div class="empty">Nothing to show.</div>';
 }
 /* ---- THE WINDOW ----
@@ -4217,6 +4324,7 @@ function winIcon(it){
   if (it.type === 'event' && EVENTS[it.id]) return sqPx(it.id, 16);
   if (it.type === 'horizon' && HORIZONS[it.id]) return hzArt(it.id, 16);
   if (it.type === 'person' && PEOPLE[it.id]) return avHTML(it.id, 'a16');
+  if (it.type === 'list') return '<span class="wglyph">' + ic('user', 12) + '</span>';
   return '<span class="wglyph">' + ic(it.type === 'callout' ? 'callout' : 'star', 12) + '</span>';
 }
 function closeWin(){
@@ -4654,12 +4762,17 @@ function chatList(){
   return CHATORDER.filter(function(k){ return CHATS[k] && (CHATS[k].messages.length || CHATDRAFT[k]); })
     .sort(function(a, b){ return ts(b) - ts(a); });
 }
+function eventCardVisible(id){
+  var e = id && EVENTS[id];
+  return !!(e && canSeeEvent(e));
+}
 function msgPreview(m, c){
   if (!m) return 'No messages yet';
   var phrase = ChatCards.phrase(m);
   if (phrase != null) return phrase;
   var who = m.from === 'self' ? 'You: ' : '';
   if (m.from === 'sys') return m.text;
+  if (m.eventId && m.cardType !== 'horizon_invite' && !eventCardVisible(m.eventId)) return who + "This event isn't available";
   return who + m.text;
 }
 function unreadChats(){ return S.loggedIn ? Object.keys(UNREADCHAT).filter(function(k){ return UNREADCHAT[k]; }).length : 0; }
@@ -4687,9 +4800,11 @@ function convHTML(cid){
   var c = CHATS[cid], pid = c.memberIds[0];
   var sub = chatSub(c);
   /* their name and the profile button open their profile in a window over the chat; closing it leaves you here */
+  /* under the header, not inside it: .phead does not wrap, and a 300px dock would overflow */
+  var slot = '<div class="profile-actions" data-pid="'+pid+'" data-rel="compact"></div>';
   var h = '<div class="phead"><button class="ib" data-act="chatback" aria-label="All chats">'+ic('back')+'</button>' +
     '<button type="button" class="ptitle ptbtn" data-act="chatprofile" data-id="'+pid+'">'+esc(c.name)+'<small>'+esc(sub)+'</small></button>' +
-    '<button class="ib" data-act="chatprofile" data-id="'+pid+'" aria-label="Profile">'+ic('user')+'</button></div>';
+    '<button class="ib" data-act="chatprofile" data-id="'+pid+'" aria-label="Profile">'+ic('user')+'</button></div>' + slot;
   var lastDay = null;
   var demoInv = pid === 'p-anna' && S.acct === 'demo' && /[?&]offline=1(&|$)/.test(location.search)
     ? '<div class="demonewrow"><button type="button" class="demonew" data-act="demonewinv">Demo: new invites</button></div>' : '';
@@ -4699,9 +4814,12 @@ function convHTML(cid){
     if (m.from === 'sys') return day + '<div class="msg sys">'+esc(m.text)+'</div>';
     var me = m.from === 'self';
     var head = '<div class="mfrom">'+(me ? '' : '<button type="button" class="mwho" data-act="chatprofile" data-id="'+esc(m.from)+'">'+esc(person(m.from).displayName)+'</button>')+'<span class="mt">'+esc(/^\d{1,2}:\d{2}$/.test(m.t || '') ? m.t : '')+'</span></div>';
-    var body = ChatCards.body(m, me, cid);
-    var card = m.eventId && EVENTS[m.eventId] ? '<a class="evcard" href="#/event/'+esc(m.eventId)+'">'+esc(EVENTS[m.eventId].title)+'</a>' : '';
-    var accept = m.chronicle && !me && m.eventId ? '<span class="chclaim">' + vb('chaccept', m.eventId, 'Add to Chronicle', 'scroll') + '</span>' : '';
+    var hiddenCard = !!(m.eventId && m.cardType !== 'horizon_invite' && !eventCardVisible(m.eventId));
+    var card = hiddenCard ? '<span class="evcard gone">' + "This event isn't available" + '</span>'
+      : (m.eventId && EVENTS[m.eventId] ? '<a class="evcard" href="#/event/'+esc(m.eventId)+'">'+esc(EVENTS[m.eventId].title)+'</a>' : '');
+    var accept = m.chronicle && !me && m.eventId && !hiddenCard ? '<span class="chclaim">' + vb('chaccept', m.eventId, 'Add to Chronicle', 'scroll') + '</span>' : '';
+    var body = hiddenCard ? '' : esc(m.text);
+    if (!hiddenCard && ChatCards.get(m.cardType)) body = ChatCards.body(m, me, cid);
     return day + '<div class="msg'+(me?' me':'')+'">'+head+'<div class="mbody">'+body+card+accept+'</div></div>';
   }).join('') : '<div class="msg sys">No messages yet</div>') + '</div>';
   /* the box grows with what you write: Enter sends, Shift+Enter starts a new line */
@@ -4767,16 +4885,12 @@ function actTime(a){ return a.at || isoMs(a.ts); }
      select * from activity where ts > now() - interval '21 days' order by ts desc
    ------------------------------------------------------------------------- */
 var ACTWINDOW = 21;
-/* who follows whom: the fixture friendships both ways, plus a few one-way follows.
-   p-michal's are the demo account's (see demoAcct), so his rows agree with what the demo follows. */
+/* who follows whom: the fixture's follow edges. A friendship is not a follow.
+   Online, bootstrap replaces this with that viewer's follow edges. */
 var NETFOLLOWS = (function(){
   var g = {};
-  var add = function(a, b){ if (a === b || !/^p-/.test(a) || !/^p-/.test(b)) return; g[a] = g[a] || []; if (g[a].indexOf(b) < 0) g[a].push(b); };
-  (H.friendships || []).forEach(function(f){ add(f[0], f[1]); add(f[1], f[0]); });
-  [['p-anna','p-mira'], ['p-rio','p-mira'], ['p-kai','p-jon'], ['p-sasha','p-kai'], ['p-sasha','p-jon'], ['p-jon','p-kai'],
-   ['p-michal','p-anna'], ['p-michal','p-rio'], ['p-michal','p-kai'], ['p-michal','p-sasha'],
-   /* a few of the newcomers already have a follower or two (never before they joined: see seedActivity) */
-   ['p-anna','p-lena'], ['p-kai','p-priya'], ['p-mira','p-ines']].forEach(function(x){ add(x[0], x[1]); });
+  var add = function(a, b){ if (!a || !b || a === b || !/^p-/.test(a) || !/^p-/.test(b)) return; g[a] = g[a] || []; if (g[a].indexOf(b) < 0) g[a].push(b); };
+  ((H && H.follows) || []).forEach(function(x){ add(x[0], x[1]); });
   return g;
 })();
 /* the fixture call outs name no event; these are the ones they are for when no event record lists them */
@@ -5315,9 +5429,9 @@ function upHTML(){
     }).join('') +
     (all.length > UPMAX ? '<div class="fupfoot"><button class="btn fupmore" data-act="upall" aria-expanded="'+UPALL+'">'+(UPALL ? 'Show fewer' : 'Show '+(all.length - UPMAX)+' more')+'</button></div>' : '') + '</section>';
 }
-/* the people the people you follow follow, and you don't yet: how you meet friends of friends */
+/* the people your accepted friends follow, and you don't yet */
 function fofPeople(){
-  var me = myActor(), fol = followedPeople(), via = {};
+  var me = myActor(), fol = window.HNRel ? HNRel.friendIds(me) : followedPeople(), via = {};
   fol.forEach(function(f){ followsOf(f).forEach(function(x){
     if (x !== me && !PFOLLOW[x] && PEOPLE[x] && fol.indexOf(x) < 0) (via[x] = via[x] || []).push(f);
   }); });
@@ -5325,11 +5439,21 @@ function fofPeople(){
     .map(function(x){ return { id:x, via:via[x] }; });
 }
 /* logged out, or following nobody: the people most followed on the network */
+function followerCountOf(pid){
+  var p = PEOPLE[pid];
+  if (p && typeof p.followerCount === 'number') return p.followerCount;
+  var n = 0;
+  Object.keys(NETFOLLOWS || {}).forEach(function(a){ if ((NETFOLLOWS[a] || []).indexOf(pid) >= 0) n++; });
+  return n;
+}
 function popularPeople(){
-  var me = myActor(), by = {};
-  Object.keys(NETFOLLOWS).forEach(function(a){ NETFOLLOWS[a].forEach(function(b){ (by[b] = by[b] || []).push(a); }); });
+  var me = myActor(), by = {}, counted = networkPeople().some(function(id){ return typeof (PEOPLE[id] || {}).followerCount === 'number'; });
+  if (!counted) Object.keys(NETFOLLOWS).forEach(function(a){ NETFOLLOWS[a].forEach(function(b){ (by[b] = by[b] || []).push(a); }); });
   return networkPeople().filter(function(x){ return x !== me && !(S.loggedIn && PFOLLOW[x]); })
-    .sort(function(a, b){ return (by[b] || []).length - (by[a] || []).length; }).map(function(x){ return { id:x, via:by[x] || [], popular:true }; });
+    .sort(function(a, b){ return followerCountOf(b) - followerCountOf(a); }).map(function(x){
+      var via = counted ? ((PEOPLE[x] && PEOPLE[x].followedBy) || []).filter(function(id){ return PEOPLE[id]; }) : (by[x] || []);
+      return { id:x, via:via, popular:true };
+    });
 }
 /* first names, unless two people (or you and someone) share one: then their @handle */
 function firstName(pid){ return String(person(pid).displayName || '').split(' ')[0]; }
@@ -5445,10 +5569,10 @@ function fHorizonCard(hzId){
     verbs: mine ? '' : fbtn('followhz', hzId, fol, 'Follow', 'Following', 'plus', 'check', true) });
 }
 function fPersonCard(pid, sub){
-  var p = person(pid), fol = S.loggedIn && PFOLLOW[pid], me = pid === myActor() || pid === 'self';
+  var p = person(pid), me = pid === myActor() || pid === 'self';
   return thingHTML({ type:'person', id:pid, cls:'fp', art:avHTML(pid, 'a48'), title:p.displayName,
     l2:esc(['@' + p.handle, citiesOf(p)[0], p.bio].filter(Boolean).join(' · ')), l3: sub ? '<div class="fcs3">'+esc(sub)+'</div>' : '',
-    verbs: me ? '' : fbtn('followp', pid, fol, 'Follow', 'Following', 'plus', 'check', true) });
+    verbs: me ? '' : '<div class="profile-actions" data-pid="'+pid+'" data-rel="compact"></div>' });
 }
 /* what a call out offers you: Answer while it is open — a public reply under it. `own` (an event's page): on your own
    call out, once someone answered, Reply — both open the call out with its box ready */
@@ -5747,7 +5871,8 @@ function renderCHead(){
   var kinds = L.phone && S.folder.kind === 'explore' && !S.phoneSearch;
   if (kinds) tools = exploreKindsHTML();
   if (L.phone && S.phoneSearch && S.folder.kind !== 'search') tools = '';
-  el.className = (tools || S.folder.kind === 'yourhz' ? '' : 'none') + (kinds ? ' kindhead' : '');
+  var pageHead = S.folder.kind === 'yourhz' || S.folder.kind === 'contacts' || S.folder.kind === 'requests';
+  el.className = (tools || pageHead ? '' : 'none') + (kinds ? ' kindhead' : '');
   el.innerHTML = '<div class="ct"><h2>'+esc(folderName())+'</h2><div class="csub">'+esc(folderSub())+'</div></div>' + (tools ? '<div class="ctools">'+tools+'</div>' : '');
 }
 function exploreKindsHTML(){
@@ -5926,6 +6051,14 @@ var NEWITEMS = [
 var DLGS = [];
 /* a dialog owns a history entry, so the phone's back gesture closes it instead of the page under it */
 function closeDialogs(){ DLGS.forEach(function(d){ d.remove(); }); DLGS = []; $('mask').style.display = 'none'; scheduleSync(); }
+/* Lists opened from the audience picker sits on the wizard. Closing it returns to the wizard, with the lists it now has. */
+function popRelDlg(){
+  if (!(DLGS.length > 1 && DLGS[DLGS.length - 1].classList.contains('rel-dlg'))) return false;
+  DLGS.pop().remove();
+  var under = DLGS[DLGS.length - 1];
+  if (under && (under.classList.contains('wizdlg') || under.classList.contains('edlg'))) paintWiz();
+  return true;
+}
 function dialog(title, bodyHTML, footHTML, w, cls){
   closePopup();
   scheduleSync();
@@ -6587,17 +6720,23 @@ function demoAcct(){
   a.role = { 'evt-world-hyperstition-2026':'cocreator', 'evt-world-warehouse':'cocreator', 'evt-world-borderland-2026':'attendee', 'evt-world-burning-man-2026':'attendee', 'evt-deep-listening':'cocreator' };
   a.went = { 'evt-world-hyperstition-2026':true, 'evt-world-warehouse':true, 'evt-world-borderland-2026':true, 'evt-world-burning-man-2026':true, 'evt-chronicle-supper':true };
   a.hzfollow = Object.assign({}, HZFOLLOWBY['p-michal']);
-  a.pfollow = { 'p-anna':true, 'p-rio':true, 'p-kai':true, 'p-sasha':true };
+  a.pfollow = {};
+  (NETFOLLOWS['p-michal'] || []).forEach(function(id){ a.pfollow[id] = true; });
   a.myevents = DEMOHOST.slice(); a.myhorizons = ['horizon-default', 'horizon-ridge'];
   a.chats = fixtureChats(); a.unread = { 'c-kai':true };
+  a.lists = fixtureLists();
   return a;
+}
+function fixtureLists(){
+  return ((H && H.lists) || []).map(function(l){ return { id:l.id, name:l.name, memberIds:(l.memberIds || []).slice() }; });
 }
 function captureAcct(){
   var p = PEOPLE['self'];
   return { profile:{ displayName:p.displayName, handle:p.handle, bio:p.bio, skills:p.skills, cities:p.cities, city:p.city },
            rsvp:RSVP, went:WENT, role:ROLE, promoted:PROMOTED, hzfollow:HZFOLLOW, pfollow:PFOLLOW, myevents:MYEVENTS, addedbyme:ADDEDBYME, myhorizons:MYHORIZONS,
            chats:{ byId:CHATS, order:CHATORDER }, unread:UNREADCHAT, drafts:{ forms:FORMDRAFTS, chat:CHATDRAFT }, shift:SHIFT, read:READ,
-           look:PTHEME['self'] || null, joinedAt:(ACCTS[S.acct] || {}).joinedAt || 0 };
+           look:PTHEME['self'] || null, joinedAt:(ACCTS[S.acct] || {}).joinedAt || 0,
+           lists: window.HNRel ? HNRel.lists() : [] };
 }
 function keptChatMessage(m){ return m.from === 'sys' || m.text || m.cardType === 'horizon_invite'; }
 function loadAcct(a){
@@ -6619,6 +6758,7 @@ function loadAcct(a){
   SHIFT = a.shift || {};
   if (a.read) Object.keys(a.read).forEach(function(k){ READ[k] = true; });
   if (a.look) PTHEME['self'] = a.look = asLook(a.look); else delete PTHEME['self'];
+  if (window.HNRel) HNRel.ingestLists(a.lists || []);
   S.me = { name:p.displayName || 'You', handle:p.handle || 'you' };
 }
 /* an account that is not logged in is, to everyone else, just a person on the network */
@@ -6634,6 +6774,8 @@ function syncAcctPeople(){
 function useAcct(k){
   if (S.loggedIn && S.acct){ if (S.acct === k){ closeDialogs(); return; } ACCTS[S.acct] = captureAcct(); }
   if (!ACCTS[k]){ ACCTS[k] = k === 'demo' ? demoAcct() : blankAcct({ displayName:'', handle:'' }); if (k !== 'demo') ACCTS[k].joinedAt = Date.now(); }
+  /* no key means this demo was saved before lists; [] means the owner deleted them */
+  if (k === 'demo' && !('lists' in ACCTS[k])) ACCTS[k].lists = fixtureLists();
   S.acct = k;
   loadAcct(ACCTS[k]);
   if (k === 'demo') seedDemoInvites();
@@ -7792,10 +7934,71 @@ function basicsHTML(d, miss, withPrivacy){
       ['free','donation','pay_what_you_can','ticket','membership','invite'].concat(ACCESSLAB[d.entry] && ['free','donation','pay_what_you_can','ticket','membership','invite'].indexOf(d.entry) < 0 ? [d.entry] : []).map(function(p){ return '<option value="'+p+'"'+(p===d.entry?' selected':'')+'>'+ACCESSLAB[p]+'</option>'; }).join('') +
     '</select></div>';
 }
+function audienceRows(){
+  var rows = [
+    { token:'everyone', label:'Everyone' },
+    { token:'friends', label:'Friends' },
+    { token:'fof', label:'Friends of friends' },
+    { token:'followers', label:'Followers' }
+  ];
+  if (window.HNRel) HNRel.lists().slice().sort(function(a, b){
+    var x = String(a.name).toLowerCase(), y = String(b.name).toLowerCase();
+    return x < y ? -1 : x > y ? 1 : 0;
+  }).forEach(function(l){ rows.push({ token:'list:'+l.id, label:l.name }); });
+  return rows;
+}
+function listTokenName(id){
+  var rows = (window.HNRel && HNRel.lists()) || [];
+  for (var i = 0; i < rows.length; i++) if (rows[i].id === id) return rows[i].name;
+  var fix = (window.HYPERNET && HYPERNET.lists) || [];
+  for (var j = 0; j < fix.length; j++) if (fix[j].id === id) return fix[j].name;
+  return 'a list';
+}
+function audienceWords(e){
+  if (!e || !window.HNAudience) return { everyone:'Everyone', friends:'Friends' }[e && e.privacy || 'everyone'] || 'Only you';
+  var a = e.audience ? HNAudience.normalize(e.audience) : HNAudience.fromPrivacy(e.privacy || 'everyone');
+  return HNAudience.summary(a, listTokenName);
+}
 function privacyHTML(d){
-  return '<div class="field"><label for="w-p">Who can see it</label><select id="w-p" data-cz="privacy">' +
-    Object.keys(PRIVACY).map(function(p){ return '<option value="'+p+'"'+(p===d.privacy?' selected':'')+'>'+PRIVACY[p]+'</option>'; }).join('') +
-    '</select><p class="fhelp">Friends are the people you follow. Only me keeps it to you.</p></div>';
+  var aud = window.HNAudience ? HNAudience.normalize(d.audience || HNAudience.fromPrivacy(d.privacy || 'everyone')) : { include:['everyone'], exclude:[] };
+  var hostNote = !d || !d.editing || isMine(d.editing);
+  return '<div class="field"><label for="w-p">Who can see it</label>' +
+    (window.HNAudience ? HNAudience.pickerHTML(aud, audienceRows(), { hostNote: hostNote }) : '') + '</div>';
+}
+function syncAudiencePicker(){
+  var root = document.querySelector('.dlg .audpick');
+  if (!root || !DRAFT || !window.HNAudience) return;
+  var a = HNAudience.normalize(DRAFT.audience || HNAudience.fromPrivacy(DRAFT.privacy));
+  root.querySelectorAll('input[data-aud]').forEach(function(n){
+    var on = (a[n.getAttribute('data-aud')] || []).indexOf(n.getAttribute('data-tok')) >= 0;
+    n.checked = on;
+    var box = n.closest('.audbox');
+    if (box) box.classList.toggle('on', on);
+  });
+  var sum = root.querySelector('.audsum');
+  if (sum) sum.textContent = HNAudience.summary(a, listTokenName);
+  var note = root.querySelector('.audnote');
+  if (note) note.hidden = !(a.exclude.length && (!DRAFT.editing || isMine(DRAFT.editing)));
+  syncInviteLock();
+}
+function syncInviteLock(){
+  var sel = document.querySelector('.dlg select[data-act="evinvitepolicy"]');
+  if (!sel || !DRAFT || !window.HNAudience) return;
+  var pub = HNAudience.isPublicAudience({ audience:DRAFT.audience, privacy:DRAFT.privacy });
+  sel.disabled = !!pub;
+  var box = sel.parentNode;
+  if (!box) return;
+  var why = box.querySelector('.ev-policy-why');
+  if (pub){
+    if (!why){ why = document.createElement('span'); why.className = 'ev-policy-why'; box.appendChild(why); }
+    why.textContent = 'This event is public, so anyone can already see it.';
+  } else if (why) why.remove();
+}
+function applyDraftAudience(e){
+  if (!window.HNAudience){ e.privacy = DRAFT.privacy || 'everyone'; return; }
+  var a = HNAudience.normalize(DRAFT.audience || HNAudience.fromPrivacy(DRAFT.privacy || 'everyone'));
+  e.audience = a;
+  e.privacy = HNAudience.derivePrivacy(a);
 }
 function splitWhen(iso){
   var m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(iso || '');
@@ -8057,12 +8260,20 @@ function paintWiz(){
 var FORMDRAFTS = {};
 var EVENTKINDS = ['meetup','build','workshop','volunteer_day','fundraiser','camp_meeting','burn_night','town_hall','decompression','burn','sale','other'];
 function blankEventDraft(){
-  return Object.assign({ step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', baseKind:'meetup', tags:[], schedule:[], city:'', online:false, privacy:'everyone', entry:'free', desc:'', bring:'',
+  return Object.assign({ step:1, editing:null, title:'', date:'', end:'', startTime:'', endTime:'', kind:'meetup', baseKind:'meetup', tags:[], schedule:[], city:'', online:false, privacy:'everyone',
+           audience: window.HNAudience ? HNAudience.fromPrivacy('everyone') : { include:['everyone'], exclude:[] }, entry:'free', desc:'', bring:'',
            fillUrl:'', lookTouched:false }, lookDraft(plainTheme('◉')));
 }
 function eventDraftDirty(d){
   var b = blankEventDraft();
-  return Object.keys(b).some(function(k){ return k !== 'step' && k !== 'editing' && k !== 'glyph' && String(d[k] == null ? '' : d[k]) !== String(b[k] == null ? '' : b[k]); });
+  return Object.keys(b).some(function(k){
+    if (k === 'step' || k === 'editing' || k === 'glyph') return false;
+    if (k === 'audience'){
+      var da = d.audience || HNAudience.fromPrivacy(d.privacy || 'everyone');
+      return JSON.stringify(da) !== JSON.stringify(b.audience);
+    }
+    return String(d[k] == null ? '' : d[k]) !== String(b[k] == null ? '' : b[k]);
+  });
 }
 /* repaint the footer only when it changes: replacing a button under the pointer would swallow its click */
 function refreshWizFoot(){
@@ -8284,8 +8495,8 @@ function cocreatorRequestRows(evId){
       '<button class="btn" data-act="evcoreview" data-id="'+evId+'" data-user="'+esc(pid)+'" data-key="decline">Decline</button></div>';
   }).join('');
 }
-// F&P will swap this for isPublicAudience() from lib/audience.ts once 0008 merges (public there means include has 'everyone', even with excludes).
-function isEventPublic(ev){ return !!(ev && (ev.privacy || 'everyone') === 'everyone'); }
+// Public is HNAudience.isPublicAudience. Include contains everyone, even with excludes. No audience uses the legacy privacy value.
+function isEventPublic(ev){ return !!(ev && window.HNAudience && HNAudience.isPublicAudience(ev)); }
 function eventControlsBody(evId){
   var host = isMine(evId);
   var e = EVENTS[evId];
@@ -8314,23 +8525,31 @@ function eventControlsBody(evId){
     '</div>';
 }
 function settleEventControl(evId){
-  if (document.querySelector('.dlg .ev-controls')){ closeDialogs(); eventControlsDialog(evId); }
+  if (document.querySelector('.dlg .ev-controls')){ closeDialogs(); eventAccessDialog(evId); }
   else render();
 }
-function eventControlsDialog(evId){
+function eventAccessHTML(evId){
+  return privacyHTML(DRAFT) + eventControlsBody(evId);
+}
+function eventAccessDialog(evId){
   var e = EVENTS[evId];
-  if (!e || !canManageEvent(evId)) return;
-  dialog('Permissions', eventControlsBody(evId), '<button class="btn" data-act="closedlg">Done</button>', 480, 'permissions');
+  if (!e || !canManageEvent(evId) || isLinkEvent(evId)) return;
+  var aud = e.audience || (window.HNAudience ? HNAudience.fromPrivacy(e.privacy || 'everyone') : { include:['everyone'], exclude:[] });
+  DRAFT = { form:'privacy', editing:evId, privacy: e.audience && window.HNAudience ? HNAudience.derivePrivacy(aud) : (e.privacy || 'everyone'), audience:aud,
+    cocreatorPolicy: cocreatorPolicyOf(evId), invitePolicy: invitePolicyOf(evId) };
+  dialog('Visibility and Permissions', eventAccessHTML(evId),
+    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="evprivacy-save" data-id="'+evId+'">Save</button>', 480, 'permissions');
   if (ONLINE && window.HNAPI && HNAPI.cocreatorRequests){
     HNAPI.cocreatorRequests(evId).then(function(r){
       var m = {};
       (r && r.requests || []).forEach(function(pid){ m[pid] = 1; });
       COREQUESTS[evId] = m;
       var dl = DLGS[DLGS.length - 1], body = dl && dl.querySelector('.dbody');
-      if (body && body.querySelector('[data-act="evpolicy"][data-id="'+evId+'"]')) body.innerHTML = eventControlsBody(evId);
+      if (body && body.querySelector('[data-act="evpolicy"][data-id="'+evId+'"]')) body.innerHTML = eventAccessHTML(evId);
     }, function(){});
   }
 }
+function eventControlsDialog(evId){ eventAccessDialog(evId); }
 function cocreatorMineHTML(evId){
   if (!S.loggedIn || isMine(evId) || isLinkEvent(evId)) return '';
   var policy = cocreatorPolicyOf(evId), role = ROLE[evId], pending = cocreatorPendingMine(evId);
@@ -8381,20 +8600,23 @@ function setCocreatorPolicy(evId, policy){
   if (ONLINE) HNAPI.patchEvent(evId, { cocreatorPolicy: policy });
   settleEventControl(evId);
 }
-function eventPrivacyDialog(evId){
-  var e = EVENTS[evId];
-  if (!e || !canManageEvent(evId) || isLinkEvent(evId)) return;
-  DRAFT = { form:'privacy', editing:evId, privacy:e.privacy || 'everyone' };
-  dialog('Who can see it', privacyHTML(DRAFT),
-    '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="evprivacy-save" data-id="'+evId+'">Save</button>', 440);
-}
+function eventPrivacyDialog(evId){ eventAccessDialog(evId); }
 function saveEventPrivacy(evId){
-  var e = EVENTS[evId], sel = $('w-p');
-  if (!e || !canManageEvent(evId) || !sel) return;
-  e.privacy = sel.value;
-  if (ONLINE) HNAPI.patchEvent(evId, { privacy:e.privacy });
+  var e = EVENTS[evId];
+  if (!e || !canManageEvent(evId) || !DRAFT || DRAFT.form !== 'privacy' || DRAFT.editing !== evId) return;
+  applyDraftAudience(e);
+  var patch = { audience:e.audience, privacy:e.privacy };
+  if (DRAFT.cocreatorPolicy === 'open' || DRAFT.cocreatorPolicy === 'request'){
+    e.cocreatorPolicy = DRAFT.cocreatorPolicy;
+    patch.cocreatorPolicy = DRAFT.cocreatorPolicy;
+  }
+  if (!isEventPublic(e) && (DRAFT.invitePolicy === 'admins' || DRAFT.invitePolicy === 'cocreators' || DRAFT.invitePolicy === 'invited')){
+    e.invitePolicy = DRAFT.invitePolicy;
+    patch.invitePolicy = DRAFT.invitePolicy;
+  }
+  if (ONLINE) HNAPI.patchEvent(evId, patch);
   closeDialogs(); render();
-  toast('Saved', PRIVACY[e.privacy] || '');
+  toast('Saved', audienceWords(e));
 }
 function setInvitePolicy(evId, policy){
   var e = EVENTS[evId];
@@ -8430,6 +8652,7 @@ function paintInvite(){
   var past = INVITE.kind !== 'admin' && EVENTS[INVITE.evId] && isPast(lastDay(EVENTS[INVITE.evId]));
   var ids = ncPeopleAll().filter(function(k){
     if (INVITE.kind === 'admin' && (k === host || k === myActor())) return false;
+    if (INVITE.kind !== 'admin' && personExcluded(INVITE.evId, k)) return false;
     var p = person(k);
     return !q || matches(p.displayName, q) || matches(p.handle, q);
   });
@@ -8446,8 +8669,15 @@ function paintInvite(){
   }).join('') || '<div class="empty">Nobody matches.</div>';
   placeDlg();
 }
+function personExcluded(evId, pid){
+  var e = EVENTS[evId];
+  if (!e || !pid || !window.HNAudience || !window.HNRel) return false;
+  var aud = e.audience || HNAudience.fromPrivacy(e.privacy || 'everyone');
+  return HNAudience.matchesExclude(pid, eventHostPid(e), aud, HNRel.audienceGraph());
+}
 function sendEventInvite(evId, pid){
   if (!pid || pid === myActor() || !canInviteToEvent(evId)) return;
+  if (personExcluded(evId, pid)) return;
   if (guestInvited(evId, pid)){ paintInvite(); return; }
   var rows = EVENT_INVITES[evId] || (EVENT_INVITES[evId] = []);
   rows.push({ inviteeId:pid, invitedBy:myActor() });
@@ -8506,7 +8736,9 @@ var editEventDialog = gated(function(evId){
   if (!e || !canFix(evId)) return;
   if (isLinkEvent(evId)){ linkEditOpen(evId); return; }
   DRAFT = Object.assign({ form:'event', mode:'edit', step:1, editing:evId, title:e.title, date:e.date, end:r.endDate || '', city:r.city || cityShort(e.city), online:r.venueKind === 'virtual',
-            privacy:e.privacy || 'everyone', entry:(r.access && r.access.model) || 'free', desc:descOf(e),
+            privacy:e.privacy || 'everyone',
+            audience: e.audience ? HNAudience.normalize(e.audience) : HNAudience.fromPrivacy(e.privacy || 'everyone'),
+            entry:(r.access && r.access.model) || 'free', desc:descOf(e),
             kind:r.kind || 'meetup', baseKind:r.kind || 'meetup', tags:eventTagIds(r), startTime:r.startTime || '', endTime:r.endTime || '',
             bring: Array.isArray(r.whatToBring) ? r.whatToBring.join('\n') : (r.whatToBring || ''),
             schedule: (Array.isArray(r.schedule) ? r.schedule : []).map(function(b){ var o = { title:b.title || '', start:b.start || '' }; if (b.end) o.end = b.end; return o; }),
@@ -8579,7 +8811,8 @@ function saveEventEdit(t){
   var id = DRAFT.editing, e = EVENTS[id], r = REC[id] || (REC[id] = {});
   var start = isoDate(DRAFT.date), end = isoDate(DRAFT.end), city = String(DRAFT.city || '').trim(), oldCity = r.city;
   if (!e.slug) e.slug = evSlug(id);          /* the link people already have keeps working */
-  e.title = DRAFT.title.trim(); e.date = start; e.privacy = DRAFT.privacy; e.description = DRAFT.desc;
+  e.title = DRAFT.title.trim(); e.date = start; e.description = DRAFT.desc;
+  applyDraftAudience(e);
   if (DRAFT.online) r.venueKind = 'virtual';
   else { if (r.venueKind === 'virtual') r.venueKind = 'physical';
          if (city){
@@ -8624,6 +8857,7 @@ function wizAct(which){
   var city = DRAFT.online ? '' : String(DRAFT.city || '').trim();
   EVENTS[id] = { id:id, title:DRAFT.title.trim(), date:start, description:DRAFT.desc,
                  hostName:S.me.name, hostAcct:S.acct, privacy:DRAFT.privacy, ownerIds:['self'], kind:'own', city:city };
+  applyDraftAudience(EVENTS[id]);
   var tk = tagsForSave(DRAFT);
   REC[id] = { kind:tk.kind, tags:tk.tags, startTime:DRAFT.startTime || undefined, endTime:DRAFT.endTime || undefined, scale: end && end > start ? 'gathering' : 'meetup', endDate: end && end > start ? end : undefined,
               venueKind:DRAFT.online ? 'virtual' : 'physical', city:city, venue:DRAFT.online ? undefined : placeVenue(city), description:DRAFT.desc,
@@ -8811,8 +9045,7 @@ function eventCogItems(evId){
   var past = isPast(lastDay(e)), logged = isLinkEvent(evId), seat = eventSeat(evId);
   var items = L.phone ? [] : [{ heading:'Admin controls' }];
   if (canFix(evId)) items.push({ label:'Edit', icon:'edit', run:function(){ editEventDialog(evId); } });
-  if (!logged && (seat === 'host' || seat === 'admin')) items.push({ label:'Visibility', icon:'eye', run:function(){ eventPrivacyDialog(evId); } });
-  if (!past && !logged && (seat === 'host' || seat === 'admin')) items.push({ label:'Permissions', icon:'key', run:function(){ eventControlsDialog(evId); } });
+  if (!logged && (seat === 'host' || seat === 'admin')) items.push({ label:'Visibility and Permissions', icon:'eye', run:function(){ eventAccessDialog(evId); } });
   if (seat === 'host' && !past && !logged) items.push({ label:'New call out', icon:'callout', run:function(){ runCmd('new-callout', evId); } });
   if (seat === 'host' || seat === 'link_adder') items.push('-', { label:'Delete', icon:'trash', run:function(){ deleteEventDialog(evId); } });
   return items;
@@ -8836,7 +9069,15 @@ function openItemMenu(btn, id, items, opts){
   ctxFocus(root.querySelector('.ci'));
 }
 function openAddToMenu(btn, id){ openItemMenu(btn, id, addToMenuItems(id), { title:'Add to' }); }
-function openEventCog(btn, id){ openItemMenu(btn, id, eventCogItems(id), { title:'Admin controls' }); }
+function openEventCog(btn, id){
+  var e = EVENTS[id];
+  if (!e) return;
+  if (!window.HNCog){ openItemMenu(btn, id, eventCogItems(id), { title:'Admin controls' }); return; }
+  var aud = e.audience || (window.HNAudience ? HNAudience.fromPrivacy(e.privacy || 'everyone') : { include:['everyone'], exclude:[] });
+  var off = HNCog.mount(btn, { kind:'event', id:id, title:e.title, audience:aud, canEdit:true });
+  HNCog.open(btn);
+  off();
+}
 /* ---- the desktop menu ---- */
 var CTX = null;                /* { root, sub, subOf, target, back, tOpen, tClose } */
 function ctxMenuEl(items, level){
@@ -9107,11 +9348,11 @@ function phoneBack(){
 /* logged out there is no Home (2026-10-04): Explore is where a visitor lands, and the root of what was Home's tab */
 function landingFolder(){ return S.loggedIn ? { kind:'home', id:null } : { kind:'explore', id:null }; }
 /* the places that are an account's own: a visitor is never in them (2026-10-05) */
-var ACCTPLACES = /^(you|chats|going|interested|hosting|promoted|owncallouts|yourhz)$/;
+var ACCTPLACES = /^(you|chats|going|interested|hosting|promoted|owncallouts|yourhz|contacts|requests)$/;
 function tabRootFolder(t){ return t === 'explore' || t === 'chats' || t === 'you' ? { kind:t, id:null } : landingFolder(); }
 function tabOfFolder(f){
   var k = (f || S.folder).kind;
-  return /^(explore|shelf|horizon)$/.test(k) ? 'explore' : k === 'chats' ? 'chats' : /^(you|going|interested|hosting|promoted|owncallouts|yourhz)$/.test(k) ? 'you' : S.loggedIn ? 'home' : 'explore';
+  return /^(explore|shelf|horizon)$/.test(k) ? 'explore' : k === 'chats' ? 'chats' : /^(you|going|interested|hosting|promoted|owncallouts|yourhz|contacts|requests)$/.test(k) ? 'you' : S.loggedIn ? 'home' : 'explore';
 }
 /* each tab keeps its own place: switching back returns you there; tapping the tab you are on goes to its top */
 var TABMEM = {};
@@ -9284,13 +9525,7 @@ function shareHorizon(hzId){
     '<p class="fhelp" style="margin:12px 0 0">You can make it private again in Edit.</p>',
     '<button class="btn" data-act="closedlg">Cancel</button><button class="btn primary" data-act="confirmok">'+ic('share')+'Make public and copy link</button>', 440);
 }
-var followP = gated(function(pid){
-  if (!(RESUMING && PFOLLOW[pid])) PFOLLOW[pid] = !PFOLLOW[pid];
-  if (PFOLLOW[pid]) logAct('followed_person', 'person', pid);
-  if (ONLINE) HNAPI.followPerson(pid);
-  render();
-  toast(PFOLLOW[pid] ? 'Following' : 'Unfollowed', person(pid).displayName);
-});
+var followP = gated(function(pid){ HNRel.toggleFollow(pid); });
 /* a conversation is never a page of its own: it opens in the chat dock on a desktop or tablet, and in the Chats tab on a
    phone. Whichever it is stays the open one (S.chatOpen) while you go elsewhere, and across a reload, until you go
    back to all chats. */
@@ -9483,8 +9718,8 @@ document.addEventListener('click', function(ev){
     case 'runcmd':   runCmd(id); break;
     case 'folder':   if (L.phone){ var fk = n.getAttribute('data-kind'); if (fk === 'home') S.tab = 'home'; else if (fk === 'explore') S.tab = 'explore'; }
                         goFolder({ kind:n.getAttribute('data-kind'), id:id || null }, true); render(); $('listbody').scrollTop = 0; break;
-    case 'tctab':    goFolder({ kind:S.folder.kind, id:id || null }, true); render(); $('listbody').scrollTop = 0; break;
-    case 'tcview':   { var tc = n.closest('.tcoll'), tk = tc && tc.getAttribute('data-store'); if (tk && (id === 'rows' || id === 'squares')){ try { localStorage.setItem(tk, id); } catch (e) {} } render(); break; }
+    case 'tctab':    if (tabbedHosted('tctab', id, n)) break; goFolder({ kind:S.folder.kind, id:id || null }, true); render(); $('listbody').scrollTop = 0; break;
+    case 'tcview':   if (tabbedHosted('tcview', id, n)) break; { var tc = n.closest('.tcoll'), tk = tc && tc.getAttribute('data-store'); if (tk && (id === 'rows' || id === 'squares')){ try { localStorage.setItem(tk, id); } catch (e) {} } render(); break; }
     case 'navplug':  { var plug = window.HNNav.rows(n.getAttribute('data-section')).filter(function(it){ return it.id === id && !it.locked; })[0]; if (plug && typeof plug.onOpen === 'function') plug.onOpen(); break; }
     case 'navrel':   if (window.HNRel && typeof window.HNRel[id] === 'function') window.HNRel[id](); break;
     case 'aboutapp': dialog('About Hypernet Global', '', '<button class="btn" data-act="closedlg">Close</button>'); break;
@@ -9634,7 +9869,11 @@ document.addEventListener('click', function(ev){
     }
     case 'pfpreview':    pfPreview(id === 'on'); break;
     case 'logout':       doLogout(); break;
-    case 'closedlg': dismissDialog(); break;
+    case 'closedlg': {
+      if (popRelDlg()) break;
+      dismissDialog();
+      break;
+    }
     case 'donewhorizon': {
       var nm = (($('nh-n')||{}).value || '').trim();
       if (!nm) break;
@@ -9773,6 +10012,11 @@ document.addEventListener('change', function(ev){
   var n = ev.target;
   if (n.getAttribute && n.getAttribute('data-sched')){ schedTouch(n); return; }
   if (n.getAttribute('data-czfile')){ var fl = n.files && n.files[0]; n.value = ''; if (n.getAttribute('data-czfile') === 'photo') pfTakePhoto(fl); else czTakeFile(fl); return; }
+  if (n.getAttribute && n.getAttribute('data-aud') && DRAFT && window.HNAudience){
+    DRAFT.audience = HNAudience.toggle(DRAFT.audience || HNAudience.fromPrivacy(DRAFT.privacy), n.getAttribute('data-tok'), n.getAttribute('data-aud'));
+    DRAFT.privacy = HNAudience.derivePrivacy(DRAFT.audience);
+    syncAudiencePicker(); refreshWizFoot(); schedulePersist(); return;
+  }
   if (n.closest('[data-cz]') && DRAFT){
     var k = n.getAttribute('data-cz');
     if (/^c[123]$/.test(k)){ czSetColor(k, n.value, n); return; }
@@ -9799,8 +10043,16 @@ document.addEventListener('change', function(ev){
   var act = n.getAttribute('data-act');
   if (act === 'calmine'){ S.calMine = n.checked; render(); }
   if (act === 'sort'){ S.sort = n.value; render(); }
-  if (act === 'evinvitepolicy'){ setInvitePolicy(n.getAttribute('data-id'), n.value); return; }
-  if (act === 'evpolicy'){ setCocreatorPolicy(n.getAttribute('data-id'), n.value); return; }
+  if (act === 'evinvitepolicy' || act === 'evpolicy'){
+    if (DRAFT && DRAFT.form === 'privacy' && DRAFT.editing === n.getAttribute('data-id')){
+      if (act === 'evinvitepolicy') DRAFT.invitePolicy = n.value;
+      else DRAFT.cocreatorPolicy = n.value;
+      return;
+    }
+    if (act === 'evinvitepolicy') setInvitePolicy(n.getAttribute('data-id'), n.value);
+    else setCocreatorPolicy(n.getAttribute('data-id'), n.value);
+    return;
+  }
 });
 document.addEventListener('input', function(ev){
   var n = ev.target;
@@ -9961,7 +10213,7 @@ document.addEventListener('keydown', function(ev){
       return;
     }
     if (POP){ closePopup(); ev.preventDefault(); return; }
-    if (DLGS.length){ dismissDialog(); return; }
+    if (DLGS.length){ if (popRelDlg()) return; dismissDialog(); return; }
     if (ae && ae.id === 'q' && S.folder.kind === 'search'){ leaveSearch(); render(); ae.blur(); return; }
     if (inField){ ae.blur(); return; }
     /* the window closes (a phone's sheet steps back, as its back gesture does) */
@@ -10039,10 +10291,12 @@ function chatBySlug(s){ return CHATS['c-' + s] ? 'c-' + s : CHATS[s] ? s : null;
 function itemPath(it){
   if (it.type === 'missing') return it.id;
   return { event:'event/' + evSlug(it.id), horizon:'horizon/' + hzSlug(it.id), person:'person/' + personSlug(it.id),
-           callout:'callout/' + coSlug(it.id), group:'group/' + it.id, chat:'chats/' + chatSlug(it.id) }[it.type] || 'home';
+           callout:'callout/' + coSlug(it.id), group:'group/' + it.id, chat:'chats/' + chatSlug(it.id), list:'list/' + it.id }[it.type] || 'home';
 }
 function folderPath(f){
   if (f.kind === 'yourhz') return 'yourhz/' + (f.id === 'following' || f.id === 'collaborating' ? f.id : 'mine');
+  if (f.kind === 'contacts') return 'contacts/' + (f.id === 'friends' || f.id === 'following' || f.id === 'follows' ? f.id : 'lists');
+  if (f.kind === 'requests') return 'requests';
   return f.kind === 'shelf' ? 'explore/' + f.id : f.kind === 'explore' ? 'explore' + (f.id ? '/' + f.id : '') : f.kind === 'horizon' ? 'horizon/' + hzSlug(f.id) : f.kind;
 }
 /* the link to one thing, as anyone can open it */
@@ -10085,6 +10339,8 @@ function folderFrom(a, b){
   if (a === 'home' && b) return isExploreKind(b) && b !== 'people' ? { kind:'explore', id:b } : SHELFIDS.test(b) ? { kind:'shelf', id:b } : b === 'people' ? { kind:'shelf', id:'followed' } : { kind:'explore', id:null };
   if (a === 'horizon'){ var hz = hzBySlug(b); return hz ? { kind:'horizon', id:hz } : null; }
   if (a === 'yourhz') return { kind:'yourhz', id: b === 'following' || b === 'collaborating' ? b : 'mine' };
+  if (a === 'contacts') return { kind:'contacts', id: b === 'friends' || b === 'following' || b === 'follows' ? b : 'lists' };
+  if (a === 'requests') return { kind:'requests', id:null };
   return FOLDERKINDS.test(a || '') ? { kind:a, id:null } : null;
 }
 function parseHash(h){
@@ -10106,6 +10362,7 @@ function parseHash(h){
   else if (a === 'callout') it = { type:'callout', id:coBySlug(b) };
   else if (a === 'group') it = { type:'horizon', id:groupHorizon(b) };
   else if (a === 'chats' && b){ it = { type:'chat', id:chatBySlug(b) }; s.folder = { kind:'chats', id:null }; }
+  else if (a === 'list' && b) it = { type:'list', id:b };
   if (it){
     s.stack = [it.id ? it : { type:'missing', id:a + '/' + (b || '') }];
     if (p.in){ var ps = p.in.split('/'); s.folder = folderFrom(ps[0], ps[1]) || s.folder; }
@@ -10122,6 +10379,7 @@ function validItem(it){
   if (it.type === 'person') return !!PEOPLE[it.id];
   if (it.type === 'callout') return !!calloutOf(it.id);
   if (it.type === 'chat') return S.loggedIn && !!CHATS[it.id];
+  if (it.type === 'list') return !!(window.HNRel && HNRel.lists().some(function(l){ return l.id === it.id; }));
   return false;
 }
 function applySnap(s){
@@ -10330,6 +10588,7 @@ function render(){
   placeWin();
   placeToasts();
   document.title = (S.stack.length ? itemName(S.stack[S.stack.length-1]) : folderName()) + ' · HYPERNET · GLOBAL';
+  if (window.HNRel) HNRel.mount(document);
   schedulePersist();
   syncRoute();
 }
@@ -10404,6 +10663,7 @@ function restore(){
   if (d.ui){ S.rightOpen = !!d.ui.rightOpen; S.chatOpen = d.ui.chatOpen || null; RECENTQ = d.ui.recent || []; }
   ACCTS = d.accounts || {};
   var k = d.session && d.session.acct;
+  if (k === 'demo' && ACCTS[k] && !('lists' in ACCTS[k])) ACCTS[k].lists = fixtureLists(); /* same rule as useAcct */
   if (k && ACCTS[k]){ S.acct = k; S.loggedIn = true; loadAcct(ACCTS[k]); if (k === 'demo') seedDemoInvites(); }
   syncAcctPeople();
 }

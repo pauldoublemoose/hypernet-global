@@ -1,20 +1,30 @@
+import { canSeeEventSql } from "./audience";
 import { sqlx } from "./db";
 import { mergeHorizonEventIds } from "./horizon-events";
 
 export type HorizonRole = "owner" | "collaborator" | "stranger";
 export type HorizonAccess = { ownerId: string | null; isPersonalDefault: boolean; role: HorizonRole };
 
-export const HORIZON_JSON = `json_build_object('id', h.id, 'slug', h.slug, 'ownerId', h.owner_id, 'ownerName', h.owner_name, 'name', h.name,
+/** A horizon as JSON. Event ids and the cover stay only when `viewerParam` may see that event. */
+export function horizonJson(viewerParam: string): string {
+  const see = canSeeEventSql(viewerParam);
+  const cover = canSeeEventSql(viewerParam, "ce");
+  const who = viewerParam + "::uuid";
+  return `json_build_object('id', h.id, 'slug', h.slug, 'ownerId', h.owner_id, 'ownerName', h.owner_name, 'name', h.name,
   'description', h.description, 'isPersonalDefault', h.is_personal_default, 'publishedAt', h.published_at, 'look', h.look,
-  'coverEventId', h.cover_event_id, 'createdAt', h.created_at,
+  'coverEventId', case when h.cover_event_id is null or exists (select 1 from events ce where ce.id = h.cover_event_id and ${cover}) then h.cover_event_id else null end,
+  'createdAt', h.created_at,
   'eventIds', coalesce((select json_agg(he.event_id order by he.position, he.added_at) from horizon_events he join events e on e.id = he.event_id
-                         where he.horizon_id = h.id and can_see_event($2::uuid, e)), '[]'),
+                         where he.horizon_id = h.id and ${see}), '[]'),
   'followers', (select count(*) from horizon_follows hf where hf.horizon_id = h.id),
   'collaboratorIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc where hc.horizon_id = h.id and hc.accepted_at is not null), '[]'),
   'pendingCollaboratorIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc
-                         where hc.horizon_id = h.id and hc.accepted_at is null and hc.declined_at is null and (hc.role is null or hc.role = 'collaborator') and (h.owner_id = $2::uuid or hc.person_id = $2::uuid)), '[]'),
+                         where hc.horizon_id = h.id and hc.accepted_at is null and hc.declined_at is null and (hc.role is null or hc.role = 'collaborator') and (h.owner_id = ${who} or hc.person_id = ${who})), '[]'),
   'pendingFollowerIds', coalesce((select json_agg(hc.person_id order by hc.created_at, hc.person_id) from horizon_collaborators hc
-                         where hc.horizon_id = h.id and hc.accepted_at is null and hc.declined_at is null and hc.role = 'follower' and (h.owner_id = $2::uuid or hc.person_id = $2::uuid)), '[]'))`;
+                         where hc.horizon_id = h.id and hc.accepted_at is null and hc.declined_at is null and hc.role = 'follower' and (h.owner_id = ${who} or hc.person_id = ${who})), '[]'))`;
+}
+
+export const HORIZON_JSON = horizonJson("$2");
 
 /** A horizon the viewer may follow: published, theirs, or one they have accepted as a collaborator. A pending invite is not enough. */
 export function horizonFollowable(viewer: "$1" | "$2"): string {
@@ -28,7 +38,7 @@ export function horizonVisible(viewer: "$1" | "$2"): string {
 async function selectHorizon(id: string, viewer: string | null, visibleOnly: boolean): Promise<unknown | null> {
   const gate = visibleOnly ? ` and ${horizonVisible("$2")}` : "";
   const rows = (await sqlx().query(
-    `select ${HORIZON_JSON} v from horizons h where h.id = $1${gate}`,
+    `select ${horizonJson("$2")} v from horizons h where h.id = $1${gate}`,
     [id, viewer],
   )) as { v: unknown }[];
   return rows[0]?.v ?? null;
@@ -91,7 +101,7 @@ export function setHorizonEvents(sql: ReturnType<typeof sqlx>, horizonId: string
       `insert into horizon_events (horizon_id, event_id, position, added_by)
          select $1, x.id, x.ord::int - 1, $3 from unnest($2::uuid[]) with ordinality as x(id, ord)
            join events e on e.id = x.id
-           where can_see_event($3::uuid, e)
+           where ${canSeeEventSql("$3")}
               or exists (select 1 from horizon_events he where he.horizon_id = $1 and he.event_id = x.id)
        on conflict (horizon_id, event_id) do update set position = excluded.position`,
       [horizonId, ids, by],

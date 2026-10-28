@@ -47,6 +47,32 @@ const clock = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/, "a time l
 const json = z.record(z.string(), z.unknown());
 
 export const PRIVACY = ["everyone", "friends", "only_me"] as const;
+export type Privacy = (typeof PRIVACY)[number];
+
+const AUDIENCE_TOKEN = /^(everyone|friends|fof|followers|list:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|group:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+const audienceList = z.array(z.string().trim().toLowerCase().regex(AUDIENCE_TOKEN, "everyone, friends, fof, followers, list:<id>, or group:<id>"));
+
+/** The same rules as audience_ok in db/migrations/0008_friends_privacy.sql. */
+export const audience = z
+  .object({ include: audienceList, exclude: audienceList })
+  .strict()
+  .superRefine((a, ctx) => {
+    const bad = (message: string, path: "include" | "exclude") =>
+      ctx.addIssue({ code: "custom", message, path: [path] });
+    if (a.include.length + a.exclude.length > 20) bad("at most 20 tokens", "include");
+    if (new Set(a.include).size !== a.include.length) bad("include repeats a token", "include");
+    if (new Set(a.exclude).size !== a.exclude.length) bad("exclude repeats a token", "exclude");
+    if (a.exclude.includes("everyone")) bad("everyone is never excluded", "exclude");
+    if (a.include.includes("everyone") && a.include.length !== 1) bad("everyone is the whole include list", "include");
+  });
+export type Audience = z.infer<typeof audience>;
+
+/** The old privacy label, as an audience. everyone is every logged-in person. */
+export function audienceFromPrivacy(p: Privacy): Audience {
+  if (p === "everyone") return { include: ["everyone"], exclude: [] };
+  if (p === "friends") return { include: ["friends"], exclude: [] };
+  return { include: [], exclude: [] };
+}
 export const EVENT_KINDS = [
   "meetup", "build", "workshop", "volunteer_day", "fundraiser", "camp_meeting",
   "burn_night", "town_hall", "decompression", "burn", "sale", "other",
@@ -155,6 +181,7 @@ export const eventCreate = z
     whatToBring: eventFields.whatToBring.default([]),
     details: eventFields.details.optional(),
     look: eventFields.look.optional(),
+    audience: audience.optional(),
   })
   .strict()
   .refine(endsAfterStart, { message: "endsOn is before startsOn", path: ["endsOn"] })
@@ -219,6 +246,7 @@ export const eventPatch = z
   .object({
     ...eventFields,
     hostName: z.string().trim().min(1).max(80),
+    audience: audience.optional(),
     cocreatorPolicy: z.enum(["open", "request"]),
     invitePolicy: z.enum(["admins", "cocreators", "invited"]),
   })
@@ -332,6 +360,14 @@ export const guestInvite = z.object({ personId: z.uuid() }).strict();
 
 export const replyCreate = z.object({ id: z.uuid().optional(), text: z.string().trim().min(1).max(2000) }).strict();
 export const messageCreate = z.object({ id: z.uuid().optional(), body: z.string().trim().min(1).max(4000) }).strict();
+
+const listName = z.string().trim().min(1).max(40);
+const listDescription = z.string().trim().max(2000);
+
+/** POST /api/lists — a contact list of yours. At most 50. Description is optional. */
+export const listCreate = z.object({ id: z.uuid().optional(), name: listName, description: listDescription.optional().default("") }).strict();
+/** PATCH /api/lists/:id */
+export const listPatch = z.object({ name: listName, description: listDescription.optional() }).strict();
 
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 export const IMAGE_TYPES = { "image/webp": "webp", "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/avif": "avif" } as const;

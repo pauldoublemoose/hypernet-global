@@ -1281,7 +1281,6 @@ body.is-phone .pkchip{ flex:0 0 auto; height:40px; }
 .relcounts button{ border:0; padding:0; background:transparent; color:var(--ink2); font:inherit; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
 .relcounts span{ color:var(--ink2); }
 .profile-actions{ min-width:0; max-width:100%; }
-#chats > .profile-actions{ padding:0 4px 8px; }
 .relrow{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; min-height:36px; color:var(--ink); }
 .relrow > .btn{ min-width:0; max-width:100%; white-space:normal; overflow-wrap:anywhere; text-align:left; }
 .relrow small, .relempty{ color:var(--dim); }
@@ -4845,12 +4844,9 @@ function chatListHTML(){
 function convHTML(cid){
   var c = CHATS[cid], pid = c.memberIds[0];
   var sub = chatSub(c);
-  /* their name and the profile button open their profile in a window over the chat; closing it leaves you here */
-  /* under the header, not inside it: .phead does not wrap, and a 300px dock would overflow */
-  var slot = '<div class="profile-actions" data-pid="'+pid+'" data-rel="compact"></div>';
+  /* their name opens their profile in a window over the chat; closing it leaves you here */
   var h = '<div class="phead"><button class="ib" data-act="chatback" aria-label="All chats">'+ic('back')+'</button>' +
-    '<button type="button" class="ptitle ptbtn" data-act="chatprofile" data-id="'+pid+'">'+esc(c.name)+'<small>'+esc(sub)+'</small></button>' +
-    '<button class="ib" data-act="chatprofile" data-id="'+pid+'" aria-label="Profile">'+ic('user')+'</button></div>' + slot;
+    '<button type="button" class="ptitle ptbtn" data-act="chatprofile" data-id="'+pid+'">'+esc(c.name)+'<small>'+esc(sub)+'</small></button></div>';
   var lastDay = null;
   var demoInv = pid === 'p-anna' && S.acct === 'demo' && /[?&]offline=1(&|$)/.test(location.search)
     ? '<div class="demonewrow"><button type="button" class="demonew" data-act="demonewinv">Demo: new invites</button></div>' : '';
@@ -5953,13 +5949,12 @@ document.addEventListener('change', function(ev){
 });
 function renderAppbar(){
   var h = '', conv = phoneConv(), back = conv || phoneCanBack();
-  /* in a conversation, back is all chats; its name and the profile button open their profile over it */
+  /* in a conversation, back is all chats; the name opens their profile over it */
   var backTo = tagSearchBack(), backLabel = backTo ? 'Back to ' + itemName(backTo) : 'Back';
   if (back) h += conv ? '<button class="ab-btn" data-act="chatback" aria-label="All chats">'+ic('back',22)+'</button>' : '<button class="ab-btn" data-act="pback" aria-label="'+esc(backLabel)+'" title="'+esc(backLabel)+'">'+ic('back',22)+'</button>';
   if (conv){
     var cc = CHATS[conv], cp = cc.memberIds[0];
-    h += '<div class="ab-title ab-tap" data-act="chatprofile" data-id="'+cp+'" role="button">'+esc(cc.name)+'<small>'+esc(chatSub(cc))+'</small></div>' +
-      '<button class="ab-btn" data-act="chatprofile" data-id="'+cp+'" aria-label="Profile">'+ic('user',22)+'</button>';
+    h += '<div class="ab-title ab-tap" data-act="chatprofile" data-id="'+cp+'" role="button">'+esc(cc.name)+'<small>'+esc(chatSub(cc))+'</small></div>';
   } else if (S.tab === 'chats'){
     h += '<div class="ab-title">Chats</div>';
     if (S.loggedIn) h += '<button class="ab-btn boxed" data-act="newchat">'+ic('edit')+'New chat</button>';

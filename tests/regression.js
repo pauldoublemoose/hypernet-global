@@ -2221,7 +2221,9 @@ async function overflowEverywhere(p, label){
     if (kind !== 'phone') ok(await ev(c, () => { const ch = document.getElementById('chats').getBoundingClientRect(); return ch.width <= 360 && document.getElementById('center').getBoundingClientRect().width > 300; }),
       kind + ': the conversation sits in the chat dock, never the whole centre');
     else ok(await ev(c, () => document.getElementById('tabbar').offsetParent !== null && document.querySelector('#tabbar .tab.on').getAttribute('data-id') === 'chats'), 'phone: in a conversation the tabs stay, Chats lit');
-    const opener = kind === 'phone' ? ['#appbar .ab-btn[data-act="chatprofile"]', '#appbar .ab-title[data-act="chatprofile"]'] : ['#chats .phead .ib[data-act="chatprofile"]', '#chats .phead .ptbtn', '#chats .msg:not(.me) .mwho'];
+    ok(await ev(c, () => !document.querySelector('#chats .phead [aria-label="Profile"], #appbar [aria-label="Profile"], #chats > .profile-actions')),
+      kind + ': the chat header has no profile icon and no Friends menu');
+    const opener = kind === 'phone' ? ['#appbar .ab-title[data-act="chatprofile"]', '#appbar .ab-title[data-act="chatprofile"]'] : ['#chats .phead .ptbtn', '#chats .msg:not(.me) .mwho'];
     for (const [i, sel] of opener.entries()){
       /* a name in the conversation is clicked where it is, without scrolling the conversation to it */
       if (/mwho/.test(sel)) await c.evaluate(() => { const box = document.getElementById('msgs').getBoundingClientRect();

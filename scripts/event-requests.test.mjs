@@ -2,7 +2,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createContext, runInContext } from "node:vm";
+import { createRequire } from "node:module";
+import { createContext, runInContext, runInThisContext } from "node:vm";
 import { fileURLToPath } from "node:url";
 
 const source = readFileSync(fileURLToPath(new URL("../_shared/event-requests.js", import.meta.url)), "utf8");
@@ -74,16 +75,22 @@ test("providers register in order and replace the inbox with two offline rows ea
   assert.match(past.primary, /added you to a past event/);
   assert.equal(past.primary.includes("invited to attend"), false);
   assert.match(upcoming.primary, /invited you to attend/);
+  assert.equal(admin.count(), admin.list().length);
+  assert.equal(coco.count(), coco.list().length);
+  assert.equal(admin.count(), 2);
+  assert.equal(coco.count(), 2);
   const dirs = JSON.parse(JSON.stringify(coco.list().map((item) => item.direction).sort()));
   assert.deepEqual(dirs, ["invite", "request"]);
-  for (const item of event.list().concat(admin.list(), coco.list())){
-    const html = event.render ? null : null;
-    const rendered = (item.direction === "request" || item.direction === "invite") && coco.list().includes(item)
-      ? coco.render(item)
-      : admin.list().includes(item) ? admin.render(item) : event.render(item);
-    assert.match(rendered, /data-act="openreq"/);
-    assert.match(rendered, new RegExp('data-id="' + item.id + '"'));
-  }
+  for (const [prov, item] of [[event, past], [event, upcoming], [admin, admin.list()[0]], [coco, coco.list()[0]]]){
+  const rendered = prov.render(item);
+  const title = String(item.eventTitle);
+  const head = rendered.slice(rendered.indexOf("r-title"), rendered.indexOf("r-meta") === -1 ? rendered.length : rendered.indexOf("r-meta"));
+  const meta = rendered.includes("r-meta") ? rendered.slice(rendered.indexOf("r-meta")) : "";
+  assert.match(head, new RegExp('data-act="openreq"[^>]*>' + title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "</button>"));
+  assert.match(head, new RegExp('data-type="' + prov.type + '"'));
+  assert.equal(meta.includes(title), false);
+  assert.equal((head.match(new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || []).length, 1);
+}
 });
 
 test("a provider registers when HNRel arrives later", () => {
@@ -128,18 +135,25 @@ test("accept, decline and undo an admin invite", async () => {
   const { sandbox, providers, calls } = boot({ online: true });
   const admin = byType(providers, "admin_invite");
   const item = admin.list()[0];
+  const adminBefore = calls.changed;
   await admin.accept(item);
   assert.equal(calls.admin.at(-1).status, "accepted");
   assert.equal(admin.list().some((row) => row.id === item.id), false);
+  assert.equal(admin.count(), admin.list().length);
+  assert.equal(admin.count(), 1);
+  assert.ok(calls.changed > adminBefore);
+  const adminUndo = calls.changed;
   await admin.undo(item);
   assert.equal(admin.list().some((row) => row.id === item.id), true);
+  assert.equal(admin.count(), 2);
+  assert.ok(calls.changed > adminUndo);
   const again = admin.list().filter((row) => row.id === item.id)[0];
   await admin.decline(again);
   assert.equal(calls.admin.at(-1).status, "declined");
   assert.equal(admin.list().some((row) => row.id === again.id), false);
   await admin.undo(again);
   assert.equal(admin.list().some((row) => row.id === again.id), true);
-  assert.equal((sandbox.EVENT_ADMINS[again.eventId] || []).some((row) => row.status === "pending"), true);
+  assert.equal(admin.count(), 2);
 });
 
 test("co-creator request and invite accept, decline and undo", async () => {
@@ -162,10 +176,92 @@ test("co-creator request and invite accept, decline and undo", async () => {
   assert.equal(calls.rsvp.at(-1).fields.role, "cocreator");
   await coco.undo(invite);
   assert.equal(sandbox.ROLE[invite.eventId], undefined);
+  const cocoBefore = calls.changed;
   await coco.decline(invite);
   assert.equal(coco.list().some((item) => item.id === invite.id), false);
+  assert.equal(coco.count(), coco.list().length);
+  assert.ok(calls.changed > cocoBefore);
+  const cocoUndo = calls.changed;
   await coco.undo(invite);
   assert.equal(coco.list().some((item) => item.id === invite.id), true);
+  assert.equal(coco.count(), 2);
+  assert.ok(calls.changed > cocoUndo);
+});
+
+test("the Requests bands count the same pending rows they show", async () => {
+  global.location = { search: "?offline=1" };
+  global.esc = (s) => String(s == null ? "" : s);
+  global.myPid = () => "p-michal";
+  global.myActor = () => "p-michal";
+  global.S = { loggedIn: true, acct: "demo", folder: { kind: "requests", id: null } };
+  global.person = (id) => ({ displayName: id, handle: id });
+  global.avHTML = () => "";
+  global.fmtShort = (iso) => iso;
+  global.EVENTS = {
+    "evt-harbour-walk": { title: "Harbour night walk", date: "2026-11-18", city: "Stockholm" },
+    "evt-dj-night": { title: "West stage set", date: "2026-11-09", city: "Malmö" },
+    "evt-chronicle-supper": { title: "Midsummer supper", date: "2026-06-20", city: "Stockholm" },
+    "evt-deep-listening": { title: "Deep Listening Lab", date: "2026-11-11", city: "Stockholm" },
+  };
+  global.isPast = (day) => day < "2026-10-28";
+  global.lastDay = (e) => e && e.date;
+  global.EVENT_ADMINS = {};
+  global.EVENT_INVITES = {};
+  global.COREQUESTS = {};
+  global.COINVITES = {};
+  global.RSVP = {};
+  global.ROLE = {};
+  global.WENT = {};
+  global.CHRON = {};
+  global.canManageEvent = () => false;
+  const require = createRequire(import.meta.url);
+  require("../_shared/hypernet-audience.js");
+  const HNRel = require("../_shared/hypernet-rel.js");
+  let changes = 0;
+  const realChanged = HNRel.requestsChanged;
+  HNRel.requestsChanged = function () {
+    changes += 1;
+    return realChanged.apply(this, arguments);
+  };
+  const captured = {};
+  const realReg = HNRel.registerRequestProvider;
+  HNRel.registerRequestProvider = function (provider) {
+    captured[provider.type] = provider;
+    return realReg.call(HNRel, provider);
+  };
+  runInThisContext(readFileSync(fileURLToPath(new URL("../_shared/event-requests.js", import.meta.url)), "utf8"));
+  function counts(html) {
+    return Object.fromEntries([...html.matchAll(/class="band">([^<]*)<span class="cnt">(\d+)/g)].map((m) => [m[1].trim(), Number(m[2])]));
+  }
+  const open = counts(HNRel.requestsHTML());
+  assert.equal(open["Event invites"], 2);
+  assert.equal(open["Admin invites"], 2);
+  assert.equal(open["Co-creator requests"], 2);
+  assert.equal(captured.admin_invite.count(), captured.admin_invite.list().length);
+  assert.equal(captured.cocreator_request.count(), captured.cocreator_request.list().length);
+  const past = captured.event_invite.list().filter((item) => item.past)[0];
+  const row = captured.event_invite.render(past);
+  assert.match(row, /added you to a past event: <button type="button" class="hzreq"[^>]*>Midsummer supper<\/button>/);
+  assert.equal(row.slice(row.indexOf("r-meta")).includes("Midsummer supper"), false);
+  assert.match(row, /2026-06-20 · Stockholm/);
+  const adminItem = captured.admin_invite.list()[0];
+  const cocoItem = captured.cocreator_request.list()[0];
+  const seen = changes;
+  await captured.admin_invite.decline(adminItem);
+  assert.ok(changes > seen);
+  assert.equal(captured.admin_invite.count(), 1);
+  assert.equal(counts(HNRel.requestsHTML())["Admin invites"], 1);
+  const afterAdmin = changes;
+  await captured.admin_invite.undo(adminItem);
+  assert.ok(changes > afterAdmin);
+  assert.equal(counts(HNRel.requestsHTML())["Admin invites"], 2);
+  const afterCoco = changes;
+  await captured.cocreator_request.accept(cocoItem);
+  assert.ok(changes > afterCoco);
+  assert.equal(counts(HNRel.requestsHTML())["Co-creator requests"], 1);
+  await captured.cocreator_request.undo(cocoItem);
+  assert.equal(captured.cocreator_request.count(), 2);
+  assert.equal(counts(HNRel.requestsHTML())["Co-creator requests"], 2);
 });
 
 test("managers see three invite roles and each sends its type", () => {

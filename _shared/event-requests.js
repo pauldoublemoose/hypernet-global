@@ -65,12 +65,24 @@
   }
   function forget(id){ delete done[id]; }
 
-  function face(type, item){
-    var title = item.eventTitle || eventTitle(item.eventId);
-    var link = '<button type="button" class="hzreq" data-act="openreq" data-type="'+esc(type)+'" data-id="'+esc(item.id)+'">'+esc(title)+'</button>';
-    return '<div class="r-main"><div class="r-title">'+esc(item.primary)+'</div>' +
-      '<div class="r-meta">'+esc(item.secondary || '')+(item.secondary ? ' · ' : '')+link+'</div></div>';
-  }
+function metaLine(item, title){
+  var sub = item.secondary || '';
+  if (!sub || sub === title) return '';
+  var tail = ' · ' + title;
+  if (title && sub.slice(-tail.length) === tail) sub = sub.slice(0, -tail.length);
+  if (!sub || sub === title) return '';
+  return sub;
+}
+function face(type, item){
+  var title = item.eventTitle || eventTitle(item.eventId);
+  var link = '<button type="button" class="hzreq" data-act="openreq" data-type="'+esc(type)+'" data-id="'+esc(item.id)+'">'+esc(title)+'</button>';
+  var primary = item.primary || '';
+  var at = title ? primary.lastIndexOf(title) : -1;
+  var sentence = at < 0 ? esc(primary) : esc(primary.slice(0, at)) + link + esc(primary.slice(at + title.length));
+  var meta = metaLine(item, title);
+  return '<div class="r-main"><div class="r-title">'+sentence+'</div>' +
+    (meta ? '<div class="r-meta">'+esc(meta)+'</div>' : '') + '</div>';
+}
 
   function fixtureEvent(id, personId, eventId, past, name, title){
     return {
@@ -121,7 +133,9 @@
     var who = me(), out = [], invites = root.EVENT_INVITES || {};
     if (!who) return out;
     Object.keys(invites).forEach(function(evId){
-      (invites[evId] || []).forEach(function(row){
+      var list = invites[evId];
+      if (!list || typeof list.forEach !== 'function') return;
+      list.forEach(function(row){
         if (!row || row.inviteeId !== who) return;
         var past = eventPast(evId);
         var title = eventTitle(evId);
@@ -140,7 +154,9 @@
     var who = me(), out = [], admins = root.EVENT_ADMINS || {};
     if (!who) return out;
     Object.keys(admins).forEach(function(evId){
-      (admins[evId] || []).forEach(function(row){
+      var list = admins[evId];
+      if (!list || typeof list.forEach !== 'function') return;
+      list.forEach(function(row){
         if (!row || row.userId !== who || row.status !== 'pending') return;
         var title = eventTitle(evId);
         out.push({
@@ -177,7 +193,9 @@
     var invites = root.COINVITES || {};
     if (who){
       Object.keys(invites).forEach(function(evId){
-        (invites[evId] || []).forEach(function(row){
+        var list = invites[evId];
+        if (!list || typeof list.forEach !== 'function') return;
+        list.forEach(function(row){
           if (!row || row.inviteeId !== who) return;
           var title = eventTitle(evId);
           out.push({
@@ -237,48 +255,46 @@
     return Promise.resolve();
   }
 
-  function adminRow(item, status){
-    var rows = bag('EVENT_ADMINS')[item.eventId] || (bag('EVENT_ADMINS')[item.eventId] = []);
-    var who = me();
-    var row = rows.filter(function(a){ return a && (a.userId === who || a === item.row); })[0];
-    if (!row){
-      row = { userId: who, invitedBy: item.personId, status: 'pending' };
-      rows.push(row);
-    }
-    item.row = row;
-    row.status = status;
-    return { rows: rows, row: row };
+function adminRowsOf(item){
+  var all = root.EVENT_ADMINS;
+  if (!all || !all[item.eventId]) return [];
+  return all[item.eventId];
+}
+function findAdminRow(item){
+  var who = me();
+  return adminRowsOf(item).filter(function(a){ return a && (a === item.row || (who && a.userId === who)); })[0] || null;
+}
+function acceptAdmin(item){
+  var row = findAdminRow(item);
+  var snap = { row: row, status: row ? row.status : '' };
+  if (row) row.status = 'accepted';
+  if (root.ONLINE && root.HNAPI && root.HNAPI.answerAdmin) root.HNAPI.answerAdmin(item.eventId, 'accepted');
+  mark(item, 'accept', snap);
+  changed();
+  return Promise.resolve();
+}
+function declineAdmin(item){
+  var rows = adminRowsOf(item);
+  var row = findAdminRow(item);
+  var index = row ? rows.indexOf(row) : -1;
+  var snap = { row: row, rows: rows, index: index, status: row ? row.status : '' };
+  if (row && index >= 0) rows.splice(index, 1);
+  if (root.ONLINE && root.HNAPI && root.HNAPI.answerAdmin) root.HNAPI.answerAdmin(item.eventId, 'declined');
+  mark(item, 'decline', snap);
+  changed();
+  return Promise.resolve();
+}
+function undoAdmin(item){
+  var snap = done[item.id] && done[item.id].snap;
+  if (snap && snap.row){
+    snap.row.status = 'pending';
+    if (snap.index >= 0 && snap.rows && snap.rows.indexOf(snap.row) < 0) snap.rows.splice(Math.min(snap.index, snap.rows.length), 0, snap.row);
   }
-  function acceptAdmin(item){
-    var found = adminRow(item, 'pending');
-    var snap = { status: 'pending', had: true };
-    found.row.status = 'accepted';
-    if (root.ONLINE && root.HNAPI && root.HNAPI.answerAdmin) root.HNAPI.answerAdmin(item.eventId, 'accepted');
-    mark(item, 'accept', snap);
-    changed();
-    return Promise.resolve();
-  }
-  function declineAdmin(item){
-    var found = adminRow(item, 'pending');
-    var snap = { status: 'pending', row: found.row, rows: found.rows };
-    found.rows.splice(found.rows.indexOf(found.row), 1);
-    if (root.ONLINE && root.HNAPI && root.HNAPI.answerAdmin) root.HNAPI.answerAdmin(item.eventId, 'declined');
-    mark(item, 'decline', snap);
-    changed();
-    return Promise.resolve();
-  }
-  function undoAdmin(item){
-    var row = done[item.id];
-    var snap = row && row.snap;
-    if (snap && snap.row){
-      snap.row.status = 'pending';
-      if (snap.rows && snap.rows.indexOf(snap.row) < 0) snap.rows.push(snap.row);
-    } else if (item.row) item.row.status = 'pending';
-    /* TODO: no endpoint returns an answered admin invite to pending. */
-    forget(item.id);
-    changed();
-    return Promise.resolve();
-  }
+  /* TODO: no endpoint returns an answered admin invite to pending. */
+  forget(item.id);
+  changed();
+  return Promise.resolve();
+}
 
   function policyOf(evId){
     if (typeof root.cocreatorPolicyOf === 'function') return root.cocreatorPolicyOf(evId);
@@ -344,22 +360,34 @@
     return Promise.resolve();
   }
 
-  function provider(type, label, rows, accept, decline, undo){
-    return {
-      type: type,
-      label: label,
-      list: function(){ return pending(dedupe(rows())); },
-      count: function(){ return pending(dedupe(rows())).length; },
-      render: function(item){ return face(type, item); },
-      accept: accept,
-      decline: decline,
-      undo: undo
-    };
+function provider(type, label, rows, accept, decline, undo){
+  function items(){
+    var listed = [];
+    try { listed = rows() || []; }
+    catch (e) { listed = []; }
+    return pending(dedupe(listed));
   }
+  return {
+    type: type,
+    label: label,
+    list: function(){ return items(); },
+    count: function(){ return items().length; },
+    render: function(item){ return face(type, item); },
+    accept: accept,
+    decline: decline,
+    undo: undo
+  };
+}
 
-  var eventProvider = provider('event_invite', 'Event invites', function(){ return offlineEvents().concat(liveEvents()); }, acceptEvent, declineEvent, undoEvent);
-  var adminProvider = provider('admin_invite', 'Admin invites', function(){ return offlineAdmins().concat(liveAdmins()); }, acceptAdmin, declineAdmin, undoAdmin);
-  var cocoProvider = provider('cocreator_request', 'Co-creator requests', function(){ return offlineCocreators().concat(liveCocreators()); }, acceptCocreator, declineCocreator, undoCocreator);
+  function listed(offlineFn, liveFn){
+  var offlineRows = [], liveRows = [];
+  try { offlineRows = offlineFn() || []; } catch (e) { offlineRows = []; }
+  try { liveRows = liveFn() || []; } catch (e) { liveRows = []; }
+  return offlineRows.concat(liveRows);
+}
+  var eventProvider = provider('event_invite', 'Event invites', function(){ return listed(offlineEvents, liveEvents); }, acceptEvent, declineEvent, undoEvent);
+  var adminProvider = provider('admin_invite', 'Admin invites', function(){ return listed(offlineAdmins, liveAdmins); }, acceptAdmin, declineAdmin, undoAdmin);
+  var cocoProvider = provider('cocreator_request', 'Co-creator requests', function(){ return listed(offlineCocreators, liveCocreators); }, acceptCocreator, declineCocreator, undoCocreator);
 
   function release(){
     offs.forEach(function(off){ if (typeof off === 'function') off(); });

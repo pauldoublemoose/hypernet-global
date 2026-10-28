@@ -199,6 +199,8 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .nrow .nlock{ display:flex; color:var(--dim); }
 .navdiv{ height:1px; margin:12px 12px 8px; background:var(--rule); }
 #app.phone #nav .navh{ padding:10px 16px 6px; }
+/* every category row, in every section, shares this indent; the section headers stay flush */
+.nrow.nsubrow{ padding-left:36px; }
 #app.phone .nrow.nsubrow{ padding-left:44px; }
 .tc-bar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 16px; border-bottom:1px solid var(--rule); background:var(--face); }
 .tc-tabs, .tc-views{ display:flex; gap:4px; }
@@ -206,7 +208,11 @@ input[type=checkbox]{ width:18px; height:18px; margin:0; accent-color:#262626; }
 .tc-tab, .tc-view{ min-height:32px; padding:0 12px; border:1px solid var(--rule); background:var(--face); color:var(--ink); font:bold 12px/16px var(--sys); cursor:pointer; }
 .tc-tab.on, .tc-view.on{ background:var(--sel); color:var(--sel-text, var(--white)); border-color:var(--sel); }
 .tc-squares{ padding:8px 16px 16px; }
+.tc-head{ padding:12px 16px 0; }
+.tc-head h2{ margin:0; font:bold 20px/24px var(--sys); color:var(--ink); }
 .tc-tile{ display:grid; place-items:center; background:var(--face); color:var(--ink2); }
+.kmarks{ display:flex; gap:4px; align-items:center; }
+.kmark{ display:inline-flex; color:var(--ink2); }
 .row.drop{ outline:2px dashed var(--ink); outline-offset:-2px; background:var(--hover); }
 /* === END SIDEBAR === */
 .acctcard{ display:none; }
@@ -1118,7 +1124,7 @@ button.fcoe:hover{ background:#2e2e2e; }
 /* Explore: a line that says what a kind is; on a phone its kinds are tabs */
 .kdesc{ margin:0; padding:8px 16px; border-bottom:1px solid var(--line); background:#fff; font-size:12px; line-height:16px; color:var(--ink2); }
 .tagback{ margin:0; padding:8px 16px; border-bottom:1px solid var(--line); background:var(--face); }
-.nrow.nsubrow{ min-height:32px; padding-left:36px; font-size:12px; }
+.nrow.nsubrow{ min-height:32px; font-size:12px; }
 .navnote{ margin:16px 20px; color:var(--dim); font-size:var(--fs-s); line-height:1.45; }
 .kinds{ display:flex; gap:6px; min-width:0; overflow-x:auto; scrollbar-width:none; }
 .kinds::-webkit-scrollbar{ display:none; }
@@ -2112,6 +2118,7 @@ var IC = {
   people:'<circle cx="7.5" cy="7" r="3"/><path d="M1.8 17c.6-3.3 2.6-5 5.7-5s5.1 1.7 5.7 5"/><circle cx="14.2" cy="6.4" r="2.3"/><path d="M14 10.6c2.5.1 4 1.5 4.4 4.4"/>',
   check:'<path d="M3.5 10.5 8 15l8.5-9.5"/>',
   heart:'<path class="fillable" d="M10 16.6S3 12.3 3 7.7C3 5.4 4.7 3.9 6.6 3.9c1.5 0 2.7.9 3.4 2 .7-1.1 1.9-2 3.4-2 1.9 0 3.6 1.5 3.6 3.8 0 4.6-7 8.9-7 8.9z"/>',
+  bookmark:'<path d="M6 3.5h8V17l-4-2.5L6 17z"/>',
   star:'<path class="fillable" d="m10 2.8 2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 8.1l5-.7z"/>',
   promote:'<path d="M5 15 15 5M7.5 5H15v7.5"/>',
   plus:'<path d="M10 3.5v13M3.5 10h13"/>',
@@ -2775,7 +2782,7 @@ function destEvents(f){
 function folderName(f){
   f = f || S.folder;
   if (f.kind === 'explore') return f.id ? (EXPLOREKINDS.filter(function(k){ return k[0] === f.id; })[0] || [0, 'Explore'])[1] : 'Explore';
-  return { home:'Home', interested:'Interested', going:'Going', hosting:'Hosting', promoted:'Boosted',
+  return { home:'Home', interested:'Interested', going:'Calendar', hosting:'Hosting', promoted:'Boosted',
            owncallouts:'Your call outs', yourhz:'Your horizons', contacts:'Contacts', requests:'Requests',
            search:'Search', you:'You', chats:'Chats', shelf: shelfTitle(f.id) }[f.kind] || (f.kind === 'horizon' && HORIZONS[f.id] ? HORIZONS[f.id].name : 'Home');
 }
@@ -2789,7 +2796,14 @@ function folderSub(f){
   if (f.kind === 'explore' && f.id === 'callouts') return n + ' open';
   if (f.kind === 'explore' && f.id === 'people')   return n + ' people';
   if (f.kind === 'search')   return n + ' result' + (n === 1 ? '' : 's') + ' for “' + S.query + '”';
-  if (f.kind === 'owncallouts') return n + ' call out' + (n === 1 ? '' : 's');
+  if (f.kind === 'owncallouts'){
+    var side = f.id === 'interacted' ? 'interacted' : 'mine';
+    var waiting = calloutMethod(side) && COPAGE.loading && !(side === 'mine' ? COPAGE.posted : COPAGE.interacted);
+    if (waiting) return 'Loading…';
+    var cn = (f.id === 'interacted' ? interactedCallouts() : postedCallouts()).length;
+    var word = f.id === 'interacted' ? 'interaction' : 'call out';
+    return cn + ' ' + word + (cn === 1 ? '' : 's');
+  }
   if (f.kind === 'yourhz'){
     var hn = (f.id === 'following' ? followedHorizonItems() : f.id === 'collaborating' ? collaboratedHorizonItems() : myHorizonItems()).length;
     return hn + ' horizon' + (hn === 1 ? '' : 's');
@@ -3038,6 +3052,146 @@ function hzCollSquare(it){
   return '<div class="card2" data-act="folder" data-kind="'+it.id+'" role="button"><div class="cart tc-tile">'+ic(it.icon, 40)+'</div>' +
     '<div class="ct2">'+esc(it.label)+'</div><div class="cs2">'+it.count+'</div></div>';
 }
+/* one shape for a call out, wherever it came from. Fields are not final. */
+function mapCallout(raw){
+  raw = raw && typeof raw === 'object' ? raw : {};
+  var author = raw.author;
+  if (author && typeof author === 'object') author = author.displayName || author.name || author.handle || '';
+  var created = raw.created_at != null ? raw.created_at : (raw.createdAt != null ? raw.createdAt : '');
+  return {
+    id: raw.id != null ? String(raw.id) : '',
+    title: String(raw.title || raw.text || raw.body || ''),
+    author: String(author || raw.hostName || ''),
+    createdAt: created
+  };
+}
+var COPAGE = { posted:null, interacted:null, loading:false, seq:0 };
+var COWATCH = null;
+function coWhen(v){
+  var ms = typeof v === 'number' ? v : (typeof v === 'string' && v ? Date.parse(v) : 0);
+  return ms && !isNaN(ms) ? agoLabel(ms) : '';
+}
+function coKindMarks(kinds){
+  var spec = { boost:['promote','Boosted'], bookmark:['bookmark','Bookmarked'], reply:['chat','Replied'] };
+  return [].concat(kinds || []).filter(function(k){ return spec[k]; }).map(function(k){
+    return '<span class="kmark" title="'+spec[k][1]+'">'+ic(spec[k][0], 14)+'</span>';
+  }).join('');
+}
+function calloutMethod(name){
+  var api = window.HNCallouts;
+  return api && typeof api[name] === 'function' ? api[name] : null;
+}
+function localPostedCallouts(){
+  return CALLOUTS.filter(isOwnCallout).map(function(c){
+    return mapCallout({ id:c.id, title:c.title, text:c.body, author:c.hostName, created_at: calloutPostedMs(c.id) || 0 });
+  }).sort(function(a, b){ return (b.createdAt || 0) - (a.createdAt || 0); });
+}
+function postedCallouts(){ return calloutMethod('mine') ? (COPAGE.posted || []) : localPostedCallouts(); }
+function interactedCallouts(){ return calloutMethod('interacted') ? (COPAGE.interacted || []) : []; }
+function pullCallouts(){
+  var mine = calloutMethod('mine'), inter = calloutMethod('interacted');
+  if (!mine && !inter) return;
+  var seq = ++COPAGE.seq;
+  COPAGE.loading = true;
+  Promise.all([
+    mine ? Promise.resolve().then(function(){ return mine(); }) : null,
+    inter ? Promise.resolve().then(function(){ return inter(); }) : null
+  ]).then(function(pair){
+    if (seq !== COPAGE.seq) return;
+    COPAGE.loading = false;
+    if (mine) COPAGE.posted = [].concat(pair[0] || []).map(mapCallout);
+    if (inter) COPAGE.interacted = [].concat(pair[1] || []).map(function(row){
+      row = row || {};
+      return { callout: mapCallout(row.callout), kinds: [].concat(row.kinds || []).filter(function(k){ return k === 'boost' || k === 'bookmark' || k === 'reply'; }), at: row.at };
+    });
+    if (S.folder.kind === 'owncallouts') render();
+  }, function(){
+    if (seq !== COPAGE.seq) return;
+    COPAGE.loading = false;
+    if (mine) COPAGE.posted = [];
+    if (inter) COPAGE.interacted = [];
+    if (S.folder.kind === 'owncallouts') render();
+  });
+}
+function syncCalloutPage(){
+  if (S.folder.kind !== 'owncallouts'){
+    if (COWATCH){ COWATCH(); COWATCH = null; }
+    if (COPAGE.posted || COPAGE.interacted || COPAGE.loading){ COPAGE.seq++; COPAGE.posted = null; COPAGE.interacted = null; COPAGE.loading = false; }
+    return;
+  }
+  var api = window.HNCallouts;
+  if (!api) return;
+  if (!COWATCH && typeof api.onChange === 'function'){
+    var off = api.onChange(function(){
+      if (calloutMethod('mine')) COPAGE.posted = null;
+      if (calloutMethod('interacted')) COPAGE.interacted = null;
+      COPAGE.loading = false;
+      if (S.folder.kind === 'owncallouts') pullCallouts();
+    });
+    COWATCH = typeof off === 'function' ? off : function(){};
+  }
+  var mine = calloutMethod('mine'), inter = calloutMethod('interacted');
+  if ((!mine || COPAGE.posted) && (!inter || COPAGE.interacted)) return;
+  if (COPAGE.loading) return;
+  pullCallouts();
+}
+function coCollRow(it){
+  var wrapped = !!(it && it.callout);
+  var c = wrapped ? it.callout : it;
+  var marks = wrapped ? coKindMarks(it.kinds) : '';
+  var meta = [c.author, coWhen(wrapped && it.at ? it.at : c.createdAt)].filter(Boolean).join(' · ');
+  return '<div class="row'+(isSel({ type:'callout', id:c.id })?' sel':'')+'" data-act="row" data-type="callout" data-id="'+esc(c.id)+'" role="button">' +
+    '<span class="r-ic">'+ic('callout')+'</span><div class="r-main"><div class="r-title">'+esc(c.title || 'Call out')+'</div>' +
+    (meta ? '<div class="r-meta">'+esc(meta)+'</div>' : '') + '</div>' +
+    (marks ? '<div class="r-side"><div class="kmarks">'+marks+'</div></div>' : '') + '</div>';
+}
+function coCollSquare(it){
+  var wrapped = !!(it && it.callout);
+  var c = wrapped ? it.callout : it;
+  var marks = wrapped ? coKindMarks(it.kinds) : '';
+  return '<div class="card2'+(isSel({ type:'callout', id:c.id })?' sel':'')+'" data-act="row" data-type="callout" data-id="'+esc(c.id)+'" role="button">' +
+    '<div class="cart tc-tile">'+ic('callout', 40)+'</div><div class="ct2">'+esc(c.title || 'Call out')+'</div>' +
+    '<div class="cs2">'+esc(c.author || '')+'</div>' + (marks ? '<div class="cs2"><span class="kmarks">'+marks+'</span></div>' : '') + '</div>';
+}
+function renderYourCallouts(){
+  var tab = S.folder.id === 'interacted' ? 'interacted' : 'posted';
+  var mine = calloutMethod('mine'), inter = calloutMethod('interacted');
+  var loading = tab === 'interacted' ? !!(inter && COPAGE.loading && !COPAGE.interacted) : !!(mine && COPAGE.loading && !COPAGE.posted);
+  var items = tab === 'interacted' ? interactedCallouts() : postedCallouts();
+  var html = window.HNNav.collectionPage({
+    kind:'owncallouts',
+    store:'hypernet-co-view',
+    tab:tab,
+    empty: loading ? 'Loading…' : (tab === 'interacted' ? 'You have not interacted with a call out yet.' : 'You have not posted a call out yet.'),
+    tabs:[
+      { id:'posted', label:'Posted', items:postedCallouts },
+      { id:'interacted', label:'Interacted', items:interactedCallouts }
+    ],
+    renderRow:coCollRow,
+    renderSquare:coCollSquare
+  });
+  S.rows = items.map(function(it){ var c = it.callout || it; return { type:'callout', id:c.id }; }).filter(function(it){ return it.id; });
+  var lb = $('listbody'), top = lb.scrollTop;
+  lb.innerHTML = html;
+  lb.scrollTop = top;
+}
+function collectionPage(spec){
+  spec = spec || {};
+  var tabs = (spec.tabs || []).map(function(t){
+    return { id:t.id, label:t.label, items:function(){
+      if (typeof t.getItems === 'function') return t.getItems() || [];
+      if (typeof t.items === 'function') return t.items() || [];
+      return t.items || [];
+    } };
+  });
+  var built = tabbedCollection({
+    store:spec.store, tab:spec.tab, empty:spec.empty, tabs:tabs,
+    renderRow:spec.renderRow || function(){ return ''; },
+    renderSquare:spec.renderSquare || function(){ return ''; }
+  });
+  var head = spec.title ? '<div class="tc-head"><h2>'+esc(spec.title)+'</h2></div>' : '';
+  return '<div class="tc-page" data-kind="'+esc(spec.kind || '')+'">'+head+built.html+'</div>';
+}
 function tabbedCollection(spec){
   var tabs = spec.tabs || [];
   var tab = spec.tab;
@@ -3105,6 +3259,7 @@ function renderList(){
   if (S.folder.kind === 'home'){ renderHome(); return; }
   if (isOverview()){ renderShelves(); return; }
   if (S.folder.kind === 'yourhz'){ renderYourHorizons(); return; }
+  if (S.folder.kind === 'owncallouts'){ renderYourCallouts(); return; }
   if (S.folder.kind === 'contacts' && window.HNRel && HNRel.mountContacts){ HNRel.mountContacts(); return; }
   if (S.folder.kind === 'requests' && window.HNRel && HNRel.mountRequests){ HNRel.mountRequests(); return; }
   var items = sortItems(folderItems());
@@ -5840,7 +5995,7 @@ window.HNNav = (function(){
     out.sort(function(a, b){ return (a.order || 0) - (b.order || 0); });
     return out;
   }
-  return { register:register, rows:rows };
+  return { register:register, rows:rows, collectionPage:collectionPage };
 })();
 window.HNNav.register({ section:'manage', id:'groups', label:'Groups', icon:'people', order:10, locked:true });
 window.HNNav.register({ section:'special', id:'inferno', label:'Inferno', icon:'star', order:10, locked:true });
@@ -5857,20 +6012,21 @@ function lockedRow(icon, label, cls){
     icon+'<span class="nlab">'+esc(label)+'</span><span class="nlock" aria-hidden="true">'+ic('lock', 12)+'</span></div>';
 }
 function plugRows(section, cls){
+  var rowCls = 'nsubrow' + (cls && cls !== 'nsubrow' ? ' ' + cls : '');
   return window.HNNav.rows(section).map(function(it){
     var icon = navIcon(it.icon);
-    if (it.locked) return lockedRow(icon, it.label, cls);
+    if (it.locked) return lockedRow(icon, it.label, rowCls);
     var badge = typeof it.badge === 'function' ? it.badge() : it.badge, cnt = badge != null && badge !== '' ? badge : '';
-    return '<div class="nrow'+(cls ? ' '+cls : '')+'" role="button" data-act="navplug" data-section="'+esc(it.section)+'" data-id="'+esc(it.id)+'">'+
+    return '<div class="nrow '+rowCls+'" role="button" data-act="navplug" data-section="'+esc(it.section)+'" data-id="'+esc(it.id)+'">'+
       icon+'<span class="nlab">'+esc(it.label)+'</span>'+(cnt !== '' ? '<span class="ncnt">'+cnt+'</span>' : '')+'</div>';
   }).join('');
 }
 function relRow(label, iconName, openName, countName){
   var api = window.HNRel, open = api && typeof api[openName] === 'function';
-  if (!open) return lockedRow(ic(iconName, 16), label);
+  if (!open) return lockedRow(ic(iconName, 16), label, 'nsubrow');
   var cnt = '';
   if (countName && typeof api[countName] === 'function'){ var c = api[countName](); if (c != null && c !== '') cnt = c; }
-  return '<div class="nrow" role="button" data-act="navrel" data-id="'+openName+'">'+
+  return '<div class="nrow nsubrow" role="button" data-act="navrel" data-id="'+openName+'">'+
     ic(iconName, 16)+'<span class="nlab">'+esc(label)+'</span>'+(cnt !== '' ? '<span class="ncnt">'+cnt+'</span>' : '')+'</div>';
 }
 function renderNav(){
@@ -5890,8 +6046,8 @@ function renderNav(){
   var f = S.folder, shelfKind = f.kind === 'shelf' ? (EVENTSHELVES.test(f.id || '') ? 'events' : null) : null;
   if (S.loggedIn){
     h += navHead('HOME');
-    h += navRow({kind:'home'}, ic('home'), 'Feed');
-    h += navRow({kind:'going'}, ic('cal'), 'Calendar', { count: rsvpList('going').length || '' });
+    h += navRow({kind:'home'}, ic('home'), 'Feed', { cls:'nsubrow' });
+    h += navRow({kind:'going'}, ic('cal'), 'Calendar', { cls:'nsubrow', count: rsvpList('going').length || '' });
     h += relRow('Requests', 'chat', 'openRequests', 'incomingCount');
     h += plugRows('home');
   }
@@ -5904,9 +6060,9 @@ function renderNav(){
   if (!S.loggedIn) h += '<p class="navnote">Join to keep the events you’re going to, your Event Horizons and the people you follow here.</p>';
   else {
     h += navHead('MANAGE');
-    h += navRow({kind:'hosting'}, ic('star'), 'Hosting', { count: MYEVENTS.length || '' });
-    h += navRow({kind:'yourhz', id:'mine'}, ic('horizon'), 'Your horizons', { count: MYHORIZONS.length || '', sel: S.folder.kind === 'yourhz' });
-    h += navRow({kind:'owncallouts'}, ic('callout'), 'Your call outs');
+    h += navRow({kind:'hosting'}, ic('star'), 'Hosting', { cls:'nsubrow', count: MYEVENTS.length || '' });
+    h += navRow({kind:'yourhz', id:'mine'}, ic('horizon'), 'Your horizons', { cls:'nsubrow', count: MYHORIZONS.length || '', sel: S.folder.kind === 'yourhz' });
+    h += navRow({kind:'owncallouts'}, ic('callout'), 'Your call outs', { cls:'nsubrow', sel: S.folder.kind === 'owncallouts' });
     h += relRow('Contacts', 'user', 'openContacts');
     h += plugRows('manage');
   }
@@ -5931,7 +6087,8 @@ function renderToolbar(){
     : '<button class="btn acct" data-act="' + (ACCTS.me ? 'login' : 'loginpick') + '">'+ic('user')+'Log in</button>';
   var q = $('q');
   if (document.activeElement !== q) q.value = S.folder.kind === 'search' ? S.query : '';
-  $('wintitle').textContent = '— ' + folderName() + (isCal() ? ' · Calendar' : '');
+  var fname = folderName();
+  $('wintitle').textContent = '— ' + fname + (isCal() && fname !== 'Calendar' ? ' · Calendar' : '');
 }
 /* the List / Calendar switch (2026-10-05): owner, "when I'm in a list and I click on Calendar, the buttons shift around.
    Let's just keep them in one single place — top right." It is always the last thing at the top right — the heading's
@@ -5955,7 +6112,7 @@ function renderCHead(){
   var kinds = L.phone && S.folder.kind === 'explore' && !S.phoneSearch;
   if (kinds) tools = exploreKindsHTML();
   if (L.phone && S.phoneSearch && S.folder.kind !== 'search') tools = '';
-  var pageHead = S.folder.kind === 'yourhz' || S.folder.kind === 'contacts' || S.folder.kind === 'requests';
+  var pageHead = S.folder.kind === 'yourhz' || S.folder.kind === 'owncallouts' || S.folder.kind === 'contacts' || S.folder.kind === 'requests';
   el.className = (tools || pageHead ? '' : 'none') + (kinds ? ' kindhead' : '');
   el.innerHTML = '<div class="ct"><h2>'+esc(folderName())+'</h2><div class="csub">'+esc(folderSub())+'</div></div>' + (tools ? '<div class="ctools">'+tools+'</div>' : '');
 }
@@ -10464,6 +10621,7 @@ function itemPath(it){
 }
 function folderPath(f){
   if (f.kind === 'yourhz') return 'yourhz/' + (f.id === 'following' || f.id === 'collaborating' ? f.id : 'mine');
+  if (f.kind === 'owncallouts') return 'owncallouts' + (f.id === 'interacted' ? '/interacted' : '');
   if (f.kind === 'contacts') return 'contacts/' + (f.id === 'friends' || f.id === 'following' || f.id === 'follows' ? f.id : 'lists');
   if (f.kind === 'requests') return 'requests';
   return f.kind === 'shelf' ? 'explore/' + f.id : f.kind === 'explore' ? 'explore' + (f.id ? '/' + f.id : '') : f.kind === 'horizon' ? 'horizon/' + hzSlug(f.id) : f.kind;
@@ -10508,6 +10666,7 @@ function folderFrom(a, b){
   if (a === 'home' && b) return isExploreKind(b) && b !== 'people' ? { kind:'explore', id:b } : SHELFIDS.test(b) ? { kind:'shelf', id:b } : b === 'people' ? { kind:'shelf', id:'followed' } : { kind:'explore', id:null };
   if (a === 'horizon'){ var hz = hzBySlug(b); return hz ? { kind:'horizon', id:hz } : null; }
   if (a === 'yourhz') return { kind:'yourhz', id: b === 'following' || b === 'collaborating' ? b : 'mine' };
+  if (a === 'owncallouts') return { kind:'owncallouts', id: b === 'interacted' ? 'interacted' : null };
   if (a === 'contacts') return { kind:'contacts', id: b === 'friends' || b === 'following' || b === 'follows' ? b : 'lists' };
   if (a === 'requests') return { kind:'requests', id:null };
   return FOLDERKINDS.test(a || '') ? { kind:a, id:null } : null;
@@ -10737,6 +10896,7 @@ function render(){
     conv && S.loggedIn ? 'conv-open' : '', !L.phone && S.loggedIn ? 'readmarks' : '', S.loggedIn ? '' : 'preview'].filter(Boolean).join(' ');
   document.body.className = L.phone ? 'is-phone' : 'is-desk';
   layoutCentre();
+  syncCalloutPage();
 
   if (L.phone){ renderAppbar(); renderTabbar(); } else renderToolbar();
   if (L.left || scr === 'you') renderNav();

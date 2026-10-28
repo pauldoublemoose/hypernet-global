@@ -16,14 +16,15 @@ end;
 alter table horizons add constraint horizons_audience_ok check (audience_ok(audience));
 
 create or replace function can_see_horizon(viewer uuid, h horizons) returns boolean language sql stable as $$
-  select viewer is not null and (
-    (h.owner_id is not null and viewer = h.owner_id)
-    or exists (
+  select
+    (viewer is not null and h.owner_id is not null and viewer = h.owner_id)
+    or (viewer is not null and exists (
       select 1 from horizon_collaborators hc
       where hc.horizon_id = h.id and hc.person_id = viewer and hc.accepted_at is not null
-    )
+    ))
     or (
-      not exists (
+      viewer is not null
+      and not exists (
         select 1 from jsonb_array_elements_text(h.audience->'exclude') tok
         where in_audience(viewer, h.owner_id, tok)
       )
@@ -32,7 +33,13 @@ create or replace function can_see_horizon(viewer uuid, h horizons) returns bool
         where in_audience(viewer, h.owner_id, tok)
       )
     )
-  )
+    or (
+      viewer is null
+      and exists (
+        select 1 from jsonb_array_elements_text(h.audience->'include') tok
+        where tok = 'everyone'
+      )
+    )
 $$;
 
 insert into _migrations (name) values ('0015_horizon_audience');

@@ -20,6 +20,8 @@ describe("can_see_horizon", () => {
     expect(fn).toMatch(/h\.audience->'exclude'/);
     expect(fn).toMatch(/in_audience\(viewer, h\.owner_id, tok\)/);
     expect(fn).toMatch(/h\.audience->'include'/);
+    expect(fn).toMatch(/viewer is null/);
+    expect(fn).toMatch(/tok = 'everyone'/);
     expect(fn).not.toMatch(/event_invites/);
   });
 
